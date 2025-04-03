@@ -1,2 +1,3 @@
 # EasyVectorOmics
-EasyVectorOmcis leverages the native geometry of multi-omics data to model how biological function flows and diverges through high-dimensional space—using vectors, fields, and curvature to trace evolutionary, developmental, or stress-induced trajectories across transcriptomic, proteomic, metabolomic, and phenotypic layers.
+
+In Tensor Omics ("EasyVectorOmics"), data becomes geometry—functional shifts unfold as flows in high-dimensional space, and the method itself arises from the structure of the data, allowing multi-omics integration, module detection, and biological insight to emerge natively from the mathematics of direction, divergence, and change.
