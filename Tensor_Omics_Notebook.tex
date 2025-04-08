@@ -34,23 +34,51 @@ We assume as input an omics dataset—typically transcriptomics—with the follo
 
 Each row vector $\mathbf{x}_i \in \mathbb{R}^m$ represents the expression profile of gene $i$ across $m$ semantic dimensions (samples), forming the basis for all further geometric interpretation.
 
-\subsection{Normalization}
+\section{Normalization}
 
-To enable meaningful comparisons across genes and omics layers, the following normalization pipeline is applied:
+Before constructing the gene expression vector space, raw count data must be normalized to allow for meaningful geometric comparison. In Tensor Omics, the normalization pipeline is deliberately simple and interpretable, designed to retain the biological semantics of the vector structure.
 
-\begin{enumerate}[label=(\roman*), leftmargin=1.5em]
-    \item \textbf{Standard Deviation Scaling:} Each vector $\mathbf{x}_i$ is scaled by the standard deviation of its components:
-    \[
-        \mathbf{x}_i' = \frac{\mathbf{x}_i}{\mathrm{sd}(\mathbf{x}_i)}
-    \]
-    \item \textbf{Quantile Normalization:} Aimed at ensuring consistent expression distributions across samples. This is optional and depends on the experimental design; it is more suitable within omics types than across them.
-    \item \textbf{Log Transformation:} To reduce the skew caused by extreme values and emphasize relative changes, we apply a log transformation:
-    \[
-        \mathbf{x}_i'' = \log(1 + \mathbf{x}_i')
-    \]
-\end{enumerate}
+\subsection{Standard Deviation Scaling (No Centering)}
 
-After normalization, each gene is now represented as a vector in $\mathbb{R}^m$ with a geometry that is interpretable across all $m$ experimental conditions. These normalized vectors define the primary semantic expression space.
+Let each gene \( g \) be associated with an expression vector \( \mathbf{x}_g = [x_{g,1}, x_{g,2}, \dots, x_{g,n}] \), where each component corresponds to a sample (e.g., different tissues, replicates, time points, or stress conditions).
+
+We normalize each gene's expression vector independently by dividing all components by its standard deviation:
+
+\[
+\hat{x}_{g,i} = \frac{x_{g,i}}{\sigma_g}
+\quad \text{where} \quad 
+\sigma_g = \sqrt{\frac{1}{n} \sum_{j=1}^n x_{g,j}^2}
+\]
+
+\textbf{Important:} We do not subtract the mean. This avoids removing the overall direction of the expression vector, which carries biological meaning—such as tissue preference or dominant condition.
+
+\paragraph{Example:}  
+Suppose a gene is expressed in three replicates each of \texttt{root}, \texttt{stem}, and \texttt{leaf}, with raw counts:
+
+\[
+\mathbf{x}_g = [120, 135, 110, 40, 50, 45, 5, 10, 12]
+\]
+
+After standard deviation normalization, we get:
+
+\[
+\hat{\mathbf{x}}_g = \left[ \frac{120}{\sigma_g}, \frac{135}{\sigma_g}, \dots, \frac{12}{\sigma_g} \right]
+\]
+
+This ensures that all vectors reside on comparable scales, while preserving angular relationships and magnitude differences needed for geometric and semantic analysis.
+
+\subsection{Quantile Normalization and Log-Transformation}
+
+\textbf{Quantile normalization} across samples is optional and typically used to ensure comparable distributions across conditions—especially useful when comparing different omics types. However, care must be taken when integrating transcriptomics with proteomics or metabolomics.
+
+\textbf{Log-transformation} is applied as:
+
+\[
+x' = \log(1 + x)
+\]
+
+This transformation reduces the impact of outliers and brings expression values closer to normality without distorting their relative magnitudes when \( x \) is large.
+
 
 \subsection{Construction of the Gene Expression Space}
 
