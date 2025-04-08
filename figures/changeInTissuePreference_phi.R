@@ -81,7 +81,7 @@ text(
 text(
   .6,
   .8,
-  label = TeX('$\\phi$'),
+  label = TeX('$\\varphi$'),
   pos = 2,
   offset = 1.25,
   col = colors[[3]],
