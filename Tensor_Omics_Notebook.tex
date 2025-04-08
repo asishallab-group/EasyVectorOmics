@@ -21,9 +21,9 @@ By embedding multi-omics data into a unified or interoperable coordinate grid an
 
 Tensor Omics offers native compatibility with vector-based AI methods, fast geometric comparison tools, and a fully reproducible, versionable implementation stack. It scales to transcriptomics of a single species, integrates proteomics and metabolomics across timepoints, and extends to metagenomic ecosystems and phenotype-genome association landscapes. From expression-based neofunctionalization detection to high-resolution microbiome response profiling, Tensor Omics transforms geometry into biology.
 
-\section{1. Methods}
+\section{Methods}
 
-\subsection{1.1 Input Data and Initial Representation}
+\subsection{Input Data and Initial Representation}
 
 We assume as input an omics dataset—typically transcriptomics—with the following components:
 
@@ -34,7 +34,7 @@ We assume as input an omics dataset—typically transcriptomics—with the follo
 
 Each row vector $\mathbf{x}_i \in \mathbb{R}^m$ represents the expression profile of gene $i$ across $m$ semantic dimensions (samples), forming the basis for all further geometric interpretation.
 
-\subsection{1.2 Normalization}
+\subsection{Normalization}
 
 To enable meaningful comparisons across genes and omics layers, the following normalization pipeline is applied:
 
@@ -52,13 +52,13 @@ To enable meaningful comparisons across genes and omics layers, the following no
 
 After normalization, each gene is now represented as a vector in $\mathbb{R}^m$ with a geometry that is interpretable across all $m$ experimental conditions. These normalized vectors define the primary semantic expression space.
 
-\subsection{1.3 Construction of the Gene Expression Space}
+\subsection{Construction of the Gene Expression Space}
 
 The normalized expression vectors $\{\mathbf{x}_i''\}_{i=1}^n$ are embedded into a semantic coordinate space $\mathbb{R}^m$, where each axis corresponds to a biological dimension such as a tissue type, timepoint, treatment condition, or spatial location. This space—called the \textit{omics space}—forms the geometric domain for all downstream analysis.
 
 Let $G$ denote a discrete grid imposed on $\mathbb{R}^m$. The grid resolution is determined automatically based on data density using a robust, reproducible strategy—e.g., the $0.8$ quantile of nearest-neighbor distances between vectors. The grid provides a canonical lattice to anchor vector fields, allowing field interpolation, modular detection, and multi-omics comparison.
 
-\subsection{1.4 Interpolation and Smoothing}
+\subsection{Interpolation and Smoothing}
 
 Because real data is sparse and noisy, Tensor Omics applies interpolation and smoothing at several stages to enable robust field construction and biological interpretation:
 
@@ -76,7 +76,7 @@ where $K(\cdot)$ is a kernel function (e.g., Gaussian) with a radius tied to the
 
 \section{Family-Level Geometry and Outlier Detection}
 
-\subsection{2.1 Gene Family Centroids}
+\subsection{Gene Family Centroids}
 
 Genes are grouped into families based on shared sequence, function, or evolutionary history. For a given gene family $F = \{ \mathbf{x}_1, \ldots, \mathbf{x}_k \}$, we define the centroid vector $\mathbf{c}_F$ as:
 
@@ -86,7 +86,7 @@ Genes are grouped into families based on shared sequence, function, or evolution
 
 This centroid represents the average expression behavior of the family and serves as a neutral reference point. It can optionally be replaced by the centroid of orthologs in a reference species or population when available.
 
-\subsection{2.2 Difference Vectors}
+\subsection{Difference Vectors}
 
 For each gene $\mathbf{x}_i \in F$, we define its \textit{difference vector} $\mathbf{d}_i$ as the vector from the family centroid to the gene:
 
@@ -96,7 +96,7 @@ For each gene $\mathbf{x}_i \in F$, we define its \textit{difference vector} $\m
 
 This difference vector captures the gene’s divergence in expression space relative to its family norm. It represents both direction (e.g., toward specific tissues) and magnitude (degree of divergence).
 
-\subsection{2.3 Relative Distance Index (RDI)}
+\subsection{Relative Distance Index (RDI)}
 
 To distinguish meaningful divergence from noise, Tensor Omics uses a native empirical significance measure called the \textit{Relative Distance Index (RDI)}.
 
@@ -121,7 +121,7 @@ The RDI measure is:
 
 \section{Semantic Axes: Versatility, Specificity, and Divergence toward Tissue Identity}
 
-\subsection{3.1 The Space Diagonal and Expression Neutrality}
+\subsection{The Space Diagonal and Expression Neutrality}
 
 Let the semantic axes of the expression space be denoted by $T = \{t_1, \ldots, t_n\}$ (e.g., tissues or conditions). In this $n$-dimensional space, the \textit{space diagonal} is the vector:
 
@@ -131,7 +131,7 @@ Let the semantic axes of the expression space be denoted by $T = \{t_1, \ldots, 
 
 It represents an equal expression in all axes — a uniform, versatile expression profile. Any deviation from this vector indicates semantic bias (i.e., tissue or condition specificity).
 
-\subsection{3.2 Angular Deviation from the Diagonal}
+\subsection{Angular Deviation from the Diagonal}
 
 For a gene expression vector $\mathbf{x}_i$, we compute the angle $\theta_i$ to the space diagonal using the cosine similarity:
 
@@ -147,7 +147,7 @@ For a gene expression vector $\mathbf{x}_i$, we compute the angle $\theta_i$ to 
 
 This measure allows rapid geometric identification of genes that have evolved specialization, for instance after duplication. Tracking these angles across orthologs and paralogs enables inference of sub- and neofunctionalization dynamics.
 
-\subsection{3.3 Practical Applications}
+\subsection{Practical Applications}
 
 \textbf{Use cases:}
 \begin{itemize}[leftmargin=1.5em]
@@ -158,9 +158,9 @@ This measure allows rapid geometric identification of genes that have evolved sp
 
 The angle $\theta$ is compact, native, and suitable for large-scale screening.
 
-\section{4. Relative Axes Expression: Clock Plots and Semantic Rotation}
+\section{Relative Axes Expression: Clock Plots and Semantic Rotation}
 
-\subsection{4.1 Projection onto the Diagonal-Orthogonal Plane}
+\subsection{Projection onto the Diagonal-Orthogonal Plane}
 
 To study shifts in expression directionality—e.g., between paralogs or across time—we define a projection onto the plane orthogonal to the space diagonal $\mathbf{d}_{\text{diag}}$.
 
@@ -172,7 +172,7 @@ Let $\mathbf{x} \in \mathbb{R}^n$ be any expression vector. Its projection $\mat
 
 This yields the component of $\mathbf{x}$ that lies in the plane where tissue biases can rotate without affecting total expression magnitude.
 
-\subsection{4.2 Clock Hand Vectors and Angle $\phi$}
+\subsection{Clock Hand Vectors and Angle $\phi$}
 
 Let:
 \begin{itemize}[leftmargin=1.5em]
@@ -198,7 +198,7 @@ The angle $\phi$ between clock hands:
     \item $\phi > 0$: divergence in tissue preference.
 \end{itemize}
 
-\subsection{4.3 Difference Vector and Unit Difference Vector}
+\subsection{Difference Vector and Unit Difference Vector}
 
 Define the \textbf{difference vector}:
 \[
@@ -212,7 +212,7 @@ And the \textbf{unit difference vector}:
 
 These vectors encode the direction and magnitude of tissue expression shift between two expression states.
 
-\subsection{4.4 Biological Interpretations and Use Cases}
+\subsection{Biological Interpretations and Use Cases}
 
 \begin{itemize}[leftmargin=1.5em]
     \item \textbf{Neofunctionalization:} Detected as a large $\phi$ and strong $\mathbf{d}_{\text{raw}}$ pointing into a new tissue direction.
@@ -222,9 +222,9 @@ These vectors encode the direction and magnitude of tissue expression shift betw
 
 This allows visualization and interpretation of evolving expression trajectories as rotations in semantic space.
 
-\section{5. Meta-Data Filtering and Comparative Analysis}
+\section{Meta-Data Filtering and Comparative Analysis}
 
-\subsection{5.1 Subsetting the Semantic Vector Space}
+\subsection{Subsetting the Semantic Vector Space}
 
 The Tensor Omics framework supports meta-data–driven filtering of expression vectors. This enables targeted analysis of semantic flow and divergence within biologically meaningful subsets of the data.
 
@@ -237,7 +237,7 @@ Let:
     \]
 \end{itemize}
 
-\subsection{5.2 Distributional Comparison of Expression Differences}
+\subsection{Distributional Comparison of Expression Differences}
 
 Once a semantic subset is selected, difference vectors (e.g., between paralog and ortholog) can be compared across groups using statistical methods:
 
@@ -252,7 +252,7 @@ Example:
 Compare the tissue shift direction (normalized $\hat{\mathbf{d}}$) for genes annotated as photosynthesis-related between \textit{Arabidopsis} and \textit{Camelina}. Use the Wilcoxon rank-sum test to determine if shift magnitudes differ significantly.
 \end{quote}
 
-\subsection{5.3 Interpretation of Semantic Flow}
+\subsection{Interpretation of Semantic Flow}
 
 The aggregate vector field (mean or weighted mean of difference vectors in a subset) yields interpretable biological insight:
 \begin{itemize}[leftmargin=1.5em]
@@ -261,7 +261,7 @@ The aggregate vector field (mean or weighted mean of difference vectors in a sub
     \item \textbf{Direction Clustering:} Tight angular distribution suggests concerted biological response; diffuse pattern implies functional drift.
 \end{itemize}
 
-\subsection{5.4 Example Applications from the Proposal}
+\subsection{Example Applications from the Proposal}
 
 \begin{itemize}[leftmargin=1.5em]
     \item \textbf{Microbiome under dietary shift:} Compare gene expression divergence vectors for microbial taxa under different diets. Highlight functional adaptation or specialization.
@@ -269,9 +269,9 @@ The aggregate vector field (mean or weighted mean of difference vectors in a sub
     \item \textbf{Wound healing:} Use time-trajectory vector fields to find gene modules with early versus late semantic activation.
 \end{itemize}
 
-\section{6. Software Architecture and Implementation Plan}
+\section{Software Architecture and Implementation Plan}
 
-\subsection{6.1 Language and Framework Choice}
+\subsection{Language and Framework Choice}
 
 The Tensor Omics implementation is deliberately minimal, efficient, and reproducible by design. The core computation stack consists of:
 
@@ -284,7 +284,7 @@ The Tensor Omics implementation is deliberately minimal, efficient, and reproduc
 
 Python is explicitly avoided. If needed, specific functions may be implemented using Rcpp with C++ libraries, maintaining a modular and lightweight R package.
 
-\subsection{6.2 Data Structure and Serialization}
+\subsection{Data Structure and Serialization}
 
 All omics data, vectors, and tensor fields are stored in a unified binary format called \texttt{.txdata}, containing:
 
@@ -303,7 +303,7 @@ All omics data, vectors, and tensor fields are stored in a unified binary format
 
 Serialization includes a self-descriptive header, followed by raw binary blocks. All structures are designed for compatibility with WASM (no dynamic allocation, no co-arrays, no nested structures).
 
-\subsection{6.3 Workbench for Interactive Visualization}
+\subsection{Workbench for Interactive Visualization}
 
 The Tensor Omics Workbench is a browser-based GUI, built with:
 
@@ -321,7 +321,7 @@ Key features include:
     \item Export of plot state (coordinates, zoom, coloring, axis configuration) for reproducibility and sharing.
 \end{itemize}
 
-\subsection{6.4 Patching and Reproducibility}
+\subsection{Patching and Reproducibility}
 
 All changes to the data can be serialized as lightweight binary patches. These patches:
 \begin{itemize}[leftmargin=1.5em]
@@ -332,7 +332,7 @@ All changes to the data can be serialized as lightweight binary patches. These p
 
 This infrastructure supports iterative and fully traceable multi-omics analysis pipelines.
 
-\section{7. Summary and Evaluation of Tensor Omics}
+\section{Summary and Evaluation of Tensor Omics}
 
 Tensor Omics is a novel framework for the geometric and semantic analysis of high-dimensional omics data. At its core lies a deceptively simple idea: omics data, especially from multi-condition or multi-tissue experiments, naturally lives in vector spaces. Instead of abstracting or reducing this complexity, Tensor Omics embraces it—turning raw data into mathematically structured vector and tensor fields. Each axis retains biological meaning, and operations like interpolation, smoothing, and derivative computation are implemented natively in this semantically grounded space.
 
