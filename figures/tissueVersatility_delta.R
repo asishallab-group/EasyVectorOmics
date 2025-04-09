@@ -108,7 +108,7 @@ text(
 text(
   dupl[1],
   dupl[2],
-  label = TeX('$\\bar{\\textit{d}}$'),
+  label = TeX('$\\bar{\\textit{p}}$'),
   pos = 1,
   offset = 1.25,
   col = colors[[2]]
@@ -116,7 +116,7 @@ text(
 text(
   dupl[1] + .1,
   dupl[2],
-  label = TeX('$\\delta(\\bar{\\textit{d}})$'),
+  label = TeX('$\\delta(\\bar{\\textit{p}})$'),
   pos = 3,
   offset = 1.25,
   col = colors[[2]],
@@ -125,11 +125,57 @@ text(
 text(
   1.75,
   1.75,
-  label = TeX('$\\bar{\\textit{\\nu}}$'),
+  label = TeX('$\\bar{\\textit{D}}$'),
   pos = 3,
   offset = 1.25,
   col = colors[[4]],
   cex = 1.5
+)
+
+# Calculate vectors
+diff_vec <- dupl - orth
+unit_vec <- diff_vec / eucLen(diff_vec)
+
+# Difference vector
+arrows(
+  orth[1],
+  orth[2],
+  dupl[1],
+  dupl[2],
+  col = "darkblue",
+  lwd = 2,
+  length = 0.15
+)
+
+# Unit vector
+arrows(
+  orth[1],
+  orth[2] - .1,
+  orth[1] + unit_vec[1],
+  orth[2] + unit_vec[2] - .1,
+  col = "blue",
+  lwd = 2,
+  length = 0.1
+)
+
+
+# labels
+text(
+  (orth[1] + dupl[1]) / 2 + .2,
+  (orth[2] + dupl[2]) / 2,
+  label = TeX('$\\bar{p} - \\bar{o}$'),
+  pos = 3,
+  col = "darkblue",
+  cex = 1.0
+)
+
+text(
+  orth[1] + .15,
+  orth[2] - .1,
+  label = TeX('$\\bar{u}_{po}$'),
+  pos = 1,
+  col = "blue",
+  cex = 1.0
 )
 
 
