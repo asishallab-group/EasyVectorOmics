@@ -7,7 +7,7 @@ addAlpha <- function(col, alpha = .25) {
     rgb(x[1], x[2], x[3], alpha = alpha))
 }
 
-colors <- brewer.pal(6, "Dark4")
+colors <- brewer.pal(6, "Dark2")
 alpha.cols <- sapply(colors, addAlpha)
 
 pdf('changeInTissuePreference_phi.pdf', width=4, height=4)

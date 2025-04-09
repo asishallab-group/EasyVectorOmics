@@ -17,7 +17,7 @@ angleVecs <- function(x, y, conv.fac = (180 / pi)) {
     x[i] * y[i])) / (eucLen(x) * eucLen(y))) * conv.fac
 }
 
-colors <- brewer.pal(4, "Dark2")
+colors <- brewer.pal(7, "Dark2")
 alpha.cols <- sapply(colors, addAlpha)
 
 
@@ -34,9 +34,10 @@ pdf('tissueVersatility_delta.pdf',
 old.par <- par(mgp = c(.4, 0.4, 0))
 
 plot(
-  rbind(orth, dupl),
-  pch = 18,
-  cex = 4,
+  # rbind(orth, dupl),
+  # pch = 18,
+  # cex = 4,
+  NA,
   xlim = c(0, 2.2),
   ylim = c(0, 2.2),
   xlab = TeX('\\textit{tissue} X'),
@@ -44,12 +45,14 @@ plot(
   ylab = TeX('\\textit{tissue} Y'),
   # '',
   cex.lab = 1.45,
-  xaxt = 'n',
-  yaxt = 'n',
   bty = 'l',
-  # axes = FALSE,
-  col = c(colors[[1]], colors[[2]])
+  axes = FALSE
 )
+points(orth[1], orth[2], pch = 21, bg = alpha.cols[[1]], col = colors[[1]], cex = 2)
+points(dupl[1], dupl[2], pch = 21, bg = alpha.cols[[2]], col = colors[[2]], cex = 2)
+
+
+
 # lines(c(0,0,0,2.15), c(0,2.15,0,0))
 draw.sector(
   45,
@@ -58,7 +61,7 @@ draw.sector(
   center = c(0, 0),
   border = colors[[1]],
   col = alpha.cols[[1]],
-  lwd = 3,
+  lwd = 2,
   rou1 = l.orth
 )
 draw.sector(
@@ -68,10 +71,11 @@ draw.sector(
   center = c(0, 0),
   border = colors[[2]],
   col = alpha.cols[[2]],
-  lwd = 3,
+  lwd = 2,
   rou1 = l.dupl
 )
-abline(0, 1, lwd = 4, col = colors[[4]])
+
+# abline(0, 1, lwd = 4, col = colors[[4]])
 # text(
 #   .1,
 #   2.15,
@@ -91,45 +95,97 @@ abline(0, 1, lwd = 4, col = colors[[4]])
 text(
   orth[1],
   orth[2],
-  label = TeX('$\\bar{\\textit{o}}$'),
+  label = TeX('$\\textit{o}$'),
   pos = 3,
   offset = 1,
   col = colors[[1]]
 )
+
+text(
+  orth[1],
+  orth[2] + .1,
+  label = TeX('$\\rightarrow$'),
+  pos = 3,
+  offset = 1,
+  col = colors[[1]]
+)
+
 text(
   orth[1],
   orth[2],
-  label = TeX('$\\delta(\\bar{\\textit{o}})$'),
+  label = TeX('$\\varphi(\\textit{o})$'),
   pos = 4,
   offset = 2.25,
   col = colors[[1]],
-  cex = 1.5
+  cex = 1.0
 )
+
+text(
+  orth[1] + .09,
+  orth[2] + .11,
+  label = TeX('$\\rightarrow$'),
+  pos = 4,
+  offset = 2.25,
+  col = colors[[1]],
+  cex = 1.0
+)
+
 text(
   dupl[1],
   dupl[2],
-  label = TeX('$\\bar{\\textit{p}}$'),
+  label = TeX('$\\textit{p}$'),
   pos = 1,
   offset = 1.25,
   col = colors[[2]]
 )
+
+text(
+  dupl[1],
+  dupl[2] + .11,
+  label = TeX('$\\rightarrow$'),
+  pos = 1,
+  offset = 1.25,
+  col = colors[[2]]
+)
+
 text(
   dupl[1] + .1,
   dupl[2],
-  label = TeX('$\\delta(\\bar{\\textit{p}})$'),
+  label = TeX('$\\varphi(\\textit{p})$'),
   pos = 3,
   offset = 1.25,
   col = colors[[2]],
-  cex = 1.5
+  cex = 1.0
 )
+
 text(
-  1.75,
-  1.75,
-  label = TeX('$\\bar{\\textit{D}}$'),
+  dupl[1] + .14,
+  dupl[2] + .15,
+  label = TeX('$\\rightarrow$'),
+  pos = 3,
+  offset = 1.25,
+  col = colors[[2]],
+  cex = 1.0
+)
+
+text(
+  1.85,
+  1.65,
+  label = TeX('$\\textit{D}$'),
   pos = 3,
   offset = 1.25,
   col = colors[[4]],
-  cex = 1.5
+  cex = 1.0
+)
+
+text(
+  1.85,
+  1.78,
+  label = TeX('$\\rightarrow$'),
+  pos = 3,
+  offset = 1.25,
+  col = colors[[4]],
+  cex = 1.0
 )
 
 # Calculate vectors
@@ -142,7 +198,7 @@ arrows(
   orth[2],
   dupl[1],
   dupl[2],
-  col = "darkblue",
+  col = colors[[7]],
   lwd = 2,
   length = 0.15
 )
@@ -153,7 +209,7 @@ arrows(
   orth[2] - .1,
   orth[1] + unit_vec[1],
   orth[2] + unit_vec[2] - .1,
-  col = "blue",
+  col = colors[[6]],
   lwd = 2,
   length = 0.1
 )
@@ -163,21 +219,42 @@ arrows(
 text(
   (orth[1] + dupl[1]) / 2 + .2,
   (orth[2] + dupl[2]) / 2,
-  label = TeX('$\\bar{p} - \\bar{o}$'),
+  label = TeX('$s_{\\textit{po}}$'),
   pos = 3,
-  col = "darkblue",
+  col = colors[[7]],
+  cex = 1.0
+)
+
+text(
+  (orth[1] + dupl[1]) / 2 + .14,
+  (orth[2] + dupl[2]) / 2 + .15,
+  label = TeX('\\rightarrow$'),
+  pos = 3,
+  col = colors[[7]],
   cex = 1.0
 )
 
 text(
   orth[1] + .15,
-  orth[2] - .1,
-  label = TeX('$\\bar{u}_{po}$'),
+  orth[2] - .15,
+  label = TeX('${s}_{\\textit{po}}^{norm}$'),
   pos = 1,
-  col = "blue",
+  col = colors[[6]],
   cex = 1.0
 )
 
+text(
+  orth[1] + .04,
+  orth[2] - .08,
+  label = TeX('$\\rightarrow$'),
+  pos = 1,
+  col = colors[[6]],
+  cex = 1.0
+)
+
+lines(c(0, 2), c(0, 2), col = colors[[4]], lwd = 2)
+lines(c(0, 0), c(0, 2), col = "black", lwd = 2)
+lines(c(0, 2), c(0, 0), col = "black", lwd = 2)
 
 par(old.par)
 
