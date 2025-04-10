@@ -74,11 +74,11 @@ To detect expression outliers and classify divergence types, we estimate empiric
     \]
     This identifies divergence in direction. Thresholds (e.g. 95\%) are derived from the pooled distribution of angles.
 
-    \item \textbf{Relative Axis Signal (RAS)}: For each unit-normalized expression vector \( \hat{p} \), we consider its component \( \hat{p}_i \) along each axis \( i \) (e.g., tissue). For each axis, the 5th percentile across all vectors is computed as the inactivity threshold. A gene is considered neofunctionalized in axis \( i \) if:
+    \item \textbf{Relative Axis Signal (RAS)}: For each unit-normalized expression vector \( \vec{p}^{\text{norm}} \), we consider its component \( \vec{p}^{\text{norm}}_i \) along each axis \( i \) (e.g., tissue). For each axis, the 5th percentile across all vectors is computed as the inactivity threshold. A gene is considered neofunctionalized in axis \( i \) if:
     \[
-    \hat{o}_i < T_i^{(5\%)} \quad \text{and} \quad \hat{p}_i > T_i^{(5\%)}
+    \vec{o}^{\text{norm}}_i < T_i^{(5\%)} \quad \text{and} \quad \vec{p}^{\text{norm}}_i > T_i^{(5\%)}
     \]
-    where \( \hat{o} \) is the centroid.
+    where \( \vec{o}^{\text{norm}} \) is the centroid.
 
     \item \textbf{Relative Frobenius Index (RFI)}: For any set of vectors \( \{ \vec{v}_1, \dots, \vec{v}_n \} \) assembled as columns in matrix \( M \in \mathbb{R}^{d \times n} \), the signal strength is computed as:
     \[
@@ -92,8 +92,13 @@ All empirical distributions are stored in Fortran arrays and used to assign sign
 
 \section*{5. Outlier Detection and Shift Vector Calculation}
 \begin{itemize}
-    \item Outliers are detected when \( \| \vec{p} - \vec{o} \| \) exceeds the 95th percentile RDI.
-    \item Shift vectors are computed as:
+  \item Outliers are detected when \( d_{po} = \| \vec{p} - \vec{o} \| \)
+    exceeds the 95th percentile RDI. \emph{Importantly} the distance
+    $d_{po}^{\text{norm}}$ is greater or equal than the 95 percentile of RDI
+    distances. So, for outlier detection we use the normalized distance,
+    divided by the max family distance, but for all later considerations we use
+    the original, not normalized, distance. 
+    \item Next, shift vectors are computed as:
     \[
         \vec{s} = \vec{p} - \vec{o}
     \]
@@ -111,7 +116,8 @@ All empirical distributions are stored in Fortran arrays and used to assign sign
 
 \section*{7. Clock Plot Projection and Rotation Angle Computation}
 \begin{itemize}
-    \item All shift vectors are projected into the \textbf{Relative Axes Plane (RAP)}, orthogonal to the space diagonal.
+    \item All shift vectors are projected into the \textbf{Relative Axes Plane
+      (RAP)}, orthogonal to the space diagonal and intersecting the origin.
     \item The following quantities are calculated for each outlier:
     \begin{itemize}
         \item Projected shift vector in RAP.
@@ -124,7 +130,7 @@ All empirical distributions are stored in Fortran arrays and used to assign sign
         \item For each outlier \( i \), store:
         \begin{itemize}
             \item \texttt{Rows 1 to \( n \)}: \( \vec{s}_i^{\text{RAP}} \)
-            \item \texttt{Rows \( n+1 \) to \( 2n \)}: \( \hat{s}_i^{\text{RAP}} \)
+            \item \texttt{Rows \( n+1 \) to \( 2n \)}: \( \vec{s}^{\text{RAP, norm}} \)
             \item \texttt{Rows \( 2n+1 \) to \( 3n \)}: \( \vec{s}_i^{\text{clock}} \)
             \item \texttt{Row \( 3n+1 \)}: rotation angle in radians
         \end{itemize}
