@@ -91,7 +91,7 @@ text(label_pos[1], label_pos[2],
      cex = 2)
 
 
-# Mini plot in bottom right (distance vs time)
+# Mini plot in top right (distance vs time)
 par(fig = c(0.65, 0.98, 0.70, 0.98), new = TRUE)
 distances <- sapply(clock_pts, function(pt) sqrt(sum((pt - O)^2)))
 plot(
