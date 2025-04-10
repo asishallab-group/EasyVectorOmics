@@ -4,8 +4,9 @@
 \usepackage{amssymb}
 \usepackage{geometry}
 \geometry{margin=2.5cm}
-\title{Tensor Omics: Core Preprocessing and Analysis Pipeline}
-\author{Bobito}
+\title{Tensor Omics: Core Preprocessing, Analysis Pipeline, and Geometric Tools
+  for Semantic Interpretation}
+\author{Bobito et al.}
 
 \begin{document}
 
@@ -19,11 +20,14 @@ Raw gene expression data is normalized in the following steps:
 \begin{enumerate}
     \item Division by gene-wise standard deviation for scale normalization.
     \item Quantile normalization across samples to reduce global expression biases.
-    \item Log-transformation: \( x \mapsto \log(1 + x) \) to stabilize variance.
+    \item Log-transformation: \( x \mapsto \log(1 + x) \) to stabilize variance and suppress outliers.
     \item For stress response studies, log fold-changes are computed: 
     \[
         \Delta_{\text{stress}} = \log(1 + x_{\text{stress}}) - \log(1 + x_{\text{control}})
     \]
+    This effectively makes each stress related axis show the fold change in
+    gene expression under stress, e.g. ``drought in root divided by control
+    root''.
 \end{enumerate}
 
 \section{Construction of Expression Vector Space}
@@ -60,7 +64,7 @@ All expression vectors in Tensor Omics are stored in a central memory structure 
     
 \end{itemize}
 
-Both trees are rebuilt as needed (e.g., after adding shift vectors) to maintain spatial indexing consistency. Together, these data structures allow both magnitude-sensitive and direction-sensitive operations across expression fields.
+Together, these data structures allow both magnitude-sensitive and direction-sensitive operations across expression fields.
 
 \section{Gene Family Grouping and Centroid Estimation}
 \label{sec:centroid_estimation}
@@ -108,57 +112,91 @@ This setting ensures the majority of the kernel’s weight is concentrated aroun
 Once interpolation is complete, a secondary smoothing step is applied across the grid. Each interpolated vector is recomputed as a Gaussian-weighted average of its neighboring grid vectors, using the same kernel width \( \sigma \). This step reinforces local coherence, reduces noise, and stabilizes the field across variable-density regions.
 
 \section{Empirical Distribution Estimation}
+\label{sec:empirical_distribution}
 
-To detect expression outliers and classify divergence types, we estimate empirical distributions for four key geometric indices across gene families or defined subsets:
+To enable robust outlier detection and hypothesis-free exploration, Tensor Omics constructs empirical distributions of core metrics across all gene families.
 
-\begin{itemize}
-    \item \textbf{Relative Distance Index (RDI)}: For each gene vector \( \vec{p} \), its Euclidean distance to the family centroid \( \vec{o} \) is computed as:
-    \[
-    \text{RDI} = \|\vec{p} - \vec{o}\|
-    \]
-    All RDI values across families are collected and percentile thresholds (e.g. 95\%) are used to identify significant divergence in magnitude.
+\subsection{Relative Distance Index (RDI)}
 
-    \item \textbf{Relative Angle Index (RAI)}: The angular difference between a vector \( \vec{p} \) and its centroid \( \vec{o} \) is computed using the cosine formula:
-    \[
-    \text{RAI} = \cos^{-1} \left( \frac{\vec{p} \cdot \vec{o}}{\|\vec{p}\| \cdot \|\vec{o}\|} \right)
-    \]
-    This identifies divergence in direction. Thresholds (e.g. 95\%) are derived from the pooled distribution of angles.
+For each family, the Euclidean distance between each member vector \( \vec{f}_i \) and the family centroid \( \vec{o} \) is computed as:
+\[
+d_i = \| \vec{f}_i - \vec{o} \|
+\]
+The family-specific maximum distance is then calculated:
+\[
+d_{\text{max}} = \max_i \| \vec{f}_i - \vec{o} \|
+\]
+Each distance is normalized to yield a \emph{Relative Distance Index (RDI)}:
+\[
+\text{RDI}_i = \frac{d_i}{d_{\text{max}}}
+\]
 
-    \item \textbf{Relative Axis Signal (RAS)}: For each unit-normalized expression vector \( \vec{p}^{\text{norm}} \), we consider its component \( \vec{p}^{\text{norm}}_i \) along each axis \( i \) (e.g., tissue). For each axis, the 5th percentile across all vectors is computed as the inactivity threshold. A gene is considered neofunctionalized in axis \( i \) if:
+All RDI values are pooled across all families to build an empirical distribution of relative intra-family divergence. This enables percentile-based filtering of significant shifts (e.g., 95th percentile for outlier detection) without requiring parametric assumptions.
+
+\textbf{Note:} While RDI values are used to identify significant divergence, the unnormalized distances \( d_i \) are retained for all downstream geometric computations, such as vector field construction and shift vector analysis.
+
+\subsection{Relative Axis Signal (RAS)}
+
+For each unit-normalized expression vector \( \vec{p}^{\text{norm}} \), we
+consider its component \( \vec{p}^{\text{norm}}_i \) along each axis \( i \)
+(e.g., tissue). For each axis, the 5th percentile across all vectors is
+computed as the inactivity threshold. A gene is considered neofunctionalized in
+axis \( i \) if:
+\[
+  \vec{o}^{\text{norm}}_i < T_i^{(5\%)} \quad \text{and} \quad \vec{p}^{\text{norm}}_i > T_i^{(5\%)}
+\]
+where \( \vec{o}^{\text{norm}} \) is the centroid.
+
+\subsection{Relative Axis Signal (RAS)}
+
+ For each unit-normalized expression vector \( \vec{p}^{\text{norm}} \), we consider its component \( \vec{p}^{\text{norm}}_i \) along each axis \( i \) (e.g., tissue). For each axis, the 5th percentile across all vectors is computed as the inactivity threshold. A gene is considered neofunctionalized in axis \( i \) if:
     \[
     \vec{o}^{\text{norm}}_i < T_i^{(5\%)} \quad \text{and} \quad \vec{p}^{\text{norm}}_i > T_i^{(5\%)}
     \]
     where \( \vec{o}^{\text{norm}} \) is the centroid.
 
-  \item \textbf{Relative Frobenius Index (RFI)}: For any set of vectors \( \{
-      \vec{v}_1, \dots, \vec{v}_n \} \), e.g. gene families, populations, or
-    genes belonging to the same biological process or molecular function group,
-    the vectors are assembled as columns in a matrix \( M \in \mathbb{R}^{d
-    \times n} \). The signal strength of this vector-group (matrix) is computed
-    as:
-    \[
-    \text{RFI} = \frac{\|M\|_F}{\sqrt{n}} = \frac{\sqrt{\sum_{i=1}^{d} \sum_{j=1}^{n} M_{ij}^2}}{\sqrt{n}}
-    \]
-    This provides a normalized estimate of signal per vector and is used to assess subfield strength.
+\subsection{Relative Frobenius Index (RFI)}
 
-\end{itemize}
+For any set of vectors \( \{ \vec{v}_1, \dots, \vec{v}_n \} \), e.g. gene
+families, populations, or genes belonging to the same biological process or
+molecular function group, the vectors are assembled as columns in a matrix
+\( M \in \mathbb{R}^{d \times n} \). The signal strength of this vector-group
+(matrix) is computed as:
+\[
+\text{RFI} = \frac{\|M\|_F}{\sqrt{n}} = \frac{\sqrt{\sum_{i=1}^{d} \sum_{j=1}^{n} M_{ij}^2}}{\sqrt{n}}
+\]
+This provides a normalized estimate of signal per vector and is used to assess
+subfield strength.
 
-All empirical distributions are stored in Fortran arrays and used to assign significance thresholds for downstream classification and visualization.
+\vspace{2em}
+
+All empirical distributions are stored in Fortran arrays and used to assign
+significance thresholds for downstream classification and visualization.
 
 \section{Outlier Detection and Shift Vector Calculation}
-\begin{itemize}
-  \item Outliers are detected when \( d_{po} = \| \vec{p} - \vec{o} \| \)
-    exceeds the 95th percentile RDI. \emph{Importantly} the distance
-    $d_{po}^{\text{norm}}$ is greater or equal than the 95 percentile of RDI
-    distances. So, for outlier detection we use the normalized distance,
-    divided by the max family distance, but for all later considerations we use
-    the original, not normalized, distance. 
-    \item Next, shift vectors are computed as:
-    \[
-        \vec{s} = \vec{p} - \vec{o}
-    \]
-    \item Both shift vectors and outlier indices are stored for further analysis.
-\end{itemize}
+\label{sec:outlier_detection}
+
+After constructing the vector space and identifying gene families, Tensor Omics detects divergent expression profiles within each family by comparing individual expression vectors to their respective family centroid.
+
+Let \( \vec{o} \in \mathbb{R}^n \) denote the centroid of a given family (typically the mean ortholog expression vector), and let \( \vec{p} \) denote the expression vector of a candidate paralog. The \emph{raw shift distance} between \( \vec{p} \) and the centroid is defined as:
+\[
+d_{po} = \| \vec{p} - \vec{o} \|
+\]
+
+To determine whether this shift is significant, we normalize the raw distance using the maximum intra-family distance from the centroid. Let \( \vec{f}_i \) denote all other expression vectors in the same family. The \emph{Relative Distance Index (RDI)} is calculated as:
+\[
+\text{RDI}_{po} = \frac{d_{po}}{\max_i \| \vec{f}_i - \vec{o} \|}
+\]
+
+Vectors with an RDI greater than the 95th percentile of the empirical RDI distribution (pooled across all families) are flagged as significant outliers.
+
+\textbf{Important:} Only the raw shift distance \( d_{po} \) is used for downstream geometric interpretation, such as vector field construction, trajectory analysis, and clock plot projection. The normalized RDI is used solely for filtering purposes, to robustly identify biologically meaningful divergence across gene families.
+
+Identified outliers are stored as index references in a dedicated Fortran array. For each significant outlier, a corresponding \emph{shift vector} is calculated:
+\[
+\vec{s}_{po} = \vec{p} - \vec{o}
+\]
+These shift vectors are added to the central vector space store (`vec\_store`) and indexed in the relevant K-D Trees.
 
 \section{Tissue Versatility Calculation}
 \begin{itemize}
@@ -327,5 +365,76 @@ Each grown region is marked as a detected module. Grid points are tracked to avo
 \subsection{Advantages}
 
 LST provides a biologically intuitive, parameter-light method to detect modules of divergent expression. It does not rely on directionality, eigenvector extraction, or flow coherence, making it particularly robust in sparse or noisy fields. The detected modules can be further characterized using geometric descriptors (see Section~\ref{sec:subfield_descriptor}) or used as inputs to more advanced tensor-based analysis in future phases.
+
+\section{Time Series Interpolation and Contextual Smoothing}
+\label{sec:time_series_smoothing}
+
+Tensor Omics applies a two-stage process to prepare time series expression trajectories for vector field analysis. This approach addresses the common problem of sparsely sampled or unevenly spaced time points in transcriptomic time courses and ensures that divergence detection remains sensitive and robust across genes and families.
+
+\subsection{Stage 1: Per-Gene Trajectory Interpolation}
+
+For each gene, we construct an interpolated expression trajectory using Gaussian kernel-based interpolation. Let the original time points be \( t_1, t_2, \dots, t_n \), with corresponding expression vectors \( \vec{e}_{t_i} \in \mathbb{R}^d \). These are interpolated to a denser trajectory with \( T = \max(10n, 30) \) total time points, equally spaced over the original time interval.
+
+Interpolation is performed independently per gene, without considering other genes. This preserves the native trajectory shape while increasing temporal resolution. For each interpolated time point \( t \), a Gaussian kernel \( K(t, t_i) \) is applied over all original points:
+\[
+K(t, t_i) = \exp\left( -\frac{(t - t_i)^2}{2\sigma_i^2} \right)
+\]
+where \( \sigma_i \) is the local kernel width, chosen adaptively based on sampling density (see below).
+
+\subsection{Stage 2: Contextual Smoothing Across Gene Families}
+
+To reduce noise and incorporate contextual biological similarity, each interpolated trajectory is smoothed using a Gaussian kernel over time, now also borrowing from ortholog and paralog trajectories.
+
+Each smoothed time point \( \vec{e}'_t \) is computed as a weighted average of nearby time points from:
+\begin{itemize}
+  \item The same gene (denoted as \( G \))
+  \item Orthologs within the family (denoted as \( O \))
+  \item Paralogs within the family (denoted as \( P \))
+\end{itemize}
+
+The total weight assigned to each group is:
+\[
+\text{Contextual Weights:} \quad 
+\frac{6}{9} \text{ for } G, \quad
+\frac{2}{9} \text{ for } O, \quad
+\frac{1}{9} \text{ for } P
+\]
+
+Within each group, the weight per point is distributed evenly:
+\[
+w_{g_i} = \frac{6}{9|G|}, \quad
+w_{o_i} = \frac{2}{9|O|}, \quad
+w_{p_i} = \frac{1}{9|P|}
+\]
+
+Each point is also assigned a Gaussian kernel weight based on temporal distance from the target time point:
+\[
+K(t, t_i) = \exp\left( -\frac{(t - t_i)^2}{2\sigma_i^2} \right)
+\]
+
+The final smoothing weight for each point is the product of its contextual weight and kernel weight. The smoothed expression vector is computed as:
+\[
+\vec{e}'_t = \frac{\sum_i w_i K(t, t_i) \vec{e}_{t_i}}{\sum_i w_i K(t, t_i)}
+\]
+
+\subsection{Adaptive Kernel Width}
+
+The Gaussian kernel width \( \sigma_i \) is determined locally using symmetric nearest-neighbor spacing:
+\[
+\sigma_i =
+\begin{cases}
+t_2 - t_1 & \text{if } i = 1 \\
+\frac{1}{2}(t_{i+1} - t_{i-1}) & \text{if } 1 < i < n \\
+t_n - t_{n-1} & \text{if } i = n
+\end{cases}
+\]
+
+This ensures that smoothing respects the local temporal resolution of the data and avoids arbitrary or global smoothing parameters.
+
+\subsection{Implementation Notes}
+
+All interpolation and smoothing operations are performed using precomputed Gaussian kernels and group weights. The process is applied prior to shift vector calculation, ensuring that all time-series trajectories are temporally aligned, smooth, and comparable across genes and gene families.
+
+This approach stabilizes vector field construction for downstream clock plots, rotation angle computation, and time-dependent divergence analysis.
 
 \end{document}
