@@ -7,17 +7,18 @@ addAlpha <- function(col, alpha = .25) {
     rgb(x[1], x[2], x[3], alpha = alpha))
 }
 
-colors <- brewer.pal(6, "Dark4")
+colors <- brewer.pal(7, "Dark2")
 alpha.cols <- sapply(colors, addAlpha)
 
 pdf('changeInTissuePreference_phi.pdf', width=4, height=4)
 
 
 plot(
-  c(1, .25, 1),
-  c(1, 2, .25),
-  col = c(colors[[4]], colors[[1]], colors[[2]]),
-  bg = c(alpha.cols[[4]], alpha.cols[[1]], alpha.cols[[2]]),
+  # c(1, .25, 1),
+  # c(1, 2, .25),
+  # col = c(colors[[4]], colors[[1]], colors[[2]]),
+  # bg = c(alpha.cols[[4]], alpha.cols[[1]], alpha.cols[[2]]),
+  NA,
   pch = c(20, 18, 18),
   lwd = 2.5,
   cex = 3,
@@ -27,6 +28,14 @@ plot(
   xlab = '',
   ylab = ''
 )
+
+D <- c(1, 1)
+p <- c(1, .25)
+o <- c(.25, 2)
+points(D[1], D[2], pch = 21, bg = alpha.cols[[4]], col = colors[[4]], cex = 2)
+points(o[1], o[2], pch = 21, bg = alpha.cols[[1]], col = colors[[1]], cex = 2)
+points(p[1], p[2], pch = 21, bg = alpha.cols[[2]], col = colors[[2]], cex = 2)
+
 draw.sector(
   127,
   270,
@@ -37,80 +46,152 @@ draw.sector(
   lwd = 2,
   rou1 = .55
 )
+# Base vectors coming from (0,0)
 arrows(1,
        1,
        1,
        .25,
        col = colors[[2]],
        lwd = 1.3,
-       length = .15)
+       length = .1)
 arrows(1,
        1,
        .25,
        2,
        col = colors[[1]],
        lwd = 1.3,
-       length = .15)
+       length = .1)
+
+# Coordinate System
 lines(c(1, 1), c(1, (1 + sqrt(2))), col = "black", lwd = 1.5)
 lines(c(1, 2), c(1, 0), col = "black", lwd = 1.5)
 lines(c(1, 0), c(1, 0), col = "black", lwd = 1.5)
+
+# Comment: \\vec{} is not supported, therefore each arrow is created and placed manually
+# Label for D vector
 text(
+  .9,
   1,
-  1,
-  label = TeX('$\\bar{\\textit{D}}$'),
+  label = TeX('$\\textit{D}$'),
   pos = 4,
   offset = 1.25,
   col = colors[[4]],
   cex = .8
 )
+# Arrow for D vector
+text(
+  .9 - .04,
+  1 + .11,
+  label = TeX('$\\rightarrow$'),
+  pos = 4,
+  offset = 1.25,
+  col = colors[[4]],
+  cex = .8
+)
+
+# Label for o point
 text(
   .25,
-  2,
-  label = TeX('$\\bar{\\textit{o}}$'),
+  1.85,
+  label = TeX('$\\textit{o}$'),
   pos = 3,
   offset = 1.25,
   col = colors[[1]],
   cex = .8
 )
+
+# Arrow for o label
 text(
-  1.2,
   .25,
-  label = TeX('$\\bar{\\textit{p}}$'),
+  1.85 + 0.1,
+  label = TeX('$\\rightarrow$'),
+  pos = 3,
+  offset = 1.25,
+  col = colors[[1]],
+  cex = .8
+)
+
+# Label for p point
+text(
+  1.15,
+  .26,
+  label = TeX('$\\textit{p}$'),
   pos = 1,
   offset = .755,
   col = colors[[2]],
   cex = .8
 )
+
+# Arrow for p point
 text(
-  .6,
-  .8,
+  1.15,
+  .26 + 0.1,
+  label = TeX('$\\rightarrow$'),
+  pos = 1,
+  offset = .755,
+  col = colors[[2]],
+  cex = .8
+)
+
+# phi label
+text(
+  .65,
+  1,
   label = TeX('$\\varphi$'),
   pos = 2,
   offset = 1.25,
   col = colors[[3]],
-  cex = 2
+  cex = .8
 )
+
+# Label for base vector p
 text(
-  1,
-  .55,
-  label = TeX('$\\perp_{D}$'),
+  .95,
+  .45,
+  label = TeX('$\\textit{{p}^{clock}}$'),
   pos = 4,
   offset = .5,
   col = colors[[2]],
   cex = .8
 )
+
+# Arrow for vec p
 text(
-  .5,
-  1.45,
-  label = TeX('$\\perp_{O}$'),
+  .95 - .06,
+  .45 + .09,
+  label = TeX('$\\rightarrow$'),
+  pos = 4,
+  offset = .5,
+  col = colors[[2]],
+  cex = .8
+)
+
+# Label for base vector o
+text(
+  .4,
+  1.65,
+  label = TeX('$\\textit{{o}^{clock}}$'),
   pos = 4,
   offset = 1.0,
   col = colors[[1]],
   cex = .8
 )
+
+# Arrow for vec o
 text(
-  2,
-  0,
+  .4 - .06,
+  1.65 + .08,
+  label = TeX('$\\rightarrow$'),
+  pos = 4,
+  offset = 1.0,
+  col = colors[[1]],
+  cex = .8
+)
+
+# Axes Labels
+text(
+  1.89,
+  0.08,
   label = TeX('\\textit{tissue} Z'),
   pos = 3,
   offset = 1.25,
@@ -125,8 +206,8 @@ text(
   cex = .8
 )
 text(
+  .15,
   .35,
-  -.1,
   label = TeX('\\textit{tissue} Y'),
   pos = 3,
   offset = .15,
@@ -140,21 +221,29 @@ diff_vec <- p - o
 unit_vec <- diff_vec / sqrt(sum(diff_vec^2))
 
 # Unit vector
-arrows(o[1] - .1,
+arrows(o[1] - .05,
        o[2],
-       o[1] + unit_vec[1] - .1,
+       o[1] + unit_vec[1] - .05,
        o[2] + unit_vec[2],
-       col = colors[[5]],
-       lwd = 2,
+       col = colors[[6]],
+       lwd = 1.3,
        lty = 1,
-       length = 0.15)
+       length = 0.1)
 
 # Label for unit vector
-text(o[1],
+text(o[1] - .05,
      o[2] - .4,
-     label = TeX('$\\bar{u}_{po}$'),
+     label = TeX('$\\textit{{s}_{po}^{norm}}$'),
      pos = 1,
-     col = colors[[5]],
+     col = colors[[6]],
+     cex = .8)
+
+# Arrow for unit vector
+text(o[1] - .18,
+     o[2] - .32,
+     label = TeX('$\\rightarrow$'),
+     pos = 1,
+     col = colors[[6]],
      cex = .8)
 
 # difference vector
@@ -162,16 +251,27 @@ arrows(o[1],
        o[2],
        p[1],
        p[2],
-       col = colors[[6]],
-       lwd = 2,
-       length = 0.15)
+       col = colors[[7]],
+       lwd = 1.3,
+       length = 0.1)
 
+# Label for difference vector
 text(
-  p[1] + ((o[1] - p[1]) / 2),
-  p[2] + ((o[2] - p[2]) / 2) - 1,
-  label = TeX('$\\bar{p} - \\bar{o}$'),
+  p[1] + ((o[1] - p[1]) / 2) + .097,
+  p[2] + ((o[2] - p[2]) / 2) - 1.1,
+  label = TeX('$\\textit{{s}_{po}^{clock}}$'),
   pos = 3,
-  col = colors[[6]],
+  col = colors[[7]],
+  cex = .8
+)
+
+# Arrow for difference vector
+text(
+  p[1] + ((o[1] - p[1]) / 2) - .03,
+  p[2] + ((o[2] - p[2]) / 2) - .91,
+  label = TeX('$\\rightarrow$'),
+  pos = 3,
+  col = colors[[7]],
   cex = .8
 )
 
