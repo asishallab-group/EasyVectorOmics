@@ -199,18 +199,18 @@ arrows(
   dupl[1],
   dupl[2],
   col = colors[[7]],
-  lwd = 2,
+  lwd = 1.3,
   length = 0.15
 )
 
 # Unit vector
 arrows(
   orth[1],
-  orth[2] - .1,
+  orth[2] - .05,
   orth[1] + unit_vec[1],
-  orth[2] + unit_vec[2] - .1,
+  orth[2] + unit_vec[2] - .05,
   col = colors[[6]],
-  lwd = 2,
+  lwd = 1.3,
   length = 0.1
 )
 
@@ -218,7 +218,7 @@ arrows(
 # labels
 text(
   (orth[1] + dupl[1]) / 2 + .2,
-  (orth[2] + dupl[2]) / 2,
+  (orth[2] + dupl[2]) / 2 - .1,
   label = TeX('$s_{\\textit{po}}$'),
   pos = 3,
   col = colors[[7]],
@@ -227,7 +227,7 @@ text(
 
 text(
   (orth[1] + dupl[1]) / 2 + .14,
-  (orth[2] + dupl[2]) / 2 + .15,
+  (orth[2] + dupl[2]) / 2 + .05,
   label = TeX('\\rightarrow$'),
   pos = 3,
   col = colors[[7]],
