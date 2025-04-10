@@ -190,8 +190,8 @@ text(
 
 # Axes Labels
 text(
-  2,
-  0,
+  1.89,
+  0.08,
   label = TeX('\\textit{tissue} Z'),
   pos = 3,
   offset = 1.25,
@@ -206,8 +206,8 @@ text(
   cex = .8
 )
 text(
-  .2,
-  .4,
+  .15,
+  .35,
   label = TeX('\\textit{tissue} Y'),
   pos = 3,
   offset = .15,
@@ -258,7 +258,7 @@ arrows(o[1],
 # Label for difference vector
 text(
   p[1] + ((o[1] - p[1]) / 2) + .097,
-  p[2] + ((o[2] - p[2]) / 2) - 1.05,
+  p[2] + ((o[2] - p[2]) / 2) - 1.1,
   label = TeX('$\\textit{{s}_{po}^{clock}}$'),
   pos = 3,
   col = colors[[7]],
@@ -268,7 +268,7 @@ text(
 # Arrow for difference vector
 text(
   p[1] + ((o[1] - p[1]) / 2) - .03,
-  p[2] + ((o[2] - p[2]) / 2) - .86,
+  p[2] + ((o[2] - p[2]) / 2) - .91,
   label = TeX('$\\rightarrow$'),
   pos = 3,
   col = colors[[7]],
