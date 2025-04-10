@@ -39,12 +39,16 @@ def plot_slide_4():
     ax.set_ylim(0, 110)
     ax.spines['top'].set_visible(False)
     ax.spines['right'].set_visible(False)
-    ax.set_xticks([])
-    ax.set_yticks([])
+    ax.tick_params(axis='both', length=0)
+    xmin, xmax = ax.get_xlim()
+    ax.set_xticks(list(range(int(xmin), int(xmax), 7)))
+    ymin, ymax = ax.get_ylim()
+    ax.set_yticks(list(range(int(ymin), int(ymax), 7)))
     ax.set_xticklabels([])
     ax.set_yticklabels([])
     ax.set_xlabel("$tissue\\ x$")
     ax.set_ylabel("$tissue\\ y$")
+    ax.grid(True, linewidth=0.5, color='gray', alpha=0.2)
 
     # Add arrows at the ends of the axes
     ax.plot(1, 0, ">k", transform=ax.get_yaxis_transform(), clip_on=False)  # Arrow for x-axis
@@ -62,28 +66,30 @@ def plot_slide_4():
 
             return arrow(start_x, start_y, end_x, direction, length=length)
         return (
-            random_arrow(5, 65, 5),
-            random_arrow(6, 100, 10, -1),
-            random_arrow(40, 40, 40),
-            random_arrow(113, 45, 113),
-            random_arrow(90, 97.5, 98),
-            random_arrow(20, 95, 25),
-            random_arrow(20, 20, 15, -1),
-            random_arrow(35, 105, 32, -1, length=8),
+            random_arrow(7, 65, 5),
+            random_arrow(7, 100, 10, -1),
+            random_arrow(42, 40, 40),
+            random_arrow(112, 45, 113),
+            random_arrow(90.5, 97.5, 97.5),
+            random_arrow(21, 95, 25),
+            random_arrow(21.5, 20, 15.5, -1),
+            random_arrow(35.5, 105, 32, -1, length=8),
             random_arrow(70, 40, 69, length=8),
-            random_arrow(100, 5, 108),
-            random_arrow(87, 12, 86, -1, length=6),
-            random_arrow(20, 80, 17, -1),
+            random_arrow(97.5, 5, 105.5),
+            random_arrow(84, 12, 86, -1, length=6),
+            random_arrow(21.5, 80, 17, -1),
             random_arrow(49, 74, 48, -1),
+            random_arrow(87, 84.5, 91, -1),
+            random_arrow(84.5, 61, 80, -1),
         )
 
     # first from left
     def first_flux(color="blue"):
         # Define the arrows
         arrows = (
-            arrow(15, 32, 21),
-            arrow(22, 45, 26, length=13),
-            arrow(27, 58, 31, length=9),
+            arrow(14, 30, 20),
+            arrow(21, 43, 26, length=13),
+            arrow(28, 58, 31, length=12),
             arrow(32.8, 71, 39),
             arrow(40, 83, 43, length=17)
         )
@@ -106,11 +112,11 @@ def plot_slide_4():
         )
         right_split = (
             arrow(52.5, 25, 47, -1, length=13),
-            arrow(55.1, 40, 53.5, -1),
+            arrow(56, 40, 54.5, -1),
         )
         left_split = (
-            arrow(49, 34, 39, -1, length=13),
-            arrow(35, 22, 30, -1),
+            arrow(49.5, 34, 39, -1, length=13),
+            arrow(35, 21.5, 30, -1),
         )
 
         # left
@@ -144,17 +150,17 @@ def plot_slide_4():
     def fourth_flux(color="blue"):
         arrows = (
             # upper
-            arrow(72, 95, 81),
+            arrow(70, 95, 79),
 
             # left up-left
-            arrow(66, 88, 57),
+            arrow(64, 88, 55),
             # right up-left
-            arrow(76, 83, 70, length=8),
+            arrow(74, 83, 68, length=8),
 
             # left downer
-            arrow(69, 85, 66, -1, length=10),
+            arrow(67, 85, 64, -1, length=10),
             # right downer
-            arrow(72, 80, 73, -1, length=12.5),
+            arrow(70, 80, 71, -1, length=12.5),
         )
         # Define points for plotting
         pointing_out = [
@@ -175,16 +181,16 @@ def plot_slide_4():
     def fifth_flux(color="blue"):
         # Define the arrows
         left_arm = (
-            arrow(81.5, 35, 91, length=13),
+            arrow(81.5, 34.5, 91, length=13),
         )
         right_arm = (
             arrow(105, 20, 101, length=12),
-            arrow(100, 35, 98, length=10),
+            arrow(100, 34.5, 98, length=10),
         )
         merged_arms = (
             arrow(95, 55, 98),
-            arrow(101, 77, 107, length=10),
-            arrow(112, 98, 123, length=14),
+            arrow(101, 76.5, 107, length=10),
+            arrow(112, 97.5, 123, length=14),
         )
 
         # Create a smoother line using interpolation
@@ -193,7 +199,7 @@ def plot_slide_4():
         arrow_xy[:, 1] += 3.5
         draw_smooth_line(ax, arrow_xy[[0, 2, -3, -1]], k=2, color=color)
         # right line
-        draw_smooth_line(ax, [(110, 20), (104, 35), (102, 50), (106, 70), (112, 85), (122, 98)], k=2, label="merged", label_move_rel=(3, 3), color=color)
+        draw_smooth_line(ax, [(110, 20), (104, 35), (102, 50), (106, 70), (112, 85), (122, 98)], k=2, label="merged", label_move_rel=(3, 4), color=color)
         # bottom curve
         draw_smooth_line(ax, [(86, 32), (93, 36), (96.5, 28), (99, 20)], k=2, color=color)
         return *left_arm, *right_arm, *merged_arms
