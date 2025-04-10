@@ -11,10 +11,10 @@
 
 \maketitle
 
-\section*{Overview}
+\section{Overview}
 This document outlines the sequential pipeline used in Tensor Omics for preprocessing, vector space construction, outlier detection, and geometric analysis of gene expression data.
 
-\section*{1. Normalization of Expression Values}
+\section{Normalization of Expression Values}
 Raw gene expression data is normalized in the following steps:
 \begin{enumerate}
     \item Division by gene-wise standard deviation for scale normalization.
@@ -26,7 +26,8 @@ Raw gene expression data is normalized in the following steps:
     \]
 \end{enumerate}
 
-\section*{2. Construction of Expression Vector Space}
+\section{Construction of Expression Vector Space}
+\label{sec:vecspace}
 \begin{itemize}
   \item Biological replicates belonging to the same axis (tissue, stressed
     tissue, etc.) are averaged post-normalization.
@@ -44,7 +45,25 @@ Raw gene expression data is normalized in the following steps:
     visualization.
 \end{itemize}
 
-\section*{3. Gene Family Grouping and Centroid Estimation}
+\subsection{Vector Space Storage in Fortran}
+\label{sec:vecstore}
+
+All expression vectors in Tensor Omics are stored in a central memory structure optimized for performance and access in Fortran. This architecture ensures efficient storage, lookup, and downstream computation.
+
+\begin{itemize}
+    \item \textbf{vec\_store:} A two-dimensional Fortran array of size \( n \times v \), where \( n \) is the number of expression dimensions (e.g., tissues or conditions), and \( v \) is the number of vectors (e.g., genes). Each column represents one expression vector.
+    
+    \item \textbf{cart\_tree:} A K-D Tree constructed on the raw (unnormalized) vectors stored in \texttt{vec\_store}. This structure enables rapid spatial neighborhood queries using Euclidean distance in the original expression space. This is not initialized until step \ref{sec:kdtree}.
+    
+    \item \textbf{sphere\_tree:} A second K-D Tree constructed from unit-length normalized vectors derived from \texttt{vec\_store}. This structure supports directional queries based on cosine similarity or angular distance. This is not initialized until step \ref{sec:kdtree}.
+    
+    
+\end{itemize}
+
+Both trees are rebuilt as needed (e.g., after adding shift vectors) to maintain spatial indexing consistency. Together, these data structures allow both magnitude-sensitive and direction-sensitive operations across expression fields.
+
+\section{Gene Family Grouping and Centroid Estimation}
+\label{sec:centroid_estimation}
 \begin{itemize}
     \item Gene families, populations, or functional groups are defined using
       metadata.
@@ -57,7 +76,38 @@ Raw gene expression data is normalized in the following steps:
       binary files.
 \end{itemize}
 
-\section*{4. Empirical Distribution Estimation}
+\section{Space Interpolation and Smoothing}
+\label{sec:interpolation}
+
+To support field-based analysis and ensure consistent representation across expression space, a regular grid is constructed. This grid forms the structural foundation for kernel-based interpolation and vector field smoothing.
+
+\subsection{Grid Step Size Estimation}
+
+The grid resolution is determined empirically from intra-family expression variation. Specifically, for each gene family, the Euclidean distance between each member's expression vector and the corresponding family centroid is computed. These intra-family distances are aggregated across all families into a single distribution. The grid step size is then set as the \textbf{first quartile} (25th percentile) of this distribution.
+
+\textit{Note:} Since this step requires family membership and centroid information, it must be performed after gene family grouping and centroid estimation (see Section~\ref{sec:centroid_estimation}).
+
+\subsection{Gaussian Kernel Interpolation}
+
+After defining the grid, each expression vector contributes to nearby grid points using a Gaussian kernel function centered at its position. For a grid point \( \vec{g} \) and an expression vector \( \vec{v} \), the kernel weight is defined as:
+
+\[
+w(\vec{v}, \vec{g}) = \exp\left( -\frac{\|\vec{v} - \vec{g}\|^2}{2\sigma^2} \right)
+\]
+
+To ensure appropriate spatial influence, the kernel width \( \sigma \) is set to:
+
+\[
+\sigma = \frac{\text{grid step size}}{\sqrt{2}}
+\]
+
+This setting ensures the majority of the kernel’s weight is concentrated around a single grid cell while still allowing natural smoothing across adjacent cells due to Gaussian decay. Each grid point receives the kernel-weighted average of all expression vectors within range, resulting in a smoothly interpolated vector field.
+
+\subsection{Gaussian Kernel Smoothing}
+
+Once interpolation is complete, a secondary smoothing step is applied across the grid. Each interpolated vector is recomputed as a Gaussian-weighted average of its neighboring grid vectors, using the same kernel width \( \sigma \). This step reinforces local coherence, reduces noise, and stabilizes the field across variable-density regions.
+
+\section{Empirical Distribution Estimation}
 
 To detect expression outliers and classify divergence types, we estimate empirical distributions for four key geometric indices across gene families or defined subsets:
 
@@ -80,7 +130,12 @@ To detect expression outliers and classify divergence types, we estimate empiric
     \]
     where \( \vec{o}^{\text{norm}} \) is the centroid.
 
-    \item \textbf{Relative Frobenius Index (RFI)}: For any set of vectors \( \{ \vec{v}_1, \dots, \vec{v}_n \} \) assembled as columns in matrix \( M \in \mathbb{R}^{d \times n} \), the signal strength is computed as:
+  \item \textbf{Relative Frobenius Index (RFI)}: For any set of vectors \( \{
+      \vec{v}_1, \dots, \vec{v}_n \} \), e.g. gene families, populations, or
+    genes belonging to the same biological process or molecular function group,
+    the vectors are assembled as columns in a matrix \( M \in \mathbb{R}^{d
+    \times n} \). The signal strength of this vector-group (matrix) is computed
+    as:
     \[
     \text{RFI} = \frac{\|M\|_F}{\sqrt{n}} = \frac{\sqrt{\sum_{i=1}^{d} \sum_{j=1}^{n} M_{ij}^2}}{\sqrt{n}}
     \]
@@ -90,7 +145,7 @@ To detect expression outliers and classify divergence types, we estimate empiric
 
 All empirical distributions are stored in Fortran arrays and used to assign significance thresholds for downstream classification and visualization.
 
-\section*{5. Outlier Detection and Shift Vector Calculation}
+\section{Outlier Detection and Shift Vector Calculation}
 \begin{itemize}
   \item Outliers are detected when \( d_{po} = \| \vec{p} - \vec{o} \| \)
     exceeds the 95th percentile RDI. \emph{Importantly} the distance
@@ -105,7 +160,7 @@ All empirical distributions are stored in Fortran arrays and used to assign sign
     \item Both shift vectors and outlier indices are stored for further analysis.
 \end{itemize}
 
-\section*{6. Tissue Versatility Calculation}
+\section{Tissue Versatility Calculation}
 \begin{itemize}
     \item Cosine of angle between expression vector and space diagonal:
     \[
@@ -114,7 +169,8 @@ All empirical distributions are stored in Fortran arrays and used to assign sign
     where \( \vec{d} = (1, 1, \dots, 1) \) is the space diagonal.
 \end{itemize}
 
-\section*{7. Clock Plot Projection and Rotation Angle Computation}
+\section{Clock Plot Projection and Rotation Angle Computation}
+\label{sec:rap}
 \begin{itemize}
     \item All shift vectors are projected into the \textbf{Relative Axes Plane
       (RAP)}, orthogonal to the space diagonal and intersecting the origin.
@@ -125,7 +181,7 @@ All empirical distributions are stored in Fortran arrays and used to assign sign
         \item Clock hand vector from origin to projected point.
         \item Rotation angle (standardized as clockwise) between projected centroid and outlier.
     \end{itemize}
-    \item Results are stored in a structured Fortran matrix:
+  \item Results are stored in a structured Fortran matrix \textbf{rap\_store}.
     \begin{itemize}
         \item For each outlier \( i \), store:
         \begin{itemize}
@@ -136,5 +192,140 @@ All empirical distributions are stored in Fortran arrays and used to assign sign
         \end{itemize}
     \end{itemize}
 \end{itemize}
+
+\subsection{Efficient Vector Lookup Using K-D Trees}
+\label{sec:kdtree}
+
+To enable fast and scalable querying of gene expression vectors, Tensor Omics
+employs K-D Trees—an efficient data structure for multidimensional
+nearest-neighbor searches. The trees are constructed at the very end of the
+pipeline. Four trees in total, two for all expression and shift vectors, where
+both are contained in \textbf{vec\_store} (see \ref{sec:vecspace}), and two
+further for the RAP vectors in \textbf{rap\_store} (see \ref{sec:rap}).
+
+Two distinct trees are constructed:
+
+\begin{itemize}
+    \item \textbf{cart\_tree:} A K-D Tree built from the raw (unnormalized) expression vectors. It supports neighborhood searches in the original Euclidean space, useful for detecting local density patterns or spatial coherence among genes.
+    
+    \item \textbf{sphere\_tree:} A second K-D Tree constructed from unit-length normalized vectors. This tree enables fast lookup of vectors with similar direction, allowing angular queries based on cosine similarity.
+\end{itemize}
+
+These lookup structures are only built during the final preprocessing stage, prior to interactive analysis. This deferred construction minimizes computational overhead during earlier pipeline steps and ensures consistency with the final state of the vector space. Together, the two trees provide complementary geometric access to the expression landscape.
+
+\section{Geometric Tools for Semantic Interpretation}
+\label{sec:geometric_tools}
+
+Tensor Omics provides a suite of geometric tools—referred to as \textit{semantic geometry measures}—that support interpretation, subfield detection, and comparative analysis of expression vector fields. These tools operate directly on the vector space and are designed to align with intuitive biological hypotheses.
+
+\subsection{Direction-Based Subfield Collector}
+\label{sec:directional_collector}
+
+To detect expression subfields aligned with a biologically meaningful trend, the user defines a direction-of-interest (DOI) vector \( \vec{v}_{\text{doi}} \in \mathbb{R}^n \). This may correspond to, for example, increased healing rate, higher oil content, or a linear combination of expression axes.
+
+For each expression vector \( \vec{v}_i \), the cosine similarity with the DOI is computed. The method supports two modes, controlled by a Boolean input argument:
+
+\begin{itemize}
+    \item \textbf{Normalization enabled:} both vectors are normalized to unit length, and the cosine is computed as:
+    \[
+    \cos(\theta_i) = \vec{v}_i^{\text{norm}} \cdot \vec{v}_{\text{doi}}^{\text{norm}}
+    \]
+    This mode emphasizes \emph{direction} over magnitude and is suited for analyses where only the semantic trend matters, such as expression coordination in transcription factors or between tissues.
+
+    \item \textbf{Normalization disabled:} the cosine is computed relative to the magnitude of the expression vector:
+    \[
+    \cos(\theta_i) = \frac{\vec{v}_i \cdot \vec{v}_{\text{doi}}^{\text{norm}}}{\|\vec{v}_i\|}
+    \]
+    This mode retains the influence of vector magnitude and is recommended when working in fold-change spaces (e.g., stress responses), where high expression shifts carry biological meaning.
+\end{itemize}
+
+The resulting cosine values \( \cos(\theta_i) \) are used to construct an empirical distribution. Vectors with the strongest projection onto the DOI (e.g., top 5\% by cosine value) are selected as a directional subfield. These can then be characterized using the Subfield Descriptor (Section~\ref{sec:subfield_descriptor}).
+
+\subsubsection*{When to Normalize (Direction-Only Interpretation)}
+
+Normalization is recommended when:
+\begin{itemize}
+    \item The biological question relates to the \textbf{direction of change} in expression across conditions.
+    \item Expression magnitude is not meaningful (e.g., low-expression transcription factors).
+    \item Comparing semantic shifts across gene families or tissues.
+\end{itemize}
+
+\subsubsection*{When Not to Normalize (Magnitude Matters)}
+
+Omitting normalization is appropriate when:
+\begin{itemize}
+    \item The space encodes \textbf{magnitude changes}, e.g., fold-change after stress.
+    \item High-magnitude responses are biologically meaningful, such as upregulation in immune response genes.
+    \item The DOI is used to detect strong response contributors in a specific context.
+\end{itemize}
+
+\subsubsection*{Selection of Directional Subfield}
+
+The cosine values \( \cos(\theta_i) \) are collected across all vectors and an empirical distribution is formed. The top 5\% (or another percentile threshold) are selected as the directional subfield—those vectors with the strongest alignment (largest projection) onto the DOI.
+
+The selected subset is returned as a list of vector indices and can be further analyzed using subfield descriptors (Section~\ref{sec:subfield_descriptor}).
+
+\subsection{Subfield Descriptor}
+\label{sec:subfield_descriptor}
+
+Each collected subfield is characterized by aggregating its vectors into a matrix \( M \in \mathbb{R}^{n \times k} \), where each column is an expression vector. This matrix is analyzed using the following derived quantities:
+
+\begin{itemize}
+    \item \textbf{Flow direction:} The first eigenvector of the covariance matrix \( C = MM^T \), representing the dominant direction of expression in the subfield.
+    \item \textbf{Rotation vector:} Computed from the antisymmetric component \( A = C - C^T \). This vector encodes the local rotation axis and strength.
+    \item \textbf{Signal strength:} The Frobenius norm \( \|M\|_F \), interpreted as the total signal energy of the field.
+    \item \textbf{Directional spread:} The matrix rank of \( M \), indicating how many independent directions are present in the subfield.
+\end{itemize}
+
+For comparability across differently sized subfields, the Frobenius norm can be normalized by the square root of the number of vectors:  
+\[
+\text{RFI} = \frac{\|M\|_F}{\sqrt{k}}
+\]
+
+This Relative Frobenius Index (RFI) provides a density-independent estimate of signal strength.
+
+\subsection{Workbench for Interactive Exploration}
+\label{sec:workbench}
+
+The Tensor Omics workbench is a lightweight, browser-based environment for exploring the expression space and its geometric structures. It supports:
+
+\begin{itemize}
+    \item 2D and 3D projections (e.g., RAP plane, PCA), with zoom and rotation.
+    \item Efficient filtering via metadata or geometric queries using K-D Trees.
+    \item Visual encoding of vector properties (color, shape, size) by metadata attributes.
+    \item Highlighting of gene families, pathways, or other annotated subsets.
+\end{itemize}
+
+Plots are exportable (e.g., to SVG or PDF), and the current view state can be
+serialized and restored for reproducibility e.g. by attaching it as request
+parameters and thus enabling linking to preconfigured interactive plots. This
+supports sharing, publication, and reproducible workflows.
+
+\section{Module Detection via Local Signal Thresholding (LST)}
+\label{sec:lst}
+
+As a simple yet powerful precursor to tensor field–based module detection, Tensor Omics includes a threshold-based method to identify local regions of coherent expression divergence. This approach—referred to as \textbf{LST}—operates directly on interpolated shift vector magnitudes, without requiring directionality or flow modeling. It serves as an efficient and broadly applicable first step in identifying biologically meaningful subregions for downstream geometric analysis.
+
+\subsection{Threshold Estimation}
+
+After the shift field has been constructed and interpolated over the grid, each grid point contains a vector representing the local expression shift. To detect significant divergence, we compute the magnitude (Euclidean norm) of each grid vector and collect the full distribution of these magnitudes across the grid.
+
+A non-parametric background threshold is derived from this distribution by selecting the \textbf{5th percentile} of non-zero vector lengths. This provides an adaptive, empirical estimate of the field’s background noise level.
+
+\subsection{Region Growing Algorithm}
+
+Module detection begins at any grid point whose vector magnitude exceeds the threshold. From each such seed point, a circular region is grown iteratively:
+
+\begin{itemize}
+    \item At each radius increment, newly encountered grid points are evaluated.
+    \item Growth continues as long as at least one new point exceeds the magnitude threshold.
+    \item If a full increment produces only sub-threshold points, the region stops growing.
+\end{itemize}
+
+Each grown region is marked as a detected module. Grid points are tracked to avoid duplication. The algorithm proceeds until all grid points exceeding the threshold have been visited.
+
+\subsection{Advantages}
+
+LST provides a biologically intuitive, parameter-light method to detect modules of divergent expression. It does not rely on directionality, eigenvector extraction, or flow coherence, making it particularly robust in sparse or noisy fields. The detected modules can be further characterized using geometric descriptors (see Section~\ref{sec:subfield_descriptor}) or used as inputs to more advanced tensor-based analysis in future phases.
 
 \end{document}
