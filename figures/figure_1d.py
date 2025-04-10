@@ -1,0 +1,214 @@
+from matplotlib import pyplot as plt
+import numpy as np
+from scipy.interpolate import make_interp_spline
+from sys import argv
+np.random.seed(2025)
+
+
+def main():
+    plot_slide_4()
+    plt.savefig(argv[0].rsplit(".", 1)[0] + ".png", bbox_inches='tight')
+
+
+def draw_smooth_line(ax, points, k=2, periodic=False, label="", label_move_rel=(0, 0), color="blue"):
+    # Separate into x and y arrays
+    x, y = zip(*points)
+
+    # Parameterize the points
+    t = np.linspace(0, 1, len(x))  # Parameterize as a sequence
+    t_smooth = np.linspace(0, 1, 300)  # Dense parameterization for smoothing
+
+    # Create smooth interpolation
+    x_spline = make_interp_spline(t, x, k=k, bc_type="periodic" if periodic else None)  # Cubic interpolation
+    y_spline = make_interp_spline(t, y, k=k, bc_type="periodic" if periodic else None)
+    x_smooth = x_spline(t_smooth)
+    y_smooth = y_spline(t_smooth)
+
+    # Plot the smooth line
+    ax.plot(x_smooth, y_smooth, linestyle='-', color=color)
+
+    mid_index = len(x_smooth) // 2
+    ax.text(x_smooth[mid_index] + label_move_rel[0], y_smooth[mid_index] + label_move_rel[1], label, color=color)
+    ax.set_aspect('equal')  # Maintain aspect ratio for shapes like circles
+
+
+# refers to plot: https://docs.google.com/presentation/d/1T9e2uZamu__GOxcbz7fM81QUgAlvKp5JjUTwnGWbz3w/edit?slide=id.g349a373bb74_0_11#slide=id.g349a373bb74_0_11
+def plot_slide_4():
+    fig, ax = plt.subplots()
+    ax.set_xlim(0, 125)
+    ax.set_ylim(0, 110)
+    ax.spines['top'].set_visible(False)
+    ax.spines['right'].set_visible(False)
+    ax.set_xticks([])
+    ax.set_yticks([])
+    ax.set_xticklabels([])
+    ax.set_yticklabels([])
+    ax.set_xlabel("$tissue\\ x$")
+    ax.set_ylabel("$tissue\\ y$")
+
+    # Add arrows at the ends of the axes
+    ax.plot(1, 0, ">k", transform=ax.get_yaxis_transform(), clip_on=False)  # Arrow for x-axis
+    ax.plot(0, 1, "^k", transform=ax.get_xaxis_transform(), clip_on=False)  # Arrow for y-axis
+
+    def arrow(start_x, start_y, end_x, direction=1, length=12):
+        end_y = start_y + direction * (length**2 - (abs(start_x) - abs(end_x))**2)**.5
+        return ((start_x, start_y), (end_x, end_y))
+
+    def standalone_arrows():
+        def random_arrow(start_x, start_y, end_x, direction=1, length=None):
+            if length is None:
+                min_length = max(5, abs(start_x - end_x))
+                length = np.random.uniform(min_length, 8)
+
+            return arrow(start_x, start_y, end_x, direction, length=length)
+        return (
+            random_arrow(5, 65, 5),
+            random_arrow(6, 100, 10, -1),
+            random_arrow(40, 40, 40),
+            random_arrow(113, 45, 113),
+            random_arrow(90, 97.5, 98),
+            random_arrow(20, 95, 25),
+            random_arrow(20, 20, 15, -1),
+            random_arrow(35, 105, 32, -1, length=8),
+            random_arrow(70, 40, 69, length=8),
+            random_arrow(100, 5, 108),
+            random_arrow(87, 12, 86, -1, length=6),
+            random_arrow(20, 80, 17, -1),
+            random_arrow(49, 74, 48, -1),
+        )
+
+    # first from left
+    def first_flux(color="blue"):
+        # Define the arrows
+        arrows = (
+            arrow(15, 32, 21),
+            arrow(22, 45, 26, length=13),
+            arrow(27, 58, 31, length=9),
+            arrow(32.8, 71, 39),
+            arrow(40, 83, 43, length=17)
+        )
+
+        # Create a smoother line using interpolation
+        arrow_xy = np.concatenate([[xy for xy, _ in arrows], [arrows[-1][-1]]])
+        arrow_xy[:, 0] -= 4
+        arrow_xy[:, 1] += 3.5
+        draw_smooth_line(ax, arrow_xy, k=2, color=color)
+        arrow_xy[:, 0] += 8
+        arrow_xy[:, 1] -= 7
+        draw_smooth_line(ax, arrow_xy, k=2, color=color)
+        return arrows
+
+    # second from left
+    def second_flux(color="blue"):
+        # Define the arrows
+        begin_arm = (
+            arrow(56, 55, 55.8, -1, length=9),
+        )
+        right_split = (
+            arrow(52.5, 25, 47, -1, length=13),
+            arrow(55.1, 40, 53.5, -1),
+        )
+        left_split = (
+            arrow(49, 34, 39, -1, length=13),
+            arrow(35, 22, 30, -1),
+        )
+
+        # left
+        draw_smooth_line(ax, [(50, 56), (48, 42), (40, 33), (32, 26), (23, 10)], k=2, color=color)
+        # right
+        draw_smooth_line(ax, [(61, 54), (59, 30), (56, 20), (51, 9)], k=2, color=color)
+        # bottom
+        draw_smooth_line(ax, [(36, 9), (41, 19), (40, 10)], k=2, color=color, label="split", label_move_rel=(-15, -15))
+        return *begin_arm, *right_split, *left_split
+
+    # third from left, the one below the circle with two arrows
+    def third_flux(color="blue"):
+        arrows = (
+            arrow(72, 16, 63, -1),
+            arrow(78, 27, 74, -1, length=9)
+        )
+
+        # Create a smoother line using interpolation
+        arrow_xy = np.concatenate(arrows)[1:]
+        arrow_xy = arrow_xy[arrow_xy[:, 0].argsort()]
+        arrow_xy[:, 0] -= 4
+        arrow_xy[:, 1] += 3.5
+        draw_smooth_line(ax, arrow_xy, k=2, color=color)
+        # flux(arrow_xy, side="left")
+        arrow_xy[:, 0] += 8
+        arrow_xy[:, 1] -= 7
+        draw_smooth_line(ax, arrow_xy, k=2, color=color)
+        return arrows
+
+    # the circle
+    def fourth_flux(color="blue"):
+        arrows = (
+            # upper
+            arrow(72, 95, 81),
+
+            # left up-left
+            arrow(66, 88, 57),
+            # right up-left
+            arrow(76, 83, 70, length=8),
+
+            # left downer
+            arrow(69, 85, 66, -1, length=10),
+            # right downer
+            arrow(72, 80, 73, -1, length=12.5),
+        )
+        # Define points for plotting
+        pointing_out = [
+            (arrows[0][1][0] + 4, arrows[0][1][1] + 1),
+            (arrows[1][1][0] - 3, arrows[1][1][1] + 3),
+            (arrows[-2][1][0] - 3, arrows[-2][1][1] - 3),
+            (arrows[-1][1][0] + 3, arrows[-1][1][1] - 3),
+        ]
+        pointing_in = [(arrows[2][0][0] + 3, arrows[2][0][1])]
+
+        # Combine points and make it periodic (ensure looping by appending the start point)
+        arrow_xy = np.array(pointing_out + pointing_in + [pointing_out[0]])
+        draw_smooth_line(ax, arrow_xy, periodic=True, color=color, label="chaotic", label_move_rel=(-17, 42))
+
+        return arrows
+
+    # the last one, first from right
+    def fifth_flux(color="blue"):
+        # Define the arrows
+        left_arm = (
+            arrow(81.5, 35, 91, length=13),
+        )
+        right_arm = (
+            arrow(105, 20, 101, length=12),
+            arrow(100, 35, 98, length=10),
+        )
+        merged_arms = (
+            arrow(95, 55, 98),
+            arrow(101, 77, 107, length=10),
+            arrow(112, 98, 123, length=14),
+        )
+
+        # Create a smoother line using interpolation
+        arrow_xy = np.concatenate([*left_arm, *merged_arms])
+        arrow_xy[:, 0] -= 4
+        arrow_xy[:, 1] += 3.5
+        draw_smooth_line(ax, arrow_xy[[0, 2, -3, -1]], k=2, color=color)
+        # right line
+        draw_smooth_line(ax, [(110, 20), (104, 35), (102, 50), (106, 70), (112, 85), (122, 98)], k=2, label="merged", label_move_rel=(3, 3), color=color)
+        # bottom curve
+        draw_smooth_line(ax, [(86, 32), (93, 36), (96.5, 28), (99, 20)], k=2, color=color)
+        return *left_arm, *right_arm, *merged_arms
+
+    arrows = (
+        *standalone_arrows(),
+        *first_flux(),
+        *second_flux("#7DB00F"),
+        *third_flux(),
+        *fourth_flux("#B39A28"),
+        *fifth_flux("#D9591B")
+    )
+    for start, end in arrows:
+        ax.annotate("", xy=end, xytext=start, arrowprops=dict(arrowstyle='->'))
+
+
+if __name__ == '__main__':
+    main()
