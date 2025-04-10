@@ -1,0 +1,134 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\title{Tensor Omics: Core Preprocessing and Analysis Pipeline}
+\author{Bobito}
+
+\begin{document}
+
+\maketitle
+
+\section*{Overview}
+This document outlines the sequential pipeline used in Tensor Omics for preprocessing, vector space construction, outlier detection, and geometric analysis of gene expression data.
+
+\section*{1. Normalization of Expression Values}
+Raw gene expression data is normalized in the following steps:
+\begin{enumerate}
+    \item Division by gene-wise standard deviation for scale normalization.
+    \item Quantile normalization across samples to reduce global expression biases.
+    \item Log-transformation: \( x \mapsto \log(1 + x) \) to stabilize variance.
+    \item For stress response studies, log fold-changes are computed: 
+    \[
+        \Delta_{\text{stress}} = \log(1 + x_{\text{stress}}) - \log(1 + x_{\text{control}})
+    \]
+\end{enumerate}
+
+\section*{2. Construction of Expression Vector Space}
+\begin{itemize}
+  \item Biological replicates belonging to the same axis (tissue, stressed
+    tissue, etc.) are averaged post-normalization.
+    \item Each gene is represented as a vector \( \vec{p} \in \mathbb{R}^n \),
+      where \( n \) is the number of conditions or tissues. Thus $n$ is the
+      number of dimensions of the vector space.
+    \item Expression vectors are stored in Fortran arrays. \emph{Importantly}
+      Fortran is column major and vectors \emph{must} be columns.
+    \item Two K-D Trees are constructed:
+    \begin{itemize}
+        \item A raw-space K-D Tree (unnormalized vectors) for Euclidean queries.
+        \item A normalized-space K-D Tree (unit-length vectors) for cosine similarity and angular queries.
+    \end{itemize}
+  \item The first axis is designated the \textbf{Anchor Axis (AA)} for
+    visualization.
+\end{itemize}
+
+\section*{3. Gene Family Grouping and Centroid Estimation}
+\begin{itemize}
+    \item Gene families, populations, or functional groups are defined using
+      metadata.
+    \item Family centroids \( \vec{o} \) are computed either as:
+    \begin{itemize}
+        \item The mean vector of all family members.
+        \item The mean vector of a family's orthologs only.
+    \end{itemize}
+    \item All metadata and vectors can be serialized into \texttt{.txdata}
+      binary files.
+\end{itemize}
+
+\section*{4. Empirical Distribution Estimation}
+
+To detect expression outliers and classify divergence types, we estimate empirical distributions for four key geometric indices across gene families or defined subsets:
+
+\begin{itemize}
+    \item \textbf{Relative Distance Index (RDI)}: For each gene vector \( \vec{p} \), its Euclidean distance to the family centroid \( \vec{o} \) is computed as:
+    \[
+    \text{RDI} = \|\vec{p} - \vec{o}\|
+    \]
+    All RDI values across families are collected and percentile thresholds (e.g. 95\%) are used to identify significant divergence in magnitude.
+
+    \item \textbf{Relative Angle Index (RAI)}: The angular difference between a vector \( \vec{p} \) and its centroid \( \vec{o} \) is computed using the cosine formula:
+    \[
+    \text{RAI} = \cos^{-1} \left( \frac{\vec{p} \cdot \vec{o}}{\|\vec{p}\| \cdot \|\vec{o}\|} \right)
+    \]
+    This identifies divergence in direction. Thresholds (e.g. 95\%) are derived from the pooled distribution of angles.
+
+    \item \textbf{Relative Axis Signal (RAS)}: For each unit-normalized expression vector \( \hat{p} \), we consider its component \( \hat{p}_i \) along each axis \( i \) (e.g., tissue). For each axis, the 5th percentile across all vectors is computed as the inactivity threshold. A gene is considered neofunctionalized in axis \( i \) if:
+    \[
+    \hat{o}_i < T_i^{(5\%)} \quad \text{and} \quad \hat{p}_i > T_i^{(5\%)}
+    \]
+    where \( \hat{o} \) is the centroid.
+
+    \item \textbf{Relative Frobenius Index (RFI)}: For any set of vectors \( \{ \vec{v}_1, \dots, \vec{v}_n \} \) assembled as columns in matrix \( M \in \mathbb{R}^{d \times n} \), the signal strength is computed as:
+    \[
+    \text{RFI} = \frac{\|M\|_F}{\sqrt{n}} = \frac{\sqrt{\sum_{i=1}^{d} \sum_{j=1}^{n} M_{ij}^2}}{\sqrt{n}}
+    \]
+    This provides a normalized estimate of signal per vector and is used to assess subfield strength.
+
+\end{itemize}
+
+All empirical distributions are stored in Fortran arrays and used to assign significance thresholds for downstream classification and visualization.
+
+\section*{5. Outlier Detection and Shift Vector Calculation}
+\begin{itemize}
+    \item Outliers are detected when \( \| \vec{p} - \vec{o} \| \) exceeds the 95th percentile RDI.
+    \item Shift vectors are computed as:
+    \[
+        \vec{s} = \vec{p} - \vec{o}
+    \]
+    \item Both shift vectors and outlier indices are stored for further analysis.
+\end{itemize}
+
+\section*{6. Tissue Versatility Calculation}
+\begin{itemize}
+    \item Cosine of angle between expression vector and space diagonal:
+    \[
+        \cos(\theta) = \frac{\vec{p} \cdot \vec{d}}{\|\vec{p}\| \cdot \|\vec{d}\|}
+    \]
+    where \( \vec{d} = (1, 1, \dots, 1) \) is the space diagonal.
+\end{itemize}
+
+\section*{7. Clock Plot Projection and Rotation Angle Computation}
+\begin{itemize}
+    \item All shift vectors are projected into the \textbf{Relative Axes Plane (RAP)}, orthogonal to the space diagonal.
+    \item The following quantities are calculated for each outlier:
+    \begin{itemize}
+        \item Projected shift vector in RAP.
+        \item Normalized (unit-length) projection.
+        \item Clock hand vector from origin to projected point.
+        \item Rotation angle (standardized as clockwise) between projected centroid and outlier.
+    \end{itemize}
+    \item Results are stored in a structured Fortran matrix:
+    \begin{itemize}
+        \item For each outlier \( i \), store:
+        \begin{itemize}
+            \item \texttt{Rows 1 to \( n \)}: \( \vec{s}_i^{\text{RAP}} \)
+            \item \texttt{Rows \( n+1 \) to \( 2n \)}: \( \hat{s}_i^{\text{RAP}} \)
+            \item \texttt{Rows \( 2n+1 \) to \( 3n \)}: \( \vec{s}_i^{\text{clock}} \)
+            \item \texttt{Row \( 3n+1 \)}: rotation angle in radians
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\end{document}
