@@ -3,6 +3,7 @@ import numpy as np
 from scipy.interpolate import make_interp_spline
 from sys import argv
 np.random.seed(2025)
+plt.rcParams.update({"figure.dpi": 200})
 
 
 def main():
