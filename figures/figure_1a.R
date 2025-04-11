@@ -10,7 +10,7 @@ addAlpha <- function(col, alpha = .25) {
 colors <- brewer.pal(7, "Dark2")
 alpha.cols <- sapply(colors, addAlpha)
 
-pdf('expressionChange.pdf', width=5, height=4)
+pdf('figure_1a.pdf', width=5, height=4)
 
 plot(
   NA,
@@ -119,64 +119,47 @@ text(
   cex = .8
 )
 
-rect(0.63, 0.63, 4.1, 3.1, col = "white", border = NA)
-
-
-usr <- par("usr") 
-
-# Deine gewünschten Plot-Koordinaten (in "user space")
-x_lo <- 0.9
-x_hi <- 4.4
-y_lo <- 0.7
-y_hi <- 3.4
-
-# Umrechnung in relative fig-Koordinaten (zwischen 0 und 1)
-fig_x_lo <- (x_lo - usr[1]) / (usr[2] - usr[1])
-fig_x_hi <- (x_hi - usr[1]) / (usr[2] - usr[1])
-fig_y_lo <- (y_lo - usr[3]) / (usr[4] - usr[3])
-fig_y_hi <- (y_hi - usr[3]) / (usr[4] - usr[3])
-
-par(fig = c(fig_x_lo, fig_x_hi, fig_y_lo, fig_y_hi), new = TRUE)
-par(mgp = c(1, 0.5, 0))
-
+# Ortholog trajectories (2 examples) and average
 orth_1 <- c(1, 2, 1, 3, 2)
-diff_vecs <- c(3, 4, 3, 4, 3)
-
-plot(
-  1:5,
-  diff_vecs,
-  type = "l",
-  pch = 16,
-  cex = 0.5,
-  xaxt = "n",
-  yaxt = "n",
-  ylab = "distance",
-  xlab = "time",
-  main = "",
-  col = colors[[2]],
-  cex.axis = 0.5,
-  cex.lab = 0.5,
-  ylim = c(1,5)
-)
-axis(1, at = 1:5, labels = paste0("t", 1:5), cex.axis = 0.5)
-axis(2, at = 1:5, labels = 1:5, cex.axis = 0.5)
-
 orth_2 <- c(3, 2, 2, 1, 1)
-mean <- c(mean(c(orth_1[1], orth_2[1])), 
-    mean(c(orth_1[2], orth_2[2])), 
-    mean(c(orth_1[3], orth_2[3])), 
-    mean(c(orth_1[4], orth_2[4])),
-    mean(c(orth_1[5], orth_2[5])))
+mean <- (orth_1 + orth_2) / 2
+diff_vecs <- c(5, 4.5, 4, 4.3, 5)
 
-lines(1:5, orth_2, type = "l", col = colors[[1]], pch = 16)
-lines(1:5, mean, type = "l", col = "red", pch = 16)
-lines(1:5, orth_1, type = "l", col = colors[[1]], pch = 16)
+# Map time to space
+map_time_to_coord <- function(x, y_base, step=0.5) {
+  coords <- lapply(1:length(x), function(i) c(0.6 + i*step, y_base + x[i] * 0.3))
+  return(do.call(rbind, coords))
+}
 
-points(1:5, orth_1, pch = 16, cex = 0.5, col = colors[1])
-points(1:5, mean, pch = 16, cex = 0.5, col = "red")
-points(1:5, orth_2, pch = 16, cex = 0.5, col = colors[1])
-points(1:5, diff_vecs, pch = 16, cex = 0.5, col = colors[2])
+orth_1_pts <- map_time_to_coord(orth_1, 1)
+orth_2_pts <- map_time_to_coord(orth_2, 1)
+mean_pts  <- map_time_to_coord(mean, 1)
+diff_pts <- matrix(c(
+  0.8, 2.5,
+  1.3, 2.7,
+  2, 2.9,
+  2.8, 2.8,
+  3.4, 3.2
+), ncol = 2, byrow = TRUE)
 
-box()
+# Smooth lines
+lines(spline(orth_1_pts), col = colors[[1]], lwd = 2)
+lines(spline(orth_2_pts), col = colors[[1]], lwd = 2)
+lines(spline(mean_pts), col = "red", lwd = 2)
+lines(spline(diff_pts), col = colors[[2]], lwd = 2)
+
+# Points
+points(orth_1_pts, pch = 16, col = colors[[1]])
+points(orth_2_pts, pch = 16, col = colors[[1]])
+points(mean_pts, pch = 16, col = "red")
+points(diff_pts, pch = 16, col = colors[[2]])
+
+# Shift vectors from mean to diff points
+for (i in 1:nrow(mean_pts)) {
+  arrows(mean_pts[i, 1], mean_pts[i, 2],
+         diff_pts[i, 1], diff_pts[i, 2],
+         length = 0.1, col = colors[[3]], lwd = 1.5)
+}
+
 
 dev.off()
