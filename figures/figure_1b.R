@@ -27,7 +27,7 @@ orth <- c(.2, 1.75)
 l.orth <- eucLen(orth)
 
 
-pdf('tissueVersatility_delta.pdf',
+pdf('figure_1b.pdf',
     width = 4,
     height = 4)
 
@@ -199,7 +199,7 @@ arrows(
   dupl[1],
   dupl[2],
   col = colors[[7]],
-  lwd = 1.3,
+  lwd = 2.5,
   length = 0.15
 )
 
@@ -210,7 +210,7 @@ arrows(
   orth[1] + unit_vec[1],
   orth[2] + unit_vec[2] - .05,
   col = colors[[6]],
-  lwd = 1.3,
+  lwd = 2.5,
   length = 0.1
 )
 

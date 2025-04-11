@@ -10,7 +10,7 @@ addAlpha <- function(col, alpha = .25) {
 colors <- brewer.pal(7, "Dark2")
 alpha.cols <- sapply(colors, addAlpha)
 
-pdf('changeInTissuePreference_phi.pdf', width=4, height=4)
+pdf('figure_1c.pdf', width=4, height=4)
 
 
 plot(
@@ -52,14 +52,14 @@ arrows(1,
        1,
        .25,
        col = colors[[2]],
-       lwd = 1.3,
+       lwd = 2,
        length = .1)
 arrows(1,
        1,
        .25,
        2,
        col = colors[[1]],
-       lwd = 1.3,
+       lwd = 2,
        length = .1)
 
 # Coordinate System
@@ -89,49 +89,49 @@ text(
   cex = .8
 )
 
-# Label for o point
-text(
-  .25,
-  1.85,
-  label = TeX('$\\textit{o}$'),
-  pos = 3,
-  offset = 1.25,
-  col = colors[[1]],
-  cex = .8
-)
+# # Label for o point
+# text(
+#   .25,
+#   1.85,
+#   label = TeX('$\\textit{o}$'),
+#   pos = 3,
+#   offset = 1.25,
+#   col = colors[[1]],
+#   cex = .8
+# )
 
-# Arrow for o label
-text(
-  .25,
-  1.85 + 0.1,
-  label = TeX('$\\rightarrow$'),
-  pos = 3,
-  offset = 1.25,
-  col = colors[[1]],
-  cex = .8
-)
+# # Arrow for o label
+# text(
+#   .25,
+#   1.85 + 0.1,
+#   label = TeX('$\\rightarrow$'),
+#   pos = 3,
+#   offset = 1.25,
+#   col = colors[[1]],
+#   cex = .8
+# )
 
-# Label for p point
-text(
-  1.15,
-  .26,
-  label = TeX('$\\textit{p}$'),
-  pos = 1,
-  offset = .755,
-  col = colors[[2]],
-  cex = .8
-)
+# # Label for p point
+# text(
+#   1.15,
+#   .26,
+#   label = TeX('$\\textit{p}$'),
+#   pos = 1,
+#   offset = .755,
+#   col = colors[[2]],
+#   cex = .8
+# )
 
-# Arrow for p point
-text(
-  1.15,
-  .26 + 0.1,
-  label = TeX('$\\rightarrow$'),
-  pos = 1,
-  offset = .755,
-  col = colors[[2]],
-  cex = .8
-)
+# # Arrow for p point
+# text(
+#   1.15,
+#   .26 + 0.1,
+#   label = TeX('$\\rightarrow$'),
+#   pos = 1,
+#   offset = .755,
+#   col = colors[[2]],
+#   cex = .8
+# )
 
 # phi label
 text(
@@ -146,19 +146,19 @@ text(
 
 # Label for base vector p
 text(
-  .95,
+  .95 +0.3,
   .45,
   label = TeX('$\\textit{{p}^{clock}}$'),
-  pos = 4,
-  offset = .5,
+  pos = 1,
+  offset = 1.5,
   col = colors[[2]],
   cex = .8
 )
 
 # Arrow for vec p
 text(
-  .95 - .06,
-  .45 + .09,
+  .95 - 0.04,
+  .45 - .38,
   label = TeX('$\\rightarrow$'),
   pos = 4,
   offset = .5,
@@ -168,8 +168,8 @@ text(
 
 # Label for base vector o
 text(
-  .4,
-  1.65,
+  .4-0.2 ,
+  1.85 + 0.3,
   label = TeX('$\\textit{{o}^{clock}}$'),
   pos = 4,
   offset = 1.0,
@@ -179,8 +179,8 @@ text(
 
 # Arrow for vec o
 text(
-  .4 - .06,
-  1.65 + .08,
+  .4 -0.27,
+  1.85 + .38,
   label = TeX('$\\rightarrow$'),
   pos = 4,
   offset = 1.0,
@@ -226,7 +226,7 @@ arrows(o[1] - .05,
        o[1] + unit_vec[1] - .05,
        o[2] + unit_vec[2],
        col = colors[[6]],
-       lwd = 1.3,
+       lwd = 2.5,
        lty = 1,
        length = 0.1)
 
@@ -252,14 +252,14 @@ arrows(o[1],
        p[1],
        p[2],
        col = colors[[7]],
-       lwd = 1.3,
+       lwd = 2.5,
        length = 0.1)
 
 # Label for difference vector
 text(
   p[1] + ((o[1] - p[1]) / 2) + .097,
   p[2] + ((o[2] - p[2]) / 2) - 1.1,
-  label = TeX('$\\textit{{s}_{po}^{clock}}$'),
+  label = TeX('$\\textit{{s}_{po}}$'),
   pos = 3,
   col = colors[[7]],
   cex = .8
@@ -267,8 +267,8 @@ text(
 
 # Arrow for difference vector
 text(
-  p[1] + ((o[1] - p[1]) / 2) - .03,
-  p[2] + ((o[2] - p[2]) / 2) - .91,
+  p[1] + ((o[1] - p[1]) / 2) + .03,
+  p[2] + ((o[2] - p[2]) / 2) - .93,
   label = TeX('$\\rightarrow$'),
   pos = 3,
   col = colors[[7]],
