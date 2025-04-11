@@ -118,34 +118,47 @@ To enable robust outlier detection and hypothesis-free exploration, Tensor Omics
 
 \subsection{Relative Distance Index (RDI)}
 
-For each family, the Euclidean distance between each member vector \( \vec{f}_i \) and the family centroid \( \vec{o} \) is computed as:
+For each gene family, we define the centroid \( \vec{o} \) as the mean of all ortholog vectors \( \vec{o}_i \) across species. To assess the magnitude of a gene's divergence from this conserved expression center, we compute the Euclidean distance:
 \[
-d_i = \| \vec{f}_i - \vec{o} \|
+d = \| \vec{p} - \vec{o} \|
 \]
-The family-specific maximum distance is then calculated:
+where \( \vec{p} \) is the expression vector of the gene being evaluated.
+
+To normalize this distance and enable scale-independent comparison across families, we compute a family-specific scaling factor as the maximum distance between any ortholog vector and the ortholog centroid:
 \[
-d_{\text{max}} = \max_i \| \vec{f}_i - \vec{o} \|
+d_{\text{scale}} = \max_i \| \vec{o}_i - \vec{o} \|
 \]
-Each distance is normalized to yield a \emph{Relative Distance Index (RDI)}:
+This normalization is linear in the number of orthologs and avoids the quadratic cost of pairwise distance computation. The Relative Distance Index (RDI) is then defined as:
 \[
-\text{RDI}_i = \frac{d_i}{d_{\text{max}}}
+\text{RDI} = \frac{\| \vec{p} - \vec{o} \|}{d_{\text{scale}}}
 \]
+
+In cases where ortholog annotations are unavailable or the family contains only a single ortholog, a statistical smoothing strategy is used to estimate an appropriate scaling factor. Specifically, for each gene family, we calculate:
+\[
+\text{FS}_i = \text{median}_j \left( \| \vec{f}_j - \vec{o}_i \| \right)
+\quad \text{and} \quad
+\text{FD}_i = \text{sd}_j \left( \| \vec{f}_j - \vec{o}_i \| \right)
+\]
+where \( \vec{f}_j \) are the expression vectors of all family members and \( \vec{o}_i \) is the family centroid (mean of all \( \vec{f}_j \)). A smoothing function \( f(\cdot) \), e.g. via LOESS, is fit to the set \( \{ (\text{FS}_i, \text{FD}_i) \} \) across all families. This yields an empirical mapping from median distance to expected spread. For families lacking orthologs, the smoothed value \( f(\text{FS}) \) is used as the denominator in:
+\[
+\text{RDI}_{\text{smoothed}} = \frac{\| \vec{p} - \vec{o} \|}{f(\text{FS})}
+\]
+
+This hybrid strategy ensures that RDI remains well-defined, interpretable, and comparable across evolutionary, functional, and statistical use cases in Tensor Omics.
 
 All RDI values are pooled across all families to build an empirical distribution of relative intra-family divergence. This enables percentile-based filtering of significant shifts (e.g., 95th percentile for outlier detection) without requiring parametric assumptions.
 
 \textbf{Note:} While RDI values are used to identify significant divergence, the unnormalized distances \( d_i \) are retained for all downstream geometric computations, such as vector field construction and shift vector analysis.
 
-\subsection{Relative Axis Signal (RAS)}
+\subsection{Relative Angle Index (RAI)}
 
-For each unit-normalized expression vector \( \vec{p}^{\text{norm}} \), we
-consider its component \( \vec{p}^{\text{norm}}_i \) along each axis \( i \)
-(e.g., tissue). For each axis, the 5th percentile across all vectors is
-computed as the inactivity threshold. A gene is considered neofunctionalized in
-axis \( i \) if:
+The angular difference between a vector \( \vec{p} \) and its centroid \(
+\vec{o} \) is computed using the cosine formula:
 \[
-  \vec{o}^{\text{norm}}_i < T_i^{(5\%)} \quad \text{and} \quad \vec{p}^{\text{norm}}_i > T_i^{(5\%)}
+  \text{RAI} = \cos^{-1} \left( \frac{\vec{p} \cdot \vec{o}}{\|\vec{p}\| \cdot \|\vec{o}\|} \right)
 \]
-where \( \vec{o}^{\text{norm}} \) is the centroid.
+This identifies divergence in direction. Thresholds (e.g. 95\%) are derived
+from the pooled distribution of angles.
 
 \subsection{Relative Axis Signal (RAS)}
 
