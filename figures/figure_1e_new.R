@@ -33,8 +33,9 @@ legend(x = 0, y = 2.5,
 # --- Plot Elements ---
 # Point O (Origin)
 O <- c(1, 1)
-points(O[1], O[2], bg = alpha.cols[1], col = colors[1], pch = 21, cex = 3)
-text(O[1], O[2], label = TeX('$\\textit{O}$'), pos = 2, offset = 1, col = colors[1], cex = 2)
+points(O[1], O[2], bg = adjustcolor("red", alpha.f = 0.5), col = "red", pch = 21, cex = 3)
+text(O[1], O[2], label = TeX('$\\textit{O}$'), pos = 2, offset = 1, col = "red", cex = 2)
+
 
 # Point D (Space origin)
 D <- c(1.7, 0.5)
@@ -71,9 +72,21 @@ for (i in 1:4) {
   pt <- clock_pts[[i]]
   arrows(O[1], O[2], pt[1], pt[2], col = vec_colors[i], lwd = 4, length = 0.13)
   points(pt[1], pt[2], pch = 21, bg = vec_alpha.cols[i], col = vec_colors[i], cex = 3)
-  # *** MODIFIED: Added 'clock' superscript ***
-  text(pt[1]+.02, pt[2]+.02, label = TeX(paste0('$t_', i, '^{{clock}}$')), pos = 3, col = vec_colors[i], cex = 1.5)
-  text(pt[1]+.02, pt[2] + .1, label = TeX('$\\rightarrow$'), pos = 3, col = vec_colors[i], cex = 1.5)
+
+ 
+  # Define a default horizontal offset
+  x_offset <- 0.02
+
+  # If i is 3, use a larger offset to move it right
+  if (i == 3) {
+    x_offset <- 0.08 # Adjust this value (e.g., 0.05, 0.1) to move it more or less
+  }
+
+
+  # Use the calculated x_offset for the text position
+  # *** MODIFIED: Added 'clock' superscript & used x_offset ***
+  text(pt[1] + x_offset, pt[2] + .02, label = TeX(paste0('$t_', i, '^{{clock}}$')), pos = 3, col = vec_colors[i], cex = 1.5)
+  text(pt[1] + x_offset, pt[2] + .1, label = TeX('$\\rightarrow$'), pos = 3, col = vec_colors[i], cex = 1.5)
 }
 
 # Phi arcs
@@ -151,9 +164,9 @@ plot(
   1:4,
   distances,
   type = "l",
-  xaxt = "n",       # Turn off x-axis labels (will be added on bottom plot)
+  xaxt = "n",       
   ylab = "Shift",
-  xlab = "",        # Turn off x-axis title
+  xlab = "Time",        	
   main = "",        # Turn off main title
   col = "black",
   cex.axis = 0.8,
@@ -161,6 +174,11 @@ plot(
 )
 # No axis(1, ...) here
 points(1:4, distances, pch = 16, col = vec_colors, cex = 1.5) # Smaller points for inset
+axis(1, at = 1:4, labels = paste0("t", 1:4), cex.axis = 0.8)
+# Color points: Use grey for the first point (ASV=0 by definition)
+# and then the corresponding vector colors for the subsequent differences
+asv_point_colors <- c(vec_colors[1:4]) # t2-t1 uses t2 color, t3-t2 uses t3 color, etc.
+points(1:4, asv_deg, pch = 16, col = asv_point_colors, cex = 1.5)
 box()
 
 # --- *** NEW: Inset 2: ASV vs time *** ---
@@ -172,7 +190,7 @@ plot(
   asv_deg,          # Use degrees for the y-axis
   type = "l",
   xaxt = "n",       # Turn off default x-axis
-  ylab = "ASV (deg)", # Y-axis label
+  ylab = "Angular Shift Velocity(deg)", # Y-axis label
   xlab = "Time",    # X-axis label (only on the bottom plot)
   main = "",
   col = "black",
@@ -181,10 +199,14 @@ plot(
 )
 # Add custom x-axis labels
 axis(1, at = 1:4, labels = paste0("t", 1:4), cex.axis = 0.8)
-asv_point_colors <- c("grey50", vec_colors[2:4]) # t2-t1 uses t2 color, t3-t2 uses t3 color, etc.
+# Color points: Use grey for the first point (ASV=0 by definition)
+# and then the corresponding vector colors for the subsequent differences
+asv_point_colors <- c(vec_colors[1:4]) # t2-t1 uses t2 color, t3-t2 uses t3 color, etc.
 points(1:4, asv_deg, pch = 16, col = asv_point_colors, cex = 1.5)
 box()
 
 # --- Finalize ---
 # Close the graphics device
-dev.off()
+
+# Optional: Reset graphics parameters if running interactively
+# par(fig = c(0, 1, 0, 1), mar = c(5.1, 4.1, 4.1, 2.1), mgp = c(3, 1, 0))
