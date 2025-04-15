@@ -7,7 +7,7 @@ plt.rcParams.update({"figure.dpi": 200})
 
 
 def main():
-    plot_slide_4()
+    plot_1d()
     plt.savefig(argv[0].rsplit(".", 1)[0] + ".png", bbox_inches='tight')
 
 
@@ -34,7 +34,7 @@ def draw_smooth_line(ax, points, k=2, periodic=False, label="", label_move_rel=(
 
 
 # refers to plot: https://docs.google.com/presentation/d/1T9e2uZamu__GOxcbz7fM81QUgAlvKp5JjUTwnGWbz3w/edit?slide=id.g349a373bb74_0_11#slide=id.g349a373bb74_0_11
-def plot_slide_4():
+def plot_1d():
     fig, ax = plt.subplots()
     ax.set_xlim(0, 125)
     ax.set_ylim(0, 110)
@@ -85,7 +85,7 @@ def plot_slide_4():
         )
 
     # first from left
-    def first_flux(color="blue"):
+    def left_blue(color="blue"):
         # Define the arrows
         arrows = (
             arrow(14, 30, 20),
@@ -105,31 +105,8 @@ def plot_slide_4():
         draw_smooth_line(ax, arrow_xy, k=2, color=color)
         return arrows
 
-    # second from left
-    def second_flux(color="blue"):
-        # Define the arrows
-        begin_arm = (
-            arrow(56, 55, 55.8, -1, length=9),
-        )
-        right_split = (
-            arrow(52.5, 25, 47, -1, length=13),
-            arrow(56, 40, 54.5, -1),
-        )
-        left_split = (
-            arrow(49.5, 34, 39, -1, length=13),
-            arrow(35, 21.5, 30, -1),
-        )
-
-        # left
-        draw_smooth_line(ax, [(50, 56), (48, 42), (40, 33), (32, 26), (23, 10)], k=2, color=color)
-        # right
-        draw_smooth_line(ax, [(61, 54), (59, 30), (56, 20), (51, 9)], k=2, color=color)
-        # bottom
-        draw_smooth_line(ax, [(36, 9), (41, 19), (40, 10)], k=2, color=color, label="split", label_move_rel=(-15, -15))
-        return *begin_arm, *right_split, *left_split
-
-    # third from left, the one below the circle with two arrows
-    def third_flux(color="blue"):
+    # second from left, the one below the circle with two arrows
+    def right_blue(color="blue"):
         arrows = (
             arrow(72, 16, 63, -1),
             arrow(78, 27, 74, -1, length=9)
@@ -148,7 +125,7 @@ def plot_slide_4():
         return arrows
 
     # the circle
-    def fourth_flux(color="blue"):
+    def chaotic(color="blue"):
         arrows = (
             # upper
             arrow(70, 95, 79),
@@ -179,7 +156,7 @@ def plot_slide_4():
         return arrows
 
     # the last one, first from right
-    def fifth_flux(color="blue"):
+    def merged(color="blue"):
         # Define the arrows
         left_arm = (
             arrow(81.5, 34.5, 91, length=13),
@@ -207,11 +184,10 @@ def plot_slide_4():
 
     arrows = (
         *standalone_arrows(),
-        *first_flux(),
-        *second_flux("#7DB00F"),
-        *third_flux(),
-        *fourth_flux("#B39A28"),
-        *fifth_flux("#D9591B")
+        *left_blue(),
+        *right_blue(),
+        *chaotic("#B39A28"),
+        *merged("#D9591B")
     )
     for start, end in arrows:
         ax.annotate("", xy=end, xytext=start, arrowprops=dict(arrowstyle='->'))
