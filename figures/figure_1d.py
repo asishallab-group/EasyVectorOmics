@@ -68,41 +68,49 @@ def plot_1d():
             return arrow(start_x, start_y, end_x, direction, length=length)
         return (
             random_arrow(7, 65, 5),
-            random_arrow(7, 100, 10, -1),
-            random_arrow(42, 40, 40),
             random_arrow(112, 45, 113),
             random_arrow(90.5, 97.5, 97.5),
-            random_arrow(21, 95, 25),
             random_arrow(21.5, 20, 15.5, -1),
             random_arrow(35.5, 105, 32, -1, length=8),
             random_arrow(70, 40, 69, length=8),
             random_arrow(97.5, 5, 105.5),
             random_arrow(84, 12, 86, -1, length=6),
-            random_arrow(21.5, 80, 17, -1),
             random_arrow(49, 74, 48, -1),
             random_arrow(87, 84.5, 91, -1),
             random_arrow(84.5, 61, 80, -1),
         )
+        return ()
 
     # first from left
     def left_blue(color="blue"):
-        # Define the arrows
+        # Define the arrows, starting from top
         arrows = (
-            arrow(14, 30, 20),
-            arrow(21, 43, 26, length=13),
-            arrow(28, 58, 31, length=12),
-            arrow(32.8, 71, 39),
-            arrow(40, 83, 43, length=17)
+            arrow(21.5, 100, 17, length=10),
+            arrow(14.5, 95, 7, length=11),
+            arrow(21.5, 90, 16, length=10),
+            arrow(28.5, 83, 23, length=11),
+            arrow(28.5, 72, 19, length=13),
+            arrow(42.5, 63, 35, length=13),
+            arrow(35.5, 56, 31, length=10),
+            arrow(44, 48.5, 38, length=14),
         )
 
-        # Create a smoother line using interpolation
-        arrow_xy = np.concatenate([[xy for xy, _ in arrows], [arrows[-1][-1]]])
-        arrow_xy[:, 0] -= 4
-        arrow_xy[:, 1] += 3.5
-        draw_smooth_line(ax, arrow_xy, color=color)
-        arrow_xy[:, 0] += 8
-        arrow_xy[:, 1] -= 7
-        draw_smooth_line(ax, arrow_xy, color=color)
+        route_left_line = [
+            (arrows[1][1][0] - 5, arrows[1][1][1] + 1),
+            (arrows[4][1][0] - 5, arrows[4][1][1]),
+            (arrows[6][1][0] - 5, arrows[6][1][1]),
+            (arrows[7][0][0] - 9, arrows[7][0][1]),
+        ]
+        draw_smooth_line(ax, route_left_line, color=color, k=2)
+
+        route_right_line = [
+            (arrows[0][1][0] + 4, arrows[0][1][1] + 1),
+            (arrows[3][0][0] + 5, arrows[3][0][1]),
+            (arrows[5][0][0] + 3, arrows[5][0][1] + 3),
+            (arrows[7][0][0] + 10, arrows[7][0][1]),
+        ]
+        draw_smooth_line(ax, route_right_line, color=color, k=2)
+
         return arrows
 
     # second from left, the one below the circle with two arrows
@@ -117,8 +125,8 @@ def plot_1d():
             (arrows[0][1][0] - 10, arrows[0][1][1] - 2),
             (arrows[1][1][0] - 3, arrows[1][1][1] + 1),
             (arrows[1][0][0] - 7, arrows[1][0][1]),
-            (arrows[1][0][0] - 1, arrows[1][0][1] - 4),
-            (arrows[2][0][0] - 4, arrows[2][0][1]),
+            (arrows[1][0][0] - 3, arrows[1][0][1] - 4),
+            (arrows[2][0][0] - 7, arrows[2][0][1]),
         ]
         draw_smooth_line(ax, route_left_line, color=color, k=2)
 
