@@ -181,8 +181,6 @@ plot(
 )
 # Add custom x-axis labels
 axis(1, at = 1:4, labels = paste0("t", 1:4), cex.axis = 0.8)
-# Color points: Use grey for the first point (ASV=0 by definition)
-# and then the corresponding vector colors for the subsequent differences
 asv_point_colors <- c("grey50", vec_colors[2:4]) # t2-t1 uses t2 color, t3-t2 uses t3 color, etc.
 points(1:4, asv_deg, pch = 16, col = asv_point_colors, cex = 1.5)
 box()
@@ -190,6 +188,3 @@ box()
 # --- Finalize ---
 # Close the graphics device
 dev.off()
-
-# Optional: Reset graphics parameters if running interactively
-# par(fig = c(0, 1, 0, 1), mar = c(5.1, 4.1, 4.1, 2.1), mgp = c(3, 1, 0))
