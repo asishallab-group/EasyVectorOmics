@@ -47,8 +47,8 @@ def plot_1d():
     ax.set_yticks(list(range(int(ymin), int(ymax), 7)))
     ax.set_xticklabels([])
     ax.set_yticklabels([])
-    ax.set_xlabel("$tissue\\ x$")
-    ax.set_ylabel("$tissue\\ y$")
+    ax.set_xlabel("$tissue\\ X$")
+    ax.set_ylabel("$tissue\\ Y$")
     ax.grid(True, linewidth=0.5, color='gray', alpha=0.2)
 
     # Add arrows at the ends of the axes
@@ -128,30 +128,43 @@ def plot_1d():
     def chaotic(color="blue"):
         arrows = (
             # upper
-            arrow(70, 95, 79),
+            arrow(63, 95, 64, length=10),
 
-            # left up-left
-            arrow(64, 88, 55),
-            # right up-left
-            arrow(74, 83, 68, length=8),
+            # left from upper
+            arrow(57, 98.5, 59, -1, length=9),
 
-            # left downer
-            arrow(67, 85, 64, -1, length=10),
-            # right downer
-            arrow(70, 80, 71, -1, length=12.5),
+            # points to bottom-left
+            arrow(63.5, 91, 55, -1, length=11),
+
+            # bottom, points up
+            arrow(59, 76.5, 62, length=8),
+
+            # middle one, points down (not bottom right)
+            arrow(65, 91.5, 66, -1, length=10),
+
+            # middle one, points bottom-right
+            arrow(66, 98.5, 71, -1, length=10),
+
+            # points right, bottom one
+            arrow(69.5, 86, 78, length=10),
+
+            # points right, top one
+            arrow(69.5, 98.5, 79.4, length=10),
         )
         # Define points for plotting
-        pointing_out = [
-            (arrows[0][1][0] + 4, arrows[0][1][1] + 1),
-            (arrows[1][1][0] - 3, arrows[1][1][1] + 3),
-            (arrows[-2][1][0] - 3, arrows[-2][1][1] - 3),
-            (arrows[-1][1][0] + 3, arrows[-1][1][1] - 3),
+        route = [
+            (start := (arrows[0][1][0] + 4, arrows[0][1][1] + 4)),
+            (arrows[1][0][0] - 3, arrows[1][0][1]),
+            (arrows[2][1][0] - 3, arrows[2][1][1] - 3),
+            (arrows[3][0][0] + 3, arrows[3][0][1] - 1),
+            (arrows[-2][1][0] + 3, arrows[-2][1][1] - 1),
+            (arrows[-1][1][0] + 1, arrows[-1][1][1] + 4),
+            start,
         ]
-        pointing_in = [(arrows[2][0][0] + 3, arrows[2][0][1])]
 
         # Combine points and make it periodic (ensure looping by appending the start point)
-        arrow_xy = np.array(pointing_out + pointing_in + [pointing_out[0]])
-        draw_smooth_line(ax, arrow_xy, periodic=True, color=color, label="chaotic", label_move_rel=(-17, 42))
+        arrow_xy = np.array(route)
+        draw_smooth_line(ax, arrow_xy, periodic=True, color=color, label="Photosynthesis", label_move_rel=(-17, 35))
 
         return arrows
 
@@ -184,9 +197,9 @@ def plot_1d():
 
     arrows = (
         *standalone_arrows(),
-        *left_blue(),
-        *right_blue(),
-        *chaotic("#B39A28"),
+        *left_blue("#003CE0"),
+        *right_blue("#003CE0"),
+        *chaotic("#7DB00F"),
         *merged("#D9591B")
     )
     for start, end in arrows:
