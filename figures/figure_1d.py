@@ -108,20 +108,28 @@ def plot_1d():
     # second from left, the one below the circle with two arrows
     def right_blue(color="blue"):
         arrows = (
-            arrow(60, 16, 51, -1),
-            arrow(66, 27, 62, -1, length=9)
+            arrow(56, 16, 52),
+            arrow(56, 10, 47),
+            arrow(63, 2, 59, length=12)
         )
 
-        # Create a smoother line using interpolation
-        arrow_xy = np.concatenate(arrows)[1:]
-        arrow_xy = arrow_xy[arrow_xy[:, 0].argsort()]
-        arrow_xy[:, 0] -= 4
-        arrow_xy[:, 1] += 3.5
-        draw_smooth_line(ax, arrow_xy, color=color)
-        # flux(arrow_xy, side="left")
-        arrow_xy[:, 0] += 8
-        arrow_xy[:, 1] -= 7
-        draw_smooth_line(ax, arrow_xy, color=color)
+        route_left_line = [
+            (arrows[0][1][0] - 10, arrows[0][1][1] - 2),
+            (arrows[1][1][0] - 3, arrows[1][1][1] + 1),
+            (arrows[1][0][0] - 7, arrows[1][0][1]),
+            (arrows[1][0][0] - 1, arrows[1][0][1] - 4),
+            (arrows[2][0][0] - 4, arrows[2][0][1]),
+        ]
+        draw_smooth_line(ax, route_left_line, color=color, k=2)
+
+        route_right_line = [
+            (arrows[0][1][0] + 5, arrows[0][1][1]),
+            (arrows[0][0][0] + 5, arrows[0][0][1] + 1),
+            (arrows[2][1][0] + 5, arrows[2][1][1] - 1),
+            (arrows[2][0][0] + 5, arrows[2][0][1] + 3),
+        ]
+        draw_smooth_line(ax, route_right_line, color=color, k=2)
+
         return arrows
 
     # the circle
