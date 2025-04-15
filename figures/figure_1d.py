@@ -4,6 +4,7 @@ from scipy.interpolate import make_interp_spline
 from sys import argv
 np.random.seed(2025)
 plt.rcParams.update({"figure.dpi": 200})
+RELEVANT_ARROW_SIZE = 7
 
 
 def main():
@@ -63,23 +64,36 @@ def plot_1d():
         def random_arrow(start_x, start_y, end_x, direction=1, length=None):
             if length is None:
                 min_length = max(5, abs(start_x - end_x))
-                length = np.random.uniform(min_length, 8)
+                length = np.random.uniform(min_length, RELEVANT_ARROW_SIZE)
 
             return arrow(start_x, start_y, end_x, direction, length=length)
+
+        high_impact = (
+            arrow(18, 56.5, 7, -1, length=14),
+            arrow(10, 34.5, 17, length=13),
+            arrow(25, 49.5, 22, -1, length=11),
+        )
         return (
-            random_arrow(7, 65, 5),
+            *high_impact,
+            random_arrow(7, 65, 9),
             random_arrow(112, 45, 113),
             random_arrow(90.5, 97.5, 97.5),
             random_arrow(21.5, 20, 15.5, -1),
-            random_arrow(35.5, 105, 32, -1, length=8),
-            random_arrow(70, 40, 69, length=8),
-            random_arrow(97.5, 5, 105.5),
+            random_arrow(35.5, 105, 32, -1, length=7),
+            random_arrow(35.5, 37, 35.5, -1),
+            random_arrow(70, 40, 71, length=7),
+            random_arrow(97.5, 5, 104.5),
             random_arrow(84, 12, 86, -1, length=6),
             random_arrow(49, 74, 48, -1),
             random_arrow(87, 84.5, 91, -1),
             random_arrow(84.5, 61, 80, -1),
+            random_arrow(31, 6.5, 35),
+            random_arrow(108, 21.5, 111, -1),
+            random_arrow(65, 70.5, 68, -1),
+            random_arrow(56, 38.5, 59, -1),
+            random_arrow(117, 70.5, 120, -1),
+            random_arrow(115, 28, 110, -1),
         )
-        return ()
 
     # first from left
     def left_blue(color="blue"):
@@ -239,7 +253,9 @@ def plot_1d():
         *merged("#D9591B")
     )
     for start, end in arrows:
-        ax.annotate("", xy=end, xytext=start, arrowprops=dict(arrowstyle='->'))
+        arrow_len = ((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2) ** .5
+        color = "black" if arrow_len > RELEVANT_ARROW_SIZE else "gray"
+        ax.annotate("", xy=end, xytext=start, arrowprops=dict(arrowstyle='->', color=color))
 
 
 if __name__ == '__main__':
