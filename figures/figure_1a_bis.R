@@ -10,7 +10,7 @@ addAlpha <- function(col, alpha = .25) {
 colors <- brewer.pal(7, "Dark2")
 alpha.cols <- sapply(colors, addAlpha)
 
-pdf('figure_1a.pdf', width=5, height=4)
+pdf('figure_1a_bis.pdf', width=5, height=4)
 
 plot(
   NA,
@@ -149,15 +149,15 @@ map_time_to_coord <- function(x, y_base, step=0.5) {
   return(do.call(rbind, coords))
 }
 
-orth_1_pts <- map_time_to_coord(orth_1, 1)
-orth_2_pts <- map_time_to_coord(orth_2, 1)
-mean_pts  <- map_time_to_coord(mean, 1)
+orth_1_pts <- map_time_to_coord(orth_1, 1.5)
+orth_2_pts <- map_time_to_coord(orth_2, 1.5)
+mean_pts  <- map_time_to_coord(mean, 1.5)
 diff_pts <- matrix(c(
-  0.8, 2.5,
-  1.3, 2.7,
-  2, 2.9,
-  2.8, 2.8,
-  3.4, 3.2
+  0.8, 3.2,
+  1.3, 3,
+  2, 2.6,
+  2.7, 1.5,
+  3.8, 0.7
 ), ncol = 2, byrow = TRUE)
 
 # Smooth lines
@@ -183,18 +183,28 @@ for (i in 1:nrow(mean_pts)) {
 
 for (i in 1:nrow(mean_pts)) {
   
-  x_coord <- (mean_pts[i, 1] + diff_pts[i, 1]) / 2 + 0.2
-  y_coord <- (mean_pts[i, 2] + diff_pts[i, 2]) / 2 + 0.05
+  x_coord <- (mean_pts[i, 1] + diff_pts[i, 1]) / 2 - 0.1
+  y_coord <- (mean_pts[i, 2] + diff_pts[i, 2]) / 2 - 0.5
 
-  if (i == 5) {
+  if (i == 5 ) {
     subscript <- paste0("t", i, ",max") 
-    x_coord <- x_coord + 0.25
+    x_coord <- x_coord + 0.4
+    y_coord <- y_coord + 0.8
     arrow_coord <- x_coord - 0.2
-  } else {
+   
+  }
+  else {
     subscript <- paste0("t", i)
     arrow_coord <- x_coord
 
   }
+
+  if(i == 2 || i == 3 ) {
+    y_coord <- y_coord - 0.3  
+    x_coord <- x_coord + 0.2
+    arrow_coord <- x_coord 
+
+}
 
   text(
     x = x_coord,

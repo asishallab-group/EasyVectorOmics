@@ -275,4 +275,56 @@ text(
   cex = .8
 )
 
+# -------- Inset: Viewing Geometry Schematic (top-right) --------
+par(fig = c(0.5, 1, 0.65, 1), new = TRUE)
+par(mar = c(0, 0, 0, 0))
+plot(NA, xlim = c(-2, 6), ylim = c(-2, 6), asp = 1, axes = FALSE, xlab = "", ylab = "")
+
+# Define points
+origin <- c(1,1.5)
+tissueX <- c(4.5, 1.5)
+tissueY <- c(1, 5)
+tissueZ <- c(3.5, 2.8)
+diagonal <- c(4, 4.5)
+
+# Draw RAP plane (parallelogram for 3D effect)
+polygon(
+  x = c(-2, 1, 4.3, 1.3),
+  y = c(2.8, 4, 0.2, -1),
+  border = "gray50",
+  col = "gray90"
+)
+
+# Origin
+# points(origin[1], origin[2], pch = 16)
+
+# # Axes arrows
+arrows(origin[1], origin[2], tissueX[1], tissueX[2], length = 0.08, lwd = 1.2)
+arrows(origin[1], origin[2], tissueY[1], tissueY[2], length = 0.08, lwd = 1.2)
+arrows(origin[1], origin[2], tissueZ[1], tissueZ[2], length = 0.08, lwd = 1.2)
+arrows(origin[1], origin[2], diagonal[1], diagonal[2], length = 0, lwd = 1.2, lty = 2, col=colors[[4]])
+
+# # Labels
+text(tissueX[1] + 0.1, tissueX[2], TeX("\\textit{tissue X}"), cex = 0.6, pos = 4)
+text(tissueY[1], tissueY[2] - 0.5, TeX("\\textit{tissue Y}"), cex = 0.6, pos = 3)
+text(tissueZ[1] + 0.1, tissueZ[2], TeX("\\textit{tissue Z}"), cex = 0.6, pos = 4)
+text(diagonal[1] - 0.7, diagonal[2] + 0.1, "Diagonal", cex = 0.6, pos = 4, col=colors[[4]])
+text(3.8, -1, "RAP", font = 1, cex = 0.8)
+
+# # Angle arc from X to diagonal
+
+origin <- c(1, 1.5)
+
+# angle 
+theta <- seq(2.5, pi/4, length.out = 100)
+# angle radius
+r <- 1.2
+
+# angle points
+x_arc <- origin[1] + r * cos(theta)
+y_arc <- origin[2] + r * sin(theta)
+
+# Draw angle
+lines(x_arc, y_arc, col = "deeppink", lwd = 2)
+
 dev.off()

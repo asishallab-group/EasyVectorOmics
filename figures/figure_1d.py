@@ -4,10 +4,11 @@ from scipy.interpolate import make_interp_spline
 from sys import argv
 np.random.seed(2025)
 plt.rcParams.update({"figure.dpi": 200})
+RELEVANT_ARROW_SIZE = 7
 
 
 def main():
-    plot_slide_4()
+    plot_1d()
     plt.savefig(argv[0].rsplit(".", 1)[0] + ".png", bbox_inches='tight')
 
 
@@ -29,12 +30,12 @@ def draw_smooth_line(ax, points, k=2, periodic=False, label="", label_move_rel=(
     ax.plot(x_smooth, y_smooth, linestyle='-', color=color)
 
     mid_index = len(x_smooth) // 2
-    ax.text(x_smooth[mid_index] + label_move_rel[0], y_smooth[mid_index] + label_move_rel[1], label, color=color)
+    ax.text(x_smooth[mid_index] + label_move_rel[0], y_smooth[mid_index] + label_move_rel[1], label, color=color, ha="center")
     ax.set_aspect('equal')  # Maintain aspect ratio for shapes like circles
 
 
 # refers to plot: https://docs.google.com/presentation/d/1T9e2uZamu__GOxcbz7fM81QUgAlvKp5JjUTwnGWbz3w/edit?slide=id.g349a373bb74_0_11#slide=id.g349a373bb74_0_11
-def plot_slide_4():
+def plot_1d():
     fig, ax = plt.subplots()
     ax.set_xlim(0, 125)
     ax.set_ylim(0, 110)
@@ -47,8 +48,8 @@ def plot_slide_4():
     ax.set_yticks(list(range(int(ymin), int(ymax), 7)))
     ax.set_xticklabels([])
     ax.set_yticklabels([])
-    ax.set_xlabel("$tissue\\ x$")
-    ax.set_ylabel("$tissue\\ y$")
+    ax.set_xlabel(r"$tissue\ X$")
+    ax.set_ylabel(r"$tissue\ Y$")
     ax.grid(True, linewidth=0.5, color='gray', alpha=0.2)
 
     # Add arrows at the ends of the axes
@@ -63,158 +64,198 @@ def plot_slide_4():
         def random_arrow(start_x, start_y, end_x, direction=1, length=None):
             if length is None:
                 min_length = max(5, abs(start_x - end_x))
-                length = np.random.uniform(min_length, 8)
+                length = np.random.uniform(min_length, RELEVANT_ARROW_SIZE)
 
             return arrow(start_x, start_y, end_x, direction, length=length)
+
+        high_impact = (
+            arrow(18, 56.5, 7, -1, length=14),
+            arrow(10, 34.5, 17, length=13),
+            arrow(25, 49.5, 22, -1, length=11),
+        )
         return (
-            random_arrow(7, 65, 5),
-            random_arrow(7, 100, 10, -1),
-            random_arrow(42, 40, 40),
+            *high_impact,
+            random_arrow(7, 65, 9),
             random_arrow(112, 45, 113),
             random_arrow(90.5, 97.5, 97.5),
-            random_arrow(21, 95, 25),
             random_arrow(21.5, 20, 15.5, -1),
-            random_arrow(35.5, 105, 32, -1, length=8),
-            random_arrow(70, 40, 69, length=8),
-            random_arrow(97.5, 5, 105.5),
+            random_arrow(35.5, 105, 32, -1, length=7),
+            random_arrow(35.5, 37, 35.5, -1),
+            random_arrow(70, 40, 71, length=7),
+            random_arrow(97.5, 5, 104.5),
             random_arrow(84, 12, 86, -1, length=6),
-            random_arrow(21.5, 80, 17, -1),
             random_arrow(49, 74, 48, -1),
             random_arrow(87, 84.5, 91, -1),
             random_arrow(84.5, 61, 80, -1),
+            random_arrow(31, 6.5, 35),
+            random_arrow(108, 21.5, 111, -1),
+            random_arrow(65, 70.5, 68, -1),
+            random_arrow(56, 38.5, 59, -1),
+            random_arrow(117, 70.5, 120, -1),
+            random_arrow(115, 28, 110, -1),
         )
 
     # first from left
-    def first_flux(color="blue"):
-        # Define the arrows
+    def left_blue(color="blue"):
+        # Define the arrows, starting from top
         arrows = (
-            arrow(14, 30, 20),
-            arrow(21, 43, 26, length=13),
-            arrow(28, 58, 31, length=12),
-            arrow(32.8, 71, 39),
-            arrow(40, 83, 43, length=17)
+            arrow(21.5, 100, 17, length=10),
+            arrow(14.5, 95, 7, length=11),
+            arrow(21.5, 90, 16, length=10),
+            arrow(28.5, 83, 23, length=11),
+            arrow(28.5, 72, 19, length=13),
+            arrow(42.5, 63, 35, length=13),
+            arrow(35.5, 56, 31, length=10),
+            arrow(44, 48.5, 38, length=14),
         )
 
-        # Create a smoother line using interpolation
-        arrow_xy = np.concatenate([[xy for xy, _ in arrows], [arrows[-1][-1]]])
-        arrow_xy[:, 0] -= 4
-        arrow_xy[:, 1] += 3.5
-        draw_smooth_line(ax, arrow_xy, k=2, color=color)
-        arrow_xy[:, 0] += 8
-        arrow_xy[:, 1] -= 7
-        draw_smooth_line(ax, arrow_xy, k=2, color=color)
+        route_left_line = [
+            (arrows[1][1][0] - 5, arrows[1][1][1] + 1),
+            (arrows[4][1][0] - 5, arrows[4][1][1]),
+            (arrows[6][1][0] - 5, arrows[6][1][1]),
+            (arrows[7][0][0] - 9, arrows[7][0][1]),
+        ]
+        draw_smooth_line(ax, route_left_line, color=color, k=2)
+
+        route_right_line = [
+            (arrows[0][1][0] + 4, arrows[0][1][1] + 1),
+            (arrows[3][0][0] + 5, arrows[3][0][1]),
+            (arrows[5][0][0] + 3, arrows[5][0][1] + 3),
+            (arrows[7][0][0] + 10, arrows[7][0][1]),
+        ]
+        draw_smooth_line(ax, route_right_line, color=color, k=2)
+
         return arrows
 
-    # second from left
-    def second_flux(color="blue"):
-        # Define the arrows
-        begin_arm = (
-            arrow(56, 55, 55.8, -1, length=9),
-        )
-        right_split = (
-            arrow(52.5, 25, 47, -1, length=13),
-            arrow(56, 40, 54.5, -1),
-        )
-        left_split = (
-            arrow(49.5, 34, 39, -1, length=13),
-            arrow(35, 21.5, 30, -1),
-        )
-
-        # left
-        draw_smooth_line(ax, [(50, 56), (48, 42), (40, 33), (32, 26), (23, 10)], k=2, color=color)
-        # right
-        draw_smooth_line(ax, [(61, 54), (59, 30), (56, 20), (51, 9)], k=2, color=color)
-        # bottom
-        draw_smooth_line(ax, [(36, 9), (41, 19), (40, 10)], k=2, color=color, label="split", label_move_rel=(-15, -15))
-        return *begin_arm, *right_split, *left_split
-
-    # third from left, the one below the circle with two arrows
-    def third_flux(color="blue"):
+    # second from left, the one below the circle with two arrows
+    def right_blue(color="blue"):
         arrows = (
-            arrow(72, 16, 63, -1),
-            arrow(78, 27, 74, -1, length=9)
+            arrow(56, 16, 52),
+            arrow(56, 10, 47),
+            arrow(63, 2, 59, length=12)
         )
 
-        # Create a smoother line using interpolation
-        arrow_xy = np.concatenate(arrows)[1:]
-        arrow_xy = arrow_xy[arrow_xy[:, 0].argsort()]
-        arrow_xy[:, 0] -= 4
-        arrow_xy[:, 1] += 3.5
-        draw_smooth_line(ax, arrow_xy, k=2, color=color)
-        # flux(arrow_xy, side="left")
-        arrow_xy[:, 0] += 8
-        arrow_xy[:, 1] -= 7
-        draw_smooth_line(ax, arrow_xy, k=2, color=color)
+        route_left_line = [
+            (arrows[0][1][0] - 10, arrows[0][1][1] - 2),
+            (arrows[1][1][0] - 3, arrows[1][1][1] + 1),
+            (arrows[1][0][0] - 7, arrows[1][0][1]),
+            (arrows[1][0][0] - 3, arrows[1][0][1] - 4),
+            (arrows[2][0][0] - 7, arrows[2][0][1]),
+        ]
+        draw_smooth_line(ax, route_left_line, color=color, k=2)
+
+        route_right_line = [
+            (arrows[0][1][0] + 5, arrows[0][1][1]),
+            (arrows[0][0][0] + 5, arrows[0][0][1] + 1),
+            (arrows[2][1][0] + 5, arrows[2][1][1] - 1),
+            (arrows[2][0][0] + 5, arrows[2][0][1] + 3),
+        ]
+        draw_smooth_line(ax, route_right_line, color=color, k=2)
+
         return arrows
 
     # the circle
-    def fourth_flux(color="blue"):
+    def chaotic(color="blue"):
         arrows = (
             # upper
-            arrow(70, 95, 79),
+            arrow(63, 95, 64, length=10),
 
-            # left up-left
-            arrow(64, 88, 55),
-            # right up-left
-            arrow(74, 83, 68, length=8),
+            # left from upper
+            arrow(57, 98.5, 59, -1, length=9),
 
-            # left downer
-            arrow(67, 85, 64, -1, length=10),
-            # right downer
-            arrow(70, 80, 71, -1, length=12.5),
+            # points to bottom-left
+            arrow(63.5, 91, 55, -1, length=11),
+
+            # bottom, points up
+            arrow(59, 76.5, 62, length=8),
+
+            # middle one, points down (not bottom right)
+            arrow(65, 91.5, 66, -1, length=10),
+
+            # middle one, points bottom-right
+            arrow(66, 98.5, 71, -1, length=10),
+
+            # points right, bottom one
+            arrow(69.5, 86, 78, length=10),
+
+            # points right, top one
+            arrow(69.5, 98.5, 79.4, length=10),
         )
         # Define points for plotting
-        pointing_out = [
-            (arrows[0][1][0] + 4, arrows[0][1][1] + 1),
-            (arrows[1][1][0] - 3, arrows[1][1][1] + 3),
-            (arrows[-2][1][0] - 3, arrows[-2][1][1] - 3),
-            (arrows[-1][1][0] + 3, arrows[-1][1][1] - 3),
+        route = [
+            (start := (arrows[0][1][0] + 4, arrows[0][1][1] + 4)),
+            (arrows[1][0][0] - 3, arrows[1][0][1]),
+            (arrows[2][1][0] - 3, arrows[2][1][1] - 3),
+            (arrows[3][0][0] + 3, arrows[3][0][1] - 1),
+            (arrows[-2][1][0] + 3, arrows[-2][1][1] - 1),
+            (arrows[-1][1][0] + 1, arrows[-1][1][1] + 4),
+            start,
         ]
-        pointing_in = [(arrows[2][0][0] + 3, arrows[2][0][1])]
 
         # Combine points and make it periodic (ensure looping by appending the start point)
-        arrow_xy = np.array(pointing_out + pointing_in + [pointing_out[0]])
-        draw_smooth_line(ax, arrow_xy, periodic=True, color=color, label="chaotic", label_move_rel=(-17, 42))
+        draw_smooth_line(ax, route, periodic=True, color=color, label="Photosynthesis", label_move_rel=(0, 35))
 
         return arrows
 
     # the last one, first from right
-    def fifth_flux(color="blue"):
-        # Define the arrows
+    def merged(color="blue"):
+        # Define the arrows, starting from top right
+        merged = (
+            arrow(105, 83.5, 116, length=14),
+            arrow(101, 76, 102, length=10),
+            arrow(94, 62.5, 100, length=13),
+            arrow(90.5, 44, 100, length=23),
+            arrow(97.5, 51, 105, length=12),
+        )
         left_arm = (
-            arrow(81.5, 34.5, 91, length=13),
+            arrow(80, 27.5, 86, length=12),
+            arrow(77, 15, 82, length=10),
         )
         right_arm = (
-            arrow(105, 20, 101, length=12),
-            arrow(100, 34.5, 98, length=10),
-        )
-        merged_arms = (
-            arrow(95, 55, 98),
-            arrow(101, 76.5, 107, length=10),
-            arrow(112, 97.5, 123, length=14),
+            arrow(95, 27, 95.5, length=10),
+            arrow(98, 10, 94, length=14),
         )
 
-        # Create a smoother line using interpolation
-        arrow_xy = np.concatenate([*left_arm, *merged_arms])
-        arrow_xy[:, 0] -= 4
-        arrow_xy[:, 1] += 3.5
-        draw_smooth_line(ax, arrow_xy[[0, 2, -3, -1]], k=2, color=color)
-        # right line
-        draw_smooth_line(ax, [(110, 20), (104, 35), (102, 50), (106, 70), (112, 85), (122, 98)], k=2, label="merged", label_move_rel=(3, 4), color=color)
-        # bottom curve
-        draw_smooth_line(ax, [(86, 32), (93, 36), (96.5, 28), (99, 20)], k=2, color=color)
-        return *left_arm, *right_arm, *merged_arms
+        route_left_line = [
+            (merged[0][1][0], merged[0][1][1] + 5),
+            (merged[1][1][0] - 3, merged[1][1][1] + 1),
+            (merged[2][1][0] - 6, merged[2][1][1]),
+            (merged[2][0][0] - 4, merged[2][0][1]),
+
+            (left_arm[0][1][0] - 5, left_arm[0][1][1]),
+            (left_arm[1][0][0] - 6, left_arm[1][0][1]),
+        ]
+        draw_smooth_line(ax, route_left_line, color=color, k=2)
+
+        route_right_line = [
+            (merged[0][1][0] + 3, merged[0][1][1] - 5),
+            (merged[1][0][0] + 12, merged[1][0][1]),
+            (merged[4][1][0] + 3, merged[4][1][1] + 1),
+
+            (right_arm[0][1][0] + 5, right_arm[0][1][1]),
+            (right_arm[1][0][0] + 6, right_arm[1][0][1]),
+        ]
+        draw_smooth_line(ax, route_right_line, color=color, k=2, label="laminar\nflow", label_move_rel=(10, -5))
+
+        route_bottom_line = [
+            (left_arm[1][0][0] + 6, left_arm[1][0][1] - 3),
+            (right_arm[1][1][0] - 6, right_arm[1][1][1]),
+            (right_arm[1][0][0] - 6, right_arm[1][0][1]),
+        ]
+        draw_smooth_line(ax, route_bottom_line, color=color, k=2)
+        return *merged, *left_arm, *right_arm
 
     arrows = (
         *standalone_arrows(),
-        *first_flux(),
-        *second_flux("#7DB00F"),
-        *third_flux(),
-        *fourth_flux("#B39A28"),
-        *fifth_flux("#D9591B")
+        *left_blue("#003CE0"),
+        *right_blue("#003CE0"),
+        *chaotic("#7DB00F"),
+        *merged("#D9591B")
     )
     for start, end in arrows:
-        ax.annotate("", xy=end, xytext=start, arrowprops=dict(arrowstyle='->'))
+        arrow_len = ((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2) ** .5
+        color = "black" if arrow_len > RELEVANT_ARROW_SIZE else "gray"
+        ax.annotate("", xy=end, xytext=start, arrowprops=dict(arrowstyle='->', color=color))
 
 
 if __name__ == '__main__':
