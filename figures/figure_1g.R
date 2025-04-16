@@ -1,5 +1,6 @@
 require(RColorBrewer)
-colors <- brewer.pal(12,"Paired")
+colors <- brewer.pal(7,"Dark2")
+colors2 <- brewer.pal(12,"Paired")
 
 pdf("figure_1g.pdf", width = 12, height = 6)
 par(mfrow = c(1, 2), mar = c(1, 1, 1, 1))
@@ -126,7 +127,7 @@ y1 <- y1 / max(y1) * 3 # Escalar altura
 y2 <- 1 + 0.9 * tanh((x - 3))  # Ajustar ubicación y altura
 
 # Dibujar ambas curvas
-lines(x, y1, lwd = 4, col = colors[[10]])
+lines(x, y1, lwd = 4, col = colors2[[10]])
 
 # Valores de x
 x <- seq(1, 8, length.out = 500)
@@ -140,6 +141,6 @@ y <- dnorm(x, mean = 1.8, sd = 1.2) -
 y <- y / max(y) * 2.7
 
 # Dibujar curva
-lines(x, y, lwd = 4, col = colors[[12]])
+lines(x, y, lwd = 4, col = colors2[[12]])
 
 dev.off()
