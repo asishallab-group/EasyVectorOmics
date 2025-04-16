@@ -18,43 +18,44 @@ vec_alpha.cols <- c(alpha.cols[[2]], alpha.cols[[3]], alpha.cols[[6]], alpha.col
 
 # Output file
 # pdf('timeSeriesTissueClock_updated_with_ASV.pdf', width = 5, height = 5)
-png('figure_1e.png', width = 800, height = 800)
+# png('figure_1e.png', width = 800, height = 800)
+pdf('figure_1e.pdf', width=10, height=10)
 
 # --- Base Plot Setup ---
 par(mar = c(1, 1, 1, 1)) # Set margins for the main plot
 plot(NA, xlim = c(0, 2.5), ylim = c(0, 2.5), axes = FALSE, xlab = '', ylab = '', asp = 1)
 
 # Legend
-legend(x = 0, y = 2.5,
-       legend = c(TeX('$Viewing \\ angle \\ \\alpha = 30 \\degree :$'),
-                  TeX('$deviation\\ from\\ diag.\\ perspective$')),
-       bty = "n", cex = 2, text.col = c(colors[4], colors[4]))
+# legend(x = -0.25, y = 2.65,
+#        legend = c(TeX('$Viewing \\ angle \\ \\alpha = 30 \\degree :$'),
+#                   TeX('$deviation\\ from\\ diag.\\ perspective$')),
+#        bty = "n", cex = 2.4, text.col = c(colors[4], colors[4]))
 
 # --- Plot Elements ---
 # Point O (Origin)
-O <- c(1, 1)
+O <- c(0.5,1.4)
 points(O[1], O[2], bg = adjustcolor(colors[[1]], alpha.f = 0.5), col = colors[[1]], pch = 21, cex = 3)
-text(O[1], O[2], label = TeX('$\\textit{O}$'), pos = 2, offset = 1, col = colors[[1]], cex = 2)
+text(O[1], O[2], label = TeX('$\\textit{O}$'), pos = 2, offset = 1, col = colors[[1]], cex = 2.5)
 
 
 # Point D (Space origin)
-D <- c(1.7, 0.5)
+D <- c(1.7, 0.4)
 points(D[1], D[2], bg = alpha.cols[4], col = colors[4], pch = 21, cex = 2)
-text(x = 1.5, y = 0.5, label = TeX('$\\alpha = 30^\\circ$'), cex = 1.5, col=colors[4])
-text(x = 2.1, y = 0.5, label = TeX('Space origin and axes'), cex = 1.5)
+text(x = 1.9, y = 0.5, label = TeX('$\\alpha = 30 \\degree$'), cex = 2.2, col=colors[4])
+text(x = 2.3, y = 0, label = TeX('Space-Orig'), cex = 2.2)
 
 # Anchor axis (AA)
 lines(c(O[1], O[1]), c(O[2], O[2] + 1), col = "#bdbdbd", lwd = 2)
-text(O[1]+0.3, O[2]+1.1, label = "Anchor Axis (AA), \nprojected tissue X", adj = 1, col = "gray40", cex = 2)
+text(O[1]+0.08, O[2]+1.1, label = "AA", adj = 1, col = "gray40", cex = 2.3)
 
 # New axes at D
 axis_length <- 0.2
 lines(c(D[1], D[1]), c(D[2], D[2] + axis_length), col = "black", lwd = 1.3)
 lines(c(D[1], D[1] - axis_length), c(D[2], D[2] - axis_length), col = "black", lwd = 1.3)
 lines(c(D[1], D[1] + axis_length), c(D[2], D[2] - axis_length), col = "black", lwd = 1.3)
-text(D[1], D[2] + axis_length + 0.01, label = TeX('\\textit{tissue X}'), pos = 3, cex = 1.5)
-text(D[1]-0.2, D[2] + axis_length - .47, label = TeX('\\textit{tissue Y}'), pos = 3, cex = 1.5)
-text(D[1]+0.25 , D[2] + axis_length - .47, label = TeX('\\textit{tissue Z}'), pos = 3, cex = 1.5)
+text(D[1], D[2] + axis_length + 0.01, label = TeX('\\textit{tissue X}'), pos = 3, cex = 2)
+text(D[1]-0.2, D[2] + axis_length - .5, label = TeX('\\textit{tissue Y}'), pos = 3, cex = 2)
+text(D[1]+0.25 , D[2] + axis_length - .5, label = TeX('\\textit{tissue Z}'), pos = 3, cex = 2)
 
 # Dashed vector D
 segments(O[1], O[2], D[1], D[2], col = colors[4], lwd = 1.5, lty = 2)
@@ -63,38 +64,38 @@ segments(O[1], O[2], D[1], D[2], col = colors[4], lwd = 1.5, lty = 2)
 clock_pts <- list(
   t1 = O + c(0.2, 0.65),
   t2 = O + c(0.65, 0.1),
-  t3 = O + c(0.2, -0.6),
+  t3 = O + c(0.15, -0.7),
   t4 = O + c(-0.5, -0.3)
 )
 
 # Draw vectors and labels
 for (i in 1:4) {
   pt <- clock_pts[[i]]
-  arrows(O[1], O[2], pt[1], pt[2], col = vec_colors[i], lwd = 4, length = 0.13)
+  arrows(O[1], O[2], pt[1], pt[2], col = vec_colors[i], lwd = 5, length = 0.13)
   points(pt[1], pt[2], pch = 21, bg = vec_alpha.cols[i], col = vec_colors[i], cex = 3)
 
  
   # Define a default horizontal offset
-  x_offset <- 0.02
+  x_offset <- 0.03
 
   # If i is 3, use a larger offset to move it right
   if (i == 3) {
-    x_offset <- 0.08 # Adjust this value (e.g., 0.05, 0.1) to move it more or less
+    x_offset <- 0.15 # Adjust this value (e.g., 0.05, 0.1) to move it more or less
   }
 
 
   # Use the calculated x_offset for the text position
   # *** MODIFIED: Added 'clock' superscript & used x_offset ***
-  text(pt[1] + x_offset, pt[2] + .02, label = TeX(paste0('$t_', i, '^{{clock}}$')), pos = 3, col = vec_colors[i], cex = 2)
-  text(pt[1] + x_offset, pt[2] + .14, label = TeX('$\\rightarrow$'), pos = 3, col = vec_colors[i], cex = 2)
+  text(pt[1] + x_offset, pt[2] + .01, label = TeX(paste0('$t_', i, '^{{clock}}$')), pos = 3, col = vec_colors[i], cex = 3)
+  text(pt[1] + x_offset, pt[2] + .21, label = TeX('$\\rightarrow$'), pos = 3, col = vec_colors[i], cex = 3)
 }
 
 # Phi arcs
 phi_label_positions <- list(
-  c(1.05, 1.33),  # phi_1
-  c(1.25, 1.2),  # phi_2
-  c(1.2, 0.7),  # phi_3
-  c(0.8, 0.66)   # phi_4
+  c(0.58, 1.95),  # phi_1
+  c(0.75, 1.6),  # phi_2
+  c(0.68, 1.1),  # phi_3
+  c(0.35, 1.1)   # phi_4
 )
 anchor_vec_phi <- c(0, 1) # Reference for angle calculation (vertical Anchor Axis)
 for (i in 1:4) {
@@ -106,14 +107,15 @@ for (i in 1:4) {
     center = O,
     border = vec_colors[i],
     col = NA,
-    lwd = 2,
+    lwd = 5,
     rou1 = 0.35 + i * 0.03
   )
   label_pos <- phi_label_positions[[i]]
+
   text(label_pos[1], label_pos[2],
        label = TeX(paste0('$\\varphi_', i, '$')),
        col = vec_colors[i],
-       cex = 1.8)
+       cex = 2.5)
 }
 
 # --- *** NEW: Calculate Angles and ASV *** ---
@@ -152,7 +154,7 @@ asv_deg <- asv_rad * 180 / pi
 
 # Reset graphics parameters for insets (margins, position relative to axis)
 par(mgp = c(2, 0.5, 0)) # control axis title, label, line positions
-par(mar = c(3, 3, 1, 1)) # Smaller margins for insets: c(bottom, left, top, right)
+par(mar = c(3, 3.5, 1, 1)) # Smaller margins for insets: c(bottom, left, top, right)
 
 # --- Inset 1: distance vs time ---
 # Define plotting region: c(xmin, xmax, ymin, ymax) in normalized device coordinates (0-1)
@@ -169,17 +171,17 @@ plot(
   xlab = "Time",        	
   main = "",        # Turn off main title
   col = "black",
-  cex.axis = 1,
-  cex.lab = 1.3     # Slightly smaller label size for insets
+  cex.axis = 1.3,
+  cex.lab = 1.7     # Slightly smaller label size for insets
 )
 # No axis(1, ...) here
-points(1:4, distances, pch = 16, col = vec_colors, cex = 1.5) # Smaller points for inset
+points(1:4, distances, pch = 16, col = vec_colors, cex = 3) # Smaller points for inset
 axis(1, at = 1:4, labels = paste0("t", 1:4), cex.axis = 0.8)
 # Color points: Use grey for the first point (ASV=0 by definition)
 # and then the corresponding vector colors for the subsequent differences
-asv_point_colors <- c(vec_colors[1:4]) # t2-t1 uses t2 color, t3-t2 uses t3 color, etc.
-points(1:4, asv_deg, pch = 16, col = asv_point_colors, cex = 1.5)
-box()
+# asv_point_colors <- c(vec_colors[1:4]) # t2-t1 uses t2 color, t3-t2 uses t3 color, etc.
+# points(1:4, asv_deg, pch = 16, col = asv_point_colors, cex = 3)
+# box()
 
 # --- *** NEW: Inset 2: ASV vs time *** ---
 # Define plotting region below the first inset, aligning left/right edges
@@ -194,15 +196,15 @@ plot(
   xlab = "Time",    # X-axis label (only on the bottom plot)
   main = "",
   col = "black",
-  cex.axis = 1,
-  cex.lab = 1.3
+  cex.axis = 1.3,
+  cex.lab = 1.7
 )
 # Add custom x-axis labels
 axis(1, at = 1:4, labels = paste0("t", 1:4), cex.axis = 0.8)
 # Color points: Use grey for the first point (ASV=0 by definition)
 # and then the corresponding vector colors for the subsequent differences
 asv_point_colors <- c(vec_colors[1:4]) # t2-t1 uses t2 color, t3-t2 uses t3 color, etc.
-points(1:4, asv_deg, pch = 16, col = asv_point_colors, cex = 1.5)
+points(1:4, asv_deg, pch = 16, col = asv_point_colors, cex = 3)
 box()
 
 # --- Finalize ---
@@ -210,3 +212,4 @@ box()
 
 # Optional: Reset graphics parameters if running interactively
 # par(fig = c(0, 1, 0, 1), mar = c(5.1, 4.1, 4.1, 2.1), mgp = c(3, 1, 0))
+dev.off()

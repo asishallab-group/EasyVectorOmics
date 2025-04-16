@@ -261,7 +261,7 @@ def plot_1d():
 
 def add_compass(fig):
     # Add the inset axis for the compass, positioned to the left of the Y-axis
-    compass_ax = fig.add_axes([0.025, 0.44, 0.1, 0.1], polar=True)  # Adjust position
+    compass_ax = fig.add_axes([0.06, 0.1, 0.1, 0.1], polar=True)  # Adjust position
     compass_ax.set_xticks([])
     compass_ax.set_yticks([])
     compass_ax.set_frame_on(False)

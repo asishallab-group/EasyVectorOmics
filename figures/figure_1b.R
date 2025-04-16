@@ -44,7 +44,7 @@ plot(
   # '',
   ylab = TeX('\\textit{tissue} Y'),
   # '',
-  cex.lab = 1.45,
+  cex.lab = 1,
   bty = 'l',
   axes = FALSE
 )
@@ -98,16 +98,18 @@ text(
   label = TeX('$\\textit{o}$'),
   pos = 3,
   offset = 1,
-  col = colors[[1]]
+  col = colors[[1]],
+  cex = 1.5
 )
 
 text(
   orth[1],
-  orth[2] + .1,
+  orth[2] + .17,
   label = TeX('$\\rightarrow$'),
   pos = 3,
   offset = 1,
-  col = colors[[1]]
+  col = colors[[1]],
+  cex = 1
 )
 
 text(
@@ -117,17 +119,17 @@ text(
   pos = 4,
   offset = 2.25,
   col = colors[[1]],
-  cex = 1.0
+  cex = 1.5
 )
 
 text(
-  orth[1] + .09,
-  orth[2] + .11,
+  orth[1] + .19,
+  orth[2] + .18,
   label = TeX('$\\rightarrow$'),
   pos = 4,
   offset = 2.25,
   col = colors[[1]],
-  cex = 1.0
+  cex = 1
 )
 
 text(
@@ -136,16 +138,18 @@ text(
   label = TeX('$\\textit{p}$'),
   pos = 1,
   offset = 1.25,
-  col = colors[[2]]
+  col = colors[[2]],
+  cex = 1.5
 )
 
 text(
   dupl[1],
-  dupl[2] + .11,
+  dupl[2] + .16,
   label = TeX('$\\rightarrow$'),
   pos = 1,
   offset = 1.25,
-  col = colors[[2]]
+  col = colors[[2]],
+  cex = 1
 )
 
 text(
@@ -155,17 +159,17 @@ text(
   pos = 3,
   offset = 1.25,
   col = colors[[2]],
-  cex = 1.0
+  cex = 1.5
 )
 
 text(
-  dupl[1] + .14,
-  dupl[2] + .15,
+  dupl[1] + .17,
+  dupl[2] + .22,
   label = TeX('$\\rightarrow$'),
   pos = 3,
   offset = 1.25,
   col = colors[[2]],
-  cex = 1.0
+  cex = 1
 )
 
 text(
@@ -175,17 +179,17 @@ text(
   pos = 3,
   offset = 1.25,
   col = colors[[4]],
-  cex = 1.0
+  cex = 1.5
 )
 
 text(
   1.85,
-  1.78,
+  1.87,
   label = TeX('$\\rightarrow$'),
   pos = 3,
   offset = 1.25,
   col = colors[[4]],
-  cex = 1.0
+  cex = 1
 )
 
 # Calculate vectors
@@ -200,7 +204,8 @@ arrows(
   dupl[2],
   col = colors[[7]],
   lwd = 2.5,
-  length = 0.15
+  length = 0.15,
+  cex = 1.5
 )
 
 # Unit vector
@@ -211,7 +216,8 @@ arrows(
   orth[2] + unit_vec[2] - .05,
   col = colors[[6]],
   lwd = 2.5,
-  length = 0.1
+  length = 0.1,
+  cex = 1.5
 )
 
 
@@ -222,34 +228,34 @@ text(
   label = TeX('$s_{\\textit{po}}$'),
   pos = 3,
   col = colors[[7]],
-  cex = 1.0
+  cex = 1.5
 )
 
 text(
   (orth[1] + dupl[1]) / 2 + .14,
-  (orth[2] + dupl[2]) / 2 + .05,
+  (orth[2] + dupl[2]) / 2 + .14,
   label = TeX('\\rightarrow$'),
   pos = 3,
   col = colors[[7]],
-  cex = 1.0
+  cex = 1
 )
 
 text(
-  orth[1] + .15,
-  orth[2] - .15,
+  orth[1] + .4,
+  orth[2] - .3,
   label = TeX('${s}_{\\textit{po}}^{norm}$'),
   pos = 1,
   col = colors[[6]],
-  cex = 1.0
+  cex = 1.5
 )
 
 text(
-  orth[1] + .04,
-  orth[2] - .08,
+  orth[1] + .2,
+  orth[2] - .2,
   label = TeX('$\\rightarrow$'),
   pos = 1,
   col = colors[[6]],
-  cex = 1.0
+  cex = 1
 )
 
 lines(c(0, 2), c(0, 2), col = colors[[4]], lwd = 2)
