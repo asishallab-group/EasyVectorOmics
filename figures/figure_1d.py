@@ -3,7 +3,7 @@ import numpy as np
 from scipy.interpolate import make_interp_spline
 from sys import argv
 np.random.seed(2025)
-plt.rcParams.update({"figure.dpi": 200})
+plt.rcParams.update({"figure.dpi": 200, "font.size": 15})
 RELEVANT_ARROW_SIZE = 7
 
 
@@ -51,6 +51,7 @@ def plot_1d():
     ax.set_xlabel(r"$tissue\ X$")
     ax.set_ylabel(r"$tissue\ Y$")
     ax.grid(True, linewidth=0.5, color='gray', alpha=0.2)
+    add_compass(fig)
 
     # Add arrows at the ends of the axes
     ax.plot(1, 0, ">k", transform=ax.get_yaxis_transform(), clip_on=False)  # Arrow for x-axis
@@ -80,7 +81,7 @@ def plot_1d():
             random_arrow(90.5, 97.5, 97.5),
             random_arrow(21.5, 20, 15.5, -1),
             random_arrow(35.5, 105, 32, -1, length=7),
-            random_arrow(35.5, 37, 35.5, -1),
+            random_arrow(35.5, 30, 35.5, -1),
             random_arrow(70, 40, 71, length=7),
             random_arrow(97.5, 5, 104.5),
             random_arrow(84, 12, 86, -1, length=6),
@@ -90,7 +91,7 @@ def plot_1d():
             random_arrow(31, 6.5, 35),
             random_arrow(108, 21.5, 111, -1),
             random_arrow(65, 70.5, 68, -1),
-            random_arrow(56, 38.5, 59, -1),
+            random_arrow(56, 40.5, 59, -1),
             random_arrow(117, 70.5, 120, -1),
             random_arrow(115, 28, 110, -1),
         )
@@ -142,7 +143,7 @@ def plot_1d():
             (arrows[1][0][0] - 3, arrows[1][0][1] - 4),
             (arrows[2][0][0] - 7, arrows[2][0][1]),
         ]
-        draw_smooth_line(ax, route_left_line, color=color, k=2)
+        draw_smooth_line(ax, route_left_line, color=color, label="DOI\nsubfields", label_move_rel=(-2, 22.5))
 
         route_right_line = [
             (arrows[0][1][0] + 5, arrows[0][1][1]),
@@ -150,7 +151,7 @@ def plot_1d():
             (arrows[2][1][0] + 5, arrows[2][1][1] - 1),
             (arrows[2][0][0] + 5, arrows[2][0][1] + 3),
         ]
-        draw_smooth_line(ax, route_right_line, color=color, k=2)
+        draw_smooth_line(ax, route_right_line, color=color)
 
         return arrows
 
@@ -235,7 +236,7 @@ def plot_1d():
             (right_arm[0][1][0] + 5, right_arm[0][1][1]),
             (right_arm[1][0][0] + 6, right_arm[1][0][1]),
         ]
-        draw_smooth_line(ax, route_right_line, color=color, k=2, label="laminar\nflow", label_move_rel=(10, -5))
+        draw_smooth_line(ax, route_right_line, color=color, k=2, label="laminar\nflow", label_move_rel=(7, -29))
 
         route_bottom_line = [
             (left_arm[1][0][0] + 6, left_arm[1][0][1] - 3),
@@ -256,6 +257,46 @@ def plot_1d():
         arrow_len = ((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2) ** .5
         color = "black" if arrow_len > RELEVANT_ARROW_SIZE else "gray"
         ax.annotate("", xy=end, xytext=start, arrowprops=dict(arrowstyle='->', color=color))
+
+
+def add_compass(fig):
+    # Add the inset axis for the compass, positioned to the left of the Y-axis
+    compass_ax = fig.add_axes([0.06, 0.1, 0.1, 0.1], polar=True)  # Adjust position
+    compass_ax.set_xticks([])
+    compass_ax.set_yticks([])
+    compass_ax.set_frame_on(False)
+
+    # Add compass arrows using annotate
+    # Draw East arrow
+    compass_ax.annotate('', xy=(0, 0.5), xytext=(0, 0),
+                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=8),
+                        ha='center', va='center')
+
+    # Draw North arrow
+    compass_ax.annotate('', xy=(np.pi/2, 0.5), xytext=(np.pi/2, 0),
+                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=8),
+                        ha='center', va='center')
+
+    # Draw West arrow
+    compass_ax.annotate('', xy=(np.pi, 0.5), xytext=(np.pi, 0),
+                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=8),
+                        ha='center', va='center')
+
+    # Draw South arrow
+    compass_ax.annotate('', xy=(3*np.pi/2, 0.5), xytext=(3*np.pi/2, 0),
+                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=8),
+                        ha='center', va='center')
+
+    # Label directions
+    directions = ['E', 'N', 'W', 'S']
+    angles = [0, np.pi/2, np.pi, 3*np.pi/2]
+    for angle, direction in zip(angles, directions):
+        compass_ax.text(angle, 1, direction, ha='center', va='center', fontsize=12, fontweight='bold')
+
+    # Add direction of interest (DOI)
+    compass_ax.annotate('DOI', xy=(0, 0), xytext=(3*np.pi/4, 2),
+                        arrowprops=dict(arrowstyle='-'),
+                        ha='center')
 
 
 if __name__ == '__main__':
