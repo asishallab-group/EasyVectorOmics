@@ -1,4 +1,8 @@
 library(latex2exp)
+library(RColorBrewer)
+
+colors <- brewer.pal(9, "Set1")  
+
 
 pdf("figure_1f.pdf", width = 10, height = 4)
 par(mar = c(0, 0, 0, 0))
@@ -93,7 +97,7 @@ for (i in 1:5) {
   arrows(
     x0 + (i - 0.5) * dx, subfield_y - 0.2,
     x0 + (i - 0.5) * dx, y0 + 0.1,
-    length = 0.08, lwd = 1.2, lty = 3, col = "gray40"
+    length = 0.08, lwd = 1, lty = 1, col = "gray70"
   )
 }
 
@@ -117,22 +121,22 @@ draw.ellipse(
 arrows(
   x0 = x_start + 5, y0 = y0,
   x1 = x_start + 7, y1 = y0 + 1.3,
-  col = "blue", lwd = 7, length = 0.1
+  col = colors[2], lwd = 7, length = 0.1
 )
-text(x_start + 7, y0 + 0.5 , labels = expression(f[m]), col = "blue", cex = 2)
+text(x_start + 7, y0 + 0.5 , labels = expression(f[m]), col = colors[2], cex = 2)
 
 # Rotation vector (horizontal with round head)
 arrows(
   x0 = x_start + 5, y0 = y0 - 0.5,
   x1 = x_start + 7, y1 = y0 - 0.5,
-  col = "red", lwd = 7, length = 0
+  col = colors[1], lwd = 7, length = 0
 )
 
 points(
   x = x_start + 7,
   y = y0 - 0.5,
   pch = 16,
-  col = "red",
+  col = colors[1],
   cex = 1.8
 )
 
@@ -153,7 +157,7 @@ lines(
   x = cx + r * cos(theta),
   y = cy + r * sin(theta),
   lwd = 4,
-  col = "red"
+  col = colors[1]
 )
 
 arrows(
@@ -162,11 +166,11 @@ arrows(
   x1 = cx + r * cos(theta[1]),
   y1 = cy + r * sin(theta[1]),
   length = 0.07,
-  col = "red",
+  col = colors[1],
   lwd = 4
 )
 
 # Label for rotation vector
-text(x_start + 8, y0 - 0.5 , labels = expression(r[m]), col = "red", cex = 2)
+text(x_start + 8, y0 - 0.5 , labels = expression(r[m]), col = colors[1], cex = 2)
 
 dev.off()
