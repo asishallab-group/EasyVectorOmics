@@ -267,37 +267,37 @@ def add_compass(fig):
     compass_ax.set_yticks([])
     compass_ax.set_frame_on(False)
 
+    # Add direction of interest (DOI)
+    compass_ax.annotate('DOI', xy=(0, 0), xytext=(3*np.pi/4, 2),
+                        arrowprops=dict(arrowstyle='<-', color=DOI_COLOR),
+                        ha='center', color=DOI_COLOR)
+
     # Add compass arrows using annotate
     # Draw East arrow
-    compass_ax.annotate('', xy=(0, 0.5), xytext=(0, 0),
-                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=8),
+    compass_ax.annotate('', xy=(0, 0.75), xytext=(0, 0),
+                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=8, headlength=17),
                         ha='center', va='center')
 
     # Draw North arrow
-    compass_ax.annotate('', xy=(np.pi/2, 0.5), xytext=(np.pi/2, 0),
-                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=8),
+    compass_ax.annotate('', xy=(np.pi/2, 0.75), xytext=(np.pi/2, 0),
+                        arrowprops=dict(facecolor='black', shrink=0, width=10, headwidth=8, headlength=17),
                         ha='center', va='center')
 
     # Draw West arrow
-    compass_ax.annotate('', xy=(np.pi, 0.5), xytext=(np.pi, 0),
-                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=8),
+    compass_ax.annotate('', xy=(np.pi, 0.75), xytext=(np.pi, 0),
+                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=8, headlength=17),
                         ha='center', va='center')
 
     # Draw South arrow
-    compass_ax.annotate('', xy=(3*np.pi/2, 0.5), xytext=(3*np.pi/2, 0),
-                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=8),
+    compass_ax.annotate('', xy=(3*np.pi/2, 0.75), xytext=(3*np.pi/2, 0),
+                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=8, headlength=17),
                         ha='center', va='center')
 
     # Label directions
     directions = ['E', 'N', 'W', 'S']
     angles = [0, np.pi/2, np.pi, 3*np.pi/2]
     for angle, direction in zip(angles, directions):
-        compass_ax.text(angle, 1, direction, ha='center', va='center', fontsize=12, fontweight='bold')
-
-    # Add direction of interest (DOI)
-    compass_ax.annotate('DOI', xy=(0, 0), xytext=(3*np.pi/4, 2),
-                        arrowprops=dict(arrowstyle='<-', color=DOI_COLOR),
-                        ha='center', color=DOI_COLOR)
+        compass_ax.text(angle, 1.2, direction, ha='center', va='center', fontsize=13, fontweight='bold')
 
 
 if __name__ == '__main__':
