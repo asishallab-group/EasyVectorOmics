@@ -5,6 +5,7 @@ from sys import argv
 np.random.seed(2025)
 plt.rcParams.update({"figure.dpi": 200, "font.size": 15})
 RELEVANT_ARROW_SIZE = 7
+DOI_COLOR = "#003CE0"
 
 
 def main():
@@ -248,8 +249,8 @@ def plot_1d():
 
     arrows = (
         *standalone_arrows(),
-        *left_blue("#003CE0"),
-        *right_blue("#003CE0"),
+        *left_blue(DOI_COLOR),
+        *right_blue(DOI_COLOR),
         *chaotic("#7DB00F"),
         *merged("#D9591B")
     )
@@ -261,7 +262,7 @@ def plot_1d():
 
 def add_compass(fig):
     # Add the inset axis for the compass, positioned to the left of the Y-axis
-    compass_ax = fig.add_axes([0.06, 0.1, 0.1, 0.1], polar=True)  # Adjust position
+    compass_ax = fig.add_axes([0.704, 0.82, 0.1, 0.1], polar=True)  # Adjust position
     compass_ax.set_xticks([])
     compass_ax.set_yticks([])
     compass_ax.set_frame_on(False)
@@ -295,8 +296,8 @@ def add_compass(fig):
 
     # Add direction of interest (DOI)
     compass_ax.annotate('DOI', xy=(0, 0), xytext=(3*np.pi/4, 2),
-                        arrowprops=dict(arrowstyle='-'),
-                        ha='center')
+                        arrowprops=dict(arrowstyle='<-', color=DOI_COLOR),
+                        ha='center', color=DOI_COLOR)
 
 
 if __name__ == '__main__':
