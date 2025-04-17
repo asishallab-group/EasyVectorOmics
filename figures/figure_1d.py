@@ -275,22 +275,22 @@ def add_compass(fig):
     # Add compass arrows using annotate
     # Draw East arrow
     compass_ax.annotate('', xy=(0, 0.75), xytext=(0, 0),
-                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=8, headlength=17),
+                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=9, headlength=17.5),
                         ha='center', va='center')
 
     # Draw North arrow
     compass_ax.annotate('', xy=(np.pi/2, 0.75), xytext=(np.pi/2, 0),
-                        arrowprops=dict(facecolor='black', shrink=0, width=10, headwidth=8, headlength=17),
+                        arrowprops=dict(facecolor='black', shrink=0, width=10, headwidth=9, headlength=17.5),
                         ha='center', va='center')
 
     # Draw West arrow
     compass_ax.annotate('', xy=(np.pi, 0.75), xytext=(np.pi, 0),
-                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=8, headlength=17),
+                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=9, headlength=17.5),
                         ha='center', va='center')
 
     # Draw South arrow
     compass_ax.annotate('', xy=(3*np.pi/2, 0.75), xytext=(3*np.pi/2, 0),
-                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=8, headlength=17),
+                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=9, headlength=17.5),
                         ha='center', va='center')
 
     # Label directions
