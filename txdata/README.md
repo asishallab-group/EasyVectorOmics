@@ -67,14 +67,10 @@ gfortran -o test_tensoromics TensorInterface_mod.f90 TensorOmics_mod.f90 test_te
   - Use a common linker and ensure runtime libraries are available (e.g., `-llfortran_runtime` for LFortran objects).
 
 ## 📌 Future ToDos
-
-- [ ] Replace placeholder K-D tree types with actual implementations or bindings (e.g., FLANN).
-- [ ] Add support for normalized vector space (`sphere_tree`).
-- [ ] Implement metadata-driven centroid computations for shift vectors.
-- [ ] Improve serialization with HDF5 or JSON metadata export.
-- [ ] Add unit tests and CI for GFortran and LFortran.
-- [ ] Validate mixed compilation workflow (LFortran + GFortran).
-
+- Bug fixes
+- More test cases
+- Getting the test program to compile
+- Extend functions
 
 ## ✅ Status Summary
 
