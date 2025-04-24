@@ -1,177 +1,123 @@
-! ======================================================================
-! TensorOmics-Module: Full Implementation with Shift Vectors and Metadata
-! ======================================================================
+! =====================================================
+! TensorOmics-Module: Full Implementation with Metadata
+! =====================================================
 module TensorOmics_mod
    use TensorInterface_mod
    implicit none
    private
    public :: TensorOmics_Type
 
-   ! -----------------------------
-   ! KDTree placeholder type (must be outside)
-   ! -----------------------------
-   type :: KDTree_Type
-      logical :: is_built = .false.
-   end type KDTree_Type
+   integer, parameter :: MAX_STR_LEN = 32, META_COLS = 3
 
-   ! -----------------------------
-   ! Metadata type
-   ! -----------------------------
-   type :: GeneMetadata
-      integer :: id
-      character(len=32) :: family
-      logical :: is_ortholog
-   end type GeneMetadata
-
-   ! -----------------------------
-   ! Main TensorOmics Type
-   ! -----------------------------
    type, extends(TensorInterface) :: TensorOmics_Type
-      integer :: n_conditions = 0
-      integer :: n_genes = 0
-      integer :: estimated_entries = 0
-      integer :: next_gene_idx = 1
+      ! Core data containers
+      real, allocatable    :: vec_store(:,:)     ! Expression vectors [n_conditions, n_genes]
+      real, allocatable    :: shift_store(:,:)   ! Shift vectors [n_conditions, n_genes]
+      
+      ! Turing Bands metadata
+      integer, allocatable :: meta_int(:,:)      ! [n_genes, META_COLS]
+      real, allocatable    :: meta_real(:,:)     ! [n_genes, META_COLS]
+      character(MAX_STR_LEN), allocatable :: meta_str(:,:) ! [n_genes, META_COLS]
 
-      real, allocatable :: vec_store(:,:), shift_store(:,:)
-      type(GeneMetadata), allocatable :: metadata(:)
-
-      type(KDTree_Type), allocatable :: cart_tree, sphere_tree
+      ! Memory tracking
+      integer :: n_conditions = 0, n_genes = 0, next_idx = 1
    contains
-      procedure :: calculate_memory_requirements => tensor_calc_mem
-      procedure :: init                         => tensor_init
-      procedure :: update                       => tensor_update
-      procedure :: save                         => tensor_save
-      procedure :: load                         => tensor_load
-      procedure :: build_kdtrees                => tensor_build_trees
+      procedure :: calculate_memory_requirements => tox_calc_mem
+      procedure :: init => tox_init
+      procedure :: update => tox_update
+      procedure :: save => tox_save
    end type TensorOmics_Type
 
-
 contains
-   ! -------------------------------------------------------------------
-   ! Step 1: Estimate memory requirements
-   ! -------------------------------------------------------------------
-   subroutine tensor_calc_mem(self, genes_per_condition)
+!======================================================================
+! Memory calculation and initialization
+!======================================================================
+   subroutine tox_calc_mem(self, data_estimates)
       class(TensorOmics_Type), intent(inout) :: self
-      integer, dimension(:), intent(in) :: genes_per_condition
-
-      self%n_conditions = size(genes_per_condition)
-      self%n_genes      = maxval(genes_per_condition)
-      self%estimated_entries = sum(genes_per_condition)
-
-      print *, "Conditions (tissues/states): ", self%n_conditions
-      print *, "Max genes per condition: ", self%n_genes
-      print *, "Total entries (memory estimate): ", self%estimated_entries
+      integer, dimension(:), intent(in) :: data_estimates
+      
+      self%n_conditions = size(data_estimates)
+      self%n_genes = sum(data_estimates)
    end subroutine
 
-   ! -------------------------------------------------------------------
-   ! Step 2: Allocate memory and initialize structures
-   ! -------------------------------------------------------------------
-   subroutine tensor_init(self)
+   subroutine tox_init(self)
       class(TensorOmics_Type), intent(inout) :: self
-
-      ! Allocate expression and shift stores
+      
       allocate(self%vec_store(self%n_conditions, self%n_genes))
       allocate(self%shift_store(self%n_conditions, self%n_genes))
-      allocate(self%metadata(self%n_genes))
-
-      ! Initialize to zero
+      allocate(self%meta_int(self%n_genes, META_COLS))
+      allocate(self%meta_real(self%n_genes, META_COLS))
+      allocate(self%meta_str(self%n_genes, META_COLS))
+      
       self%vec_store = 0.0
       self%shift_store = 0.0
-      self%next_gene_idx = 1
-
-      ! Allocate K-D trees (actual initialization deferred)
-      allocate(self%cart_tree)
-      allocate(self%sphere_tree)
-
-      print *, "TensorOmics initialized: ", self%n_genes, " genes x ", self%n_conditions, " conditions."
+      self%meta_int = 0
+      self%meta_real = 0.0
+      self%meta_str = ""
    end subroutine
 
-   ! -------------------------------------------------------------------
-   ! Step 3: Insert data patches and compute shift vectors (outliers)
-   ! -------------------------------------------------------------------
-   subroutine tensor_update(self, patch, gene_id)
+!======================================================================
+! Data insertion with patch tracking
+!======================================================================
+   subroutine tox_update(self, patch, indices)
       class(TensorOmics_Type), intent(inout) :: self
-      real, dimension(:), intent(in) :: patch
-      integer, intent(in), optional :: gene_id
-
-      integer :: idx
-      real, dimension(self%n_conditions) :: centroid
-
-      ! Assign gene ID or auto-increment
-      if (present(gene_id)) then
-         idx = gene_id
-      else
-         idx = self%next_gene_idx
-         self%next_gene_idx = self%next_gene_idx + 1
-      end if
-
-      ! Insert expression vector (ensure column-major)
-      self%vec_store(:, idx) = patch
-
-      ! Example: Compute centroid (mean of family) and shift vector
-      ! (In practice, centroid would come from metadata)
-      centroid = sum(self%vec_store, dim=2) / real(self%n_genes)
-      self%shift_store(:, idx) = patch - centroid
-
-      ! Update metadata (placeholder for family/ortholog annotations)
-      self%metadata(idx)%id = idx
-      self%metadata(idx)%family = "UNKNOWN"
-      self%metadata(idx)%is_ortholog = .false.
-
-      print *, "Updated gene ", idx, " with shift vector norm: ", norm2(self%shift_store(:, idx))
-   end subroutine
-
-   ! -------------------------------------------------------------------
-   ! Step 4: Serialize to binary file (including metadata)
-   ! -------------------------------------------------------------------
-   subroutine tensor_save(self, filename)
-      class(TensorOmics_Type), intent(inout) :: self
-      character(len=*), intent(in) :: filename
-      integer :: unit, i
-
-      open(unit=unit, file=filename, status="replace", form="unformatted")
+      real, dimension(:,:), intent(in) :: patch  ! [n_conditions, n_genes]
+      integer, dimension(:), intent(out) :: indices
       
-      ! Save dimensions and metadata
-      write(unit) self%n_conditions, self%n_genes
-      write(unit) self%vec_store
-      write(unit) self%shift_store
-      write(unit) self%metadata  ! Assumes derived type serialization is supported
+      integer :: i, n_genes_patch, start_idx
 
-      close(unit)
-      print *, "Data saved to ", trim(filename)
+      n_genes_patch = size(patch, 2)
+      start_idx = self%next_idx
+      
+      do i = 1, n_genes_patch
+         if(self%next_idx > self%n_genes) exit
+         
+         self%vec_store(:, self%next_idx) = patch(:,i)
+         self%shift_store(:, self%next_idx) = patch(:,i) - &  ! Simplified centroid
+             sum(self%vec_store, dim=2)/self%n_genes
+         
+         indices(i) = self%next_idx
+         self%next_idx = self%next_idx + 1
+      end do
    end subroutine
 
-   ! -------------------------------------------------------------------
-   ! Step 5: Load from binary file
-   ! -------------------------------------------------------------------
-   subroutine tensor_load(self, filename)
+!======================================================================
+! Binary serialization with header
+!======================================================================
+!   subroutine tox_save(self, filename)
+!     class(TensorOmics_Type), intent(inout) :: self
+!      character(len=*), intent(in) :: filename
+!      
+!      integer :: unit, header(6)
+!      
+!      open(newunit=unit, file=filename, form='unformatted', status='replace')
+!      
+!      ! Header: [n_cond, n_genes, meta_int_cols, meta_real_cols, meta_str_cols, reserved]
+!      header = [self%n_conditions, self%n_genes, META_COLS, META_COLS, META_COLS, 0]
+!      write(unit) header
+!      
+!      ! Body: Flat binary data
+!      write(unit) self%vec_store
+!      write(unit) self%shift_store
+!      write(unit) self%meta_int
+!      write(unit) self%meta_real
+!      write(unit) self%meta_str
+!      
+!      close(unit)
+!   end subroutine
+
+   subroutine tox_save(self, filename)
       class(TensorOmics_Type), intent(inout) :: self
       character(len=*), intent(in) :: filename
       integer :: unit
-
-      open(unit=unit, file=filename, status="old", form="unformatted")
-      
-      ! Load dimensions
-      read(unit) self%n_conditions, self%n_genes
-      call self%init()  ! Allocate memory
-
-      ! Load data
-      read(unit) self%vec_store
-      read(unit) self%shift_store
-      read(unit) self%metadata
-
+      open(newunit=unit, file=filename, form='unformatted', status='replace')
+      write(unit) [self%n_conditions, self%n_genes, META_COLS, META_COLS, META_COLS, 0]
+      write(unit) self%vec_store
+      write(unit) self%shift_store
+      write(unit) self%meta_int
+      write(unit) self%meta_real
+      write(unit) self%meta_str
       close(unit)
-      print *, "Data loaded from ", trim(filename)
-   end subroutine
-
-   ! -------------------------------------------------------------------
-   ! Step 6: Build K-D Trees (deferred until all data is inserted)
-   ! -------------------------------------------------------------------
-   subroutine tensor_build_trees(self)
-      class(TensorOmics_Type), intent(inout) :: self
-      ! Placeholder for actual K-D tree construction
-      ! (e.g., using a library like FLANN or custom implementation)
-      print *, "K-D trees built for ", self%n_genes, " vectors."
    end subroutine
 
 end module TensorOmics_mod

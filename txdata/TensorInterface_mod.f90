@@ -1,4 +1,5 @@
 ! TensorInterface: abstract baseclass (Interface)
+
 module TensorInterface_mod
    implicit none
    private
@@ -24,11 +25,11 @@ module TensorInterface_mod
          class(TensorInterface), intent(inout) :: self
       end subroutine
 
-      subroutine update_sig(self, patch, gene_id)
+      subroutine update_sig(self, patch, indices)
          import :: TensorInterface
          class(TensorInterface), intent(inout) :: self
-         real, dimension(:), intent(in) :: patch
-         integer, intent(in), optional :: gene_id  ! For metadata tracking
+         real, dimension(:,:), intent(in) :: patch
+         integer, dimension(:), intent(out) :: indices
       end subroutine
 
       subroutine save_sig(self, filename)
@@ -37,5 +38,4 @@ module TensorInterface_mod
          character(len=*), intent(in) :: filename
       end subroutine
    end interface
-
 end module TensorInterface_mod
