@@ -1,6 +1,6 @@
 require(RColorBrewer)
 colors <- brewer.pal(7,"Dark2")
-colors2 <- brewer.pal(12,"Paired")
+colors2 <- brewer.pal(12,"Set1")
 
 pdf("figure_1g.pdf", width = 12, height = 6)
 par(mfrow = c(1, 2), mar = c(1, 1, 1, 1))
@@ -26,7 +26,9 @@ rotation_matrix <- matrix(c(cos(theta), -sin(theta),
 rotated <- rotation_matrix %*% rbind(x, y)
 
 # --- Dibujar ---
-lines(rotated[1, ] - 0.3, rotated[2, ] , col = "gray60", lwd = 2)
+lines(rotated[1, ] - 0.3, rotated[2, ] , col = "#66A61E", lwd = 3)
+
+text(0,1.8, "Photosynthesis", cex = 2, col = "#66A61E")
 
 # Ejes con flechas en ambos extremos
 # Ángulo de rotación en radianes
@@ -49,7 +51,7 @@ arrows(e1[1]-0.6, e1[2]-0.2,-e1[1]-0.6, -e1[2]-0.2, col = "black", lwd = 2, leng
 arrows(-e2[1], -e2[2], e2[1], e2[2], col = "black", lwd = 2, length = 0.2)
 arrows(e2[1], e2[2], -e2[1], -e2[2], col = "black", lwd = 2, length = 0.2)
 
-arrows(e1[1]*0.3-0.2, e1[2]*0.3-0.2,-e1[1]*0.3-0.2, -e1[2]*0.3-0.2, col = colors[[4]], lwd = 1.3, lty = 2,length = 0.2)
+arrows(e1[1]*0.3-0.2, e1[2]*0.3-0.2,-e1[1]*0.3-0.2, -e1[2]*0.3-0.2, col = colors[[4]], lwd = 7, lty = 1,length = 0.2)
 
 
 # Etiquetas
@@ -63,8 +65,8 @@ curve_y <- seq(-1, 1, length.out = 100)  # rango amplio sin escalar
 curve_x <- dnorm(curve_y, mean = 0, sd = 0.4)  # forma de campana
 
 # Escalamos para hacerlo más chico
-curve_x <- curve_x * 0.4  # achica en eje X
-curve_y <- curve_y * 0.5  # achica en eje Y si querés también
+curve_x <- curve_x * 0.45  # achica en eje X
+curve_y <- curve_y * 0.6  # achica en eje Y si querés también
 
 # Centrar la curva en el origen
 curve_x <- curve_x - mean(curve_x)
@@ -77,9 +79,9 @@ rotation_matrix <- matrix(c(cos(theta), -sin(theta),
 rotated_coords <- rotation_matrix %*% rbind(curve_x, curve_y)
 
 # 3. Dibujar la curva rotada
-lines(rotated_coords[1, ]-0.7, rotated_coords[2, ]+0.6, lwd = 3, col = colors[[4]])
+lines(rotated_coords[1, ]-0.7, rotated_coords[2, ]+0.6, lwd = 7, col = colors[[4]])
 
-draw_vector <- function(x0, y0, length, angle_deg, col = "black", lwd = 3, arrow_size = 0.1) {
+draw_vector <- function(x0, y0, length, angle_deg, col = "black", lwd = 4, arrow_size = 0.1) {
   # Convertir ángulo a radianes
   angle_rad <- angle_deg * pi / 180
   
@@ -88,7 +90,7 @@ draw_vector <- function(x0, y0, length, angle_deg, col = "black", lwd = 3, arrow
   y1 <- y0 + length * sin(angle_rad)
   
   # Dibujar flecha
-  arrows(x0, y0, x1, y1, length = arrow_size, col = colors[[6]], lwd = lwd)
+  arrows(x0, y0, x1, y1, length = arrow_size, col = "black", lwd = lwd)
 }
 
 draw_vector(-1.3, 0.7, 0.25, 270)    
@@ -113,8 +115,8 @@ arrows(0, -3, 8, -3, length = 0.1, lwd = 1.5)  # Eje E1
 arrows(0, -3, 0, 4, length = 0.1, lwd = 1.5)   # Eje signal strength
 
 # Etiquetas de los ejes
-text(8, -3.5, expression(E[1]), cex = 1.8)
-text(1.4, 4.5, "Signal strength", cex = 1.6)
+text(8, -3.5, expression(E[1]), cex = 2)
+text(2, 4.5, "Centered Value", cex = 2)
 
 # Secuencia de x
 x <- seq(1, 8, length.out = 200)
@@ -122,12 +124,14 @@ x <- seq(1, 8, length.out = 200)
 # Curva 1: Distribución normal sesgada a la derecha
 y1 <- dnorm(x, mean = 1.6, sd = 1.3)
 y1 <- y1 / max(y1) * 3 # Escalar altura
+text(4.5, 2.5, "Dir-Spread", cex = 1.9, col = colors2[[1]])
+
 
 # Curva 2: Forma de "S" acostada (tanh)
 y2 <- 1 + 0.9 * tanh((x - 3))  # Ajustar ubicación y altura
 
 # Dibujar ambas curvas
-lines(x, y1, lwd = 4, col = colors2[[10]])
+lines(x, y1, lwd = 4, col = colors2[[1]])
 
 # Valores de x
 x <- seq(1, 8, length.out = 500)
@@ -141,6 +145,8 @@ y <- dnorm(x, mean = 1.8, sd = 1.2) -
 y <- y / max(y) * 2.7
 
 # Dibujar curva
-lines(x, y, lwd = 4, col = colors2[[12]])
+lines(x, y, lwd = 4, col = colors2[[2]])
+text(5, -1.5, "Sign-Strn", cex = 1.9, col = colors2[[2]])
+
 
 dev.off()

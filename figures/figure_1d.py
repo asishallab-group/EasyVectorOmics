@@ -5,7 +5,7 @@ from sys import argv
 np.random.seed(2025)
 plt.rcParams.update({"figure.dpi": 200, "font.size": 15})
 RELEVANT_ARROW_SIZE = 7
-DOI_COLOR = "#003CE0"
+DOI_COLOR = "#377EB8"
 
 
 def main():
@@ -13,7 +13,7 @@ def main():
     plt.savefig(argv[0].rsplit(".", 1)[0] + ".png", bbox_inches='tight')
 
 
-def draw_smooth_line(ax, points, k=2, periodic=False, label="", label_move_rel=(0, 0), color="blue"):
+def draw_smooth_line(ax, points, k=2, periodic=False, label="", label_move_rel=(0, 0), color="#377EB8"):
     # Separate into x and y arrays
     x, y = zip(*points)
 
@@ -98,7 +98,7 @@ def plot_1d():
         )
 
     # first from left
-    def left_blue(color="blue"):
+    def left_blue(color="#377EB8"):
         # Define the arrows, starting from top
         arrows = (
             arrow(21.5, 100, 17, length=10),
@@ -130,7 +130,7 @@ def plot_1d():
         return arrows
 
     # second from left, the one below the circle with two arrows
-    def right_blue(color="blue"):
+    def right_blue(color="#377EB8"):
         arrows = (
             arrow(56, 16, 52),
             arrow(56, 10, 47),
@@ -251,8 +251,8 @@ def plot_1d():
         *standalone_arrows(),
         *left_blue(DOI_COLOR),
         *right_blue(DOI_COLOR),
-        *chaotic("#7DB00F"),
-        *merged("#D9591B")
+        *chaotic("#66A61E"),
+        *merged("#D95F02")
     )
     for start, end in arrows:
         arrow_len = ((start[0] - end[0]) ** 2 + (start[1] - end[1]) ** 2) ** .5
@@ -261,43 +261,37 @@ def plot_1d():
 
 
 def add_compass(fig):
-    # Add the inset axis for the compass, positioned to the left of the Y-axis
-    compass_ax = fig.add_axes([0.704, 0.82, 0.1, 0.1], polar=True)  # Adjust position
+    # Larger and positioned in the upper right corner
+    compass_ax = fig.add_axes([0.7, 0.92, 0.15, 0.15], polar=True)  # Adjusted size and position
+    compass_color = "#377EB8"
+
+    # Hide ticks and make the polar spine (border) invisible
     compass_ax.set_xticks([])
     compass_ax.set_yticks([])
     compass_ax.set_frame_on(False)
 
-    # Add direction of interest (DOI)
-    compass_ax.annotate('DOI', xy=(0, 0), xytext=(3*np.pi/4, 2),
-                        arrowprops=dict(arrowstyle='<-', color=DOI_COLOR),
-                        ha='center', color=DOI_COLOR)
+    # Change color of radial and circular gridlines
+    compass_ax.grid(True, color=compass_color, linewidth=5)
+    compass_ax.spines['polar'].set_color(compass_color)
 
-    # Add compass arrows using annotate
-    # Draw East arrow
-    compass_ax.annotate('', xy=(0, 0.75), xytext=(0, 0),
-                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=9, headlength=17.5),
-                        ha='center', va='center')
+    # Direction of Interest (DOI)
+    compass_ax.annotate('DOI', xy=(0, 0), xytext=(3 * np.pi / 4, 2),
+                        arrowprops=dict(arrowstyle='<-', color=compass_color),
+                        ha='center', color=compass_color)
 
-    # Draw North arrow
-    compass_ax.annotate('', xy=(np.pi/2, 0.75), xytext=(np.pi/2, 0),
-                        arrowprops=dict(facecolor='black', shrink=0, width=10, headwidth=9, headlength=17.5),
-                        ha='center', va='center')
+    # Cardinal arrows
+    arrow_kwargs = dict(facecolor=compass_color, edgecolor=compass_color, shrink=0, width=1.5, headwidth=10, headlength=18)
+    compass_ax.annotate('', xy=(0, 0.75), xytext=(0, 0), arrowprops=arrow_kwargs)              # East
+    compass_ax.annotate('', xy=(np.pi / 2, 0.75), xytext=(np.pi / 2, 0), arrowprops=arrow_kwargs)  # North
+    compass_ax.annotate('', xy=(np.pi, 0.75), xytext=(np.pi, 0), arrowprops=arrow_kwargs)         # West
+    compass_ax.annotate('', xy=(3 * np.pi / 2, 0.75), xytext=(3 * np.pi / 2, 0), arrowprops=arrow_kwargs)  # South
 
-    # Draw West arrow
-    compass_ax.annotate('', xy=(np.pi, 0.75), xytext=(np.pi, 0),
-                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=9, headlength=17.5),
-                        ha='center', va='center')
-
-    # Draw South arrow
-    compass_ax.annotate('', xy=(3*np.pi/2, 0.75), xytext=(3*np.pi/2, 0),
-                        arrowprops=dict(facecolor='black', shrink=0, width=1, headwidth=9, headlength=17.5),
-                        ha='center', va='center')
-
-    # Label directions
+    # Cardinal direction labels
     directions = ['E', 'N', 'W', 'S']
-    angles = [0, np.pi/2, np.pi, 3*np.pi/2]
+    angles = [0, np.pi / 2, np.pi, 3 * np.pi / 2]
     for angle, direction in zip(angles, directions):
-        compass_ax.text(angle, 1.2, direction, ha='center', va='center', fontsize=13, fontweight='bold')
+        compass_ax.text(angle, 1.2, direction, ha='center', va='center',
+                        fontsize=14, fontweight='bold', color=compass_color)
 
 
 if __name__ == '__main__':

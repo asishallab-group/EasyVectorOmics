@@ -44,21 +44,23 @@ centroid_1 <- c(1.5, 3.5)
 centroid_2 <- c(4.5, 1.5)
 # expression_vectors <- 
 
-points(centroid_1[1], centroid_1[2], pch = 21, bg = alpha.cols[[1]], col = colors[[1]], cex = 1)
-points(centroid_2[1], centroid_2[2], pch = 21, bg = alpha.cols[[1]], col = colors[[1]], cex = 2)
+points(centroid_1[1], centroid_1[2], pch = 21, bg = alpha.cols[[1]], col = colors[[1]], cex = 3)
+points(centroid_2[1], centroid_2[2], pch = 21, bg = alpha.cols[[1]], col = colors[[1]], cex = 4)
 
 
 centroid_1_pts <- list(
-  p1 = centroid_1 + c(0.0, 0.3),
-  p2 = centroid_1 + c(0.2, 0.1),
-  p3 = centroid_1 + c(0.1, -0.15),
-  p4 = centroid_1 + c(-0.15, -0.2),
-  p5 = centroid_1 + c(-0.1, 0.2)
+  p1 = centroid_1 + c(0.0, 0.4),
+  p2 = centroid_1 + c(0.4, 0.1),
+  p3 = centroid_1 + c(0.3, -0.15),
+  p4 = centroid_1 + c(-0.2, -0.2),
+  p5 = centroid_1 + c(-0.25, 0.2)
 )
+
+set.seed(1)
 
 for (tp in names(centroid_1_pts)) {
   pt <- centroid_1_pts[[tp]]
-  points(pt[1], pt[2], pch = 21, col = colors[sample(1:2, 1)], cex = 0.5)
+  points(pt[1], pt[2], pch = 21, col = colors[sample(1:2, 1)], cex = 1.5)
 }
 
 centroid_2_pts <- list(
@@ -71,7 +73,7 @@ centroid_2_pts <- list(
 
 for (tp in names(centroid_2_pts)) {
   pt <- centroid_2_pts[[tp]]
-  points(pt[1], pt[2], pch = 21, col = colors[sample(1:2, 1)], cex = 1)
+  points(pt[1], pt[2], pch = 21, col = colors[sample(1:2, 1)], cex = 2)
 }
 
 centroid_2_paras <- list(
@@ -86,7 +88,7 @@ for (tp in names(centroid_2_paras)) {
          col = colors[2],
          lwd = 2.2,
          length = 0.1)
-  points(pt[1], pt[2], pch = 21, col = colors[2], cex = 1)
+  points(pt[1], pt[2], pch = 21, col = colors[2], cex = 2)
 }
 
 text(

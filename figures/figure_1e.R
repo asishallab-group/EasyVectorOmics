@@ -68,6 +68,8 @@ clock_pts <- list(
   t4 = O + c(-0.5, -0.3)
 )
 
+y_offset <- 0.01 # Default y offset for text labels
+
 # Draw vectors and labels
 for (i in 1:4) {
   pt <- clock_pts[[i]]
@@ -81,13 +83,18 @@ for (i in 1:4) {
   # If i is 3, use a larger offset to move it right
   if (i == 3) {
     x_offset <- 0.15 # Adjust this value (e.g., 0.05, 0.1) to move it more or less
+    y_offset <- 0 # Adjust this value (e.g., 0.05, 0.1) to move it more or less
+  }
+  if(i == 4) {
+    x_offset <- 0.1
+    y_offset <- 0.06 # Adjust this value (e.g., 0.05, 0.1) to move it more or less
   }
 
 
   # Use the calculated x_offset for the text position
   # *** MODIFIED: Added 'clock' superscript & used x_offset ***
-  text(pt[1] + x_offset, pt[2] + .01, label = TeX(paste0('$t_', i, '^{{clock}}$')), pos = 3, col = vec_colors[i], cex = 3)
-  text(pt[1] + x_offset, pt[2] + .21, label = TeX('$\\rightarrow$'), pos = 3, col = vec_colors[i], cex = 3)
+  text(pt[1] + x_offset, pt[2] + .01+y_offset, label = TeX(paste0('$s_{t', i, '}^{{clock}}$')), pos = 3, col = vec_colors[i], cex = 3)
+  text(pt[1] + x_offset, pt[2] + .21+y_offset, label = TeX('$\\rightarrow$'), pos = 3, col = vec_colors[i], cex = 3)
 }
 
 # Phi arcs
@@ -172,16 +179,14 @@ plot(
   main = "",        # Turn off main title
   col = "black",
   cex.axis = 1.3,
-  cex.lab = 1.7     # Slightly smaller label size for insets
+  cex.lab = 1.7,     # Slightly smaller label size for insets
+  xlim = c(0.8, 4.2),
+  ylim = range(distances) + c(-0.01, 0.01)
 )
 # No axis(1, ...) here
 points(1:4, distances, pch = 16, col = vec_colors, cex = 3) # Smaller points for inset
 axis(1, at = 1:4, labels = paste0("t", 1:4), cex.axis = 0.8)
-# Color points: Use grey for the first point (ASV=0 by definition)
-# and then the corresponding vector colors for the subsequent differences
-# asv_point_colors <- c(vec_colors[1:4]) # t2-t1 uses t2 color, t3-t2 uses t3 color, etc.
-# points(1:4, asv_deg, pch = 16, col = asv_point_colors, cex = 3)
-# box()
+
 
 # --- *** NEW: Inset 2: ASV vs time *** ---
 # Define plotting region below the first inset, aligning left/right edges
@@ -197,7 +202,9 @@ plot(
   main = "",
   col = "black",
   cex.axis = 1.3,
-  cex.lab = 1.7
+  cex.lab = 1.7,
+  xlim = c(0.8, 4.2),
+  ylim = range(asv_deg) + c(-10, 10)
 )
 # Add custom x-axis labels
 axis(1, at = 1:4, labels = paste0("t", 1:4), cex.axis = 0.8)
@@ -207,9 +214,4 @@ asv_point_colors <- c(vec_colors[1:4]) # t2-t1 uses t2 color, t3-t2 uses t3 colo
 points(1:4, asv_deg, pch = 16, col = asv_point_colors, cex = 3)
 box()
 
-# --- Finalize ---
-# Close the graphics device
-
-# Optional: Reset graphics parameters if running interactively
-# par(fig = c(0, 1, 0, 1), mar = c(5.1, 4.1, 4.1, 2.1), mgp = c(3, 1, 0))
 dev.off()

@@ -10,14 +10,12 @@ addAlpha <- function(col, alpha = .25) {
 colors <- brewer.pal(7, "Dark2")
 alpha.cols <- sapply(colors, addAlpha)
 
+print(colors)
+print(alpha.cols)
 pdf('figure_1c.pdf', width=4, height=4)
 
 
 plot(
-  # c(1, .25, 1),
-  # c(1, 2, .25),
-  # col = c(colors[[4]], colors[[1]], colors[[2]]),
-  # bg = c(alpha.cols[[4]], alpha.cols[[1]], alpha.cols[[2]]),
   NA,
   pch = c(20, 18, 18),
   lwd = 2.5,
@@ -297,37 +295,6 @@ polygon(
 
 # Origin
 # points(origin[1], origin[2], pch = 16)
-
-# # Axes arrows
-arrows(origin[1], origin[2], tissueX[1], tissueX[2], length = 0.08, lwd = 1.2)
-arrows(origin[1], origin[2], tissueY[1], tissueY[2], length = 0.08, lwd = 1.2)
-arrows(origin[1], origin[2], tissueZ[1], tissueZ[2], length = 0.08, lwd = 1.2)
-arrows(origin[1], origin[2], diagonal[1], diagonal[2], length = 0, lwd = 1.2, lty = 2, col=colors[[4]])
-
-# # Labels
-text(tissueX[1] + 0.1, tissueX[2], TeX("\\textit{tissue X}"), cex = 0.65, pos = 4)
-text(tissueY[1], tissueY[2] - 0.5, TeX("\\textit{tissue Y}"), cex = 0.65, pos = 3)
-text(tissueZ[1] + 0.1, tissueZ[2], TeX("\\textit{tissue Z}"), cex = 0.65, pos = 4)
-text(diagonal[1] - 0.7, diagonal[2] + 0.1, "Diagonal", cex = 0.65, pos = 4, col=colors[[4]])
-text(3.8, -1, "RAP", font = 1, cex = 0.8)
-
-text(
-  diagonal[1] + 1.2, diagonal[2],
-  label = TeX('$\\textit{(D)}$'),
-  pos = 4,
-  offset = 1.25,
-  col = colors[[4]],
-  cex = 0.65
-)
-# Arrow for D vector
-text(
-  diagonal[1] + 1.3, diagonal[2] + 0.6,
-  label = TeX('$\\rightarrow$'),
-  pos = 4,
-  offset = 1.25,
-  col = colors[[4]],
-  cex = 0.65
-)
 # # Angle arc from X to diagonal
 
 origin <- c(1, 1.5)
@@ -343,5 +310,36 @@ y_arc <- origin[2] + r * sin(theta)
 
 # Draw angle
 lines(x_arc, y_arc, col = "deeppink", lwd = 2)
+
+# # Axes arrows
+arrows(origin[1], origin[2], tissueX[1], tissueX[2], length = 0.08, lwd = 1.2)
+arrows(origin[1], origin[2], tissueY[1], tissueY[2], length = 0.08, lwd = 1.2)
+arrows(origin[1], origin[2], tissueZ[1], tissueZ[2], length = 0.08, lwd = 1.2)
+arrows(origin[1], origin[2], diagonal[1], diagonal[2], length = 0, lwd = 2.5, lty = 2, col=colors[[4]])
+
+# # Labels
+text(tissueX[1] + 0.1, tissueX[2], TeX("\\textit{tissue X}"), cex = 0.65, pos = 4)
+text(tissueY[1], tissueY[2] - 0.5, TeX("\\textit{tissue Y}"), cex = 0.65, pos = 3)
+text(tissueZ[1] + 0.1, tissueZ[2], TeX("\\textit{tissue Z}"), cex = 0.65, pos = 4)
+text(diagonal[1] - 0.7, diagonal[2] + 0.5, "Diagonal", cex = 0.65, pos = 4, col=colors[[4]])
+text(3.8, -1, "RAP", font = 1, cex = 0.8)
+
+text(
+  diagonal[1] + 1.2, diagonal[2] + 0.4,
+  label = TeX('$\\textit{(D)}$'),
+  pos = 4,
+  offset = 1.25,
+  col = colors[[4]],
+  cex = 0.65
+)
+# Arrow for D vector
+text(
+  diagonal[1] + 1.3, diagonal[2] + 1,
+  label = TeX('$\\rightarrow$'),
+  pos = 4,
+  offset = 1.25,
+  col = colors[[4]],
+  cex = 0.65
+)
 
 dev.off()
