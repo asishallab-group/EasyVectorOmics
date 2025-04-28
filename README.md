@@ -136,6 +136,67 @@ The Fortran code is also carefully commented inline to facilitate further develo
 
 
 
+# 📄 Input Data Format Specification
+
+This project expects input gene expression matrices to follow specific naming conventions for proper normalization and processing.
 
 
+## 📦 General Input Matrix Structure
 
+- **Rows**: Genes (e.g., `geneA`, `geneB`, `FBpp0070000`, etc.).
+- **Columns**: Samples corresponding to tissues and/or experimental groups.
+
+
+## 📋 Column Naming Rules
+
+| Feature | How it should be named |
+|:--------|:-----------------------|
+| Tissue name | Should appear as a prefix |
+| Control vs condition groups | Distinguished using suffixes |
+| Replicates | Indicated with final `_1`, `_2`, `_3`, etc. |
+
+### ✅ Examples
+
+| Column Name | Meaning |
+|:------------|:--------|
+| `muscle_control_1` | Muscle tissue, control group, replicate 1 |
+| `muscle_control_2` | Muscle tissue, control group, replicate 2 |
+| `muscle_treatmentA_1` | Muscle tissue, condition "treatmentA", replicate 1 |
+| `brain_control` | Brain tissue, control (no replicate if only one) |
+| `heart_dietM_1` | Heart tissue, dietM condition, replicate 1 |
+| `heart_dietP_2` | Heart tissue, dietP condition, replicate 2 |
+
+
+## 🧠 Important Points
+
+- **Replicates**:  
+  - Must be indicated with an underscore and number (`_1`, `_2`, etc.).
+  - Replicates are automatically detected and averaged using `calculate_tissue_averages()`.
+
+- **Conditions (control vs experimental)**:  
+  - Control groups and condition groups must be distinguishable by a recognizable **pattern** (e.g., `"control"`, `"dietM"`, `"dietP"`, etc.).
+  - Fold-change is computed based on **pattern matching** using functions like `calculate_fc_by_patterns()`.
+
+- **Missing Replicates**:  
+  - If no replicate number exists, it's assumed to be a single sample for that tissue/condition.
+
+- **Naming Consistency**:  
+  - Always keep naming consistent (same format across all columns).
+  - No spaces or unusual characters; use underscores `_` to separate parts.
+
+
+## ⚙️ Supported Input Scenarios
+
+| Scenario | Supported? | Notes |
+|:---------|:-----------|:------|
+| Single sample per tissue | ✅ | Simply use the tissue name (e.g., `brain_control`) |
+| Multiple replicates per tissue group | ✅ | Must use `_1`, `_2`, `_3` convention |
+| Multiple conditions for same tissue | ✅ | Control and conditions detected based on user-provided patterns |
+| No replicates and no conditions | ✅ | Treated as simple tissues for averaging or fold-change |
+
+
+## 🚫 Not Supported
+
+- Spaces inside column names (`"muscle control"` ❌).
+- Different separator characters (`"muscle-control-1"` ❌ use `"muscle_control_1"` ✅).
+- Completely inconsistent naming.
