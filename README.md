@@ -3,7 +3,7 @@
 
 This repository provides the core normalization and transformation methods for **TensorOmics**, focusing on highly efficient matrix operations using **Fortran** for backend computation and **R** as a convenient wrapper.
 
-This scripts were tested using:
+The scripts were tested using:
 - Ubuntu clang version 14.0.0-1ubuntu1.1
 - R version 4.4.3 (2025-02-28) -- "Trophy Case"
 - LFortran version: 0.51.0
@@ -50,6 +50,33 @@ Check if the subroutines were compiled successfully with:
 nm -g libtensoromics_g.so
 ```
 
+## ⚡ Alternative Compilation Options (for future WASM or portability)
+
+### 1. Compile only to Object File (`.o`)
+
+Instead of building a shared object, you can compile to an intermediate object file:
+
+```bash
+gfortran -c tensoromics_normalization.f90
+```
+
+- Generates `tensoromics_normalization.o`.
+- Useful if you want to later link manually or transform the `.o` file (e.g., for WASM).
+
+---
+
+### 2. Direct WebAssembly Compilation (Experimental)
+
+Using **LFortran** (experimental feature), you can **directly compile to WebAssembly**:
+
+```bash
+lfortran --emit-wasm tensoromics_normalization.f90 -o tensoromics_normalization.wasm
+```
+
+- This produces a `.wasm` module directly from Fortran.
+- However, **current LFortran WebAssembly output is experimental** and may not yet support all features (like bindings with R or complex memory layouts).
+- Migration to pure WebAssembly workflows is considered a future goal.
+
 
 ## 📦 How to Use in R
 
@@ -92,9 +119,8 @@ The Fortran code is also carefully commented inline to facilitate further develo
 
 # 📈 Future Work
 
-- Investigate LFortran or Flang as a compiler once `.so` creation is stable.
-- WASM target: fully port TensorOmics preprocessing to run inside browsers via WebAssembly.
-
+- [ ] Investigate full WebAssembly compilation and browser execution.
+- [ ] Migrate to LFortran when .so and .wasm generation becomes fully stable.
 
 # 🧹 Repository Structure Summary
 
@@ -107,4 +133,9 @@ The Fortran code is also carefully commented inline to facilitate further develo
 /results
   └── (results outputs here)
 ```
+
+
+
+
+
 
