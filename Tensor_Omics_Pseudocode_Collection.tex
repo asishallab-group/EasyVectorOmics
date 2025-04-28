@@ -1,0 +1,514 @@
+\documentclass{article}
+
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{geometry}
+\geometry{margin=2.5cm}
+\title{Collection of Pseudo-Code definitions for the Tensor Omics
+  Implementation}
+\author{Asis Hallab, ``el Bobito''}
+
+\begin{document}
+
+\maketitle
+
+\section{F42 LOESS Module Pseudocode}
+
+\subsection{Module Overview}
+
+The LOESS module provides local weighted regression smoothing for 1D data, specifically for fitting standard deviation as a function of mean expression.  
+It is designed to comply fully with the F42 DataStructure principles: statelessness, preallocated memory, reproducibility, and serialization-readiness.
+
+\subsection{Type Definitions}
+
+\begin{itemize}
+    \item \texttt{type :: LOESS\_Model}
+    \begin{itemize}
+        \item \texttt{real, dimension(:), allocatable :: x\_sorted} \hfill (sorted predictor values)
+        \item \texttt{real, dimension(:), allocatable :: y\_sorted} \hfill (sorted response values)
+        \item \texttt{integer :: n} \hfill (number of data points)
+        \item \texttt{real :: bandwidth\_fraction} \hfill (fraction of points used for local fitting, e.g., 0.3)
+    \end{itemize}
+\end{itemize}
+
+\subsection{Public Procedures}
+
+\begin{itemize}
+    \item \texttt{subroutine loess\_fit(x, y, bandwidth, model, work\_int, work\_real)}
+    \begin{itemize}
+        \item Inputs:
+        \begin{itemize}
+            \item \texttt{real, dimension(n) :: x} \hfill (predictor values)
+            \item \texttt{real, dimension(n) :: y} \hfill (response values)
+            \item \texttt{real :: bandwidth} \hfill (bandwidth fraction, \(0 < \text{bandwidth} \leq 1\))
+        \end{itemize}
+        \item Outputs:
+        \begin{itemize}
+            \item \texttt{type(LOESS\_Model) :: model}
+        \end{itemize}
+        \item Working memory (preallocated by caller):
+        \begin{itemize}
+            \item \texttt{integer, dimension(n) :: work\_int}
+            \item \texttt{real, dimension(n) :: work\_real}
+        \end{itemize}
+    \end{itemize}
+
+    \item \texttt{subroutine loess\_predict(model, x\_query, y\_pred, work\_int, work\_real)}
+    \begin{itemize}
+        \item Inputs:
+        \begin{itemize}
+            \item \texttt{type(LOESS\_Model) :: model}
+            \item \texttt{real :: x\_query} \hfill (query predictor value)
+        \end{itemize}
+        \item Outputs:
+        \begin{itemize}
+            \item \texttt{real :: y\_pred} \hfill (predicted response value)
+        \end{itemize}
+        \item Working memory (preallocated by caller):
+        \begin{itemize}
+            \item \texttt{integer, dimension(model\%n) :: work\_int}
+            \item \texttt{real, dimension(model\%n) :: work\_real}
+        \end{itemize}
+    \end{itemize}
+\end{itemize}
+
+\subsection{Algorithm: \texttt{loess\_fit}}
+
+\begin{enumerate}
+    \item Copy input \texttt{x} and \texttt{y} into temporary arrays using \texttt{work\_real}.
+    \item Sort \texttt{x} ascendingly, rearranging \texttt{y} in the same order (store into \texttt{model\%x\_sorted} and \texttt{model\%y\_sorted}).
+    \item Store \texttt{n = size(x)} and \texttt{bandwidth\_fraction = bandwidth} into \texttt{model}.
+\end{enumerate}
+
+\subsection{Algorithm: \texttt{loess\_predict}}
+
+\begin{enumerate}
+    \item Perform binary search on \texttt{model\%x\_sorted} to find the insertion point for \texttt{x\_query}.
+    \item Expand left and right to collect \( k \) nearest neighbors, where
+    \[
+    k = \max(3, \lfloor \text{bandwidth\_fraction} \times n \rfloor)
+    \]
+    \item Compute distances of collected neighbors to \texttt{x\_query}.
+    \item Assign weights using the tricube kernel:
+    \[
+    w_i = \left(1 - \left(\frac{|x_i - x_{\text{query}}|}{d_{\text{max}}}\right)^3\right)^3
+    \]
+    where \( d_{\text{max}} \) is the largest distance among the collected neighbors.
+    \item Solve the weighted least squares problem to fit \( y = \beta_0 + \beta_1 x \) locally:
+    \[
+    \min_{\beta_0, \beta_1} \sum_{i} w_i (y_i - \beta_0 - \beta_1 x_i)^2
+    \]
+    (This can be solved by forming normal equations manually or using a tiny LAPACK call if needed.)
+    \item Predict the response:
+    \[
+    y_{\text{pred}} = \beta_0 + \beta_1 x_{\text{query}}
+    \]
+\end{enumerate}
+
+\subsection{Memory Requirements}
+
+\begin{itemize}
+    \item During fitting:
+    \begin{itemize}
+        \item \texttt{2n} reals (temporary storage for sorting)
+        \item \texttt{n} integers (for sorting indices if needed)
+    \end{itemize}
+    \item During prediction:
+    \begin{itemize}
+        \item \texttt{n} reals (for temporary neighbor distances and weights)
+        \item \texttt{n} integers (for neighbor indices if needed)
+    \end{itemize}
+\end{itemize}
+
+\subsection{Unit Tests for LOESS Module}
+
+The following unit tests are designed to verify the correctness, stability, and reproducibility of the LOESS fitting and prediction routines.
+All tests assume that memory management (allocation of working arrays) is properly handled by the test harness.
+
+\subsubsection{Test 1: Exact Interpolation with Noiseless Linear Data}
+
+\begin{itemize}
+    \item Input:
+    \begin{itemize}
+        \item \texttt{x} = [1.0, 2.0, 3.0, 4.0, 5.0]
+        \item \texttt{y} = [2.0, 4.0, 6.0, 8.0, 10.0]
+        \item \texttt{bandwidth} = 1.0 (use all points)
+    \end{itemize}
+    \item Action:
+    \begin{itemize}
+        \item Fit LOESS model.
+        \item Predict at all original \texttt{x} points.
+    \end{itemize}
+    \item Expected:
+    \begin{itemize}
+        \item Predictions exactly match \texttt{y}.
+        \item Maximum absolute prediction error \( < 10^{-12} \).
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Test 2: Locality with Bandwidth Restriction}
+
+\begin{itemize}
+    \item Input:
+    \begin{itemize}
+        \item \texttt{x} = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]
+        \item \texttt{y} = [0.0, 1.0, 4.0, 9.0, 16.0, 25.0] \hfill (quadratic)
+        \item \texttt{bandwidth} = 0.5
+    \end{itemize}
+    \item Action:
+    \begin{itemize}
+        \item Fit LOESS model.
+        \item Predict at \texttt{x = 2.5}.
+    \end{itemize}
+    \item Expected:
+    \begin{itemize}
+        \item Prediction approximates local quadratic behavior.
+        \item Acceptable absolute error compared to \( y = x^2 \), tolerance \( < 0.5 \).
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Test 3: Behavior at Boundaries}
+
+\begin{itemize}
+    \item Input:
+    \begin{itemize}
+        \item Same as Test 2.
+    \end{itemize}
+    \item Action:
+    \begin{itemize}
+        \item Predict at \texttt{x = 0.0} and \texttt{x = 5.0}.
+    \end{itemize}
+    \item Expected:
+    \begin{itemize}
+        \item No crash or invalid memory access.
+        \item Predictions within reasonable extrapolation range (tolerance \( < 1.0 \)).
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Test 4: Sorting Stability}
+
+\begin{itemize}
+    \item Input:
+    \begin{itemize}
+        \item \texttt{x} = [5.0, 1.0, 4.0, 2.0, 3.0] (unsorted)
+        \item \texttt{y} = [10.0, 2.0, 8.0, 4.0, 6.0]
+        \item \texttt{bandwidth} = 1.0
+    \end{itemize}
+    \item Action:
+    \begin{itemize}
+        \item Fit LOESS model.
+        \item Predict at \texttt{x = 1.0} to \texttt{5.0}.
+    \end{itemize}
+    \item Expected:
+    \begin{itemize}
+        \item Sorting is correctly handled internally.
+        \item Predictions match original linear relationship.
+        \item Maximum absolute prediction error \( < 10^{-12} \).
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Test 5: Consistency Under Different Bandwidths}
+
+\begin{itemize}
+    \item Input:
+    \begin{itemize}
+        \item Simple linear data as in Test 1.
+    \end{itemize}
+    \item Action:
+    \begin{itemize}
+        \item Fit LOESS models with bandwidths 0.4, 0.6, 0.8, 1.0.
+        \item Predict at \texttt{x = 3.0}.
+    \end{itemize}
+    \item Expected:
+    \begin{itemize}
+        \item Predicted values are consistent across bandwidths (variance \( < 10^{-10} \)).
+    \end{itemize}
+\end{itemize}
+
+\section{F42 Core Sorting Module Pseudocode}
+
+\subsection{Module Overview}
+
+The sorting module provides type-specific, in-place sorting routines for 1D arrays of integers, real numbers, and character sequences.
+It uses Fortran \texttt{interface} blocks to overload a common sort function name across types.
+All working memory is preallocated and passed explicitly.
+
+\subsection{Type Definitions}
+
+\begin{itemize}
+    \item No new types are defined.
+    \item Only standard Fortran arrays are used.
+\end{itemize}
+
+\subsection{Public Interface}
+
+\begin{itemize}
+    \item \texttt{interface sort\_array}
+    \begin{itemize}
+        \item \texttt{module procedure sort\_integer, sort\_real, sort\_character}
+    \end{itemize}
+\end{itemize}
+
+Each sort routine works in-place and expects preallocated working memory.
+
+\subsection{Function Signatures}
+
+\begin{itemize}
+    \item \texttt{subroutine sort\_integer(array, work)}
+    \begin{itemize}
+        \item \texttt{integer, dimension(n), intent(inout) :: array}
+        \item \texttt{integer, dimension(n), intent(inout) :: work} \hfill (temporary work array)
+    \end{itemize}
+
+    \item \texttt{subroutine sort\_real(array, work)}
+    \begin{itemize}
+        \item \texttt{real, dimension(n), intent(inout) :: array}
+        \item \texttt{integer, dimension(n), intent(inout) :: work}
+    \end{itemize}
+
+    \item \texttt{subroutine sort\_character(array, work)}
+    \begin{itemize}
+        \item \texttt{character(len=*), dimension(n), intent(inout) :: array}
+        \item \texttt{integer, dimension(n), intent(inout) :: work}
+    \end{itemize}
+\end{itemize}
+
+\subsection{Algorithm: General Structure (All Types)}
+
+\begin{enumerate}
+    \item Initialize permutation array:
+    \[
+    \text{work}(i) = i \quad \text{for} \quad i = 1, \ldots, n
+    \]
+    \item Sort the permutation array \texttt{work} based on the corresponding values in \texttt{array}.
+    \begin{itemize}
+        \item Use insertion sort (small \( n \)) or quicksort (large \( n \)).
+    \end{itemize}
+    \item Rearrange \texttt{array} according to the sorted permutation:
+    \begin{itemize}
+        \item Use a cycle leader algorithm to avoid extra memory allocation.
+    \end{itemize}
+\end{enumerate}
+
+\subsection{Details for Each Type}
+
+\begin{itemize}
+    \item \textbf{Integer}: Compare \texttt{array(i)} and \texttt{array(j)} numerically.
+    \item \textbf{Real}: Compare \texttt{array(i)} and \texttt{array(j)} numerically.
+    \item \textbf{Character}: Compare \texttt{array(i)} and \texttt{array(j)} lexicographically.
+\end{itemize}
+
+\subsection{Memory Requirements}
+
+\begin{itemize}
+    \item For sorting an array of size \( n \):
+    \begin{itemize}
+        \item One integer work array of size \( n \) is needed.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Algorithm: Non-Recursive Quicksort for Permutation Array}
+
+To comply with F42 and WebAssembly restrictions, Quicksort is implemented without recursion,  
+using an explicit manual stack structure for subarray boundaries.
+
+\subsubsection{Procedure: \texttt{quicksort\_nonrecursive}}
+
+\begin{itemize}
+    \item \texttt{subroutine quicksort\_nonrecursive(array, perm, n, stack\_left, stack\_right)}
+    \begin{itemize}
+        \item \texttt{type depends on context :: array} \hfill (integer, real, or character array)
+        \item \texttt{integer, dimension(n), intent(inout) :: perm} \hfill (permutation array)
+        \item \texttt{integer, intent(in) :: n} \hfill (size of array)
+        \item \texttt{integer, dimension(:), intent(inout) :: stack\_left, stack\_right} \hfill (manual stack arrays)
+    \end{itemize}
+\end{itemize}
+
+\subsubsection{Working Memory Requirements}
+
+\begin{itemize}
+    \item \texttt{stack\_left} and \texttt{stack\_right}: integer arrays of length at least \(\log_2(n) + 10\) (safe overestimate).
+\end{itemize}
+
+\subsubsection{Steps}
+
+\begin{enumerate}
+    \item Initialize:
+    \begin{itemize}
+        \item Set \texttt{stack\_ptr = 1}.
+        \item Push initial full range: \texttt{stack\_left(1) = 1}, \texttt{stack\_right(1) = n}.
+    \end{itemize}
+    
+    \item Main loop:
+    \begin{itemize}
+        \item While \texttt{stack\_ptr > 0}:
+        \begin{enumerate}
+            \item Pop:
+            \begin{itemize}
+                \item Set \texttt{left = stack\_left(stack\_ptr)}, \texttt{right = stack\_right(stack\_ptr)}.
+                \item Decrement \texttt{stack\_ptr}.
+            \end{itemize}
+            \item If \texttt{left} \(\geq\) \texttt{right}, continue to next loop iteration.
+            
+            \item Select pivot:
+            \begin{itemize}
+                \item Set \texttt{pivot\_index = (left + right) / 2}.
+                \item Set \texttt{pivot\_value = array(perm(pivot\_index))}.
+            \end{itemize}
+            
+            \item Partition:
+            \begin{itemize}
+                \item Initialize \texttt{i = left}, \texttt{j = right}.
+                \item While \texttt{i $\leq$ j}:
+                \begin{itemize}
+                    \item Increment \texttt{i} while \texttt{array(perm(i)) < pivot\_value}.
+                    \item Decrement \texttt{j} while \texttt{array(perm(j)) > pivot\_value}.
+                    \item If \texttt{i} \(\leq\) \texttt{j}:
+                    \begin{itemize}
+                        \item Swap \texttt{perm(i)} and \texttt{perm(j)}.
+                        \item Increment \texttt{i}, decrement \texttt{j}.
+                    \end{itemize}
+                \end{itemize}
+            \end{itemize}
+            
+            \item Push new ranges onto the stack:
+            \begin{itemize}
+                \item If \texttt{left < j}:
+                \begin{itemize}
+                    \item Increment \texttt{stack\_ptr}.
+                    \item Set \texttt{stack\_left(stack\_ptr) = left}, \texttt{stack\_right(stack\_ptr) = j}.
+                \end{itemize}
+                \item If \texttt{i < right}:
+                \begin{itemize}
+                    \item Increment \texttt{stack\_ptr}.
+                    \item Set \texttt{stack\_left(stack\_ptr) = i}, \texttt{stack\_right(stack\_ptr) = right}.
+                \end{itemize}
+            \end{itemize}
+        \end{enumerate}
+    \end{itemize}
+\end{enumerate}
+
+\subsubsection{Notes}
+
+\begin{itemize}
+    \item No recursion: stack is manually managed.
+    \item Memory predictable: all working memory passed as arguments.
+    \item Stateless: no hidden or module-wide variables.
+    \item Safe for WebAssembly compilation and fully F42 compliant.
+\end{itemize}
+
+\section{Unit Tests for F42 Core Sorting Module}
+
+The following unit tests verify correctness, robustness, and F42 compliance of the non-recursive sorting routines for integer, real, and character arrays.
+Each test assumes that all required working memory is preallocated before calling sort procedures.
+
+\subsection{Test 1: Sort Ascending Integer Array}
+
+\begin{itemize}
+    \item Input:
+    \begin{itemize}
+        \item \texttt{array} = [5, 2, 9, 1, 6]
+        \item \texttt{work} = preallocated integer array of size 5
+    \end{itemize}
+    \item Action:
+    \begin{itemize}
+        \item Call \texttt{sort\_array(array, work)}.
+    \end{itemize}
+    \item Expected:
+    \begin{itemize}
+        \item \texttt{array} = [1, 2, 5, 6, 9]
+    \end{itemize}
+\end{itemize}
+
+\subsection{Test 2: Sort Descending Real Array}
+
+\begin{itemize}
+    \item Input:
+    \begin{itemize}
+        \item \texttt{array} = [3.5, 2.2, 8.8, 1.1, 7.7]
+        \item \texttt{work} = preallocated integer array of size 5
+    \end{itemize}
+    \item Action:
+    \begin{itemize}
+        \item Call \texttt{sort\_array(array, work)}.
+    \end{itemize}
+    \item Expected:
+    \begin{itemize}
+        \item \texttt{array} = [1.1, 2.2, 3.5, 7.7, 8.8]
+    \end{itemize}
+\end{itemize}
+
+\subsection{Test 3: Sort Random Character Array}
+
+\begin{itemize}
+    \item Input:
+    \begin{itemize}
+        \item \texttt{array} = ["dog", "apple", "zebra", "cat", "bird"]
+        \item \texttt{work} = preallocated integer array of size 5
+    \end{itemize}
+    \item Action:
+    \begin{itemize}
+        \item Call \texttt{sort\_array(array, work)}.
+    \end{itemize}
+    \item Expected:
+    \begin{itemize}
+        \item \texttt{array} = ["apple", "bird", "cat", "dog", "zebra"]
+    \end{itemize}
+\end{itemize}
+
+\subsection{Test 4: Stability on Already Sorted Arrays}
+
+\begin{itemize}
+    \item Input:
+    \begin{itemize}
+        \item \texttt{array} = [1, 2, 3, 4, 5]
+        \item \texttt{work} = preallocated integer array of size 5
+    \end{itemize}
+    \item Action:
+    \begin{itemize}
+        \item Call \texttt{sort\_array(array, work)}.
+    \end{itemize}
+    \item Expected:
+    \begin{itemize}
+        \item \texttt{array} remains [1, 2, 3, 4, 5]
+    \end{itemize}
+\end{itemize}
+
+\subsection{Test 5: Behavior on Empty Array}
+
+\begin{itemize}
+    \item Input:
+    \begin{itemize}
+        \item \texttt{array} = []
+        \item \texttt{work} = preallocated integer array of size 0
+    \end{itemize}
+    \item Action:
+    \begin{itemize}
+        \item Call \texttt{sort\_array(array, work)}.
+    \end{itemize}
+    \item Expected:
+    \begin{itemize}
+        \item No error or crash; operation completes trivially.
+    \end{itemize}
+\end{itemize}
+
+\subsection{Test 6: Correctness of Sorting After Random Shuffles}
+
+\begin{itemize}
+    \item Input:
+    \begin{itemize}
+        \item Generate random permutation of integers [1,2,3,...,1000].
+        \item \texttt{array} = shuffled integers
+        \item \texttt{work} = preallocated integer array of size 1000
+    \end{itemize}
+    \item Action:
+    \begin{itemize}
+        \item Call \texttt{sort\_array(array, work)}.
+    \end{itemize}
+    \item Expected:
+    \begin{itemize}
+        \item \texttt{array} = [1, 2, 3, ..., 1000]
+    \end{itemize}
+\end{itemize}
+
+\end{document}
