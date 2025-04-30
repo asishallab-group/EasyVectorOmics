@@ -105,4 +105,130 @@ Access full row & \texttt{real\_array(i, :)} & Yes \\
 Efficient memory handling is critical for Tensor Omics.  
 Understanding Fortran's passing conventions allows maximization of speed, minimization of hidden temporaries, and preservation of F42 computational standards.
 
+\section{Critical Practices in TOX Interfacing and Control Flow}
+
+This section consolidates three key implementation standards for TOX and F42 compliance: correct R–Fortran interfacing, prohibition of \texttt{GOTO}, and manual memory cleanup.
+
+\subsection{Why \texttt{bind(C)} Is Dangerous for R Interfacing}
+
+Using \texttt{bind(C)} in Fortran changes the function's symbol name and calling convention to conform to the C ABI. This is incompatible with R's native \texttt{.Fortran()} interface, which relies on legacy Fortran symbol conventions (e.g., appending underscores, pass-by-address semantics).
+
+\subsubsection*{Problems Caused by \texttt{bind(C)} in R Packages}
+\begin{itemize}
+  \item \textbf{Breaks Symbol Lookup:} R expects mangled names like \texttt{mysub\_}, which \texttt{bind(C)} suppresses.
+  \item \textbf{Incorrect Argument Handling:} Changes to calling convention may result in wrong memory alignment or crashes.
+  \item \textbf{Unnecessary:} R handles native Fortran linking automatically during package build.
+\end{itemize}
+
+\subsubsection*{Correct Way to Interface R with Fortran}
+\begin{enumerate}
+  \item Write your subroutines in pure Fortran \emph{without} \texttt{bind(C)}.
+  \item Place Fortran files in \texttt{src/} directory of the package.
+  \item Register your compiled code using \texttt{useDynLib(pkgname)} in \texttt{NAMESPACE}.
+  \item Call Fortran code from R via \texttt{.Fortran()}:
+\begin{verbatim}
+  result <- .Fortran("mysub",
+    as.double(x), as.double(y), result = double(1))$result
+\end{verbatim}
+\end{enumerate}
+
+\subsubsection*{Minimal Example of Package Setup}
+\begin{itemize}
+  \item \texttt{DESCRIPTION}: no special flags needed.
+  \item \texttt{NAMESPACE}: \verb|useDynLib(mytoxpkg)|
+  \item \texttt{src/mysub.f90}:
+\begin{verbatim}
+subroutine mysub(x, y, result)
+  real(8) :: x, y, result
+  result = x + y
+end subroutine
+\end{verbatim}
+\end{itemize}
+
+\vspace{1em}
+
+\subsection{Why \texttt{GOTO} Is Forbidden in F42 and TOX}
+
+\texttt{GOTO} is a low-level control structure that violates the principles of structured, readable, and verifiable code. While allowed by Fortran, its use is incompatible with both modern software engineering and WebAssembly (WASM) compilation.
+
+\subsubsection*{Reasons for Prohibition}
+\begin{itemize}
+  \item \textbf{Non-Structured Control Flow:} Makes code hard to reason about and maintain.
+  \item \textbf{Incompatible With WASM:} WebAssembly requires structured control graphs.
+  \item \textbf{Opaque for Debugging:} Introduces implicit jump logic that hinders traceability.
+  \item \textbf{Fails F42 Goals:} Violates statelessness, modularity, and verifiability.
+\end{itemize}
+
+\subsection{How to Replace \texttt{GOTO} Correctly}
+
+\subsubsection*{1. Use \texttt{exit} to break out of a loop}
+\begin{verbatim}
+do i = 1, n
+  if (array(i) < 0.0) then
+    exit
+  end if
+end do
+\end{verbatim}
+
+\subsubsection*{2. Use \texttt{cycle} to skip to next iteration}
+\begin{verbatim}
+do i = 1, n
+  if (.not. valid(i)) cycle
+  call process(i)
+end do
+\end{verbatim}
+
+\subsubsection*{3. Use \texttt{select case} for structured branching}
+\begin{verbatim}
+select case(code)
+case(1)
+  call handle_case1()
+case(2)
+  call handle_case2()
+case default
+  call handle_default()
+end select
+\end{verbatim}
+
+\subsection{Memory Cleanup: Manual Destructors}
+
+Since Fortran has no \texttt{try/finally} construct and F42 disallows \texttt{final ::} destructors due to their opacity, all memory cleanup must be performed manually.
+
+\subsubsection*{Pattern: Explicit Cleanup Subroutine}
+\begin{verbatim}
+subroutine deallocate_datatable(dt)
+  type(DataTable), intent(inout) :: dt
+
+  if (allocated(dt%real_array)) deallocate(dt%real_array)
+  if (allocated(dt%char_array)) deallocate(dt%char_array)
+  if (allocated(dt%int_array))  deallocate(dt%int_array)
+  if (allocated(dt%column_names)) deallocate(dt%column_names)
+end subroutine
+\end{verbatim}
+
+\subsubsection*{Pattern: Simulated try-finally via logical block}
+\begin{verbatim}
+logical :: success
+success = .false.
+
+call allocate_datatable(dt, ierr)
+if (ierr == 0) then
+  call compute(dt)
+  success = .true.
+end if
+
+call deallocate_datatable(dt)
+\end{verbatim}
+
+\subsection*{Conclusion}
+
+All R–Fortran interfacing, control flow, and memory management in TOX must follow F42 principles:
+\begin{itemize}
+  \item Never use \texttt{bind(C)} unless wrapping via \texttt{.Call()} (not \texttt{.Fortran()}).
+  \item Never use \texttt{GOTO} — always use structured constructs.
+  \item Always provide manual cleanup subroutines for types containing allocatables.
+\end{itemize}
+
+These principles ensure safety, readability, WASM compatibility, and long-term maintainability.
+
 \end{document}
