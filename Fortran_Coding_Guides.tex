@@ -231,4 +231,85 @@ All R–Fortran interfacing, control flow, and memory management in TOX must fol
 
 These principles ensure safety, readability, WASM compatibility, and long-term maintainability.
 
+\section{Unified Parallel Loop Snippet}
+
+To streamline parallel execution across different computing environments, we
+define a unified Fortran snippet that automatically generates precompiler code
+enabling compilation to one of three execution modes: \textbf{Coarrays},
+\textbf{OpenMP}, or \textbf{serial fallback}. This is achieved using
+preprocessor directives that adapt the loop structure based on compiler flags.
+The loop body itself remains unchanged, ensuring that the parallelization
+mechanism is orthogonal to the logic being executed.
+
+Below is the result of expanding the \texttt{f42:do-parallel} snippet, which
+selects the appropriate backend at compile time:
+
+\begin{verbatim}
+
+! ----------------------
+! START OF PARALLEL LOOP
+! ----------------------
+# ifdef USE_COARRAY
+start_i = (this_image() - 1) * N / num_images() + 1
+end_i   = min(this_image() * N / num_images(), N)
+
+do i = start_i, end_i
+# endif
+
+# ifdef USE_OPENMP
+!$omp parallel do private(i)
+do i = 1, N
+# endif
+
+#if !defined(USE_COARRAY) && !defined(USE_OPENMP)
+do i = 1, N
+#endif
+
+! BODY OF THE PARALLEL LOOP
+! -----------------------------
+
+! -----------------------------
+! END BODY OF THE PARALLEL LOOP
+
+end do ! END OF DO-LOOP
+
+# ifdef USE_COARRAY
+sync all
+# endif
+
+# ifdef USE_OPENMP
+!$OMP END PARALLEL
+# endif
+
+! --------------------
+! END OF PARALLEL LOOP
+! --------------------
+\end{verbatim}
+
+Compile with:
+\begin{itemize}
+  \item \texttt{-DUSE\_OPENMP} and \texttt{-fopenmp} for OpenMP
+  \item \texttt{-DUSE\_COARRAY} for Coarrays (e.g. with
+    \texttt{-fcoarray=single} for shared memory, or \texttt{-fcoarray=lib} for
+    distributed)
+\end{itemize}
+
+\subsection{Guideline: Use \texttt{f42:do-parallel} only in ``Root Loops''}
+
+To ensure clarity, efficiency, and robustness of parallel execution in Tensor
+Omics, parallel loops using the \texttt{f42:do-parallel} snippet should only be
+used at the \emph{root level} of computational routines—that is, in the
+outermost loops directly executed within a parallelized function or subroutine.
+These \emph{root-loops} are not nested inside other loops or deeply obscured by
+function calls.
+
+This restriction avoids unnecessary overhead, data locality issues, and
+potential thread contention that can arise when parallelization is applied
+within inner or nested computation layers. Keeping parallelization explicit and
+confined to root-loops ensures predictable control over memory access and
+parallel execution, aligning with the minimalist and efficient design
+principles of F42. Developers are encouraged to refactor inner computations
+into pure, stateless subroutines and apply parallelization only where it
+governs the outermost iteration logic.
+
 \end{document}
