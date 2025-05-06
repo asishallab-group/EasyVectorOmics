@@ -1,0 +1,9 @@
+project: TOX_Normalization
+output_dir: doc
+docmark: "!"
+author: Vivian Bass
+summary: >
+  Fortran subroutines for normalizing gene expression data..
+doc_block_style: doxygen
+files:
+  - tox_normalization.f90

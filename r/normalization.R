@@ -27,6 +27,18 @@ fc_df <- calculate_fc_by_patterns(
   condition_patterns = c("dietP")       # Define conditions pattern(s)
 )
 
-# === Save the resulting normalized and transformed data ===
-normalized_df <- data.frame(gene_id = gene_ids, fc_df)
+# # === Save the resulting normalized and transformed data ===
+# normalized_df <- data.frame(gene_id = gene_ids, fc_df)
+
+print(head(df_matrix))
+print(head(normalized_matrix_std))
+print(head(normalized_matrix_qtl))
+print(head(normalized_matrix_log))
+print(head(averaged_df))
+print(head(fc_df))
+normalized_df <- as.data.frame(fc_df)
+normalized_df$gene_id <- gene_ids  
+normalized_df <- normalized_df[, c("gene_id", setdiff(colnames(normalized_df), "gene_id"))]
+
+
 write.table(normalized_df, output_file, sep = "\t", row.names = FALSE, quote = FALSE)

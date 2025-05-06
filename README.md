@@ -12,7 +12,7 @@ The scripts were tested using:
 
 ## 🚀 Project Structure
 
-- **Fortran 90/95 Modules (`tensoromics_normalization.f90`)**  
+- **Fortran 90/95 Modules (`tox_normalization.f90`)**  
   Provides fast implementations of:
   - Standard deviation normalization
   - Quantile normalization
@@ -40,15 +40,22 @@ If in the future LFortran improves `.so` support, migration can be considered.
 Compile the Fortran code using `gfortran`:
 
 ```bash
-gfortran -fPIC -shared -o build/libtensoromics_g.so src/tensoromics_normalization.f90
+gfortran -g -fcheck=all -Wall -fPIC -shared -o build/tox_normalization.so src/tox_sorting.f90 src/tox_normalization.f90
 ```
 
 This will produce a shared object (`.so`) file that R can dynamically load.
 
 Check if the subroutines were compiled successfully with:
 ```bash
-nm -g libtensoromics_g.so
+nm -g build/tox_normalization.so
 ```
+
+- Unit tests: sorting
+  ```bash
+  gfortran -c src/tests/test_sorting.f90 -o build/test_sorting.o
+  gfortran -o build/test_runner src/tests/main.f90 build/test_sorting.o src/tox_sorting.f90
+  ./build/test_runner 
+  ```
 
 ## ⚡ Alternative Compilation Options (for future WASM or portability)
 
@@ -57,10 +64,10 @@ nm -g libtensoromics_g.so
 Instead of building a shared object, you can compile to an intermediate object file:
 
 ```bash
-gfortran -c tensoromics_normalization.f90
+gfortran -c tox_normalization.f90
 ```
 
-- Generates `tensoromics_normalization.o`.
+- Generates `tox_normalization.o`.
 - Useful if you want to later link manually or transform the `.o` file (e.g., for WASM).
 
 ---
@@ -70,7 +77,7 @@ gfortran -c tensoromics_normalization.f90
 Using **LFortran** (experimental feature), you can **directly compile to WebAssembly**:
 
 ```bash
-lfortran --emit-wasm tensoromics_normalization.f90 -o tensoromics_normalization.wasm
+lfortran --emit-wasm tox_normalization.f90 -o tox_normalization.wasm
 ```
 
 - This produces a `.wasm` module directly from Fortran.
@@ -83,7 +90,7 @@ lfortran --emit-wasm tensoromics_normalization.f90 -o tensoromics_normalization.
 First, load the shared library inside your R session:
 
 ```r
-dyn.load("libtensoromics.so")
+dyn.load("build/tox_normalization.so")
 ```
 
 Now you can use the provided R wrapper functions:
@@ -114,8 +121,26 @@ All R functions are documented using **Roxygen2-style comments**, meaning that:
 - Parameters, outputs, and examples are clearly explained.
 - Easy to generate `.Rd` files for package building if needed.
 
-The Fortran code is also carefully commented inline to facilitate further development.
+The Fortran code is also carefully commented using FORD:
 
+
+### ✅ FORD (Fortran Online Reference Documentation)
+
+[FORD](https://github.com/Fortran-FOSS-Programmers/ford) is a documentation generator specifically designed for Fortran projects. It allows developers to create clean, structured, and navigable HTML documentation from source code using lightweight markup embedded in comments.
+
+* Designed specifically for Fortran (unlike Doxygen which is general-purpose).
+* Supports documentation of modules, subroutines, functions, derived types, and more.
+* Uses `!!!` or `!>` comment syntax to annotate code.
+* Ideal for scientific and engineering projects using modern Fortran.
+* Easy to integrate into Git-based workflows.
+
+Example usage:
+
+```bash
+ford ford.yml
+```
+
+This generates an HTML site you can explore in a browser (`doc/index.html` by default).
 
 # 📈 Future Work
 
@@ -126,7 +151,7 @@ The Fortran code is also carefully commented inline to facilitate further develo
 
 ```
 /src
-  └── tensoromics_normalization.f90    # Fortran backend code
+  └── tox_normalization.f90    # Fortran backend code
 /methods
   └── normalization.R                  # R wrappers for normalization functions
   └── tensoromics_functions.R           # Additional R helper functions

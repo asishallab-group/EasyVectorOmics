@@ -1,5 +1,5 @@
 # === Load the shared library ===
-dyn.load("build/libtensoromics_g.so")
+dyn.load("build/tox_normalization.so")
 
 
 
@@ -21,32 +21,23 @@ normalize_by_std_dev <- function(input_matrix) {
   n_genes <- nrow(input_matrix)  # Number of genes (rows)
   n_tissues <- ncol(input_matrix)  # Number of tissues (columns)
 
-  # Save column and row names for later restoration
-  col_names <- colnames(input_matrix)
-  row_names <- rownames(input_matrix)
+  # print(head(input_matrix))
 
   # Prepare the input vector (flatten matrix column-major) and allocate output space
   input_vector <- as.numeric(as.vector(input_matrix))
   output_vector <- numeric(n_genes * n_tissues)
 
   # Call the Fortran subroutine
-  result <- .C("normalize_by_std_dev",
+  result <- .Fortran("normalize_by_std_dev",
                as.integer(n_genes),
                as.integer(n_tissues),
                input_vector,
                output_vector)
 
-  # Reconstruct the normalized matrix
-  normalized_matrix <- matrix(result[[4]], nrow = n_genes, ncol = n_tissues)
+  matrix(result[[4]], nrow = n_genes, ncol = n_tissues,
+         dimnames = dimnames(input_matrix))
 
-  # Restore row and column names
-  colnames(normalized_matrix) <- col_names
-  rownames(normalized_matrix) <- row_names
-
-  return(normalized_matrix)
 }
-
-
 
 
 #' Quantile normalization of gene expression values
@@ -64,33 +55,52 @@ normalize_by_std_dev <- function(input_matrix) {
 #' @examples
 #' normalized_matrix <- quantile_normalization(input_matrix)
 quantile_normalization <- function(input_matrix) {
-  n_genes <- nrow(input_matrix)  # Number of genes (rows)
-  n_tissues <- ncol(input_matrix)  # Number of tissues (columns)
+  n_genes <- nrow(input_matrix)
+  n_tissues <- ncol(input_matrix)
 
-  # Save column and row names for later restoration
-  col_names <- colnames(input_matrix)
-  row_names <- rownames(input_matrix)
-
-  # Prepare the input vector (flatten matrix column-major) and allocate output space
+  # Flatten input matrix (column-major) and preallocate vectors
   input_vector <- as.numeric(as.vector(input_matrix))
   output_vector <- numeric(n_genes * n_tissues)
+  temp_col <- numeric(n_genes)
+  rank_means <- numeric(n_genes)
+  perm <- integer(n_genes)
 
-  # Call the Fortran subroutine
-  result <- .C("quantile_normalization",
-               as.integer(n_genes),
-               as.integer(n_tissues),
-               input_vector,
-               output_vector)
+  # Estimar tamaño máximo para la pila (según pseudocódigo: log2(n) + 10)
+  max_stack <- as.integer(ceiling(log2(n_genes)) + 10)
+  stack_left <- integer(max_stack)
+  stack_right <- integer(max_stack)
 
-  # Reconstruct the quantile-normalized matrix
-  normalized_matrix <- matrix(result[[4]], nrow = n_genes, ncol = n_tissues)
+  # Fortran interop: asegurar tipos
+  storage.mode(input_vector) <- "double"
+  storage.mode(output_vector) <- "double"
+  storage.mode(temp_col) <- "double"
+  storage.mode(rank_means) <- "double"
+  storage.mode(perm) <- "integer"
+  storage.mode(stack_left) <- "integer"
+  storage.mode(stack_right) <- "integer"
 
-  # Restore row and column names
-  colnames(normalized_matrix) <- col_names
-  rownames(normalized_matrix) <- row_names
+  # Initialize first stack entry manually
+  # stack_left[1] <- 1L
+  # stack_right[1] <- n_genes
 
-  return(normalized_matrix)
+  result <- .Fortran("quantile_normalization",
+    as.integer(n_genes),
+    as.integer(n_tissues),
+    input_vector,
+    output_vector,
+    temp_col,
+    rank_means,
+    perm,
+    stack_left,
+    stack_right,
+    as.integer(max_stack)
+  )
+
+  matrix(result[[4]], nrow = n_genes, ncol = n_tissues,
+         dimnames = dimnames(input_matrix))
 }
+
+
 
 
 #' Apply log2(x + 1) transformation to gene expression values
@@ -112,29 +122,30 @@ log2_transformation <- function(input_matrix) {
   n_genes <- nrow(input_matrix)  # Number of genes (rows)
   n_tissues <- ncol(input_matrix)  # Number of tissues (columns)
 
-  # Save column and row names for later restoration
-  col_names <- colnames(input_matrix)
-  row_names <- rownames(input_matrix)
+  # # Save column and row names for later restoration
+  # col_names <- colnames(input_matrix)
+  # row_names <- rownames(input_matrix)
 
   # Prepare the input vector (flatten matrix column-major) and allocate output space
   input_vector <- as.numeric(as.vector(input_matrix))
   output_vector <- numeric(n_genes * n_tissues)
 
   # Call the Fortran subroutine
-  result <- .C("log2_transformation",
+  result <- .Fortran("log2_transformation",
                as.integer(n_genes),
                as.integer(n_tissues),
                input_vector,
                output_vector)
 
   # Reconstruct the transformed matrix
-  normalized_matrix <- matrix(result[[4]], nrow = n_genes, ncol = n_tissues)
+  matrix(result[[4]], nrow = n_genes, ncol = n_tissues,
+  dimnames = dimnames(input_matrix))
 
-  # Restore row and column names
-  colnames(normalized_matrix) <- col_names
-  rownames(normalized_matrix) <- row_names
+  # # Restore row and column names
+  # colnames(normalized_matrix) <- col_names
+  # rownames(normalized_matrix) <- row_names
 
-  return(normalized_matrix)
+  # return(normalized_matrix)
 }
 
 #' Parse tissue group name from column name
@@ -150,14 +161,16 @@ log2_transformation <- function(input_matrix) {
 #' parse_tissue_group("brain_dietP")    # returns "brain_dietP"
 parse_tissue_group <- function(colname) {
   parts <- strsplit(colname, "_")[[1]]
-  if (length(parts) >= 3 && grepl("^[0-9]+$", parts[length(parts)])) {
-    # Case: column ends with a replicate number (e.g., _1, _2)
+  
+  if (length(parts) >= 2 && grepl("^[0-9]+$", parts[length(parts)])) {
+    # If last part is a number (replicate), remove it
     return(paste(parts[1:(length(parts)-1)], collapse = "_"))
   } else {
-    # Case: no replicate suffix
+    # Otherwise, return full name
     return(colname)
   }
 }
+
 
 #' Calculate average expression across replicates for each tissue group
 #'
@@ -216,9 +229,8 @@ calculate_tissue_averages <- function(df) {
   output_vector <- numeric(n_genes * n_groups)
 
   # --- Call the Fortran subroutine to calculate averages ---
-  result <- .C("calc_tiss_avg",
+  result <- .Fortran("calc_tiss_avg",
                as.integer(n_genes),
-               as.integer(n_columns),
                as.integer(n_groups),
                as.integer(group_starts),
                as.integer(group_counts),
@@ -226,7 +238,7 @@ calculate_tissue_averages <- function(df) {
                as.numeric(output_vector))
 
   # --- Reconstruct output matrix ---
-  output_matrix <- matrix(result[[7]], nrow = n_genes, ncol = n_groups)
+  output_matrix <- matrix(result[[6]], nrow = n_genes, ncol = n_groups)
 
   # --- Restore column and row names ---
   colnames(output_matrix) <- unique_groups
@@ -318,8 +330,11 @@ calculate_fc_by_patterns <- function(df, control_pattern, condition_patterns) {
   input_vector <- as.numeric(as.vector(as.matrix(df)))
   output_vector <- numeric(n_genes * n_pairs)
 
+  print(control_cols)
+  print(condition_cols)
+  print(head(input_vector))
   # --- Call Fortran subroutine to calculate fold changes ---
-  result <- .C("calc_fchange",
+  result <- .Fortran("calc_fchange",
                as.integer(n_genes),
                as.integer(n_pairs),
                as.integer(control_cols),
@@ -334,3 +349,4 @@ calculate_fc_by_patterns <- function(df, control_pattern, condition_patterns) {
 
   return(as.data.frame(output_matrix))
 }
+
