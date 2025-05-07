@@ -1,0 +1,153 @@
+\documentclass{article}
+\usepackage{amsmath,amssymb}
+\usepackage[margin=1in]{geometry}
+\usepackage{enumitem}
+\begin{document}
+
+\section*{Tensor Omics: Full Toolkit Overview (April 2025)}
+
+\subsection*{A. Data Preprocessing and Representation}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Normalization:} standard deviation scaling, quantile normalization (optional), log transform (\( \log(1 + x) \)), log fold-change for stress studies.
+  \item \textbf{Expression Vector Construction:} replicate averaging, raw and normalized K-D Trees.
+  \item \textbf{Grid Construction and Smoothing:} automatic grid sizing; interpolation + smoothing performed at expression, tensor field, and module levels.
+\end{itemize}
+
+\subsection*{B. Semantic Annotation and Axes}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Metadata Annotation:} gene families, molecular functions, duplication metadata.
+  \item \textbf{Anchor Axis:} user-defined semantic axis for projections and directional queries.
+  \item \textbf{Parzival Axes:} lexical axes (e.g., stress, phenotype contrasts).
+\end{itemize}
+
+\subsection*{C. Shift Field and Angular Geometry}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Shift Vectors:} \( \vec{s} = \vec{p} - \vec{o} \), followed by interpolation and smoothing on the grid.
+  \item \textbf{Outlier Detection:} RDI (distance), RAI (angle), RAS (axis signal).
+  \item \textbf{Tissue Specificity:} angle to space diagonal; versatility metric via cosine similarity.
+  \item \textbf{RAP Projection:} Relative Axes Plane for clock plots; subspace RAP for axis-limited projection.
+\end{itemize}
+
+\subsection*{D. Duplication Outcome Analysis}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Subfunctionalization:} sum vector close to centroid, low RAI and RDI.
+  \item \textbf{Neofunctionalization:} high RAS—axis expression gained not present in centroid.
+  \item \textbf{Dosage Effects:} amplified sum vector in same direction; low RAI, high RDI.
+\end{itemize}
+
+\subsection*{E. Subfield and Tensor Descriptor Analysis}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Directional Subfield Selection:} by metadata, cosine to direction of interest, background exclusion.
+  \item \textbf{Subfield Summary Tensor:}
+    \begin{itemize}
+      \item Flow vector: first eigenvector of \( C = M M^T \)
+      \item Rotation vector: from \( A = C - C^T \)
+      \item Frobenius norm: total signal energy
+      \item Rank: via SVD
+    \end{itemize}
+\end{itemize}
+
+\subsection*{F. Gradient Visualization via Gwion (formerly GAWD)}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Gwion Analysis:} traversal along flow axis (first eigenvector)
+  \item \textbf{Panel 1:} Standardized dual line plot of signal strength + rank vs axis position
+  \item \textbf{Panel 2:} Clock plots of flow vectors projected orthogonal to axis
+  \item \textbf{Panel 3:} Clock plots of rotation vectors, same projection
+\end{itemize}
+
+\subsection*{G. Temporal and Trajectory Analysis}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Trajectory Modes:} Mode A (low angular variance) vs Mode B (local stacked planes)
+  \item \textbf{Metrics:} Angular Shift Velocity (ASV), Instantaneous Acceleration (IA)
+\end{itemize}
+
+\subsection*{H. Tensor Field Analysis (Bobito)}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{First-Order Cones:} local vector aggregation; cutoff by JOE/JOV derivative jumps
+  \item \textbf{Summary:} flow vector, rotation vector, Frobenius norm, rank
+  \item \textbf{Second-Order Surfaces:} symmetric and antisymmetric tensor components
+\end{itemize}
+
+\subsection*{I. Semantic Glyph Learning (Gilgamesh)}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Glyph Alignment:} cross-field comparison of shifts and tensors
+  \item \textbf{Classification:} prolific vs polymorphic glyphs
+  \item \textbf{Constellation Maps:} latent semantic layer of expression motifs
+\end{itemize}
+
+\subsection*{J. Eitri Surface Extraction (Multi-Rail Shell Detection)}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Axis Traversal:} trace along 1–3 eigenvectors (\( \vec{v}_1, \vec{v}_2, \vec{v}_3 \))
+  \item \textbf{Cylindrical Segments:} short axial tubes centered on each rail
+  \item \textbf{Within Each Tube:} divide into angular bins; select max-radius vectors as surface candidates
+  \item \textbf{Multi-Rail Refinement:} if a vector in a higher-order axis has greater radial distance in a sector, it replaces the candidate
+  \item \textbf{Final Surface:} interpolated and smoothed on the grid for meshed visualization
+\end{itemize}
+
+\subsection*{K. Infrastructure and Instrumentation}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{F42 Data Model:} typed binary arrays, grid metadata, raw and normalized K-D Trees
+  \item \textbf{Patch System:} versioned `.txdata` deltas, timestamped, streamable, script-generated
+  \item \textbf{Carbon Awareness:} no large models, Fortran-based numerics, WASM-compatibility
+\end{itemize}
+
+\subsection*{L. Visualization and Outreach}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Tensor Omics Workbench:} D3-based interactive UI, SVG export, zoom/filtering
+  \item \textbf{Flyer Design:}
+    \begin{itemize}
+      \item Pipeline summary with cartoon visuals
+      \item Glyph and cone illustrations
+      \item Semantic primitives legend (shift, cone, RAP, glyph)
+      \item Emission and reproducibility highlights
+    \end{itemize}
+\end{itemize}
+
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Movie Mode in TOX Flyer:} 
+    \begin{itemize}
+      \item Sequential saving of Flyer states (zoom, axes, metadata filters, projections).
+      \item Enables animated exploration of semantic fields.
+      \item Playback within Flyer UI or embedded in labbook.
+    \end{itemize}
+
+  \item \textbf{Scriptable Flyer (JavaScript API):}
+    \begin{itemize}
+      \item Scripts written in native JavaScript, matching Flyer’s implementation language.
+      \item Allows automation of visualization transitions, filter toggling, color mappings, etc.
+      \item Optional minimal abstraction layer for user-defined scripting (helper functions or DSL-style wrapper).
+      \item Exportable snippets as `.js` + `<div>` blocks for labbook or HTML slides.
+    \end{itemize}
+
+  \item \textbf{HTML Labbook Integration:}
+    \begin{itemize}
+      \item Labbook rendered in HTML with embedded JavaScript plots.
+      \item Flyer exports interactive views or movies as embeddable elements.
+      \item Fully portable and printable; supports Git and static hosting.
+    \end{itemize}
+
+  \item \textbf{Siddhartha Mode (Multi-Dimensional Trace):}
+    \begin{itemize}
+      \item Projects higher-dimensional subfields into 3D via slices along spread/flow axes.
+      \item Shows surface formation over trace; grid-to-surface vectors collected at each slice.
+      \item Derivative estimates at grid points support semantic curvature analysis.
+    \end{itemize}
+
+  \item \textbf{Afterglow Effect (User-Defined Trace Memory):}
+    \begin{itemize}
+      \item User can specify how many recent trace steps to visualize.
+      \item Points from previous steps rendered with fading opacity (increasing alpha).
+      \item Optional color hue gradient applied across trace history.
+      \item Creates a ghost-like trail showing the semantic object’s movement through 3D.
+    \end{itemize}
+
+  \item \textbf{First Derivative Estimation Arrows:}
+    \begin{itemize}
+      \item At each grid point, vectors to surface points traced during Siddhartha slices are recorded.
+      \item From these, local derivative estimates are computed via finite differences.
+      \item Resulting arrows indicate the surface’s directional change (curvature flow).
+      \item Arrows are toggleable per user setting and overlaid onto the current 3D slice.
+    \end{itemize}
+\end{itemize}
+
+\end{document}
