@@ -12,219 +12,6 @@
 
 \maketitle
 
-\section{F42 LOESS Module Pseudocode}
-
-\subsection{Module Overview}
-
-The LOESS module provides local weighted regression smoothing for 1D data, specifically for fitting standard deviation as a function of mean expression.  
-It is designed to comply fully with the F42 DataStructure principles: statelessness, preallocated memory, reproducibility, and serialization-readiness.
-
-\subsection{Type Definitions}
-
-\begin{itemize}
-    \item \texttt{type :: LOESS\_Model}
-    \begin{itemize}
-        \item \texttt{real, dimension(:), allocatable :: x\_sorted} \hfill (sorted predictor values)
-        \item \texttt{real, dimension(:), allocatable :: y\_sorted} \hfill (sorted response values)
-        \item \texttt{integer :: n} \hfill (number of data points)
-        \item \texttt{real :: bandwidth\_fraction} \hfill (fraction of points used for local fitting, e.g., 0.3)
-    \end{itemize}
-\end{itemize}
-
-\subsection{Public Procedures}
-
-\begin{itemize}
-    \item \texttt{subroutine loess\_fit(x, y, bandwidth, model, work\_int, work\_real)}
-    \begin{itemize}
-        \item Inputs:
-        \begin{itemize}
-            \item \texttt{real, dimension(n) :: x} \hfill (predictor values)
-            \item \texttt{real, dimension(n) :: y} \hfill (response values)
-            \item \texttt{real :: bandwidth} \hfill (bandwidth fraction, \(0 < \text{bandwidth} \leq 1\))
-        \end{itemize}
-        \item Outputs:
-        \begin{itemize}
-            \item \texttt{type(LOESS\_Model) :: model}
-        \end{itemize}
-        \item Working memory (preallocated by caller):
-        \begin{itemize}
-            \item \texttt{integer, dimension(n) :: work\_int}
-            \item \texttt{real, dimension(n) :: work\_real}
-        \end{itemize}
-    \end{itemize}
-
-    \item \texttt{subroutine loess\_predict(model, x\_query, y\_pred, work\_int, work\_real)}
-    \begin{itemize}
-        \item Inputs:
-        \begin{itemize}
-            \item \texttt{type(LOESS\_Model) :: model}
-            \item \texttt{real :: x\_query} \hfill (query predictor value)
-        \end{itemize}
-        \item Outputs:
-        \begin{itemize}
-            \item \texttt{real :: y\_pred} \hfill (predicted response value)
-        \end{itemize}
-        \item Working memory (preallocated by caller):
-        \begin{itemize}
-            \item \texttt{integer, dimension(model\%n) :: work\_int}
-            \item \texttt{real, dimension(model\%n) :: work\_real}
-        \end{itemize}
-    \end{itemize}
-\end{itemize}
-
-\subsection{Algorithm: \texttt{loess\_fit}}
-
-\begin{enumerate}
-    \item Copy input \texttt{x} and \texttt{y} into temporary arrays using \texttt{work\_real}.
-    \item Sort \texttt{x} ascendingly, rearranging \texttt{y} in the same order (store into \texttt{model\%x\_sorted} and \texttt{model\%y\_sorted}).
-    \item Store \texttt{n = size(x)} and \texttt{bandwidth\_fraction = bandwidth} into \texttt{model}.
-\end{enumerate}
-
-\subsection{Algorithm: \texttt{loess\_predict}}
-
-\begin{enumerate}
-    \item Perform binary search on \texttt{model\%x\_sorted} to find the insertion point for \texttt{x\_query}.
-    \item Expand left and right to collect \( k \) nearest neighbors, where
-    \[
-    k = \max(3, \lfloor \text{bandwidth\_fraction} \times n \rfloor)
-    \]
-    \item Compute distances of collected neighbors to \texttt{x\_query}.
-    \item Assign weights using the tricube kernel:
-    \[
-    w_i = \left(1 - \left(\frac{|x_i - x_{\text{query}}|}{d_{\text{max}}}\right)^3\right)^3
-    \]
-    where \( d_{\text{max}} \) is the largest distance among the collected neighbors.
-    \item Solve the weighted least squares problem to fit \( y = \beta_0 + \beta_1 x \) locally:
-    \[
-    \min_{\beta_0, \beta_1} \sum_{i} w_i (y_i - \beta_0 - \beta_1 x_i)^2
-    \]
-    (This can be solved by forming normal equations manually or using a tiny LAPACK call if needed.)
-    \item Predict the response:
-    \[
-    y_{\text{pred}} = \beta_0 + \beta_1 x_{\text{query}}
-    \]
-\end{enumerate}
-
-\subsection{Memory Requirements}
-
-\begin{itemize}
-    \item During fitting:
-    \begin{itemize}
-        \item \texttt{2n} reals (temporary storage for sorting)
-        \item \texttt{n} integers (for sorting indices if needed)
-    \end{itemize}
-    \item During prediction:
-    \begin{itemize}
-        \item \texttt{n} reals (for temporary neighbor distances and weights)
-        \item \texttt{n} integers (for neighbor indices if needed)
-    \end{itemize}
-\end{itemize}
-
-\subsection{Unit Tests for LOESS Module}
-
-The following unit tests are designed to verify the correctness, stability, and reproducibility of the LOESS fitting and prediction routines.
-All tests assume that memory management (allocation of working arrays) is properly handled by the test harness.
-
-\subsubsection{Test 1: Exact Interpolation with Noiseless Linear Data}
-
-\begin{itemize}
-    \item Input:
-    \begin{itemize}
-        \item \texttt{x} = [1.0, 2.0, 3.0, 4.0, 5.0]
-        \item \texttt{y} = [2.0, 4.0, 6.0, 8.0, 10.0]
-        \item \texttt{bandwidth} = 1.0 (use all points)
-    \end{itemize}
-    \item Action:
-    \begin{itemize}
-        \item Fit LOESS model.
-        \item Predict at all original \texttt{x} points.
-    \end{itemize}
-    \item Expected:
-    \begin{itemize}
-        \item Predictions exactly match \texttt{y}.
-        \item Maximum absolute prediction error \( < 10^{-12} \).
-    \end{itemize}
-\end{itemize}
-
-\subsubsection{Test 2: Locality with Bandwidth Restriction}
-
-\begin{itemize}
-    \item Input:
-    \begin{itemize}
-        \item \texttt{x} = [0.0, 1.0, 2.0, 3.0, 4.0, 5.0]
-        \item \texttt{y} = [0.0, 1.0, 4.0, 9.0, 16.0, 25.0] \hfill (quadratic)
-        \item \texttt{bandwidth} = 0.5
-    \end{itemize}
-    \item Action:
-    \begin{itemize}
-        \item Fit LOESS model.
-        \item Predict at \texttt{x = 2.5}.
-    \end{itemize}
-    \item Expected:
-    \begin{itemize}
-        \item Prediction approximates local quadratic behavior.
-        \item Acceptable absolute error compared to \( y = x^2 \), tolerance \( < 0.5 \).
-    \end{itemize}
-\end{itemize}
-
-\subsubsection{Test 3: Behavior at Boundaries}
-
-\begin{itemize}
-    \item Input:
-    \begin{itemize}
-        \item Same as Test 2.
-    \end{itemize}
-    \item Action:
-    \begin{itemize}
-        \item Predict at \texttt{x = 0.0} and \texttt{x = 5.0}.
-    \end{itemize}
-    \item Expected:
-    \begin{itemize}
-        \item No crash or invalid memory access.
-        \item Predictions within reasonable extrapolation range (tolerance \( < 1.0 \)).
-    \end{itemize}
-\end{itemize}
-
-\subsubsection{Test 4: Sorting Stability}
-
-\begin{itemize}
-    \item Input:
-    \begin{itemize}
-        \item \texttt{x} = [5.0, 1.0, 4.0, 2.0, 3.0] (unsorted)
-        \item \texttt{y} = [10.0, 2.0, 8.0, 4.0, 6.0]
-        \item \texttt{bandwidth} = 1.0
-    \end{itemize}
-    \item Action:
-    \begin{itemize}
-        \item Fit LOESS model.
-        \item Predict at \texttt{x = 1.0} to \texttt{5.0}.
-    \end{itemize}
-    \item Expected:
-    \begin{itemize}
-        \item Sorting is correctly handled internally.
-        \item Predictions match original linear relationship.
-        \item Maximum absolute prediction error \( < 10^{-12} \).
-    \end{itemize}
-\end{itemize}
-
-\subsubsection{Test 5: Consistency Under Different Bandwidths}
-
-\begin{itemize}
-    \item Input:
-    \begin{itemize}
-        \item Simple linear data as in Test 1.
-    \end{itemize}
-    \item Action:
-    \begin{itemize}
-        \item Fit LOESS models with bandwidths 0.4, 0.6, 0.8, 1.0.
-        \item Predict at \texttt{x = 3.0}.
-    \end{itemize}
-    \item Expected:
-    \begin{itemize}
-        \item Predicted values are consistent across bandwidths (variance \( < 10^{-10} \)).
-    \end{itemize}
-\end{itemize}
-
 \section{F42 Core Sorting Module Pseudocode}
 
 \subsection{Module Overview}
@@ -509,6 +296,240 @@ Each test assumes that all required working memory is preallocated before callin
     \begin{itemize}
         \item \texttt{array} = [1, 2, 3, ..., 1000]
     \end{itemize}
+\end{itemize}
+
+\section{Generalized F42-Compliant LOESS Smoothing Routine}
+
+\subsection{Purpose}
+
+This routine provides a reusable LOESS (Locally Weighted Scatterplot Smoothing) kernel smoother for scalar or vector data in Tensor Omics. Inspired by R’s \texttt{loess(formula, data)}, this version uses strict F42 conventions:
+
+\begin{itemize}
+  \item Stateless: No persistent state.
+  \item Allocation-free: All inputs, outputs, and workspaces passed explicitly.
+  \item Modular: Works on scalars, vectors, or matrix-shaped fields.
+  \item Efficient: Supports filtering via index arrays and optional kernel cutoff.
+\end{itemize}
+
+\subsection{Function Signature}
+
+\begin{verbatim}
+subroutine loess_smooth(
+    n_total,                        ! total entries in the source arrays
+    n_target,                       ! number of smoothing query targets
+
+    x_ref(n_total),                 ! reference coordinate array (e.g. mean values)
+    y_ref(d, n_total),              ! values at x_ref (scalars: d=1, vectors: d > 1)
+
+    indices_used(n_target),        ! index array specifying which entries to use
+    x_query(n_target),             ! query locations for LOESS evaluation
+    y_out(d, n_target),            ! smoothed output at query locations
+
+    kernel_sigma,                  ! width of Gaussian kernel
+    kernel_cutoff,                 ! cutoff radius (e.g. 3.0 = truncate at 3sigma)
+
+    workspace_weights(n_total),    ! transient workspace (reused per query point)
+    workspace_values(d, n_total)   ! transient workspace for weighted values
+)
+\end{verbatim}
+
+\subsection{F42 Pseudocode Implementation}
+
+\begin{verbatim}
+for q = 1 to n_target:
+
+    query_x = x_query(q)
+    sum_weights = 0.0
+
+    ! zero out y_out(:, q)
+    for k = 1 to d:
+        y_out(k, q) = 0.0
+
+    for i = 1 to n_total:
+
+        idx = indices_used(i)
+        ref_x = x_ref(idx)
+        delta = abs(query_x - ref_x)
+
+        if delta > kernel_cutoff * kernel_sigma:
+            cycle
+
+        weight = exp( - (delta / kernel_sigma)**2 )
+        sum_weights += weight
+
+        ! Accumulate weighted value
+        for k = 1 to d:
+            y_out(k, q) += weight * y_ref(k, idx)
+
+    ! Normalize if possible
+    if sum_weights > 0.0:
+        for k = 1 to d:
+            y_out(k, q) = y_out(k, q) / sum_weights
+    else:
+        ! fallback: assign default or NaN
+        for k = 1 to d:
+            y_out(k, q) = y_ref(k, indices_used(q))  ! self value
+\end{verbatim}
+
+\subsection{Behavior and Flexibility}
+
+\begin{itemize}
+  \item The routine supports both scalar (e.g. $d=1$) and vector-valued smoothing ($d>1$).
+  \item The use of \texttt{indices\_used} allows smoothing over subsets without copying.
+  \item The \texttt{x\_query} values can be equal to, interpolated between, or distinct from \texttt{x\_ref}.
+  \item If \texttt{sum\_weights = 0}, fallback to using the reference value at the current index (or an alternative default).
+\end{itemize}
+
+\subsection{Applications Across TOX}
+
+\begin{itemize}
+  \item Normalization: LOESS fit for gene-wise SD vs. mean.
+  \item Interpolation smoothing of expression vectors or shift vectors.
+  \item Lexical smoothing across metadata axes.
+  \item Clock hand and trajectory smoothing (e.g. Mjölnir-aligned).
+  \item Local field smoothing in GAWD or Bobito cones.
+\end{itemize}
+
+\subsection{Unit Tests for Generalized LOESS Smoothing (F42)}
+
+The following unit test cases validate the correct functioning of the generalized \texttt{loess\_smooth} routine described above. Each test case assumes stateless design, preallocated input/output arrays, and strict reproducibility. No I/O, dynamic memory, or recursion is allowed.
+
+\subsubsection*{Test Case 1: Constant Input (Sanity Check)}
+
+\begin{itemize}
+  \item \textbf{Input:}
+    \begin{itemize}
+      \item \texttt{x\_ref(i)} = 5.0 for all \texttt{i}
+      \item \texttt{y\_ref(1, i)} = 10.0 for all \texttt{i}
+      \item \texttt{x\_query(j)} = 5.0 for all \texttt{j}
+      \item \texttt{kernel\_sigma} = 1.0
+    \end{itemize}
+  \item \textbf{Expected Output:} \texttt{y\_out(1, j)} = 10.0 for all \texttt{j}
+  \item \textbf{Assertion:} \texttt{abs(y\_out(1, j) - 10.0) < 1.0e-6}
+\end{itemize}
+
+\subsubsection*{Test Case 2: Linear Trend Recovery}
+
+\begin{itemize}
+  \item \textbf{Input:}
+    \begin{itemize}
+      \item \texttt{x\_ref(i)} = i
+      \item \texttt{y\_ref(1, i)} = 0.5 * i
+      \item \texttt{x\_query(j)} = j + 0.5
+      \item \texttt{kernel\_sigma} = 2.0
+    \end{itemize}
+  \item \textbf{Expected Output:} \texttt{y\_out(1, j)} approximately follows \texttt{0.5 * x\_query(j)}
+  \item \textbf{Assertion:} \texttt{abs(y\_out(1, j) - 0.5 * x\_query(j)) < 0.05}
+\end{itemize}
+
+\subsubsection*{Test Case 3: Outlier Suppression}
+
+\begin{itemize}
+  \item \textbf{Input:}
+    \begin{itemize}
+      \item \texttt{x\_ref(1:10)} = 10.0, \texttt{x\_ref(11)} = 100.0
+      \item \texttt{y\_ref(1, 1:10)} = 5.0, \texttt{y\_ref(1, 11)} = 99.0
+      \item \texttt{x\_query(1)} = 10.0
+      \item \texttt{kernel\_sigma} = 1.0, \texttt{kernel\_cutoff} = 3.0
+    \end{itemize}
+  \item \textbf{Expected Output:} Outlier at index 11 is ignored due to distance.
+  \item \textbf{Assertion:} \texttt{abs(y\_out(1,1) - 5.0) < 0.01}
+\end{itemize}
+
+\subsubsection*{Test Case 4: Sparse Fallback Behavior}
+
+\begin{itemize}
+  \item \textbf{Input:}
+    \begin{itemize}
+      \item \texttt{x\_ref(i)} = i * 100.0
+      \item \texttt{x\_query(j)} = (j * 100.0) + 50.0
+      \item \texttt{kernel\_sigma} = 1.0, very small
+    \end{itemize}
+  \item \textbf{Expected Output:} Kernel weights are zero for all query points; fallback used.
+  \item \textbf{Assertion:} \texttt{y\_out(:, j)} equals \texttt{y\_ref(:, indices\_used(j))}
+\end{itemize}
+
+\subsubsection*{Test Case 5: Vector Field Smoothing}
+
+\begin{itemize}
+  \item \textbf{Input:}
+    \begin{itemize}
+      \item \texttt{d = 3}, \texttt{y\_ref(1:3, i)} = [1.0, 2.0, 3.0] + 0.1*i
+      \item \texttt{x\_ref(i)} = i
+      \item \texttt{x\_query(j)} = j + 0.5
+    \end{itemize}
+  \item \textbf{Expected Output:} Each component smoothly follows its linear offset.
+  \item \textbf{Assertion:} \texttt{abs(y\_out(k, j) - expected(k, j)) < 0.1} for each \texttt{k}
+\end{itemize}
+
+\subsection{The \texttt{which} Function for Logical Arrays (F42-Compliant)}
+
+The \texttt{which} function extracts the indices of all entries in a logical array that evaluate to \texttt{.TRUE.}. This routine is the direct analogue of the R function \texttt{which()}, designed to work with logical arrays resulting from any Fortran logical expression (e.g., \texttt{x > 3.0 .AND. MOD(x,2) == 0}). It follows the F42 principles: stateless, allocation-free, and usable in high-performance settings.
+
+\subsubsection{Interface Specification}
+
+\begin{verbatim}
+subroutine which(
+    mask(n),            ! Input logical array
+    n,                  ! Size of the input array
+    idx_out(m_max),     ! Preallocated output array of indices
+    m_max,              ! Capacity of idx_out
+    m_out               ! Number of matches returned
+)
+\end{verbatim}
+
+\begin{itemize}
+  \item \texttt{mask(n)}: Logical array derived from a Fortran logical expression
+  \item \texttt{idx\_out(m\_max)}: Output array holding 1-based indices of matches
+  \item \texttt{m\_out}: Actual number of matches written to \texttt{idx\_out}
+\end{itemize}
+
+\subsubsection{Pseudocode Implementation}
+
+\begin{verbatim}
+m_out = 0
+do i = 1, n
+    if (mask(i)) then
+        if (m_out < m_max) then
+            m_out = m_out + 1
+            idx_out(m_out) = i
+        endif
+    endif
+enddo
+\end{verbatim}
+
+This implementation ensures no allocation and full compatibility with high-performance computing contexts (e.g., OpenMP, SIMD, or GPU-friendly flattening).
+
+\subsubsection{Test Case 1: Simple Threshold Filter}
+
+\begin{itemize}
+  \item \textbf{Input:} \texttt{x = [1.0, 4.0, 6.0, 2.0, 8.0]}
+  \item \textbf{Logical Mask:} \texttt{mask = (x > 3.0)}
+  \item \textbf{Expected Output:} \texttt{idx\_out = [2, 3, 5]}, \texttt{m\_out = 3}
+\end{itemize}
+
+\subsubsection{Test Case 2: Composite Logical Condition}
+
+\begin{itemize}
+  \item \textbf{Input:} \texttt{x = [1.0, 4.0, 6.0, 2.0, 8.0]}
+  \item \textbf{Mask:} \texttt{mask = (x > 3.0 .AND. MOD(INT(x),2) == 0)}
+  \item \textbf{Expected Output:} \texttt{idx\_out = [2, 5]}, \texttt{m\_out = 2}
+\end{itemize}
+
+\subsubsection{Test Case 3: No Matches}
+
+\begin{itemize}
+  \item \textbf{Input:} \texttt{x = [1.0, 2.0, 3.0]}
+  \item \textbf{Mask:} \texttt{mask = (x > 10.0)}
+  \item \textbf{Expected Output:} \texttt{idx\_out = []}, \texttt{m\_out = 0}
+\end{itemize}
+
+\subsubsection{Performance and Compliance Notes}
+
+\begin{itemize}
+  \item This function is safe for use in any high-performance loop or parallel region.
+  \item Overflow behavior (when \texttt{m\_out} exceeds \texttt{m\_max}) must be handled externally.
+  \item All array bounds and allocations are managed by the caller.
 \end{itemize}
 
 \end{document}
