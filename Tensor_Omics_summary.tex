@@ -1,7 +1,9 @@
 \documentclass{article}
+
 \usepackage{amsmath,amssymb}
 \usepackage[margin=1in]{geometry}
 \usepackage{enumitem}
+
 \begin{document}
 
 \section*{Tensor Omics: Full Toolkit Overview (May 7, 2025)}
@@ -47,28 +49,80 @@
     \end{itemize}
 \end{itemize}
 
-\subsection*{F. Gradient Visualization: Gwion (formerly GAWD)}
+\subsection*{F. Mjölnir’s Handle — Canonical Axis Reconstruction}
 \begin{itemize}[leftmargin=1.5em]
-  \item \textbf{Directional Slicing:} trace field along its dominant flow vector.
+  \item \textbf{Purpose:}
+    \begin{itemize}
+      \item Defines a smooth, empirically derived semantic axis for subfield tracing and slicing.
+      \item Serves as the canonical tracing rail for all downstream modules requiring directional coherence.
+    \end{itemize}
+
+  \item \textbf{Step 1 — Extract Brokk Axes:}
+    \begin{itemize}
+      \item For expression fields: apply PCA to normalized vectors to get spread axes.
+      \item For shift fields: compute covariance matrix of shift vectors; first eigenvector is dominant flow.
+    \end{itemize}
+
+  \item \textbf{Step 2 — Compute Clock Hand Projections:}
+    \[
+    \vec{v}_i = \vec{r}_i + \vec{v}_i^{\text{clock}}, \quad
+    \vec{r}_i = \langle \vec{v}_i, \vec{b} \rangle \cdot \vec{b}, \quad
+    \vec{v}_i^{\text{clock}} = \vec{v}_i - \vec{r}_i
+    \]
+
+  \item \textbf{Step 3 — Smooth Root Vector Cloud:}
+    \[
+    \sigma = 1.2 \cdot d_{\text{grid step}}, \quad \text{truncated at } 3\sigma
+    \]
+
+  \item \textbf{Step 4 — Surface Extraction via Eitri 2.0:}
+    \begin{itemize}
+      \item Divide Mjölnir's handle into equal-length or quantile-based segments.
+      \item Construct orthogonal planes and form cylinders; select surface candidates by angular binning.
+    \end{itemize}
+\end{itemize}
+
+\subsection*{G. Gradient Visualization: Gwion (formerly GAWD)}
+\textit{All directional slicing and signal/rank estimation in this module is performed along \textbf{Mjölnir’s handle} (see Section F).}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Directional Slicing:} trace field along the dominant flow vector.
   \item \textbf{Panel 1:} Line plot of standardized Frobenius norm and rank along axis.
   \item \textbf{Panel 2:} Clock plot of flow vectors orthogonal to the axis.
   \item \textbf{Panel 3:} Clock plot of rotation vectors, same projection.
 \end{itemize}
 
-\subsection*{G. Temporal and Trajectory Analysis}
+\subsection*{H. Temporal and Trajectory Analysis}
+\textit{All local plane projections and shift-based trace estimation are guided by \textbf{Mjölnir’s handle}.}
 \begin{itemize}[leftmargin=1.5em]
   \item \textbf{Trajectory Modes:} mean-plane projection (Mode A) vs. locally stacked planes (Mode B).
   \item \textbf{Derived Metrics:} Angular Shift Velocity (ASV), Instantaneous Acceleration (IA), vector distance to centroid.
 \end{itemize}
 
+\subsection*{I. Siddhartha Projection and Surface Tracing}
+\textit{Multi-dimensional trace visualization and curvature estimation are performed along \textbf{Mjölnir’s handle}.}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Multidimensional Trace:} slices a high-dimensional subfield into 3D using its spread axis.
+  \item \textbf{Afterglow:} trailing frames visualized with alpha decay and color gradient.
+  \item \textbf{Surface Derivatives:} vectors from grid to surface points used to estimate curvature.
+\end{itemize}
+
+\subsection*{J. Surface Extraction — Eitri}
+\textit{All surface cylinders are constructed around segments of \textbf{Mjölnir’s handle}.}
+\begin{itemize}[leftmargin=1.5em]
+  \item \textbf{Cylindrical Shells:} projected around Brokk axis; grid-aligned.
+  \item \textbf{Clock-hand Analysis:} select max-distance vectors per angular bin within tube slices.
+  \item \textbf{Multi-Rail Correction:} check across eigenvector axes; update surface candidates if stronger per sector.
+\end{itemize}
+
+% The remaining sections (Gilgamesh, F42, Flyer) would follow unchanged, as they don’t directly invoke axis tracing.
 \subsection*{H. Tensor Field Analysis — Bobito}
 \begin{itemize}[leftmargin=1.5em]
-  \item \textbf{Bobito 🦋 (Flechita) — Level One:}
+  \item \textbf{Bobito (Flechita) — Level One:}
     \begin{itemize}
       \item Cone-based expansion using vector alignment (JOE/JOV)
       \item Cutoff detection via derivative jump
     \end{itemize}
-  \item \textbf{Bobito ☁️ (Nubecita) — Level Two:}
+  \item \textbf{Bobito (Nubecita) — Level Two:}
     \begin{itemize}
       \item Subfield grouping via directional coherence of flow/rotation vectors
       \item Empirical jump threshold based on sorted cosine similarity
