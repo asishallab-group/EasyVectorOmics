@@ -532,4 +532,182 @@ This implementation ensures no allocation and full compatibility with high-perfo
   \item All array bounds and allocations are managed by the caller.
 \end{itemize}
 
+\section{F42-Compliant Index-Based K-D Trees and BSTs}
+
+\subsection{Overview}
+
+This section defines efficient, allocation-free, recursion-free, and Fortran-compatible implementations of:
+\begin{itemize}
+    \item A 1D Binary Search Tree (BST) represented as a flat index array
+    \item A Cartesian K-D Tree using descending variance dimension order
+    \item A Spherical K-D Tree (used for directional queries based on cosine similarity)
+    \item Core access and query routines
+    \item Unit tests for each structure
+\end{itemize}
+
+All memory structures are passed in. The trees are represented purely as sorted index arrays. No structs, recursion, or dynamic memory is used.
+
+\subsection{Binary Search Tree (BST) Construction via Sorting}
+
+\textbf{Input:}
+\begin{itemize}
+    \item Real array \texttt{x(n)} --- the data to be indexed
+    \item Integer array \texttt{ix(n)} --- index array to be filled
+\end{itemize}
+
+\textbf{Pseudocode:}
+\begin{verbatim}
+subroutine build_bst_index(x, n, ix)
+  real, intent(in) :: x(n)
+  integer, intent(out) :: ix(n)
+
+  call quicksort_indices(x, ix, n)
+end subroutine
+\end{verbatim}
+
+\subsection{Access Functions for BST (Flat Index Array)}
+
+\paragraph{Get Value at Sorted Position}
+Returns the value of the original data array at the position given by the sorted index.
+
+\begin{verbatim}
+function get_sorted_value(x, ix, i) result(val)
+real, intent(in) :: x(:)
+integer, intent(in) :: ix(:)
+integer, intent(in) :: i
+real :: val
+
+val = x(ix(i))
+end function
+\end{verbatim}
+
+\paragraph{Get Sorted Index for Range Query}
+Example: Find values in \texttt{x} between a given \texttt{lo} and \texttt{hi}. This function returns a list of positions \texttt{i} such that \texttt{lo <= x(ix(i)) <= hi}.
+
+\begin{verbatim}
+subroutine bst_range_query(x, ix, n, lo, hi, out_ix, out_n)
+real, intent(in) :: x(:)
+integer, intent(in) :: ix(:)
+integer, intent(in) :: n
+real, intent(in) :: lo, hi
+integer, intent(out) :: out_ix(n)
+integer, intent(out) :: out_n
+
+integer :: i
+out_n = 0
+
+do i = 1, n
+if (x(ix(i)) >= lo .and. x(ix(i)) <= hi) then
+out_n = out_n + 1
+out_ix(out_n) = ix(i)
+else if (x(ix(i)) > hi) then
+exit ! Since array is sorted, we can stop early
+end if
+end do
+end subroutine
+\end{verbatim}
+
+\paragraph{Use Case Example}
+Sort an array and extract all values between 2.0 and 3.5.
+
+\begin{verbatim}
+real :: x(1000)
+integer :: ix(1000), res_ix(1000), res_n
+
+call random_fill(x)
+call build_bst_index(x, 1000, ix)
+call bst_range_query(x, ix, 1000, 2.0, 3.5, res_ix, res_n)
+! Now x(res_ix(1:res_n)) holds the sorted matching values
+\end{verbatim}
+
+\subsection{Cartesian K-D Tree Construction}
+
+\textbf{Input:}
+\begin{itemize}
+    \item Real matrix \texttt{X(d, n)} --- the data points
+    \item Integer array \texttt{kd\_ix(n)} --- output index array representing K-D Tree
+    \item Integer array \texttt{dim\_order(d)} --- precomputed dimension order by descending variance
+    \item Integer work arrays for temporary use
+\end{itemize}
+
+\textbf{Pseudocode:}
+\begin{verbatim}
+subroutine build_kd_index(X, d, n, kd_ix, dim_order, work)
+  ! Loop-based K-D Tree construction by sorting and partitioning
+  ! No recursion. Uses stack to manage index intervals and split dimension.
+
+  integer :: stack_top, stack(1:2, max_depth)
+  integer :: l, r, dim, mid, depth, i
+
+  stack_top = 1
+  stack(:, 1) = [1, n]
+
+  do while (stack_top > 0)
+    l = stack(1, stack_top)
+    r = stack(2, stack_top)
+    stack_top = stack_top - 1
+    if (r <= l) cycle
+
+    depth = some_depth_heuristic(l, r)  ! Or simply count levels
+    dim = dim_order(mod(depth, d) + 1)
+
+    call partial_sort_by_dimension(X, d, kd_ix, l, r, dim)
+  end do
+end subroutine
+\end{verbatim}
+
+\subsection{Spherical K-D Tree for Directional Queries}
+
+\textbf{Input:}
+\begin{itemize}
+    \item Normalized vector matrix \texttt{V(d, n)} --- each column is unit length
+    \item Integer array \texttt{sphere\_ix(n)} --- output index array for spherical K-D Tree
+\end{itemize}
+
+\textbf{Pseudocode:}
+\begin{verbatim}
+subroutine build_spherical_kd(V, d, n, sphere_ix, dim_order)
+  call build_kd_index(V, d, n, sphere_ix, dim_order)
+end subroutine
+\end{verbatim}
+
+\subsection{Access Routines}
+
+\textbf{Get value at sorted position:}
+\begin{verbatim}
+function get_value_sorted(x, ix, i)
+  real :: get_value_sorted
+  real, intent(in) :: x(:)
+  integer, intent(in) :: ix(:)
+  get_value_sorted = x(ix(i))
+end function
+\end{verbatim}
+
+\textbf{Get point from KD index:}
+\begin{verbatim}
+subroutine get_kd_point(X, kd_ix, i, point)
+  real, intent(in) :: X(:, :)
+  integer, intent(in) :: kd_ix(:)
+  real, intent(out) :: point(:)
+  point = X(:, kd_ix(i))
+end subroutine
+\end{verbatim}
+
+\subsection{Unit Tests}
+
+\textbf{BST Test:}
+\begin{verbatim}
+call random_array(x, n)
+call build_bst_index(x, n, ix)
+assert_monotonic(x(ix))
+\end{verbatim}
+
+\textbf{K-D Tree Test:}
+\begin{verbatim}
+call random_matrix(X, d, n)
+call compute_dim_order(X, d, n, dim_order)
+call build_kd_index(X, d, n, kd_ix, dim_order)
+assert_valid_kd_structure(kd_ix)
+\end{verbatim}
+
 \end{document}
