@@ -1,31 +1,31 @@
 program test_parallel
   implicit none
 
-integer :: k 
-integer :: ENE
-integer :: start_k , end_k 
+integer :: i
+integer :: N
+integer :: start_i, end_i
 
-ENE = 10
+N = 15
 
 ! ----------------------
 ! START OF PARALLEL LOOP
 ! ----------------------
 #ifdef USE_COARRAY
-  start_k  = (this_image() - 1) * ENE / num_images() + 1
-  end_k    = min(this_image() * ENE / num_images(), ENE)
-  do k  = start_k , end_k 
+  start_i = (this_image() - 1) * N / num_images() + 1
+  end_i   = min(this_image() * N / num_images(), N)
+  do i = start_i, end_i
 
 #elif defined(USE_OPENMP)
-  !$omp parallel do private(k )
-  do k  = 1, ENE
+  !$omp parallel do private(i)
+  do i = 1, N
 
 #else
-  do k  = 1, ENE
+  do i = 1, N
 #endif
 
 ! BODY OF THE PARALLEL LOOP
 ! -----------------------------
-   print *, "Running i =", k
+    print *, "Running i =", i
 ! -----------------------------
 ! END BODY OF THE PARALLEL LOOP
 
