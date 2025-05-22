@@ -1,0 +1,70 @@
+! filepath: /home/aaron/EasyVectorOmics/tensor-omics/BST/src/binary_search_tree.f90
+!> \file
+!! \brief Flat-index-based Binary Search Tree (BST) utilities for 1D range queries.
+!!
+!! This module provides routines to build a BST index (via sorting), access sorted values,
+!! and perform efficient range queries over a real-valued array.
+module binary_search_tree
+  use tox_sorting
+  implicit none
+contains
+  
+  !> \brief Build the BST index by sorting indices using values in x.
+  !! \param x Input real array to be indexed.
+  !! \param n Number of elements in x.
+  !! \param ix Output integer array holding the permutation index such that x(ix) is sorted.
+  !! \param stack_left Manual stack of left indices for quicksort recursion (preallocated)
+  !! \param stack_right Manual stack of right indices for quicksort recursion (preallocated)
+  subroutine build_bst_index(x, n, ix, stack_left, stack_right)
+    real(8), intent(in) :: x(:)
+    integer, intent(in) :: n
+    integer, intent(out) :: ix(:)
+    integer, intent(inout) :: stack_left(:), stack_right(:)
+    integer :: i
+    do i = 1, n
+      ix(i) = i
+    end do
+    call sort_array(x, ix, stack_left, stack_right)
+  end subroutine build_bst_index
+
+  !> \brief Get the value at the sorted position.
+  !! \param x Input real array.
+  !! \param ix Permutation index array.
+  !! \param i Sorted position (1-based).
+  !! \return Value x(ix(i)), i.e., the i-th smallest value in x.
+  function get_sorted_value(x, ix, i) result(val)
+    real(8), intent(in) :: x(:)
+    integer, intent(in) :: ix(:)
+    integer, intent(in) :: i
+    real :: val
+    val = x(ix(i))
+  end function get_sorted_value
+
+  !> \brief Perform a 1D range query over the sorted index.
+  !! \param x Input real array.
+  !! \param ix Permutation index array (sorted).
+  !! \param n Number of elements.
+  !! \param lo Lower bound of range (inclusive).
+  !! \param hi Upper bound of range (inclusive).
+  !! \param out_ix Output array of indices in x that match the range.
+  !! \param out_n Number of matches found.
+  subroutine bst_range_query(x, ix, n, lo, hi, out_ix, out_n)
+    real(8), intent(in) :: x(:)
+    integer, intent(in) :: ix(:)
+    integer, intent(in) :: n
+    real, intent(in) :: lo, hi
+    integer, intent(out) :: out_ix(:)
+    integer, intent(out) :: out_n
+    integer :: i
+    out_n = 0
+    do i = 1, n
+      if (x(ix(i)) >= lo .and. x(ix(i)) <= hi) then
+        out_n = out_n + 1
+        out_ix(out_n) = ix(i)
+      else if (x(ix(i)) > hi) then
+        exit
+      end if
+    end do
+  end subroutine bst_range_query
+
+end module binary_search_tree
