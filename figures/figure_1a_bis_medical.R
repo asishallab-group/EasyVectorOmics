@@ -36,8 +36,8 @@ lines(c(.6, .6), c(.6, 4), col = "black", lwd = 1.5)
 lines(c(.6, 6), c(.6, .6), col = "black", lwd = 1.5)              
 
 # Tissue labels
-text(0, 3.7, label = TeX('\\textit{resistant\npatients}'), pos = 4, offset = -.2, cex = 1.0)
-text(5.7, -.05, label = TeX('\\textit{susceptible\npatients}'), pos = 3, offset = .1, cex = 1.0)
+text(0, 3.7, label = TeX('\\textit{intestine}'), pos = 4, offset = -.2, cex = 1.0)
+text(5.7, .15, label = TeX('\\textit{liver}'), pos = 3, offset = .1, cex = 1.0)
 
 
 centroid_1 <- c(1.5, 3.5)
@@ -92,13 +92,13 @@ for (tp in names(centroid_2_paras)) {
 }
 
 text(
-  centroid_2_paras[[1]][1] - 0.5,
+  centroid_2_paras[[1]][1] - 0.8,
   centroid_2_paras[[1]][2] - 0.1,
-  label = TeX('$\\textit{bacteroidetes}$'),
+  label = TeX('$\\textit{susceptible\\ patients}$'),
   pos = 3,
   offset = 1,
   col = colors[[2]],
-  cex = 1.2
+  cex = 1.1
 )
 
 text(
@@ -120,23 +120,23 @@ text(
   )
 
 text(
-  centroid_2_paras[[2]][1] + .3,
+  centroid_2_paras[[2]][1] + .2,
   centroid_2_paras[[2]][2] - .1,
-  label = TeX('$\\textit{bacteroidetes}$'),
+  label = TeX('$\\textit{susceptible\\ patients}$'),
   pos = 3,
   offset = 1,
   col = colors[[2]],
-  cex = 1.2
+  cex = 1.1
 )
 
 text(
   centroid_2_paras[[3]][1] - .15,
-  centroid_2_paras[[3]][2] - .15,
-  label = TeX('$\\textit{firmicutes}$'),
+  centroid_2_paras[[3]][2] - .11,
+  label = TeX('$\\textit{resistant\\ patients}$'),
   pos = 3,
   offset = 1,
   col = colors[[2]],
-  cex = 1.2
+  cex = 1.1
 )
 
 # Ortholog trajectories (2 examples) and average
