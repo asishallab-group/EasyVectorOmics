@@ -1,152 +1,333 @@
 require(RColorBrewer)
-colors <- brewer.pal(7,"Dark2")
-colors2 <- brewer.pal(12,"Set1")
+colors <- brewer.pal(7, "Dark2")
+colors2 <- brewer.pal(9, "Set1")
 
-pdf("figure_1g.pdf", width = 12, height = 6)
-par(mfrow = c(1, 2), mar = c(1, 1, 1, 1))
+pdf("figure_1g.pdf", width = 12, height = 12)
+par(mfrow = c(2, 2), mar = c(1, 1, 1, 1))  # 4 panels (2x2) with minimal margins
 
-# --- Panel Izquierdo: Campo vectorial con E1 y E2 ---
-plot(NA, xlim = c(-2, 2), ylim = c(-2, 2), asp = 1, axes = FALSE, xlab = "", ylab = "")
+# Function to draw the green amoeba-like contour
+draw_contour <- function() {
+  a <- 1.9  # length along E1 axis
+  b <- 1.5  # width along E2 axis
+  theta <- -2 * pi / 3  # rotation angle in radians (approx. -120°)
 
+  t <- seq(0, 2 * pi, length.out = 200)
+  r <- 1 + 0.15 * sin(3 * t)  # wavy radius for amoeba effect
+  x <- a * r * cos(t)
+  y <- b * r * sin(t)
 
-# --- Parámetros configurables ---
-a <- 1.8  # largo (eje E1)
-b <- 1.5  # ancho (eje E2)
-theta <-  -2*pi/3   # rotación en radianes (30°)
+  # Apply rotation
+  rotation_matrix <- matrix(c(cos(theta), -sin(theta),
+                              sin(theta), cos(theta)), ncol = 2)
+  rotated <- rotation_matrix %*% rbind(x, y)
 
-# --- Generar contorno tipo ameba ---
-t <- seq(0, 2*pi, length.out = 200)
-r <- 1 + 0.15 * sin(3 * t)  # forma ondulada
-x <- a * r * cos(t)  # escalado horizontal (E1)
-y <- b * r * sin(t)  # escalado vertical (E2)
-
-# --- Rotar ---
-rotation_matrix <- matrix(c(cos(theta), -sin(theta),
-                            sin(theta),  cos(theta)), ncol = 2)
-rotated <- rotation_matrix %*% rbind(x, y)
-
-# --- Dibujar ---
-lines(rotated[1, ] - 0.3, rotated[2, ] , col = "#66A61E", lwd = 3)
-
-text(0,1.8, "Photosynthesis", cex = 2, col = "#66A61E")
-
-# Ejes con flechas en ambos extremos
-# Ángulo de rotación en radianes
-theta <- - pi / 6  # 30 grados
-
-# Matriz de rotación
-rotation_matrix <- matrix(c(cos(theta), -sin(theta),
-                            sin(theta),  cos(theta)), ncol = 2)
-
-# E1 original: (0, 2) → vertical
-e1 <- rotation_matrix %*% c(0, 2) * 0.8
-# E2 original: (2, 0) → horizontal
-e2 <- rotation_matrix %*% c(2, 0) * 0.65
-
-# E1 con flechas en ambos extremos
-arrows(-e1[1]-0.6, -e1[2]-0.2, e1[1]-0.6, e1[2]-0.2, col = "black", lwd = 2, length = 0.2)
-arrows(e1[1]-0.6, e1[2]-0.2,-e1[1]-0.6, -e1[2]-0.2, col = "black", lwd = 2, length = 0.2)
-
-# E2 con flechas en ambos extremos
-arrows(-e2[1], -e2[2], e2[1], e2[2], col = "black", lwd = 2, length = 0.2)
-arrows(e2[1], e2[2], -e2[1], -e2[2], col = "black", lwd = 2, length = 0.2)
-
-arrows(e1[1]*0.3-0.2, e1[2]*0.3-0.2,-e1[1]*0.3-0.2, -e1[2]*0.3-0.2, col = colors[[4]], lwd = 7, lty = 1,length = 0.2)
-
-
-# Etiquetas
-text(0.2, -1.2, labels = expression(E[1]), pos = 3, cex = 2, srt = 30)
-
-# E2 label rotado (por ejemplo, -30 grados)
-text(0.7, 0.1, labels = expression(E[2]), pos = 4, cex = 2, srt = 30)
-# Curva gruesa que sigue E1
-# 1. Datos de la curva (forma de distribución normal)
-curve_y <- seq(-1, 1, length.out = 100)  # rango amplio sin escalar
-curve_x <- dnorm(curve_y, mean = 0, sd = 0.4)  # forma de campana
-
-# Escalamos para hacerlo más chico
-curve_x <- curve_x * 0.45  # achica en eje X
-curve_y <- curve_y * 0.6  # achica en eje Y si querés también
-
-# Centrar la curva en el origen
-curve_x <- curve_x - mean(curve_x)
-
-# 2. Rotar la curva 30 grados
-theta <- -pi / 6  # 30 grados en radianes
-rotation_matrix <- matrix(c(cos(theta), -sin(theta),
-                            sin(theta),  cos(theta)), ncol = 2)
-
-rotated_coords <- rotation_matrix %*% rbind(curve_x, curve_y)
-
-# 3. Dibujar la curva rotada
-lines(rotated_coords[1, ]-0.7, rotated_coords[2, ]+0.6, lwd = 7, col = colors[[4]])
-
-draw_vector <- function(x0, y0, length, angle_deg, col = "black", lwd = 4, arrow_size = 0.1) {
-  # Convertir ángulo a radianes
-  angle_rad <- angle_deg * pi / 180
-  
-  # Calcular punto final
-  x1 <- x0 + length * cos(angle_rad)
-  y1 <- y0 + length * sin(angle_rad)
-  
-  # Dibujar flecha
-  arrows(x0, y0, x1, y1, length = arrow_size, col = "black", lwd = lwd)
+  # Plot contour
+  lines(rotated[1, ] - 0.3, rotated[2, ], col = "#66A61E", lwd = 3)
+  text(0, 1.8, "Photosynthesis", cex = 2.5, col = "#66A61E")
 }
 
-draw_vector(-1.3, 0.7, 0.25, 270)    
-draw_vector(-1.35, 0.1, 0.3, 250)    
-draw_vector(-1.1, -.4, 0.35, 60)   
-draw_vector(-.3, 1.1, 0.4, 30)   
-draw_vector(0.5, 0.7, 0.3, 30)   
-draw_vector(-.2, 0.4, 0.2, -30)   
-draw_vector(0.3, 0.5, 0.25, -120)   
-draw_vector(-.5, -0.8, 0.2, -60) 
-draw_vector(-.5, -1.2, 0.3, -60) 
-draw_vector(0.3, -1.3, 0.25, -60) 
-draw_vector(0.5, -0.7, 0.25, -60) 
-draw_vector(0.7, -0.2, 0.3, -60) 
+# Function to draw E1 and E2 axes with arrows and labels
+draw_axis <- function() {
+  theta <- -pi / 6  # 30 degrees in radians
+  rotation_matrix <- matrix(c(cos(theta), -sin(theta),
+                              sin(theta), cos(theta)), ncol = 2)
 
-# --- Panel Derecho: Proyección sobre E1 ---
+  e1 <- rotation_matrix %*% c(0, 2) * 0.8
+  e2 <- rotation_matrix %*% c(2, 0) * 0.65
+
+  # Arrows for E1 in both directions
+  arrows(-e1[1] - 0.6, -e1[2] - 0.2, e1[1] - 0.6, e1[2] - 0.2, col = "black", lwd = 2, length = 0.2)
+  arrows(e1[1] - 0.6, e1[2] - 0.2, -e1[1] - 0.6, -e1[2] - 0.2, col = "black", lwd = 2, length = 0.2)
+
+  # Arrows for E2 in both directions
+  arrows(-e2[1], -e2[2], e2[1], e2[2], col = "black", lwd = 2, length = 0.2)
+  arrows(e2[1], e2[2], -e2[1], -e2[2], col = "black", lwd = 2, length = 0.2)
+
+  # Axis labels
+  text(0.4, -1.9, labels = expression(E[1]), pos = 3, cex = 2.3, srt = 30)
+  text(0.9, 0.15, labels = expression(E[2]), pos = 4, cex = 2.3, srt = 30)
+}
+
+# Function to draw a single vector
+draw_vector <- function(x0, y0, length, angle_deg, col = "black", lwd = 4, arrow_size = 0.1, lty = "solid") {
+  angle_rad <- angle_deg * pi / 180
+  x1 <- x0 + length * cos(angle_rad)
+  y1 <- y0 + length * sin(angle_rad)
+  arrows(x0, y0, x1, y1, length = arrow_size, col = "black", lwd = lwd, lty = lty)
+}
+
+# Draws a vector and its projections onto the E1 and E2 axes
+draw_vector_with_projections <- function(x0, y0, length, angle_deg,
+                                         e1_angle = 30, e2_angle = 120,
+                                         e1_offset = c(0, 0),
+                                         e2_offset = c(-0.6, -0.2),
+                                         col = "gray60", lwd = 1.5, arrow_size = 0.1,
+                                         proj_col = "black", proj_lty = "dotted") {
+  angle_rad <- angle_deg * pi / 180
+  e1_rad <- e1_angle * pi / 180
+  e2_rad <- e2_angle * pi / 180
+
+  vx <- length * cos(angle_rad)
+  vy <- length * sin(angle_rad)
+  x_tip <- x0 + vx
+  y_tip <- y0 + vy
+
+  e1 <- c(cos(e1_rad), sin(e1_rad))
+  e2 <- c(cos(e2_rad), sin(e2_rad))
+
+  project_to_axis <- function(xt, yt, base_dir, offset) {
+    v <- c(xt, yt) - offset
+    proj_len <- sum(v * base_dir)
+    proj_point <- offset + proj_len * base_dir
+    return(proj_point)
+  }
+
+  proj_e1_pt <- project_to_axis(x_tip, y_tip, e1, e1_offset)
+  proj_e2_pt <- project_to_axis(x_tip, y_tip, e2, e2_offset)
+
+  arrows(x0, y0, x_tip, y_tip, length = arrow_size, col = col, lwd = lwd)
+  segments(x_tip, y_tip, proj_e1_pt[1], proj_e1_pt[2], col = proj_col, lty = proj_lty, lwd = 2)
+  segments(x_tip, y_tip, proj_e2_pt[1], proj_e2_pt[2], col = proj_col, lty = proj_lty, lwd = 2)
+  points(proj_e1_pt[1], proj_e1_pt[2], col = colors[[4]], pch = 16, cex = 1.5)
+  points(proj_e2_pt[1], proj_e2_pt[2], col = colors[[4]], pch = 16, cex = 1.5)
+}
+
+# Draws a spline-smoothed semantic axis
+draw_semantic_axis <- function() {
+  x_points <- c(-.6, -0.65, -0.65, -0.5, -0.45, -0.4, 0)
+  y_points <- c(-1.5, -1.1, -0.7, -.2, 0.5, 1, 1.4)
+  t <- seq(0, 1, length.out = length(x_points))
+  spline_x <- spline(t, x_points, n = 200)
+  spline_y <- spline(t, y_points, n = 200)
+  lines(spline_x$y, spline_y$y, col = colors[[4]], lwd = 5)
+}
+
+# Define parameters for 10 vectors to be drawn
+x_vec <- c(-0.7, -1.2, -0.7,  0.0, -0.3, -0.8,  0.0, -0.15, -0.4,  0.58)
+y_vec <- c( 0.9,  0.4, -0.3,  1.1,  0.5, -0.6, -0.8, -1.10, -0.9, -0.25)
+len_vec <- c(0.25, 0.3, 0.2, 0.3, 0.4, 0.2, 0.4,  0.3,  0.1,  0.4)
+angle_vec <- c(150, 170, 200,  50,  80, 220, 350, 270, 350,  70)
+
+# --- Top-left Panel: Vector field with E1 and E2, with vector projections ---
+plot(NA, xlim = c(-2, 2), ylim = c(-2, 2), asp = 1, axes = FALSE, xlab = "", ylab = "")
+
+# Draw amoeba-like contour representing the biological response area
+draw_contour()
+
+# Draw principal axes E1 and E2 (semantic structure)
+draw_axis()
+
+# Draw all directional vectors with dotted projections onto E1 and E2
+for (i in seq_along(x_vec)) {
+  draw_vector_with_projections(x_vec[i], y_vec[i], len_vec[i], angle_vec[i])
+}
+
+# Draw the smoothed semantic axis that runs through the space
+draw_semantic_axis()
+
+
+# --- Bottom-left Panel: Same field, now highlighting semantic flow ---
+plot(NA, xlim = c(-2, 2), ylim = c(-2, 2), asp = 1, axes = FALSE, xlab = "", ylab = "")
+
+# Draw contour and axes again
+draw_contour()
+draw_axis()
+
+# Highlight semantic axis direction with thick arrow
+arrows(-0.35, -.1, -0.43, -.7, col = colors[[4]], lwd = 12, lty = 1, length = 0.2)
+
+# --- Thick curved arrow (semantic axis trajectory) ---
+# Step 1: Generate a symmetric bell-shaped curve (normal distribution)
+curve_y <- seq(-1, 1, length.out = 100)
+curve_x <- dnorm(curve_y, mean = 0, sd = 0.4)
+
+# Step 2: Scale down to make the shape smaller
+curve_x <- curve_x * 0.6
+curve_y <- curve_y * 0.6
+curve_x <- curve_x - mean(curve_x)  # Center the curve horizontally
+
+# Step 3: Rotate the shape slightly to align with the semantic axis
+theta <- pi / 20  # Small positive angle (≈9°)
+rotation_matrix <- matrix(c(cos(theta), -sin(theta),
+                            sin(theta),  cos(theta)), ncol = 2)
+rotated_coords <- rotation_matrix %*% rbind(curve_x, curve_y)
+
+# Step 4: Plot the rotated curve as a thick semantic arrow
+lines(rotated_coords[1, ] - 0.4, rotated_coords[2, ] + 0.5, lwd = 12, col = colors[[4]])
+
+# Draw the original vectors again, this time without projections
+for (i in seq_along(x_vec)) {
+  draw_vector(x_vec[i], y_vec[i], len_vec[i], angle_vec[i])
+}
+
+# Re-draw semantic axis curve to connect vector tips smoothly
+draw_semantic_axis()
+
+# --- Top-right Panel: Signal curves projected onto the semantic axis ---
+
+# Create an empty plot with specified axis limits and no axis lines
 plot(NA, xlim = c(0, 10), ylim = c(0, 1.2), type = "n",
      xlab = "", ylab = "", axes = FALSE, asp = 1)
 
-# Ejes con flechas
-arrows(0, -3, 8, -3, length = 0.1, lwd = 1.5)  # Eje E1
-arrows(0, -3, 0, 4, length = 0.1, lwd = 1.5)   # Eje signal strength
+# Draw axis arrows
+arrows(0, -3, 8, -3, length = 0.1, lwd = 1.5)  # Horizontal axis: Semantic Axis (E1)
+arrows(0, -3, 0, 4, length = 0.1, lwd = 1.5)   # Vertical axis: Signal Strength
 
-# Etiquetas de los ejes
-text(8, -3.5, expression(E[1]), cex = 2)
-text(2, 4.5, "Centered Value", cex = 2)
+# Add axis labels
+text(7, -3.5, "Semantic Axis", cex = 2.5)
+text(2, 4.5, "Centered Value", cex = 2.5)
 
-# Secuencia de x
+# --- First Curve: Directional Spread (Dir-Spread) ---
+
+# Generate a sequence of x values
 x <- seq(1, 8, length.out = 200)
 
-# Curva 1: Distribución normal sesgada a la derecha
+# Compute a right-skewed normal distribution
 y1 <- dnorm(x, mean = 1.6, sd = 1.3)
-y1 <- y1 / max(y1) * 3 # Escalar altura
-text(4.5, 2.5, "Dir-Spread", cex = 1.9, col = colors2[[1]])
 
+# Normalize height and scale for display
+y1 <- y1 / max(y1) * 3
 
-# Curva 2: Forma de "S" acostada (tanh)
-y2 <- 1 + 0.9 * tanh((x - 3))  # Ajustar ubicación y altura
+# Label the curve
+text(4.5, 2.5, "Dir-Spread", cex = 2.3, col = colors2[[1]])
 
-# Dibujar ambas curvas
+# Draw the curve
 lines(x, y1, lwd = 4, col = colors2[[1]])
 
-# Valores de x
+# --- Second Curve: Significance Strength (Sign-Strn) ---
+
+# Refine x-resolution for smoother drawing
 x <- seq(1, 8, length.out = 500)
 
-# Curva compuesta: dos normales (montaña y valle)
+# Combine multiple Gaussian peaks (positive and negative) to simulate signal strength dynamics
 y <- dnorm(x, mean = 1.8, sd = 1.2) - 
      0.5 * dnorm(x, mean = 4, sd = 1.5) + 
      0.4 * dnorm(x, mean = 6.5, sd = 0.7)
 
-# Normalizar a altura máxima 1
+# Normalize height to max value and rescale
 y <- y / max(y) * 2.7
 
-# Dibujar curva
+# Draw the composite curve
 lines(x, y, lwd = 4, col = colors2[[2]])
-text(5, -1.5, "Sign-Strn", cex = 1.9, col = colors2[[2]])
+
+# Label the second curve
+text(5, -1.5, "Sign-Strn", cex = 2.3, col = colors2[[2]])
+
+
+# --- Bottom-right Panel: Semantic axis curvature and cosine angle illustration ---
+
+# Initialize empty plot with specified bounds and aspect ratio
+plot(NA, xlim = c(-2.2, 2), ylim = c(-2, 2), asp = 1, axes = FALSE, xlab = "", ylab = "")
+
+# Draw amoeba-like contour and inflammation label
+draw_contour()
+
+# Draw each directional vector (without projections)
+for (i in seq_along(x_vec)) {
+  draw_vector(x_vec[i], y_vec[i], len_vec[i], angle_vec[i])
+}  
+
+# --- Define manually the points that form the semantic axis curve ---
+x_points <- c(-.6, -0.65, -0.65, -0.5, -0.45, -0.4, 0)
+y_points <- c(-1.5, -1.1, -0.7,  -.2, 0.5, 1, 1.4)
+
+# Create artificial parameter t for interpolation
+t <- seq(0, 1, length.out = length(x_points))
+
+# Generate smooth spline interpolation for both x and y coordinates
+spline_x <- spline(t, x_points, n = 200)
+spline_y <- spline(t, y_points, n = 200)
+
+# Draw the main semantic axis as a smooth thick line
+lines(spline_x$y, spline_y$y, col = colors[[4]], lwd = 5)
+
+# Optional: draw a scaled-down semantic axis copy for illustration
+scale_factor <- 0.4
+lines(spline_x$y * scale_factor + 1.3,
+      spline_y$y * scale_factor - 1.5,
+      col = colors[[4]], lwd = 5)
+
+# --- Cosine Angle Illustration ---
+
+# Draw two vectors with an angle between them
+draw_vector(1, -2.1, 1.3, 80, lty = "dashed", arrow_size = 0.2)    
+draw_vector(1, -2.1, 1, 40)
+
+# Define center of arc (same origin as the two vectors)
+cx <- 1
+cy <- -2.1
+
+# Define angular span in radians
+angle1 <- 40 * pi / 180
+angle2 <- 80 * pi / 180
+theta <- seq(angle1, angle2, length.out = 100)
+
+# Radius of the arc
+r <- .5
+
+# Compute arc coordinates
+x_arc <- cx + r * cos(theta)
+y_arc <- cy + r * sin(theta)
+
+# Draw arc representing angle between vectors
+lines(x_arc, y_arc, lwd = 4, col = "black")
+text(1.35, -1.5, "cos", cex = 2.3, col = "black")
+
+# Draw resulting average vector for illustration
+draw_vector(1.4, -1.3, .5, 60, arrow_size = 0.1, lwd = 1)    
+
+# Draw a circle with a "+" in the center (e.g., summarizing direction)
+x <- 1.8
+y <- -0.5
+symbols(x, y, circles = 0.2, inches = FALSE, add = TRUE, fg = "black", lwd = 3)
+
+# Add "+" symbol
+plus_size <- 0.15
+segments(x - plus_size, y, x + plus_size, y, lwd = 3)  # horizontal line
+segments(x, y - plus_size, x, y + plus_size, lwd = 3)  # vertical line
+
+# --- Draw bin divisions along the semantic axis ---
+
+# Step 1: Compute arc length along the semantic axis
+dx <- diff(spline_x$y)
+dy <- diff(spline_y$y)
+segment_lengths <- sqrt(dx^2 + dy^2)
+arc_length <- c(0, cumsum(segment_lengths))
+
+# Step 2: Identify index positions corresponding to 5 percentile bins
+total_length <- tail(arc_length, 1)
+percentiles <- seq(0, total_length, length.out = 6)  # 0%, 20%, ..., 100%
+bin_indices <- sapply(percentiles, function(p) which.min(abs(arc_length - p)))
+
+# Step 3: Draw dashed lines perpendicular to semantic axis at bin edges
+for (idx in bin_indices[-c(1, length(bin_indices))]) {
+  # Get point on curve
+  x0 <- spline_x$y[idx] + 0.1  # small adjustment to x0
+  y0 <- spline_y$y[idx]
+
+  # Estimate tangent vector using neighboring points
+  dx <- spline_x$y[idx + 1] - spline_x$y[idx - 1]
+  dy <- spline_y$y[idx + 1] - spline_y$y[idx - 1]
+
+  # Compute normal (perpendicular) vector
+  norm_length <- 1.38
+  nx <- -dy
+  ny <- dx
+
+  if (idx == 53) {
+    norm_length <- 1
+    x0 <- x0 + 0.3
+  }
+
+  n_norm <- sqrt(nx^2 + ny^2)
+  nx <- nx / n_norm
+  ny <- ny / n_norm
+
+  # Draw perpendicular dashed segment at bin position
+  segments(x0 - nx * norm_length, y0 - ny * norm_length,
+           x0 + nx * norm_length, y0 + ny * norm_length,
+           lty = "dashed", lwd = 3, col = colors[[3]])
+}
 
 
 dev.off()
