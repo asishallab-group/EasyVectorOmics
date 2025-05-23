@@ -3,7 +3,9 @@ colors <- brewer.pal(7, "Dark2")
 colors2 <- brewer.pal(9, "Set1")
 
 pdf("figure_1g.pdf", width = 12, height = 12)
-par(mfrow = c(2, 2), mar = c(1, 1, 1, 1))  # 4 panels (2x2) with minimal margins
+# par(mfrow = c(2, 2), mar = c(1, 1, 1, 1))  # 4 panels (2x2) with minimal margins
+layout(matrix(c(1, 1, 2, 3), nrow = 2, byrow = TRUE), heights = c(1.1, 1.3))
+par(mar = c(1, 1, 1, 1))
 
 # Function to draw the green amoeba-like contour
 draw_contour <- function() {
@@ -109,7 +111,7 @@ len_vec <- c(0.25, 0.3, 0.2, 0.3, 0.4, 0.2, 0.4,  0.3,  0.1,  0.4)
 angle_vec <- c(150, 170, 200,  50,  80, 220, 350, 270, 350,  70)
 
 # --- Top-left Panel: Vector field with E1 and E2, with vector projections ---
-plot(NA, xlim = c(-2, 2), ylim = c(-2, 2), asp = 1, axes = FALSE, xlab = "", ylab = "")
+plot(NA, xlim = c(-1.95, 1.95), ylim = c(-1.95, 1.95), asp = 1, axes = FALSE, xlab = "", ylab = "")
 
 # Draw amoeba-like contour representing the biological response area
 draw_contour()
@@ -213,121 +215,6 @@ lines(x, y, lwd = 4, col = colors2[[2]])
 # Label the second curve
 text(5, -1.5, "Sign-Strn", cex = 2.3, col = colors2[[2]])
 
-
-# --- Bottom-right Panel: Semantic axis curvature and cosine angle illustration ---
-
-# Initialize empty plot with specified bounds and aspect ratio
-plot(NA, xlim = c(-2.2, 2), ylim = c(-2, 2), asp = 1, axes = FALSE, xlab = "", ylab = "")
-
-# Draw amoeba-like contour and inflammation label
-draw_contour()
-
-# Draw each directional vector (without projections)
-for (i in seq_along(x_vec)) {
-  draw_vector(x_vec[i], y_vec[i], len_vec[i], angle_vec[i])
-}  
-
-# --- Define manually the points that form the semantic axis curve ---
-x_points <- c(-.6, -0.65, -0.65, -0.5, -0.45, -0.4, 0)
-y_points <- c(-1.5, -1.1, -0.7,  -.2, 0.5, 1, 1.4)
-
-# Create artificial parameter t for interpolation
-t <- seq(0, 1, length.out = length(x_points))
-
-# Generate smooth spline interpolation for both x and y coordinates
-spline_x <- spline(t, x_points, n = 200)
-spline_y <- spline(t, y_points, n = 200)
-
-# Draw the main semantic axis as a smooth thick line
-lines(spline_x$y, spline_y$y, col = colors[[4]], lwd = 5)
-
-# Optional: draw a scaled-down semantic axis copy for illustration
-scale_factor <- 0.4
-lines(spline_x$y * scale_factor + 1.3,
-      spline_y$y * scale_factor - 1.5,
-      col = colors[[4]], lwd = 5)
-
-# --- Cosine Angle Illustration ---
-
-# Draw two vectors with an angle between them
-draw_vector(1, -2.1, 1.3, 80, lty = "dashed", arrow_size = 0.2)    
-draw_vector(1, -2.1, 1, 40)
-
-# Define center of arc (same origin as the two vectors)
-cx <- 1
-cy <- -2.1
-
-# Define angular span in radians
-angle1 <- 40 * pi / 180
-angle2 <- 80 * pi / 180
-theta <- seq(angle1, angle2, length.out = 100)
-
-# Radius of the arc
-r <- .5
-
-# Compute arc coordinates
-x_arc <- cx + r * cos(theta)
-y_arc <- cy + r * sin(theta)
-
-# Draw arc representing angle between vectors
-lines(x_arc, y_arc, lwd = 4, col = "black")
-text(1.35, -1.5, "cos", cex = 2.3, col = "black")
-
-# Draw resulting average vector for illustration
-draw_vector(1.4, -1.3, .5, 60, arrow_size = 0.1, lwd = 1)    
-
-# Draw a circle with a "+" in the center (e.g., summarizing direction)
-x <- 1.8
-y <- -0.5
-symbols(x, y, circles = 0.2, inches = FALSE, add = TRUE, fg = "black", lwd = 3)
-
-# Add "+" symbol
-plus_size <- 0.15
-segments(x - plus_size, y, x + plus_size, y, lwd = 3)  # horizontal line
-segments(x, y - plus_size, x, y + plus_size, lwd = 3)  # vertical line
-
-# --- Draw bin divisions along the semantic axis ---
-
-# Step 1: Compute arc length along the semantic axis
-dx <- diff(spline_x$y)
-dy <- diff(spline_y$y)
-segment_lengths <- sqrt(dx^2 + dy^2)
-arc_length <- c(0, cumsum(segment_lengths))
-
-# Step 2: Identify index positions corresponding to 5 percentile bins
-total_length <- tail(arc_length, 1)
-percentiles <- seq(0, total_length, length.out = 6)  # 0%, 20%, ..., 100%
-bin_indices <- sapply(percentiles, function(p) which.min(abs(arc_length - p)))
-
-# Step 3: Draw dashed lines perpendicular to semantic axis at bin edges
-for (idx in bin_indices[-c(1, length(bin_indices))]) {
-  # Get point on curve
-  x0 <- spline_x$y[idx] + 0.1  # small adjustment to x0
-  y0 <- spline_y$y[idx]
-
-  # Estimate tangent vector using neighboring points
-  dx <- spline_x$y[idx + 1] - spline_x$y[idx - 1]
-  dy <- spline_y$y[idx + 1] - spline_y$y[idx - 1]
-
-  # Compute normal (perpendicular) vector
-  norm_length <- 1.38
-  nx <- -dy
-  ny <- dx
-
-  if (idx == 53) {
-    norm_length <- 1
-    x0 <- x0 + 0.3
-  }
-
-  n_norm <- sqrt(nx^2 + ny^2)
-  nx <- nx / n_norm
-  ny <- ny / n_norm
-
-  # Draw perpendicular dashed segment at bin position
-  segments(x0 - nx * norm_length, y0 - ny * norm_length,
-           x0 + nx * norm_length, y0 + ny * norm_length,
-           lty = "dashed", lwd = 3, col = colors[[3]])
-}
 
 
 dev.off()
