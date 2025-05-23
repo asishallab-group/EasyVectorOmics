@@ -4,13 +4,13 @@ import numpy as np
 # ======================
 # CONFIGURATION SECTION
 # ======================
-input_file = r"D:/EasyVectorOmics/TEST/results_OP/neighborhood/distances_tandem.tsv"
-centroid_file = r"D:/EasyVectorOmics/TEST/results_OP/orthogroup_centroids_neighborhood.tsv"
-pairwise_file = r"D:/EasyVectorOmics/TEST/results_OP/neighborhood/paralog_pairwise_distances.tsv"
+input_file = "results/distances_tandem.tsv"
+centroid_file = "results/orthogroup_centroids"
+pairwise_file = "results/paralog_pairwise_distances.tsv"
 
-output_df_file = r"D:/EasyVectorOmics/TEST/results_OP/neighborhood/distances_tandem_angle.tsv"
-output_expr_file = r"D:/EasyVectorOmics/TEST/results_OP/neighborhood/centroid_angle.tsv"
-output_pairwise_file = r"D:/EasyVectorOmics/TEST/results_OP/neighborhood/pairwise_distances_angle.tsv"
+output_df_file = "results/distances_tandem_angle.tsv"
+output_expr_file = "results/centroid_angle.tsv"
+output_pairwise_file = "results/pairwise_distances_angle.tsv"
 
 
 # ======================

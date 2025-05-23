@@ -578,11 +578,11 @@ def classify_genes(csv_df, conserved_orthologs, target_orthogroup):
 def main():
     global allowed_orthologs
     method = validate_args(sys.argv)
-    orthologs_directory = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/proteom/OrthoFinder/Results_Apr03/Orthologues"
-    pickle_file = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/harmonic_means_by_prefix.pkl"
-    Duplications_file = r"/storage/EasyVectorOmics/FastQ_GSE125483_JK/proteom/OrthoFinder/Results_Apr03/Gene_Duplication_Events/Duplications.tsv"
-    tree_files = r"/storage/EasyVectorOmics/FastQ_GSE125483_JK/proteom/OrthoFinder/Results_Apr03/Resolved_Gene_Trees"
-    df_orthogroups = pd.read_csv('/storage/EasyVectorOmics/FastQ_GSE125483_JK/proteom/OrthoFinder/Results_Apr03/Orthogroups/Orthogroups.tsv', sep='\t')
+    orthologs_directory = "proteom/OrthoFinder/Results_Apr03/Orthologues"
+    pickle_file = "results/harmonic_means_by_prefix.pkl"
+    Duplications_file = "proteom/OrthoFinder/Results_Apr03/Gene_Duplication_Events/Duplications.tsv"
+    tree_files = "proteom/OrthoFinder/Results_Apr03/Resolved_Gene_Trees"
+    df_orthogroups = pd.read_csv('proteom/OrthoFinder/Results_Apr03/Orthogroups/Orthogroups.tsv', sep='\t')
     species_names = df_orthogroups.columns[1:]
     species_list.extend(species_names)
 
@@ -610,11 +610,11 @@ def main():
 
     folder = "whitelist"  # oder "majority", "whitelist", etc.
 
-    co_path = f"/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/tree/{folder}/complete_tree_conserved_orthologs_{th}.tsv"
-    in_path = f"/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/tree/{folder}/complete_tree_in_paralogs_{th}.tsv"
-    sin_path = f"/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/tree/{folder}/complete_tree_special_in_paralogs_{th}.tsv"
-    sout_path = f"/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/tree/{folder}/complete_tree_special_out_paralogs_{th}.tsv"
-    out_path = f"/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/tree/{folder}/complete_tree_out_paralogs_{th}.tsv"
+    co_path = f"results/tree/{folder}/complete_tree_conserved_orthologs_{th}.tsv"
+    in_path = f"results/tree/{folder}/complete_tree_in_paralogs_{th}.tsv"
+    sin_path = f"results/tree/{folder}/complete_tree_special_in_paralogs_{th}.tsv"
+    sout_path = f"results/tree/{folder}/complete_tree_special_out_paralogs_{th}.tsv"
+    out_path = f"results/tree/{folder}/complete_tree_out_paralogs_{th}.tsv"
 
 
 

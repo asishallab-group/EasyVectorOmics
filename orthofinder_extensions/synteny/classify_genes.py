@@ -21,9 +21,9 @@ def classify_genes(csv_df, conserved_orthologs, target_orthogroup):
     # Klassifikation starten
     classifications = {
         'inparalogs': [],
-        'special_inparalogs': [],
+        'source_copy_inparalogs': [],
         'outparalogs': [],
-        'special_outparalogs': [],
+        'source_copy_outparalogs': [],
         'conserved_orthologs': [],
     }
 
@@ -74,10 +74,10 @@ def classify_genes(csv_df, conserved_orthologs, target_orthogroup):
                 if not is_conserved_gene(gene1) and not is_conserved_gene(gene2):
                     classifications['inparalogs'].append(pair)
                 else:
-                    classifications['special_inparalogs'].append(pair)
+                    classifications['source_copy_inparalogs'].append(pair)
 
     # print(classifications['inparalogs'])
-    # print(classifications['special_inparalogs'])
+    # print(classifications['source_copy_inparalogs'])
 
     # Zwischen Spezies klassifizieren
     species_pairs = list(genes_in_orthogroup.keys())
@@ -90,7 +90,7 @@ def classify_genes(csv_df, conserved_orthologs, target_orthogroup):
                         classifications['outparalogs'].append(pair)
                     elif not any((gene1x in t[0] and gene2x in t[1]) or (gene1x in t[1] and gene2x in t[0]) for t in
                                  conserved_orthologs):
-                        classifications['special_outparalogs'].append(pair)
+                        classifications['source_copy_outparalogs'].append(pair)
 
     return classifications
 
@@ -111,14 +111,14 @@ def write_file(classifications, co_path, in_path, sin_path, sout_path, out_path)
     # Escribir las clasificaciones en sus respectivos archivos
     append_to_csv(co_path, classifications['conserved_orthologs'])
     append_to_csv(in_path, classifications['inparalogs'])
-    append_to_csv(sin_path, classifications['special_inparalogs'])
+    append_to_csv(sin_path, classifications['source_copy_inparalogs'])
     append_to_csv(out_path, classifications['outparalogs'])
-    append_to_csv(sout_path, classifications['special_outparalogs'])
+    append_to_csv(sout_path, classifications['source_copy_outparalogs'])
 
 
 # Cargar los datos
-df_orthogroups = pd.read_csv('/storage/EasyVectorOmics/FastQ_GSE125483_JK/proteom/OrthoFinder/Results_Apr03/Orthogroups/Orthogroups.tsv', sep='\t')
-df = pd.read_csv('/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/neighborhood/neighborhood_results_formatted.tsv', sep='\t')
+df_orthogroups = pd.read_csv('proteom/OrthoFinder/Results_Apr03/Orthogroups/Orthogroups.tsv', sep='\t')
+df = pd.read_csv('results/neighborhood/neighborhood_results_formatted.tsv', sep='\t')
 
 # Crear una lista de tuplas para conserved_orthologs
 result_conserved_orthologs = defaultdict(list)
@@ -126,11 +126,11 @@ for _, row in df.iterrows():
     result_conserved_orthologs[row['Orthogroup']].append((row['Gene1'], row['Gene2']))
 
 # Definir rutas de archivo
-co_path = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/neighborhood/neighborhood_conserved_orthologs.tsv"
-in_path = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/neighborhood/neighborhood_in_paralogs.tsv"
-sin_path = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/neighborhood/neighborhood_special_in_paralogs.tsv"
-sout_path = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/neighborhood/neighborhood_special_out_paralogs.tsv"
-out_path = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/neighborhood/neighborhood_out_paralogs.tsv"
+co_path = "results/neighborhood/neighborhood_conserved_orthologs.tsv"
+in_path = "results/neighborhood/neighborhood_in_paralogs.tsv"
+sin_path = "results/neighborhood/neighborhood_source_copy_in_paralogs.tsv"
+sout_path = "results/neighborhood/neighborhood_source_copy_out_paralogs.tsv"
+out_path = "results/neighborhood/neighborhood_out_paralogs.tsv"
 
 # Verificar o crear archivos
 check_or_create_file(co_path, "Orthogroup\tGene1\tSpecies1\tGene2\tSpecies2")

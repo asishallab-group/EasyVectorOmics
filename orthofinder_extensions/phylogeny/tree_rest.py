@@ -175,7 +175,7 @@ def main():
     args = parser.parse_args()
 
     # Load the harmonic_dict from the passed argument (JSON)
-    harmonic_dict_path = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/harmonic_means_by_id.pkl"
+    harmonic_dict_path = "results/harmonic_means_by_id.pkl"
 
     # File paths for appending results
     co_path = args.arg1

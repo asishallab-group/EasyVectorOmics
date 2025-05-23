@@ -3,10 +3,10 @@ library(dplyr)
 library(readr)
 
 # Load logFC data
-logfc_df <- read.table("/storage/EasyVectorOmics/FastQ_GSE125483_JK/kallisto_outputs/combined_output.tsv", header = TRUE, sep = "\t")
+logfc_df <- read.table("results/normalization.tsv", header = TRUE, sep = "\t")
 
 # Load orthologs data
-orthologs_df <- read.table("/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/tree/majority/complete_tree_conserved_orthologs_2_formatted_filtered.tsv", header = TRUE, sep = "\t")
+orthologs_df <- read.table("material/filtered_orthologs.tsv", header = TRUE, sep = "\t")
 
 # Function to compute centroid per orthogroup 
 calculate_orthogroup_centroids <- function(logfc_df, orthologs_df) {
@@ -27,7 +27,7 @@ calculate_orthogroup_centroids <- function(logfc_df, orthologs_df) {
     
     # Get matching logFC values
     og_logfc <- logfc_df %>%
-      filter(GeneID %in% genes)
+      filter(gene_id %in% genes)
     
     if (nrow(og_logfc) > 0) {
     #   print("Ortholog vectors:")
@@ -56,4 +56,4 @@ calculate_orthogroup_centroids <- function(logfc_df, orthologs_df) {
 centroids <- calculate_orthogroup_centroids(logfc_df, orthologs_df)
 
 # Save result
-write.table(centroids, file = "results/orthogroup_centroids_majorityrule.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
+write.table(centroids, file = "results/orthogroup_centroids.tsv", sep = "\t", quote = FALSE, row.names = FALSE)

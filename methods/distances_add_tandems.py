@@ -1,13 +1,9 @@
 import pandas as pd
 
 # 1. Einlesen der Dateien
-map_df = pd.read_csv("D:/EasyVectorOmics/TEST/map_gen_protein_species_orthogroup.tsv", sep="\t", usecols=["GeneID", "ProteinID"], dtype=str)
-tandem_df = pd.read_csv("D:/EasyVectorOmics/TEST/Tandems_output.tsv", sep="\t", usecols=["genids"], dtype=str)
-dist_df = pd.read_csv(r"D:\EasyVectorOmics\TEST\results_OP\majority\distances_df.tsv", sep="\t", dtype=str)
-
-
-# 2. Normalize ProteinID/GeneID
-
+map_df = pd.read_csv("material/map.tsv", sep="\t", usecols=["GeneID", "ProteinID"], dtype=str)
+tandem_df = pd.read_csv("results/tandems/Tandems_output.tsv", sep="\t", usecols=["genids"], dtype=str)
+dist_df = pd.read_csv("results/distances_df.tsv", sep="\t", dtype=str)
 
 
 # 3. Mapping ProteinID → GeneID
@@ -48,4 +44,4 @@ else:
     print("Kein Tandem-Paralog erkannt.")
 
 # 11. Speichern
-dist_df.to_csv(r"D:\EasyVectorOmics\TEST\results_OP\majority\distances_tandem.tsv", sep="\t", index=False)
+dist_df.to_csv("results/distances_tandem.tsv", sep="\t", index=False)
