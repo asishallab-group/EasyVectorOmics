@@ -5,17 +5,17 @@ import numpy as np
 # Define work packages with start and end months
 work_packages = {
     "WP1": (1, 6),
-    "WP2": (3, 36),
-    "WP3": (10, 20),
-    "WP4": (12, 36)
+    "WP2": (3, 46),
+    "WP3": (10, 30),
+    "WP4": (12, 48)
 }
 
 # Define milestones: (month, label, associated WP)
 milestones = [
     (6, "MS1", "WP1"),
-    (14, "MS2", "WP2"),
-    (18, "MS3", "WP3"),
-    (32, "MS4", "WP4")
+    (18, "MS2", "WP2"),
+    (24, "MS3", "WP3"),
+    (43, "MS4", "WP4")
 ]
 
 # Setup
@@ -41,8 +41,8 @@ ax.set_yticks(y_positions)
 ax.set_yticklabels(wp_names, fontsize=14, fontweight='bold')
 
 # X-axis and title
-ax.set_xticks(np.arange(1, 37, 3))
-ax.set_xlim(0, 37)
+ax.set_xticks(np.arange(1, 49, 3))
+ax.set_xlim(0, 49)
 ax.set_ylim(-0.75, len(wp_names) - 0.25)
 ax.set_xlabel("Month", fontsize=12)
 ax.set_title("Tensor Omics – Gantt Chart", fontsize=14)
