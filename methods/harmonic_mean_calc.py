@@ -49,9 +49,9 @@ def get_harmonic_mean(df):
 # Hauptprogramm
 if __name__ == "__main__":
     # BLAST-Datei einlesen
-    blast_file = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/blast_results_mapped.txt"  # Pfad zur BLAST-Datei
-    output_pickle_by_id = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/harmonic_means_by_id.pkl"  # Pickle-Datei für (qid, sid)
-    output_pickle_by_prefix = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/harmonic_means_by_prefix.pkl"  # Pickle-Datei für (query_protein_prefix, target_protein_prefix)
+    blast_file = "results/blast_results_mapped.txt"  # Pfad zur BLAST-Datei
+    output_pickle_by_id = "results/harmonic_means_by_id.pkl"  # Pickle-Datei für (qid, sid)
+    output_pickle_by_prefix = "results/harmonic_means_by_prefix.pkl"  # Pickle-Datei für (query_protein_prefix, target_protein_prefix)
 
     try:
         # DataFrame aus BLAST-Datei erstellen

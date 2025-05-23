@@ -282,8 +282,7 @@ def load_tandem_dict(tandem_file):
     return tandem_dict
 
 
-def count_shared_genes(gene, gene_related, neighborhood_1, neighborhood_2, relationship_dict, csv_all_edges,
-                       csv_unique_edges):
+def count_shared_genes(gene, gene_related, neighborhood_1, neighborhood_2, relationship_dict):
     """
     Counts the maximum number of unique gene pairs between two neighborhoods
     using the Hopcroft-Karp algorithm for bipartite matching.
@@ -327,8 +326,7 @@ def count_shared_genes(gene, gene_related, neighborhood_1, neighborhood_2, relat
     return max_unique_pairs, len(B.edges)
 
 
-def analyze_genes(gene_dicts, gene_to_species, neighborhoods, relationship_dict, output_file, csv_all_edges,
-                  csv_unique_edges, batch_size=10000):
+def analyze_genes(gene_dicts, gene_to_species, neighborhoods, relationship_dict, output_file,batch_size=10000):
     """
     Analyzes genes, calculates shared neighbors, and writes the results to a file.
 
@@ -371,8 +369,8 @@ def analyze_genes(gene_dicts, gene_to_species, neighborhoods, relationship_dict,
                         if len(related_neighborhood) == 0:
                             continue
                         shared_genes, all_shared_genes = count_shared_genes(gene, related_gene, neighborhood,
-                                                                            related_neighborhood, relationship_dict,
-                                                                            csv_all_edges, csv_unique_edges)
+                                                                            related_neighborhood, relationship_dict
+                                                                            )
                         # print(shared_genes)
                         # Update the maximum shared genes by species
                         if related_species not in max_shared_genes_per_species:
@@ -432,32 +430,17 @@ def main():
     Main function that loads data, processes it, and analyzes genes.
     """
     # Load the GTF files for the species
-    genes_df_Canis = load_gtf_genes(r'/storage/EasyVectorOmics/FastQ_GSE125483_JK/gtf/gtf_Canis.gtf').reset_index(drop=True)
-    genes_df_Macaca = load_gtf_genes(r'/storage/EasyVectorOmics/FastQ_GSE125483_JK/gtf/gtf_Macaca.gtf').reset_index(drop=True)
-    genes_df_Mus = load_gtf_genes(r'/storage/EasyVectorOmics/FastQ_GSE125483_JK/gtf/gtf_Mus.gtf').reset_index(drop=True)
-    genes_df_Rat = load_gtf_genes(r'/storage/EasyVectorOmics/FastQ_GSE125483_JK/gtf/gtf_Rat.gtf').reset_index(drop=True)
-    # genes_df_dvir = load_gtf_genes('material/gtf_files/dvir-all-r1.07.gtf').reset_index(drop=True)
-    # genes_df_dsec = load_gtf_genes('material/gtf_files/dsec-all-r1.3.gtf').reset_index(drop=True)
-    # genes_df_dpse = load_gtf_genes('material/gtf_files/dpse-all-r3.04.gtf').reset_index(drop=True)
-    # genes_df_dper = load_gtf_genes('material/gtf_files/dper-all-r1.3.gtf').reset_index(drop=True)
-    # genes_df_dmoj = load_gtf_genes('material/gtf_files/dmoj-all-r1.04.gtf').reset_index(drop=True)
-    # genes_df_dmel = load_gtf_genes('material/gtf_files/dmel-all-r6.24.gtf').reset_index(drop=True)
-    # genes_df_dgri = load_gtf_genes('material/gtf_files/dgri-all-r1.05.gtf').reset_index(drop=True)
-    # genes_df_dere = load_gtf_genes('material/gtf_files/dere-all-r1.05.gtf').reset_index(drop=True)
+    genes_df_Canis = load_gtf_genes(r'gtf/gtf_Canis.gtf').reset_index(drop=True)
+    genes_df_Macaca = load_gtf_genes(r'gtf/gtf_Macaca.gtf').reset_index(drop=True)
+    genes_df_Mus = load_gtf_genes(r'gtf/gtf_Mus.gtf').reset_index(drop=True)
+    genes_df_Rat = load_gtf_genes(r'gtf/gtf_Rat.gtf').reset_index(drop=True)
 
     species = {
         'Canis_Lupus': genes_df_Canis,
         'Macaca': genes_df_Macaca,
         'Mus': genes_df_Mus,
         'Rat': genes_df_Rat
-        # 'dgri': genes_df_dgri,
-        # 'dmoj': genes_df_dmoj,
-        # 'dper': genes_df_dper,
-        # 'dpse': genes_df_dpse,
-        # 'dsec': genes_df_dsec,
-        # 'dvir': genes_df_dvir,
-        # 'dana': genes_df_dana,
-        # 'dwil': genes_df_dwil
+
     }
 
     # Create gene dictionaries per species
@@ -467,7 +450,7 @@ def main():
     # Create gene-to-species mapping
     gene_to_species = {gene: species_name for species_name, genes_df in species.items() for gene in genes_df['gene_id']}
 
-    tandem_file = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/tandems/Tandems_output.tsv"
+    tandem_file = "results/tandems/Tandems_output.tsv"
     tandem_dict = load_tandem_dict(tandem_file)
     #print(tandem_dict)
 
@@ -477,26 +460,22 @@ def main():
 
     path_relationship_dict = 'material/clean_relationships.pkl'
 
-    csv_all_edges = r"D:\EasyVectorOmics\TEST\results/all_edges.csv"
-    csv_unique_edges = r"D:\EasyVectorOmics\TEST\results/unique_edges.csv"
-
     # Comprobar si ya existe el archivo de diccionario
     if os.path.exists(path_relationship_dict):
         relationship_dict = load_relationship_dictionary(path_relationship_dict)
     else:
-        blast_df = read_blast(r'/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/blast/blast_results.tsv')  # Cargar datos de BLAST
+        blast_df = read_blast(r'results/blast/blast_results.tsv')  # Cargar datos de BLAST
         relationship_dict = create_relationship_dictionary(blast_df)
         #save_relationship_dictionary(relationship_dict, path_relationship_dict)
 
     # Check or create output file
     header_orth = "Gene1\tSpecies1\tGene2\tSpecies2\tCount"
-    orthologues_nbh_path = r"/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/neighborhood/neighborhood_results.tsv"
+    orthologues_nbh_path = r"results/neighborhood/neighborhood_results.tsv"
 
     check_or_create_file(orthologues_nbh_path, header_orth)
 
     # Analyze genes and save the results
-    analyze_genes(gene_dicts, gene_to_species, neighborhoods, relationship_dict, orthologues_nbh_path, csv_all_edges,
-                  csv_unique_edges)
+    analyze_genes(gene_dicts, gene_to_species, neighborhoods, relationship_dict, orthologues_nbh_path)
 
 
 if __name__ == "__main__":

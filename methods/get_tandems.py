@@ -308,22 +308,10 @@ def filter_genid_with_highest_mean_score(df_tandems, df_blast):
 
 #-------Files------------------------------------------------------------------
 
-#-------Test-----------------------------------------------------------------
-"""
-fasta_file = r"D:\EasyVectorOmics\Tandems\Test\fasta_test.txt"
-gtf_file = r"D:\EasyVectorOmics\Tandems\Test\test_gtf.txt"
-blast_file = r"D:\EasyVectorOmics\Tandems\Test\blast_test.txt"
-tsv_file = r"D:\EasyVectorOmics\Tandems\Test\tsv_test.txt"
-"""
-#-----normal------------------------------------------------------
-
-
-tsv_file = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/map_gen_protein_species.tsv"
-gtf_file = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/gtf/combined.gtf"
-blast_file = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/blast/blast_results.tsv"
-output_path = "/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/tandems/Tandems_output.tsv"
-#tsv_file = r"D:\EasyVectorOmics\Tandems\Orthogroups.tsv"
-
+tsv_file = "results/map_gen_protein_species.tsv"
+gtf_file = "gtf/combined.gtf"
+blast_file = "results/blast/blast_results.tsv"
+output_path = "results/tandems/Tandems_output.tsv"
 
 #----thresholds----------------------------------------------------------------
 

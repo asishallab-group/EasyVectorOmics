@@ -22,16 +22,16 @@ alpha.cols <- sapply(colors, addAlpha)
 
 
 # Load expression data (gene_id + expression values)
-norm_df <- read.table("/storage/EasyVectorOmics/FastQ_GSE125483_JK/kallisto_outputs/combined_output.tsv", header = TRUE, sep = "\t")
+norm_df <- read.table("results/normalization.tsv", header = TRUE, sep = "\t")
 
 # Load centroid data (Orthogroup + centroid vectors)
-centroids_df <- read.table("/storage/EasyVectorOmics/FastQ_GSE125483_JK/Scripts/EVO/results/orthogroup_centroids_neighborhood.tsv", header = TRUE, sep = "\t")
+centroids_df <- read.table("results/orthogroup_centroids", header = TRUE, sep = "\t")
 
 # Load orthogroup mapping (Orthogroup ↔ genes)
-orthogroups_df <- read.table("/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/neighborhood/Orthogroups_filtered.tsv", header = TRUE, sep = "\t", quote = "", fill = TRUE)
+orthogroups_df <- read.table("results/filtered_families.tsv", header = TRUE, sep = "\t", quote = "", fill = TRUE)
 
-orthologs_df <- read.table("/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/neighborhood/neighborhood_conserved_orthologs_formatted_filtered.tsv", header = TRUE, sep = "\t")  # Must have columns: Orthogroup, Gene1, Gene2
-paralogs_df <- read.table("/storage/EasyVectorOmics/FastQ_GSE125483_JK/results/neighborhood/neighborhood_special_in_and_out_paralogs_formatted_filtered.tsv", header = TRUE, sep = "\t")
+orthologs_df <- read.table("results/filtered_orthologs.tsv", header = TRUE, sep = "\t")  # Must have columns: Orthogroup, Gene1, Gene2
+paralogs_df <- read.table("results/filtered_paralogs.tsv", header = TRUE, sep = "\t")
 
 
 colnames(norm_df)[1] <- "gene_id"
@@ -192,7 +192,7 @@ geom_jitter(width = 0.2, shape = 21, size = 2, aes(color = gene_type, fill = gen
     label.y = max(distances_with_rdi$distance_to_centroid, na.rm = TRUE) + 0.1
   )
 
-ggsave("results2/all_distances.svg", plot = all_distances, width = 8, height = 6, device = svg)
+ggsave("results/all_distances.svg", plot = all_distances, width = 8, height = 6, device = svg)
 
 
 effsize_results <- distances_with_rdi %>%
@@ -206,7 +206,7 @@ effsize_results <- distances_with_rdi %>%
 # In eine TXT-Datei speichern
 write.table(
   effsize_results,
-  file = "results2/wilcox_effsize.txt",
+  file = "results/wilcox_effsize.txt",
   sep = "\t",
   row.names = FALSE,
   quote = FALSE
@@ -228,7 +228,7 @@ rdi_plot <- ggplot(distances_with_rdi, aes(x = RDI)) +
   annotate("text", x = p95, y = Inf, label = paste0("Threshold: ", round(p95, 3)),
            vjust = -0.5, hjust = 1, color = "red", size = 4)
 
-ggsave("results2/rdi_distribution_plot.svg", plot = rdi_plot, width = 8, height = 6, device = svg)
+ggsave("results/rdi_distribution_plot.svg", plot = rdi_plot, width = 8, height = 6, device = svg)
 
 
 # Plot outlier distances to centroid
@@ -265,9 +265,9 @@ geom_jitter(width = 0.2, shape = 21, size = 2, aes(color = gene_type, fill = gen
     label.y = max(distances_with_rdi$distance_to_centroid, na.rm = TRUE) + 0.1
   )
 
-ggsave("results2/outlier_distances_t_test.svg", plot = outlier_distances, width = 8, height = 6, device = svg)
+ggsave("results/outlier_distances_t_test.svg", plot = outlier_distances, width = 8, height = 6, device = svg)
 
-write.table(distances_with_rdi, file = "results2/distances_df.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
+write.table(distances_with_rdi, file = "results/distances_df.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
 
 # Plot outlier distances to centroid per family (mean)
 outlier_means <- distances_with_rdi %>%
@@ -306,7 +306,7 @@ geom_jitter(width = 0.2, shape = 21, size = 2, aes(color = gene_type, fill = gen
     label.y = max(distances_with_rdi$distance_to_centroid, na.rm = TRUE) + 0.1
   )
 
-ggsave("results2/outlier_distances_per_family.svg", plot = outlier_dist_per_family, width = 8, height = 6, device = svg)
+ggsave("results/outlier_distances_per_family.svg", plot = outlier_dist_per_family, width = 8, height = 6, device = svg)
 
 
 # Effektstärke-Berechnung für outlier_means
@@ -320,11 +320,11 @@ effsize_outlier_means <- outlier_means %>%
 
 # Ergebnisse an bestehende Datei anhängen
 write("\n\n# Effektstärken für outlier_means (Mean Distance per Family)", 
-      file = "results2/wilcox_effsize.txt", append = TRUE)
+      file = "results/wilcox_effsize.txt", append = TRUE)
 
 write.table(
   effsize_outlier_means,
-  file = "results2/wilcox_effsize.txt",
+  file = "results/wilcox_effsize.txt",
   sep = "\t",
   row.names = FALSE,
   quote = FALSE,
@@ -423,7 +423,7 @@ paralog_distances <- paralog_distances %>%
   ))
 
 # Save results
-write.table(paralog_distances, file = "results2/paralog_pairwise_distances.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
+write.table(paralog_distances, file = "results/paralog_pairwise_distances.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
 
 # Plot distribution of RDI values: source-copy
 rdi_plot <- ggplot(paralog_distances, aes(x = RDI)) +
@@ -438,7 +438,7 @@ rdi_plot <- ggplot(paralog_distances, aes(x = RDI)) +
            vjust = -0.5, hjust = 1, color = "red", size = 4) +
   theme_classic()
 
-ggsave("results2/rdi_distribution_source_copy.svg", plot = rdi_plot, width = 8, height = 6, device = svg)
+ggsave("results/rdi_distribution_source_copy.svg", plot = rdi_plot, width = 8, height = 6, device = svg)
 
 
 # Source Copy Outliers in Inparalogs und Outparalogs aufteilen
@@ -505,7 +505,7 @@ combined_plot <- ggplot(combined_outliers, aes(x = gene_type, y = distance_to_ce
     axis.text.x = element_text(angle = 45, hjust = 1)  # X-Achsenbeschriftung schräg stellen für bessere Lesbarkeit
   )
 
-ggsave("results2/combined_outlier_distances.svg", plot = combined_plot, width = 10, height = 6, device = svg)
+ggsave("results/combined_outlier_distances.svg", plot = combined_plot, width = 10, height = 6, device = svg)
 
 # Effektstärke-Berechnung für die Outlier-Daten mit mehreren Vergleichen
 effsize_combined_outliers <- combined_outliers %>%
@@ -517,10 +517,10 @@ effsize_combined_outliers <- combined_outliers %>%
   )
 
 # Ergebnisse an bestehende Datei anhängen
-write("\n\n# Effektstärken für combined_outliers", file = "results2/wilcox_effsize.txt", append = TRUE)
+write("\n\n# Effektstärken für combined_outliers", file = "results/wilcox_effsize.txt", append = TRUE)
 write.table(
   effsize_combined_outliers,
-  file = "results2/wilcox_effsize.txt",
+  file = "results/wilcox_effsize.txt",
   sep = "\t",
   row.names = FALSE,
   quote = FALSE,
@@ -565,4 +565,4 @@ test_results <- do.call(rbind, results_list)
 test_results$BH_adjusted <- p.adjust(test_results$p_value, method = "BH")
 
 # Guardar resultados
-write.table(test_results, "results2/p_values_BH_adjusted.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
+write.table(test_results, "results/p_values_BH_adjusted.tsv", sep = "\t", quote = FALSE, row.names = FALSE)
