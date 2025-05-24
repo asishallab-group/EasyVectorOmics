@@ -1,16 +1,22 @@
-# EasyVectorOmics
+# Tensor Omics
+
+## General Information
+
+Tensor Omics is a project currently funded by the Carl-Zeiss-Stiftung ("EasyVectorOmics") and aims at Multi Omics, and textual knowledge integration for high performance computing geometric Biomarker learning. Interactive scientific visualization for expert data exploration and hypothesis generation is supported by an graphical user user interface in the web-browser. 
+
+## Abstract
 
 Transcriptomics is the science of change in gene expression. Current methods provide key insights in a vast variety of life-science disciplines by robust identification of genes whose expression changes significantly between experimental conditions, like e.g. healthy versus wounded tissue. However, no tools yet exist to do comparisons between related genes or to efficiently analyze time series data. 
 Tensor Omics is a new framework in applied bioinformatics for analyzing transcriptome data by projecting it into semantically meaningful vector spaces—where each axis represents a biological context such as tissue, dietary regimen, disease state, or developmental stage. Gene families are explored through expression shifts from ancestral centroids, enabling geometric insights into divergence, specificity, and adaptation. Through robust empirical outlier detection the method reliably captures biological signals like genes significantly contributing to wound healing or gut microbial response to protein based dietary regimens.
-
 
 ## Description
 EasyVectorOmics is a pipeline designed to analyze gene expression data and evolutionary relationships between genes. This pipeline combines tools for phylogenetic analysis, gene classification, and expression calculations to generate processed results ready for interpretation.
 
 The pipeline includes steps for data normalization, protein similarity calculations, phylogenetic classification, synteny analysis, and evolutionary distance and angle calculations.
 
+### Analysis as a pipeline
 
-### Requirements
+Find below the summarized steps of the geometric biomarker detection implemented in Tensor Omics.
 
 1. **Execute [BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi)**
 
