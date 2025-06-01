@@ -1,8 +1,8 @@
-module cartesian_kd_tree
+module kd_tree
     use tox_sorting
     implicit none
     private
-    public :: build_kd_index
+    public :: build_kd_index, build_spherical_kd
 
 contains
 
@@ -14,13 +14,19 @@ contains
     !!   kd_ix     - integer, dimension(n): output index array (k-d tree order)
     !!   dim_order - integer, dimension(d): dimension order (by variance)
     !!   work      - integer, dimension(n): workspace array
-    subroutine build_kd_index(X, d, n, kd_ix, dim_order, work)
+    !!   subarray  - real(8), dimension(n): workspace for sorting
+    !!   perm      - integer, dimension(n): workspace for sorting
+    !!   stack_left, stack_right - integer, dimension(max_depth): workspace for sorting
+    subroutine build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right)
         implicit none
         integer, intent(in) :: d, n
         real(kind=8), intent(in) :: X(d, n)
         integer, intent(in) :: dim_order(d)
         integer, intent(out) :: kd_ix(n)
         integer, intent(inout) :: work(n)
+        real(8), intent(inout) :: subarray(n)
+        integer, intent(inout) :: perm(n)
+        integer, intent(inout) :: stack_left(:), stack_right(:)
         integer, parameter :: max_depth = 64
         integer :: stack(3, max_depth) !! l, r, depth
         integer :: stack_top
@@ -52,7 +58,7 @@ contains
             mid = (l + r) / 2
 
             !> Partition kd_ix(l:r) by X(dim, kd_ix(:)), so that kd_ix(mid) is median in dim
-            call partial_sort_by_dimension(X, d, kd_ix, l, r, dim, mid, work)
+            call partial_sort_by_dimension(X, d, kd_ix, l, r, dim, mid, work, subarray, perm, stack_left, stack_right)
 
             !> Push right and left intervals onto stack
             if (mid + 1 < r) then
@@ -71,22 +77,20 @@ contains
     end subroutine build_kd_index
 
     !> Helper: sorts kd_ix(l:r) by X(dim, kd_ix(:)) using tox_sorting sort_array
-    subroutine partial_sort_by_dimension(X, d, kd_ix, l, r, dim, mid, work)
+    subroutine partial_sort_by_dimension(X, d, kd_ix, l, r, dim, mid, work, subarray, perm, stack_left, stack_right)
         implicit none
         integer, intent(in) :: d, l, r, dim, mid
         real(kind=8), intent(in) :: X(d, *)
-        integer, intent(inout) :: kd_ix(*)
-        integer, intent(inout) :: work(*)
+        integer, intent(inout) :: kd_ix(:)
+        integer, intent(inout) :: work(:)
+        real(8), intent(inout) :: subarray(:)
+        integer, intent(inout) :: perm(:)
+        integer, intent(inout) :: stack_left(:), stack_right(:)
         integer :: n_sub, i
-        ! The following arrays must be allocated by the caller and passed via 'work'
-        real(8), pointer :: subarray(:)
-        integer, pointer :: perm(:)
-        integer, pointer :: stack_left(:), stack_right(:)
 
         n_sub = r - l + 1
         if (n_sub <= 1) return
 
-        !> Assume subarray, perm, stack_left, stack_right are already associated with sufficient size
         !> Fill subarray with the values of X(dim, kd_ix(l:r))
         do i = 1, n_sub
             subarray(i) = X(dim, kd_ix(l + i - 1))
@@ -107,4 +111,40 @@ contains
         ! No allocation or deallocation here; handled by parent
     end subroutine partial_sort_by_dimension
 
-end module cartesian_kd_tree
+    subroutine build_spherical_kd(V, d, n, sphere_ix, dim_order, work, subarray, perm, stack_left, stack_right)
+        ! V: real(kind=8), dimension(d, n), input, each column is unit length
+        ! d: integer, input, number of dimensions
+        ! n: integer, input, number of vectors
+        ! sphere_ix: integer, dimension(n), output, index array for spherical k-d tree
+        ! dim_order: integer, dimension(d), input/output, order of dimensions for splitting
+
+        real(kind=8), intent(in) :: V(:,:)
+        integer, intent(in) :: d, n
+        integer, intent(out) :: sphere_ix(:)
+        integer, intent(inout) :: dim_order(:)
+        integer, intent(inout) :: work(n)
+        real(8), intent(inout) :: subarray(n)
+        integer, intent(inout) :: perm(n)
+        integer, intent(inout) :: stack_left(:), stack_right(:)
+
+        call build_kd_index(V, d, n, sphere_ix, dim_order, work, subarray , perm, stack_left, stack_right)
+    end subroutine build_spherical_kd
+
+    pure function get_value_sorted(x, ix, i) result(val)
+        real(8), intent(in) :: x(:)
+        integer, intent(in) :: ix(:)
+        integer, intent(in) :: i
+        real(8) :: val
+        val = x(ix(i))
+    end function get_value_sorted
+
+    !> Get point from KD index
+    subroutine get_kd_point(X, kd_ix, i, point)
+        real(8), intent(in) :: X(:, :)
+        integer, intent(in) :: kd_ix(:)
+        integer, intent(in) :: i
+        real(8), intent(out) :: point(:)
+        point = X(:, kd_ix(i))
+    end subroutine get_kd_point
+
+end module kd_tree
