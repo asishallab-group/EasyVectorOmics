@@ -2,7 +2,7 @@ module kd_tree
     use tox_sorting
     implicit none
     private
-    public :: build_kd_index, build_spherical_kd
+    public :: build_kd_index, build_spherical_kd 
 
 contains
 

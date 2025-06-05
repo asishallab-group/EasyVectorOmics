@@ -7,6 +7,7 @@
 module binary_search_tree
   use tox_sorting
   implicit none
+  public :: build_bst_index, get_sorted_value, bst_range_query
 contains
   
   !> \brief Build the BST index by sorting indices using values in x.

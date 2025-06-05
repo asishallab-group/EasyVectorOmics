@@ -55,23 +55,30 @@ contains
             dim = dim_order(mod(depth, d) + 1)
 
             !> Find median index
-            mid = (l + r) / 2
+            mid = l + (r - l) / 2
+
+            !print *, "STACK POP: l=", l, " r=", r, " depth=", depth, " dim=", dim, " mid=", mid
+            !print *, "kd_ix before partition:", kd_ix(l:r)
 
             !> Partition kd_ix(l:r) by X(dim, kd_ix(:)), so that kd_ix(mid) is median in dim
             call partial_sort_by_dimension(X, d, kd_ix, l, r, dim, mid, work, subarray, perm, stack_left, stack_right)
 
+            !print *, "kd_ix after partition:", kd_ix(l:r)
+
             !> Push right and left intervals onto stack
-            if (mid + 1 < r) then
+            if (mid < r) then
                 stack_top = stack_top + 1
                 stack(1, stack_top) = mid + 1
                 stack(2, stack_top) = r
                 stack(3, stack_top) = depth + 1
+                !print *, "STACK PUSH RIGHT: l=", mid+1, " r=", r, " depth=", depth+1
             end if
-            if (l < mid - 1) then
+            if (l < mid) then
                 stack_top = stack_top + 1
                 stack(1, stack_top) = l
                 stack(2, stack_top) = mid - 1
                 stack(3, stack_top) = depth + 1
+                !print *, "STACK PUSH LEFT: l=", l, " r=", mid-1, " depth=", depth+1
             end if
         end do
     end subroutine build_kd_index
@@ -91,22 +98,33 @@ contains
         n_sub = r - l + 1
         if (n_sub <= 1) return
 
+        !print *, "partial_sort_by_dimension: l=", l, " r=", r, " dim=", dim, " n_sub=", n_sub
+
         !> Fill subarray with the values of X(dim, kd_ix(l:r))
         do i = 1, n_sub
             subarray(i) = X(dim, kd_ix(l + i - 1))
             perm(i) = i
         end do
 
-        !> Sort subarray indirectly, perm will hold the sorted order
-        call sort_array(subarray, perm, stack_left, stack_right)
+        !print *, "subarray before sort:", subarray(1:n_sub)
+        !print *, "perm before sort:", perm(1:n_sub)
+        call sort_array(subarray(1:n_sub), perm(1:n_sub), stack_left, stack_right)
+        !print *, "subarray after sort:", subarray(perm(1:n_sub))
+        !print *, "perm after sort:", perm(1:n_sub)
 
         !> Reorder kd_ix(l:r) according to perm
         do i = 1, n_sub
+            if (perm(i) < 1 .or. perm(i) > n_sub) then
+                print *, "ERROR: perm(", i, ") out of bounds: ", perm(i)
+                stop 1
+            end if
             work(i) = kd_ix(l + perm(i) - 1)
         end do
         do i = 1, n_sub
             kd_ix(l + i - 1) = work(i)
         end do
+
+        !print *, "kd_ix after reorder:", kd_ix(l:r)
 
         ! No allocation or deallocation here; handled by parent
     end subroutine partial_sort_by_dimension

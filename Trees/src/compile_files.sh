@@ -15,3 +15,6 @@ gfortran -o ../build/test_kd tox_sorting.o k_d_tree.o test_kd.o
 # Move all build artifacts to build/
 mv *.o ../build
 mv *.mod ../build
+
+# Create shared library for R and other dynamic linking
+gfortran -shared -fPIC ../build/tox_sorting.o ../build/binary_search_tree.o ../build/k_d_tree.o -o ../build/libkdtrees.so
