@@ -1,6 +1,6 @@
  2D Cartesian KD Tree index:           1           5           2           4           3           6
  PASS:2D cartesian
- 3D Spherical KD Tree index:           3           5           4           1           8           2           6           7
+ 3D Spherical KD Tree index:           2           3           4           7           5           1           8           6
  PASS:3D spherical
  Edge n=0 passed.
  Edge n=1 passed.
