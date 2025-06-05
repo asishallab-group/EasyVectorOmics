@@ -69,3 +69,27 @@ contains
   end subroutine bst_range_query
 
 end module binary_search_tree
+
+subroutine bst_range_query_r(x, ix, n, lo, hi, out_ix, out_n)
+  use binary_search_tree
+  implicit none
+  real(8), intent(in) :: x(:)
+  integer, intent(in) :: ix(:)
+  integer, intent(in) :: n
+  real, intent(in) :: lo, hi
+  integer, intent(out) :: out_ix(:)
+  integer, intent(out) :: out_n
+
+  call bst_range_query(x, ix, n, lo, hi, out_ix, out_n)
+end subroutine bst_range_query_r
+
+subroutine build_bst_index_r(x, n, ix, stack_left, stack_right)
+  use binary_search_tree
+  implicit none
+  real(8), intent(in) :: x(:)
+  integer, intent(in) :: n
+  integer, intent(out) :: ix(:)
+  integer, intent(inout) :: stack_left(:), stack_right(:)
+
+  call build_bst_index(x, n, ix, stack_left, stack_right)
+end subroutine build_bst_index_r

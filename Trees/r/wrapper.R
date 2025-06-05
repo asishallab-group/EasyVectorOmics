@@ -6,7 +6,7 @@ build_bst_index <- function(x) {
   ix <- integer(n)
   stack_left <- integer(n)
   stack_right <- integer(n)
-  res <- .Fortran("build_bst_index",
+  res <- .Fortran("build_bst_index_r_",
                   as.double(x), n, ix, stack_left, stack_right)
   res[[3]]
 }
@@ -16,7 +16,7 @@ bst_range_query <- function(x, ix, lo, hi) {
   n <- as.integer(length(x))
   out_ix <- integer(n)
   out_n <- integer(1)
-  res <- .Fortran("bst_range_query",
+  res <- .Fortran("bst_range_query_r_",
                   as.double(x), as.integer(ix), n, as.double(lo), as.double(hi), out_ix, out_n)
   list(indices = res[[6]][seq_len(res[[7]])], count = res[[7]])
 }
@@ -31,7 +31,7 @@ build_kd_index <- function(X, dim_order) {
   perm <- integer(n)
   stack_left <- integer(64)
   stack_right <- integer(64)
-  res <- .Fortran("build_kd_index",
+  res <- .Fortran("build_kd_index_r_",
                   as.double(X), d, n, kd_ix, as.integer(dim_order), work, subarray, perm, stack_left, stack_right)
   res[[4]]
 }
@@ -46,7 +46,7 @@ build_spherical_kd <- function(V, dim_order) {
   perm <- integer(n)
   stack_left <- integer(64)
   stack_right <- integer(64)
-  res <- .Fortran("build_spherical_kd",
+  res <- .Fortran("build_spherical_kd_r_",
                   as.double(V), d, n, sphere_ix, as.integer(dim_order), work, subarray, perm, stack_left, stack_right)
   res[[4]]
 }
