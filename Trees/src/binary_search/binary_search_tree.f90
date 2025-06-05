@@ -22,6 +22,12 @@ contains
     integer, intent(out) :: ix(:)
     integer, intent(inout) :: stack_left(:), stack_right(:)
     integer :: i
+
+    print *, 'build_bst_index: size(x) =', size(x)
+    print *, 'build_bst_index: size(ix) =', size(ix)
+    print *, 'build_bst_index: size(stack_left) =', size(stack_left)
+    print *, 'build_bst_index: size(stack_right) =', size(stack_right)
+
     do i = 1, n
       ix(i) = i
     end do
@@ -86,10 +92,16 @@ end subroutine bst_range_query_r
 subroutine build_bst_index_r(x, n, ix, stack_left, stack_right)
   use binary_search_tree
   implicit none
-  real(8), intent(in) :: x(:)
   integer, intent(in) :: n
-  integer, intent(out) :: ix(:)
-  integer, intent(inout) :: stack_left(:), stack_right(:)
+  real(8), intent(in) :: x(n)
 
+  integer, intent(out) :: ix(n)
+  integer, intent(inout) :: stack_left(n), stack_right(n)
+
+  print *, 'Size n:', n
+  print *, 'Size x:', size(x)
+  print *, 'Size ix:', size(ix)
+  print *, 'Size stack_left:', size(stack_left)
+  print *, 'Size stack_right:', size(stack_right)
   call build_bst_index(x, n, ix, stack_left, stack_right)
 end subroutine build_bst_index_r
