@@ -36,7 +36,7 @@ program test_bst
   print *, 'get_sorted_value(x, ix, n/2) = ', val
 
   ! Test 3: bst_range_query
-  call bst_range_query(x, ix, n, 0.2, 0.8, res_ix, res_n)
+  call bst_range_query(x, ix, n, 0.2d0, 0.8d0, res_ix, res_n)
   print *, 'bst_range_query: Number of values in [0.2, 0.8] =', res_n
   if (res_n > 0) then
     print *, 'First value in range: ', x(res_ix(1))

@@ -37,7 +37,7 @@ contains
     real(8), intent(in) :: x(:)
     integer, intent(in) :: ix(:)
     integer, intent(in) :: i
-    real :: val
+    real(8) :: val
     val = x(ix(i))
   end function get_sorted_value
 
@@ -53,7 +53,7 @@ contains
     real(8), intent(in) :: x(:)
     integer, intent(in) :: ix(:)
     integer, intent(in) :: n
-    real, intent(in) :: lo, hi
+    real(8), intent(in) :: lo, hi
     integer, intent(out) :: out_ix(:)
     integer, intent(out) :: out_n
     integer :: i
@@ -76,7 +76,7 @@ subroutine bst_range_query_r(x, ix, n, lo, hi, out_ix, out_n)
   real(8), intent(in) :: x(:)
   integer, intent(in) :: ix(:)
   integer, intent(in) :: n
-  real, intent(in) :: lo, hi
+  real(8), intent(in) :: lo, hi
   integer, intent(out) :: out_ix(:)
   integer, intent(out) :: out_n
 

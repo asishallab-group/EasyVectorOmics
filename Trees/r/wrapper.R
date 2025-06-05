@@ -6,8 +6,12 @@ build_bst_index <- function(x) {
   ix <- integer(n)
   stack_left <- integer(n)
   stack_right <- integer(n)
-  res <- .Fortran("build_bst_index_r_",
-                  as.double(x), n, ix, stack_left, stack_right)
+  res <- .Fortran("build_bst_index_r",
+                  x = as.double(x), 
+                  n = as.integer(n), 
+                  ix = as.integer(ix), 
+                  stack_left = as.integer(stack_left), 
+                  stack_right = as.integer(stack_right))
   res[[3]]
 }
 
@@ -16,8 +20,8 @@ bst_range_query <- function(x, ix, lo, hi) {
   n <- as.integer(length(x))
   out_ix <- integer(n)
   out_n <- integer(1)
-  res <- .Fortran("bst_range_query_r_",
-                  as.double(x), as.integer(ix), n, as.double(lo), as.double(hi), out_ix, out_n)
+  res <- .Fortran("bst_range_query_r",
+                  as.double(x), as.integer(ix), n, as.double(lo), as.double(hi), as.integer(out_ix), as.integer(out_n))
   list(indices = res[[6]][seq_len(res[[7]])], count = res[[7]])
 }
 
@@ -31,8 +35,17 @@ build_kd_index <- function(X, dim_order) {
   perm <- integer(n)
   stack_left <- integer(64)
   stack_right <- integer(64)
-  res <- .Fortran("build_kd_index_r_",
-                  as.double(X), d, n, kd_ix, as.integer(dim_order), work, subarray, perm, stack_left, stack_right)
+  res <- .Fortran("build_kd_index_r",
+                  X = as.double(X), 
+                  d = as.integer(d), 
+                  n = as.integer(n), 
+                  kd_ix = as.integer(kd_ix), 
+                  dim_order = as.integer(dim_order), 
+                  work = as.integer(work), 
+                  subarray = as.double(subarray), 
+                  perm = as.integer(perm), 
+                  stack_left = as.integer(stack_left), 
+                  stack_right = as.integer(stack_right))
   res[[4]]
 }
 
@@ -46,24 +59,24 @@ build_spherical_kd <- function(V, dim_order) {
   perm <- integer(n)
   stack_left <- integer(64)
   stack_right <- integer(64)
-  res <- .Fortran("build_spherical_kd_r_",
+  res <- .Fortran("build_spherical_kd_r",
                   as.double(V), d, n, sphere_ix, as.integer(dim_order), work, subarray, perm, stack_left, stack_right)
   res[[4]]
 }
 
 # --- Simple tests ---
 
-cat("Testing BST index...\n")
+#cat("Testing BST index...\n")
 set.seed(42)
 x <- runif(10)
 ix <- build_bst_index(x)
-cat("Original x:", x, "\n")
-cat("Sorted x[ix]:", x[ix], "\n")
+#cat("Original x:", x, "\n")
+#cat("Sorted x[ix]:", x[ix], "\n")
 
 cat("Testing BST range query...\n")
 range_res <- bst_range_query(x, ix, 0.2, 0.8)
-cat("Indices in range [0.2, 0.8]:", range_res$indices, "\n")
-cat("Count:", range_res$count, "\n")
+#cat("Indices in range [0.2, 0.8]:", range_res$indices, "\n")
+#cat("Count:", range_res$count, "\n")
 
 cat("Testing KD-Tree index...\n")
 X <- matrix(runif(20), nrow=2)
