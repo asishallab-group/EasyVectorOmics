@@ -79,11 +79,11 @@ end module binary_search_tree
 subroutine bst_range_query_r(x, ix, n, lo, hi, out_ix, out_n)
   use binary_search_tree
   implicit none
-  real(8), intent(in) :: x(:)
-  integer, intent(in) :: ix(:)
+  real(8), intent(in) :: x(n)
+  integer, intent(in) :: ix(n)
   integer, intent(in) :: n
   real(8), intent(in) :: lo, hi
-  integer, intent(out) :: out_ix(:)
+  integer, intent(out) :: out_ix(n)
   integer, intent(out) :: out_n
 
   call bst_range_query(x, ix, n, lo, hi, out_ix, out_n)

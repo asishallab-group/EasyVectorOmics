@@ -177,7 +177,7 @@ subroutine build_kd_index_r(X, d, n, kd_ix, dim_order, work, subarray, perm, sta
     integer, intent(inout) :: work(n)
     real(8), intent(inout) :: subarray(n)
     integer, intent(inout) :: perm(n)
-    integer, intent(inout) :: stack_left(:), stack_right(:)
+    integer, intent(inout) :: stack_left(n), stack_right(n)
 
     ! Call the build_kd_index from the kd_tree module
     call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right)
@@ -186,14 +186,14 @@ end subroutine build_kd_index_r
 subroutine build_spherical_kd_r(V, d, n, sphere_ix, dim_order, work, subarray, perm, stack_left, stack_right)
     use kd_tree
     implicit none
-    real(kind=8), intent(in) :: V(:,:)
+    real(kind=8), intent(in) :: V(d,n)
     integer, intent(in) :: d, n
-    integer, intent(out) :: sphere_ix(:)
-    integer, intent(inout) :: dim_order(:)
+    integer, intent(out) :: sphere_ix(n)
+    integer, intent(inout) :: dim_order(n)
     integer, intent(inout) :: work(n)
     real(8), intent(inout) :: subarray(n)
     integer, intent(inout) :: perm(n)
-    integer, intent(inout) :: stack_left(:), stack_right(:)
+    integer, intent(inout) :: stack_left(n), stack_right(n)
 
     ! Call the build_spherical_kd from the kd_tree module
     call build_spherical_kd(V, d, n, sphere_ix, dim_order, work, subarray, perm, stack_left, stack_right)
