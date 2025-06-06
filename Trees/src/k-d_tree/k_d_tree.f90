@@ -57,9 +57,6 @@ contains
             !> Find median index
             mid = l + (r - l) / 2
 
-            !print *, "STACK POP: l=", l, " r=", r, " depth=", depth, " dim=", dim, " mid=", mid
-            !print *, "kd_ix before partition:", kd_ix(l:r)
-
             !> Partition kd_ix(l:r) by X(dim, kd_ix(:)), so that kd_ix(mid) is median in dim
             call partial_sort_by_dimension(X, d, kd_ix, l, r, dim, mid, work, subarray, perm, stack_left, stack_right)
 
@@ -71,14 +68,12 @@ contains
                 stack(1, stack_top) = mid + 1
                 stack(2, stack_top) = r
                 stack(3, stack_top) = depth + 1
-                !print *, "STACK PUSH RIGHT: l=", mid+1, " r=", r, " depth=", depth+1
             end if
             if (l < mid) then
                 stack_top = stack_top + 1
                 stack(1, stack_top) = l
                 stack(2, stack_top) = mid - 1
                 stack(3, stack_top) = depth + 1
-                !print *, "STACK PUSH LEFT: l=", l, " r=", mid-1, " depth=", depth+1
             end if
         end do
     end subroutine build_kd_index

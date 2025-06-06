@@ -76,6 +76,7 @@ contains
 
 end module binary_search_tree
 
+!> \brief Wrapper for getting range query usable by R
 subroutine bst_range_query_r(x, ix, n, lo, hi, out_ix, out_n)
   use binary_search_tree
   implicit none
@@ -89,6 +90,7 @@ subroutine bst_range_query_r(x, ix, n, lo, hi, out_ix, out_n)
   call bst_range_query(x, ix, n, lo, hi, out_ix, out_n)
 end subroutine bst_range_query_r
 
+!> \brief Wrapper for building BST index usable by R
 subroutine build_bst_index_r(x, n, ix, stack_left, stack_right)
   use binary_search_tree
   implicit none
