@@ -353,4 +353,111 @@ subroutine project_vector_C(v, n) bind(C, name="project_vector_C")
 end subroutine
 \end{verbatim}
 
+\subsection{Safe and Efficient Interface Design for \texttt{bind(C)} in Tensor Omics}
+
+To expose Tensor Omics routines safely and portably, we use minimal \texttt{bind(C)} wrappers around internal Fortran procedures. Each wrapper is designed for ABI stability, no-copy interop, and zero semantic loss.
+
+\subsubsection{Keep \texttt{bind(C)} wrappers minimal}
+
+Wrap only, no computation.
+
+\begin{verbatim}
+subroutine project_vector_C(x, n) bind(C, name="project_vector_C")
+  use iso_c_binding
+  real(c_double) :: x(*)
+  integer(c_int) :: n
+  call project_vector_core(x, n)
+end subroutine
+\end{verbatim}
+
+\subsubsection{Use \texttt{iso\_c\_binding} types}
+
+Avoid compiler-specific kinds.
+
+\begin{verbatim}
+real(c_double) :: x(*)
+integer(c_int) :: n
+\end{verbatim}
+
+\subsubsection{Accept arguments as C-style pointers}
+
+Do not use assumed-shape or allocatable arrays.
+
+\begin{verbatim}
+real(c_double) :: x(*)      ! OK
+real(c_double), dimension(:) :: x  ! Not allowed
+\end{verbatim}
+
+\subsubsection{Avoid optional arguments and intent propagation}
+
+Declare arguments explicitly, without \texttt{intent} or \texttt{optional}.
+
+\begin{verbatim}
+real(c_double) :: x(*)
+! No intent or optional keyword
+\end{verbatim}
+
+\subsubsection{Pass all arguments by reference}
+
+Do not use \texttt{value}; pass pointers from caller (Python, Lua, etc.).
+
+\begin{verbatim}
+real(c_double) :: x(*)
+integer(c_int) :: n
+\end{verbatim}
+
+\subsubsection{Preserve SIMD and optimization pathways}
+
+Call computational logic in a separate routine that uses full Fortran features.
+
+\begin{verbatim}
+subroutine project_vector_core(x, n)
+  real(8), intent(inout) :: x(n)
+  integer, intent(in) :: n
+  ! fast loop, vectorizable
+end subroutine
+\end{verbatim}
+
+\subsubsection{Use stable symbol names}
+
+Avoid compiler-dependent mangling by specifying names explicitly.
+
+\begin{verbatim}
+subroutine project_vector_C(x, n) bind(C, name="project_vector_C")
+\end{verbatim}
+
+\subsubsection{Ensure ABI compatibility with all consumers}
+
+Expose only basic types: scalars and flat arrays.
+
+\begin{verbatim}
+real(c_double) :: vec(*)
+integer(c_int) :: n
+! No derived types, assumed-shape arrays, or allocatables
+\end{verbatim}
+
+\subsubsection{Verify type equivalence when calling core Fortran routines}
+
+Make sure internal types match \texttt{iso\_c\_binding} externally.
+
+\begin{verbatim}
+use iso_c_binding
+real(8) :: x(n)
+! Ensure real(8) == real(c_double) on your compiler
+\end{verbatim}
+
+\subsubsection{Avoid aliasing in calls to \texttt{bind(C)} routines}
+
+Do not pass the same variable twice under different names.
+
+\begin{verbatim}
+! DON'T - Unsafe aliasing: same memory twice
+call project_vector_C(x, x, n)
+
+! OK - Pass unique memory regions only
+call project_vector_C(x, y, n)
+\end{verbatim}
+
+This structure ensures maximum compatibility and reproducibility across calling environments without compromising Fortran-native performance.
+
 \end{document}
