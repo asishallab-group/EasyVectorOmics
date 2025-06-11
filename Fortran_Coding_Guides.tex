@@ -460,4 +460,39 @@ call project_vector_C(x, y, n)
 
 This structure ensures maximum compatibility and reproducibility across calling environments without compromising Fortran-native performance.
 
+\subsubsection{Flattening Multidimensional Arrays for \texttt{bind(C)} Interfaces}
+
+Multidimensional arrays such as 2D expression matrices or tensor fields cannot be passed directly through \texttt{bind(C)} interfaces, since assumed-shape arrays (e.g., \texttt{(:,:)} or \texttt{(:,:,:)} types) require Fortran array descriptors that are not compatible with C.
+
+To expose such routines safely, we flatten the array into a 1D buffer and pass shape metadata separately. The internal Fortran logic reshapes the buffer without copying.
+
+\vspace{1em}
+\noindent\textbf{C-compatible wrapper:}
+\begin{verbatim}
+subroutine process_matrix_C(flat, nrow, ncol) bind(C, name="process_matrix_C")
+  use iso_c_binding
+  real(c_double), intent(inout) :: flat(*)
+  integer(c_int), value :: nrow, ncol
+  call process_matrix(reshape(flat, [nrow, ncol]))
+end subroutine
+\end{verbatim}
+
+\noindent\textbf{Internal Fortran routine:}
+\begin{verbatim}
+subroutine process_matrix(mat)
+  real(8), intent(inout) :: mat(:,:)
+  integer :: i, j
+  do j = 1, size(mat,2)
+    do i = 1, size(mat,1)
+      mat(i,j) = mat(i,j) * 2.0
+    end do
+  end do
+end subroutine
+\end{verbatim}
+
+\noindent\textbf{Caller responsibility:}
+The external caller (e.g., from C, Python, Lua) must allocate a 1D array of size \texttt{nrow * ncol} and ensure it is stored in Fortran-style column-major order, or reshaped accordingly.
+
+\noindent This pattern allows Tensor Omics to retain full multidimensional structure internally while offering safe and portable interfaces to external consumers.
+
 \end{document}
