@@ -312,4 +312,45 @@ principles of F42. Developers are encouraged to refactor inner computations
 into pure, stateless subroutines and apply parallelization only where it
 governs the outermost iteration logic.
 
+\section{Fortran to other programming languages Interface}
+
+Ideally, we build our Tensor Omics and F42 code so that it can be included and
+called from any other programming language. This comprises R, of course, but
+also Python, Lua, Julia, Matlab, etc. We can easily achieve this by offering
+two interface functions for every Tensor Omics or F42 function that we
+implement. Importantly, we should implement such pure Fortran functions in
+Fortran \texttt{module}s. Then add another function of the same name with
+appended ``\texttt{\_R}'' to expose the module function to R and a
+\texttt{bind(C)} with \texttt{use\_iso\_c\_binding} and naming the function
+with appended ``\texttt{\_C}''. See the below example for clarification.
+
+\begin{verbatim}
+! High-performance module code
+module tensor_omics
+contains
+  subroutine project_vector_core(v, n)
+    real(8), intent(inout) :: v(n)
+    integer, intent(in) :: n
+    ! core vector projection logic
+  end subroutine
+end module
+
+! R interface
+subroutine project_vector_R(v, n)
+  real(8) :: v(*)
+  integer :: n
+  use tensor_omics
+  call project_vector_core(v, n)
+end subroutine
+
+! C / WASM / Python interface
+subroutine project_vector_C(v, n) bind(C, name="project_vector_C")
+  use iso_c_binding
+  real(c_double) :: v(*)
+  integer(c_int) :: n
+  use tensor_omics
+  call project_vector_core(v, n)
+end subroutine
+\end{verbatim}
+
 \end{document}
