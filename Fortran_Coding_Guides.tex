@@ -495,4 +495,93 @@ The external caller (e.g., from C, Python, Lua) must allocate a 1D array of size
 
 \noindent This pattern allows Tensor Omics to retain full multidimensional structure internally while offering safe and portable interfaces to external consumers.
 
+\section{Fortran Array Notation Cheat-Sheet}
+
+This section summarizes the three common ways to declare array arguments in Fortran procedures, with a focus on their use, safety, and suitability in modern code.
+
+\subsection{1. Assumed-Size Arrays \texttt{(*)}}
+
+\begin{verbatim}
+subroutine example(a, n)
+  real(8), intent(in) :: a(*)
+  integer, intent(in) :: n
+  integer :: i
+  do i = 1, n
+    print *, a(i)
+  end do
+end subroutine
+\end{verbatim}
+
+\textbf{Meaning:} \texttt{a(*)} is an assumed-size array. The subroutine does not know the array bounds and must be told explicitly via a separate argument (e.g., \texttt{n}). This is the lowest-level array form and maps closely to a raw pointer in C.
+
+\textbf{Limitations:}
+\begin{itemize}
+  \item No bounds checking
+  \item \texttt{size(a)} and \texttt{lbound(a)} are illegal
+  \item Cannot use array operations like \texttt{matmul} or \texttt{sum}
+  \item Unsafe for slicing (\texttt{a(2:5)} is undefined)
+\end{itemize}
+
+\textbf{Use case:} C interoperability, legacy code, low-level memory kernels.
+
+
+\subsection{2. Assumed-Shape Arrays \texttt{(:)}}
+
+\begin{verbatim}
+subroutine example(a)
+  real(8), intent(in) :: a(:)
+  integer :: i
+  do i = 1, size(a)
+    print *, a(i)
+  end do
+end subroutine
+\end{verbatim}
+
+\textbf{Meaning:} \texttt{a(:)} is an assumed-shape array. The compiler receives size and bounds information at runtime. Requires an explicit interface (typically via a module or \texttt{interface} block).
+
+\textbf{Advantages:}
+\begin{itemize}
+  \item Safe: \texttt{size(a)} is available
+  \item Supports slicing, broadcasting, and array intrinsics
+  \item Can use \texttt{matmul}, \texttt{dot\_product}, etc.
+\end{itemize}
+
+\textbf{Use case:} Recommended default for most modern Fortran code.
+
+
+\subsection{3. Multidimensional Arrays \texttt{(:,:)} and Higher}
+
+\begin{verbatim}
+subroutine process_matrix(A)
+  real(8), intent(in) :: A(:, :)
+  print *, size(A, 1), size(A, 2)
+end subroutine
+\end{verbatim}
+
+\textbf{Meaning:} Each colon represents a dimension of unknown size. Like 1D assumed-shape arrays, this requires an explicit interface and passes shape info at runtime.
+
+\textbf{Features:}
+\begin{itemize}
+  \item Full array operations: \texttt{transpose}, \texttt{matmul}, etc.
+  \item Safer and clearer semantics for tensors and matrices
+\end{itemize}
+
+\textbf{Use case:} Tensor Omics vector spaces, image/matrix processing, linear algebra routines.
+
+\vspace{1em}
+
+\noindent\textbf{Summary Table}
+
+\begin{tabular}{|l|l|l|l|}
+\hline
+Notation & Bounds Known? & Safe? & Use Case \\
+\hline
+\texttt{(*)} & No  & No  & C interop, low-level \\
+\texttt{(:)} & Yes & Yes & Modern Fortran arrays \\
+\texttt{(:,:)} & Yes & Yes & Matrices, tensors \\
+\hline
+\end{tabular}
+
+\noindent For all assumed-shape forms (\texttt{(:)}, \texttt{(:,:)}), ensure the subroutine has an explicit interface or is in a module.
+
 \end{document}
