@@ -15,7 +15,7 @@
       "  call sort_array(x, ix, stack_left, stack_right)",
       "end subroutine build_bst_index"
     ],
-    "description": "Fortran-Subroutine für build_bst_index"
+    "description": "Fortran-Subroutine for building a binary search tree (BST) index"
     },
     
     "Fortran bst_range_query Subroutine": {
@@ -40,7 +40,7 @@
         "    end do",
         "end subroutine bst_range_query"
       ],
-      "description": "Fortran-Subroutine für bst_range_query"
+      "description": "Fortran-Subroutine for range-querying a binary search tree (BST)"
     },
 
     "Fortran build_kd_index subroutine": {
@@ -105,7 +105,7 @@
             "    end do",
             "end subroutine build_kd_index"
         ],
-        "description": "Fortran-Subroutine zum Aufbau eines KD-Baums"
+        "description": "Fortran-Subroutine for building a kd-tree index for multidimensional data"
     },
     "Fortran partial_sort_by_dimension subroutine": {
         "prefix": "f42:partial_sort_by_dimension",
@@ -141,7 +141,7 @@
             "    end do",
             "end subroutine partial_sort_by_dimension"
         ],
-        "description": "Hilfsroutine: Sortiert kd_ix(l:r) nach X(dim, kd_ix(:))"
+        "description": "Helper subroutine for partial sorting of kd-tree indices by a specific dimension"
     },
     "Fortran build_spherical_kd subroutine": {
         "prefix": "f42:build_spherical_kd",
@@ -159,7 +159,7 @@
             "    call build_kd_index(V, d, n, sphere_ix, dim_order, work, subarray , perm, stack_left, stack_right)",
             "end subroutine build_spherical_kd"
         ],
-        "description": "Fortran-Subroutine zum Aufbau eines sphärischen KD-Baums"
+        "description": "Fortran-Subroutine for building a spherical kd-tree index for multidimensional data"
     },
     "Fortran get_value_sorted function": {
         "prefix": "f42:get_value_sorted",
@@ -172,7 +172,7 @@
             "    val = x(ix(i))",
             "end function get_value_sorted"
         ],
-        "description": "Fortran-Funktion: Wert aus sortiertem Array holen"
+        "description": "Fortran-Function: Get value from sorted index"
     },
     "Fortran get_kd_point subroutine": {
         "prefix": "f42:get_kd_point",
@@ -185,6 +185,102 @@
             "    point = X(:, kd_ix(i))",
             "end subroutine get_kd_point"
         ],
-        "description": "Fortran-Subroutine: Punkt aus KD-Index holen"
+        "description": "Fortran-Subroutine: Get point from kd-tree index"
+    },
+    "R BST Index Builder": {
+        "prefix": "R_f42:build_bst_index",
+        "body": [
+            "#' Build BST index (1D)",
+            "build_bst_index <- function(x) {",
+            "  n <- as.integer(length(x))",
+            "  ix <- integer(n)",
+            "  stack_left <- integer(n)",
+            "  stack_right <- integer(n)",
+            "",
+            "  res <- .Fortran(\"build_bst_index_r\",",
+            "                  as.double(x),",
+            "                  as.integer(n),",
+            "                  ix,",
+            "                  stack_left,",
+            "                  stack_right)",
+            "  res[[3]]",
+            "}"
+        ],
+        "description": "R-Wrapper for 1D BST index builder"
+    },
+    "R BST Range Query": {
+        "prefix": "R_f42:bst_range_query",
+        "body": [
+            "#' BST range query",
+            "bst_range_query <- function(x, ix, lo, hi) {",
+            "  n <- as.integer(length(x))",
+            "  out_ix <- integer(n)",
+            "  out_n <- integer(1)",
+            "",
+            "  res <- .Fortran(\"bst_range_query_r\",",
+            "                  as.double(x), ",
+            "                  as.integer(ix), ",
+            "                  n, ",
+            "                  as.double(lo), ",
+            "                  as.double(hi), ",
+            "                  out_ix, ",
+            "                  out_n)",
+            "  list(indices = res[[6]][seq_len(res[[7]])), count = res[[7]])",
+            "}"
+        ],
+        "description": "Range query for BST in R"
+    },
+    "R KD-Tree Builder": {
+        "prefix": "R_f42:build_kd_index",
+        "body": [
+            "#' Build KD-Tree index (multidimensional)",
+            "build_kd_index <- function(X, dim_order) {",
+            "  d <- as.integer(nrow(X))",
+            "  n <- as.integer(ncol(X))",
+            "  kd_ix <- integer(n)",
+            "  work <- integer(n)",
+            "  subarray <- double(n)",
+            "  perm <- integer(n)",
+            "  stack_left <- integer(64)",
+            "  stack_right <- integer(64)",
+            "",
+            "  res <- .Fortran(\"build_kd_index_r\",",
+            "                  X = as.double(X), ",
+            "                  d = d, ",
+            "                  n = n, ",
+            "                  kd_ix = kd_ix, ",
+            "                  dim_order = as.integer(dim_order), ",
+            "                  work = work, ",
+            "                  subarray = subarray, ",
+            "                  perm = perm, ",
+            "                  stack_left = stack_left, ",
+            "                  stack_right = stack_right)",
+            "  res$kd_ix",
+            "}"
+        ],
+        "description": "KD-Tree-Indexing for multidimensional data in R"
+    },
+    "R Spherical KD-Tree": {
+        "prefix": "R_f42:build_spherical_kd",
+        "body": [
+            "#' Build Spherical KD-Tree index",
+            "build_spherical_kd <- function(V, dim_order) {",
+            "  d <- as.integer(nrow(V))",
+            "  n <- as.integer(ncol(V))",
+            "  sphere_ix <- integer(n)",
+            "  work <- integer(n)",
+            "  subarray <- double(n)",
+            "  perm <- integer(n)",
+            "  stack_left <- integer(64)",
+            "  stack_right <- integer(64)",
+            "",
+            "  res <- .Fortran(\"build_spherical_kd_r\",",
+            "                  as.double(V), d, n, sphere_ix, ",
+            "                  as.integer(dim_order), work, subarray, ",
+            "                  perm, stack_left, stack_right)",
+            "  res[[4]]",
+            "}"
+        ],
+        "description": "Spherical kd tree index builder in R"
     }
 }

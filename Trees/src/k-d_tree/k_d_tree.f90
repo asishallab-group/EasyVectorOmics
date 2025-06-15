@@ -92,20 +92,13 @@ contains
 
         n_sub = r - l + 1
         if (n_sub <= 1) return
-
-        !print *, "partial_sort_by_dimension: l=", l, " r=", r, " dim=", dim, " n_sub=", n_sub
-
         !> Fill subarray with the values of X(dim, kd_ix(l:r))
         do i = 1, n_sub
             subarray(i) = X(dim, kd_ix(l + i - 1))
             perm(i) = i
         end do
 
-        !print *, "subarray before sort:", subarray(1:n_sub)
-        !print *, "perm before sort:", perm(1:n_sub)
         call sort_array(subarray(1:n_sub), perm(1:n_sub), stack_left, stack_right)
-        !print *, "subarray after sort:", subarray(perm(1:n_sub))
-        !print *, "perm after sort:", perm(1:n_sub)
 
         !> Reorder kd_ix(l:r) according to perm
         do i = 1, n_sub
@@ -194,3 +187,44 @@ subroutine build_spherical_kd_r(V, d, n, sphere_ix, dim_order, work, subarray, p
     call build_spherical_kd(V, d, n, sphere_ix, dim_order, work, subarray, perm, stack_left, stack_right)
 end subroutine build_spherical_kd_r
 
+subroutine build_kd_index_C(X_flat, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right) bind(C, name='build_kd_index_C')
+    use iso_c_binding
+    use kd_tree
+    implicit none
+    integer(c_int), intent(in) :: d, n
+    ! Input flat array
+    real(c_double), intent(in) :: X_flat(*)
+    integer(c_int), intent(in) :: dim_order(*)
+    integer(c_int), intent(out) :: kd_ix(*)
+    integer(c_int), intent(inout) :: work(*)
+    real(c_double), intent(inout) :: subarray(*)
+    integer(c_int), intent(inout) :: perm(*)
+    integer(c_int), intent(inout) :: stack_left(*), stack_right(*)
+    
+    real(c_double) :: X(d, n)
+    ! Reshape the flat array into a 2D array
+    X = reshape(X_flat, [d, n])
+
+    ! Call the build_kd_index from the kd_tree module
+    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right)
+end subroutine build_kd_index_C
+
+subroutine build_spherical_kd_C( V_flat, d, n, sphere_ix, dim_order, work, subarray, perm, stack_left, stack_right) bind(C, name='build_spherical_kd_C')
+    use iso_c_binding
+    use kd_tree
+    implicit none
+    ! Input flat array
+    real(c_double), intent(in) :: V_flat(*)
+    integer(c_int), intent(in), value :: d, n
+    integer(c_int), intent(out) :: sphere_ix(*)
+    integer(c_int), intent(inout) :: dim_order(*), work(*), perm(*), &
+                                    stack_left(*), stack_right(*)
+    real(c_double), intent(inout) :: subarray(*)
+    !local 2D array
+    real(c_double) :: V(d, n)
+
+    ! Reshape the flat array into a 2D array
+    V = reshape(V_flat, [d, n])
+    call build_spherical_kd(V, d, n, sphere_ix, dim_order, work, subarray, &
+                          perm, stack_left, stack_right)
+end subroutine build_spherical_kd_C

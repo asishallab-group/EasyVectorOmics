@@ -1,4 +1,4 @@
-dyn.load("build/libkdtrees.so") # Load the shared library
+dyn.load("build/libtrees.so") # Load the shared library
 
 #' Build BST index (1D)
 build_bst_index <- function(x) {

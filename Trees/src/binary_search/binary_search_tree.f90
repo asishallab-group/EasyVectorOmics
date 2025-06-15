@@ -17,16 +17,11 @@ contains
   !! \param stack_left Manual stack of left indices for quicksort recursion (preallocated)
   !! \param stack_right Manual stack of right indices for quicksort recursion (preallocated)
   subroutine build_bst_index(x, n, ix, stack_left, stack_right)
-    real(8), intent(in) :: x(:)
+    real(8), intent(in) :: x(*)
     integer, intent(in) :: n
-    integer, intent(out) :: ix(:)
-    integer, intent(inout) :: stack_left(:), stack_right(:)
+    integer, intent(out) :: ix(*)
+    integer, intent(inout) :: stack_left(*), stack_right(*)
     integer :: i
-
-    print *, 'build_bst_index: size(x) =', size(x)
-    print *, 'build_bst_index: size(ix) =', size(ix)
-    print *, 'build_bst_index: size(stack_left) =', size(stack_left)
-    print *, 'build_bst_index: size(stack_right) =', size(stack_right)
 
     do i = 1, n
       ix(i) = i
@@ -56,11 +51,11 @@ contains
   !! \param out_ix Output array of indices in x that match the range.
   !! \param out_n Number of matches found.
   subroutine bst_range_query(x, ix, n, lo, hi, out_ix, out_n)
-    real(8), intent(in) :: x(:)
-    integer, intent(in) :: ix(:)
+    real(8), intent(in) :: x(*)
+    integer, intent(in) :: ix(*)
     integer, intent(in) :: n
     real(8), intent(in) :: lo, hi
-    integer, intent(out) :: out_ix(:)
+    integer, intent(out) :: out_ix(*)
     integer, intent(out) :: out_n
     integer :: i
     out_n = 0
@@ -96,14 +91,37 @@ subroutine build_bst_index_r(x, n, ix, stack_left, stack_right)
   implicit none
   integer, intent(in) :: n
   real(8), intent(in) :: x(n)
-
   integer, intent(out) :: ix(n)
   integer, intent(inout) :: stack_left(n), stack_right(n)
 
-  print *, 'Size n:', n
-  print *, 'Size x:', size(x)
-  print *, 'Size ix:', size(ix)
-  print *, 'Size stack_left:', size(stack_left)
-  print *, 'Size stack_right:', size(stack_right)
   call build_bst_index(x, n, ix, stack_left, stack_right)
 end subroutine build_bst_index_r
+
+
+!> \brief Wrapper using C for getting range query usable by python
+subroutine bst_range_query_C(x, ix, n, lo, hi, out_ix, out_n) bind(C, name='bst_range_query_C')
+  use binary_search_tree
+  use iso_c_binding
+  implicit none
+  integer(c_int), value :: n
+  real(c_double), intent(in) :: x(*)
+  integer(c_int), intent(in) :: ix(*)
+  real(c_double), value :: lo, hi
+  integer(c_int), intent(out) :: out_ix(*)
+  integer(c_int), intent(out) :: out_n
+
+  call bst_range_query(x, ix, n, lo, hi, out_ix, out_n)
+end subroutine bst_range_query_C
+
+!> \brief Wrapper using C for building BST index usable by python
+subroutine build_bst_index_C(x, n, ix, stack_left, stack_right) bind(C, name='build_bst_index_C')
+  use binary_search_tree
+  use iso_c_binding
+  implicit none
+  integer(c_int), value :: n
+  real(c_double), intent(in) :: x(*)
+  integer(c_int), intent(out) :: ix(*)
+  integer(c_int), intent(inout) :: stack_left(*), stack_right(*)
+
+  call build_bst_index(x, n, ix, stack_left, stack_right)
+end subroutine build_bst_index_C
