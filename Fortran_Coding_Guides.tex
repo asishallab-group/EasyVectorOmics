@@ -473,35 +473,106 @@ call project_vector_C(x, y, n)
 
 This structure ensures maximum compatibility and reproducibility across calling environments without compromising Fortran-native performance.
 
-\subsubsection{Flattening Multidimensional Arrays for \texttt{bind(C)} Interfaces}
+\subsection{Interfacing Arrays Between Fortran and C Without Memory Copy}
 
-Multidimensional arrays such as 2D expression matrices or tensor fields cannot be passed directly through \texttt{bind(C)} interfaces, since assumed-shape arrays (e.g., \texttt{(:,:)} or \texttt{(:,:,:)} types) require Fortran array descriptors that are not compatible with C.
+When writing Fortran procedures with \texttt{bind(C)} and \texttt{iso\_c\_binding}, only assumed-size arrays (\texttt{x(*)}) are allowed. Assumed-shape arrays (\texttt{x(:)} or \texttt{x(:,:)}), which rely on Fortran descriptors, are not compatible with the C ABI. However, both directions of memory-safe interoperation can be achieved without copying, using \texttt{c\_f\_pointer} and \texttt{c\_loc}.
 
-To expose such routines safely, we flatten the array into a 1D buffer and pass shape metadata separately. The internal Fortran logic reshapes the buffer without copying.
+\subsubsection{Passing a C-Style Flat Array to Fortran as Assumed-Shape}
 
-\vspace{1em}
-\noindent\textbf{C-compatible wrapper:}
+To reinterpret an assumed-size array received from C as a shaped array in Fortran, use pointer association via \texttt{c\_f\_pointer}. This method avoids any memory copy and provides full Fortran array semantics internally.
+
+\paragraph{Fortran Wrapper}
+
 \begin{verbatim}
-subroutine process_matrix_C(flat, nrow, ncol) bind(C, name="process_matrix_C")
+subroutine project_matrix_C(x, nrow, ncol) bind(C, name="project_matrix_C")
   use iso_c_binding
-  real(c_double), intent(inout) :: flat(*)
+  implicit none
+  real(c_double), intent(inout) :: x(*)
   integer(c_int), value :: nrow, ncol
-  call process_matrix(reshape(flat, [nrow, ncol]))
+
+  real(c_double), pointer :: mat(:,:)
+  call c_f_pointer(c_loc(x(1)), mat, [nrow, ncol])
+
+  call project_matrix(mat)
 end subroutine
 \end{verbatim}
 
-\noindent\textbf{Internal Fortran routine:}
+\paragraph{Internal Routine with Full Fortran Semantics}
+
 \begin{verbatim}
-subroutine process_matrix(mat)
+subroutine project_matrix(mat)
   real(8), intent(inout) :: mat(:,:)
-  integer :: i, j
-  do j = 1, size(mat,2)
-    do i = 1, size(mat,1)
-      mat(i,j) = mat(i,j) * 2.0
-    end do
+  ! Full array-based logic permitted here
+end subroutine
+\end{verbatim}
+
+This technique supports any rank, and does not involve copying. It is compatible with arrays passed from C, Python (via ctypes or cffi), LuaJIT, and WebAssembly when memory layout is column-major.
+
+\subsubsection{Returning a Fortran Array to C Without Copying}
+
+Because Fortran array descriptors are not understood by C, assumed-shape or allocatable arrays cannot be returned directly to C. Instead, a raw pointer to the data must be returned using \texttt{c\_loc}, along with shape metadata as scalar arguments.
+
+\paragraph{Returning Allocated Data from Fortran to C}
+
+\begin{verbatim}
+subroutine get_data_C(data_ptr, n) bind(C, name="get_data_C")
+  use iso_c_binding
+  implicit none
+  type(c_ptr), intent(out) :: data_ptr
+  integer(c_int), intent(out) :: n
+
+  real(c_double), pointer :: buffer(:)
+
+  n = 100
+  allocate(buffer(n))
+  buffer = [(real(i, c_double), i = 1, n)]
+
+  data_ptr = c_loc(buffer(1))
+end subroutine
+\end{verbatim}
+
+\paragraph{Caller-Side Interpretation in C (Example)}
+
+\begin{verbatim}
+extern void get_data_C(void **ptr, int *n);
+double *buf;
+int n;
+get_data_C((void**)&buf, &n);
+// buf now points to n doubles allocated by Fortran
+\end{verbatim}
+
+\paragraph{Alternative: Caller Allocates the Buffer}
+
+A more interoperable strategy is for the C side to allocate the buffer and pass it to Fortran for filling.
+
+\begin{verbatim}
+subroutine fill_vector_C(buf, n) bind(C, name="fill_vector_C")
+  use iso_c_binding
+  real(c_double), intent(out) :: buf(*)
+  integer(c_int), value :: n
+  integer :: i
+  do i = 1, n
+    buf(i) = i * 2.0
   end do
 end subroutine
 \end{verbatim}
+
+\subsubsection{Summary Table of Interoperable Array Patterns}
+
+\begin{center}
+\begin{tabular}{|l|l|l|l|}
+\hline
+\textbf{Direction} & \textbf{Method} & \textbf{Copy?} & \textbf{Safe?} \\
+\hline
+C $\rightarrow$ Fortran & \texttt{c\_f\_pointer} & No & Yes \\
+Fortran $\rightarrow$ C & \texttt{c\_loc + shape info} & No & Yes \\
+Fortran descriptor to C & Not possible & N/A & No \\
+Allocatable return & Not portable & Yes (implicit) & No \\
+\hline
+\end{tabular}
+\end{center}
+
+This approach ensures efficient, copy-free interoperation between Fortran and C while preserving the expressiveness of assumed-shape arrays internally in Fortran.
 
 \noindent\textbf{Caller responsibility:}
 The external caller (e.g., from C, Python, Lua) must allocate a 1D array of size \texttt{nrow * ncol} and ensure it is stored in Fortran-style column-major order, or reshaped accordingly.
