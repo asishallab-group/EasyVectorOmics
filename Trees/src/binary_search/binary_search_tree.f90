@@ -17,10 +17,10 @@ contains
   !! \param stack_left Manual stack of left indices for quicksort recursion (preallocated)
   !! \param stack_right Manual stack of right indices for quicksort recursion (preallocated)
   subroutine build_bst_index(x, n, ix, stack_left, stack_right)
-    real(8), intent(in) :: x(*)
+    real(8), intent(in) :: x(:)
     integer, intent(in) :: n
-    integer, intent(out) :: ix(*)
-    integer, intent(inout) :: stack_left(*), stack_right(*)
+    integer, intent(out) :: ix(:)
+    integer, intent(inout) :: stack_left(:), stack_right(:)
     integer :: i
 
     do i = 1, n
@@ -51,11 +51,11 @@ contains
   !! \param out_ix Output array of indices in x that match the range.
   !! \param out_n Number of matches found.
   subroutine bst_range_query(x, ix, n, lo, hi, out_ix, out_n)
-    real(8), intent(in) :: x(*)
-    integer, intent(in) :: ix(*)
+    real(8), intent(in) :: x(:)
+    integer, intent(in) :: ix(:)
     integer, intent(in) :: n
     real(8), intent(in) :: lo, hi
-    integer, intent(out) :: out_ix(*)
+    integer, intent(out) :: out_ix(:)
     integer, intent(out) :: out_n
     integer :: i
     out_n = 0
@@ -100,28 +100,45 @@ end subroutine build_bst_index_r
 
 !> \brief Wrapper using C for getting range query usable by python
 subroutine bst_range_query_C(x, ix, n, lo, hi, out_ix, out_n) bind(C, name='bst_range_query_C')
-  use binary_search_tree
   use iso_c_binding
+  use binary_search_tree
   implicit none
+  real(c_double), intent(in), target :: x(*)
+  integer(c_int), intent(in), target :: ix(*)
   integer(c_int), value :: n
-  real(c_double), intent(in) :: x(*)
-  integer(c_int), intent(in) :: ix(*)
   real(c_double), value :: lo, hi
-  integer(c_int), intent(out) :: out_ix(*)
+  integer(c_int), intent(out), target :: out_ix(*)
   integer(c_int), intent(out) :: out_n
 
-  call bst_range_query(x, ix, n, lo, hi, out_ix, out_n)
-end subroutine bst_range_query_C
+  ! Zero-copy pointer association
+  real(c_double), pointer :: x_shape(:)
+  integer(c_int), pointer :: ix_shape(:), out_ix_shape(:)
+
+  call c_f_pointer(c_loc(x(1)), x_shape, [n])
+  call c_f_pointer(c_loc(ix(1)), ix_shape, [n])
+  call c_f_pointer(c_loc(out_ix(1)), out_ix_shape, [n])
+
+  call bst_range_query(x_shape, ix_shape, n, lo, hi, out_ix_shape, out_n)
+end subroutine
 
 !> \brief Wrapper using C for building BST index usable by python
 subroutine build_bst_index_C(x, n, ix, stack_left, stack_right) bind(C, name='build_bst_index_C')
-  use binary_search_tree
   use iso_c_binding
+  use binary_search_tree
   implicit none
+  real(c_double), intent(in), target :: x(*)   ! C-style flat array
   integer(c_int), value :: n
-  real(c_double), intent(in) :: x(*)
-  integer(c_int), intent(out) :: ix(*)
-  integer(c_int), intent(inout) :: stack_left(*), stack_right(*)
+  integer(c_int), intent(out), target :: ix(*)
+  integer(c_int), intent(inout), target :: stack_left(*), stack_right(*)
 
-  call build_bst_index(x, n, ix, stack_left, stack_right)
-end subroutine build_bst_index_C
+  ! Zero-copy pointer association
+  real(c_double), pointer :: x_shape(:)
+  integer(c_int), pointer :: ix_shape(:), sl_shape(:), sr_shape(:)
+
+  call c_f_pointer(c_loc(x(1)), x_shape, [n])
+  call c_f_pointer(c_loc(ix(1)), ix_shape, [n])
+  call c_f_pointer(c_loc(stack_left(1)), sl_shape, [n])
+  call c_f_pointer(c_loc(stack_right(1)), sr_shape, [n])
+
+  call build_bst_index(x_shape, n, ix_shape, sl_shape, sr_shape)
+end subroutine
