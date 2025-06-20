@@ -747,4 +747,515 @@ However, \texttt{fpm test} works out of the box with plain Fortran modules and \
 \subsection{Optional}
 Would you like a sample \texttt{fpm} project template with your smoothing algorithm and pre-configured test suite?
 
+\section{High-Performance Fortran Compilation and Memory Alignment}
+
+This section provides practical guidelines for scientific programmers to write memory-efficient and performance-optimized Fortran code using OpenMP, SIMD, and compiler-specific features. It also includes instructions on compiler configuration and memory alignment strategies suitable for AVX2 and AVX-512 systems.
+
+\subsection{Precompiler include file for constants}
+
+We need a precompiler macros file that needs to be included in all Fortran
+files that use macros.
+
+\vspace{1em}%
+\noindent{}File \texttt{precompiler\_constants.F90}:
+\begin{verbatim}
+#ifndef DEFAULT_ALIGNMENT
+#define DEFAULT_ALIGNMENT 32
+#endif
+\end{verbatim}
+
+\subsection{OpenMP and SIMD: Double Parallelization}
+\label{thread_and_vectorized_parallelization}
+Modern Fortran compilers support combined OpenMP threading and SIMD vectorization through a single directive:
+
+\begin{verbatim}
+!$omp parallel do simd schedule(static) private(i)
+do i = 1, n
+a(i) = b(i) + c(i)
+end do
+!$omp end parallel do simd
+\end{verbatim}
+
+This pragma enables:
+\begin{itemize}
+\item \textbf{Thread-level parallelism} via OpenMP.
+\item \textbf{Instruction-level parallelism} via SIMD (Single Instruction, Multiple Data).
+\end{itemize}
+
+This combination splits loop iterations across threads, and each thread processes elements in SIMD fashion. It is ideal for dense numerical operations.
+
+\subsection{Compiler-Specific Pragmas and Flags}
+
+To \emph{ensure} the above OpenMP \emph{and} vectorized parallelization (see
+\ref{thread_and_vectorized_parallelization}) works with maximum efficiency, we
+need to use compiler pragmas for Intel and gfortran compilers. See this example
+that tells both compilers that the Arrays used in the \texttt{do}-loop actually
+are setup correctly for vectorized (\texttt{SIMD}) parallelization on the level
+of the CPU:
+
+\begin{verbatim}
+!DIR$ ASSUME_ALIGNED a:64, b:64, c:64
+!$omp parallel do simd schedule(static) private(i) aligned(a, b, c:64)
+do i = 1, n
+  a(i) = b(i) + c(i)
+end do
+!$omp end parallel do simd
+\end{verbatim}
+
+The above ensures most efficient compilation, if and only if the right compiler
+flags are set (see below sections \ref{intel_flags} and \ref{gfortran_flags}),
+too.
+
+The problem here is that the above \texttt{memory alignment boundary in bytes}
+set to 64 depends on the CPU vectorized instruction set, i.e. \texttt{AVX2},
+\texttt{AVX512}, etc. So, we need to do some macro magic to squeeze the last
+bit of maximum efficency out of our code for any hardware it is compiled on:
+
+\begin{verbatim}
+! The below line should likely be the first line
+! in any Fortran file that has macros.
+#include "precompiler_constants.F90"
+
+! This included module sets the correct memory alignment boundary in bytes
+! and ensures that when allocating arrays in Fortran they are correctly aligned.
+use config
+
+#if DEFAULT_ALIGNMENT == 16
+!DIR$ ASSUME_ALIGNED a:16, b:16, c:16
+!$omp parallel do simd schedule(static) private(i) aligned(a, b, c:16)
+#elif DEFAULT_ALIGNMENT == 32
+!DIR$ ASSUME_ALIGNED a:32, b:32, c:32
+!$omp parallel do simd schedule(static) private(i) aligned(a, b, c:32)
+#elif DEFAULT_ALIGNMENT == 64
+!DIR$ ASSUME_ALIGNED a:64, b:64, c:64
+!$omp parallel do simd schedule(static) private(i) aligned(a, b, c:64)
+#elif DEFAULT_ALIGNMENT == 128
+!DIR$ ASSUME_ALIGNED a:128, b:128, c:128
+!$omp parallel do simd schedule(static) private(i) aligned(a, b, c:128)
+#else
+!$omp parallel do simd schedule(static) private(i)
+#endif
+
+do i = 1, n
+  a(i) = b(i) + c(i)
+end do
+!$omp end parallel do simd
+\end{verbatim}
+
+\emph{Note} see section \ref{fortran_config_module} for the above
+\texttt{config} module, please.
+
+\subsubsection{OpenMP Variable Scoping: \texttt{private} and \texttt{reduction}}
+
+When using OpenMP parallel loops, it is essential to correctly declare the scope of all variables used within the loop body. This ensures thread safety and avoids unintended data races or compiler misoptimizations.
+
+Most importantly:
+
+\begin{itemize}
+  \item \textbf{Loop indices} must be declared as \texttt{private}, e.g., \texttt{private(i)}.
+  \item \textbf{Temporary variables or accumulators} introduced inside the loop body must also be marked \texttt{private}, unless they are used in a reduction.
+  \item \textbf{Reduction variables} (e.g., sums or maxima computed across threads) must be declared using the \texttt{reduction(...)} clause.
+\end{itemize}
+
+\noindent
+Example:
+\begin{verbatim}
+real(8) :: tmp
+real(8) :: sum
+
+!$omp parallel do simd private(i, tmp) reduction(+:sum) schedule(static)
+do i = 1, n
+  tmp = compute(i)
+  sum = sum + tmp
+end do
+!$omp end parallel do simd
+\end{verbatim}
+
+In this example:
+\begin{itemize}
+  \item \texttt{i} is the loop counter and must be private.
+  \item \texttt{tmp} is a per-iteration local value and must be private to avoid race conditions.
+  \item \texttt{sum} is a global accumulator and must be declared as a reduction variable with the \texttt{+} operator.
+\end{itemize}
+
+Failing to properly scope these variables may lead to undefined behavior, wrong results, or silent compiler fallbacks to scalar execution. Always carefully inspect variable use when applying OpenMP to numerical loops.
+
+\subsubsection{Reduction Operations in OpenMP SIMD Loops}
+
+When performing numerical or logical accumulation in parallel regions, OpenMP provides \texttt{reduction} clauses that ensure correctness and performance across threads. These clauses combine thread-local results using an associative operation into a final value at the end of the parallel loop.
+
+\vspace{1em}
+\noindent
+\textbf{Supported Reduction Operations in OpenMP:}
+
+\begin{center}
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Operation} & \textbf{Description} & \textbf{Example} \\
+\hline
+\texttt{+} & Sum & \texttt{reduction(+:sum)} \\
+\texttt{*} & Product & \texttt{reduction(*:prod)} \\
+\texttt{max} & Maximum value & \texttt{reduction(max:maxval)} \\
+\texttt{min} & Minimum value & \texttt{reduction(min:minval)} \\
+\texttt{-} & Subtraction\textsuperscript{*} & \texttt{reduction(-:diff)} \\
+\hline
+\texttt{iand} & Bitwise AND (integers) & \texttt{reduction(iand:mask)} \\
+\texttt{ior} & Bitwise OR (integers) & \texttt{reduction(ior:flag)} \\
+\texttt{ieor} & Bitwise XOR (integers) & \texttt{reduction(ieor:flag)} \\
+\hline
+\texttt{.and.} & Logical AND (booleans) & \texttt{reduction(.and.:ok)} \\
+\texttt{.or.} & Logical OR (booleans) & \texttt{reduction(.or.:status)} \\
+\hline
+\end{tabular}
+\end{center}
+
+\vspace{1em}
+\noindent
+\textbf{Note:}
+\begin{itemize}
+\item Most common are \texttt{+}, \texttt{max}, and \texttt{min} for numerical accumulations.
+\item The subtraction operator \texttt{-} is supported, but caution is advised: subtraction is not associative, so the result may depend on thread order. Use only if mathematically justified.
+\item Logical and bitwise reductions are especially useful for flags, masks, and status checks.
+\end{itemize}
+
+\noindent
+\textbf{Best practice:} Always declare temporary or accumulator variables as \texttt{private(...)} or \texttt{reduction(...)} depending on their intended aggregation behavior. This prevents race conditions and ensures correctness.
+
+\subsubsection{Intel Compiler (\texttt{ifort} or \texttt{ifx})}
+\label{intel_flags}
+Recommended flags:
+\begin{verbatim}
+-O3 -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul
+\end{verbatim}
+
+\subsubsection{GNU Compiler (\texttt{gfortran})}
+\label{gfortran_flags}
+Recommended flags:
+\begin{verbatim}
+-O3 -march=native -mtune=native -fopenmp -ffast-math -funroll-loops -ftree-vectorize -fassociative-math
+\end{verbatim}
+
+\subsection{Configuring \texttt{fpm.toml}}
+Use dedicated profiles for Intel and GNU compilers in your \texttt{fpm.toml}:
+
+\begin{verbatim}
+[profile.release-gfortran]
+flags = [
+  "-O3",
+  "-march=native",
+  "-mtune=native",
+  "-fopenmp",
+  "-ffast-math",
+  "-funroll-loops",
+  "-ftree-vectorize",
+  "-fassociative-math"
+]
+
+[profile.release-ifx]
+flags = [
+  "-O3",
+  "-qopenmp",
+  "-xHost",
+  "-align", "array64byte",
+  "-qopt-zmm-usage=high",
+  "-qopt-prefetch=3",
+  "-qopt-matmul"
+]
+\end{verbatim}
+
+\subsection{Compile Script with Hardware-Dependent Defaults}
+Use a compile script to choose the optimal alignment at runtime and apply the appropriate compiler profile:
+
+\begin{verbatim}
+#!/bin/bash
+
+# build.sh — Optimized build script for FPM with dynamic alignment
+
+# Default fallback alignment for the most likely situation:
+ALIGN=32
+
+# Detect capabilities in order of descending priority:
+if lscpu | grep -q amx; then
+  ALIGN=128
+elif lscpu | grep -q avx512; then
+  ALIGN=64
+elif lscpu | grep -q avx2; then
+  ALIGN=32
+elif lscpu | grep -q sse2; then
+  ALIGN=16
+fi
+
+# Detect compiler and choose appropriate profile:
+if [[ "$FC" == "ifx" || "$FC" == "ifort" ]]; then
+  PROFILE="release-ifx"
+else
+  PROFILE="release-gfortran"
+fi
+
+# Informative output:
+echo "Detected alignment: $ALIGN bytes"
+echo "Using compiler profile: $PROFILE"
+
+# Build with selected profile and alignment parameter:
+fpm build --profile "$PROFILE" --flag "-DDEFAULT_ALIGNMENT=$ALIGN"
+\end{verbatim}
+
+\subsection{Contiguous and Aligned Arrays in Fortran}
+A \texttt{contiguous} array is one whose elements are stored sequentially in memory. An \texttt{aligned} array is one that starts at a memory address that is a multiple of the desired alignment boundary (e.g., 32 or 64 bytes).
+
+\textbf{All \texttt{allocatable} arrays in Fortran are inherently contiguous.} Aligned allocation ensures that SIMD instructions can operate efficiently.
+
+\subsection{Configuration Module}
+\label{fortran_config_module}
+\begin{verbatim}
+#include "precompiler_constants.F90"
+
+module config
+implicit none
+#ifdef DEFAULT_ALIGNMENT
+integer, parameter :: alignment = DEFAULT_ALIGNMENT
+#endif
+end module config
+\end{verbatim}
+
+\subsection{Alignment-Aware Padding Function}
+This helper computes padded sizes for any array dimension:
+
+\begin{verbatim}
+module alignment_utils
+use config
+implicit none
+contains
+
+integer function padded_size(n)
+integer, intent(in) :: n
+padded_size = alignment * ceiling(real(n) / alignment)
+end function padded_size
+
+end module alignment_utils
+\end{verbatim}
+
+Use this in your allocation logic:
+
+\begin{verbatim}
+use alignment_utils
+integer :: m, padded_m
+real(8), allocatable :: A(:)
+
+m = 1000
+padded_m = padded_size(m)
+allocate(A(padded_m))
+\end{verbatim}
+
+This ensures alignment across 1D, 2D, or ND arrays by applying padding logic to each dimension before allocation.
+
+\subsection{Alignment-Aware Allocation for ND Arrays}
+
+To ensure all dimensions are padded and aligned, wrap padding in a helper procedure or macro-like pattern per array rank. Example for 2D:
+
+\begin{verbatim}
+integer :: nx, ny, px, py
+real(8), allocatable :: A(:,:)
+
+nx = 800
+ny = 600
+px = padded_size(nx)
+py = padded_size(ny)
+allocate(A(px, py))
+\end{verbatim}
+
+Repeat this pattern for higher-dimensional arrays.
+
+\subsection{Note on Using Single Helper for Arbitrary Ranks}
+
+It is not possible to pass arbitrary-rank assumed-shape arrays into a single routine that allocates them, because Fortran does not support polymorphic allocatable shapes. Instead, compute and apply padding for each dimension prior to allocation, using `padded\_size`.
+
+Thus, the best practice is to:
+\begin{itemize}
+\item Store dimension sizes in variables.
+\item Use \texttt{padded\_size()} for each.
+\item Allocate directly in the relevant context.
+\item Optionally provide \texttt{allocate\_padded\_1D()}, \texttt{...2D()} helpers per rank for clarity.
+\end{itemize}
+
+\subsection{Best Practice Summary}
+
+\begin{itemize}
+\item Use \texttt{!\$omp parallel do simd schedule(static)} to enable both thread and instruction-level parallelism.
+\item Use compiler-specific alignment and vectorization flags in \texttt{fpm.toml}.
+\item Dynamically set alignment to 32 or 64 via a shell script based on CPU capabilities.
+\item Use \texttt{padded\_size()} to round up all dimensions to nearest alignment multiple.
+\item Allocate arrays explicitly using padded sizes to ensure SIMD-safe alignment.
+\item Maintain a \texttt{config} module to centralize the alignment parameter.
+\end{itemize}
+
+\subsection{Verifying Alignment at Runtime (Possible but \emph{not} practical)}
+
+Intel and GNU compilers do not provide standard runtime alignment checks. For
+debugging, one may use C interoperability and POSIX memory alignment checks
+(advanced). For practical purposes, correct use of allocation and compiler
+flags suffices.
+
+\subsection{Conclusion: Thread-Level and CPU-Local Vectorized Parallelization}
+
+By combining OpenMP, SIMD, and alignment-aware allocation, scientific Fortran code can achieve modern HPC-level efficiency while maintaining clarity and portability. This setup enables seamless transition to C bindings, WebAssembly targets, and multi-threaded environments such as browser-based Tensor Omics visualizations or clustered batch jobs.
+
+\emph{Importantly}, the following Fortran code template enables \textbf{double parallelization}: first at the \textbf{thread level}, where array chunks are distributed across cores using the \texttt{!\$omp parallel do simd schedule(static)} directive; and second at the \textbf{instruction level}, where each thread processes its assigned chunk using vectorized CPU instructions enabled by the \texttt{simd} clause.
+
+\subsection{Distributed Parallelism with Coarrays and OpenMP SIMD Loops}
+
+This section describes how Tensor Omics achieves \textbf{triple parallelization} on distributed systems by combining:
+
+\begin{itemize}
+  \item \textbf{Coarrays} for inter-node (inter-image) parallelism,
+  \item \textbf{OpenMP threads} for intra-node (core-level) parallelism,
+  \item and \textbf{SIMD vectorization} for CPU-instruction-level efficiency.
+\end{itemize}
+
+This hybrid model enables high-throughput omics analysis on SLURM clusters with minimal programming overhead and near-optimal hardware utilization.
+
+\subsubsection{Local Data Strategy in Coarrays}
+Coarrays in Fortran natively represent distributed memory: each \emph{image} is conceptually an independent process with its own memory space. This makes them ideal for Tensor Omics, where data can be split into families and processed independently. 
+
+The key principle is:
+\begin{quote}
+\textbf{Each image works on its own local subset of gene families.} Data from other images is only accessed explicitly when needed.
+\end{quote}
+
+Within each image, we apply the previously described memory-optimized loops with:
+\begin{itemize}
+\item \texttt{!\$omp parallel do simd} — enabling OpenMP threading and SIMD vectorization.
+\item Intel pragmas and \texttt{aligned(...)} clauses — ensuring memory is aligned to AVX boundaries.
+\end{itemize}
+
+Crucially, \textbf{looping over coarrays automatically refers to the local image's data}, without additional indexing or copying, unless explicitly accessing remote images (e.g., \texttt{b[2]} to read from image 2).
+
+\subsection{Brief summary: Declaring and Accessing Coarrays}
+
+A coarray is declared in Fortran by appending square brackets with \texttt{[*]} to the variable declaration. For example:
+
+\begin{verbatim}
+real(8), allocatable :: a(:)[:], b(:)[:], c(:)[:]
+\end{verbatim}
+
+The colon \texttt{:} indicates a deferred-shape (allocatable) array, and the brackets \texttt{[:]} declare the variable as a coarray, with one instance per image.
+
+\textbf{Local image access} is performed without brackets:
+\begin{verbatim}
+a(i) = b(i) + c(i)        ! Local access: all references are to this_image()
+\end{verbatim}
+
+\textbf{Remote image access} uses explicit brackets with an image number:
+\begin{verbatim}
+a(i) = b(i)[2] + c(i)     ! Reads from image 2 (remote access)
+\end{verbatim}
+
+Remote access should be minimized for performance and memory locality. Tensor Omics encourages access to remote images only in explicitly synchronized stages.
+
+Memory-aligned OpenMP SIMD loops work identically with coarrays when accessing only local data. The compiler automatically uses the correct memory region without copying:
+
+\begin{verbatim}
+!DIR$ ASSUME_ALIGNED a:64, b:64, c:64
+!$omp parallel do simd schedule(static) aligned(a, b, c:64)
+do i = 1, n
+  a(i) = b(i) + c(i)       ! Local data access on this_image()
+end do
+!$omp end parallel do simd
+\end{verbatim}
+
+\subsubsection{Data Loading Based on Image ID}
+The image-specific data loading follows a simple naming convention: each image loads its own chunk from a directory or file pattern like \texttt{<base>\_<image\_no>}.
+
+Example:
+\begin{verbatim}
+integer :: me
+me = this_image()
+
+! Allocate coarrays as needed (e.g., expression vectors)
+! Each image loads only its own data:
+call load_txdata(me, base_file_name, expression_vecs, ...)
+\end{verbatim}
+
+This pattern supports full scalability with large gene family datasets. For best performance:
+\begin{itemize}
+\item Split data by gene family.
+\item Assign families evenly to images during pre-processing.
+\item Avoid inter-image data transfer unless strictly required.
+\end{itemize}
+
+\subsubsection{Synchronization and Remote Data Access}
+Coarray images execute asynchronously by default. To coordinate across images:
+
+\begin{itemize}
+\item Use \texttt{sync all} to wait for all images at the same code line.
+\item Use \texttt{sync images(*)} or \texttt{sync images(img)} for partial synchronization.
+\item Access remote coarray data using bracket syntax (e.g., \texttt{vec(1:n)[2]}).
+\end{itemize}
+
+If cross-image data is required for analysis (e.g., inter-family comparisons):
+\begin{itemize}
+\item \textbf{Fetch remote data explicitly} using coarray brackets.
+\item \textbf{Copy into aligned local arrays} before processing, preserving SIMD efficiency.
+\item Perform \texttt{sync all} if necessary.
+\end{itemize}
+
+Memory budgeting must ensure that any fetched data fits into local memory.
+
+\subsubsection{Compiling for Coarrays}
+Compilation differs slightly depending on compiler:
+
+\paragraph{With Intel (ifx/ifort):}
+\begin{verbatim}
+ifx -coarray=distributed -fopenmp -O3 -qopenmp -align array64byte -c file.f90
+\end{verbatim}
+
+\paragraph{With GNU gfortran + OpenCoarrays:}
+\begin{verbatim}
+caf -fcoarray=single -fopenmp -O3 -march=native -c file.f90
+\end{verbatim}
+
+Linking must include coarray runtimes, especially when using OpenCoarrays (\texttt{caf} handles this).
+
+\subsubsection{SLURM Setup for Coarray Execution}
+
+Below is a complete SLURM job script to run Tensor Omics with \textbf{3 Coarray images}, each using \textbf{40 OpenMP threads}. Adjust resource counts to your system and dataset.
+
+\begin{verbatim}
+#!/bin/bash
+#SBATCH --job-name=tensor-omics
+#SBATCH --nodes=3
+#SBATCH --ntasks-per-node=1            # One Coarray image per node
+#SBATCH --cpus-per-task=40             # 40 threads per image
+#SBATCH --time=02:00:00
+#SBATCH --partition=compute
+#SBATCH --exclusive                    # Optional: gets full nodes
+#SBATCH --output=slurm-%j.out
+#SBATCH --error=slurm-%j.err
+
+# Load modules (adjust to your environment)
+module load intel/2023.1
+module load openmpi/4.1.5              # or Intel MPI if using ifx/ifort
+
+# Set OpenMP thread count
+export OMP_NUM_THREADS=40
+export FOR_COARRAY_NUM_IMAGES=3        # Optional: Intel Coarrays only
+
+# Optional: pin threads for reproducibility and performance
+export KMP_AFFINITY=granularity=fine,compact,1,0
+export KMP_STACKSIZE=2g
+
+# Run executable with MPI wrapper
+srun ./tensor_omics_exe
+\end{verbatim}
+
+\paragraph{Notes:}
+\begin{itemize}
+\item Each image automatically processes only its local data.
+\item Use \texttt{this\_image()} and \texttt{num\_images()} to manage indexing.
+\item Combined with alignment-aware OpenMP SIMD loops, this setup provides maximal throughput.
+\end{itemize}
+
+\subsubsection{Conclusion}
+The coarray-enabled, tripple-parallel architecture of Tensor Omics allows scalable, memory-aligned, and instruction-optimized analysis on both laptops and HPC clusters. Minimal code changes are needed to move from serial to multi-node execution. This enables true geometric tensor-based biology at scale.
+
 \end{document}
