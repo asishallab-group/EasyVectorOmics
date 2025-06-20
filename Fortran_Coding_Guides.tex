@@ -806,6 +806,9 @@ The above ensures most efficient compilation, if and only if the right compiler
 flags are set (see below sections \ref{intel_flags} and \ref{gfortran_flags}),
 too.
 
+\subsubsection{How to optimize for all CPU architectures?}
+\label{simd_architecture_macros}
+
 The problem here is that the above \texttt{memory alignment boundary in bytes}
 set to 64 depends on the CPU vectorized instruction set, i.e. \texttt{AVX2},
 \texttt{AVX512}, etc. So, we need to do some macro magic to squeeze the last
@@ -1101,6 +1104,99 @@ flags suffices.
 By combining OpenMP, SIMD, and alignment-aware allocation, scientific Fortran code can achieve modern HPC-level efficiency while maintaining clarity and portability. This setup enables seamless transition to C bindings, WebAssembly targets, and multi-threaded environments such as browser-based Tensor Omics visualizations or clustered batch jobs.
 
 \emph{Importantly}, the following Fortran code template enables \textbf{double parallelization}: first at the \textbf{thread level}, where array chunks are distributed across cores using the \texttt{!\$omp parallel do simd schedule(static)} directive; and second at the \textbf{instruction level}, where each thread processes its assigned chunk using vectorized CPU instructions enabled by the \texttt{simd} clause.
+
+\subsection{Best Practice: SIMD in Leaf Loops, OpenMP in Top-Level Loops}
+
+In Tensor Omics, it is crucial to distinguish between two levels of parallelization:
+
+\begin{itemize}
+\item \textbf{Thread-level parallelism}: achieved via \texttt{!\$omp parallel do} at the top level, typically when iterating over gene families or other large-scale, independent units of computation.
+\item \textbf{Vector-level (SIMD) parallelism}: achieved via \texttt{!\$omp simd} within inner loops that perform the actual arithmetic operations, e.g., normalization, centroid computation, tensor updates.
+\end{itemize}
+
+\paragraph{Key rule:} \emph{Apply \texttt{!\$omp simd} only at the level of the loop that does the actual vector arithmetic. This is the most nested loop — the ``leaf'' loop.}
+
+\paragraph{And:} \emph{Apply \texttt{!\$omp parallel do} only at the top level, for instance over gene families or modules.} This should be confirmed and coordinated with the software architect (Vivian or Asis) to ensure it aligns with the design of the specific routine.
+
+\subsubsection{Why?}
+
+Nested use of \texttt{simd} inside a loop that is already marked with \texttt{parallel do simd} leads to undefined or inefficient behavior. While technically allowed by OpenMP, compilers may:
+
+\begin{itemize}
+\item silently ignore the inner \texttt{simd} region,
+\item fail to vectorize at all,
+\item or generate scalar fallback code.
+\end{itemize}
+
+Hence, we \emph{do not} use both \texttt{parallel do simd} and inner \texttt{simd} together — unless there is a specific, performance-tested reason.
+
+\subsubsection{Incorrect (nested SIMD, should be avoided)}
+
+\begin{verbatim}
+subroutine family_centroids(...)
+  !$omp simd aligned(a, b, c:64)
+  do j = 1, ndim
+    ...
+  end do
+end subroutine
+
+!The below repeated 'simd' is the problem here:
+!$omp parallel do simd schedule(static) private(i)
+do i = 1, nfam
+  call family_centroids(...)
+end do
+\end{verbatim}
+
+\textbf{Problems:}
+\begin{itemize}
+\item The outer loop redundantly specifies both \texttt{parallel do} and \texttt{simd}, causing potential nested vectorization issues.
+\item The alignment is hardcoded (\texttt{64}) instead of using the macro defined in our configuration header.
+\end{itemize}
+
+\subsubsection{Correct and recommended pattern in Tensor Omics}
+
+\begin{verbatim}
+subroutine family_centroids(...)
+  !$omp simd aligned(a, b, c:64) private(j)
+  do j = 1, ndim
+    ...
+  end do
+end subroutine
+
+!$omp parallel do schedule(static) private(i) aligned(...)
+do i = 1, nfam
+  call family_centroids(...)
+end do
+\end{verbatim}
+
+\emph{Note}, see section \ref{simd_architecture_macros} for details on how to
+set the correct memory alignment boundary in bytes, e.g. ``\texttt{aligned(a,
+b, c:64}'' and ``\texttt{!DIR\$ ASSUME\_ALIGNED a:64, b:64, c:64}'' to 16, 32,
+64, or 128, using precompiler macros.
+
+\textbf{This is the canonical Tensor Omics pattern:}
+\begin{itemize}
+\item The leaf loop that performs arithmetic (e.g., element-wise ops) uses \texttt{simd} and the \texttt{aligned(...:DEFAULT\_ALIGNMENT)} directive. This macro is defined in the precompiler header \texttt{precompiler\_constants.F90}.
+\item The outer loop over independent entities (e.g., gene families) uses \texttt{parallel do} for thread-level parallelism.
+\end{itemize}
+
+\paragraph{Important:} Always use \texttt{\#include "precompiler\_constants.F90"} if alignment is to be ensured. This file defines \texttt{DEFAULT\_ALIGNMENT}, which is passed at compile time via the build script depending on AVX512, AVX2, or baseline SIMD capabilities. Using this macro ensures correct alignment in both \texttt{!DIR\$ ASSUME\_ALIGNED} and \texttt{aligned(...)} clauses.
+
+\subsubsection{Summary}
+
+\begin{itemize}
+\item \textbf{Use \texttt{!\$omp simd} only in the leaf loop doing actual vector math.}
+\item \textbf{Use \texttt{!\$omp parallel do} only in top-level outer loops.}
+\item \textbf{Avoid using \texttt{parallel do simd} in Tensor Omics unless explicitly reviewed.}
+\item \textbf{Always include \texttt{precompiler\_constants.F90} if using alignment directives.}
+\item \textbf{Use correct directives to keep hardware compatibility across
+  compilers and targets:}
+  \begin{itemize}
+    \item \texttt{aligned(...:<DEFAULT\_ALIGNMENT>)} \emph{and}
+    \item \texttt{!DIR\$ ASSUME\_ALIGNED a:<DEFAULT\_ALIGNMENT>,
+      b:<DEFAULT\_ALIGNMENT>, c:<DEFAULT\_ALIGNMENT>}.
+  \end{itemize}
+\end{itemize}
 
 \subsection{Distributed Parallelism with Coarrays and OpenMP SIMD Loops}
 
