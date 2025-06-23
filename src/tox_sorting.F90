@@ -227,3 +227,33 @@ contains
   end subroutine swap_int
 
 end module tox_sorting
+
+subroutine sort_real_r(array, perm, stack_left, stack_right, n)
+  use tox_sorting, only: sort_array
+  implicit none
+  integer, intent(in) :: n
+  real(8), intent(in) :: array(n)
+  integer, intent(inout) :: perm(n), stack_left(n), stack_right(n)
+
+  call sort_array(array, perm, stack_left, stack_right)
+end subroutine sort_real_r
+
+subroutine sort_integer_r(array, perm, stack_left, stack_right, n)
+  use tox_sorting, only: sort_array
+  implicit none
+  integer, intent(in) :: n
+  integer, intent(in) :: array(n)
+  integer, intent(inout) :: perm(n), stack_left(n), stack_right(n)
+
+  call sort_array(array, perm, stack_left, stack_right)
+end subroutine sort_integer_r
+
+subroutine sort_character_r(array, perm, stack_left, stack_right, n, strlen)
+  use tox_sorting, only: sort_array
+  implicit none
+  integer, intent(in) :: n, strlen
+  character(len=strlen), intent(in) :: array(n)
+  integer, intent(inout) :: perm(n), stack_left(n), stack_right(n)
+
+  call sort_array(array, perm, stack_left, stack_right)
+end subroutine sort_character_r
