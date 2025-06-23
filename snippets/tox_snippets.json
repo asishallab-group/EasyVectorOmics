@@ -25,6 +25,52 @@
         "end do"
       ],
       "description": "Example usage of normalize_by_std_dev subroutine with small test matrix"
-    }
-
+    },
+      "Wrapper R/f2py": {
+    "prefix": "wrapper_r",
+    "body": [
+      "subroutine ${1:core_name}_r_py(${2:args})",
+      "  use ${3:module}",
+      "  ${4:! -- declare arguments here as in the core routine --}",
+      "  call ${1:core_name}(${2:args})",
+      "end subroutine ${1:core_name}_r_py"
+    ],
+    "description": "Wrapper for R/f2py (2D arrays, no bind(C))"
+  },
+  "Wrapper C/Python": {
+    "prefix": "wrapper_c",
+    "body": [
+	  "! -- use this snippet or helper_c_srapper.py to generate the C wrapper",
+      "subroutine ${1:core_name}_c(${2:args}) bind(C, name=\"${1:core_name}_c\")",
+      "  use iso_c_binding",
+      "  use ${3:module}",
+      "  ${4:! -- declare arguments here with snippets c_arg or flat_array_2d as needed --}",
+      "  call ${1:core_name}(${2:args})",
+      "end subroutine ${1:core_name}_c"
+    ],
+    "description": "Wrapper for C/Python (bind(C), flat arrays)"
+  },
+  "Fortran argument declaration": {
+    "prefix": "r_arg",
+    "body": [
+      "${1:type}, intent(${2:inout}) :: ${3:name}${4:(dimensions)}"
+    ],
+    "description": "Fortran standard argument declaration"
+  },
+  "C argument declaration": {
+    "prefix": "c_arg",
+    "body": [
+      "${1:c_type}, intent(${2:inout}), target :: ${3:name}(*)"
+    ],
+    "description": "C-style argument declaration"
+  },
+  "c_f_pointer 2D": {
+    "prefix": "flat_array_2d",
+    "body": [
+      "real(c_double), pointer :: ${1:mat}(:,:)",
+      "call c_f_pointer(c_loc(${2:flat_array}(1)), ${1:mat}, [${3:n1}, ${4:n2}])"
+    ],
+    "description": "Map flat array to 2D with c_f_pointer"
+  }
 }
+
