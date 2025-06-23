@@ -29,11 +29,11 @@
       "Wrapper R/f2py": {
     "prefix": "wrapper_r",
     "body": [
-      "subroutine ${1:core_name}_r_py(${2:args})",
+      "subroutine ${1:core_name}_r(${2:args})",
       "  use ${3:module}",
       "  ${4:! -- declare arguments here as in the core routine --}",
       "  call ${1:core_name}(${2:args})",
-      "end subroutine ${1:core_name}_r_py"
+      "end subroutine ${1:core_name}_r"
     ],
     "description": "Wrapper for R/f2py (2D arrays, no bind(C))"
   },
