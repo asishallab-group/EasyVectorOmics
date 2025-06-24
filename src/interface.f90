@@ -3,8 +3,7 @@
 ! ==============================================================================
 ! Description:
 !   Provides C and R compatible wrappers for the `gene_centroid_calculator`
-!   module. This adheres to the guidelines in Section 4 of the coding standard,
-!   creating minimal wrappers around the core Fortran logic.
+!   module.
 !
 ! Revision Notes:
 !   - Corrected C wrapper to use a temporary allocatable matrix to satisfy the
@@ -29,7 +28,6 @@ CONTAINS
 ! ==============================================================================
 ! Purpose:
 !   R-compatible wrapper to compute the centroid for a SINGLE orthogroup.
-!   This simplified interface is designed for use with R's `.Fortran()` call.
 ! ==============================================================================
   SUBROUTINE compute_centroid_for_group_r(vectors, n_genes, n_tissues, &
                                           gene_indices_for_group, n_genes_in_group, &
@@ -71,8 +69,7 @@ CONTAINS
 ! SUBROUTINE: compute_centroids_c
 ! ==============================================================================
 ! Purpose:
-!   C-compatible wrapper for `group_centroid`. Adheres to F42 guidelines by
-!   using `iso_c_binding`, `bind(C)`, and taking only C-compatible arguments
+!   C-compatible wrapper for `group_centroid`. Taking only C-compatible arguments
 !   (pointers/assumed-size arrays and scalars).
 ! ==============================================================================
   SUBROUTINE compute_centroids_c(vectors_flat, n_genes, n_tissues, &
