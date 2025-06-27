@@ -1,14 +1,14 @@
 ! filepath: src/tox_normalization.F90
-#include "../precompiler_constants.F90"
+#include "precompiler_constants.F90"
 
-!> Wrapper for R and Fortran usage (f2py, R .Fortran)
-subroutine normalize_by_std_dev_r_py(n_genes, n_tissues, input_matrix, output_matrix)
+!> Wrapper for R and Fortran usage (R .Fortran)
+subroutine normalize_by_std_dev_r(n_genes, n_tissues, input_matrix, output_matrix)
   use tox_normalization_mod
   integer, intent(in) :: n_genes, n_tissues
   real(8), intent(in)  :: input_matrix(n_genes, n_tissues)
   real(8), intent(out) :: output_matrix(n_genes, n_tissues)
   call normalize_by_std_dev_core(n_genes, n_tissues, input_matrix, output_matrix)
-end subroutine normalize_by_std_dev_r_py
+end subroutine normalize_by_std_dev_r
 
 !> C/Python interface (bind(C)), expects flat arrays.
 subroutine normalize_by_std_dev_c(n_genes, n_tissues, input_matrix, output_matrix) bind(C, name="normalize_by_std_dev_c")
@@ -23,7 +23,7 @@ subroutine normalize_by_std_dev_c(n_genes, n_tissues, input_matrix, output_matri
   call normalize_by_std_dev_core(n_genes, n_tissues, inmat, outmat)
 end subroutine normalize_by_std_dev_c
 
-subroutine quantile_normalization_r_py(n_genes, n_tissues, input_matrix, output_matrix, &
+subroutine quantile_normalization_r(n_genes, n_tissues, input_matrix, output_matrix, &
                                         temp_col, rank_means, perm, stack_left, stack_right, max_stack)
   use tox_normalization_mod
     integer, intent(in) :: n_genes, n_tissues, max_stack
@@ -37,7 +37,7 @@ subroutine quantile_normalization_r_py(n_genes, n_tissues, input_matrix, output_
 
   call quantile_normalization(n_genes, n_tissues, input_matrix, output_matrix, &
                             temp_col, rank_means, perm, stack_left, stack_right, max_stack)
-end subroutine quantile_normalization_r_py
+end subroutine quantile_normalization_r
 
 subroutine quantile_normalization_c(n_genes, n_tissues, input_matrix, output_matrix, &
                                     temp_col, rank_means, perm, stack_left, stack_right, max_stack) &
