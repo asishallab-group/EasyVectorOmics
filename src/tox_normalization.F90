@@ -11,18 +11,22 @@ contains
   !! @param input_matrix Input matrix (n_genes x n_tissues)
   !! @param output_matrix Output matrix (n_genes x n_tissues), normalized by RMS per gene
   subroutine normalize_by_std_dev_core(n_genes, n_tissues, input_matrix, output_matrix)
+    use, intrinsic :: iso_fortran_env, only: real64
     integer, intent(in) :: n_genes, n_tissues
     real(real64), intent(in)  :: input_matrix(n_genes, n_tissues)
     real(real64), intent(out) :: output_matrix(n_genes, n_tissues)
     integer :: i, j
-    real(real64) :: std_dev, temp_sum
+    real(real64) :: std_dev, temp_sum, val
 
-    !$omp parallel do private(i, j, std_dev, temp_sum) schedule(static)
+    !$omp parallel do private(i, j, std_dev, temp_sum, val) schedule(static)
     do i = 1, n_genes
       temp_sum = 0.0_real64
       !$omp simd
       do j = 1, n_tissues
-        temp_sum = temp_sum + input_matrix(i, j)**2
+        val = input_matrix(i, j)
+        ! Si es NaN o Inf, ponlo a cero
+        if (val /= val .or. abs(val) >= huge(val)) val = 0.0_real64
+        temp_sum = temp_sum + val**2
       end do
 
       std_dev = sqrt(temp_sum / real(n_tissues, real64))
@@ -30,7 +34,12 @@ contains
 
       !$omp simd
       do j = 1, n_tissues
-        output_matrix(i, j) = input_matrix(i, j) / std_dev
+        val = input_matrix(i, j)
+        if (val /= val .or. abs(val) >= huge(val)) then
+          output_matrix(i, j) = 0.0_real64
+        else
+          output_matrix(i, j) = val / std_dev
+        end if
       end do
     end do
     !$omp end parallel do
@@ -74,6 +83,11 @@ contains
     real(real64) :: local_temp_col(n_tissues)
     integer :: local_perm(n_tissues), local_stack_left(max_stack), local_stack_right(max_stack)
 
+    if (n_genes == 1) then
+      output_matrix(1,:) = input_matrix(1,:)
+      return
+    end if
+    
     !> Initialize rank means to zero
     !$omp simd
     do i = 1, n_genes
