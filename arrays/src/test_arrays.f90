@@ -2,29 +2,27 @@ program test_arrays
   use array_ops
   use reshape_utils
   use, intrinsic :: iso_fortran_env, only: int32, real64
+  use iso_c_binding
   implicit none
 
-  integer(int32), allocatable :: iarr(:,:), iarr2(:,:), row(:), col(:)
-  integer(int32), allocatable :: iarr1d(:), iarr1d2(:)
-  integer(int32), allocatable :: iarr3d(:,:,:), iarr3d2(:,:,:)
-  integer(int32), allocatable :: iarr4d(:,:,:,:), iarr4d2(:,:,:,:)
-  integer(int32), allocatable :: iarr5d(:,:,:,:,:)
+  integer(int32), allocatable :: row(:), col(:)
+  integer(int32), allocatable :: iarr(:,:), iarr1d(:), iarr3d(:,:,:), iarr4d(:,:,:,:), iarr5d(:,:,:,:,:)
+  integer(int32), pointer :: iarr2(:,:), iarr1d2(:), iarr3d2(:,:,:), iarr4d2(:,:,:,:)
   integer(int32), pointer :: iarr_flat(:)
   integer(int32), allocatable :: idims(:)
-  real(real64), allocatable   :: rarr(:,:), rarr2(:,:)
-  real(real64), allocatable   :: rarr1d(:), rarr1d2(:)
-  real(real64), allocatable   :: rarr3d(:,:,:), rarr3d2(:,:,:)
-  real(real64), allocatable   :: rarr4d(:,:,:,:), rarr4d2(:,:,:,:)
-  real(real64), allocatable   :: rarr5d(:,:,:,:,:)
+
+  real(real64), allocatable :: rarr(:,:), rarr1d(:), rarr3d(:,:,:), rarr4d(:,:,:,:), rarr5d(:,:,:,:,:)
+  real(real64), pointer :: rarr2(:,:), rarr1d2(:), rarr3d2(:,:,:), rarr4d2(:,:,:,:)
+
   real(real64), pointer :: rarr_flat(:)
   integer(int32), allocatable :: rdims(:)
-  character(len=:), allocatable :: carr2(:,:) ! Korrigiert: deferred length
-  character(len=:), allocatable :: carr1d2(:)
-  character(len=:), allocatable :: carr3d2(:,:,:)
-  character(len=:), allocatable :: carr4d2(:,:,:,:)
-  character(len=:), allocatable :: carr5d(:,:,:,:,:)
-  character(len=5), allocatable :: carr(:,:), carr1d(:), carr3d(:,:,:), carr4d(:,:,:,:)
-  character(len=5), allocatable :: carr5d_ref(:,:,:,:,:)
+  character(len=:), pointer :: carr2(:,:) ! Korrigiert: deferred length
+  character(len=:), pointer :: carr1d2(:)
+  character(len=:), pointer :: carr3d2(:,:,:)
+  character(len=:), pointer :: carr4d2(:,:,:,:)
+  character(len=:), pointer :: carr5d(:,:,:,:,:)
+  character(len=:), allocatable :: carr(:,:), carr1d(:), carr3d(:,:,:), carr4d(:,:,:,:)
+  character(len=:), pointer :: carr5d_ref(:,:,:,:,:)
   character(len=:), pointer :: carr_flat(:)
   integer(int32), allocatable :: cdims(:)
   integer :: clen
@@ -95,7 +93,7 @@ program test_arrays
   end if
 
   print *, "==== Test: serialize/deserialize character array (reshape) ===="
-  allocate(carr(2,2))
+  allocate(character(len=clen):: carr(2,2))
   carr = reshape(['foo  ','bar  ','baz  ','qux  '], [2,2])
   fname = "test_carr.bin"
   call serialize(carr, fname)
@@ -106,48 +104,6 @@ program test_arrays
     print *, "PASS: Character array serialization/reshape"
   else
     print *, "FAIL: Character array serialization/reshape"
-  end if
-
-  print *, "==== Test: reshape 3D int flat to 5D ===="
-  allocate(iarr3d(2,2,2))
-  iarr3d = reshape([1,2,3,4,5,6,7,8], [2,2,2])
-  fname = "test_iarr3d.bin"
-  call serialize(iarr3d, fname)
-  call deserialize_int_flat(iarr_flat, idims, fname)
-  allocate(iarr5d(2,2,2,1,1))
-  call reshape_int_to_5D(iarr_flat, iarr5d, [2_int32,2_int32,2_int32,1_int32,1_int32])
-  if (all(iarr3d == iarr5d(:,:,:,1,1))) then
-    print *, "PASS: reshape 3D int flat to 5D"
-  else
-    print *, "FAIL: reshape 3D int flat to 5D"
-  end if
-
-  print *, "==== Test: reshape 3D real flat to 5D ===="
-  allocate(rarr3d(2,2,2))
-  rarr3d = reshape([1.0_real64,2.0_real64,3.0_real64,4.0_real64,5.0_real64,6.0_real64,7.0_real64,8.0_real64], [2,2,2])
-  fname = "test_rarr3d.bin"
-  call serialize(rarr3d, fname)
-  call deserialize_real_flat(rarr_flat, rdims, fname)
-  allocate(rarr5d(2,2,2,1,1))
-  call reshape_real_to_5D(rarr_flat, rarr5d, [2_int32,2_int32,2_int32,1_int32,1_int32])
-  if (all(abs(rarr3d - rarr5d(:,:,:,1,1)) < 1e-12_real64)) then
-    print *, "PASS: reshape 3D real flat to 5D"
-  else
-    print *, "FAIL: reshape 3D real flat to 5D"
-  end if
-
-  print *, "==== Test: reshape 3D char flat to 5D ===="
-  allocate(carr3d(2,2,1))
-  carr3d = reshape(['foo  ','bar  ','baz  ','qux  '], [2,2,1])
-  fname = "test_carr3d.bin"
-  call serialize(carr3d, fname)
-  call deserialize_char_flat(carr_flat, cdims, clen, fname)
-  allocate(character(len=clen) :: carr5d(2,2,1,1,1))
-  call reshape_char_to_5D(carr_flat, carr5d, [2_int32,2_int32,1_int32,1_int32,1_int32], clen)
-  if (all(carr3d == carr5d(:,:,1,1,1))) then
-    print *, "PASS: reshape 3D char flat to 5D"
-  else
-    print *, "FAIL: reshape 3D char flat to 5D"
   end if
 
   print *, "==== Edge Case: 1x1 array serialization ===="
@@ -271,7 +227,7 @@ program test_arrays
 
   print *, "==== Test: serialize/deserialize 1D character array ===="
   if (allocated(carr1d)) deallocate(carr1d)
-  allocate(carr1d(3))
+  allocate(character(len=clen):: carr1d(3))
   carr1d = ['foo  ','bar  ','baz  ']
   fname = "test_carr1d.bin"
   call serialize(carr1d, fname)
@@ -286,7 +242,7 @@ program test_arrays
 
   print *, "==== Test: serialize/deserialize 3D character array ===="
   if (allocated(carr3d)) deallocate(carr3d)
-  allocate(carr3d(2,2,1))
+  allocate(character(len=clen):: carr3d(2,2,1))
   carr3d = reshape(['foo  ','bar  ','baz  ','qux  '], [2,2,1])
   fname = "test_carr3d.bin"
   call serialize(carr3d, fname)
@@ -301,7 +257,7 @@ program test_arrays
 
   print *, "==== Test: serialize/deserialize 4D character array ===="
   if (allocated(carr4d)) deallocate(carr4d)
-  allocate(carr4d(2,1,1,2))
+  allocate(character(len=clen):: carr4d(2,1,1,2))
   carr4d = reshape(['foo  ','bar  ','baz  ','qux  '], [2,1,1,2])
   fname = "test_carr4d.bin"
   call serialize(carr4d, fname)

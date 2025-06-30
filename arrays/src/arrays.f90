@@ -449,8 +449,8 @@ contains
   ! Reshape-Routinen für CHARACTER-Arrays
   ! ============================================
   subroutine reshape_char_to_1D(flat, arr, dims, clen)
-    character(len=*), pointer, intent(in) :: flat(:)
-    character(len=*), pointer, intent(out) :: arr(:)
+    character(len=:), pointer, intent(in) :: flat(:)
+    character(len=:), pointer, intent(out) :: arr(:)
     integer(int32), intent(in) :: dims(1)
     integer, intent(in) :: clen
     integer :: i
@@ -461,8 +461,8 @@ contains
   end subroutine reshape_char_to_1D
 
   subroutine reshape_char_to_2D(flat, arr, dims, clen)
-    character(len=*), pointer, intent(in) :: flat(:)
-    character(len=*), pointer, intent(out) :: arr(:,:)
+    character(len=:), pointer, intent(in) :: flat(:)
+    character(len=:), pointer, intent(out) :: arr(:,:)
     integer(int32), intent(in) :: dims(2)
     integer, intent(in) :: clen
     integer :: i, j, idx
@@ -477,8 +477,8 @@ contains
   end subroutine reshape_char_to_2D
 
   subroutine reshape_char_to_3D(flat, arr, dims, clen)
-    character(len=*), pointer, intent(in) :: flat(:)
-    character(len=*), pointer, intent(out) :: arr(:,:,:)
+    character(len=:), pointer, intent(in) :: flat(:)
+    character(len=:), pointer, intent(out) :: arr(:,:,:)
     integer(int32), intent(in) :: dims(3)
     integer, intent(in) :: clen
     integer :: i, j, k, idx
@@ -495,8 +495,8 @@ contains
   end subroutine reshape_char_to_3D
 
   subroutine reshape_char_to_4D(flat, arr, dims, clen)
-    character(len=*), pointer, intent(in) :: flat(:)
-    character(len=*), pointer, intent(out) :: arr(:,:,:,:)
+    character(len=:), pointer, intent(in) :: flat(:)
+    character(len=:), pointer, intent(out) :: arr(:,:,:,:)
     integer(int32), intent(in) :: dims(4)
     integer, intent(in) :: clen
     integer :: i, j, k, l, idx
@@ -515,8 +515,8 @@ contains
   end subroutine reshape_char_to_4D
 
   subroutine reshape_char_to_5D(flat, arr, dims, clen)
-    character(len=*), pointer, intent(in) :: flat(:)
-    character(len=*), pointer, intent(out) :: arr(:,:,:,:,:)
+    character(len=:), pointer, intent(in) :: flat(:)
+    character(len=:), pointer, intent(out) :: arr(:,:,:,:,:)
     integer(int32), intent(in) :: dims(5)
     integer, intent(in) :: clen
     integer :: i, j, k, l, m, idx
