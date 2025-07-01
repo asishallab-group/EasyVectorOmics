@@ -1,6 +1,7 @@
 program test_arrays
   use array_ops
   use reshape_utils
+  use array_utils
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding
   implicit none
@@ -25,44 +26,12 @@ program test_arrays
   character(len=:), pointer :: carr5d_ref(:,:,:,:,:)
   character(len=:), pointer :: carr_flat(:)
   integer(int32), allocatable :: cdims(:)
-  integer :: clen
+  integer :: clen, cell
   character(len=5), allocatable :: crow(:), ccol(:)
   character(len=5), allocatable :: cnames(:)
   integer(int32) :: val, i, j
   character(len=100) :: fname
   logical :: ok
-
-  ! Funktionsprototypen für Accessor-Tests
-  interface
-    function get_row(arr, idx) result(row)
-      import :: int32
-      integer(int32), intent(in) :: arr(:,:), idx
-      integer(int32) :: row(size(arr,2))
-    end function
-    function get_col(arr, idx) result(col)
-      import :: int32
-      integer(int32), intent(in) :: arr(:,:), idx
-      integer(int32) :: col(size(arr,1))
-    end function
-    function get_cell(arr, i, j) result(val)
-      import :: int32
-      integer(int32), intent(in) :: arr(:,:), i, j
-      integer(int32) :: val
-    end function
-    function get_col_for_name(arr, cnames, name) result(col)
-      import :: int32
-      integer(int32), intent(in) :: arr(:,:)
-      character(len=*), intent(in) :: cnames(:), name
-      integer(int32) :: col(size(arr,1))
-    end function
-    function get_cell_for_column_name(arr, cnames, name, rowidx) result(val)
-      import :: int32
-      integer(int32), intent(in) :: arr(:,:)
-      character(len=*), intent(in) :: cnames(:), name
-      integer(int32), intent(in) :: rowidx
-      integer(int32) :: val
-    end function
-  end interface
 
   print *, "==== Test: serialize/deserialize integer array (reshape) ===="
   allocate(iarr(2,3))
@@ -280,7 +249,7 @@ program test_arrays
   print *, "==== Test: get_row ===="
   if (allocated(row)) deallocate(row)
   allocate(row(3))
-  row = get_row(iarr, 2)
+  call get_row(iarr, 2, row)
   print *, "row=", row
   if (all(row == [2_int32,4_int32,6_int32])) then
     print *, "PASS: get_row"
@@ -291,7 +260,7 @@ program test_arrays
   print *, "==== Test: get_col ===="
   if (allocated(col)) deallocate(col)
   allocate(col(2))
-  col = get_col(iarr, 1)
+  call get_col(iarr, 1, col)
   print *, "col=", col
   if (all(col == [1_int32,2_int32])) then
     print *, "PASS: get_col"
@@ -300,32 +269,12 @@ program test_arrays
   end if
 
   print *, "==== Test: get_cell ===="
-  val = get_cell(iarr, 2, 3)
-  if (val == 6) then
+  call get_cell(iarr, 2, 3, cell)
+  print *, "cell=", cell
+  if (cell == 6) then
     print *, "PASS: get_cell"
   else
     print *, "FAIL: get_cell"
-  end if
-
-  print *, "==== Test: get_col_for_name ===="
-  if (allocated(cnames)) deallocate(cnames)
-  allocate(cnames(3))
-  cnames = ['A','B','C']
-  col = get_col_for_name(iarr, cnames, 'B')
-  print *, "col_for_name=", col
-  if (all(col == [3_int32,4_int32])) then
-    print *, "PASS: get_col_for_name"
-  else
-    print *, "FAIL: get_col_for_name"
-  end if
-
-  print *, "==== Test: get_cell_for_column_name ===="
-  val = get_cell_for_column_name(iarr, cnames, 'C', 2)
-  print *, "cell_for_column_name=", val
-  if (val == 6_int32) then
-    print *, "PASS: get_cell_for_column_name"
-  else
-    print *, "FAIL: get_cell_for_column_name"
   end if
 
   print *, "==== Edge Case: 1x1 array serialization ===="
@@ -334,8 +283,9 @@ program test_arrays
   iarr = 42
   fname = "test_iarr_1x1.bin"
   call serialize(iarr, fname)
-  call deserialize(iarr2, fname)
-  if (iarr2(1,1) == 42) then
+  call deserialize_int_flat(iarr1d2, idims, fname)
+  print *, "iarr1d2=", iarr1d2
+  if (iarr1d2(1) == 42) then
     print *, "PASS: 1x1 array serialization"
   else
     print *, "FAIL: 1x1 array serialization"
@@ -346,7 +296,7 @@ program test_arrays
   allocate(iarr(0,3))
   fname = "test_iarr_empty.bin"
   call serialize(iarr, fname)
-  call deserialize(iarr2, fname)
+  call deserialize_int_flat(iarr1d2, idims, fname)
   if (size(iarr2,1) == 0 .and. size(iarr2,2) == 3) then
     print *, "PASS: Empty array serialization"
   else

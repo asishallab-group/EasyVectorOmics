@@ -537,3 +537,31 @@ contains
   end subroutine reshape_char_to_5D
 
 end module reshape_utils
+
+module array_utils
+  use iso_c_binding, only: c_loc, c_f_pointer
+  implicit none
+
+  public :: get_row, get_col, get_cell
+
+  contains
+    subroutine get_row(arr, idx, row)
+      integer, intent(in) :: arr(:,:), idx
+      integer, intent(out) :: row(size(arr,2))
+      row = arr(idx,:)
+    end subroutine get_row
+
+    subroutine get_col(arr, idx, col)
+      integer, intent(in) :: arr(:,:), idx
+      integer, intent(out) :: col(size(arr,1))
+      col = arr(:,idx)
+    end subroutine get_col
+
+    subroutine get_cell(arr, row_idx, col_idx, cell)
+      integer, intent(in) :: arr(:,:)
+      integer, intent(in) :: row_idx, col_idx
+      integer, intent(out) :: cell
+      cell = arr(row_idx, col_idx)
+    end subroutine get_cell
+
+end module array_utils
