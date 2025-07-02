@@ -1,5 +1,5 @@
 {
-  "Wrapper R/f2py": {
+  "Wrapper R": {
     "prefix": "wrapper_r",
     "body": [
       "subroutine ${1:core_name}_r(${2:args})",
@@ -8,7 +8,7 @@
       "  call ${1:core_name}(${2:args})",
       "end subroutine ${1:core_name}_r"
     ],
-    "description": "Wrapper for R/f2py (2D arrays, no bind(C))"
+    "description": "Wrapper for R (2D arrays, no bind(C))"
   },
   "Wrapper C/Python": {
     "prefix": "wrapper_c",
