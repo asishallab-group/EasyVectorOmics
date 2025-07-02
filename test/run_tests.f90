@@ -1,0 +1,178 @@
+program main
+  use mod_test_normalize_by_std_dev
+  ! use mod_test_sorting
+  ! use mod_test_quantile_normalization
+  implicit none
+
+  ! Type for suite registry
+  type :: suite_entry
+    character(len=32) :: name
+    procedure(run_all_interface), pointer, nopass :: run_all => null()
+    procedure(run_named_interface), pointer, nopass :: run_named => null()
+  end type suite_entry
+
+  ! Abstract interfaces
+  abstract interface
+    subroutine run_all_interface()
+    end subroutine run_all_interface
+    
+    subroutine run_named_interface(test_names)
+      character(len=*), intent(in) :: test_names(:)
+    end subroutine run_named_interface
+  end interface
+
+  ! Registry of all available suites
+  type(suite_entry), allocatable :: available_suites(:)
+
+  integer :: nargs
+  character(len=64) :: suite_name, test_list
+
+  ! Initialize the suite registry
+  call initialize_suites()
+
+  nargs = command_argument_count()
+  
+  if (nargs == 0) then
+    ! Run all tests from all suites
+    call run_all_suites()
+    
+  else if (nargs == 1) then
+    ! Run all tests in specified suite
+    call get_command_argument(1, suite_name)
+    call run_suite_all(trim(suite_name))
+    
+  else if (nargs == 2) then
+    ! Run specific tests in suite
+    call get_command_argument(1, suite_name)
+    call get_command_argument(2, test_list)
+    call run_suite_named(trim(suite_name), test_list)
+    
+  else
+    print *, "Too many arguments"
+    call print_usage()
+    stop 1
+  end if
+
+contains
+
+  !> Initialize the suite registry - ADD NEW SUITES HERE (no numbers!)
+  subroutine initialize_suites()
+    ! Start with empty registry
+    allocate(available_suites(0))
+    
+    ! Add each suite - NO NUMBERS, just add lines!
+    call add_suite("normalization", run_all_tests_normalize_by_std_dev, run_named_tests_normalize_by_std_dev)
+    ! call add_suite("sorting", run_all_tests_sorting, run_named_tests_sorting)
+    ! call add_suite("quantile_normalization", run_all_tests_quantile_normalization, run_named_tests_quantile_normalization)
+  end subroutine initialize_suites
+
+  !> Add a suite to the registry (grows automatically)
+  subroutine add_suite(name, run_all_proc, run_named_proc)
+    character(len=*), intent(in) :: name
+    procedure(run_all_interface) :: run_all_proc
+    procedure(run_named_interface) :: run_named_proc
+    type(suite_entry), allocatable :: temp_suites(:)
+    integer :: n
+    
+    n = size(available_suites)
+    
+    ! Create temporary array with one more slot
+    allocate(temp_suites(n + 1))
+    
+    ! Copy existing suites
+    if (n > 0) then
+      temp_suites(1:n) = available_suites(1:n)
+    end if
+    
+    ! Add new suite
+    temp_suites(n + 1) = suite_entry(name, run_all_proc, run_named_proc)
+    
+    ! Replace the registry
+    call move_alloc(temp_suites, available_suites)
+  end subroutine add_suite
+
+  !> Run all tests from all suites
+  subroutine run_all_suites()
+    integer :: i
+    do i = 1, size(available_suites)
+      print *, "Running suite: ", trim(available_suites(i)%name)
+      call available_suites(i)%run_all()
+    end do
+  end subroutine run_all_suites
+
+  !> Run all tests in a specific suite
+  subroutine run_suite_all(suite_name)
+    character(len=*), intent(in) :: suite_name
+    integer :: i
+    
+    do i = 1, size(available_suites)
+      if (trim(available_suites(i)%name) == suite_name) then
+        call available_suites(i)%run_all()
+        return
+      end if
+    end do
+    
+    print *, "Unknown test suite: ", suite_name
+    call print_usage()
+    stop 1
+  end subroutine run_suite_all
+
+  !> Run named tests in a specific suite
+  subroutine run_suite_named(suite_name, test_list)
+    character(len=*), intent(in) :: suite_name, test_list
+    integer :: i
+    
+    do i = 1, size(available_suites)
+      if (trim(available_suites(i)%name) == suite_name) then
+        call run_tests_from_list(test_list, available_suites(i)%run_named)
+        return
+      end if
+    end do
+    
+    print *, "Unknown test suite: ", suite_name
+    call print_usage()
+    stop 1
+  end subroutine run_suite_named
+
+  !> Run tests from comma-separated list using a specific runner
+  subroutine run_tests_from_list(test_list, run_named_proc)
+    character(len=*), intent(in) :: test_list
+    procedure(run_named_interface) :: run_named_proc
+    character(len=32) :: test_name
+    character(len=32) :: single_test_array(1)
+    integer :: start, end, pos
+    
+    start = 1
+    
+    do while (start <= len_trim(test_list))
+      pos = index(test_list(start:), ',')
+      if (pos > 0) then
+        end = start + pos - 2
+      else
+        end = len_trim(test_list)
+      end if
+      
+      test_name = trim(adjustl(test_list(start:end)))
+      single_test_array(1) = test_name
+      call run_named_proc(single_test_array)
+      
+      start = end + 2
+      if (pos == 0) exit
+    end do
+  end subroutine run_tests_from_list
+
+  !> Print usage information
+  subroutine print_usage()
+    integer :: i
+    print *, "Usage:"
+    print *, "  run_tests                                   # Run all tests"
+    print *, "  run_tests <suite>                           # Run all tests in suite"
+    print *, "  run_tests <suite> <test1,test2,...>         # Run specific tests"
+    print *, ""
+    print *, "Available test suites:"
+    do i = 1, size(available_suites)
+      print *, "  ", trim(available_suites(i)%name)
+    end do
+  end subroutine print_usage
+
+end program main

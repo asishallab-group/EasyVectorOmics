@@ -68,9 +68,9 @@ test_runner.sh  # Compile and generate unit test
 
   * The file `asserts.f90` must exist and can be modified if additional assert functions are needed.
   * There must be a central program called `run_tests.f90` which contains all the test calls defined in the modules.
-  * Each subroutine's tests should be placed in independent modules (one file per tested subroutine). All of them must include a function `run_all_tests()` ... **TO BE COMPLETED**
+  * Each subroutine's tests should be placed in independent modules (one file per tested subroutine). 
   * All test modules must be named `mod_<subroutine_name>.f90` to ensure they are compiled before `run_tests.f90`. Otherwise, compilation errors may occur.
-  * Full tests can be executed using `fpm test` or the script `test_runner.sh` ... **TO BE COMPLETED**
+  * Check details in `test/readme.md`
 
 * **`/helper`** this folder will not be included in the final version of TOX. For now, it serves to help us create the C wrapper for the subroutines more quickly and easily. See details in `helper/readme.md`.
 
@@ -137,11 +137,38 @@ Usage:
 ./build.sh --max-performance FC=ifx
 ```
 
+Keep in mind that files are compiled in alphabetical order, please name your files accordingly.
+
 ---
 
 
 ### Testing
 
--- Under construction
+The test suite framework provides a robust and scalable system for organizing and executing unit tests in Fortran. It allows running individual tests, complete test suites, or all project tests with simple and clear syntax.
+
+#### Architecture
+
+1. **`run_tests.f90`** - Main program that handles command line arguments
+2. **Test Modules** - Each module (suite) contains tests for a specific functionality
+3. **`asserts.f90`** - Assertion function library for validating results
+
+#### System Usage
+
+```bash
+# Run all tests from all suites
+./test_runner.sh
+
+# Run all tests from a specific suite
+./test_runner.sh <suite_name>
+
+# Run specific tests from a suite
+./test_runner.sh <suite_name> <test1,test2,test3>
+```
+
+Keep in mind that files are compiled in alphabetical order, please name your files accordingly.
+
+See `test/readme.md` for details.
+
+---
 
 Feel free to extend this README with additional information.
