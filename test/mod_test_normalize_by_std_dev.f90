@@ -1,36 +1,81 @@
 ! filepath: test/mod_test_normalize_by_std_dev.f90
 !> @brief Unit test suite for normalize_by_std_dev routine.
-!! @details
-!! This module contains a comprehensive set of tests for the
-!! normalize_by_std_dev routine, including edge cases and
-!! typical usage scenarios.
 module mod_test_normalize_by_std_dev
   use asserts
   implicit none
   public
 
+  ! Abstract interface for all test procedures
+  abstract interface
+    subroutine test_interface()
+    end subroutine test_interface
+  end interface
+
+  ! Type to hold test name and procedure pointer
+  type :: test_case
+    character(len=64) :: name
+    procedure(test_interface), pointer, nopass :: test_proc => null()
+  end type test_case
+
 contains
 
+  !> @brief Get array of all available tests.
+  function get_all_tests() result(all_tests)
+    type(test_case) :: all_tests(13)
+    
+    all_tests(1) = test_case("test_normalize_by_std_dev_basic", test_normalize_by_std_dev_basic)
+    all_tests(2) = test_case("test_normalize_by_std_dev_constant_rows", test_normalize_by_std_dev_constant_rows)
+    all_tests(3) = test_case("test_normalize_by_std_dev_large_numbers", test_normalize_by_std_dev_large_numbers)
+    all_tests(4) = test_case("test_identity_matrix", test_identity_matrix)
+    all_tests(5) = test_case("test_zero_rows", test_zero_rows)
+    all_tests(6) = test_case("test_negative_rows", test_negative_rows)
+    all_tests(7) = test_case("test_large_random_matrix", test_large_random_matrix)
+    all_tests(8) = test_case("test_single_nonzero", test_single_nonzero)
+    all_tests(9) = test_case("test_small_large_values", test_small_large_values)
+    all_tests(10) = test_case("test_nan_inf_input", test_nan_inf_input)
+    all_tests(11) = test_case("test_single_row_col", test_single_row_col)
+    all_tests(12) = test_case("test_empty_matrix", test_empty_matrix)
+    all_tests(13) = test_case("test_symmetric_rows", test_symmetric_rows)
+  end function get_all_tests
+
   !> @brief Run all normalize_by_std_dev tests.
-  !! @details
-  !! Executes all test cases for the normalize_by_std_dev routine.
-  !! If all assertions pass, prints a single success message.
   subroutine run_all_tests_normalize_by_std_dev()
-    call test_normalize_by_std_dev_basic()
-    call test_normalize_by_std_dev_constant_rows()
-    call test_normalize_by_std_dev_large_numbers()
-    call test_identity_matrix()
-    call test_zero_rows()
-    call test_negative_rows()
-    call test_large_random_matrix()
-    call test_single_nonzero()
-    call test_small_large_values()
-    call test_nan_inf_input()
-    call test_single_row_col()
-    call test_empty_matrix()
-    call test_symmetric_rows()
+    type(test_case) :: all_tests(13)
+    integer :: i
+    
+    all_tests = get_all_tests()
+    
+    do i = 1, size(all_tests)
+      call all_tests(i)%test_proc()
+      print *, trim(all_tests(i)%name), " passed."
+    end do
     print *, "All normalize_by_std_dev tests passed successfully."
   end subroutine run_all_tests_normalize_by_std_dev
+
+  !> @brief Run specific normalize_by_std_dev tests by name.
+  subroutine run_named_tests_normalize_by_std_dev(test_names)
+    character(len=*), intent(in) :: test_names(:)
+    type(test_case) :: all_tests(13)
+    integer :: i, j
+    logical :: found
+    
+    all_tests = get_all_tests()
+    
+    do i = 1, size(test_names)
+      found = .false.
+      do j = 1, size(all_tests)
+        if (trim(test_names(i)) == trim(all_tests(j)%name)) then
+          call all_tests(j)%test_proc()
+          print *, trim(test_names(i)), " passed."
+          found = .true.
+          exit
+        end if
+      end do
+      if (.not. found) then
+        print *, "Unknown test: ", trim(test_names(i))
+      end if
+    end do
+  end subroutine run_named_tests_normalize_by_std_dev
 
   !> @brief Test that normalize_by_std_dev normalizes values correctly.
   subroutine test_normalize_by_std_dev_basic()
@@ -49,7 +94,7 @@ contains
     end do
 
     call assert_equal_array_real(result, expected, 4, 1d-12, "normalize_by_std_dev: basic normalization failed")
-  end subroutine
+  end subroutine test_normalize_by_std_dev_basic
 
   !> @brief Test that normalize_by_std_dev handles constant rows (should normalize to 1).
   subroutine test_normalize_by_std_dev_constant_rows()
@@ -63,7 +108,7 @@ contains
 
     call assert_true(all(result == 1.0d0), "normalize_by_std_dev: not all values are 1 for constant rows")
     call assert_no_nan_real(result, 4, "normalize_by_std_dev: NaN in result for constant rows")
-  end subroutine
+  end subroutine test_normalize_by_std_dev_constant_rows
 
   !> @brief Test that normalize_by_std_dev normalizes large numbers properly.
   subroutine test_normalize_by_std_dev_large_numbers()
@@ -84,8 +129,7 @@ contains
     call assert_equal_array_real(result, expected, 4, 1d-12, "normalize_by_std_dev: large numbers normalization failed")
     call assert_no_nan_real(result, 4, "normalize_by_std_dev: NaN in result for large numbers")
     call assert_true(all(isfinite_mat(result)), "normalize_by_std_dev: Inf in result for large numbers")
-
-  end subroutine
+  end subroutine test_normalize_by_std_dev_large_numbers
 
   !> @brief Test normalization of the identity matrix.
   subroutine test_identity_matrix()
@@ -102,7 +146,7 @@ contains
         if (i /= j) call assert_equal_real(result(i,j), 0.0d0, 1d-12, "identity: off-diagonal not zero")
       end do
     end do
-  end subroutine
+  end subroutine test_identity_matrix
 
   !> @brief Test normalization of rows with all zeros.
   subroutine test_zero_rows()
@@ -111,7 +155,7 @@ contains
     call normalize_by_std_dev_r(2, 3, mat, result)
     call assert_true(all(result == 0.0d0), "zero rows: not all zeros")
     call assert_no_nan_real(result, 6, "zero rows: NaN in result")
-  end subroutine
+  end subroutine test_zero_rows
 
   !> @brief Test normalization of rows with negative values.
   subroutine test_negative_rows()
@@ -127,7 +171,7 @@ contains
       end do
     end do
     call assert_equal_array_real(result, expected, 6, 1d-12, "negative rows: normalization failed")
-  end subroutine
+  end subroutine test_negative_rows
 
   !> @brief Test normalization of a large random matrix.
   subroutine test_large_random_matrix()
@@ -141,7 +185,7 @@ contains
       call assert_in_range_real(sqrt(sum(result(i,:)**2)/ncol), 1d0-1d-10, 1d0+1d-10, "large random: RMS not 1")
     end do
     call assert_no_nan_real(result, nrow*ncol, "large random: NaN in result")
-  end subroutine
+  end subroutine test_large_random_matrix
 
   !> @brief Test normalization of rows with a single nonzero value.
   subroutine test_single_nonzero()
@@ -159,7 +203,7 @@ contains
     end do
 
     call assert_equal_array_real(result, expected, 8, 1d-12, "single nonzero: normalization failed")
-  end subroutine
+  end subroutine test_single_nonzero
 
   !> @brief Test normalization with very small and very large values.
   subroutine test_small_large_values()
@@ -176,16 +220,15 @@ contains
     end do
     call assert_equal_array_real(result, expected, 4, 1d-10, "small/large values: normalization failed")
     call assert_no_nan_real(result, 4, "small/large values: NaN in result")
-  end subroutine
+  end subroutine test_small_large_values
 
   !> @brief Test normalization when input contains NaN or Inf.
   subroutine test_nan_inf_input()
     real(8), dimension(2,2) :: mat, result
     mat = reshape([1.0d0, 2.0d0, huge(1.0d0), 4.0d0], [2,2]) ! Simulate Inf in (2,1)
     call normalize_by_std_dev_r(2, 2, mat, result)
-
     call assert_true(all(isfinite_mat(result)), "normalize_by_std_dev: output contains NaN/Inf unexpectedly")
-  end subroutine
+  end subroutine test_nan_inf_input
 
   !> @brief Test normalization of a single row and a single column matrix.
   subroutine test_single_row_col()
@@ -205,7 +248,7 @@ contains
     mat2 = reshape([2.0d0, 4.0d0, 6.0d0, 8.0d0], [4,1])
     call normalize_by_std_dev_r(4, 1, mat2, result2)
     call assert_true(all(abs(result2) == 1.0d0), "single col: normalization failed")
-  end subroutine
+  end subroutine test_single_row_col
 
   !> @brief Test normalization of an empty matrix.
   subroutine test_empty_matrix()
@@ -213,7 +256,7 @@ contains
     allocate(mat(0,0), result(0,0))
     call normalize_by_std_dev_r(0, 0, mat, result)
     ! No assertion needed: just check no crash
-  end subroutine
+  end subroutine test_empty_matrix
 
   !> @brief Test normalization of symmetric rows.
   subroutine test_symmetric_rows()
@@ -225,7 +268,7 @@ contains
     do j = 1, 3
       call assert_equal_real(result(2,j), result(1,j), 1d-12, "symmetric rows: not equal after normalization")
     end do
-  end subroutine
+  end subroutine test_symmetric_rows
 
   !> @brief Helper function to check if all values are finite (matrix version).
   function isfinite_mat(arr) result(mask)

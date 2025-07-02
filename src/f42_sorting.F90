@@ -7,11 +7,12 @@ module tox_sorting
   implicit none
   private
 
+  ! Expose specific functions C/R
+  public :: sort_real, sort_integer, sort_character
+  ! Only internal use since R and Python can't resolve interfaces (can't use sort_array)
   public :: sort_array
 
-  !> Generic interface to sort real, integer, or character arrays.
-  !>  Calls one of the module procedures `sort_real`, `sort_integer`, or `sort_character`
-  !> depending on the input array type. Sorting is done indirectly through a permutation vector.
+  !> Generic interface for internal Fortran use only
   interface sort_array
     module procedure sort_real, sort_integer, sort_character
   end interface sort_array
@@ -228,32 +229,86 @@ contains
 
 end module tox_sorting
 
+! === R WRAPPERS ===
 subroutine sort_real_r(array, perm, stack_left, stack_right, n)
-  use tox_sorting, only: sort_array
+  use tox_sorting, only: sort_real
   implicit none
   integer, intent(in) :: n
   real(8), intent(in) :: array(n)
   integer, intent(inout) :: perm(n), stack_left(n), stack_right(n)
 
-  call sort_array(array, perm, stack_left, stack_right)
+  call sort_real(array, perm, stack_left, stack_right)
 end subroutine sort_real_r
 
 subroutine sort_integer_r(array, perm, stack_left, stack_right, n)
-  use tox_sorting, only: sort_array
+  use tox_sorting, only: sort_integer
   implicit none
   integer, intent(in) :: n
   integer, intent(in) :: array(n)
   integer, intent(inout) :: perm(n), stack_left(n), stack_right(n)
 
-  call sort_array(array, perm, stack_left, stack_right)
+  call sort_integer(array, perm, stack_left, stack_right)
 end subroutine sort_integer_r
 
-subroutine sort_character_r(array, perm, stack_left, stack_right, n, strlen)
-  use tox_sorting, only: sort_array
+subroutine sort_character_r(char_matrix, perm, stack_left, stack_right, n, strlen)
+  use tox_sorting, only: sort_character
   implicit none
   integer, intent(in) :: n, strlen
-  character(len=strlen), intent(in) :: array(n)
+  character(len=1), intent(in) :: char_matrix(strlen, n)
   integer, intent(inout) :: perm(n), stack_left(n), stack_right(n)
 
-  call sort_array(array, perm, stack_left, stack_right)
-end subroutine sort_character_r
+  character(len=strlen) :: array(n)
+  integer :: i, j
+
+  ! Reconstruct each full string from the character matrix
+  do i = 1, n
+    do j = 1, strlen
+      array(i)(j:j) = char_matrix(j, i)
+    end do
+  end do
+
+  ! Call the original sorting routine
+  call sort_character(array, perm, stack_left, stack_right)
+end subroutine
+
+
+
+! === C WRAPPERS ===
+subroutine sort_real_c(array, perm, stack_left, stack_right, n) bind(C, name="sort_real_c")
+  use iso_c_binding
+  use tox_sorting, only: sort_real
+  implicit none
+  integer(c_int), intent(in), value :: n
+  real(c_double), intent(in) :: array(n)
+  integer(c_int), intent(inout) :: perm(n)
+  integer(c_int), intent(inout) :: stack_left(n)
+  integer(c_int), intent(inout) :: stack_right(n)
+
+  call sort_real(array, perm, stack_left, stack_right)
+end subroutine sort_real_c
+
+subroutine sort_integer_c(array, perm, stack_left, stack_right, n) bind(C, name="sort_integer_c")
+  use iso_c_binding
+  use tox_sorting, only: sort_integer
+  implicit none
+  integer(c_int), intent(in), value :: n
+  integer(c_int), intent(in) :: array(n)
+  integer(c_int), intent(inout) :: perm(n)
+  integer(c_int), intent(inout) :: stack_left(n)
+  integer(c_int), intent(inout) :: stack_right(n)
+
+  call sort_integer(array, perm, stack_left, stack_right)
+end subroutine sort_integer_c
+
+subroutine sort_character_c(array, perm, stack_left, stack_right, n, strlen) bind(C, name="sort_character_c")
+  use iso_c_binding
+  use tox_sorting, only: sort_character
+  implicit none
+  integer(c_int), intent(in), value :: n, strlen
+  character(len=strlen), intent(in) :: array(n)
+  integer(c_int), intent(inout) :: perm(n)
+  integer(c_int), intent(inout) :: stack_left(n)
+  integer(c_int), intent(inout) :: stack_right(n)
+
+  call sort_character(array, perm, stack_left, stack_right)
+end subroutine sort_character_c

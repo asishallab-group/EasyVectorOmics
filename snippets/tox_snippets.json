@@ -1,0 +1,148 @@
+{
+	"Call to normalize_by_std_dev": {
+      "prefix": "tox:norm_by_std_dev",
+      "body": [
+        "! Normalize expression values using sqrt(mean(x^2)) across tissues",
+        "call normalize_by_std_dev_r(n_genes, n_tissues, input_matrix, output_matrix)"
+      ],
+      "description": "Invoke normalization by standard deviation"
+    },
+    
+    "Call to quantile_normalization": {
+      "prefix": "tox:norm_quantile",
+      "body": [
+        "! Quantile normalization - makes distributions identical across tissues",
+        "call quantile_normalization_r(n_genes, n_tissues, input_matrix, output_matrix, &",
+        "                           temp_col, rank_means, perm, stack_left, stack_right, max_stack)"
+      ],
+      "description": "Invoke quantile normalization with rank averaging"
+    },
+    
+    "Call to log2_transformation": {
+      "prefix": "tox:norm_log2_trans",
+      "body": [
+        "! Apply log2(x + 1) transformation to stabilize variance",
+        "call log2_transformation_r(n_genes, n_tissues, input_matrix, output_matrix)"
+      ],
+      "description": "Apply log2(x + 1) transformation to expression data"
+    },
+    
+    "Call to calc_tiss_avg": {
+      "prefix": "tox:norm_tiss_avg",
+      "body": [
+        "! Calculate tissue averages by grouping replicates",
+        "call calc_tiss_avg_r(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix)"
+      ],
+      "description": "Calculate average expression per tissue group from replicates"
+    },
+    
+    "Call to calc_fchange": {
+      "prefix": "tox:norm_fchange",
+      "body": [
+        "! Calculate log2 fold changes between condition and control pairs",
+        "call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)"
+      ],
+      "description": "Calculate log2 fold changes between condition-control pairs"
+    },
+		
+  "Wrapper R": {
+    "prefix": "wrapper_r",
+    "body": [
+      "subroutine ${1:core_name}_r(${2:args})",
+      "  use ${3:module}",
+      "  ${4:! -- declare arguments here as in the core routine --}",
+      "  call ${1:core_name}(${2:args})",
+      "end subroutine ${1:core_name}_r"
+    ],
+    "description": "Wrapper for R (2D arrays, no bind(C))"
+  },
+  "Wrapper C/Python": {
+    "prefix": "wrapper_c",
+    "body": [
+	  "! -- use this snippet or helper_c_srapper.py to generate the C wrapper",
+      "subroutine ${1:core_name}_c(${2:args}) bind(C, name=\"${1:core_name}_c\")",
+      "  use iso_c_binding",
+      "  use ${3:module}",
+      "  ${4:! -- declare arguments here with snippets c_arg or flat_array_2d as needed --}",
+      "  call ${1:core_name}(${2:args})",
+      "end subroutine ${1:core_name}_c"
+    ],
+    "description": "Wrapper for C/Python (bind(C), flat arrays)"
+  },
+  "Fortran argument declaration": {
+    "prefix": "r_arg",
+    "body": [
+      "${1:type}, intent(${2:inout}) :: ${3:name}${4:(dimensions)}"
+    ],
+    "description": "Fortran standard argument declaration"
+  },
+  "C argument declaration": {
+    "prefix": "c_arg",
+    "body": [
+      "${1:c_type}, intent(${2:inout}), target :: ${3:name}(*)"
+    ],
+    "description": "C-style argument declaration"
+  },
+  "c_f_pointer 2D": {
+    "prefix": "flat_array_2d",
+    "body": [
+      "real(c_double), pointer :: ${1:mat}(:,:)",
+      "call c_f_pointer(c_loc(${2:flat_array}(1)), ${1:mat}, [${3:n1}, ${4:n2}])"
+    ],
+    "description": "Map flat array to 2D with c_f_pointer"
+  },
+  	"R call to normalize_by_std_dev": {
+		"prefix": "tox:R_norm_by_std_dev",
+		"body": [
+		"result <- .Fortran(\"normalize_by_std_dev_r\",",
+		"                  as.integer(${1:n_genes}),",
+		"                  as.integer(${2:n_tissues}),",
+		"                  ${3:input_vector},",
+		"                  output_vector = numeric(length(${3:input_vector})))"
+		],
+		"description": "Call normalize_by_std_dev_r Fortran function from R"
+	},
+	
+	"R call to log2_transformation": {
+		"prefix": "tox:R_norm_log2_trans",
+		"body": [
+		"result <- .Fortran(\"log2_transformation_r\",",
+		"                  as.integer(${1:n_genes}),",
+		"                  as.integer(${2:n_tissues}),",
+		"                  ${3:input_vector},",
+		"                  output_vector = numeric(length(${3:input_vector})))"
+		],
+		"description": "Call log2_transformation_r Fortran function from R"
+	},
+	
+	"R call to calc_tiss_avg": {
+		"prefix": "tox:R_calc_tiss_avg",
+		"body": [
+		"result <- .Fortran(\"calc_tiss_avg_r\",",
+		"                  as.integer(${1:n_genes}),",
+		"                  as.integer(${2:n_groups}),",
+		"                  as.integer(${3:group_starts}),",
+		"                  as.integer(${4:group_counts}),",
+		"                  ${5:input_matrix},",
+		"                  output_matrix = numeric(${1:n_genes} * ${2:n_groups}))"
+		],
+		"description": "Call calc_tiss_avg_r Fortran function from R"
+	},
+	
+	"R call to calc_fchange": {
+		"prefix": "tox:R_calc_fchange_r",
+		"body": [
+		"result <- .Fortran(\"calc_fchange_r\",",
+		"                  as.integer(${1:n_genes}),",
+		"                  as.integer(${2:n_pairs}),",
+		"                  as.integer(${3:control_cols}),",
+		"                  as.integer(${4:condition_cols}),",
+		"                  ${5:input_matrix},",
+		"                  output_matrix = numeric(${1:n_genes} * ${2:n_pairs}))"
+		],
+		"description": "Call calc_fchange_r Fortran function from R"
+	}
+}
+
+
+  

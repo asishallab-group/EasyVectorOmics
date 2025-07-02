@@ -36,7 +36,15 @@ fpm build --compiler $COMPILER --flag "$FLAGS" --flag "-DDEFAULT_ALIGNMENT=$ALIG
 
 echo "Build complete with compiler: $COMPILER, alignment: $ALIGN bytes, optimization flags: $FLAGS, max performance: $MAX_PERF_FLAG"
 
-# # Encuentra el .so generado por fpm
-# sofile=$(find build -name 'libtensor-omics.so' | head -n 1)
-# # Crea un enlace simbólico con el nombre que quieras en la raíz del proyecto
-# ln -sf "$sofile" libtensor-omics.so
+# Find .so file in the build directory
+sofile=$(find build -name 'libtensor-omics.so' | head -n 1)
+
+# Create symbolic link in the build directory with relative path
+if [[ -n "$sofile" ]]; then
+  # Extract the relative path from build/ directory
+  relative_path=$(realpath --relative-to=build "$sofile")
+  ln -sf "$relative_path" build/libtensor-omics.so
+  echo "Created symlink: build/libtensor-omics.so -> $relative_path"
+else
+  echo "Warning: libtensor-omics.so not found in build directory"
+fi

@@ -1,130 +1,186 @@
-program run_tests
+program main
   use mod_test_sorting
   use mod_test_normalize_by_std_dev
   use mod_test_quantile_normalization
+  use mod_test_log2_transformation
+  use mod_test_calc_tiss_avg
+  use mod_test_calc_fchange
+
 
   implicit none
-  integer :: nargs, i
-  character(len=32) :: arg
+
+  ! Type for suite registry
+  type :: suite_entry
+    character(len=32) :: name
+    procedure(run_all_interface), pointer, nopass :: run_all => null()
+    procedure(run_named_interface), pointer, nopass :: run_named => null()
+  end type suite_entry
+
+  ! Abstract interfaces
+  abstract interface
+    subroutine run_all_interface()
+    end subroutine run_all_interface
+    
+    subroutine run_named_interface(test_names)
+      character(len=*), intent(in) :: test_names(:)
+    end subroutine run_named_interface
+  end interface
+
+  ! Registry of all available suites
+  type(suite_entry), allocatable :: available_suites(:)
+
+  integer :: nargs
+  character(len=64) :: suite_name, test_list
+
+  ! Initialize the suite registry
+  call initialize_suites()
 
   nargs = command_argument_count()
+  
   if (nargs == 0) then
-    call run_all_tests_sorting()
-    call run_all_tests_normalize_by_std_dev()
-    call run_all_tests_quantile_normalization()
-
+    ! Run all tests from all suites
+    call run_all_suites()
+    
+  else if (nargs == 1) then
+    ! Run all tests in specified suite
+    call get_command_argument(1, suite_name)
+    call run_suite_all(trim(suite_name))
+    
+  else if (nargs == 2) then
+    ! Run specific tests in suite
+    call get_command_argument(1, suite_name)
+    call get_command_argument(2, test_list)
+    call run_suite_named(trim(suite_name), test_list)
+    
   else
-    do i = 1, nargs
-      call get_command_argument(i, arg)
-      select case (trim(arg))
-      ! --- Sorting tests ---
-      case ("test_sort_real")
-        call test_sort_real()
-        print *, "test_sort_real passed."
-      case ("test_sort_integer")
-        call test_sort_integer()
-        print *, "test_sort_integer passed."
-      case ("test_sort_character")
-        call test_sort_character()
-        print *, "test_sort_character passed."
-      case ("test_sort_integer_ascending")
-        call test_sort_integer_ascending()
-        print *, "test_sort_integer_ascending passed."
-      case ("test_sort_real_descending")
-        call test_sort_real_descending()
-        print *, "test_sort_real_descending passed."
-      case ("test_sort_char_random")
-        call test_sort_char_random()
-        print *, "test_sort_char_random passed."
-      case ("test_sort_sorted_stability")
-        call test_sort_sorted_stability()
-        print *, "test_sort_sorted_stability passed."
-      case ("test_sort_empty_array")
-        call test_sort_empty_array()
-        print *, "test_sort_empty_array passed."
-      case ("test_sort_large_random")
-        call test_sort_large_random()
-        print *, "test_sort_large_random passed."
-
-      ! --- Normalization tests ---
-      case ("test_normalize_by_std_dev_basic")
-        call test_normalize_by_std_dev_basic()
-        print *, "test_normalize_by_std_dev_basic passed."
-      case ("test_normalize_by_std_dev_constant_rows")
-        call test_normalize_by_std_dev_constant_rows()
-        print *, "test_normalize_by_std_dev_constant_rows passed."
-      case ("test_normalize_by_std_dev_large_numbers")
-        call test_normalize_by_std_dev_large_numbers()
-        print *, "test_normalize_by_std_dev_large_numbers passed."
-      case ("test_identity_matrix")
-        call test_identity_matrix()
-        print *, "test_identity_matrix passed."
-      case ("test_zero_rows")
-        call test_zero_rows()
-        print *, "test_zero_rows passed."
-      case ("test_negative_rows")
-        call test_negative_rows()
-        print *, "test_negative_rows passed."
-      case ("test_large_random_matrix")
-        call test_large_random_matrix()
-        print *, "test_large_random_matrix passed."
-      case ("test_single_nonzero")
-        call test_single_nonzero()
-        print *, "test_single_nonzero passed."
-      case ("test_small_large_values")
-        call test_small_large_values()
-        print *, "test_small_large_values passed."
-      case ("test_nan_inf_input")
-        call test_nan_inf_input()
-        print *, "test_nan_inf_input passed."
-      case ("test_single_row_col")
-        call test_single_row_col()
-        print *, "test_single_row_col passed."
-      case ("test_empty_matrix")
-        call test_empty_matrix()
-        print *, "test_empty_matrix passed."
-      case ("test_symmetric_rows")
-        call test_symmetric_rows()
-        print *, "test_symmetric_rows passed."
-
-      ! --- Quantile normalization tests ---
-      case ("test_qn_preserves_dimensions")
-        call test_qn_preserves_dimensions()
-        print *, "test_qn_preserves_dimensions passed."
-      case ("test_qn_identical_rows")
-        call test_qn_identical_rows()
-        print *, "test_qn_identical_rows passed."
-      case ("test_qn_no_nans_and_standardizes")
-        call test_qn_no_nans_and_standardizes()
-        print *, "test_qn_no_nans_and_standardizes passed."
-      case ("test_qn_single_row")
-        call test_qn_single_row()
-        print *, "test_qn_single_row passed."
-      case ("test_qn_single_column")
-        call test_qn_single_column()
-        print *, "test_qn_single_column passed."
-      case ("test_qn_all_equal")
-        call test_qn_all_equal()
-        print *, "test_qn_all_equal passed."
-      case ("test_qn_large_random")
-        call test_qn_large_random()
-        print *, "test_qn_large_random passed."
-      case ("test_qn_negative_values")
-        call test_qn_negative_values()
-        print *, "test_qn_negative_values passed."
-      case ("test_qn_zero_matrix")
-        call test_qn_zero_matrix()
-        print *, "test_qn_zero_matrix passed."
-      case ("test_qn_sorted_input")
-        call test_qn_sorted_input()
-        print *, "test_qn_sorted_input passed."
-      case ("test_qn_reverse_sorted")
-        call test_qn_reverse_sorted()
-        print *, "test_qn_reverse_sorted passed."
-
-      case default
-        print *, "Unknown test: ", trim(arg)
-      end select
-    end do
+    print *, "Too many arguments"
+    call print_usage()
+    stop 1
   end if
-end program run_tests
+
+contains
+
+  !> Initialize the suite registry - ADD NEW SUITES HERE (no numbers!)
+  subroutine initialize_suites()
+    ! Start with empty registry
+    allocate(available_suites(0))
+    
+    ! Add each suite 
+    call add_suite("sorting", run_all_tests_sorting, run_named_tests_sorting)
+    call add_suite("normalization", run_all_tests_normalize_by_std_dev, run_named_tests_normalize_by_std_dev)
+    call add_suite("quantile_normalization", run_all_tests_quantile_normalization, run_named_tests_quantile_normalization)
+    call add_suite("log2_transformation", run_all_tests_log2_transformation, run_named_tests_log2_transformation)
+    call add_suite("calc_tiss_avg", run_all_tests_calc_tiss_avg, run_named_tests_calc_tiss_avg)
+    call add_suite("calc_fchange", run_all_tests_calc_fchange, run_named_tests_calc_fchange)
+  end subroutine initialize_suites
+
+  !> Add a suite to the registry (grows automatically)
+  subroutine add_suite(name, run_all_proc, run_named_proc)
+    character(len=*), intent(in) :: name
+    procedure(run_all_interface) :: run_all_proc
+    procedure(run_named_interface) :: run_named_proc
+    type(suite_entry), allocatable :: temp_suites(:)
+    integer :: n
+    
+    n = size(available_suites)
+    
+    ! Create temporary array with one more slot
+    allocate(temp_suites(n + 1))
+    
+    ! Copy existing suites
+    if (n > 0) then
+      temp_suites(1:n) = available_suites(1:n)
+    end if
+    
+    ! Add new suite
+    temp_suites(n + 1) = suite_entry(name, run_all_proc, run_named_proc)
+    
+    ! Replace the registry
+    call move_alloc(temp_suites, available_suites)
+  end subroutine add_suite
+
+  !> Run all tests from all suites
+  subroutine run_all_suites()
+    integer :: i
+    do i = 1, size(available_suites)
+      print *, "Running suite: ", trim(available_suites(i)%name)
+      call available_suites(i)%run_all()
+    end do
+  end subroutine run_all_suites
+
+  !> Run all tests in a specific suite
+  subroutine run_suite_all(suite_name)
+    character(len=*), intent(in) :: suite_name
+    integer :: i
+    
+    do i = 1, size(available_suites)
+      if (trim(available_suites(i)%name) == suite_name) then
+        call available_suites(i)%run_all()
+        return
+      end if
+    end do
+    
+    print *, "Unknown test suite: ", suite_name
+    call print_usage()
+    stop 1
+  end subroutine run_suite_all
+
+  !> Run named tests in a specific suite
+  subroutine run_suite_named(suite_name, test_list)
+    character(len=*), intent(in) :: suite_name, test_list
+    integer :: i
+    
+    do i = 1, size(available_suites)
+      if (trim(available_suites(i)%name) == suite_name) then
+        call run_tests_from_list(test_list, available_suites(i)%run_named)
+        return
+      end if
+    end do
+    
+    print *, "Unknown test suite: ", suite_name
+    call print_usage()
+    stop 1
+  end subroutine run_suite_named
+
+  !> Run tests from comma-separated list using a specific runner
+  subroutine run_tests_from_list(test_list, run_named_proc)
+    character(len=*), intent(in) :: test_list
+    procedure(run_named_interface) :: run_named_proc
+    character(len=32) :: test_name
+    character(len=32) :: single_test_array(1)
+    integer :: start, end, pos
+    
+    start = 1
+    
+    do while (start <= len_trim(test_list))
+      pos = index(test_list(start:), ',')
+      if (pos > 0) then
+        end = start + pos - 2
+      else
+        end = len_trim(test_list)
+      end if
+      
+      test_name = trim(adjustl(test_list(start:end)))
+      single_test_array(1) = test_name
+      call run_named_proc(single_test_array)
+      
+      start = end + 2
+      if (pos == 0) exit
+    end do
+  end subroutine run_tests_from_list
+
+  !> Print usage information
+  subroutine print_usage()
+    integer :: i
+    print *, "Usage:"
+    print *, "  run_tests                                   # Run all tests"
+    print *, "  run_tests <suite>                           # Run all tests in suite"
+    print *, "  run_tests <suite> <test1,test2,...>         # Run specific tests"
+    print *, ""
+    print *, "Available test suites:"
+    do i = 1, size(available_suites)
+      print *, "  ", trim(available_suites(i)%name)
+    end do
+  end subroutine print_usage
+
+end program main

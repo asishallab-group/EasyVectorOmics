@@ -1,6 +1,5 @@
-dyn.load("build/tox_normalization.so") # Ajusta el path
+dyn.load("build/libtensor-omics.so")
 
-# Test para enteros
 test_sort_real <- function() {
     n <- 6
     array <- c(3.2, 1.5, 9.0, 2.1, 7.3, 4.4)
@@ -38,28 +37,32 @@ test_sort_integer <- function() {
 }
 
 sort_test_char <- function() {
-  strings <- c("delta", "alpha", "beta")
+  strings <- c("test", "dog", "delta", "zeta", "alpha", "beta")
   n <- length(strings)
   strlen <- max(nchar(strings))
-  
-  # Rellena a longitud fija
-  padded <- format(strings, width = strlen, justify = "left")
 
-  # Transforma en matriz de 1-char (n x strlen)
-  char_matrix <- matrix("", nrow = n, ncol = strlen)
-  for (i in 1:n) {
-    char_matrix[i, ] <- strsplit(padded[i], "")[[1]]
+  # Create a character matrix of size (strlen x n), transposed for Fortran column-major order
+  char_matrix <- matrix(" ", nrow = strlen, ncol = n)
+  for (i in seq_len(n)) {
+    # Pad each string to fixed length and split into individual characters
+    padded <- sprintf("%-*s", strlen, strings[i])
+    chars <- strsplit(padded, "")[[1]]
+    char_matrix[, i] <- chars
   }
 
-  # Transpone porque Fortran espera columna a columna
-  flat_chars <- as.character(t(char_matrix))
+  # Flatten the matrix into a character vector
+  char_vec <- as.vector(char_matrix)
+  # Convert character vector to raw ASCII codes (needed for Fortran)
+  char_raw <- as.raw(sapply(char_vec, charToRaw))
 
+  # Prepare integer arrays
   perm <- as.integer(seq_len(n))
   stack_left <- integer(n)
   stack_right <- integer(n)
 
+  # Call Fortran subroutine
   result <- .Fortran("sort_character_r",
-    char_data = flat_chars,
+    char_data = char_raw,
     perm = perm,
     stack_left = stack_left,
     stack_right = stack_right,
@@ -67,9 +70,12 @@ sort_test_char <- function() {
     strlen = as.integer(strlen)
   )
 
+  # Use the returned permutation to reorder the original strings
   sorted <- strings[result$perm]
   print(sorted)
 }
+
+
 
 
 test_sort_real()
