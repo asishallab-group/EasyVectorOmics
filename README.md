@@ -63,6 +63,7 @@ test_runner.sh  # Compile and generate unit test
   ```
 * **`/src`** contains performance-critical Fortran code. These are compiled during the build process.
   - All `.f90` files should include `precompiler_constants.f90`
+  - Subroutines that do not perform `input/output` operations or memory allocations must be declared as `pure`.
 * **`/test`** contains the unit tests for the Fortran subroutines.
 
   * The file `asserts.f90` must exist and can be modified if additional assert functions are needed.
