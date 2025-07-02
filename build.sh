@@ -38,5 +38,13 @@ echo "Build complete with compiler: $COMPILER, alignment: $ALIGN bytes, optimiza
 
 # Find .so file in the build directory
 sofile=$(find build -name 'libtensor-omics.so' | head -n 1)
-# Create symbolic link in the build directory
-ln -sf "$sofile" build/libtensor-omics.so
+
+# Create symbolic link in the build directory with relative path
+if [[ -n "$sofile" ]]; then
+  # Extract the relative path from build/ directory
+  relative_path=$(realpath --relative-to=build "$sofile")
+  ln -sf "$relative_path" build/libtensor-omics.so
+  echo "Created symlink: build/libtensor-omics.so -> $relative_path"
+else
+  echo "Warning: libtensor-omics.so not found in build directory"
+fi
