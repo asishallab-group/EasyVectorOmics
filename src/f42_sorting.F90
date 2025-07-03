@@ -27,7 +27,7 @@ contains
   !> @param perm         Permutation vector that will be sorted<br>
   !> @param stack_left   Manual stack of left indices for quicksort recursion<br>
   !> @param stack_right  Manual stack of right indices for quicksort recursion<br>
-  subroutine sort_real(array, perm, stack_left, stack_right)
+  pure subroutine sort_real(array, perm, stack_left, stack_right)
     real(8), intent(in) :: array(:)
     integer, intent(inout) :: perm(:)
     integer, intent(inout) :: stack_left(:), stack_right(:)
@@ -36,7 +36,7 @@ contains
 
   !> Sort an integer array indirectly using quicksort.
   !>  Similar to `sort_real`, but for integer input.
-  subroutine sort_integer(array, perm, stack_left, stack_right)
+  pure subroutine sort_integer(array, perm, stack_left, stack_right)
     integer, intent(in) :: array(:)
     integer, intent(inout) :: perm(:)
     integer, intent(inout) :: stack_left(:), stack_right(:)
@@ -45,7 +45,7 @@ contains
 
   !> Sort a character array indirectly using quicksort.
   !>  Uses lexicographic ordering and permutation vector sorting.
-  subroutine sort_character(array, perm, stack_left, stack_right)
+  pure subroutine sort_character(array, perm, stack_left, stack_right)
     character(len=*), intent(in) :: array(:)
     integer, intent(inout) :: perm(:)
     integer, intent(inout) :: stack_left(:), stack_right(:)
@@ -54,7 +54,7 @@ contains
 
   !> Internal quicksort implementation for real arrays.
   !>  Sorts indirectly using the permutation vector `perm`. Manual stack replaces recursion.
-  subroutine quicksort_real(array, perm, n, stack_left, stack_right)
+  pure subroutine quicksort_real(array, perm, n, stack_left, stack_right)
     real(8), intent(in) :: array(:)
     integer, intent(inout) :: perm(:)
     integer, intent(in) :: n
@@ -112,7 +112,7 @@ contains
 
   !> Internal quicksort implementation for integer arrays.
   !>  Indirectly sorts `array` using `perm`, same algorithm as `quicksort_real`.
-  subroutine quicksort_int(array, perm, n, stack_left, stack_right)
+  pure subroutine quicksort_int(array, perm, n, stack_left, stack_right)
     integer, intent(in) :: array(:)
     integer, intent(inout) :: perm(:)
     integer, intent(in) :: n
@@ -166,7 +166,7 @@ contains
 
   !> Internal quicksort implementation for character arrays.
   !>  Lexicographic quicksort using string comparison, indirect via `perm`.
-  subroutine quicksort_char(array, perm, n, stack_left, stack_right)
+  pure subroutine quicksort_char(array, perm, n, stack_left, stack_right)
     character(len=*), intent(in) :: array(:)
     integer, intent(inout) :: perm(:)
     integer, intent(in) :: n
@@ -221,7 +221,7 @@ contains
   !> Swap two integer values in-place.
   !> @param a First integer to swap<br>
   !> @param b Second integer to swap<br>
-  subroutine swap_int(a, b)
+  pure subroutine swap_int(a, b)
     integer, intent(inout) :: a, b
     integer :: temp
     temp = a; a = b; b = temp

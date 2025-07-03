@@ -10,7 +10,7 @@ contains
   !> @param n_tissues Number of tissues (columns).<br>
   !> @param input_matrix Flattened matrix of gene expression values (column-major).<br>
   !> @param output_matrix Output normalized matrix (same shape as input).<br>
-  subroutine normalize_by_std_dev(n_genes, n_tissues, input_matrix, output_matrix)
+  pure subroutine normalize_by_std_dev(n_genes, n_tissues, input_matrix, output_matrix)
       implicit none
 
       ! Arguments
@@ -53,22 +53,22 @@ contains
   !> @param stack_left    Manual quicksort stack (≥ log2(n_genes) + 10)<br>
   !> @param stack_right   Manual quicksort stack (same size as stack_left)<br>
   !> @param max_stack     Stack size passed from R<br>
-  subroutine quantile_normalization(n_genes, n_tissues, input_matrix, output_matrix, &
-                                    temp_col, rank_means, perm, stack_left, stack_right, max_stack)
-      use tox_sorting, only: sort_array
+  pure subroutine quantile_normalization(n_genes, n_tissues, input_matrix, output_matrix, &
+                                      temp_col, rank_means, perm, stack_left, stack_right, max_stack)
+    use tox_sorting, only: sort_array
 
-      implicit none
+    implicit none
 
-      integer, intent(in) :: n_genes         
-      integer, intent(in) :: n_tissues       
-      real(8), intent(in) :: input_matrix(n_genes * n_tissues)  
-      real(8), intent(out) :: output_matrix(n_genes * n_tissues)  
-      real(8), intent(inout) :: temp_col(n_genes)      
-      real(8), intent(inout) :: rank_means(n_genes)    
-      integer, intent(inout) :: perm(n_genes)         
-      integer, dimension(max_stack) :: stack_left     
-      integer, dimension(max_stack) :: stack_right    
-      integer, intent(in) :: max_stack                
+    integer, intent(in) :: n_genes         
+    integer, intent(in) :: n_tissues       
+    real(8), intent(in) :: input_matrix(n_genes * n_tissues)  
+    real(8), intent(out) :: output_matrix(n_genes * n_tissues)  
+    real(8), intent(inout) :: temp_col(n_genes)      
+    real(8), intent(inout) :: rank_means(n_genes)    
+    integer, intent(inout) :: perm(n_genes)         
+    integer, intent(inout) :: stack_left(max_stack)     ! ← Agregar intent(inout)
+    integer, intent(inout) :: stack_right(max_stack)    ! ← Agregar intent(inout)
+    integer, intent(in) :: max_stack              
 
       ! Locals
       integer :: i, j
@@ -82,11 +82,6 @@ contains
           do i = 1, n_genes
               temp_col(i) = input_matrix((j - 1) * n_genes + i)
               perm(i) = i
-
-                  if (perm(i) < 1 .or. perm(i) > n_genes) then
-                      print *, "Invalid perm index: ", i, perm(i)
-                      stop
-                  end if
           end do
 
           ! Sort current column with index tracking
@@ -131,7 +126,7 @@ contains
   !> @param[in]  n_tissues     Number of tissues (columns)<br>
   !> @param[in]  input_matrix  Flattened input matrix (size: n_genes * n_tissues)<br>
   !> @param[out] output_matrix Flattened output matrix (same size)<br>
-  subroutine log2_transformation(n_genes, n_tissues, input_matrix, output_matrix)
+  pure subroutine log2_transformation(n_genes, n_tissues, input_matrix, output_matrix)
       implicit none
 
       ! Arguments
@@ -161,7 +156,7 @@ contains
   !> @param[in]  group_c       Number of columns per group (length: n_grps)<br>
   !> @param[in]  input_matrix  Flattened input matrix (length: n_gene * n_col)<br>
   !> @param[out] output_matrix Flattened output matrix (length: n_gene * n_grps)<br>
-  subroutine calc_tiss_avg(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix)
+  pure subroutine calc_tiss_avg(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix)
       implicit none
 
       ! === Arguments ===
@@ -208,7 +203,7 @@ contains
   !> @param cond_cols      Indices (1-based) of condition columns (length n_pairs)<br>
   !> @param i_matrix       Input expression matrix, flattened (length: n_genes × N)<br>
   !> @param o_matrix       Output matrix for fold changes (length: n_genes × n_pairs)<br>
-  subroutine calc_fchange(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
+  pure subroutine calc_fchange(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
 
       implicit none
 
