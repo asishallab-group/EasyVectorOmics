@@ -1,130 +1,82 @@
 
-# TensorOmics - Normalization and Fold Change Calculation
+# Tensor Omics
 
-This repository provides the core normalization and transformation methods for **TensorOmics**, focusing on highly efficient matrix operations using **Fortran** for backend computation and **R** as a convenient wrapper.
+See the Tensor_Omics.tex file for details.
 
-The scripts were tested using:
-- Ubuntu clang version 14.0.0-1ubuntu1.1
-- R version 4.4.3 (2025-02-28) -- "Trophy Case"
-- LFortran version: 0.51.0
-- GNU Fortran (Ubuntu 11.4.0-1ubuntu1~22.04) 11.4.0
+# TOX Project Structure
 
+This repository contains the source code, methods, snippets and tests for the **Tensor Omics (TOX)** project.
 
-## 🚀 Project Structure
+## Folder Overview
 
-- **Fortran 90/95 Modules (`tox_normalization.f90`)**  
-  Provides fast implementations of:
-  - Standard deviation normalization
-  - Quantile normalization
-  - Log2(x+1) transformation
-  - Tissue replicate averaging
-  - Log2 fold-change calculation
-  
-- **R Interface (`normalization.R`, `tensoromics_functions.R`)**  
-  User-friendly R functions that call the compiled Fortran subroutines and return easily manipulated R data frames.
+```
+/build
+  └── ...       # Compiled Fortran binaries and intermediate build files
 
-## ⚙️ Why use `gfortran` instead of `lfortran`?
+/doc
+  └── ...       # Documentation generated automatically using FORD (Fortran documentation tool)
 
-Although **LFortran** (based on LLVM) was originally preferred due to its WebAssembly (WASM) compatibility goals, it is currently **unable to correctly compile shared libraries** (`.so`) for direct dynamic loading in R.
+/python
+  └── ...       # Python scripts that execute pipeline logic and invoke subroutines
 
-Specifically:
-- LFortran does not yet support full linking for `.so` binaries needed by `.C()` in R.
-- Some `source` bindings (e.g., `bind(C, name="...")`) are not fully functional with `lfortran`'s current stable releases.
-- `gfortran` provides stable `.so` generation fully compatible with R's foreign function interface (FFI).
+/r
+  └── ...       # R scripts that execute pipeline logic and invoke subroutines
 
-👉 Therefore, **`gfortran` was used to compile** the shared library for now.  
-If in the future LFortran improves `.so` support, migration can be considered.
+/snippets
+└── ...         #Code templates or reusable short logic blocks 
 
-## 🛠️ How to Build
+/src
+  └── ...       # Fortran backend
 
-Compile the Fortran code using `gfortran`:
+/test
+  └── ...       # Fortran testing
 
-```bash
-gfortran -g -fcheck=all -Wall -fPIC -shared -o build/tox_normalization.so src/tox_sorting.f90 src/tox_normalization.f90
+/helper
+  └── helper_c_wrapper.py       #  helper script to generate c wrappers subroutines
+
+build.sh        # Compile and generate shared libraries
+ford.yml        # Generates documentation
+fpm.toml        # Defines compilation options
+test_runner.sh  # Compile and generate unit test
+
 ```
 
-This will produce a shared object (`.so`) file that R can dynamically load.
+## Notes
 
-Check if the subroutines were compiled successfully with:
-```bash
-nm -g build/tox_normalization.so
-```
-
-- Unit tests: sorting
-  ```bash
-  gfortran -c src/tests/test_sorting.f90 -o build/test_sorting.o
-  gfortran -o build/test_runner src/tests/main.f90 build/test_sorting.o src/tox_sorting.f90
-  ./build/test_runner 
+* **`/build`** is used to store shared libraries, compiled and binary files resulting from Fortran compilation. It keeps the repo clean by separating source and compiled code.
+* **`/doc`** contains the auto-generated documentation, which is built using [FORD](https://github.com/Fortran-FOSS-Programmers/ford) from annotated Fortran source files.
+* **`/python`** includes python scripts that coordinate analysis workflows
+* **`/r`** includes R scripts that coordinate analysis workflows
+* **`/snippets/`** includes frequently used or testable units of logic reused across development stages. 
+  - Snippets should be easy to create and use. The goal is to give the user access to the subroutine names along with their respective arguments, and nothing more. Example:
   ```
+    {
+        "Call to subroutine_name": {
+          "prefix": "tox|f42:subroutine_name",
+          "body": [
+            "! Brief explanation on what the subroutine does",
+            "call subroutine_name(arg1, arg2, arg3, arg4)"
+          ],
+          "description": "Insert a call to subroutine_name with brief explanation"
+        }
+    }
+  ```
+* **`/src`** contains performance-critical Fortran code. These are compiled during the build process.
+  - All `.f90` files should include `precompiler_constants.f90`
+  - Subroutines that do not perform `input/output` operations or memory allocations must be declared as `pure`.
+* **`/test`** contains the unit tests for the Fortran subroutines.
 
-## ⚡ Alternative Compilation Options (for future WASM or portability)
+  * The file `asserts.f90` must exist and can be modified if additional assert functions are needed.
+  * There must be a central program called `run_tests.f90` which contains all the test calls defined in the modules.
+  * Each subroutine's tests should be placed in independent modules (one file per tested subroutine). 
+  * All test modules must be named `mod_<subroutine_name>.f90` to ensure they are compiled before `run_tests.f90`. Otherwise, compilation errors may occur.
+  * Check details in `test/readme.md`
 
-### 1. Compile only to Object File (`.o`)
-
-Instead of building a shared object, you can compile to an intermediate object file:
-
-```bash
-gfortran -c tox_normalization.f90
-```
-
-- Generates `tox_normalization.o`.
-- Useful if you want to later link manually or transform the `.o` file (e.g., for WASM).
+* **`/helper`** this folder will not be included in the final version of TOX. For now, it serves to help us create the C wrapper for the subroutines more quickly and easily. See details in `helper/readme.md`.
 
 ---
 
-### 2. Direct WebAssembly Compilation (Experimental)
-
-Using **LFortran** (experimental feature), you can **directly compile to WebAssembly**:
-
-```bash
-lfortran --emit-wasm tox_normalization.f90 -o tox_normalization.wasm
-```
-
-- This produces a `.wasm` module directly from Fortran.
-- However, **current LFortran WebAssembly output is experimental** and may not yet support all features (like bindings with R or complex memory layouts).
-- Migration to pure WebAssembly workflows is considered a future goal.
-
-
-## 📦 How to Use in R
-
-First, load the shared library inside your R session:
-
-```r
-dyn.load("build/tox_normalization.so")
-```
-
-Now you can use the provided R wrapper functions:
-
-```r
-# Normalize by standard deviation
-normalized_matrix <- normalize_by_std_dev(input_matrix)
-
-# Perform quantile normalization
-quantile_normalized <- quantile_normalization(input_matrix)
-
-# Apply log2(x + 1) transformation
-log_matrix <- log2_transformation(input_matrix)
-
-# Average replicates by tissue groups
-averaged_matrix <- calculate_tissue_averages(input_matrix)
-
-# Calculate fold changes
-# Use control_pattern and condition_patterns to indicate which columns are control and conditions.
-fc_matrix <- calculate_fc_by_patterns(averaged_matrix, control_pattern = "dietM", condition_patterns = c("dietP"))
-```
-
-Each function transparently sends the data to Fortran and reconstructs the result in R with proper row and column names.
-
-## 📋 Documentation
-
-All R functions are documented using **Roxygen2-style comments**, meaning that:
-- Parameters, outputs, and examples are clearly explained.
-- Easy to generate `.Rd` files for package building if needed.
-
-The Fortran code is also carefully commented using FORD:
-
-
-### ✅ FORD (Fortran Online Reference Documentation)
+### FORD (Fortran Online Reference Documentation)
 
 [FORD](https://github.com/Fortran-FOSS-Programmers/ford) is a documentation generator specifically designed for Fortran projects. It allows developers to create clean, structured, and navigable HTML documentation from source code using lightweight markup embedded in comments.
 
@@ -142,86 +94,81 @@ ford ford.yml
 
 This generates an HTML site you can explore in a browser (`doc/index.html` by default).
 
-# 📈 Future Work
 
-- [ ] Investigate full WebAssembly compilation and browser execution.
-- [ ] Migrate to LFortran when .so and .wasm generation becomes fully stable.
+### Tensor Omics Snippets
 
-# 🧹 Repository Structure Summary
+Organize and place the snippets inside the appropriate snippet folders according to their functionality:
 
+- Use the `f42:` prefix for F42-compliant infrastructure.
+- Use the `tox:` prefix for application-specific Tensor Omics subroutines.
+
+See `snippets/readme.md` for details.
+
+---
+
+
+### Compilation
+
+The `build.sh` script will compile all the files located in the `src/` directory.
+
+It creates a directory for the compiled objects under `/build/<compiler>/`, and the resulting shared library will be named `libtensor-omics.so`.
+
+This `.so` file is the one that must be loaded from R or Python.
+
+Every time the code is compiled, a new `/build/<compiler>/` directory is created. To simplify access, the script creates a symbolic link to the latest compiled shared library so that R and Python can always load the same file consistently.
+
+Usage:
+
+→ Uses the `gfortran` compiler without performance optimizations.
+
+```bash
+./build.sh
 ```
-/src
-  └── tox_normalization.f90    # Fortran backend code
-/methods
-  └── normalization.R                  # R wrappers for normalization functions
-  └── tensoromics_functions.R           # Additional R helper functions
-/results
-  └── (results outputs here)
+
+→ Uses the `gfortran` compiler with maximum performance flags.
+
+```bash
+./build.sh --max-performance
 ```
 
+→ Uses the `ifx` compiler with maximum performance flags.
+
+```bash
+./build.sh --max-performance FC=ifx
+```
+
+Keep in mind that files are compiled in alphabetical order, please name your files accordingly.
+
+---
 
 
-# 📄 Input Data Format Specification
+### Testing
 
-This project expects input gene expression matrices to follow specific naming conventions for proper normalization and processing.
+The test suite framework provides a robust and scalable system for organizing and executing unit tests in Fortran. It allows running individual tests, complete test suites, or all project tests with simple and clear syntax.
 
+#### Architecture
 
-## 📦 General Input Matrix Structure
+1. **`run_tests.f90`** - Main program that handles command line arguments
+2. **Test Modules** - Each module (suite) contains tests for a specific functionality
+3. **`asserts.f90`** - Assertion function library for validating results
 
-- **Rows**: Genes (e.g., `geneA`, `geneB`, `FBpp0070000`, etc.).
-- **Columns**: Samples corresponding to tissues and/or experimental groups.
+#### System Usage
 
+```bash
+# Run all tests from all suites
+./test_runner.sh
 
-## 📋 Column Naming Rules
+# Run all tests from a specific suite
+./test_runner.sh <suite_name>
 
-| Feature | How it should be named |
-|:--------|:-----------------------|
-| Tissue name | Should appear as a prefix |
-| Control vs condition groups | Distinguished using suffixes |
-| Replicates | Indicated with final `_1`, `_2`, `_3`, etc. |
+# Run specific tests from a suite
+./test_runner.sh <suite_name> <test1,test2,test3>
+```
 
-### ✅ Examples
+Keep in mind that files are compiled in alphabetical order, please name your files accordingly.
 
-| Column Name | Meaning |
-|:------------|:--------|
-| `muscle_control_1` | Muscle tissue, control group, replicate 1 |
-| `muscle_control_2` | Muscle tissue, control group, replicate 2 |
-| `muscle_treatmentA_1` | Muscle tissue, condition "treatmentA", replicate 1 |
-| `brain_control` | Brain tissue, control (no replicate if only one) |
-| `heart_dietM_1` | Heart tissue, dietM condition, replicate 1 |
-| `heart_dietP_2` | Heart tissue, dietP condition, replicate 2 |
+See `test/readme.md` for details.
 
+---
 
-## 🧠 Important Points
-
-- **Replicates**:  
-  - Must be indicated with an underscore and number (`_1`, `_2`, etc.).
-  - Replicates are automatically detected and averaged using `calculate_tissue_averages()`.
-
-- **Conditions (control vs experimental)**:  
-  - Control groups and condition groups must be distinguishable by a recognizable **pattern** (e.g., `"control"`, `"dietM"`, `"dietP"`, etc.).
-  - Fold-change is computed based on **pattern matching** using functions like `calculate_fc_by_patterns()`.
-
-- **Missing Replicates**:  
-  - If no replicate number exists, it's assumed to be a single sample for that tissue/condition.
-
-- **Naming Consistency**:  
-  - Always keep naming consistent (same format across all columns).
-  - No spaces or unusual characters; use underscores `_` to separate parts.
-
-
-## ⚙️ Supported Input Scenarios
-
-| Scenario | Supported? | Notes |
-|:---------|:-----------|:------|
-| Single sample per tissue | ✅ | Simply use the tissue name (e.g., `brain_control`) |
-| Multiple replicates per tissue group | ✅ | Must use `_1`, `_2`, `_3` convention |
-| Multiple conditions for same tissue | ✅ | Control and conditions detected based on user-provided patterns |
-| No replicates and no conditions | ✅ | Treated as simple tissues for averaging or fold-change |
-
-
-## 🚫 Not Supported
-
-- Spaces inside column names (`"muscle control"` ❌).
-- Different separator characters (`"muscle-control-1"` ❌ use `"muscle_control_1"` ✅).
-- Completely inconsistent naming.
+Feel free to extend this README with additional information.
