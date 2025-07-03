@@ -104,6 +104,63 @@
 			"                  strlen = as.integer(strlen))"
 		],
 		"description": "Call sort_character_r Fortran function from R"
+	},
+	"C call to sort_real": {
+		"prefix": "f42:C_sort_real",
+		"body": [
+			"def setup_sort_real():",
+			"    \"\"\"Setup real sorting function\"\"\"",
+			"    sort_real = lib.sort_real_c",
+			"    sort_real.argtypes = [",
+			"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        ctypes.c_int",
+			"    ]",
+			"    sort_real.restype = None",
+			"    return sort_real"
+		],
+		"description": "Setup sort_real_c function binding"
+	},
+
+	"C call to sort_integer": {
+		"prefix": "f42:C_sort_integer",
+		"body": [
+			"def setup_sort_integer():",
+			"    \"\"\"Setup integer sorting function\"\"\"",
+			"    sort_int = lib.sort_integer_c",
+			"    sort_int.argtypes = [",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        ctypes.c_int",
+			"    ]",
+			"    sort_int.restype = None",
+			"    return sort_int"
+		],
+		"description": "Setup sort_integer_c function binding"
+	},
+
+	"C call to sort_character": {
+		"prefix": "f42:C_sort_character",
+		"body": [
+			"def setup_sort_character():",
+			"    \"\"\"Setup character sorting function\"\"\"",
+			"    sort_char = lib.sort_character_c",
+			"    sort_char.argtypes = [",
+			"        ctypes.POINTER(ctypes.c_ubyte),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        ctypes.c_int,",
+			"        ctypes.c_int",
+			"    ]",
+			"    sort_char.restype = None",
+			"    return sort_char"
+		],
+		"description": "Setup sort_character_c function binding"
 	}
 
   }

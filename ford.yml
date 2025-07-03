@@ -1,9 +1,9 @@
-project: TOX_Normalization
+project: TensorOmics
 output_dir: doc
 docmark: "!"
-author: Vivian Bass
+author: TensorOmics Developers
 summary: >
   Fortran subroutines for normalizing gene expression data..
 doc_block_style: doxygen
 files:
-  - tox_normalization.f90
+  - src/*.f90
