@@ -41,4 +41,4 @@ normalized_df$gene_id <- gene_ids
 normalized_df <- normalized_df[, c("gene_id", setdiff(colnames(normalized_df), "gene_id"))]
 
 
-# write.table(normalized_df, output_file, sep = "\t", row.names = FALSE, quote = FALSE)
+write.table(normalized_df, output_file, sep = "\t", row.names = FALSE, quote = FALSE)
