@@ -44,6 +44,25 @@
       ],
       "description": "Calculate log2 fold changes between condition-control pairs"
     },
+
+    "Call to euclidean_distance": {
+      "prefix": "tox:euclidean_distance",
+      "body": [
+        "! Calculate Euclidean distance between two vectors",
+        "call euclidean_distance(vec1, vec2, d, result)"
+      ],
+      "description": "Invoke Euclidean distance calculation between two vectors"
+    },
+
+    "Call to distance_to_centroid": {
+      "prefix": "tox:distance_to_centroid",
+      "body": [
+        "! Calculate distance from each gene to its family centroid",
+        "call distance_to_centroid(n_genes, n_families, genes, centroids, &",
+        "                          gene_to_fam, distances, d)"
+      ],
+      "description": "Invoke distance calculation from genes to family centroids"
+    },
 		
   "Wrapper R": {
     "prefix": "wrapper_r",
@@ -159,6 +178,33 @@
 		],
 		"description": "Call calc_fchange_r Fortran function from R"
 	},
+
+	"R call to euclidean_distance between 2 vectors": {
+		"prefix": "tox:R_euclidean_distance",
+		"body": [
+		"result <- .Fortran(\"euclidean_distance_r\",",
+		"                  vec1 = as.double(${1:vector1}),",
+		"                  vec2 = as.double(${2:vector2}),",
+		"                  d = as.integer(${3:dimension}),",
+		"                  result = as.double(0.0))"
+		],
+		"description": "Call euclidean_distance_r Fortran function from R"
+	},
+
+	"R call to distance_to_centroid": {
+		"prefix": "tox:R_distance_to_centroid",
+		"body": [
+		"result <- .Fortran(\"distance_to_centroid_r\",",
+		"                  n_genes = as.integer(${1:n_genes}),",
+		"                  n_families = as.integer(${2:n_families}),",
+		"                  genes = as.double(${3:gene_matrix}),",
+		"                  centroids = as.double(${4:centroid_matrix}),",
+		"                  gene_to_fam = as.integer(${5:gene_to_family}),",
+		"                  distances = as.double(numeric(${1:n_genes})),",
+		"                  d = as.integer(${6:dimension}))"
+		],
+		"description": "Call distance_to_centroid_r Fortran function from R"
+	},
   
   "Load libraries for C": {
 		"prefix": "tox:load_c_libs",
@@ -266,8 +312,45 @@
 		"    return fchange"
 		],
 		"description": "Setup calc_fchange_c function binding"
+	},
+
+	"C call to euclidean_distance": {
+		"prefix": "tox:C_euclidean_distance",
+		"body": [
+		"def setup_euclidean_distance():",
+		"    \"\"\"Setup euclidean distance function\"\"\"",
+		"    euclidean_dist = lib.euclidean_distance_c",
+		"    euclidean_dist.argtypes = [",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        ctypes.c_int,",
+		"        ctypes.POINTER(ctypes.c_double)",
+		"    ]",
+		"    euclidean_dist.restype = None",
+		"    return euclidean_dist"
+		],
+		"description": "Setup euclidean_distance_c function binding"
+	},
+
+	"C call to distance_to_centroid": {
+		"prefix": "tox:C_distance_to_centroid",
+		"body": [
+		"def setup_distance_to_centroid():",
+		"    \"\"\"Setup distance to centroid function\"\"\"",
+		"    dist_to_centroid = lib.distance_to_centroid_c",
+		"    dist_to_centroid.argtypes = [",
+		"        ctypes.c_int, ctypes.c_int,",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        ctypes.c_int",
+		"    ]",
+		"    dist_to_centroid.restype = None",
+		"    return dist_to_centroid"
+		],
+		"description": "Setup distance_to_centroid_c function binding"
 	}
 }
 
 
-  
