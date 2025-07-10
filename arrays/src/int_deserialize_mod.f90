@@ -5,7 +5,7 @@ module int_deserialize_mod
 
   private
   public :: deserialize_int, deserialize_int_1d, deserialize_int_2d, &
-           deserialize_int_3d, deserialize_int_4d, deserialize_int_5d
+           deserialize_int_3d, deserialize_int_4d, deserialize_int_5d, deserialize_int_flat
 
   integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
 
@@ -103,11 +103,12 @@ contains
 
 end module int_deserialize_mod
 
-subroutine deserialize_int_1d_r(arr, filename_ascii, fn_len)
+subroutine deserialize_int_1d_r(arr, size, filename_ascii, fn_len)
   use int_deserialize_mod, only: deserialize_int_1d
   use iso_fortran_env, only: int32
   implicit none
-  integer(int32), intent(out) :: arr(:)
+  integer , INTENT(IN) :: size
+  integer(int32), intent(out) :: arr(size)
   integer(int32), intent(in) :: filename_ascii(fn_len)
   integer(int32), pointer :: arr_f(:)
   integer(int32), intent(in) :: fn_len
@@ -120,54 +121,50 @@ subroutine deserialize_int_1d_r(arr, filename_ascii, fn_len)
   do i = 1, fn_len
     filename(i:i) = char(filename_ascii(i))
   end do
-  print *, "Deserializing from file: ", filename
   
   call deserialize_int_1d(arr_f, filename)
 
-  if (size(arr_f) /= size(arr)) then
-    print *, "Size mismatch: arr_f(", size(arr_f), ") vs arr(", size(arr), ")"
-    error stop "deserialize_int_1d_r: Output array size mismatch"
-  end if
-
   arr = arr_f
-  print *, arr
 end subroutine deserialize_int_1d_r
 
-subroutine deserialize_int_2d_r(arr, filename)
-  use int_deserialize_mod, only: deserialize_int_2d
+subroutine deserialize_int_flat_r(flat_arr, dims_out, ndim_out, filename_ascii, fn_len)
   use iso_fortran_env, only: int32
+  use int_deserialize_mod
   implicit none
-  integer(int32), pointer, intent(out) :: arr(:,:)
-  character(len=*), intent(in) :: filename
-  call deserialize_int_2d(arr, filename)
-end subroutine deserialize_int_2d_r
 
-subroutine deserialize_int_3d_r(arr, filename)
-  use int_deserialize_mod, only: deserialize_int_3d
-  use iso_fortran_env, only: int32
-  implicit none
-  integer(int32), pointer, intent(out) :: arr(:,:,:)
-  character(len=*), intent(in) :: filename
-  call deserialize_int_3d(arr, filename)
-end subroutine deserialize_int_3d_r
+  ! Rückgabe an R
+  integer(int32), intent(out) :: flat_arr(*)
+  integer(int32), intent(out) :: dims_out(*)
+  integer, intent(out) :: ndim_out
 
-subroutine deserialize_int_4d_r(arr, filename)
-  use int_deserialize_mod, only: deserialize_int_4d
-  use iso_fortran_env, only: int32
-  implicit none
-  integer(int32), pointer, intent(out) :: arr(:,:,:,:)
-  character(len=*), intent(in) :: filename
-  call deserialize_int_4d(arr, filename)
-end subroutine deserialize_int_4d_r
+  ! Dateiname
+  integer(int32), intent(in) :: filename_ascii(fn_len)
+  integer, intent(in) :: fn_len
 
-subroutine deserialize_int_5d_r(arr, filename)
-  use int_deserialize_mod, only: deserialize_int_5d
-  use iso_fortran_env, only: int32
-  implicit none
-  integer(int32), pointer, intent(out) :: arr(:,:,:,:,:)
-  character(len=*), intent(in) :: filename
-  call deserialize_int_5d(arr, filename)
-end subroutine deserialize_int_5d_r
+  ! Intern
+  character(len=:), allocatable :: filename
+  integer :: i, k
+  integer(int32), pointer :: flat(:)
+  integer(int32), allocatable, target :: dims(:)
+
+  allocate(character(len=fn_len) :: filename)
+  do i = 1, fn_len
+    filename(i:i) = char(filename_ascii(i))
+  end do
+
+  ! Lese Daten
+  call deserialize_int_flat(flat, dims, filename)
+
+  ndim_out = size(dims)
+  do i = 1, ndim_out
+    dims_out(i) = dims(i)
+  end do
+
+  do i = 1, product(dims)
+    flat_arr(i) = flat(i)
+  end do
+end subroutine
+
 
 subroutine deserialize_int_1d_C(arr, filename) bind(C, name="deserialize_int_1d_C")
   use iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char

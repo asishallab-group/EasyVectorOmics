@@ -1,50 +1,40 @@
 dyn.load("arrays/build/arrays.so")
 
-deserialize_int_1d <- function(filename, n) {
-  arr <- integer(n)
+get_array_dims <- function(filename, max_dims = 5) {
   ascii <- utf8ToInt(filename)
-  res <- .Fortran("deserialize_int_1d_r",
-                  arr = arr,
+  dims <- integer(max_dims)
+  ndims <- integer(1)
+
+  res <- .Fortran("get_array_dims",
                   filename_ascii = as.integer(ascii),
                   fn_len = as.integer(length(ascii)),
+                  dims_out = dims,
+                  ndims = ndims,
                   PACKAGE = "arrays")
-  res$arr
+
+  res$dims_out[1:res$ndims]
 }
 
-deserialize_int_2d <- function(filename, dim1, dim2) {
-  arr <- integer(dim1 * dim2)
-  res <- .Fortran("deserialize_int_2d_r",
-                  arr = arr,
-                  filename = as.character(filename),
-                  PACKAGE = "arrays")
-  array(res$arr, dim = c(dim1, dim2))
-}
+deserialize_int <- function(filename, max_dims = 5) {
+    ascii <- utf8ToInt(filename)
 
-deserialize_int_3d <- function(filename, dim1, dim2, dim3) {
-  arr <- integer(dim1 * dim2 * dim3)
-  res <- .Fortran("deserialize_int_3d_r",
-                  arr = arr,
-                  filename = as.character(filename),
-                  PACKAGE = "arrays")
-  array(res$arr, dim = c(dim1, dim2, dim3))
-}
+    actual_dims <- get_array_dims(filename, max_dims)
+    total_size <- prod(actual_dims)
 
-deserialize_int_4d <- function(filename, dim1, dim2, dim3, dim4) {
-  arr <- integer(dim1 * dim2 * dim3 * dim4)
-  res <- .Fortran("deserialize_int_4d_r",
-                  arr = arr,
-                  filename = as.character(filename),
-                  PACKAGE = "arrays")
-  array(res$arr, dim = c(dim1, dim2, dim3, dim4))
-}
+    flat <- integer(total_size)
+    dims <- integer(max_dims)
+    ndim <- integer(1)
 
-deserialize_int_5d <- function(filename, dim1, dim2, dim3, dim4, dim5) {
-  arr <- integer(dim1 * dim2 * dim3 * dim4 * dim5)
-  res <- .Fortran("deserialize_int_5d_r",
-                  arr = arr,
-                  filename = as.character(filename),
-                  PACKAGE = "arrays")
-  array(res$arr, dim = c(dim1, dim2, dim3, dim4, dim5))
+    res <- .Fortran("deserialize_int_flat_r",
+                flat_arr = flat,
+                dims_out = dims,
+                ndim_out = ndim,
+                filename_ascii = as.integer(ascii),
+                fn_len = as.integer(length(ascii)),
+                PACKAGE = "arrays")
+
+    actual_dims <- res$dims_out[1:res$ndim_out]
+    array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
 }
 
 deserialize_real_1d <- function(filename, n) {
@@ -316,33 +306,30 @@ test_array_wrappers <- function(tmpdir = tempdir()) {
   stopifnot(is.integer(arr1))
   stopifnot(length(arr1) == 10)
   serialize_int_1d(arr1, fn("int1d.bin"))
-  cat("serialized\n")
-  cat("Serialized array: " , arr1)
-  cat("\n")
-  cat(deserialize_int_1d(fn("int1d.bin"), 10))
-  stopifnot(all(deserialize_int_1d(fn("int1d.bin"), 10) == arr1))
+  stopifnot(all(deserialize_int(fn("int1d.bin"), 10) == arr1))
 
   cat("Dim 2\n")
   arr2 <- matrix(1:12, nrow=3, ncol=4)
   stopifnot(is.integer(arr2))
   stopifnot(length(arr2) == 12)
   serialize_int_2d(arr2, fn("int2d.bin"))
-  stopifnot(all(deserialize_int_2d(fn("int2d.bin"), 3, 4) == arr2))
+  cat("Serialized 2D")
+  stopifnot(all(deserialize_int(fn("int2d.bin"), 3, 4) == arr2))
 
   cat("Dim 3\n")
   arr3 <- array(1:24, dim = c(2,3,4))
   serialize_int_3d(arr3, fn("int3d.bin"))
-  stopifnot(all(deserialize_int_3d(fn("int3d.bin"), 2,3,4) == arr3))
+  stopifnot(all(deserialize_int(fn("int3d.bin"), 2,3,4) == arr3))
 
   cat("Dim 4\n")
   arr4 <- array(1:48, dim = c(2,3,4,2))
   serialize_int_4d(arr4, fn("int4d.bin"))
-  stopifnot(all(deserialize_int_4d(fn("int4d.bin"), 2,3,4,2) == arr4))
+  stopifnot(all(deserialize_int(fn("int4d.bin"), 2,3,4,2) == arr4))
 
   cat("Dim 5\n")
   arr5 <- array(1:96, dim = c(2,3,4,2,2))
   serialize_int_5d(arr5, fn("int5d.bin"))
-  stopifnot(all(deserialize_int_5d(fn("int5d.bin"), 2,3,4,2,2) == arr5))
+  stopifnot(all(deserialize_int(fn("int5d.bin"), 2,3,4,2,2) == arr5))
 
   # REAL
   arr1r <- as.numeric(1:10) * 0.5
