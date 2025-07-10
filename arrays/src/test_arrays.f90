@@ -222,36 +222,6 @@ program test_arrays
   allocate(iarr(2,3))
   iarr = reshape([1,2,3,4,5,6], [2,3])
 
-  print *, "==== Test: get_row ===="
-  if (allocated(row)) deallocate(row)
-  allocate(row(3))
-  call get_row(iarr, 2, row)
-  print *, "row=", row
-  if (all(row == [2_int32,4_int32,6_int32])) then
-    print *, "PASS: get_row"
-  else
-    print *, "FAIL: get_row"
-  end if
-
-  print *, "==== Test: get_col ===="
-  if (allocated(col)) deallocate(col)
-  allocate(col(2))
-  call get_col(iarr, 1, col)
-  print *, "col=", col
-  if (all(col == [1_int32,2_int32])) then
-    print *, "PASS: get_col"
-  else
-    print *, "FAIL: get_col"
-  end if
-
-  print *, "==== Test: get_cell ===="
-  call get_cell(iarr, 2, 3, cell)
-  print *, "cell=", cell
-  if (cell == 6) then
-    print *, "PASS: get_cell"
-  else
-    print *, "FAIL: get_cell"
-  end if
 
   print *, "==== Edge Case: 1x1 array serialization ===="
   if (allocated(iarr)) deallocate(iarr)

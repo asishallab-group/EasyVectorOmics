@@ -1,10 +1,11 @@
 module int_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
-  use iso_c_binding
+  use iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char
   implicit none
 
   private
-  public :: deserialize_int
+  public :: deserialize_int, deserialize_int_1d, deserialize_int_2d, &
+           deserialize_int_3d, deserialize_int_4d, deserialize_int_5d
 
   integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
 
@@ -45,10 +46,8 @@ contains
     use iso_c_binding
     integer(int32), pointer, intent(out) :: arr(:)
     character(len=*), intent(in) :: filename
-
     integer(int32), pointer :: flat(:)
     integer(int32), allocatable :: dims(:)
-
     call deserialize_int_flat(flat, dims, filename)
     if (size(dims) /= 1) error stop "Expected 1D array"
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1)])
@@ -59,10 +58,8 @@ contains
     use iso_c_binding
     integer(int32), pointer, intent(out) :: arr(:,:)
     character(len=*), intent(in) :: filename
-
     integer(int32), pointer :: flat(:)
     integer(int32), allocatable :: dims(:)
-
     call deserialize_int_flat(flat, dims, filename)
     if (size(dims) /= 2) error stop "Expected 2D array"
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2)])
@@ -73,10 +70,8 @@ contains
     use iso_c_binding
     integer(int32), pointer, intent(out) :: arr(:,:,:)
     character(len=*), intent(in) :: filename
-
     integer(int32), pointer :: flat(:)
     integer(int32), allocatable :: dims(:)
-
     call deserialize_int_flat(flat, dims, filename)
     if (size(dims) /= 3) error stop "Expected 3D array"
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3)])
@@ -87,10 +82,8 @@ contains
     use iso_c_binding
     integer(int32), pointer, intent(out) :: arr(:,:,:,:)
     character(len=*), intent(in) :: filename
-
     integer(int32), pointer :: flat(:)
     integer(int32), allocatable :: dims(:)
-
     call deserialize_int_flat(flat, dims, filename)
     if (size(dims) /= 4) error stop "Expected 4D array"
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3), dims(4)])
@@ -101,13 +94,177 @@ contains
     use iso_c_binding
     integer(int32), pointer, intent(out) :: arr(:,:,:,:,:)
     character(len=*), intent(in) :: filename
-
     integer(int32), pointer :: flat(:)
     integer(int32), allocatable :: dims(:)
-
     call deserialize_int_flat(flat, dims, filename)
     if (size(dims) /= 5) error stop "Expected 5D array"
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3), dims(4), dims(5)])
   end subroutine deserialize_int_5d
 
 end module int_deserialize_mod
+
+subroutine deserialize_int_1d_r(arr, filename_ascii, fn_len)
+  use int_deserialize_mod, only: deserialize_int_1d
+  use iso_fortran_env, only: int32
+  implicit none
+  integer(int32), intent(out) :: arr(:)
+  integer(int32), intent(in) :: filename_ascii(fn_len)
+  integer(int32), pointer :: arr_f(:)
+  integer(int32), intent(in) :: fn_len
+
+  character(len=:), allocatable :: filename
+  integer :: i
+
+  allocate(character(len=fn_len) :: filename)
+
+  do i = 1, fn_len
+    filename(i:i) = char(filename_ascii(i))
+  end do
+  print *, "Deserializing from file: ", filename
+  
+  call deserialize_int_1d(arr_f, filename)
+
+  if (size(arr_f) /= size(arr)) then
+    print *, "Size mismatch: arr_f(", size(arr_f), ") vs arr(", size(arr), ")"
+    error stop "deserialize_int_1d_r: Output array size mismatch"
+  end if
+
+  arr = arr_f
+  print *, arr
+end subroutine deserialize_int_1d_r
+
+subroutine deserialize_int_2d_r(arr, filename)
+  use int_deserialize_mod, only: deserialize_int_2d
+  use iso_fortran_env, only: int32
+  implicit none
+  integer(int32), pointer, intent(out) :: arr(:,:)
+  character(len=*), intent(in) :: filename
+  call deserialize_int_2d(arr, filename)
+end subroutine deserialize_int_2d_r
+
+subroutine deserialize_int_3d_r(arr, filename)
+  use int_deserialize_mod, only: deserialize_int_3d
+  use iso_fortran_env, only: int32
+  implicit none
+  integer(int32), pointer, intent(out) :: arr(:,:,:)
+  character(len=*), intent(in) :: filename
+  call deserialize_int_3d(arr, filename)
+end subroutine deserialize_int_3d_r
+
+subroutine deserialize_int_4d_r(arr, filename)
+  use int_deserialize_mod, only: deserialize_int_4d
+  use iso_fortran_env, only: int32
+  implicit none
+  integer(int32), pointer, intent(out) :: arr(:,:,:,:)
+  character(len=*), intent(in) :: filename
+  call deserialize_int_4d(arr, filename)
+end subroutine deserialize_int_4d_r
+
+subroutine deserialize_int_5d_r(arr, filename)
+  use int_deserialize_mod, only: deserialize_int_5d
+  use iso_fortran_env, only: int32
+  implicit none
+  integer(int32), pointer, intent(out) :: arr(:,:,:,:,:)
+  character(len=*), intent(in) :: filename
+  call deserialize_int_5d(arr, filename)
+end subroutine deserialize_int_5d_r
+
+subroutine deserialize_int_1d_C(arr, filename) bind(C, name="deserialize_int_1d_C")
+  use iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char
+  use int_deserialize_mod, only: deserialize_int_1d
+  use iso_fortran_env, only: int32
+  implicit none
+  type(c_ptr), intent(out) :: arr
+  character(kind=c_char), intent(in) :: filename(*)
+  integer(int32), pointer :: arr_f(:)
+  character(len=:), allocatable :: fname
+  integer :: i
+  arr_f => null()
+  i = 1
+  do while (filename(i) /= c_null_char)
+    i = i + 1
+  end do
+  fname = transfer(filename(1:i-1), fname)
+  call deserialize_int_1d(arr_f, fname)
+  arr = c_loc(arr_f)
+end subroutine deserialize_int_1d_C
+
+subroutine deserialize_int_2d_C(arr, filename) bind(C, name="deserialize_int_2d_C")
+  use iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char
+  use int_deserialize_mod, only: deserialize_int_2d
+  use iso_fortran_env, only: int32
+  implicit none
+  type(c_ptr), intent(out) :: arr
+  character(kind=c_char), intent(in) :: filename(*)
+  integer(int32), pointer :: arr_f(:,:)
+  character(len=:), allocatable :: fname
+  integer :: i
+  arr_f => null()
+  i = 1
+  do while (filename(i) /= c_null_char)
+    i = i + 1
+  end do
+  fname = transfer(filename(1:i-1), fname)
+  call deserialize_int_2d(arr_f, fname)
+  arr = c_loc(arr_f)
+end subroutine deserialize_int_2d_C
+
+subroutine deserialize_int_3d_C(arr, filename) bind(C, name="deserialize_int_3d_C")
+  use iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char
+  use int_deserialize_mod, only: deserialize_int_3d
+  use iso_fortran_env, only: int32
+  implicit none
+  type(c_ptr), intent(out) :: arr
+  character(kind=c_char), intent(in) :: filename(*)
+  integer(int32), pointer :: arr_f(:,:,:)
+  character(len=:), allocatable :: fname
+  integer :: i
+  arr_f => null()
+  i = 1
+  do while (filename(i) /= c_null_char)
+    i = i + 1
+  end do
+  fname = transfer(filename(1:i-1), fname)
+  call deserialize_int_3d(arr_f, fname)
+  arr = c_loc(arr_f)
+end subroutine deserialize_int_3d_C
+
+subroutine deserialize_int_4d_C(arr, filename) bind(C, name="deserialize_int_4d_C")
+  use iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char
+  use int_deserialize_mod, only: deserialize_int_4d
+  use iso_fortran_env, only: int32
+  implicit none
+  type(c_ptr), intent(out) :: arr
+  character(kind=c_char), intent(in) :: filename(*)
+  integer(int32), pointer :: arr_f(:,:,:,:)
+  character(len=:), allocatable :: fname
+  integer :: i
+  arr_f => null()
+  i = 1
+  do while (filename(i) /= c_null_char)
+    i = i + 1
+  end do
+  fname = transfer(filename(1:i-1), fname)
+  call deserialize_int_4d(arr_f, fname)
+  arr = c_loc(arr_f)
+end subroutine deserialize_int_4d_C
+
+subroutine deserialize_int_5d_C(arr, filename) bind(C, name="deserialize_int_5d_C")
+  use iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char
+  use int_deserialize_mod, only: deserialize_int_5d
+  use iso_fortran_env, only: int32
+  implicit none
+  type(c_ptr), intent(out) :: arr
+  character(kind=c_char), intent(in) :: filename(*)
+  integer(int32), pointer :: arr_f(:,:,:,:,:)
+  character(len=:), allocatable :: fname
+  integer :: i
+  arr_f => null()
+  i = 1
+  do while (filename(i) /= c_null_char)
+    i = i + 1
+  end do
+  fname = transfer(filename(1:i-1), fname)
+  call deserialize_int_5d(arr_f, fname)
+  arr = c_loc(arr_f)
+end subroutine deserialize_int_5d_C
