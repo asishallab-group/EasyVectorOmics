@@ -225,8 +225,15 @@ contains
   !> @brief Test normalization when input contains NaN or Inf.
   subroutine test_nan_inf_input()
     real(8), dimension(2,2) :: mat, result
-    mat = reshape([1.0d0, 2.0d0, huge(1.0d0), 4.0d0], [2,2]) ! Simulate Inf in (2,1)
+    real(8) :: nan_value, zero, inf_value
+    
+    ! Generate NaN using division by zero
+    zero = 0.0d0
+    nan_value = 0.0d0/zero
+    
+    mat = reshape([1.0d0, 2.0d0, huge(1.0d0), nan_value], [2,2]) ! Simulate Inf in (2,1) and NaN in (2,2)
     call normalize_by_std_dev_r(2, 2, mat, result)
+
     call assert_true(all(isfinite_mat(result)), "normalize_by_std_dev: output contains NaN/Inf unexpectedly")
   end subroutine test_nan_inf_input
 
@@ -277,7 +284,9 @@ contains
     integer :: i, j
     do i = 1, size(arr,1)
       do j = 1, size(arr,2)
-        mask(i,j) = abs(arr(i,j)) < huge(1.0d0)
+        ! Check if value is finite (not Inf) and not NaN
+        ! NaN is the only value that is not equal to itself
+        mask(i,j) = (abs(arr(i,j)) < huge(1.0d0)) .and. (arr(i,j) == arr(i,j))
       end do
     end do
   end function isfinite_mat
