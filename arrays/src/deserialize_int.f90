@@ -103,30 +103,6 @@ contains
 
 end module int_deserialize_mod
 
-subroutine deserialize_int_1d_r(arr, size, filename_ascii, fn_len)
-  use int_deserialize_mod, only: deserialize_int_1d
-  use iso_fortran_env, only: int32
-  implicit none
-  integer , INTENT(IN) :: size
-  integer(int32), intent(out) :: arr(size)
-  integer(int32), intent(in) :: filename_ascii(fn_len)
-  integer(int32), pointer :: arr_f(:)
-  integer(int32), intent(in) :: fn_len
-
-  character(len=:), allocatable :: filename
-  integer :: i
-
-  allocate(character(len=fn_len) :: filename)
-
-  do i = 1, fn_len
-    filename(i:i) = char(filename_ascii(i))
-  end do
-  
-  call deserialize_int_1d(arr_f, filename)
-
-  arr = arr_f
-end subroutine deserialize_int_1d_r
-
 subroutine deserialize_int_flat_r(flat_arr, dims_out, ndim_out, filename_ascii, fn_len)
   use iso_fortran_env, only: int32
   use int_deserialize_mod
@@ -163,6 +139,8 @@ subroutine deserialize_int_flat_r(flat_arr, dims_out, ndim_out, filename_ascii, 
   do i = 1, product(dims)
     flat_arr(i) = flat(i)
   end do
+
+  if (associated(flat)) deallocate(flat)
 end subroutine
 
 

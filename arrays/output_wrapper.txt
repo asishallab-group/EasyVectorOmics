@@ -1,0 +1,16 @@
+Start Wrapper-Tests...
+Integer tests...
+Dim 1: okay
+Dim 2: okay
+Dim 3: okay
+Dim 4: okay
+Dim 5: okay
+Real tests...
+serialized real 1D arr
+okay
+okay
+okay
+okay
+okay
+Real tests successful!
+Character tests...

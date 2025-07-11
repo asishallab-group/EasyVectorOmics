@@ -4,7 +4,7 @@ module serialize_real
   implicit none
 
   public:: serialize_real_1d, serialize_real_2d, serialize_real_3d, &
-           serialize_real_4d, serialize_real_5d
+           serialize_real_4d, serialize_real_5d, serialize_real_nd
 
   integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
 
@@ -105,73 +105,65 @@ contains
     close(unit)
   end subroutine
 
+    !> Writes serialized real array from R to file with metdata.
+  subroutine serialize_real_nd(arr, dims, ndim, filename)
+    real(real64), intent(in) :: arr(:)
+    integer(int32), intent(in) :: dims(:)
+    integer(int32), intent(in) :: ndim
+    character(len=*), intent(in) :: filename
+    integer :: unit
+
+    if (size(dims) /= ndim) then
+      error stop "Dimension mismatch in serialize_real_nd"
+    end if
+
+    open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace')
+    write(unit) ARRAY_FILE_MAGIC
+    write(unit) 2
+    write(unit) ndim
+    write(unit) dims
+    write(unit) arr
+    close(unit)
+  end subroutine
  
 end module serialize_real
 
-  !> R-Interface: 1D Real-Array serialisieren
-  subroutine serialize_real_1d_r(arr, n1, filename)
-    use iso_c_binding
-    use serialize_real
-    implicit none
-    real(real64), intent(in), target :: arr(*)
-    integer, intent(in) :: n1
-    character(len=*), intent(in) :: filename
-    real(real64), pointer :: arr_f(:)
-    call c_f_pointer(c_loc(arr(1)), arr_f, [n1])
-    call serialize_real_1d(arr_f, filename)
-  end subroutine
+!> Serialize a flat integer array with specified dimensions and number of dimensions to a binary file.
+!! R can not pass a multidimensional array directly, so we use a flat array and dimensions. Therefore, exposing serialize_int_*d to R is not needed.
+!! @param arr The input integer array to serialize.
+!! @param dims The dimensions of the array.
+!! @param ndim The number of dimensions.
+!! @param filename_ascii The output filename as an ASCII character array.
+!! @param fn_len The length of the filename ASCII character array.
+subroutine serialize_real_flat_r(arr, dims, ndim, filename_ascii, fn_len)
+  use iso_fortran_env
+  use serialize_real, only: serialize_real_nd
+  implicit none
+  real(real64), intent(in) :: arr(*)         ! assumed-size array
+  integer(int32), intent(in) :: dims(*)
+  integer(int32), intent(in) :: ndim
+  integer(int32), intent(in) :: filename_ascii(fn_len)
+  integer(int32), intent(in) :: fn_len
 
-  !> R-Interface: 2D Real-Array serialisieren
-  subroutine serialize_real_2d_r(arr, n1, n2, filename)
-    use iso_c_binding
-    use serialize_real
-    implicit none
-    real(real64), intent(in), target :: arr(*)
-    integer, intent(in) :: n1, n2
-    character(len=*), intent(in) :: filename
-    real(real64), pointer :: arr_f(:,:)
-    call c_f_pointer(c_loc(arr(1)), arr_f, [n1, n2])
-    call serialize_real_2d(arr_f, filename)
-  end subroutine
+  character(len=:), allocatable :: filename
+  integer :: i, total_len
 
-  !> R-Interface: 3D Real-Array serialisieren
-  subroutine serialize_real_3d_r(arr, n1, n2, n3, filename)
-    use iso_c_binding
-    use serialize_real
-    implicit none
-    real(real64), intent(in), target :: arr(*)
-    integer, intent(in) :: n1, n2, n3
-    character(len=*), intent(in) :: filename
-    real(real64), pointer :: arr_f(:,:,:)
-    call c_f_pointer(c_loc(arr(1)), arr_f, [n1, n2, n3])
-    call serialize_real_3d(arr_f, filename)
-  end subroutine
+  allocate(character(len=fn_len) :: filename)
+  do i = 1, fn_len
+    filename(i:i) = char(filename_ascii(i))
+  end do
 
-  !> R-Interface: 4D Real-Array serialisieren
-  subroutine serialize_real_4d_r(arr, n1, n2, n3, n4, filename)
-    use iso_c_binding
-    use serialize_real
-    implicit none
-    real(real64), intent(in), target :: arr(*)
-    integer, intent(in) :: n1, n2, n3, n4
-    character(len=*), intent(in) :: filename
-    real(real64), pointer :: arr_f(:,:,:,:)
-    call c_f_pointer(c_loc(arr(1)), arr_f, [n1, n2, n3, n4])
-    call serialize_real_4d(arr_f, filename)
-  end subroutine
+  ! Gesamtgröße berechnen (z. B. für Sicherheit oder Logging)
+  total_len = 1
+  do i = 1, ndim
+    total_len = total_len * dims(i)
+  end do
 
-  !> R-Interface: 5D Real-Array serialisieren
-  subroutine serialize_real_5d_r(arr, n1, n2, n3, n4, n5, filename)
-    use iso_c_binding
-    use serialize_real
-    implicit none
-    real(real64), intent(in), target :: arr(*)
-    integer, intent(in) :: n1, n2, n3, n4, n5
-    character(len=*), intent(in) :: filename
-    real(real64), pointer :: arr_f(:,:,:,:,:)
-    call c_f_pointer(c_loc(arr(1)), arr_f, [n1, n2, n3, n4, n5])
-    call serialize_real_5d(arr_f, filename)
-  end subroutine
+  ! optional check
+  ! print *, "Serializing array with ", total_len, " elements and ", ndim, " dimensions."
+
+  call serialize_real_nd(arr(1:total_len), dims(1:ndim), ndim, filename)
+end subroutine
 
   ! --- C-Bindings für serialize_real_* ---
 

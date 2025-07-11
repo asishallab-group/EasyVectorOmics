@@ -5,7 +5,7 @@ module real_deserialize_mod
   implicit none
 
   private
-  public :: deserialize_real
+  public :: deserialize_real, deserialize_real_flat
 
   integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
 
@@ -112,3 +112,44 @@ contains
   end subroutine deserialize_real_5d
 
 end module real_deserialize_mod
+
+subroutine deserialize_real_flat_r(flat_arr, dims_out, ndim_out, filename_ascii, fn_len)
+  use iso_fortran_env
+  use real_deserialize_mod
+  implicit none
+
+  ! Rückgabe an R
+  real(real64), intent(out) :: flat_arr(*)
+  integer(int32), intent(out) :: dims_out(*)
+  integer, intent(out) :: ndim_out
+
+  ! Dateiname
+  integer(int32), intent(in) :: filename_ascii(fn_len)
+  integer, intent(in) :: fn_len
+
+  ! Intern
+  character(len=:), allocatable :: filename
+  integer :: i, k
+  real(real64), pointer :: flat(:)
+  integer(int32), allocatable, target :: dims(:)
+
+  allocate(character(len=fn_len) :: filename)
+  do i = 1, fn_len
+    filename(i:i) = char(filename_ascii(i))
+  end do
+
+  ! Lese Daten
+  call deserialize_real_flat(flat, dims, filename)
+
+  ndim_out = size(dims)
+  do i = 1, ndim_out
+    dims_out(i) = dims(i)
+  end do
+
+  do i = 1, product(dims)
+    flat_arr(i) = flat(i)
+  end do
+
+
+  if (associated(flat)) deallocate(flat)
+end subroutine

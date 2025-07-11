@@ -7,7 +7,7 @@ module serialize_char
   implicit none
 
   public:: serialize_char_1d, serialize_char_2d, serialize_char_3d, &
-           serialize_char_4d, serialize_char_5d
+           serialize_char_4d, serialize_char_5d, serialize_char_nd
 
   integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
 
@@ -158,83 +158,62 @@ contains
     close(unit)
   end subroutine
 
+  subroutine serialize_char_nd(flat, dims, ndim, clen, filename)
+    use iso_c_binding
+    implicit none
+    character(len=*), intent(in) :: flat(:)
+    integer(int32), intent(in) :: dims(:)
+    integer, intent(in) :: ndim, clen
+    character(len=*), intent(in) :: filename
+
+    integer :: unit, i, str_len
+
+    open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace')
+    write(unit) ARRAY_FILE_MAGIC
+    write(unit) 3  ! type code for character data
+    write(unit) ndim
+    write(unit) dims
+    write(unit) clen
+
+    do i = 1, size(flat)
+      str_len = len_trim(flat(i))
+      write(unit) str_len
+      if (str_len > 0) then
+        write(unit) flat(i)(1:str_len)
+      end if
+    end do
+
+    close(unit)
+  end subroutine serialize_char_nd
 
 end module serialize_char
 
-!> R-Interface: 1D Character-Array serialisieren
-subroutine serialize_char_1d_r(arr, n1, filename)
-  use iso_c_binding
+subroutine serialize_char_flat_r(arr, dims, ndim, clen, filename_ascii, fn_len)
+  use iso_fortran_env
   use serialize_char
   implicit none
-  character(len=*), intent(in), target :: arr(*)
-  integer, intent(in) :: n1
-  character(len=*), intent(in) :: filename
-  character(len=:), pointer :: arr_f(:)
-  integer :: clen
-  clen = len(arr)
-  call c_f_pointer(c_loc(arr(1)), arr_f, [n1])
-  call serialize_char_1d(arr_f, filename)
-end subroutine
 
-!> R-Interface: 2D Character-Array serialisieren
-subroutine serialize_char_2d_r(arr, n1, n2, filename)
-  use iso_c_binding
-  use serialize_char
-  implicit none
-  character(len=*), intent(in), target :: arr(*)
-  integer, intent(in) :: n1, n2
-  character(len=*), intent(in) :: filename
-  character(len=:), pointer :: arr_f(:,:)
-  integer :: clen
-  clen = len(arr)
-  call c_f_pointer(c_loc(arr(1)), arr_f, [n1, n2])
-  call serialize_char_2d(arr_f, filename)
-end subroutine
+  character(len=*), intent(in) :: arr(:)
+  integer(int32), intent(in) :: dims(:)
+  integer(int32), intent(in) :: ndim
+  integer(int32), intent(in) :: clen
+  integer(int32), intent(in) :: filename_ascii(fn_len)
+  integer(int32), intent(in) :: fn_len
 
-!> R-Interface: 3D Character-Array serialisieren
-subroutine serialize_char_3d_r(arr, n1, n2, n3, filename)
-  use iso_c_binding
-  use serialize_char
-  implicit none
-  character(len=*), intent(in), target :: arr(*)
-  integer, intent(in) :: n1, n2, n3
-  character(len=*), intent(in) :: filename
-  character(len=:), pointer :: arr_f(:,:,:)
-  integer :: clen
-  clen = len(arr)
-  call c_f_pointer(c_loc(arr(1)), arr_f, [n1, n2, n3])
-  call serialize_char_3d(arr_f, filename)
-end subroutine
+  character(len=:), allocatable :: filename
+  integer :: i
 
-!> R-Interface: 4D Character-Array serialisieren
-subroutine serialize_char_4d_r(arr, n1, n2, n3, n4, filename)
-  use iso_c_binding
-  use serialize_char
-  implicit none
-  character(len=*), intent(in), target :: arr(*)
-  integer, intent(in) :: n1, n2, n3, n4
-  character(len=*), intent(in) :: filename
-  character(len=:), pointer :: arr_f(:,:,:,:)
-  integer :: clen
-  clen = len(arr)
-  call c_f_pointer(c_loc(arr(1)), arr_f, [n1, n2, n3, n4])
-  call serialize_char_4d(arr_f, filename)
-end subroutine
+  ! Build filename string from ascii codes
+  allocate(character(len=fn_len) :: filename)
+  do i = 1, fn_len
+    filename(i:i) = char(filename_ascii(i))
+  end do
 
-!> R-Interface: 5D Character-Array serialisieren
-subroutine serialize_char_5d_r(arr, n1, n2, n3, n4, n5, filename)
-  use iso_c_binding
-  use serialize_char
-  implicit none
-  character(len=*), intent(in), target :: arr(*)
-  integer, intent(in) :: n1, n2, n3, n4, n5
-  character(len=*), intent(in) :: filename
-  character(len=:), pointer :: arr_f(:,:,:,:,:)
-  integer :: clen
-  clen = len(arr)
-  call c_f_pointer(c_loc(arr(1)), arr_f, [n1, n2, n3, n4, n5])
-  call serialize_char_5d(arr_f, filename)
-end subroutine
+  ! Call main serialize routine
+  call serialize_char_nd(arr, dims, ndim, clen, filename)
+
+end subroutine serialize_char_flat_r
+
 
 ! --- C-Bindings für serialize_char_* ---
 

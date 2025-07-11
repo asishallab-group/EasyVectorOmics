@@ -4,7 +4,7 @@ module serialize_int
   implicit none
 
   public:: serialize_int_1d, serialize_int_2d, serialize_int_3d, &
-           serialize_int_4d, serialize_int_5d
+           serialize_int_4d, serialize_int_5d, serialize_int_nd
 
   integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
 
@@ -104,74 +104,66 @@ contains
     write(unit) arr
     close(unit)
   end subroutine
+
+  subroutine serialize_int_nd(arr, dims, ndim, filename)
+    integer(int32), intent(in) :: arr(:)
+    integer(int32), intent(in) :: dims(:)
+    integer(int32), intent(in) :: ndim
+    character(len=*), intent(in) :: filename
+    integer :: unit
+
+    if (size(dims) /= ndim) then
+      error stop "Dimension mismatch in serialize_int_nd"
+    end if
+
+    open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace')
+    write(unit) ARRAY_FILE_MAGIC
+    write(unit) 1
+    write(unit) ndim
+    write(unit) dims
+    write(unit) arr
+    close(unit)
+  end subroutine
 end module serialize_int
 
-!> R-Interface: 1D Integer-Array serialisieren
-subroutine serialize_int_1d_r(arr, n1, filename_ascii, fn_len)
-  use serialize_int
+
+!> Serialize a flat integer array with specified dimensions and number of dimensions to a binary file.
+!! R can not pass a multidimensional array directly, so we use a flat array and dimensions. Therefore, exposing serialize_int_*d to R is not needed.
+!! @param arr The input integer array to serialize.
+!! @param dims The dimensions of the array.
+!! @param ndim The number of dimensions.
+!! @param filename_ascii The output filename as an ASCII character array.
+!! @param fn_len The length of the filename ASCII character array.
+subroutine serialize_int_flat_r(arr, dims, ndim, filename_ascii, fn_len)
+  use iso_fortran_env, only: int32
+  use serialize_int, only: serialize_int_nd
   implicit none
-  integer(int32), intent(in) :: arr(n1)
-  integer(int32), intent(in) :: n1
+  integer(int32), intent(in) :: arr(*)         ! assumed-size array
+  integer(int32), intent(in) :: dims(*)
+  integer(int32), intent(in) :: ndim
   integer(int32), intent(in) :: filename_ascii(fn_len)
   integer(int32), intent(in) :: fn_len
 
   character(len=:), allocatable :: filename
-  integer :: i
+  integer :: i, total_len
 
   allocate(character(len=fn_len) :: filename)
-
   do i = 1, fn_len
     filename(i:i) = char(filename_ascii(i))
   end do
 
-  call serialize_int_1d(arr, filename)
+  ! Gesamtgröße berechnen (z. B. für Sicherheit oder Logging)
+  total_len = 1
+  do i = 1, ndim
+    total_len = total_len * dims(i)
+  end do
+
+  ! optional check
+  ! print *, "Serializing array with ", total_len, " elements and ", ndim, " dimensions."
+
+  call serialize_int_nd(arr(1:total_len), dims(1:ndim), ndim, filename)
 end subroutine
 
-
-!> R-Interface: 2D Integer-Array serialisieren
-subroutine serialize_int_2d_r(arr, n1, n2, filename)
-  use iso_c_binding
-  use serialize_int
-  implicit none
-  integer(int32), intent(in) :: arr(*)
-  integer, intent(in) :: n1, n2
-  character(len=*), intent(in) :: filename
-  ! Siehe oben: kein c_f_pointer!
-  call serialize_int_2d(reshape(arr(1:n1*n2), [n1, n2]), filename)
-end subroutine
-
-!> R-Interface: 3D Integer-Array serialisieren
-subroutine serialize_int_3d_r(arr, n1, n2, n3, filename)
-  use iso_c_binding
-  use serialize_int
-  implicit none
-  integer(int32), intent(in) :: arr(*)
-  integer, intent(in) :: n1, n2, n3
-  character(len=*), intent(in) :: filename
-  call serialize_int_3d(reshape(arr(1:n1*n2*n3), [n1, n2, n3]), filename)
-end subroutine
-
-!> R-Interface: 4D Integer-Array serialisieren
-subroutine serialize_int_4d_r(arr, n1, n2, n3, n4, filename)
-  use iso_c_binding
-  use serialize_int
-  implicit none
-  integer(int32), intent(in) :: arr(*)
-  integer, intent(in) :: n1, n2, n3, n4
-  character(len=*), intent(in) :: filename
-  call serialize_int_4d(reshape(arr(1:n1*n2*n3*n4), [n1, n2, n3, n4]), filename)
-end subroutine
-
-!> R-Interface: 5D Integer-Array serialisieren
-subroutine serialize_int_5d_r(arr, n1, n2, n3, n4, n5, filename)
-  use iso_c_binding
-  use serialize_int
-  implicit none
-  integer(int32), intent(in) :: arr(*)
-  integer, intent(in) :: n1, n2, n3, n4, n5
-  character(len=*), intent(in) :: filename
-  call serialize_int_5d(reshape(arr(1:n1*n2*n3*n4*n5), [n1, n2, n3, n4, n5]), filename)
-end subroutine
 
 ! --- C-Bindings für serialize_int_* ---
 
@@ -284,3 +276,4 @@ subroutine serialize_int_5d_C(arr, n1, n2, n3, n4, n5, filename) bind(C, name="s
   fname = transfer(filename(1:i-1), fname)
   call serialize_int_5d(arr_f, fname)
 end subroutine
+

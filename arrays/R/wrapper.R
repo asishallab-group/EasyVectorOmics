@@ -1,4 +1,4 @@
-dyn.load("arrays/build/arrays.so")
+dyn.load("./build/arrays.so")
 
 get_array_dims <- function(filename, max_dims = 5) {
   ascii <- utf8ToInt(filename)
@@ -15,7 +15,28 @@ get_array_dims <- function(filename, max_dims = 5) {
   res$dims_out[1:res$ndims]
 }
 
-deserialize_int <- function(filename, max_dims = 5) {
+get_array_metadata_chars <- function(filename, max_dims = 5) {
+  ascii <- utf8ToInt(filename)
+  dims <- integer(max_dims)
+  ndims <- integer(1)
+  typecode <- integer(1)
+  clen <- integer(1)
+
+  res <- .Fortran("get_array_metadata_chars",
+                  filename_ascii = as.integer(ascii),
+                  fn_len = as.integer(length(ascii)),
+                  dims_out = dims,
+                  ndims = ndims,
+                  type_code_out = typecode,
+                  clen_out = clen,
+                  PACKAGE = "arrays")
+
+  list(dims = res$dims_out[1:res$ndims],
+       type = res$type_code_out,
+       clen = res$clen_out)
+}
+
+deserialize_int_array <- function(filename, max_dims = 5) {
     ascii <- utf8ToInt(filename)
 
     actual_dims <- get_array_dims(filename, max_dims)
@@ -37,260 +58,105 @@ deserialize_int <- function(filename, max_dims = 5) {
     array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
 }
 
-deserialize_real_1d <- function(filename, n) {
-  arr <- double(n)
-  res <- .Fortran("deserialize_real_1d_r",
-                  arr = arr,
-                  filename = as.character(filename),
-                  PACKAGE = "arrays")
-  res$arr
-}
-
-deserialize_real_2d <- function(filename, dim1, dim2) {
-  arr <- double(dim1 * dim2)
-  res <- .Fortran("deserialize_real_2d_r",
-                  arr = arr,
-                  filename = as.character(filename),
-                  PACKAGE = "arrays")
-  array(res$arr, dim = c(dim1, dim2))
-}
-
-deserialize_real_3d <- function(filename, dim1, dim2, dim3) {
-  arr <- double(dim1 * dim2 * dim3)
-  res <- .Fortran("deserialize_real_3d_r",
-                  arr = arr,
-                  filename = as.character(filename),
-                  PACKAGE = "arrays")
-  array(res$arr, dim = c(dim1, dim2, dim3))
-}
-
-deserialize_real_4d <- function(filename, dim1, dim2, dim3, dim4) {
-  arr <- double(dim1 * dim2 * dim3 * dim4)
-  res <- .Fortran("deserialize_real_4d_r",
-                  arr = arr,
-                  filename = as.character(filename),
-                  PACKAGE = "arrays")
-  array(res$arr, dim = c(dim1, dim2, dim3, dim4))
-}
-
-deserialize_real_5d <- function(filename, dim1, dim2, dim3, dim4, dim5) {
-  arr <- double(dim1 * dim2 * dim3 * dim4 * dim5)
-  res <- .Fortran("deserialize_real_5d_r",
-                  arr = arr,
-                  filename = as.character(filename),
-                  PACKAGE = "arrays")
-  array(res$arr, dim = c(dim1, dim2, dim3, dim4, dim5))
-}
-
-# Für char: Rückgabe als character-Vektor/Array, Annahme: maximale Länge clen muss bekannt sein
-deserialize_char_1d <- function(filename, n, clen) {
-  arr <- rep(strrep(" ", clen), n)
-  res <- .Fortran("deserialize_char_1d_r",
-                  arr = arr,
-                  filename = as.character(filename),
-                  PACKAGE = "arrays")
-  trimws(res$arr)
-}
-
-deserialize_char_2d <- function(filename, dim1, dim2, clen) {
-  arr <- rep(strrep(" ", clen), dim1 * dim2)
-  res <- .Fortran("deserialize_char_2d_r",
-                  arr = arr,
-                  filename = as.character(filename),
-                  PACKAGE = "arrays")
-  matrix(trimws(res$arr), nrow = dim1, ncol = dim2)
-}
-
-deserialize_char_3d <- function(filename, dim1, dim2, dim3, clen) {
-  arr <- rep(strrep(" ", clen), dim1 * dim2 * dim3)
-  res <- .Fortran("deserialize_char_3d_r",
-                  arr = arr,
-                  filename = as.character(filename),
-                  PACKAGE = "arrays")
-  array(trimws(res$arr), dim = c(dim1, dim2, dim3))
-}
-
-deserialize_char_4d <- function(filename, dim1, dim2, dim3, dim4, clen) {
-  arr <- rep(strrep(" ", clen), dim1 * dim2 * dim3 * dim4)
-  res <- .Fortran("deserialize_char_4d_r",
-                  arr = arr,
-                  filename = as.character(filename),
-                  PACKAGE = "arrays")
-  array(trimws(res$arr), dim = c(dim1, dim2, dim3, dim4))
-}
-
-deserialize_char_5d <- function(filename, dim1, dim2, dim3, dim4, dim5, clen) {
-  arr <- rep(strrep(" ", clen), dim1 * dim2 * dim3 * dim4 * dim5)
-  res <- .Fortran("deserialize_char_5d_r",
-                  arr = arr,
-                  filename = as.character(filename),
-                  PACKAGE = "arrays")
-  array(trimws(res$arr), dim = c(dim1, dim2, dim3, dim4, dim5))
-}
-
-# --- Serialize Funktionen ---
-
-serialize_int_1d <- function(arr, filename) {
+deserialize_real_array <- function(filename, max_dims = 5) {
     ascii <- utf8ToInt(filename)
-    .Fortran("serialize_int_1d_r",
-           arr = as.integer(arr),
-           n1 = as.integer(length(arr)),
+
+    actual_dims <- get_array_dims(filename, max_dims)
+    total_size <- prod(actual_dims)
+
+    flat <- double(total_size)
+    dims <- integer(max_dims)
+    ndim <- integer(1)
+
+    res <- .Fortran("deserialize_real_flat_r",
+                flat_arr = flat,
+                dims_out = dims,
+                ndim_out = ndim,
+                filename_ascii = as.integer(ascii),
+                fn_len = as.integer(length(ascii)),
+                PACKAGE = "arrays")
+    actual_dims <- res$dims_out[1:res$ndim_out]
+    array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
+}
+
+deserialize_char_array <- function(filename, max_dims = 5) {
+  meta <- get_array_metadata_chars(filename, max_dims)
+  dims <- meta$dims
+  clen <- meta$clen
+  total_size <- prod(dims)
+
+  # R-Zielpuffer: character-Vektor mit leerstrings, Länge total_size
+  flat <- rep(strrep(" ", clen), total_size)
+  ascii <- utf8ToInt(filename)
+
+  res <- .Fortran("deserialize_char_flat_r",
+                  flat_arr = as.character(flat),
+                  dims_out = integer(max_dims),
+                  ndim_out = integer(1),
+                  clen_out = as.integer(clen),
+                  filename_ascii = as.integer(ascii),
+                  fn_len = as.integer(length(ascii)),
+                  PACKAGE = "arrays")
+
+  actual_dims <- res$dims_out[1:res$ndim_out]
+  array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
+}
+
+
+# BASE R arrays are column-major just like fortran, so no serialization is needed for the array structure.
+# Array can simply be passed with with as.integer()
+serialize_int_array <- function(arr, filename) {
+  flat <- as.integer(arr)
+  dims <- as.integer(dim(arr))
+  ndim <- as.integer(length(dims))
+  ascii <- utf8ToInt(filename)
+
+  .Fortran("serialize_int_flat_r",
+           arr = flat,
+           dims = dims,
+           ndim = ndim,
            filename_ascii = as.integer(ascii),
            fn_len = as.integer(length(ascii)),
            PACKAGE = "arrays")
 }
 
-serialize_int_2d <- function(arr, filename) {
-  d <- dim(arr)
-  .Fortran("serialize_int_2d_r",
-           arr = as.integer(arr),
-           n1 = as.integer(d[1]),
-           n2 = as.integer(d[2]),
-           filename = as.character(filename),
+serialize_real_array <- function(arr, filename) {
+  flat <- as.double(arr)
+
+  dims <- if (is.null(dim(arr))) {
+    as.integer(length(arr))  # 1D-Vektor
+  } else {
+    as.integer(dim(arr))
+  }
+
+  ndim <- as.integer(length(dims))
+  ascii <- utf8ToInt(filename)
+
+  .Fortran("serialize_real_flat_r",
+           arr = flat,
+           dims = dims,
+           ndim = ndim,
+           filename_ascii = as.integer(ascii),
+           fn_len = as.integer(length(ascii)),
            PACKAGE = "arrays")
 }
 
-serialize_int_3d <- function(arr, filename) {
-  d <- dim(arr)
-  .Fortran("serialize_int_3d_r",
-           arr = as.integer(arr),
-           n1 = as.integer(d[1]),
-           n2 = as.integer(d[2]),
-           n3 = as.integer(d[3]),
-           filename = as.character(filename),
-           PACKAGE = "arrays")
-}
+serialize_char_array <- function(arr, filename) {
+  flat <- as.character(arr)
+  dims <- as.integer(dim(arr))
+  if (is.null(dims)) dims <- as.integer(length(arr))
+  ndim <- as.integer(length(dims))
+  clen <- max(nchar(flat, type = "chars"))
 
-serialize_int_4d <- function(arr, filename) {
-  d <- dim(arr)
-  .Fortran("serialize_int_4d_r",
-           arr = as.integer(arr),
-           n1 = as.integer(d[1]),
-           n2 = as.integer(d[2]),
-           n3 = as.integer(d[3]),
-           n4 = as.integer(d[4]),
-           filename = as.character(filename),
-           PACKAGE = "arrays")
-}
+  ascii <- utf8ToInt(filename)
 
-serialize_int_5d <- function(arr, filename) {
-  d <- dim(arr)
-  .Fortran("serialize_int_5d_r",
-           arr = as.integer(arr),
-           n1 = as.integer(d[1]),
-           n2 = as.integer(d[2]),
-           n3 = as.integer(d[3]),
-           n4 = as.integer(d[4]),
-           n5 = as.integer(d[5]),
-           filename = as.character(filename),
-           PACKAGE = "arrays")
-}
-
-serialize_real_1d <- function(arr, filename) {
-  .Fortran("serialize_real_1d_r",
-           arr = as.double(arr),
-           n1 = as.integer(length(arr)),
-           filename = as.character(filename),
-           PACKAGE = "arrays")
-}
-
-serialize_real_2d <- function(arr, filename) {
-  d <- dim(arr)
-  .Fortran("serialize_real_2d_r",
-           arr = as.double(arr),
-           n1 = as.integer(d[1]),
-           n2 = as.integer(d[2]),
-           filename = as.character(filename),
-           PACKAGE = "arrays")
-}
-
-serialize_real_3d <- function(arr, filename) {
-  d <- dim(arr)
-  .Fortran("serialize_real_3d_r",
-           arr = as.double(arr),
-           n1 = as.integer(d[1]),
-           n2 = as.integer(d[2]),
-           n3 = as.integer(d[3]),
-           filename = as.character(filename),
-           PACKAGE = "arrays")
-}
-
-serialize_real_4d <- function(arr, filename) {
-  d <- dim(arr)
-  .Fortran("serialize_real_4d_r",
-           arr = as.double(arr),
-           n1 = as.integer(d[1]),
-           n2 = as.integer(d[2]),
-           n3 = as.integer(d[3]),
-           n4 = as.integer(d[4]),
-           filename = as.character(filename),
-           PACKAGE = "arrays")
-}
-
-serialize_real_5d <- function(arr, filename) {
-  d <- dim(arr)
-  .Fortran("serialize_real_5d_r",
-           arr = as.double(arr),
-           n1 = as.integer(d[1]),
-           n2 = as.integer(d[2]),
-           n3 = as.integer(d[3]),
-           n4 = as.integer(d[4]),
-           n5 = as.integer(d[5]),
-           filename = as.character(filename),
-           PACKAGE = "arrays")
-}
-
-serialize_char_1d <- function(arr, filename) {
-  .Fortran("serialize_char_1d_r",
-           arr = as.character(arr),
-           n1 = as.integer(length(arr)),
-           filename = as.character(filename),
-           PACKAGE = "arrays")
-}
-
-serialize_char_2d <- function(arr, filename) {
-  d <- dim(arr)
-  .Fortran("serialize_char_2d_r",
-           arr = as.character(arr),
-           n1 = as.integer(d[1]),
-           n2 = as.integer(d[2]),
-           filename = as.character(filename),
-           PACKAGE = "arrays")
-}
-
-serialize_char_3d <- function(arr, filename) {
-  d <- dim(arr)
-  .Fortran("serialize_char_3d_r",
-           arr = as.character(arr),
-           n1 = as.integer(d[1]),
-           n2 = as.integer(d[2]),
-           n3 = as.integer(d[3]),
-           filename = as.character(filename),
-           PACKAGE = "arrays")
-}
-
-serialize_char_4d <- function(arr, filename) {
-  d <- dim(arr)
-  .Fortran("serialize_char_4d_r",
-           arr = as.character(arr),
-           n1 = as.integer(d[1]),
-           n2 = as.integer(d[2]),
-           n3 = as.integer(d[3]),
-           n4 = as.integer(d[4]),
-           filename = as.character(filename),
-           PACKAGE = "arrays")
-}
-
-serialize_char_5d <- function(arr, filename) {
-  d <- dim(arr)
-  .Fortran("serialize_char_5d_r",
-           arr = as.character(arr),
-           n1 = as.integer(d[1]),
-           n2 = as.integer(d[2]),
-           n3 = as.integer(d[3]),
-           n4 = as.integer(d[4]),
-           n5 = as.integer(d[5]),
-           filename = as.character(filename),
+  .Fortran("serialize_char_flat_r",
+           arr = flat,
+           dims = dims,
+           ndim = ndim,
+           clen = as.integer(clen),
+           filename_ascii = as.integer(ascii),
+           fn_len = as.integer(length(ascii)),
            PACKAGE = "arrays")
 }
 
@@ -300,81 +166,94 @@ test_array_wrappers <- function(tmpdir = tempdir()) {
   fn <- function(name) file.path(tmpdir, name)
 
   cat("Integer tests...\n")
-  cat("Dim 1\n")
+  cat("Dim 1: ")
   arr1 <- 1:10
   # Debug: check storage mode and length
   stopifnot(is.integer(arr1))
   stopifnot(length(arr1) == 10)
-  serialize_int_1d(arr1, fn("int1d.bin"))
-  stopifnot(all(deserialize_int(fn("int1d.bin"), 10) == arr1))
+  serialize_int_array(arr1, fn("int1d.bin"))
+  stopifnot(all(deserialize_int_array(fn("int1d.bin")) == arr1))
+  cat("okay\n")
 
-  cat("Dim 2\n")
+  cat("Dim 2: ")
   arr2 <- matrix(1:12, nrow=3, ncol=4)
   stopifnot(is.integer(arr2))
   stopifnot(length(arr2) == 12)
-  serialize_int_2d(arr2, fn("int2d.bin"))
-  cat("Serialized 2D")
-  stopifnot(all(deserialize_int(fn("int2d.bin"), 3, 4) == arr2))
+  serialize_int_array(arr2, fn("int2d.bin"))
+  stopifnot(all(deserialize_int_array(fn("int2d.bin")) == arr2))
+  cat("okay\n")
 
-  cat("Dim 3\n")
+  cat("Dim 3: ")
   arr3 <- array(1:24, dim = c(2,3,4))
-  serialize_int_3d(arr3, fn("int3d.bin"))
-  stopifnot(all(deserialize_int(fn("int3d.bin"), 2,3,4) == arr3))
+  serialize_int_array(arr3, fn("int3d.bin"))
+  stopifnot(all(deserialize_int_array(fn("int3d.bin")) == arr3))
+  cat("okay\n")
 
-  cat("Dim 4\n")
+  cat("Dim 4: ")
   arr4 <- array(1:48, dim = c(2,3,4,2))
-  serialize_int_4d(arr4, fn("int4d.bin"))
-  stopifnot(all(deserialize_int(fn("int4d.bin"), 2,3,4,2) == arr4))
+  serialize_int_array(arr4, fn("int4d.bin"))
+  stopifnot(all(deserialize_int_array(fn("int4d.bin")) == arr4))
+  cat("okay\n")
 
-  cat("Dim 5\n")
+  cat("Dim 5: ")
   arr5 <- array(1:96, dim = c(2,3,4,2,2))
-  serialize_int_5d(arr5, fn("int5d.bin"))
-  stopifnot(all(deserialize_int(fn("int5d.bin"), 2,3,4,2,2) == arr5))
+  serialize_int_array(arr5, fn("int5d.bin"))
+  stopifnot(all(deserialize_int_array(fn("int5d.bin")) == arr5))
+  cat("okay\n")
 
   # REAL
+  cat("Real tests...\n")
   arr1r <- as.numeric(1:10) * 0.5
-  serialize_real_1d(arr1r, fn("real1d.bin"))
-  stopifnot(all.equal(deserialize_real_1d(fn("real1d.bin"), 10), arr1r))
+  serialize_real_array(arr1r, fn("real1d.bin"))
+  cat("serialized real 1D arr\n")
+  stopifnot(all(deserialize_real_array(fn("real1d.bin")) == arr1r))
+  cat("okay\n")
 
   arr2r <- matrix(runif(12), nrow=3, ncol=4)
-  serialize_real_2d(arr2r, fn("real2d.bin"))
-  stopifnot(all.equal(deserialize_real_2d(fn("real2d.bin"), 3, 4), arr2r))
+  serialize_real_array(arr2r, fn("real2d.bin"))
+  stopifnot(all(deserialize_real_array(fn("real2d.bin")) == arr2r))
+  cat("okay\n")
 
   arr3r <- array(runif(24), dim = c(2,3,4))
-  serialize_real_3d(arr3r, fn("real3d.bin"))
-  stopifnot(all.equal(deserialize_real_3d(fn("real3d.bin"), 2,3,4), arr3r))
+  serialize_real_array(arr3r, fn("real3d.bin"))
+  stopifnot(all(deserialize_real_array(fn("real3d.bin")) == arr3r))
+  cat("okay\n")
 
   arr4r <- array(runif(48), dim = c(2,3,4,2))
-  serialize_real_4d(arr4r, fn("real4d.bin"))
-  stopifnot(all.equal(deserialize_real_4d(fn("real4d.bin"), 2,3,4,2), arr4r))
+  serialize_real_array(arr4r, fn("real4d.bin"))
+  stopifnot(all(deserialize_real_array(fn("real4d.bin")) == arr4r))
+  cat("okay\n")
 
   arr5r <- array(runif(96), dim = c(2,3,4,2,2))
-  serialize_real_5d(arr5r, fn("real5d.bin"))
-  stopifnot(all.equal(deserialize_real_5d(fn("real5d.bin"), 2,3,4,2,2), arr5r))
+  serialize_real_array(arr5r, fn("real5d.bin"))
+  stopifnot(all(deserialize_real_array(fn("real5d.bin")) == arr5r))
+  cat("okay\n")
+  cat("Real tests successful!\n")
 
   # CHAR
+  cat("Character tests...\n")
   clen <- 8
   arr1c <- sprintf("%0*d", clen, 1:10)
-  serialize_char_1d(arr1c, fn("char1d.bin"))
-  stopifnot(all(deserialize_char_1d(fn("char1d.bin"), 10, clen) == arr1c))
+  serialize_char_array(arr1c, fn("char1d.bin"))
+  stopifnot(all(deserialize_char_array(fn("char1d.bin")) == arr1c))
 
   arr2c <- matrix(sprintf("%0*d", clen, 1:12), nrow=3, ncol=4)
-  serialize_char_2d(arr2c, fn("char2d.bin"))
-  stopifnot(all(deserialize_char_2d(fn("char2d.bin"), 3, 4, clen) == arr2c))
+  serialize_char_array(arr2c, fn("char2d.bin"))
+  stopifnot(all(deserialize_char_array(fn("char2d.bin")) == arr2c))
 
   arr3c <- array(sprintf("%0*d", clen, 1:24), dim = c(2,3,4))
-  serialize_char_3d(arr3c, fn("char3d.bin"))
-  stopifnot(all(deserialize_char_3d(fn("char3d.bin"), 2,3,4, clen) == arr3c))
+  serialize_char_array(arr3c, fn("char3d.bin"))
+  stopifnot(all(deserialize_char_array(fn("char3d.bin")) == arr3c))
 
   arr4c <- array(sprintf("%0*d", clen, 1:48), dim = c(2,3,4,2))
-  serialize_char_4d(arr4c, fn("char4d.bin"))
-  stopifnot(all(deserialize_char_4d(fn("char4d.bin"), 2,3,4,2, clen) == arr4c))
+  serialize_char_array(arr4c, fn("char4d.bin"))
+  stopifnot(all(deserialize_char_array(fn("char4d.bin")) == arr4c))
 
   arr5c <- array(sprintf("%0*d", clen, 1:96), dim = c(2,3,4,2,2))
-  serialize_char_5d(arr5c, fn("char5d.bin"))
-  stopifnot(all(deserialize_char_5d(fn("char5d.bin"), 2,3,4,2,2, clen) == arr5c))
+  serialize_char_array(arr5c, fn("char5d.bin"))
+  stopifnot(all(deserialize_char_array(fn("char5d.bin")) == arr5c))
 
-  cat("Alle Wrapper-Tests erfolgreich!\n")
+  cat("All Wrapper-Tests done!\n")
 }
 
 # Am Ende der Datei automatisch testen (optional, auskommentieren falls nicht gewünscht)
