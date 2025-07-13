@@ -140,6 +140,7 @@ subroutine deserialize_int_flat_r(flat_arr, dims_out, ndim_out, filename_ascii, 
     flat_arr(i) = flat(i)
   end do
 
+  ! flat is no longer needed but manually created so it needs to be deallocated
   if (associated(flat)) deallocate(flat)
 end subroutine
 
