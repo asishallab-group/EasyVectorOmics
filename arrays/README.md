@@ -1,4 +1,3 @@
-```markdown
 # Array Serialization Library for Fortran
 
 ## Overview
