@@ -188,29 +188,43 @@ contains
 
 end module serialize_char
 
-subroutine serialize_char_flat_r(arr, dims, ndim, clen, filename_ascii, fn_len)
+subroutine serialize_char_flat_r(ascii_arr, dims, ndim, clen, filename_ascii, fn_len)
   use iso_fortran_env
   use serialize_char
   implicit none
 
-  character(len=*), intent(in) :: arr(:)
-  integer(int32), intent(in) :: dims(:)
+  integer(int32), intent(in) :: ascii_arr(clen, *)
+  integer(int32), intent(in) :: dims(ndim)
   integer(int32), intent(in) :: ndim
   integer(int32), intent(in) :: clen
   integer(int32), intent(in) :: filename_ascii(fn_len)
   integer(int32), intent(in) :: fn_len
 
   character(len=:), allocatable :: filename
-  integer :: i
+  character(len=clen), allocatable :: flat(:)
+  integer :: i, j, total
 
-  ! Build filename string from ascii codes
+  total = product(dims)
+  allocate(flat(total))
   allocate(character(len=fn_len) :: filename)
+
+  ! ASCII to character conversion
+  do i = 1, total
+    flat(i) = ""
+    do j = 1, clen
+      if (ascii_arr(j, i) > 0) then
+        flat(i)(j:j) = char(ascii_arr(j, i))
+      else
+        exit
+      end if
+    end do
+  end do
+
   do i = 1, fn_len
     filename(i:i) = char(filename_ascii(i))
   end do
 
-  ! Call main serialize routine
-  call serialize_char_nd(arr, dims, ndim, clen, filename)
+  call serialize_char_nd(flat, dims, ndim, clen, filename)
 
 end subroutine serialize_char_flat_r
 

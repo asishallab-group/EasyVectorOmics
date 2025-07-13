@@ -14,3 +14,12 @@ okay
 okay
 Real tests successful!
 Character tests...
+actual_dims: 10 clen: 8 
+actual_dims: 3 4 clen: 8 
+actual_dims: 2 3 4 clen: 8 
+actual_dims: 2 3 4 2 clen: 8 
+actual_dims: 2 3 4 2 2 clen: 8 
+actual_dims: 8 clen: 8 
+actual_dims: 2 3 clen: 7 
+actual_dims: 2 2 2 clen: 7 
+All ASCII string variation tests passed!

@@ -79,27 +79,36 @@ deserialize_real_array <- function(filename, max_dims = 5) {
     array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
 }
 
-deserialize_char_array <- function(filename, max_dims = 5) {
-  meta <- get_array_metadata_chars(filename, max_dims)
-  dims <- meta$dims
-  clen <- meta$clen
-  total_size <- prod(dims)
-
-  # R-Zielpuffer: character-Vektor mit leerstrings, Länge total_size
-  flat <- rep(strrep(" ", clen), total_size)
+deserialize_char_array <- function(filename, max_dims = 5, max_clen = 100) {
   ascii <- utf8ToInt(filename)
+  dims <- integer(max_dims)
+  ndim <- integer(1)
+  clen <- integer(1)
+
+  # Lade Metadaten: Dimensionen + clen
+  meta <- get_array_metadata_chars(filename, max_dims)
+
+  actual_dims <- meta$dims
+  clen <- meta$clen
+  total <- prod(actual_dims)
+  cat("actual_dims:", actual_dims, "clen:", clen, "\n")
+
+  ascii_arr <- integer(clen * total)
 
   res <- .Fortran("deserialize_char_flat_r",
-                  flat_arr = as.character(flat),
-                  dims_out = integer(max_dims),
-                  ndim_out = integer(1),
-                  clen_out = as.integer(clen),
-                  filename_ascii = as.integer(ascii),
-                  fn_len = as.integer(length(ascii)),
-                  PACKAGE = "arrays")
+    ascii_arr = ascii_arr,
+    dims_out = dims,
+    ndim_out = ndim,
+    clen_out = clen,
+    filename_ascii = ascii,
+    fn_len = length(ascii),
+    PACKAGE = "arrays"
+  )
 
-  actual_dims <- res$dims_out[1:res$ndim_out]
-  array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
+  mat <- matrix(res$ascii_arr, nrow = clen)
+  chars <- apply(mat, 2, function(col) rawToChar(as.raw(col[col > 0])))
+
+  array(chars, dim = res$dims_out[1:res$ndim_out])
 }
 
 
@@ -142,22 +151,29 @@ serialize_real_array <- function(arr, filename) {
 }
 
 serialize_char_array <- function(arr, filename) {
-  flat <- as.character(arr)
-  dims <- as.integer(dim(arr))
-  if (is.null(dims)) dims <- as.integer(length(arr))
-  ndim <- as.integer(length(dims))
-  clen <- max(nchar(flat, type = "chars"))
+  stopifnot(is.character(arr))
+  arr <- as.array(arr)
+  dims <- dim(arr)
+  if (is.null(dims)) dims <- length(arr)
+  clen <- max(nchar(arr, type = "chars"))
 
-  ascii <- utf8ToInt(filename)
+  # encode to integer matrix
+  # Chars can not be passed via .Fortran directly
+  mat <- matrix(0L, nrow = clen, ncol = length(arr))
+  for (i in seq_along(arr)) {
+    chars <- utf8ToInt(substr(arr[i], 1, clen))
+    mat[seq_along(chars), i] <- chars
+  }
 
-  .Fortran("serialize_char_flat_r",
-           arr = flat,
-           dims = dims,
-           ndim = ndim,
-           clen = as.integer(clen),
-           filename_ascii = as.integer(ascii),
-           fn_len = as.integer(length(ascii)),
-           PACKAGE = "arrays")
+  invisible(.Fortran("serialize_char_flat_r",
+    ascii_arr = as.integer(mat),
+    dims = as.integer(dims),
+    ndim = as.integer(length(dims)),
+    clen = as.integer(clen),
+    filename_ascii = utf8ToInt(filename),
+    fn_len = nchar(filename),
+    PACKAGE = "arrays"
+  ))
 }
 
 # --- Testprogramm für alle Funktionen ---
@@ -253,7 +269,22 @@ test_array_wrappers <- function(tmpdir = tempdir()) {
   serialize_char_array(arr5c, fn("char5d.bin"))
   stopifnot(all(deserialize_char_array(fn("char5d.bin")) == arr5c))
 
-  cat("All Wrapper-Tests done!\n")
+  # 1D-Array mit verschiedenen ASCII-Längen
+  arr_ascii1 <- c("A", "G1", "GENE003", "BRCA1", "XYZ", "", "12345678", "SEQ")
+  serialize_char_array(arr_ascii1, fn("char_ascii1d.bin"))
+  stopifnot(all(deserialize_char_array(fn("char_ascii1d.bin")) == arr_ascii1))
+
+  # 2D-Matrix mit ASCII-Zeichenketten verschiedener Länge
+  arr_ascii2 <- matrix(c("GENE1", "GENE22", "GENE333", "", "ID", "SEQ9999"), nrow = 2, byrow = TRUE)
+  serialize_char_array(arr_ascii2, fn("char_ascii2d.bin"))
+  stopifnot(all(deserialize_char_array(fn("char_ascii2d.bin")) == arr_ascii2))
+
+  # 3D-Array mit realistischerem biologischen Text
+  arr_ascii3 <- array(c("TP53", "BRCA1", "MT-ATP6", "CYTB", "ND1", "", "NRAS", "EGFR"), dim = c(2, 2, 2))
+  serialize_char_array(arr_ascii3, fn("char_ascii3d.bin"))
+  stopifnot(all(deserialize_char_array(fn("char_ascii3d.bin")) == arr_ascii3))
+
+  cat("All ASCII string variation tests passed!\n")
 }
 
 # Am Ende der Datei automatisch testen (optional, auskommentieren falls nicht gewünscht)

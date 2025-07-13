@@ -179,44 +179,45 @@ contains
 
 end module char_deserialize_mod
 
-subroutine deserialize_char_flat_r(flat_arr, dims_out, ndim_out, clen_out, filename_ascii, fn_len)
+subroutine deserialize_char_flat_r(ascii_arr, dims_out, ndim_out, clen_out, filename_ascii, fn_len)
   use iso_fortran_env
   use char_deserialize_mod
   implicit none
 
-  ! Rückgabe an R
-  character(len=*), intent(out) :: flat_arr(*)
+  integer(int32), intent(out) :: ascii_arr(*)
   integer(int32), intent(out) :: dims_out(*)
-  integer(int32), intent(out) :: ndim_out
-  integer(int32), intent(out) :: clen_out
-
+  integer, intent(out) :: ndim_out, clen_out
   integer(int32), intent(in) :: filename_ascii(fn_len)
   integer(int32), intent(in) :: fn_len
 
   character(len=:), allocatable :: filename
-  integer :: i
   character(len=:), pointer :: flat(:)
-  integer(int32), allocatable, target :: dims(:)
+  integer(int32), allocatable :: dims(:)
+  integer :: i, j, clen, total
 
-  ! Build filename string from ascii codes
   allocate(character(len=fn_len) :: filename)
   do i = 1, fn_len
     filename(i:i) = char(filename_ascii(i))
   end do
 
-  ! Call main deserialize routine
-  call deserialize_char_flat(flat, dims, clen_out, filename)
-
+  call deserialize_char_flat(flat, dims, clen, filename)
+  total = product(dims)
+  clen_out = clen
   ndim_out = size(dims)
+
   do i = 1, ndim_out
     dims_out(i) = dims(i)
   end do
 
-  ! Copy data element-wise into flat_arr
-  do i = 1, product(dims)
-    flat_arr(i) = flat(i)
+  do i = 1, total
+    do j = 1, clen
+      if (j <= len_trim(flat(i))) then
+        ascii_arr((i - 1) * clen + j) = iachar(flat(i)(j:j))
+      else
+        ascii_arr((i - 1) * clen + j) = 0
+      end if
+    end do
   end do
 
-  if (associated(flat)) deallocate(flat)
-
 end subroutine deserialize_char_flat_r
+
