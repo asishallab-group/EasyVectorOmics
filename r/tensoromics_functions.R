@@ -335,6 +335,7 @@ calculate_fc_by_patterns <- function(df, control_pattern, condition_patterns) {
   # --- Call Fortran subroutine to calculate fold changes ---
   result <- .Fortran("calc_fchange_r",
                as.integer(n_genes),
+               as.integer(n_columns),   # Pass n_cols as required by Fortran
                as.integer(n_pairs),
                as.integer(control_cols),
                as.integer(condition_cols),
@@ -342,7 +343,7 @@ calculate_fc_by_patterns <- function(df, control_pattern, condition_patterns) {
                output_vector)
 
   # --- Reconstruct the fold change matrix ---
-  output_matrix <- matrix(result[[6]], nrow = n_genes, ncol = n_pairs)
+  output_matrix <- matrix(result[[7]], nrow = n_genes, ncol = n_pairs)
   colnames(output_matrix) <- condition_labels
   rownames(output_matrix) <- rownames(df)
 

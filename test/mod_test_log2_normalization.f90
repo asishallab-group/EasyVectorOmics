@@ -2,6 +2,7 @@
 !> @brief Unit test suite for log2_transformation routine.
 module mod_test_log2_transformation
   use asserts
+  use, intrinsic :: iso_fortran_env, only: real64
   implicit none
   public
 
@@ -79,8 +80,8 @@ contains
   !> @brief Test log2(x+1) transformation with basic known values (from R test).
   subroutine test_log2_basic_values()
     integer :: n_genes, n_tissues
-    real(8), dimension(4) :: input_flat, output_flat, expected_flat
-    real(8), parameter :: LOG2 = log(2.0d0)
+    real(real64), dimension(4) :: input_flat, output_flat, expected_flat
+    real(real64), parameter :: LOG2 = log(2.0d0)
     
     n_genes = 2; n_tissues = 2
     ! Matrix: [0, 7; 3, 15] in column-major (flattened: [0, 3, 7, 15])
@@ -102,7 +103,7 @@ contains
   !> @brief Test that log2(0+1) = 0 for all zeros (from R test).
   subroutine test_log2_zeros_handling()
     integer :: n_genes, n_tissues
-    real(8), dimension(4) :: input_flat, output_flat, expected_flat
+    real(real64), dimension(4) :: input_flat, output_flat, expected_flat
     
     n_genes = 2; n_tissues = 2
     input_flat = [0.0d0, 0.0d0, 0.0d0, 0.0d0]
@@ -118,7 +119,7 @@ contains
   !> @brief Test that dimensions are preserved (from R test concept).
   subroutine test_log2_preserves_dimensions()
     integer :: n_genes, n_tissues
-    real(8), dimension(6) :: input_flat, output_flat
+    real(real64), dimension(6) :: input_flat, output_flat
     
     n_genes = 2; n_tissues = 3
     input_flat = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
@@ -135,8 +136,8 @@ contains
   !> @brief Test single element matrix.
   subroutine test_log2_single_element()
     integer :: n_genes, n_tissues
-    real(8), dimension(1) :: input_flat, output_flat
-    real(8), parameter :: LOG2 = log(2.0d0)
+    real(real64), dimension(1) :: input_flat, output_flat
+    real(real64), parameter :: LOG2 = log(2.0d0)
     
     n_genes = 1; n_tissues = 1
     input_flat = [7.0d0]
@@ -150,8 +151,8 @@ contains
   !> @brief Test with large values to check numerical stability.
   subroutine test_log2_large_values()
     integer :: n_genes, n_tissues
-    real(8), dimension(4) :: input_flat, output_flat
-    real(8), parameter :: LOG2 = log(2.0d0)
+    real(real64), dimension(4) :: input_flat, output_flat
+    real(real64), parameter :: LOG2 = log(2.0d0)
     
     n_genes = 2; n_tissues = 2
     input_flat = [1d6, 1d9, 1d12, 1d15]
@@ -170,8 +171,8 @@ contains
   !> @brief Test with very small positive values.
   subroutine test_log2_small_values()
     integer :: n_genes, n_tissues
-    real(8), dimension(4) :: input_flat, output_flat
-    real(8), parameter :: LOG2 = log(2.0d0)
+    real(real64), dimension(4) :: input_flat, output_flat
+    real(real64), parameter :: LOG2 = log(2.0d0)
     
     n_genes = 2; n_tissues = 2
     input_flat = [1d-6, 1d-9, 1d-12, 1d-15]
@@ -188,7 +189,7 @@ contains
   !> @brief Test with powers of 2 minus 1 for exact results.
   subroutine test_log2_powers_of_two()
     integer :: n_genes, n_tissues
-    real(8), dimension(4) :: input_flat, output_flat, expected_flat
+    real(real64), dimension(4) :: input_flat, output_flat, expected_flat
     
     n_genes = 2; n_tissues = 2
     ! Powers of 2 minus 1: log2((2^n - 1) + 1) = log2(2^n) = n
@@ -204,10 +205,16 @@ contains
   !> @brief Test with random matrix for general properties.
   subroutine test_log2_random_matrix()
     integer, parameter :: n_genes = 5, n_tissues = 4
-    real(8), dimension(n_genes * n_tissues) :: input_flat, output_flat
+    real(real64), dimension(n_genes * n_tissues) :: input_flat, output_flat
     integer :: i
-    
-    call random_seed()
+    integer :: n_seed
+    integer, allocatable :: seed_array(:)
+    ! For reproducibility: initialize the random number generator seed
+    call random_seed(size=n_seed)
+    allocate(seed_array(n_seed))
+    seed_array = 42  ! Fixed value for reproducibility
+    call random_seed(put=seed_array)
+    deallocate(seed_array)
     call random_number(input_flat)
     input_flat = input_flat * 100.0d0  ! Scale to [0, 100]
     
@@ -227,8 +234,8 @@ contains
   !> @brief Test behavior with negative values (should still work due to +1).
   subroutine test_log2_negative_handling()
     integer :: n_genes, n_tissues
-    real(8), dimension(4) :: input_flat, output_flat
-    real(8), parameter :: LOG2 = log(2.0d0)
+    real(real64), dimension(4) :: input_flat, output_flat
+    real(real64), parameter :: LOG2 = log(2.0d0)
     
     n_genes = 2; n_tissues = 2
     input_flat = [-0.5d0, -0.9d0, -0.99d0, -0.999d0]
@@ -245,8 +252,8 @@ contains
   !> @brief Test edge cases and boundary conditions.
   subroutine test_log2_edge_cases()
     integer :: n_genes, n_tissues
-    real(8), dimension(4) :: input_flat, output_flat
-    real(8), parameter :: LOG2 = log(2.0d0)
+    real(real64), dimension(4) :: input_flat, output_flat
+    real(real64), parameter :: LOG2 = log(2.0d0)
     
     n_genes = 2; n_tissues = 2
     input_flat = [0.0d0, 1.0d0, huge(1.0d0), tiny(1.0d0)]
@@ -263,7 +270,7 @@ contains
   !> @brief Test monotonic property: log2(x+1) is strictly increasing.
   subroutine test_log2_monotonic_property()
     integer :: n_genes, n_tissues
-    real(8), dimension(5) :: input_flat, output_flat
+    real(real64), dimension(5) :: input_flat, output_flat
     integer :: i
     
     n_genes = 5; n_tissues = 1
@@ -281,8 +288,8 @@ contains
   !> @brief Test mathematical properties of log2 transformation.
   subroutine test_log2_mathematical_properties()
     integer :: n_genes, n_tissues
-    real(8), dimension(8) :: input_flat, output_flat
-    real(8), parameter :: LOG2 = log(2.0d0)
+    real(real64), dimension(8) :: input_flat, output_flat
+    real(real64), parameter :: LOG2 = log(2.0d0)
     
     n_genes = 4; n_tissues = 2
     input_flat = [1.0d0, 3.0d0, 7.0d0, 15.0d0, 2.0d0, 6.0d0, 14.0d0, 30.0d0]

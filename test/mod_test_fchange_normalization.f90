@@ -2,6 +2,7 @@
 !> @brief Unit test suite for calc_fchange routine.
 module mod_test_calc_fchange
   use asserts
+  use, intrinsic :: iso_fortran_env, only: real64
   implicit none
   public
 
@@ -76,13 +77,13 @@ contains
 
   !> @brief Test basic fold change calculation (from R test).
   subroutine test_calc_fchange_basic_calculation()
-    integer :: n_genes, n_pairs
+    integer :: n_genes, n_cols, n_pairs
     integer, dimension(1) :: control_cols, cond_cols
-    real(8), dimension(4) :: i_matrix  ! 2 genes × 2 samples
-    real(8), dimension(2) :: o_matrix  ! 2 genes × 1 pair
-    real(8), dimension(2) :: expected_matrix
+    real(real64), dimension(4) :: i_matrix  ! 2 genes × 2 samples
+    real(real64), dimension(2) :: o_matrix  ! 2 genes × 1 pair
+    real(real64), dimension(2) :: expected_matrix
     
-    n_genes = 2; n_pairs = 1
+    n_genes = 2; n_cols = 2; n_pairs = 1
     ! Input matrix (column-major): [1,2; 4,8] → geneA=[1,4], geneB=[2,8]
     i_matrix = [1.0d0, 2.0d0, 4.0d0, 8.0d0]
     
@@ -90,7 +91,7 @@ contains
     control_cols = [1]
     cond_cols = [2]
     
-    call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
+    call calc_fchange_r(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
     
     ! Expected fold changes: geneA = 4-1 = 3, geneB = 8-2 = 6
     expected_matrix = [3.0d0, 6.0d0]
@@ -102,18 +103,18 @@ contains
 
   !> @brief Test result correctness with specific expected values (from R test).
   subroutine test_calc_fchange_result_correctness()
-    integer :: n_genes, n_pairs
+    integer :: n_genes, n_cols, n_pairs
     integer, dimension(1) :: control_cols, cond_cols
-    real(8), dimension(4) :: i_matrix
-    real(8), dimension(2) :: o_matrix
+    real(real64), dimension(4) :: i_matrix
+    real(real64), dimension(2) :: o_matrix
     
-    n_genes = 2; n_pairs = 1
+    n_genes = 2; n_cols = 2; n_pairs = 1
     ! Same data as basic test but focusing on correctness
     i_matrix = [1.0d0, 2.0d0, 4.0d0, 8.0d0]
     control_cols = [1]
     cond_cols = [2]
     
-    call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
+    call calc_fchange_r(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
     
     ! Check specific values as in R test
     call assert_equal_real(o_matrix(1), 3.0d0, 1d-12, &
@@ -124,19 +125,19 @@ contains
 
   !> @brief Test that output dimensions are correct.
   subroutine test_calc_fchange_preserves_dimensions()
-    integer :: n_genes, n_pairs
+    integer :: n_genes, n_cols, n_pairs
     integer, dimension(2) :: control_cols, cond_cols
-    real(8), dimension(12) :: i_matrix  ! 3 genes × 4 samples
-    real(8), dimension(6) :: o_matrix   ! 3 genes × 2 pairs
+    real(real64), dimension(12) :: i_matrix  ! 3 genes × 4 samples
+    real(real64), dimension(6) :: o_matrix   ! 3 genes × 2 pairs
     
-    n_genes = 3; n_pairs = 2
+    n_genes = 3; n_cols = 4; n_pairs = 2
     i_matrix = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0, &
                 7.0d0, 8.0d0, 9.0d0, 10.0d0, 11.0d0, 12.0d0]
     
     control_cols = [1, 3]  ! Control columns
     cond_cols = [2, 4]     ! Condition columns
     
-    call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
+    call calc_fchange_r(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
     
     ! Output should have n_genes * n_pairs elements
     call assert_equal_int(size(o_matrix), n_genes * n_pairs, &
@@ -147,17 +148,17 @@ contains
 
   !> @brief Test with single gene, single pair.
   subroutine test_calc_fchange_single_pair()
-    integer :: n_genes, n_pairs
+    integer :: n_genes, n_cols, n_pairs
     integer, dimension(1) :: control_cols, cond_cols
-    real(8), dimension(2) :: i_matrix  ! 1 gene × 2 samples
-    real(8), dimension(1) :: o_matrix  ! 1 gene × 1 pair
+    real(real64), dimension(2) :: i_matrix  ! 1 gene × 2 samples
+    real(real64), dimension(1) :: o_matrix  ! 1 gene × 1 pair
     
-    n_genes = 1; n_pairs = 1
+    n_genes = 1; n_cols = 2; n_pairs = 1
     i_matrix = [5.0d0, 15.0d0]  ! gene1: control=5, condition=15
     control_cols = [1]
     cond_cols = [2]
     
-    call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
+    call calc_fchange_r(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
     
     ! Expected: 15 - 5 = 10
     call assert_equal_real(o_matrix(1), 10.0d0, 1d-12, &
@@ -166,12 +167,12 @@ contains
 
   !> @brief Test with multiple condition-control pairs.
   subroutine test_calc_fchange_multiple_pairs()
-    integer :: n_genes, n_pairs
+    integer :: n_genes, n_cols, n_pairs
     integer, dimension(3) :: control_cols, cond_cols
-    real(8), dimension(12) :: i_matrix  ! 2 genes × 6 samples
-    real(8), dimension(6) :: o_matrix   ! 2 genes × 3 pairs
+    real(real64), dimension(12) :: i_matrix  ! 2 genes × 6 samples
+    real(real64), dimension(6) :: o_matrix   ! 2 genes × 3 pairs
     
-    n_genes = 2; n_pairs = 3
+    n_genes = 2; n_cols = 6; n_pairs = 3
     ! 2 genes, 6 samples (3 control-condition pairs)
     i_matrix = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0, &  ! samples 1,2,3
                 7.0d0, 8.0d0, 9.0d0, 10.0d0, 11.0d0, 12.0d0]  ! samples 4,5,6
@@ -179,7 +180,7 @@ contains
     control_cols = [1, 3, 5]  ! Control samples
     cond_cols = [2, 4, 6]     ! Condition samples
     
-    call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
+    call calc_fchange_r(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
     
     call assert_no_nan_real(o_matrix, 6, "test_calc_fchange_multiple_pairs: NaN in result")
     
@@ -192,18 +193,18 @@ contains
 
   !> @brief Test with negative expression values.
   subroutine test_calc_fchange_negative_values()
-    integer :: n_genes, n_pairs
+    integer :: n_genes, n_cols, n_pairs
     integer, dimension(2) :: control_cols, cond_cols
-    real(8), dimension(8) :: i_matrix  ! 2 genes × 4 samples
-    real(8), dimension(4) :: o_matrix  ! 2 genes × 2 pairs
+    real(real64), dimension(8) :: i_matrix  ! 2 genes × 4 samples
+    real(real64), dimension(4) :: o_matrix  ! 2 genes × 2 pairs
     
-    n_genes = 2; n_pairs = 2
+    n_genes = 2; n_cols = 4; n_pairs = 2
     i_matrix = [-1.0d0, -2.0d0, 3.0d0, 4.0d0, -5.0d0, -6.0d0, 7.0d0, 8.0d0]
     
     control_cols = [1, 3]  ! Columns with negative values
     cond_cols = [2, 4]     ! Columns with positive values
     
-    call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
+    call calc_fchange_r(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
     
     call assert_no_nan_real(o_matrix, 4, "test_calc_fchange_negative_values: NaN in result")
     
@@ -216,17 +217,17 @@ contains
 
   !> @brief Test with zero expression values.
   subroutine test_calc_fchange_zero_values()
-    integer :: n_genes, n_pairs
+    integer :: n_genes, n_cols, n_pairs
     integer, dimension(1) :: control_cols, cond_cols
-    real(8), dimension(4) :: i_matrix  ! 2 genes × 2 samples
-    real(8), dimension(2) :: o_matrix  ! 2 genes × 1 pair
+    real(real64), dimension(4) :: i_matrix  ! 2 genes × 2 samples
+    real(real64), dimension(2) :: o_matrix  ! 2 genes × 1 pair
     
-    n_genes = 2; n_pairs = 1
+    n_genes = 2; n_cols = 2; n_pairs = 1
     i_matrix = [0.0d0, 0.0d0, 5.0d0, 10.0d0]  ! Control=0, Condition>0
     control_cols = [1]
     cond_cols = [2]
     
-    call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
+    call calc_fchange_r(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
     
     ! Expected: gene1: 5-0=5, gene2: 10-0=10
     call assert_equal_real(o_matrix(1), 5.0d0, 1d-12, &
@@ -237,17 +238,17 @@ contains
 
   !> @brief Test with large expression values for numerical stability.
   subroutine test_calc_fchange_large_values()
-    integer :: n_genes, n_pairs
+    integer :: n_genes, n_cols, n_pairs
     integer, dimension(1) :: control_cols, cond_cols
-    real(8), dimension(4) :: i_matrix  ! 2 genes × 2 samples
-    real(8), dimension(2) :: o_matrix  ! 2 genes × 1 pair
+    real(real64), dimension(4) :: i_matrix  ! 2 genes × 2 samples
+    real(real64), dimension(2) :: o_matrix  ! 2 genes × 1 pair
     
-    n_genes = 2; n_pairs = 1
+    n_genes = 2; n_cols = 2; n_pairs = 1
     i_matrix = [1d6, 2d6, 1d9, 2d9]  ! Very large values
     control_cols = [1]
     cond_cols = [2]
     
-    call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
+    call calc_fchange_r(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
     
     call assert_no_nan_real(o_matrix, 2, "test_calc_fchange_large_values: NaN in result")
     
@@ -260,18 +261,18 @@ contains
 
   !> @brief Test with identical control and condition values (zero fold change).
   subroutine test_calc_fchange_identical_values()
-    integer :: n_genes, n_pairs
+    integer :: n_genes, n_cols, n_pairs
     integer, dimension(2) :: control_cols, cond_cols
-    real(8), dimension(8) :: i_matrix  ! 2 genes × 4 samples
-    real(8), dimension(4) :: o_matrix  ! 2 genes × 2 pairs
+    real(real64), dimension(8) :: i_matrix  ! 2 genes × 4 samples
+    real(real64), dimension(4) :: o_matrix  ! 2 genes × 2 pairs
     
-    n_genes = 2; n_pairs = 2
+    n_genes = 2; n_cols = 4; n_pairs = 2
     i_matrix = [5.0d0, 10.0d0, 5.0d0, 10.0d0, 7.0d0, 14.0d0, 7.0d0, 14.0d0]
     
     control_cols = [1, 3]  ! Identical to condition columns
     cond_cols = [2, 4]
     
-    call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
+    call calc_fchange_r(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
     
     ! All fold changes should be zero (identical values)
     call assert_equal_real(o_matrix(1), 0.0d0, 1d-12, &
@@ -286,12 +287,12 @@ contains
 
   !> @brief Test with mixed positive, negative, and zero values.
   subroutine test_calc_fchange_mixed_values()
-    integer :: n_genes, n_pairs
+    integer :: n_genes, n_cols, n_pairs
     integer, dimension(3) :: control_cols, cond_cols
-    real(8), dimension(18) :: i_matrix  ! 3 genes × 6 samples
-    real(8), dimension(9) :: o_matrix   ! 3 genes × 3 pairs
+    real(real64), dimension(18) :: i_matrix  ! 3 genes × 6 samples
+    real(real64), dimension(9) :: o_matrix   ! 3 genes × 3 pairs
     
-    n_genes = 3; n_pairs = 3
+    n_genes = 3; n_cols = 6; n_pairs = 3
     i_matrix = [-1.0d0, 0.0d0, 5.0d0,   & ! Control samples (cols 1,3,5)
                 2.0d0, -3.0d0, 0.0d0,   & ! Condition samples (cols 2,4,6)
                 10.0d0, -5.0d0, 2.0d0,  &
@@ -302,7 +303,7 @@ contains
     control_cols = [1, 3, 5]
     cond_cols = [2, 4, 6]
     
-    call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
+    call calc_fchange_r(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
     
     call assert_no_nan_real(o_matrix, 9, "test_calc_fchange_mixed_values: NaN in result")
     

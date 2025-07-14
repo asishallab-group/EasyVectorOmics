@@ -68,11 +68,13 @@ def setup_calc_fchange():
     """Setup fold change function"""
     fchange = lib.calc_fchange_c
     fchange.argtypes = [
-        ctypes.c_int, ctypes.c_int,
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        ctypes.c_int,  # n_genes
+        ctypes.c_int,  # n_cols
+        ctypes.c_int,  # n_pairs
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # control_cols
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # cond_cols
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # i_matrix
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # o_matrix
     ]
     fchange.restype = None
     return fchange
@@ -352,6 +354,7 @@ def test_calc_fchange_example_1():
     
     fchange = setup_calc_fchange()
     n_genes, n_samples = mat.shape
+    n_cols = n_samples
     n_pairs = 1
     
     control_cols = np.array([1], dtype=np.int32, order='F')  # 1-based indexing
@@ -360,7 +363,7 @@ def test_calc_fchange_example_1():
     input_flat = np.asfortranarray(mat).ravel(order='F')
     output_flat = np.zeros(n_genes * n_pairs, dtype=np.float64, order='F')
     
-    fchange(n_genes, n_pairs, control_cols, condition_cols, input_flat, output_flat)
+    fchange(n_genes, n_cols, n_pairs, control_cols, condition_cols, input_flat, output_flat)
     
     print(f"\nOutput (fold changes): {output_flat}")
     
@@ -368,6 +371,7 @@ def test_calc_fchange_example_1():
     print("\nManual verification (condition - control):")
     print(f"Gene 1: {mat[0,1]} - {mat[0,0]} = {mat[0,1] - mat[0,0]}")
     print(f"Gene 2: {mat[1,1]} - {mat[1,0]} = {mat[1,1] - mat[1,0]}")
+
 def test_calc_fchange_example_2():
     """Example 2: Multiple conditions vs same control"""
     print("="*50)
@@ -384,6 +388,7 @@ def test_calc_fchange_example_2():
     
     fchange = setup_calc_fchange()
     n_genes, n_samples = mat.shape
+    n_cols = n_samples
     n_pairs = 2
     
     # Both pairs use column 1 as control, but different condition columns
@@ -393,7 +398,7 @@ def test_calc_fchange_example_2():
     input_flat = np.asfortranarray(mat).ravel(order='F')
     output_flat = np.zeros(n_genes * n_pairs, dtype=np.float64, order='F')
     
-    fchange(n_genes, n_pairs, control_cols, condition_cols, input_flat, output_flat)
+    fchange(n_genes, n_cols, n_pairs, control_cols, condition_cols, input_flat, output_flat)
     result = output_flat.reshape((n_genes, n_pairs), order='F')
     
     print_matrix("Output (2 genes × 2 pairs)", result)

@@ -2,6 +2,7 @@
 !> @brief Unit test suite for calc_tiss_avg routine.
 module mod_test_calc_tiss_avg
   use asserts
+  use, intrinsic :: iso_fortran_env, only: real64
   implicit none
   public
 
@@ -79,8 +80,8 @@ contains
   subroutine test_calc_tiss_avg_three_tissues()
     integer :: n_gene, n_grps
     integer, dimension(3) :: group_s, group_c
-    real(8), dimension(12) :: input_matrix, output_matrix
-    real(8), dimension(6) :: expected_matrix  ! n_gene * n_grps = 2 * 3 = 6
+    real(real64), dimension(12) :: input_matrix, output_matrix
+    real(real64), dimension(6) :: expected_matrix  ! n_gene * n_grps = 2 * 3 = 6
     
     n_gene = 2; n_grps = 3
     ! Input matrix (2 genes × 6 samples): column-major
@@ -91,7 +92,7 @@ contains
     group_s = [1, 3, 5]
     ! Group counts: each tissue has 2 replicates
     group_c = [2, 2, 2]
-    
+
     call calc_tiss_avg_r(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix)
     
     ! Expected results (column-major):
@@ -109,8 +110,8 @@ contains
   subroutine test_calc_tiss_avg_generic_tissues()
     integer :: n_gene, n_grps
     integer, dimension(3) :: group_s, group_c
-    real(8), dimension(12) :: input_matrix, output_matrix
-    real(8), dimension(6) :: expected_matrix  ! n_gene * n_grps = 2 * 3 = 6
+    real(real64), dimension(12) :: input_matrix, output_matrix
+    real(real64), dimension(6) :: expected_matrix  ! n_gene * n_grps = 2 * 3 = 6
     
     n_gene = 2; n_grps = 3
     ! Same data as previous test but representing generic tissue naming
@@ -133,8 +134,8 @@ contains
   subroutine test_calc_tiss_avg_single_tissue()
     integer :: n_gene, n_grps
     integer, dimension(1) :: group_s, group_c
-    real(8), dimension(6) :: input_matrix, output_matrix
-    real(8), dimension(3) :: expected_matrix  ! n_gene * n_grps = 3 * 1 = 3
+    real(real64), dimension(6) :: input_matrix, output_matrix
+    real(real64), dimension(3) :: expected_matrix  ! n_gene * n_grps = 3 * 1 = 3
     
     n_gene = 3; n_grps = 1
     input_matrix = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
@@ -155,8 +156,8 @@ contains
   subroutine test_calc_tiss_avg_preserves_dimensions()
     integer :: n_gene, n_grps
     integer, dimension(2) :: group_s, group_c
-    real(8), dimension(8) :: input_matrix
-    real(8), dimension(8) :: output_matrix  ! n_gene * n_grps = 4 * 2 = 8, same as input
+    real(real64), dimension(8) :: input_matrix
+    real(real64), dimension(8) :: output_matrix  ! n_gene * n_grps = 4 * 2 = 8, same as input
     
     n_gene = 4; n_grps = 2
     input_matrix = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0, 7.0d0, 8.0d0]
@@ -172,13 +173,12 @@ contains
                        "test_calc_tiss_avg_preserves_dimensions: NaN in result")
   end subroutine test_calc_tiss_avg_preserves_dimensions
 
-
   !> @brief Test with unequal number of replicates per tissue.
   subroutine test_calc_tiss_avg_unequal_replicates()
     integer :: n_gene, n_grps
     integer, dimension(3) :: group_s, group_c
-    real(8), dimension(14) :: input_matrix
-    real(8), dimension(6) :: output_matrix  ! n_gene * n_grps = 2 * 3 = 6, NOT 14
+    real(real64), dimension(14) :: input_matrix
+    real(real64), dimension(6) :: output_matrix  ! n_gene * n_grps = 2 * 3 = 6, NOT 14
     
     n_gene = 2; n_grps = 3
     input_matrix = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0, 7.0d0, &
@@ -200,12 +200,11 @@ contains
                          "test_calc_tiss_avg_unequal_replicates: unequal replicate averaging incorrect")
   end subroutine test_calc_tiss_avg_unequal_replicates
 
-
   !> @brief Test with single replicate per tissue (no averaging needed).
   subroutine test_calc_tiss_avg_single_replicate()
     integer :: n_gene, n_grps
     integer, dimension(3) :: group_s, group_c
-    real(8), dimension(6) :: input_matrix, output_matrix, expected_matrix
+    real(real64), dimension(6) :: input_matrix, output_matrix, expected_matrix
     
     n_gene = 2; n_grps = 3
     input_matrix = [1.0d0, 2.0d0, 3.0d0, 4.0d0, 5.0d0, 6.0d0]
@@ -225,8 +224,8 @@ contains
   subroutine test_calc_tiss_avg_large_values()
     integer :: n_gene, n_grps
     integer, dimension(2) :: group_s, group_c
-    real(8), dimension(8) :: input_matrix
-    real(8), dimension(4) :: output_matrix  ! n_gene * n_grps = 2 * 2 = 4, NOT 8
+    real(real64), dimension(8) :: input_matrix
+    real(real64), dimension(4) :: output_matrix  ! n_gene * n_grps = 2 * 2 = 4, NOT 8
     
     n_gene = 2; n_grps = 2
     input_matrix = [1d6, 2d6, 1d9, 2d9, 1d12, 2d12, 1d15, 2d15]
@@ -244,13 +243,12 @@ contains
                          "test_calc_tiss_avg_large_values: large number averaging incorrect")
   end subroutine test_calc_tiss_avg_large_values
 
-
   !> @brief Test with negative values.
   subroutine test_calc_tiss_avg_negative_values()
     integer :: n_gene, n_grps
     integer, dimension(2) :: group_s, group_c
-    real(8), dimension(8) :: input_matrix
-    real(8), dimension(4) :: output_matrix  ! n_gene * n_grps = 2 * 2 = 4, NOT 8
+    real(real64), dimension(8) :: input_matrix
+    real(real64), dimension(4) :: output_matrix  ! n_gene * n_grps = 2 * 2 = 4, NOT 8
     
     n_gene = 2; n_grps = 2
     input_matrix = [-1.0d0, -2.0d0, -3.0d0, -4.0d0, 1.0d0, 2.0d0, 3.0d0, 4.0d0]
@@ -267,14 +265,13 @@ contains
                       "test_calc_tiss_avg_negative_values: negative averaging incorrect")
   end subroutine test_calc_tiss_avg_negative_values
 
-
   !> @brief Test with zero values.
   subroutine test_calc_tiss_avg_zero_values()
     integer :: n_gene, n_grps
     integer, dimension(2) :: group_s, group_c
-    real(8), dimension(8) :: input_matrix
-    real(8), dimension(4) :: output_matrix  ! n_gene * n_grps = 2 * 2 = 4, NOT 8
-    real(8), dimension(4) :: expected_matrix
+    real(real64), dimension(8) :: input_matrix
+    real(real64), dimension(4) :: output_matrix  ! n_gene * n_grps = 2 * 2 = 4, NOT 8
+    real(real64), dimension(4) :: expected_matrix
     
     n_gene = 2; n_grps = 2
     input_matrix = [0.0d0, 0.0d0, 0.0d0, 0.0d0, 0.0d0, 0.0d0, 0.0d0, 0.0d0]
@@ -288,13 +285,12 @@ contains
                             "test_calc_tiss_avg_zero_values: zero averaging incorrect")
   end subroutine test_calc_tiss_avg_zero_values
 
-
-    !> @brief Test with mixed positive, negative, and zero values.
+  !> @brief Test with mixed positive, negative, and zero values.
   subroutine test_calc_tiss_avg_mixed_values()
     integer :: n_gene, n_grps
     integer, dimension(3) :: group_s, group_c
-    real(8), dimension(12) :: input_matrix
-    real(8), dimension(6) :: output_matrix  ! n_gene * n_grps = 2 * 3 = 6, NOT 12
+    real(real64), dimension(12) :: input_matrix
+    real(real64), dimension(6) :: output_matrix  ! n_gene * n_grps = 2 * 3 = 6, NOT 12
     
     n_gene = 2; n_grps = 3
     input_matrix = [-5.0d0, 5.0d0, 0.0d0, 0.0d0, 10.0d0, -10.0d0, &

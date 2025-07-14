@@ -3,6 +3,7 @@
 module mod_test_sorting
   use tox_sorting
   use asserts
+  use, intrinsic :: iso_fortran_env, only: real64
   implicit none
   public
 
@@ -76,7 +77,7 @@ contains
 
   !> @brief Test sorting of a real array using permutation vector.
   subroutine test_sort_real()
-    real(8), dimension(5) :: data = [3.0d0, 1.0d0, 5.0d0, 2.0d0, 4.0d0]
+    real(real64), dimension(5) :: data = [3.0d0, 1.0d0, 5.0d0, 2.0d0, 4.0d0]
     integer, dimension(5) :: perm, expected = [2, 4, 1, 5, 3]
     integer :: stack_left(20), stack_right(20), i
     
@@ -127,8 +128,8 @@ contains
 
   !> @brief Test that sorted values are in ascending order for reals.
   subroutine test_sort_real_descending()
-    real(8), dimension(5) :: data = [3.5d0, 2.2d0, 8.8d0, 1.1d0, 7.7d0]
-    real(8), dimension(5) :: expected_sorted = [1.1d0, 2.2d0, 3.5d0, 7.7d0, 8.8d0]
+    real(real64), dimension(5) :: data = [3.5d0, 2.2d0, 8.8d0, 1.1d0, 7.7d0]
+    real(real64), dimension(5) :: expected_sorted = [1.1d0, 2.2d0, 3.5d0, 7.7d0, 8.8d0]
     integer, dimension(5) :: perm
     integer :: stack_left(20), stack_right(20)
     integer :: i
@@ -182,33 +183,34 @@ contains
 
   !> @brief Test sorting with large random array for performance and correctness.
   subroutine test_sort_large_random()
-    real(8), allocatable :: rdata(:)
+    real(real64), allocatable :: rdata(:)
     integer, allocatable :: data(:), perm(:), sorted(:)
     integer :: n
     integer, allocatable :: stack_left(:), stack_right(:), dummy_perm(:)
     integer :: i
-
+    integer :: n_seed
+    integer, allocatable :: seed_array(:)
     n = 1000
     allocate(rdata(n), data(n), perm(n), sorted(n))
     allocate(stack_left(64), stack_right(64))
     allocate(dummy_perm(n))
-
-    call random_seed()
+    ! For reproducibility: initialize the random number generator seed
+    call random_seed(size=n_seed)
+    allocate(seed_array(n_seed))
+    seed_array = 42  ! Fixed value for reproducibility
+    call random_seed(put=seed_array)
+    deallocate(seed_array)
     call random_number(rdata)
     data = int(rdata * 10000)
-
     ! Create reference sorted array using built-in approach
     sorted = data
     dummy_perm = [(i, i = 1, n)]
     call sort_array(sorted, dummy_perm, stack_left, stack_right)
     sorted = sorted(dummy_perm)
-
     ! Test our sorting
     perm = [(i, i = 1, n)]
     call sort_array(data, perm, stack_left, stack_right)
-
     call assert_equal_array_int(data(perm), sorted, n, "test_sort_large_random: sorted values mismatch")
-
     deallocate(rdata, data, perm, sorted, stack_left, stack_right, dummy_perm)
   end subroutine test_sort_large_random
 
