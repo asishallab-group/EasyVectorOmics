@@ -169,7 +169,7 @@ run_real_data_example <- function() {
   results_with_families <- results_df[results_df$has_family, ]
   
   # Save results
-  output_file <- file.path(base_path, "distance_to_centroids_fortran.tsv")
+  output_file <- file.path("results/distance_to_centroids_fortran.tsv")
   write_tsv(results_with_families, output_file)
   
   cat("Results saved to:", output_file, "\n")
