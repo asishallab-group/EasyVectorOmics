@@ -1,27 +1,22 @@
 import re
 
 # name of the core subroutine
-core_name = "quantile_normalization"
+core_name = "sort_character"
 
 # name of the module that contains the core subroutine
-module_name = "tox_normalization_mod"
+module_name = "tox_sorting"
 
 # <--- Core subroutine arguments as a string --->
 core_args = """
-  integer, intent(in) :: n_genes, n_tissues, max_stack
-  real(real64), intent(in)  :: input_matrix(n_genes, n_tissues)
-  real(real64), intent(out) :: output_matrix(n_genes, n_tissues)
-  real(real64), intent(inout) :: temp_col(n_genes)
-  real(real64), intent(inout) :: rank_means(n_genes)
-  integer, intent(inout) :: perm(n_genes)
-  integer, intent(inout) :: stack_left(max_stack)
-  integer, intent(inout) :: stack_right(max_stack)
+integer, intent(in) :: n, strlen
+character(len=strlen), intent(in) :: array(n)
+integer, intent(inout) :: perm(n), stack_left(n), stack_right(n)
+
 """
 
 # <--- Define correct order of arguments that the subroutine receives --->
 arg_order = [
-    "n_genes", "n_tissues", "input_matrix", "output_matrix",
-    "temp_col", "rank_means", "perm", "stack_left", "stack_right", "max_stack"
+    "array", "perm", "stack_left", "stack_right"
 ]
 
 #-------------------------------------------------------------------------------------

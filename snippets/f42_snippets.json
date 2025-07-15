@@ -46,7 +46,122 @@
         "$0"
     ],
     "description": "Unified parallel loop for Coarray, OpenMP, or serial fallback with tab stops"
-    }
+    },
+
+    "Fortran call to sort_array": {
+		"prefix": "f42:sort_array",
+		"body": [
+		"! Fortran sort - automatically selects implementation based on data type",
+		"call sort_array(array, perm, stack_left, stack_right)"
+		],
+		"description": "Generic interface that resolves to appropriate sort function"
+	},
+  	"R call to sort_real": {
+		"prefix": "f42:R_sort_real",
+		"body": [
+			"result <- .Fortran(\"sort_real_r\",",
+			"                  as.double(${1:array}),",
+			"                  perm = as.integer(1:${2:n}),",
+			"                  stack_left = integer(${2:n}),",
+			"                  stack_right = integer(${2:n}),",
+			"                  n = as.integer(${2:n}))"
+		],
+		"description": "Call sort_real_r Fortran function from R"
+	},
+
+	"R call to sort_integer": {
+		"prefix": "f42:R_sort_integer",
+		"body": [
+			"result <- .Fortran(\"sort_integer_r\",",
+			"                  array = as.integer(${1:x}),",
+			"                  perm = as.integer(1:${2:n}),",
+			"                  stack_left = integer(${2:n}),",
+			"                  stack_right = integer(${2:n}),",
+			"                  n = as.integer(${2:n}))"
+		],
+		"description": "Call sort_integer_r Fortran function from R"
+	},
+
+	"R call to sort_character": {
+		"prefix": "f42:R_sort_character",
+		"body": [
+			"# Convert strings to raw ASCII for Fortran",
+			"strlen <- max(nchar(${1:strings}))",
+			"char_matrix <- matrix(\" \", nrow = strlen, ncol = length(${1:strings}))",
+			"for (i in seq_len(length(${1:strings}))) {",
+			"  padded <- sprintf(\"%-*s\", strlen, ${1:strings}[i])",
+			"  chars <- strsplit(padded, \"\")[[1]]",
+			"  char_matrix[, i] <- chars",
+			"}",
+			"char_raw <- as.raw(sapply(as.vector(char_matrix), charToRaw))",
+			"",
+			"result <- .Fortran(\"sort_character_r\",",
+			"                  char_data = char_raw,",
+			"                  perm = as.integer(seq_len(length(${1:strings}))),",
+			"                  stack_left = integer(length(${1:strings})),",
+			"                  stack_right = integer(length(${1:strings})),",
+			"                  n = as.integer(length(${1:strings})),",
+			"                  strlen = as.integer(strlen))"
+		],
+		"description": "Call sort_character_r Fortran function from R"
+	},
+	"C call to sort_real": {
+		"prefix": "f42:C_sort_real",
+		"body": [
+			"def setup_sort_real():",
+			"    \"\"\"Setup real sorting function\"\"\"",
+			"    sort_real = lib.sort_real_c",
+			"    sort_real.argtypes = [",
+			"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        ctypes.c_int",
+			"    ]",
+			"    sort_real.restype = None",
+			"    return sort_real"
+		],
+		"description": "Setup sort_real_c function binding"
+	},
+
+	"C call to sort_integer": {
+		"prefix": "f42:C_sort_integer",
+		"body": [
+			"def setup_sort_integer():",
+			"    \"\"\"Setup integer sorting function\"\"\"",
+			"    sort_int = lib.sort_integer_c",
+			"    sort_int.argtypes = [",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        ctypes.c_int",
+			"    ]",
+			"    sort_int.restype = None",
+			"    return sort_int"
+		],
+		"description": "Setup sort_integer_c function binding"
+	},
+
+	"C call to sort_character": {
+		"prefix": "f42:C_sort_character",
+		"body": [
+			"def setup_sort_character():",
+			"    \"\"\"Setup character sorting function\"\"\"",
+			"    sort_char = lib.sort_character_c",
+			"    sort_char.argtypes = [",
+			"        ctypes.POINTER(ctypes.c_ubyte),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+			"        ctypes.c_int,",
+			"        ctypes.c_int",
+			"    ]",
+			"    sort_char.restype = None",
+			"    return sort_char"
+		],
+		"description": "Setup sort_character_c function binding"
+	}
 
   }
   

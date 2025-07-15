@@ -7,10 +7,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
       <meta name="description" content="">
-    <meta name="author" content="TensorOmics Developers" >
+    <meta name="author" content="Vivian Bass" >
     <link rel="icon" href="../favicon.png">
 
-    <title>All Procedures &ndash; TensorOmics
+    <title>All Procedures &ndash; TOX_Normalization
 </title>
 
     <!-- Bootstrap -->
@@ -45,7 +45,7 @@
     <div class="container-fluid mb-sm-4 mb-xl-2">
       <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div class="container">
-          <a class="navbar-brand" href="../index.html">TensorOmics </a>
+          <a class="navbar-brand" href="../index.html">TOX_Normalization </a>
           <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
                   aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
                   <span class="navbar-toggler-icon">
@@ -61,6 +61,9 @@
                 </li>
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
+                </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../program/test_normalization.html">Program</a>
                 </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
@@ -81,40 +84,45 @@
 			 <thead><tr><th>Procedure</th><th>Location</th><th>Procedure Type</th><th>Description</th></tr></thead>
 			 <tbody>
 			   <tr>
-                 <td><a href='../proc/normalize_by_std_dev_c.html'>normalize_by_std_dev_c</a></td>
-                 <td><a href='../sourcefile/tox_normalization_wrappers.f90.html'>tox_normalization_wrappers.F90</a></td>
+                 <td><a href='../proc/calc_fchange.html'>calc_fchange</a></td>
+                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.f90</a></td>
                  <td>Subroutine</td>
-                 <td><p>C/Python interface (bind(C)), expects flat arrays.</p></td>
+                 <td><p>Calculate <code>log2 fold changes</code> between condition and control columns.
+For each control-condition pair, this subroutine computes the <code>log2 fold change</code>
+by subtracting the expression value in the control column from the corresponding
+value in the condition column, for all genes.</p><a href="../proc/calc_fchange.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/normalize_by_std_dev_core.html'>normalize_by_std_dev_core</a></td>
-                 <td><a href='../module/tox_normalization.html'>tox_normalization</a></td>
+                 <td><a href='../proc/calc_tiss_avg.html'>calc_tiss_avg</a></td>
+                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.f90</a></td>
                  <td>Subroutine</td>
-                 <td><p>Normalizes each gene's expression vector by its root mean square (RMS) across tissues.</p></td>
+                 <td><p>Calculate tissue averages by averaging replicates within each group.
+For each group of tissue replicates, this subroutine computes the average
+expression per gene. The input matrix is column-major, flattened as a 1D array.</p><a href="../proc/calc_tiss_avg.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/normalize_by_std_dev_r.html'>normalize_by_std_dev_r</a></td>
-                 <td><a href='../sourcefile/tox_normalization_wrappers.f90.html'>tox_normalization_wrappers.F90</a></td>
+                 <td><a href='../proc/log2_transformation.html'>log2_transformation</a></td>
+                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.f90</a></td>
                  <td>Subroutine</td>
-                 <td><p>Wrapper for R and Fortran usage (R .Fortran)</p></td>
+                 <td><p>Apply <code>log2(x + 1)</code> transformation to each element of the input matrix.
+This subroutine performs element-wise <code>log2(x + 1)</code> transformation on a
+matrix flattened in column-major order. The <code>log2</code> is computed via:
+<code>log(x + 1) / log(2)</code>, which is numerically equivalent and avoids the
+non-portable <code>log2</code> intrinsic for compatibility with WebAssembly (WASM).</p><a href="../proc/log2_transformation.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/normalize_by_std_dev.html'>normalize_by_std_dev</a></td>
+                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.f90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Normalizes each gene's expression vector using <code>sqrt(mean(x^2))</code>
+across tissues (not classical standard deviation).</p><a href="../proc/normalize_by_std_dev.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/quantile_normalization.html'>quantile_normalization</a></td>
-                 <td><a href='../module/tox_normalization.html'>tox_normalization</a></td>
+                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.f90</a></td>
                  <td>Subroutine</td>
-                 <td><p>Performs quantile normalization across tissues for each gene.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/quantile_normalization_c.html'>quantile_normalization_c</a></td>
-                 <td><a href='../sourcefile/tox_normalization_wrappers.f90.html'>tox_normalization_wrappers.F90</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/quantile_normalization_r.html'>quantile_normalization_r</a></td>
-                 <td><a href='../sourcefile/tox_normalization_wrappers.f90.html'>tox_normalization_wrappers.F90</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
+                 <td><p>Quantile normalization of a gene expression matrix (F42-compliant).
+Computes average expression per rank across tissues.</p><a href="../proc/quantile_normalization.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../interface/sort_array.html'>sort_array</a></td>
@@ -123,24 +131,6 @@
                  <td><p>Generic interface to sort real, integer, or character arrays.
  Calls one of the module procedures <code>sort_real</code>, <code>sort_integer</code>, or <code>sort_character</code>
 depending on the input array type. Sorting is done indirectly through a permutation vector.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/sort_character_r.html'>sort_character_r</a></td>
-                 <td><a href='../sourcefile/f42_sorting.f90.html'>f42_sorting.F90</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/sort_integer_r.html'>sort_integer_r</a></td>
-                 <td><a href='../sourcefile/f42_sorting.f90.html'>f42_sorting.F90</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/sort_real_r.html'>sort_real_r</a></td>
-                 <td><a href='../sourcefile/f42_sorting.f90.html'>f42_sorting.F90</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
                </tr>
 			 </tbody></table>
              
@@ -153,8 +143,8 @@ depending on the input array type. Sorting is done indirectly through a permutat
         <div class="row justify-content-between">
           <div class="col">
             <p>
-              TensorOmics
- was developed by TensorOmics Developers<br>              &copy; 2025 
+              TOX_Normalization
+ was developed by Vivian Bass<br>              &copy; 2025 
 </p>
           </div>
           <div class="col">

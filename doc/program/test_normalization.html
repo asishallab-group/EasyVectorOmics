@@ -10,7 +10,7 @@
     <meta name="author" content="Vivian Bass" >
     <link rel="icon" href="../favicon.png">
 
-    <title>quantile_normalization &ndash; TOX_Normalization</title>
+    <title>test_normalization &ndash; TOX_Normalization</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -77,8 +77,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>quantile_normalization
-      <small>Subroutine</small>
+    <h1>test_normalization      <small>Program</small>
       
     </h1>
       <div class="container p-2 mb-4 bg-light border rounded-3">
@@ -88,20 +87,20 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="36.8% of total for procedures.">43 statements</a>
+                 title="100.0% of total for programs.">18 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/tox_normalization.f90"> Source File</a>
+              <a href="../src/test_normalization.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.f90</a></li>
-            <li class="breadcrumb-item active" aria-current="page">quantile_normalization</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/test_normalization.f90.html'>test_normalization.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">test_normalization</li>
           </ol>
         </nav>
       </div>
@@ -122,7 +121,22 @@
       <div id="sidebar">
       <h3>Contents</h3>
   
-  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#vars-0"
+         aria-expanded="false" aria-controls="vars-0">
+         <h4 class="card-header bg-primary text-white">Variables</h4>
+      </a>
+      <div id="vars-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../program/test_normalization.html#variable-n_genes">n_genes</a>
+            <a class="list-group-item" href="../program/test_normalization.html#variable-n_tissues">n_tissues</a>
+            <a class="list-group-item" href="../program/test_normalization.html#variable-input_matrix">input_matrix</a>
+            <a class="list-group-item" href="../program/test_normalization.html#variable-output_matrix">output_matrix</a>
+            <a class="list-group-item" href="../program/test_normalization.html#variable-i">i</a>
+        </div>
+      </div>
+    </div>
+
   
   
   
@@ -148,193 +162,98 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2> subroutine quantile_normalization(n_genes, n_tissues, input_matrix, output_matrix, temp_col, rank_means, perm, stack_left, stack_right, max_stack)  
-</h2>
-        <div class="card mb-4">
-      <h3 class="card-header card-title bg-light">Uses</h3>
-      <div class="card-body">
-        <ul class="list-group list-group-flush">
-            <li class="list-group-item">
-              <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/tox_sorting.html'>tox_sorting</a></li>
-              </ul>
-            </li>
-        </ul>
-      </div>
-    </div>
+    
+    
 
 
-    <p>Quantile normalization of a gene expression matrix (F42-compliant).
-Computes average expression per rank across tissues.</p>
-<p>@param n_genes       Number of genes (rows) <br>
-@param n_tissues     Number of tissues (columns)<br>
-@param input_matrix  Flattened input matrix (column-major)<br>
-@param output_matrix Flattened normalized output matrix<br>
-@param temp_col      Temporary vector for column sorting (size n_genes)<br>
-@param rank_means    Preallocated vector to store rank means (size n_genes)<br>
-@param perm          Permutation vector (size n_genes)<br>
-@param stack_left    Manual quicksort stack (≥ log2(n_genes) + 10)<br>
-@param stack_right   Manual quicksort stack (same size as stack_left)<br>
-@param max_stack     Stack size passed from R<br></p>
-
-
-    <h3>Arguments</h3>
-        <table class="table table-striped varlist">
+    <section>
+    <h2>Variables</h2>
+      <table class="table table-striped varlist">
     <thead>
       <tr>
         <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col">Attributes</th>
         <th scope="col"></th>
         <th scope="col">Name</th>
-        <th scope="col"></th>
+<th></th><th scope="col">Initial</th>        <th scope="col"></th>
     </thead>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_genes~3"></span>
-              integer,
+              <span class="anchor" id="variable-n_genes"></span>
+              integer
             </td>
-<td>intent(in)</td>
-              <td></td>            <td>
+            <td>
               
             </td>
             <td>::</td>
             <td><strong>n_genes</strong></td>
+                <td></td>
+                <td></td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_tissues~3"></span>
-              integer,
+              <span class="anchor" id="variable-n_tissues"></span>
+              integer
             </td>
-<td>intent(in)</td>
-              <td></td>            <td>
+            <td>
               
             </td>
             <td>::</td>
             <td><strong>n_tissues</strong></td>
+                <td></td>
+                <td></td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-input_matrix~3"></span>
+              <span class="anchor" id="variable-input_matrix"></span>
               real(kind=8),
             </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
+            <td>
+              allocatable
             </td>
             <td>::</td>
-            <td><strong>input_matrix</strong>(n_genes*n_tissues)</td>
+            <td><strong>input_matrix</strong>(:)</td>
+                <td></td>
+                <td></td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-output_matrix~3"></span>
+              <span class="anchor" id="variable-output_matrix"></span>
               real(kind=8),
             </td>
-<td>intent(out)</td>
-              <td></td>            <td>
+            <td>
+              allocatable
+            </td>
+            <td>::</td>
+            <td><strong>output_matrix</strong>(:)</td>
+                <td></td>
+                <td></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i"></span>
+              integer
+            </td>
+            <td>
               
             </td>
             <td>::</td>
-            <td><strong>output_matrix</strong>(n_genes*n_tissues)</td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-temp_col"></span>
-              real(kind=8),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>temp_col</strong>(n_genes)</td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-rank_means"></span>
-              real(kind=8),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>rank_means</strong>(n_genes)</td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-perm"></span>
-              integer,
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>perm</strong>(n_genes)</td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-stack_left"></span>
-              integer,
-            </td>
-<td></td>
-              <td></td>            <td>
-              dimension(max_stack)
-            </td>
-            <td>::</td>
-            <td><strong>stack_left</strong></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-stack_right"></span>
-              integer,
-            </td>
-<td></td>
-              <td></td>            <td>
-              dimension(max_stack)
-            </td>
-            <td>::</td>
-            <td><strong>stack_right</strong></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-max_stack"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>max_stack</strong></td>
+            <td><strong>i</strong></td>
+                <td></td>
+                <td></td>
             <td>
                 
             </td>
@@ -342,18 +261,17 @@ Computes average expression per rank across tissues.</p>
     </tbody>
   </table>
 
+    </section>
     <br>
-
-
     
-    
-
     
     
 
+    
 
 
     
+
     
     </div>
   </div>

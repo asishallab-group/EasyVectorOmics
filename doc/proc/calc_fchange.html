@@ -10,7 +10,7 @@
     <meta name="author" content="Vivian Bass" >
     <link rel="icon" href="../favicon.png">
 
-    <title>quantile_normalization &ndash; TOX_Normalization</title>
+    <title>calc_fchange &ndash; TOX_Normalization</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -77,7 +77,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>quantile_normalization
+    <h1>calc_fchange
       <small>Subroutine</small>
       
     </h1>
@@ -88,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="36.8% of total for procedures.">43 statements</a>
+                 title="15.4% of total for procedures.">18 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -101,7 +101,7 @@
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
                 <li class="breadcrumb-item"><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.f90</a></li>
-            <li class="breadcrumb-item active" aria-current="page">quantile_normalization</li>
+            <li class="breadcrumb-item active" aria-current="page">calc_fchange</li>
           </ol>
         </nav>
       </div>
@@ -148,34 +148,21 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2> subroutine quantile_normalization(n_genes, n_tissues, input_matrix, output_matrix, temp_col, rank_means, perm, stack_left, stack_right, max_stack)  
+    <h2> subroutine calc_fchange(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)  
 </h2>
-        <div class="card mb-4">
-      <h3 class="card-header card-title bg-light">Uses</h3>
-      <div class="card-body">
-        <ul class="list-group list-group-flush">
-            <li class="list-group-item">
-              <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/tox_sorting.html'>tox_sorting</a></li>
-              </ul>
-            </li>
-        </ul>
-      </div>
-    </div>
+    
 
-
-    <p>Quantile normalization of a gene expression matrix (F42-compliant).
-Computes average expression per rank across tissues.</p>
-<p>@param n_genes       Number of genes (rows) <br>
-@param n_tissues     Number of tissues (columns)<br>
-@param input_matrix  Flattened input matrix (column-major)<br>
-@param output_matrix Flattened normalized output matrix<br>
-@param temp_col      Temporary vector for column sorting (size n_genes)<br>
-@param rank_means    Preallocated vector to store rank means (size n_genes)<br>
-@param perm          Permutation vector (size n_genes)<br>
-@param stack_left    Manual quicksort stack (≥ log2(n_genes) + 10)<br>
-@param stack_right   Manual quicksort stack (same size as stack_left)<br>
-@param max_stack     Stack size passed from R<br></p>
+    <p>Calculate <code>log2 fold changes</code> between condition and control columns.
+For each control-condition pair, this subroutine computes the <code>log2 fold change</code>
+by subtracting the expression value in the control column from the corresponding
+value in the condition column, for all genes.</p>
+<p>The input matrix must be column-major and flattened as a 1D array.</p>
+<p>@param n_genes        Number of genes (rows)<br>
+@param n_pairs        Number of condition-control column pairs<br>
+@param control_cols   Indices (1-based) of control columns (length n_pairs)<br>
+@param cond_cols      Indices (1-based) of condition columns (length n_pairs)<br>
+@param i_matrix       Input expression matrix, flattened (length: n_genes × N)<br>
+@param o_matrix       Output matrix for fold changes (length: n_genes × n_pairs)<br></p>
 
 
     <h3>Arguments</h3>
@@ -191,7 +178,7 @@ Computes average expression per rank across tissues.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_genes~3"></span>
+              <span class="anchor" id="variable-n_genes~5"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -206,7 +193,7 @@ Computes average expression per rank across tissues.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_tissues~3"></span>
+              <span class="anchor" id="variable-n_pairs"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -214,14 +201,44 @@ Computes average expression per rank across tissues.</p>
               
             </td>
             <td>::</td>
-            <td><strong>n_tissues</strong></td>
+            <td><strong>n_pairs</strong></td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-input_matrix~3"></span>
+              <span class="anchor" id="variable-control_cols"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>control_cols</strong>(*)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-cond_cols"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>cond_cols</strong>(*)</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i_matrix"></span>
               real(kind=8),
             </td>
 <td>intent(in)</td>
@@ -229,14 +246,14 @@ Computes average expression per rank across tissues.</p>
               
             </td>
             <td>::</td>
-            <td><strong>input_matrix</strong>(n_genes*n_tissues)</td>
+            <td><strong>i_matrix</strong>(*)</td>
             <td>
                 
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-output_matrix~3"></span>
+              <span class="anchor" id="variable-o_matrix"></span>
               real(kind=8),
             </td>
 <td>intent(out)</td>
@@ -244,97 +261,7 @@ Computes average expression per rank across tissues.</p>
               
             </td>
             <td>::</td>
-            <td><strong>output_matrix</strong>(n_genes*n_tissues)</td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-temp_col"></span>
-              real(kind=8),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>temp_col</strong>(n_genes)</td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-rank_means"></span>
-              real(kind=8),
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>rank_means</strong>(n_genes)</td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-perm"></span>
-              integer,
-            </td>
-<td>intent(inout)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>perm</strong>(n_genes)</td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-stack_left"></span>
-              integer,
-            </td>
-<td></td>
-              <td></td>            <td>
-              dimension(max_stack)
-            </td>
-            <td>::</td>
-            <td><strong>stack_left</strong></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-stack_right"></span>
-              integer,
-            </td>
-<td></td>
-              <td></td>            <td>
-              dimension(max_stack)
-            </td>
-            <td>::</td>
-            <td><strong>stack_right</strong></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-max_stack"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>max_stack</strong></td>
+            <td><strong>o_matrix</strong>(*)</td>
             <td>
                 
             </td>

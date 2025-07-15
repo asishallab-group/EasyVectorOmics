@@ -1,4 +1,50 @@
 {
+	"Call to normalize_by_std_dev": {
+      "prefix": "tox:norm_by_std_dev",
+      "body": [
+        "! Normalize expression values using sqrt(mean(x^2)) across tissues",
+        "call normalize_by_std_dev_r(n_genes, n_tissues, input_matrix, output_matrix)"
+      ],
+      "description": "Invoke normalization by standard deviation"
+    },
+    
+    "Call to quantile_normalization": {
+      "prefix": "tox:norm_quantile",
+      "body": [
+        "! Quantile normalization - makes distributions identical across tissues",
+        "call quantile_normalization_r(n_genes, n_tissues, input_matrix, output_matrix, &",
+        "                           temp_col, rank_means, perm, stack_left, stack_right, max_stack)"
+      ],
+      "description": "Invoke quantile normalization with rank averaging"
+    },
+    
+    "Call to log2_transformation": {
+      "prefix": "tox:norm_log2_trans",
+      "body": [
+        "! Apply log2(x + 1) transformation to stabilize variance",
+        "call log2_transformation_r(n_genes, n_tissues, input_matrix, output_matrix)"
+      ],
+      "description": "Apply log2(x + 1) transformation to expression data"
+    },
+    
+    "Call to calc_tiss_avg": {
+      "prefix": "tox:norm_tiss_avg",
+      "body": [
+        "! Calculate tissue averages by grouping replicates",
+        "call calc_tiss_avg_r(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix)"
+      ],
+      "description": "Calculate average expression per tissue group from replicates"
+    },
+    
+    "Call to calc_fchange": {
+      "prefix": "tox:norm_fchange",
+      "body": [
+        "! Calculate log2 fold changes between condition and control pairs",
+        "call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)"
+      ],
+      "description": "Calculate log2 fold changes between condition-control pairs"
+    },
+		
   "Wrapper R": {
     "prefix": "wrapper_r",
     "body": [
@@ -44,6 +90,184 @@
       "call c_f_pointer(c_loc(${2:flat_array}(1)), ${1:mat}, [${3:n1}, ${4:n2}])"
     ],
     "description": "Map flat array to 2D with c_f_pointer"
-  }
+  },
+  	"R call to normalize_by_std_dev": {
+		"prefix": "tox:R_norm_by_std_dev",
+		"body": [
+		"result <- .Fortran(\"normalize_by_std_dev_r\",",
+		"                  as.integer(${1:n_genes}),",
+		"                  as.integer(${2:n_tissues}),",
+		"                  ${3:input_vector},",
+		"                  output_vector = numeric(length(${3:input_vector})))"
+		],
+		"description": "Call normalize_by_std_dev_r Fortran function from R"
+	},
+  "R call to quantile_normalization": {
+		"prefix": "tox:R_quantile_norm",
+		"body": [
+			"result <- .Fortran(\"quantile_normalization_r\",",
+			"                  as.integer(${1:n_genes}),",
+			"                  as.integer(${2:n_tissues}),",
+			"                  ${3:input_matrix},",
+			"                  output_matrix = numeric(length(${3:input_matrix})),",
+			"                  temp_col = numeric(${1:n_genes}),",
+			"                  rank_means = numeric(${1:n_genes}),",
+			"                  perm = as.integer(1:${1:n_genes}),",
+			"                  stack_left = integer(max(2 * ${1:n_genes}, 2)),",
+			"                  stack_right = integer(max(2 * ${1:n_genes}, 2)),",
+			"                  max_stack = as.integer(max(2 * ${1:n_genes}, 2)))"
+		],
+		"description": "Call quantile_normalization_r Fortran function from R"
+	},
+	
+	"R call to log2_transformation": {
+		"prefix": "tox:R_norm_log2_trans",
+		"body": [
+		"result <- .Fortran(\"log2_transformation_r\",",
+		"                  as.integer(${1:n_genes}),",
+		"                  as.integer(${2:n_tissues}),",
+		"                  ${3:input_vector},",
+		"                  output_vector = numeric(length(${3:input_vector})))"
+		],
+		"description": "Call log2_transformation_r Fortran function from R"
+	},
+	
+	"R call to calc_tiss_avg": {
+		"prefix": "tox:R_calc_tiss_avg",
+		"body": [
+		"result <- .Fortran(\"calc_tiss_avg_r\",",
+		"                  as.integer(${1:n_genes}),",
+		"                  as.integer(${2:n_groups}),",
+		"                  as.integer(${3:group_starts}),",
+		"                  as.integer(${4:group_counts}),",
+		"                  ${5:input_matrix},",
+		"                  output_matrix = numeric(${1:n_genes} * ${2:n_groups}))"
+		],
+		"description": "Call calc_tiss_avg_r Fortran function from R"
+	},
+	
+	"R call to calc_fchange": {
+		"prefix": "tox:R_calc_fchange",
+		"body": [
+		"result <- .Fortran(\"calc_fchange_r\",",
+		"                  as.integer(${1:n_genes}),",
+		"                  as.integer(${2:n_pairs}),",
+		"                  as.integer(${3:control_cols}),",
+		"                  as.integer(${4:condition_cols}),",
+		"                  ${5:input_matrix},",
+		"                  output_matrix = numeric(${1:n_genes} * ${2:n_pairs}))"
+		],
+		"description": "Call calc_fchange_r Fortran function from R"
+	},
+  
+  "Load libraries for C": {
+		"prefix": "tox:load_c_libs",
+		"body": [
+		"import numpy as np",
+		"import ctypes",
+		"",
+		"# Load library",
+		"ctypes.CDLL(\"libgomp.so.1\", mode=ctypes.RTLD_GLOBAL)",
+		"lib = ctypes.CDLL(\"build/libtensor-omics.so\")"
+		],
+		"description": "TOX Python imports and library loading"
+	},
+
+	"C call to normalize_by_std_dev": {
+		"prefix": "tox:C_norm_by_std_dev",
+		"body": [
+		"def setup_normalize_by_std_dev():",
+		"    \"\"\"Setup normalize function\"\"\"",
+		"    normalize = lib.normalize_by_std_dev_c",
+		"    normalize.argtypes = [",
+		"        ctypes.c_int, ctypes.c_int,",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"    ]",
+		"    normalize.restype = None",
+		"    return normalize"
+		],
+		"description": "Setup normalize_by_std_dev_c function binding"
+	},
+
+	"C call to quantile_normalization": {
+		"prefix": "tox:C_quantile_norm",
+		"body": [
+		"def setup_quantile():",
+		"    \"\"\"Setup quantile normalization function\"\"\"",
+		"    quantile_norm = lib.quantile_normalization_c",
+		"    quantile_norm.argtypes = [",
+		"        ctypes.c_int, ctypes.c_int,",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+		"        ctypes.c_int",
+		"    ]",
+		"    quantile_norm.restype = None",
+		"    return quantile_norm"
+		],
+		"description": "Setup quantile_normalization_c function binding"
+	},
+
+	"C call to log2_transformation": {
+		"prefix": "tox:C_norm_log2_trans",
+		"body": [
+		"def setup_log2():",
+		"    \"\"\"Setup log2 transformation function\"\"\"",
+		"    log2_transform = lib.log2_transformation_c",
+		"    log2_transform.argtypes = [",
+		"        ctypes.c_int, ctypes.c_int,",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"    ]",
+		"    log2_transform.restype = None",
+		"    return log2_transform"
+		],
+		"description": "Setup log2_transformation_c function binding"
+	},
+
+	"C call to calc_tiss_avg": {
+		"prefix": "tox:C_calc_tiss_avg",
+		"body": [
+		"def setup_calc_tiss_avg():",
+		"    \"\"\"Setup tissue averaging function\"\"\"",
+		"    tiss_avg = lib.calc_tiss_avg_c",
+		"    tiss_avg.argtypes = [",
+		"        ctypes.c_int, ctypes.c_int,",
+		"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"    ]",
+		"    tiss_avg.restype = None",
+		"    return tiss_avg"
+		],
+		"description": "Setup calc_tiss_avg_c function binding"
+	},
+
+	"C call to calc_fchange": {
+		"prefix": "tox:C_calc_fchange",
+		"body": [
+		"def setup_calc_fchange():",
+		"    \"\"\"Setup fold change function\"\"\"",
+		"    fchange = lib.calc_fchange_c",
+		"    fchange.argtypes = [",
+		"        ctypes.c_int, ctypes.c_int,",
+		"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"    ]",
+		"    fchange.restype = None",
+		"    return fchange"
+		],
+		"description": "Setup calc_fchange_c function binding"
+	}
 }
 
+
+  
