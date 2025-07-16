@@ -18,7 +18,6 @@ module char_deserialize_mod
 
 contains
 
-  ! Hilfsroutine: Flaches Array + Dimensionen lesen (angepasst für variable Stringlängen)
   subroutine deserialize_char_flat(flat, dims, clen, filename)
     use iso_c_binding
     character(len=:), pointer, intent(out) :: flat(:)
@@ -179,16 +178,17 @@ contains
 
 end module char_deserialize_mod
 
-subroutine deserialize_char_flat_r(ascii_arr, dims_out, ndim_out, clen_out, filename_ascii, fn_len)
+subroutine deserialize_char_flat_r(ascii_arr, arr_size, dims_out, ndim_out, clen_out, filename_ascii, fn_len, ndim_actual)
   use iso_fortran_env
   use char_deserialize_mod
   implicit none
 
-  integer(int32), intent(out) :: ascii_arr(*)
-  integer(int32), intent(out) :: dims_out(*)
+  integer(int32), intent(out) :: ascii_arr(arr_size)
+  integer(int32), intent(out) :: dims_out(ndim_actual)
   integer, intent(out) :: ndim_out, clen_out
   integer(int32), intent(in) :: filename_ascii(fn_len)
   integer(int32), intent(in) :: fn_len
+  integer(int32), intent(in) :: arr_size, ndim_actual
 
   character(len=:), allocatable :: filename
   character(len=:), pointer :: flat(:)
@@ -221,3 +221,50 @@ subroutine deserialize_char_flat_r(ascii_arr, dims_out, ndim_out, clen_out, file
 
 end subroutine deserialize_char_flat_r
 
+subroutine deserialize_char_flat_C(ascii_arr, clen, total, dims_out, ndim_out, clen_out, &
+                                   filename_ascii, fn_len, ndim_actual) bind(C, name="deserialize_char_flat_C")
+  use iso_c_binding
+  use char_deserialize_mod
+  implicit none
+
+  ! Argumente
+  integer(c_int), intent(out) :: ascii_arr(clen, total)     ! explizit: Zeichen * Anzahl Strings
+  integer(c_int), value       :: clen, total
+  integer(c_int), intent(out) :: dims_out(ndim_actual)
+  integer(c_int), intent(out) :: ndim_out, clen_out
+  integer(c_int), intent(in)  :: filename_ascii(fn_len)
+  integer(c_int), value       :: fn_len, ndim_actual
+
+  ! Lokale Variablen
+  character(len=:), allocatable :: filename
+  character(len=:), pointer     :: flat(:)
+  integer(c_int), allocatable   :: dims(:)
+  integer :: i, j, actual_clen
+
+  ! Filename umwandeln
+  allocate(character(len=fn_len) :: filename)
+  do i = 1, fn_len
+    filename(i:i) = char(filename_ascii(i))
+  end do
+
+  ! Deserialisierung
+  call deserialize_char_flat(flat, dims, actual_clen, filename)
+  clen_out = actual_clen
+  ndim_out = size(dims)
+
+  ! Dimensionen kopieren
+  do i = 1, min(ndim_out, ndim_actual)
+    dims_out(i) = dims(i)
+  end do
+
+  ! Zeichen in ASCII umwandeln (Null-padding)
+  do i = 1, total
+    do j = 1, clen
+      if (j <= len_trim(flat(i))) then
+        ascii_arr(j, i) = iachar(flat(i)(j:j))
+      else
+        ascii_arr(j, i) = 0
+      end if
+    end do
+  end do
+end subroutine

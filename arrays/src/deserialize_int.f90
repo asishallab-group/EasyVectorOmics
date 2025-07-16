@@ -103,7 +103,7 @@ contains
 
 end module int_deserialize_mod
 
-subroutine deserialize_int_flat_r(flat_arr, dims_out, ndim_out, filename_ascii, fn_len)
+subroutine deserialize_int_r(flat_arr, dims_out, ndim_out, filename_ascii, fn_len)
   use iso_fortran_env, only: int32
   use int_deserialize_mod
   implicit none
@@ -145,102 +145,44 @@ subroutine deserialize_int_flat_r(flat_arr, dims_out, ndim_out, filename_ascii, 
 end subroutine
 
 
-subroutine deserialize_int_1d_C(arr, filename) bind(C, name="deserialize_int_1d_C")
-  use iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char
-  use int_deserialize_mod, only: deserialize_int_1d
+subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len) bind(C, name="deserialize_int_C")
+  use iso_c_binding
+  use int_deserialize_mod, only: deserialize_int_flat
   use iso_fortran_env, only: int32
   implicit none
-  type(c_ptr), intent(out) :: arr
-  character(kind=c_char), intent(in) :: filename(*)
+
+  integer(c_int), intent(inout) :: arr(arr_size)
+  integer(c_int), value :: arr_size
+  integer(c_int), intent(in) :: filename_ascii(fn_len)
+  integer(c_int), value :: fn_len
+
+  character(len=:), allocatable :: filename
+  integer :: i
+
+  ! arr_f ist das Ergebnis von deserialize_int_flat – muss kopiert werden
   integer(int32), pointer :: arr_f(:)
-  character(len=:), allocatable :: fname
-  integer :: i
-  arr_f => null()
-  i = 1
-  do while (filename(i) /= c_null_char)
-    i = i + 1
-  end do
-  fname = transfer(filename(1:i-1), fname)
-  call deserialize_int_1d(arr_f, fname)
-  arr = c_loc(arr_f)
-end subroutine deserialize_int_1d_C
+  integer(int32), allocatable :: dims(:)
 
-subroutine deserialize_int_2d_C(arr, filename) bind(C, name="deserialize_int_2d_C")
-  use iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char
-  use int_deserialize_mod, only: deserialize_int_2d
-  use iso_fortran_env, only: int32
-  implicit none
-  type(c_ptr), intent(out) :: arr
-  character(kind=c_char), intent(in) :: filename(*)
-  integer(int32), pointer :: arr_f(:,:)
-  character(len=:), allocatable :: fname
-  integer :: i
-  arr_f => null()
-  i = 1
-  do while (filename(i) /= c_null_char)
-    i = i + 1
+  ! ASCII → String
+  allocate(character(len=fn_len) :: filename)
+  do i = 1, fn_len
+    filename(i:i) = char(filename_ascii(i))
   end do
-  fname = transfer(filename(1:i-1), fname)
-  call deserialize_int_2d(arr_f, fname)
-  arr = c_loc(arr_f)
-end subroutine deserialize_int_2d_C
 
-subroutine deserialize_int_3d_C(arr, filename) bind(C, name="deserialize_int_3d_C")
-  use iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char
-  use int_deserialize_mod, only: deserialize_int_3d
-  use iso_fortran_env, only: int32
-  implicit none
-  type(c_ptr), intent(out) :: arr
-  character(kind=c_char), intent(in) :: filename(*)
-  integer(int32), pointer :: arr_f(:,:,:)
-  character(len=:), allocatable :: fname
-  integer :: i
-  arr_f => null()
-  i = 1
-  do while (filename(i) /= c_null_char)
-    i = i + 1
-  end do
-  fname = transfer(filename(1:i-1), fname)
-  call deserialize_int_3d(arr_f, fname)
-  arr = c_loc(arr_f)
-end subroutine deserialize_int_3d_C
+  ! Daten einlesen – arr_f wird intern allokiert
+  call deserialize_int_flat(arr_f, dims, filename)
 
-subroutine deserialize_int_4d_C(arr, filename) bind(C, name="deserialize_int_4d_C")
-  use iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char
-  use int_deserialize_mod, only: deserialize_int_4d
-  use iso_fortran_env, only: int32
-  implicit none
-  type(c_ptr), intent(out) :: arr
-  character(kind=c_char), intent(in) :: filename(*)
-  integer(int32), pointer :: arr_f(:,:,:,:)
-  character(len=:), allocatable :: fname
-  integer :: i
-  arr_f => null()
-  i = 1
-  do while (filename(i) /= c_null_char)
-    i = i + 1
-  end do
-  fname = transfer(filename(1:i-1), fname)
-  call deserialize_int_4d(arr_f, fname)
-  arr = c_loc(arr_f)
-end subroutine deserialize_int_4d_C
+  ! Sicherheitschecks
+  if (.not. associated(arr_f)) then
+      print *, "Fehler: arr_f nicht allokiert"
+      stop 1
+  end if
 
-subroutine deserialize_int_5d_C(arr, filename) bind(C, name="deserialize_int_5d_C")
-  use iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char
-  use int_deserialize_mod, only: deserialize_int_5d
-  use iso_fortran_env, only: int32
-  implicit none
-  type(c_ptr), intent(out) :: arr
-  character(kind=c_char), intent(in) :: filename(*)
-  integer(int32), pointer :: arr_f(:,:,:,:,:)
-  character(len=:), allocatable :: fname
-  integer :: i
-  arr_f => null()
-  i = 1
-  do while (filename(i) /= c_null_char)
-    i = i + 1
-  end do
-  fname = transfer(filename(1:i-1), fname)
-  call deserialize_int_5d(arr_f, fname)
-  arr = c_loc(arr_f)
-end subroutine deserialize_int_5d_C
+  if (size(arr_f) /= arr_size) then
+      print *, "Fehler: Größe passt nicht: ", size(arr_f), arr_size
+      stop 2
+  end if
+
+  ! Jetzt in den Python-Puffer kopieren
+  arr(:) = arr_f(:)
+end subroutine

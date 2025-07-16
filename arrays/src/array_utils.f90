@@ -79,6 +79,47 @@ subroutine get_array_dims(filename_ascii, fn_len, dims_out, ndims)
   end do
 end subroutine get_array_dims
 
+subroutine get_array_dims_C(filename_ascii, fn_len, dims_out, ndims) bind(C, name="get_array_dims_C")
+  use iso_c_binding
+  use iso_fortran_env
+  implicit none
+
+  ! Eingabeparameter
+  integer(c_int), intent(in) :: filename_ascii(fn_len)
+  integer(c_int), value :: fn_len
+
+  ! Ausgabeparameter
+  integer(c_int), intent(out) :: dims_out(*)
+  integer(c_int), intent(out) :: ndims
+
+  ! Interne Variablen
+  character(len=:), allocatable :: filename
+  integer(c_int) :: unit, magic, type_code, d, i
+  integer(c_int), allocatable :: dims(:)
+
+
+  ! ASCII → String
+  allocate(character(len=fn_len) :: filename)
+  do i = 1, fn_len
+    filename(i:i) = char(filename_ascii(i))
+  end do
+
+  ! Datei öffnen und Header lesen
+  open(newunit=unit, file=filename, form='unformatted', access='stream', status='old')
+  read(unit) magic
+  read(unit) type_code
+  read(unit) d
+  allocate(dims(d))
+  read(unit) dims
+  close(unit)
+
+  ! Rückgabe
+  ndims = d
+  do i = 1, d
+    dims_out(i) = dims(i)
+  end do
+end subroutine get_array_dims_C
+
 subroutine get_array_metadata_chars(filename_ascii, fn_len, dims_out, ndims, type_code_out, clen_out)
   use iso_fortran_env, only: int32
   implicit none
@@ -127,6 +168,59 @@ subroutine get_array_metadata_chars(filename_ascii, fn_len, dims_out, ndims, typ
   type_code_out = type_code
   ndims = d
   do i = 1, d
+    dims_out(i) = dims(i)
+  end do
+end subroutine
+
+subroutine get_array_metadata_chars_C(filename_ascii, fn_len, dims_out, dims_len, ndims, &
+                          type_code_out, clen_out) bind(C, name="get_array_metadata_chars_C")
+  use iso_c_binding
+  implicit none
+
+  ! Eingabe
+  integer(c_int), intent(in) :: filename_ascii(fn_len)
+  integer(c_int), value :: fn_len, dims_len
+
+  ! Ausgabe
+  integer(c_int), intent(out) :: dims_out(dims_len)
+  integer(c_int), intent(out) :: ndims
+  integer(c_int), intent(out) :: type_code_out
+  integer(c_int), intent(out) :: clen_out
+
+  ! Intern
+  character(len=:), allocatable :: filename
+  integer :: unit, magic, type_code, d, i
+  integer(c_int), allocatable :: dims(:)
+  integer(c_int), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', c_int) ! 'FA20' in hex
+
+  ! ASCII → String
+  allocate(character(len=fn_len) :: filename)
+  do i = 1, fn_len
+    filename(i:i) = char(filename_ascii(i))
+  end do
+
+  ! Datei öffnen
+  open(newunit=unit, file=filename, form='unformatted', access='stream', status='old')
+  read(unit) magic
+  if (magic /= ARRAY_FILE_MAGIC) error stop "Invalid file format"
+  read(unit) type_code
+  read(unit) d
+
+  allocate(dims(d))
+  read(unit) dims
+
+  if (type_code == 3) then
+    read(unit) clen_out
+  else
+    clen_out = 0
+  end if
+  close(unit)
+
+  ! Rückgabe
+  type_code_out = type_code
+  ndims = d 
+
+  do i = 1, min(d, dims_len)
     dims_out(i) = dims(i)
   end do
 end subroutine

@@ -167,112 +167,32 @@ end subroutine
 
   ! --- C-Bindings für serialize_real_* ---
 
-  subroutine serialize_real_1d_C(arr, n1, filename) bind(C, name="serialize_real_1d_C")
-    use iso_c_binding
-    use serialize_real
-    use, intrinsic :: iso_fortran_env, only: real64
-    implicit none
-    type(c_ptr), value :: arr
-    integer, value :: n1
-    character(kind=c_char), intent(in) :: filename(*)
-    real(real64), pointer :: arr_f(:)
-    character(len=:), allocatable :: fname
-    integer :: i
+subroutine serialize_real_nd_C(arr, dims, ndim, filename_ascii, fn_len) bind(C, name="serialize_real_nd_C")
+  use iso_c_binding
+  use serialize_real
+  implicit none
 
-    call c_f_pointer(arr, arr_f, [n1])
+  ! Eingabeparameter
+  type(c_ptr), value :: arr
+  integer(c_int), intent(in) :: dims(ndim)
+  integer(c_int), value :: ndim
+  integer(c_int), intent(in) :: filename_ascii(fn_len)
+  integer(c_int), value :: fn_len
 
-    i = 1
-    do while (filename(i) /= c_null_char)
-      i = i + 1
-    end do
-    fname = transfer(filename(1:i-1), fname)
-    call serialize_real_1d(arr_f, fname)
-  end subroutine
+  ! Lokale Variablen
+  character(len=:), allocatable :: filename
+  real(c_double), pointer :: arr_f(:)
+  integer :: i
 
-  subroutine serialize_real_2d_C(arr, n1, n2, filename) bind(C, name="serialize_real_2d_C")
-    use iso_c_binding
-    use serialize_real
-    use, intrinsic :: iso_fortran_env, only: real64
-    implicit none
-    type(c_ptr), value :: arr
-    integer, value :: n1, n2
-    character(kind=c_char), intent(in) :: filename(*)
-    real(real64), pointer :: arr_f(:,:)
-    character(len=:), allocatable :: fname
-    integer :: i
+  ! Filename umwandeln
+  allocate(character(len=fn_len) :: filename)
+  do i = 1, fn_len
+    filename(i:i) = char(filename_ascii(i))
+  end do
 
-    call c_f_pointer(arr, arr_f, [n1, n2])
+  ! 1D-Array aus dem C-Pointer
+  call c_f_pointer(arr, arr_f, [product(dims(1:ndim))])
 
-    i = 1
-    do while (filename(i) /= c_null_char)
-      i = i + 1
-    end do
-    fname = transfer(filename(1:i-1), fname)
-    call serialize_real_2d(arr_f, fname)
-  end subroutine
-
-  subroutine serialize_real_3d_C(arr, n1, n2, n3, filename) bind(C, name="serialize_real_3d_C")
-    use iso_c_binding
-    use serialize_real
-    use, intrinsic :: iso_fortran_env, only: real64
-    implicit none
-    type(c_ptr), value :: arr
-    integer, value :: n1, n2, n3
-    character(kind=c_char), intent(in) :: filename(*)
-    real(real64), pointer :: arr_f(:,:,:)
-    character(len=:), allocatable :: fname
-    integer :: i
-
-    call c_f_pointer(arr, arr_f, [n1, n2, n3])
-
-    i = 1
-    do while (filename(i) /= c_null_char)
-      i = i + 1
-    end do
-    fname = transfer(filename(1:i-1), fname)
-    call serialize_real_3d(arr_f, fname)
-  end subroutine
-
-  subroutine serialize_real_4d_C(arr, n1, n2, n3, n4, filename) bind(C, name="serialize_real_4d_C")
-    use iso_c_binding
-    use serialize_real
-    use, intrinsic :: iso_fortran_env, only: real64
-    implicit none
-    type(c_ptr), value :: arr
-    integer, value :: n1, n2, n3, n4
-    character(kind=c_char), intent(in) :: filename(*)
-    real(real64), pointer :: arr_f(:,:,:,:)
-    character(len=:), allocatable :: fname
-    integer :: i
-
-    call c_f_pointer(arr, arr_f, [n1, n2, n3, n4])
-
-    i = 1
-    do while (filename(i) /= c_null_char)
-      i = i + 1
-    end do
-    fname = transfer(filename(1:i-1), fname)
-    call serialize_real_4d(arr_f, fname)
-  end subroutine
-
-  subroutine serialize_real_5d_C(arr, n1, n2, n3, n4, n5, filename) bind(C, name="serialize_real_5d_C")
-    use iso_c_binding
-    use serialize_real
-    use, intrinsic :: iso_fortran_env, only: real64
-    implicit none
-    type(c_ptr), value :: arr
-    integer, value :: n1, n2, n3, n4, n5
-    character(kind=c_char), intent(in) :: filename(*)
-    real(real64), pointer :: arr_f(:,:,:,:,:)
-    character(len=:), allocatable :: fname
-    integer :: i
-
-    call c_f_pointer(arr, arr_f, [n1, n2, n3, n4, n5])
-
-    i = 1
-    do while (filename(i) /= c_null_char)
-        i = i + 1
-    end do
-    fname = transfer(filename(1:i-1), fname)
-    call serialize_real_5d(arr_f, fname)
-  end subroutine
+  ! Speichern
+  call serialize_real_nd(arr_f, dims, ndim, filename)
+end subroutine

@@ -231,107 +231,44 @@ end subroutine serialize_char_flat_r
 
 ! --- C-Bindings für serialize_char_* ---
 
-subroutine serialize_char_1d_C(arr, n1, filename) bind(C, name="serialize_char_1d_C")
+subroutine serialize_char_flat_C(ascii_ptr, dims, ndim, clen, filename_ascii, fn_len) bind(C, name="serialize_char_flat_C")
   use iso_c_binding
   use serialize_char
   implicit none
-  type(c_ptr), value :: arr
-  integer, value :: n1
-  character(kind=c_char), intent(in) :: filename(*)
-  character(len=:), pointer :: arr_f(:)
-  character(len=:), allocatable :: fname
-  integer :: i
 
-  call c_f_pointer(arr, arr_f, [n1])
+  type(c_ptr), value :: ascii_ptr
+  integer(c_int), intent(in) :: dims(ndim)
+  integer(c_int), value :: ndim
+  integer(c_int), value :: clen
+  integer(c_int), intent(in) :: filename_ascii(fn_len)
+  integer(c_int), value :: fn_len
 
-  i = 1
-  do while (filename(i) /= c_null_char)
-    i = i + 1
+  integer(c_int), pointer :: ascii_arr(:)
+  character(len=:), allocatable :: filename
+  character(len=clen), allocatable :: flat(:)
+  integer :: i, j, total
+
+  total = product(dims)
+  call c_f_pointer(ascii_ptr, ascii_arr, [clen * total])
+  allocate(flat(total))
+  allocate(character(len=fn_len) :: filename)
+
+  ! ASCII zu Fortran character(len=clen)
+  do i = 1, total
+    flat(i) = ""
+    do j = 1, clen
+      if (ascii_arr((i - 1) * clen + j) > 0) then
+        flat(i)(j:j) = char(ascii_arr((i - 1) * clen + j))
+      else
+        exit
+      end if
+    end do
   end do
-  fname = transfer(filename(1:i-1), fname)
-  call serialize_char_1d(arr_f, fname)
-end subroutine
 
-subroutine serialize_char_2d_C(arr, n1, n2, filename) bind(C, name="serialize_char_2d_C")
-  use iso_c_binding
-  use serialize_char
-  implicit none
-  type(c_ptr), value :: arr
-  integer, value :: n1, n2
-  character(kind=c_char), intent(in) :: filename(*)
-  character(len=:), pointer :: arr_f(:,:)
-  character(len=:), allocatable :: fname
-  integer :: i
-
-  call c_f_pointer(arr, arr_f, [n1, n2])
-
-  i = 1
-  do while (filename(i) /= c_null_char)
-    i = i + 1
+  ! Filename-Umwandlung
+  do i = 1, fn_len
+    filename(i:i) = char(filename_ascii(i))
   end do
-  fname = transfer(filename(1:i-1), fname)
-  call serialize_char_2d(arr_f, fname)
-end subroutine
 
-subroutine serialize_char_3d_C(arr, n1, n2, n3, filename) bind(C, name="serialize_char_3d_C")
-  use iso_c_binding
-  use serialize_char
-  implicit none
-  type(c_ptr), value :: arr
-  integer, value :: n1, n2, n3
-  character(kind=c_char), intent(in) :: filename(*)
-  character(len=:), pointer :: arr_f(:,:,:)
-  character(len=:), allocatable :: fname
-  integer :: i
-
-  call c_f_pointer(arr, arr_f, [n1, n2, n3])
-
-  i = 1
-  do while (filename(i) /= c_null_char)
-    i = i + 1
-  end do
-  fname = transfer(filename(1:i-1), fname)
-  call serialize_char_3d(arr_f, fname)
-end subroutine
-
-subroutine serialize_char_4d_C(arr, n1, n2, n3, n4, filename) bind(C, name="serialize_char_4d_C")
-  use iso_c_binding
-  use serialize_char
-  implicit none
-  type(c_ptr), value :: arr
-  integer, value :: n1, n2, n3, n4
-  character(kind=c_char), intent(in) :: filename(*)
-  character(len=:), pointer :: arr_f(:,:,:,:)
-  character(len=:), allocatable :: fname
-  integer :: i
-
-  call c_f_pointer(arr, arr_f, [n1, n2, n3, n4])
-
-  i = 1
-  do while (filename(i) /= c_null_char)
-    i = i + 1
-  end do
-  fname = transfer(filename(1:i-1), fname)
-  call serialize_char_4d(arr_f, fname)
-end subroutine
-
-subroutine serialize_char_5d_C(arr, n1, n2, n3, n4, n5, filename) bind(C, name="serialize_char_5d_C")
-  use iso_c_binding
-  use serialize_char
-  implicit none
-  type(c_ptr), value :: arr
-  integer, value :: n1, n2, n3, n4, n5
-  character(kind=c_char), intent(in) :: filename(*)
-  character(len=:), pointer :: arr_f(:,:,:,:,:)
-  character(len=:), allocatable :: fname
-  integer :: i
-
-  call c_f_pointer(arr, arr_f, [n1, n2, n3, n4, n5])
-
-  i = 1
-  do while (filename(i) /= c_null_char)
-    i = i + 1
-  end do
-  fname = transfer(filename(1:i-1), fname)
-  call serialize_char_5d(arr_f, fname)
-end subroutine
+  call serialize_char_nd(flat, dims, ndim, clen, filename)
+end subroutine serialize_char_flat_C

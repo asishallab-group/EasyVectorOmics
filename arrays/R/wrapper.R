@@ -46,7 +46,7 @@ deserialize_int_array <- function(filename, max_dims = 5) {
     dims <- integer(max_dims)
     ndim <- integer(1)
 
-    res <- .Fortran("deserialize_int_flat_r",
+    res <- .Fortran("deserialize_int_r",
                 flat_arr = flat,
                 dims_out = dims,
                 ndim_out = ndim,
@@ -97,11 +97,13 @@ deserialize_char_array <- function(filename, max_dims = 5, max_clen = 100) {
 
   res <- .Fortran("deserialize_char_flat_r",
     ascii_arr = ascii_arr,
-    dims_out = dims,
+    arr_size = integer(clen * total),  # size is ignored in the Fortran code
+    dims_out = actual_dims,
     ndim_out = ndim,
     clen_out = clen,
     filename_ascii = ascii,
     fn_len = length(ascii),
+    ndim_actual = as.integer(length(actual_dims)),
     PACKAGE = "arrays"
   )
 

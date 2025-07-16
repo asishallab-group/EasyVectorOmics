@@ -153,3 +153,45 @@ subroutine deserialize_real_flat_r(flat_arr, dims_out, ndim_out, filename_ascii,
   !Flat is no longer needed but created manually so it needs to be deallocated
   if (associated(flat)) deallocate(flat)
 end subroutine
+
+subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len) bind(C, name="deserialize_real_C")
+  use iso_c_binding
+  use real_deserialize_mod, only: deserialize_real_flat
+  use iso_fortran_env
+  implicit none
+
+  real(c_double), intent(inout) :: arr(arr_size)
+  integer(c_int), value :: arr_size
+  integer(c_int), intent(in) :: filename_ascii(fn_len)
+  integer(c_int), value :: fn_len
+
+  character(len=:), allocatable :: filename
+  integer :: i
+
+  ! arr_f ist das Ergebnis von deserialize_int_flat – muss kopiert werden
+  real(real64), pointer :: arr_f(:)
+  integer(int32), allocatable :: dims(:)
+
+  ! ASCII → String
+  allocate(character(len=fn_len) :: filename)
+  do i = 1, fn_len
+    filename(i:i) = char(filename_ascii(i))
+  end do
+
+  ! Daten einlesen – arr_f wird intern allokiert
+  call deserialize_real_flat(arr_f, dims, filename)
+
+  ! Sicherheitschecks
+  if (.not. associated(arr_f)) then
+      print *, "Fehler: arr_f nicht allokiert"
+      stop 1
+  end if
+
+  if (size(arr_f) /= arr_size) then
+      print *, "Fehler: Größe passt nicht: ", size(arr_f), arr_size
+      stop 2
+  end if
+
+  ! Jetzt in den Python-Puffer kopieren
+  arr(:) = arr_f(:)
+end subroutine
