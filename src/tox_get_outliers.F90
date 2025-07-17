@@ -16,71 +16,50 @@ contains
   !> @param gene_to_fam Mapping of each gene to its family (1-based)
   !> @param is_ortholog Boolean array indicating orthologs
   !> @param dscale      Output: array of scaling factors per family
-  !> @param loess_x     (optional) x for LOESS (medians)
-  !> @param loess_y     (optional) y for LOESS (stddevs)
-  !> @param loess_n     (optional) number of points for LOESS
-  !> @param kernel_sigma (optional) sigma for LOESS
-  !> @param kernel_cutoff (optional) cutoff for LOESS
+  !> @param loess_x     Work array, dimension n_families (LOESS reference x)
+  !> @param loess_y     Work array, dimension n_families (LOESS reference y)
+  !> @param indices_used Work array, dimension n_families (indices for LOESS)
+  !> @param perm_tmp, stack_left_tmp, stack_right_tmp: work arrays, dimension n_genes
+  !> @param workspace_weights, workspace_values: work arrays, dimension n_families (LOESS workspace)
   !> @param max_distance_bw_orths (optional) array of max distances between orthologs per family
-  !> @param error_code  Error code: 0=ok, -1=missing max_distance_bw_orths, -2=invalid family indices
-  pure subroutine compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, is_ortholog, dscale, &
-                                                loess_x, loess_y, loess_n, kernel_sigma, kernel_cutoff, & 
-                                                max_distance_bw_orths, error_code)
+  !> @param error_code  Error code: 0=ok, -1=missing max_distance_bw_orths, -2=invalid family indices (required)
+  pure subroutine compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code, &
+    is_ortholog, max_distance_bw_orths)
     implicit none
     integer, intent(in) :: n_genes, n_families
     real(real64), intent(in) :: distances(n_genes)
     integer, intent(in) :: gene_to_fam(n_genes)
-    logical, intent(in), optional :: is_ortholog(:)
     real(real64), intent(out) :: dscale(n_families)
-    real(real64), intent(in), optional :: loess_x(:), loess_y(:,:)
-    integer, intent(in), optional :: loess_n
-    real(real64), intent(in), optional :: kernel_sigma, kernel_cutoff
+    real(real64), intent(inout) :: loess_x(n_families), loess_y(n_families)
+    integer, intent(inout) :: indices_used(n_families)
+    integer, intent(inout) :: perm_tmp(n_genes), stack_left_tmp(n_genes), stack_right_tmp(n_genes)
+    real(real64), intent(inout) :: workspace_weights(n_families)
+    real(real64), intent(inout) :: workspace_values(1, n_families)
+    integer, intent(out) :: error_code  ! Required
+    logical, intent(in), optional :: is_ortholog(:)
     real(real64), intent(in), optional :: max_distance_bw_orths(:)
-    integer, intent(out) :: error_code  ! Now required, not optional
 
     integer :: i, family_idx, n_in_family, n_orth_in_fam
     real(real64) :: family_distances(n_genes)
-    real(real64) :: median_dist, stddev_dist, loess_pred(1,1), mean_dist, sumsq
+    real(real64) :: median_dist, stddev_dist, mean_dist, sumsq
     real(real64), parameter :: default_sigma = 0.5_real64, default_cutoff = 3.0_real64
-    integer :: nloess
     real(real64) :: sigma, cutoff
     integer :: err
-    integer :: k
-    integer :: perm_tmp(n_genes), stack_left_tmp(n_genes), stack_right_tmp(n_genes)
-    integer :: j
-    real(real64) :: workspace_weights(n_genes)
-    real(real64) :: workspace_values(1, n_genes)
-    integer :: indices_used(n_genes)
-    integer :: m
+    integer :: j, m
+    integer :: n_valid
+    real(real64) :: loess_pred(1,1)
 
     dscale = 0.0_real64
     err = 0
-    ! Default values for LOESS
-    if (present(kernel_sigma)) then
-      sigma = kernel_sigma
-    else
-      sigma = default_sigma
-    end if
-    if (present(kernel_cutoff)) then
-      cutoff = kernel_cutoff
-    else
-      cutoff = default_cutoff
-    end if
-    if (present(loess_n)) then
-      do m = 1, loess_n
-        indices_used(m) = m
-      end do
-      nloess = loess_n
-    else if (present(loess_x)) then
-      nloess = size(loess_x)
-    else
-      nloess = 0
-    end if
+    ! Use default values for LOESS
+    sigma = default_sigma
+    cutoff = default_cutoff
 
     ! Check for invalid family indices
     do i = 1, n_genes
       if (gene_to_fam(i) < 1 .or. gene_to_fam(i) > n_families) then
-        dscale = 1.0_real64
+        dscale = -1.0_real64  ! Set to -1 to indicate error, do not use if error_code /= 0
         error_code = -2
         return
       end if
@@ -90,13 +69,52 @@ contains
     if (present(is_ortholog)) then
       if (any(is_ortholog)) then
         if (.not. present(max_distance_bw_orths)) then
-          dscale = 1.0_real64
+          dscale = -1.0_real64  ! Set to -1 to indicate error, do not use if error_code /= 0
           error_code = -1
           return
         end if
       end if
     end if
 
+    ! First pass: compute median and stddev for each family, and build indices_used for LOESS
+    n_valid = 0
+    do family_idx = 1, n_families
+      n_in_family = 0
+      do i = 1, n_genes
+        if (gene_to_fam(i) == family_idx) then
+          n_in_family = n_in_family + 1
+          family_distances(n_in_family) = abs(distances(i))
+        end if
+      end do
+      if (n_in_family <= 1) then
+        loess_x(family_idx) = 0.0_real64
+        loess_y(family_idx) = 0.0_real64
+        cycle
+      end if
+      do j = 1, n_in_family
+        perm_tmp(j) = j
+        stack_left_tmp(j) = 0
+        stack_right_tmp(j) = 0
+      end do
+      call sort_array(family_distances(1:n_in_family), perm_tmp(1:n_in_family), stack_left_tmp(1:n_in_family), &
+                      stack_right_tmp(1:n_in_family))
+      if (mod(n_in_family,2) == 0) then
+        median_dist = 0.5_real64 * (family_distances(n_in_family/2) + family_distances(n_in_family/2+1))
+      else
+        median_dist = family_distances((n_in_family+1)/2)
+      end if
+      mean_dist = sum(family_distances(1:n_in_family)) / n_in_family
+      sumsq = sum((family_distances(1:n_in_family) - mean_dist)**2)
+      stddev_dist = sqrt(sumsq / (n_in_family-1))
+      loess_x(family_idx) = median_dist
+      loess_y(family_idx) = stddev_dist
+      n_valid = n_valid + 1
+      indices_used(n_valid) = family_idx
+    end do
+    ! n_valid is now the number of valid families for LOESS
+    ! Only use indices_used(1:n_valid) in LOESS calls
+
+    ! Second pass: assign dscale per family
     do family_idx = 1, n_families
       n_in_family = 0
       n_orth_in_fam = 0
@@ -122,28 +140,19 @@ contains
           err = -1
         end if
       else
-        ! Otherwise, use stddev or LOESS fallback
-        do j = 1, n_in_family
-          perm_tmp(j) = j
-          stack_left_tmp(j) = 0
-          stack_right_tmp(j) = 0
-        end do
-        call sort_array(family_distances(1:n_in_family), perm_tmp(1:n_in_family), stack_left_tmp(1:n_in_family), & 
-                        stack_right_tmp(1:n_in_family))
-        if (mod(n_in_family,2) == 0) then
-          median_dist = 0.5_real64 * (family_distances(n_in_family/2) + family_distances(n_in_family/2+1))
-        else
-          median_dist = family_distances((n_in_family+1)/2)
-        end if
-        mean_dist = sum(family_distances(1:n_in_family)) / n_in_family
-        sumsq = sum((family_distances(1:n_in_family) - mean_dist)**2)
-        stddev_dist = sqrt(sumsq / (n_in_family-1))
-        if (present(loess_x) .and. present(loess_y) .and. nloess > 0) then
-          call loess_smooth(nloess, 1, 1, loess_x, loess_y, indices_used, [median_dist], sigma, cutoff, loess_pred, &
-                  workspace_weights, workspace_values)
+        ! Otherwise, use LOESS smoothing on median_dist
+        if (n_valid > 0) then
+          if (mod(n_in_family,2) == 0) then
+            median_dist = 0.5_real64 * (family_distances(n_in_family/2) + family_distances(n_in_family/2+1))
+          else
+            median_dist = family_distances((n_in_family+1)/2)
+          end if
+          ! Only pass first n_valid elements of LOESS arrays
+          call loess_smooth(n_valid, 1, 1, loess_x, reshape(loess_y, [n_valid,1]), indices_used, [median_dist], &
+                  sigma, cutoff, loess_pred, workspace_weights, workspace_values)
           dscale(family_idx) = loess_pred(1,1)
         else
-          dscale(family_idx) = stddev_dist
+          dscale(family_idx) = 0.0_real64
         end if
       end if
     end do
@@ -276,33 +285,30 @@ contains
   !> @param stack_right  Stack array for sorting (dimension n_genes)
   !> @param is_outlier   Output boolean array indicating outliers
   !> @param percentile   (optional) Percentile threshold for outlier detection (default: 95)
-  !> @param loess_x     Optional X for LOESS (if used)
-  !> @param loess_y     Optional Y for LOESS (if used)
-  !> @param loess_n     Optional number of neighbors for LOESS (if used)
-  !> @param kernel_sigma Optional sigma for LOESS kernel (if used)
-  !> @param kernel_cutoff Optional cutoff for LOESS kernel (if used)
   !> @param max_distance_bw_orths (optional) array of max distances between orthologs per family
+  !> @param loess_x, loess_y, loess_n, workspace_weights, workspace_values: work arrays, dimension n_families (for LOESS)
   pure subroutine detect_outliers(n_genes, n_families, distances, gene_to_fam, &
-                            is_ortholog, work_array, perm, stack_left, stack_right, &
-                            is_outlier, &
-                            percentile, loess_x, loess_y, loess_n, kernel_sigma, kernel_cutoff, max_distance_bw_orths, error_code)
+                            work_array, perm, stack_left, stack_right, &
+                            is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &
+                            is_ortholog, percentile, max_distance_bw_orths)
     implicit none
     integer, intent(in) :: n_genes, n_families
     real(real64), intent(in) :: distances(n_genes)
     integer, intent(in) :: gene_to_fam(n_genes)
-    logical, intent(in), optional :: is_ortholog(n_genes)
     real(real64), intent(inout) :: work_array(n_genes)
     integer, intent(inout) :: perm(n_genes)
     integer, intent(inout) :: stack_left(n_genes)
     integer, intent(inout) :: stack_right(n_genes)
     logical, intent(out) :: is_outlier(n_genes)
+    real(real64), intent(inout) :: loess_x(n_families), loess_y(n_families)
+    integer, intent(inout) :: loess_n(n_families)
+    real(real64), intent(inout) :: workspace_weights(n_families)
+    real(real64), intent(inout) :: workspace_values(1, n_families)
+    integer, intent(out) :: error_code  ! Required
+    logical, intent(in), optional :: is_ortholog(n_genes)
     real(real64), intent(in), optional :: percentile
-    real(real64), intent(in), optional :: loess_x(:), loess_y(:,:)
-    integer, intent(in), optional :: loess_n
-    real(real64), intent(in), optional :: kernel_sigma, kernel_cutoff
     real(real64), intent(in), optional :: max_distance_bw_orths(:)
-    integer, intent(out) :: error_code  ! Now required
-
+    ! Local variables
     real(real64) :: dscale(n_families)
     real(real64) :: rdi(n_genes)
     real(real64) :: threshold
@@ -323,25 +329,23 @@ contains
 
     if (present(is_ortholog)) then
       if (present(max_distance_bw_orths)) then
-        call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, is_ortholog, dscale, &
-                                          loess_x, loess_y, loess_n, kernel_sigma, kernel_cutoff, &
-                                          max_distance_bw_orths, error_code)
+        call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+                                          loess_x, loess_y, loess_n, perm, stack_left, stack_right, workspace_weights, &
+                                          workspace_values, error_code, is_ortholog, max_distance_bw_orths)
       else
-        call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, is_ortholog, dscale, &
-                                          loess_x, loess_y, loess_n, kernel_sigma, kernel_cutoff, &
-                                          error_code=error_code)
+        call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+                                          loess_x, loess_y, loess_n, perm, stack_left, stack_right, workspace_weights, &
+                                          workspace_values, error_code, is_ortholog)
       end if
     else
       if (present(max_distance_bw_orths)) then
-        call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale=dscale, &
-                                          loess_x=loess_x, loess_y=loess_y, loess_n=loess_n, kernel_sigma=kernel_sigma, &
-                                          kernel_cutoff=kernel_cutoff, &
-                                          max_distance_bw_orths=max_distance_bw_orths, error_code=error_code)
+        call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+                                          loess_x, loess_y, loess_n, perm, stack_left, stack_right, workspace_weights, &
+                                          workspace_values, error_code, max_distance_bw_orths=max_distance_bw_orths)
       else
-        call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale=dscale, &
-                                          loess_x=loess_x, loess_y=loess_y, loess_n=loess_n, kernel_sigma=kernel_sigma, &
-                                          kernel_cutoff=kernel_cutoff, &
-                                          error_code=error_code)
+        call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+                                          loess_x, loess_y, loess_n, perm, stack_left, stack_right, workspace_weights, &
+                                          workspace_values, error_code)
       end if
     end if
     if (error_code /= 0) return
