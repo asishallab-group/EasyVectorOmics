@@ -4,7 +4,9 @@
 !> Sorting is performed indirectly via a permutation vector, preserving the original arrays.
 !> Suitable for expression data analysis workflows requiring stable and indirect sorting.
 module tox_sorting
+  use, intrinsic :: iso_fortran_env, only: real64
   implicit none
+
   private
 
   ! Expose specific functions C/R
@@ -19,7 +21,7 @@ module tox_sorting
 
 contains
 
-  !> Sort a real(8) array indirectly using quicksort.
+  !> Sort a real(real64) array indirectly using quicksort.
   !>  Creates a sorted version of the array by reordering the `perm` vector.
   !> The original data in `array` remains unchanged.
   !> 
@@ -28,7 +30,7 @@ contains
   !> @param stack_left   Manual stack of left indices for quicksort recursion<br>
   !> @param stack_right  Manual stack of right indices for quicksort recursion<br>
   pure subroutine sort_real(array, perm, stack_left, stack_right)
-    real(8), intent(in) :: array(:)
+    real(real64), intent(in) :: array(:)
     integer, intent(inout) :: perm(:)
     integer, intent(inout) :: stack_left(:), stack_right(:)
     call quicksort_real(array, perm, size(array), stack_left, stack_right)
@@ -55,12 +57,12 @@ contains
   !> Internal quicksort implementation for real arrays.
   !>  Sorts indirectly using the permutation vector `perm`. Manual stack replaces recursion.
   pure subroutine quicksort_real(array, perm, n, stack_left, stack_right)
-    real(8), intent(in) :: array(:)
+    real(real64), intent(in) :: array(:)
     integer, intent(inout) :: perm(:)
     integer, intent(in) :: n
     integer, intent(inout) :: stack_left(:), stack_right(:)
     integer :: left, right, i, j, top, pivot_idx
-    real(8) :: pivot_val
+    real(real64) :: pivot_val
 
     top = 1
     stack_left(top) = 1
@@ -231,10 +233,11 @@ end module tox_sorting
 
 ! === R WRAPPERS ===
 subroutine sort_real_r(array, perm, stack_left, stack_right, n)
+  use, intrinsic :: iso_fortran_env, only: real64
   use tox_sorting, only: sort_real
   implicit none
   integer, intent(in) :: n
-  real(8), intent(in) :: array(n)
+  real(real64), intent(in) :: array(n)
   integer, intent(inout) :: perm(n), stack_left(n), stack_right(n)
 
   call sort_real(array, perm, stack_left, stack_right)
