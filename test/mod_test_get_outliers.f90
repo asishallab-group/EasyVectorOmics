@@ -100,7 +100,7 @@ contains
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
       is_ortholog, max_distance_bw_orths)
     call assert_equal_int(error_code, 0, 'Error code 0 with is_ortholog and max_distance_bw_orths (test_scaling_basic)')
@@ -122,7 +122,7 @@ contains
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
       is_ortholog, max_distance_bw_orths)
     call assert_equal_int(error_code, 0, 'Error code 0 with one ortholog per family (should use fallback)')
@@ -145,7 +145,7 @@ contains
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
       is_ortholog, max_distance_bw_orths)
     call assert_true(all(dscale /= -1.0_real64), 'dscale must not be -1.0 in valid fallback')
@@ -228,7 +228,7 @@ contains
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
     max_distance_bw_orths = [42.0_real64]
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
       is_ortholog, max_distance_bw_orths)
     call assert_equal_real(dscale(1), 42.0_real64, 1e-12_real64, "All orthologs scaling (max_distance_bw_orths override)")
@@ -250,7 +250,7 @@ contains
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
       is_ortholog, max_distance_bw_orths)
     call assert_equal_real(dscale(1), expected_std, 1e-12_real64, "No orthologs fallback scaling (stddev)")
@@ -271,7 +271,7 @@ contains
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
       is_ortholog, max_distance_bw_orths)
     call assert_equal_int(error_code, -2, 'Error code -2 for invalid family indices')
@@ -329,7 +329,7 @@ contains
     integer :: loess_n(1)
     real(real64) :: workspace_weights(1)
     real(real64) :: workspace_values(1,1)
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, loess_n, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
       is_ortholog, max_distance_bw_orths)
     call compute_rdi(n_genes, distances, gene_to_fam, dscale, rdi)
@@ -359,7 +359,7 @@ contains
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(1)
     real(real64) :: workspace_values(1,1)
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
     call compute_rdi(n_genes, distances, gene_to_fam, dscale, rdi)
     call assert_equal_real(dscale(1), 0.0_real64, 1e-12_real64, &
@@ -382,7 +382,7 @@ contains
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(1)
     real(real64) :: workspace_values(1,1)
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
       is_ortholog, max_distance_bw_orths)
     call assert_equal_real(dscale(1), 5.0_real64, 1e-12_real64, "All genes one family scaling (max ortholog distance)")
@@ -422,7 +422,7 @@ contains
     real(real64) :: workspace_values(1, n_families)
     real(real64) :: max_distance_bw_orths(1) = [0.0_real64]
     distances = [0.0_real64, 0.0_real64, 0.0_real64]
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
       is_ortholog, max_distance_bw_orths)
     distances(1) = -1.0_real64
@@ -462,7 +462,7 @@ contains
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
       is_ortholog)
     call assert_equal_int(error_code, -1, 'Error code -1 if max_distance_bw_orths is missing')
@@ -485,7 +485,7 @@ contains
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
       is_ortholog, max_distance_bw_orths)
     call assert_equal_int(error_code, 0, 'Error code 0 with is_ortholog and max_distance_bw_orths')
@@ -508,7 +508,7 @@ contains
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
     logical :: is_ortholog(n_genes)
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
       max_distance_bw_orths=max_distance_bw_orths)
     call assert_equal_int(error_code, 0, 'Error code 0 with max_distance_bw_orths but no is_ortholog')
@@ -528,7 +528,7 @@ contains
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
     call assert_equal_int(error_code, -2, 'Error code -2 for invalid family indices')
     call assert_true(all(dscale == -1.0_real64), 'dscale fallback to -1.0 on invalid indices')
@@ -547,7 +547,7 @@ contains
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
     call assert_equal_int(error_code, 0, 'Error code 0 for single-gene families')
     call assert_equal_real(dscale(1), 0.0_real64, 1e-12_real64, 'Single-gene family scaling 0.0')
@@ -567,7 +567,7 @@ contains
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(1)
     real(real64) :: workspace_values(1,1)
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
     call assert_equal_int(error_code, 0, 'Error code 0 for all-zero distances')
     call assert_equal_real(dscale(1), 0.0_real64, 1e-12_real64, 'All-zero distances scaling 0.0')
@@ -627,7 +627,7 @@ contains
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
-    call compute_family_scaling_hybrid(n_genes, n_families, distances, gene_to_fam, dscale, &
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
       is_ortholog, max_distance_bw_orths)
     call assert_equal_int(error_code, 0, 'Error code 0 for LOESS fallback')
