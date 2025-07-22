@@ -1,3 +1,4 @@
+!> Module for deserializing integer arrays from files
 module int_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char
@@ -9,6 +10,7 @@ module int_deserialize_mod
 
   integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
 
+  !> Interface for deserializing integer arrays
   interface deserialize_int
     module procedure deserialize_int_1d
     module procedure deserialize_int_2d
@@ -18,8 +20,10 @@ module int_deserialize_mod
   end interface
 
 contains
-
-  ! Hilfsroutine: Flaches Array + Dimensionen lesen
+  !> @brief Deserialize a flat integer array from a file
+  !> @param flat Pointer to the output flat array
+  !> @param dims Output array for dimensions
+  !> @param filename Name of the file to read
   subroutine deserialize_int_flat(flat, dims, filename)
     use iso_c_binding
     integer(int32), pointer, intent(out) :: flat(:)
@@ -28,6 +32,7 @@ contains
 
     integer :: unit, magic, type_code, d
 
+    ! Read file
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='old')
     read(unit) magic
     if (magic /= ARRAY_FILE_MAGIC) error stop "Invalid file format"
@@ -36,12 +41,16 @@ contains
     read(unit) d
     allocate(dims(d))
     read(unit) dims
+    ! Allocate array of proper size
     allocate(flat(product(dims)))
     read(unit) flat
     close(unit)
   end subroutine deserialize_int_flat
 
-  ! Überladene Routinen: 1D
+  !> @brief Deserialize a 1D integer array from a file
+  !> @param arr Pointer to the output array
+  !> @param filename Name of the file to read
+  !> @note The array must be allocated before calling this subroutine
   subroutine deserialize_int_1d(arr, filename)
     use iso_c_binding
     integer(int32), pointer, intent(out) :: arr(:)
@@ -53,7 +62,10 @@ contains
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1)])
   end subroutine deserialize_int_1d
 
-  ! 2D
+  !> @brief Deserialize a 2D integer array from a file
+  !> @param arr Pointer to the output array
+  !> @param filename Name of the file to read
+  !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_int_2d(arr, filename)
     use iso_c_binding
     integer(int32), pointer, intent(out) :: arr(:,:)
@@ -65,7 +77,10 @@ contains
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2)])
   end subroutine deserialize_int_2d
 
-  ! 3D
+  !> @brief Deserialize a 3D integer array from a file
+  !> @param arr Pointer to the output array
+  !> @param filename Name of the file to read
+  !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_int_3d(arr, filename)
     use iso_c_binding
     integer(int32), pointer, intent(out) :: arr(:,:,:)
@@ -77,7 +92,10 @@ contains
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3)])
   end subroutine deserialize_int_3d
 
-  ! 4D
+  !> @brief Deserialize a 4D integer array from a file
+  !> @param arr Pointer to the output array
+  !> @param filename Name of the file to read
+  !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_int_4d(arr, filename)
     use iso_c_binding
     integer(int32), pointer, intent(out) :: arr(:,:,:,:)
@@ -89,7 +107,10 @@ contains
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3), dims(4)])
   end subroutine deserialize_int_4d
 
-  ! 5D
+  !> @brief Deserialize a 5D integer array from a file
+  !> @param arr Pointer to the output array
+  !> @param filename Name of the file to read
+  !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_int_5d(arr, filename)
     use iso_c_binding
     integer(int32), pointer, intent(out) :: arr(:,:,:,:,:)

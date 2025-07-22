@@ -5,7 +5,7 @@ get_array_dims <- function(filename, max_dims = 5) {
   dims <- integer(max_dims)
   ndims <- integer(1)
 
-  res <- .Fortran("get_array_dims",
+  res <- .Fortran("get_array_dims_r",
                   filename_ascii = as.integer(ascii),
                   fn_len = as.integer(length(ascii)),
                   dims_out = dims,
@@ -22,7 +22,7 @@ get_array_metadata_chars <- function(filename, max_dims = 5) {
   typecode <- integer(1)
   clen <- integer(1)
 
-  res <- .Fortran("get_array_metadata_chars",
+  res <- .Fortran("get_array_metadata_chars_r",
                   filename_ascii = as.integer(ascii),
                   fn_len = as.integer(length(ascii)),
                   dims_out = dims,
