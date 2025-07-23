@@ -115,21 +115,27 @@ contains
 
 end module int_deserialize_mod
 
+!> @brief R interface for deserializing an integer array from a file
+!> @param flat_arr Output flat array
+!> @param dims_out Output dimensions array
+!> @param ndim_out Output number of dimensions
+!> @param filename_ascii ASCII representation of the filename
+!> @param fn_len Length of the filename array
 subroutine deserialize_int_r(flat_arr, dims_out, ndim_out, filename_ascii, fn_len)
   use iso_fortran_env, only: int32
   use int_deserialize_mod
   implicit none
 
-  ! Rückgabe an R
+  ! Outputs
   integer(int32), intent(out) :: flat_arr(*)
   integer(int32), intent(out) :: dims_out(*)
   integer, intent(out) :: ndim_out
 
-  ! Dateiname
+  ! Filename
   integer(int32), intent(in) :: filename_ascii(fn_len)
   integer, intent(in) :: fn_len
 
-  ! Intern
+  ! Local variables
   character(len=:), allocatable :: filename
   integer :: i, k
   integer(int32), pointer :: flat(:)
@@ -140,7 +146,7 @@ subroutine deserialize_int_r(flat_arr, dims_out, ndim_out, filename_ascii, fn_le
     filename(i:i) = char(filename_ascii(i))
   end do
 
-  ! Lese Daten
+  ! Read file
   call deserialize_int_flat(flat, dims, filename)
 
   ndim_out = size(dims)
@@ -156,7 +162,12 @@ subroutine deserialize_int_r(flat_arr, dims_out, ndim_out, filename_ascii, fn_le
   if (associated(flat)) deallocate(flat)
 end subroutine
 
-
+!>@brief C binding for the subroutine to deserialize an integer array from a file
+!>@param arr Output array
+!>@param arr_size Size of the output array
+!>@param filename_ascii ASCII representation of the filename
+!>@param fn_len Length of the filename array
+!> @note It is assumed that the array is already allocated and passed together with its size
 subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len) bind(C, name="deserialize_int_C")
   use iso_c_binding
   use int_deserialize_mod, only: deserialize_int_flat
@@ -186,15 +197,15 @@ subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len) bind(C, name
 
   ! Sicherheitschecks
   if (.not. associated(arr_f)) then
-      print *, "Fehler: arr_f nicht allokiert"
+      print *, "Error: arr_f not allocated"
       stop 1
   end if
 
   if (size(arr_f) /= arr_size) then
-      print *, "Fehler: Größe passt nicht: ", size(arr_f), arr_size
+      print *, "Error: Size does not match ", size(arr_f), arr_size
       stop 2
   end if
 
-  ! Jetzt in den Python-Puffer kopieren
+  ! Move data in C buffer
   arr(:) = arr_f(:)
 end subroutine

@@ -27,6 +27,9 @@ module array_utils
     close(unit)
   end function get_type_code
 
+  !> @brief Get the dimensions of an array file
+  !> @param filename Name of the file to read
+  !> @return Allocatable array of dimensions
   function get_array_dims(filename) result(dims)
     use iso_c_binding
     implicit none

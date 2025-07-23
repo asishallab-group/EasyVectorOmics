@@ -105,7 +105,11 @@ contains
     close(unit)
   end subroutine
 
-    !> Writes serialized real array from R to file with metdata.
+  !> @brief Writes serialized real array from R to file with metdata.
+  !> @param arr The input real array to serialize.
+  !> @param dims The dimensions of the array.
+  !> @param ndim The number of dimensions.
+  !> @param filename The output filename.
   subroutine serialize_real_nd(arr, dims, ndim, filename)
     real(real64), intent(in) :: arr(:)
     integer(int32), intent(in) :: dims(:)
@@ -153,7 +157,7 @@ subroutine serialize_real_flat_r(arr, dims, ndim, filename_ascii, fn_len)
     filename(i:i) = char(filename_ascii(i))
   end do
 
-  ! Gesamtgröße berechnen (z. B. für Sicherheit oder Logging)
+  ! calculate total size
   total_len = 1
   do i = 1, ndim
     total_len = total_len * dims(i)
@@ -172,27 +176,27 @@ subroutine serialize_real_nd_C(arr, dims, ndim, filename_ascii, fn_len) bind(C, 
   use serialize_real
   implicit none
 
-  ! Eingabeparameter
+  ! Input parameters
   type(c_ptr), value :: arr
   integer(c_int), intent(in) :: dims(ndim)
   integer(c_int), value :: ndim
   integer(c_int), intent(in) :: filename_ascii(fn_len)
   integer(c_int), value :: fn_len
 
-  ! Lokale Variablen
+  ! Local
   character(len=:), allocatable :: filename
   real(c_double), pointer :: arr_f(:)
   integer :: i
 
-  ! Filename umwandeln
+  ! Filename conversion
   allocate(character(len=fn_len) :: filename)
   do i = 1, fn_len
     filename(i:i) = char(filename_ascii(i))
   end do
 
-  ! 1D-Array aus dem C-Pointer
+  ! 1D-Array from C pointer
   call c_f_pointer(arr, arr_f, [product(dims(1:ndim))])
 
-  ! Speichern
+  ! save
   call serialize_real_nd(arr_f, dims, ndim, filename)
 end subroutine

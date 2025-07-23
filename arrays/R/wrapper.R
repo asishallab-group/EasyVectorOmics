@@ -1,5 +1,6 @@
 dyn.load("./build/arrays.so")
 
+# returns the dimensions of an array stored in a file, works for integer and real
 get_array_dims <- function(filename, max_dims = 5) {
   ascii <- utf8ToInt(filename)
   dims <- integer(max_dims)
@@ -15,6 +16,7 @@ get_array_dims <- function(filename, max_dims = 5) {
   res$dims_out[1:res$ndims]
 }
 
+#returns the dimensions, type code and character length of an array stored in a file; works for character arrays
 get_array_metadata_chars <- function(filename, max_dims = 5) {
   ascii <- utf8ToInt(filename)
   dims <- integer(max_dims)
@@ -36,6 +38,8 @@ get_array_metadata_chars <- function(filename, max_dims = 5) {
        clen = res$clen_out)
 }
 
+# deserializes an integer array from a file, reads array dimensions first and then creates a proper array
+# That is then being filled by fortran
 deserialize_int_array <- function(filename, max_dims = 5) {
     ascii <- utf8ToInt(filename)
 
@@ -58,6 +62,8 @@ deserialize_int_array <- function(filename, max_dims = 5) {
     array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
 }
 
+# Deserializes a real array from a file, reads array dimensions first and then creates a proper array
+# That is then being filled by fortran
 deserialize_real_array <- function(filename, max_dims = 5) {
     ascii <- utf8ToInt(filename)
 
@@ -79,7 +85,10 @@ deserialize_real_array <- function(filename, max_dims = 5) {
     array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
 }
 
-deserialize_char_array <- function(filename, max_dims = 5, max_clen = 100) {
+# Deserializes a character array from a file, reads array dimensions and character length first
+# Then creates a proper array that is then being filled by fortran
+# Note that the array needs to be translated back to characters
+deserialize_char_array <- function(filename, max_dims = 5) {
   ascii <- utf8ToInt(filename)
   dims <- integer(max_dims)
   ndim <- integer(1)
@@ -107,6 +116,7 @@ deserialize_char_array <- function(filename, max_dims = 5, max_clen = 100) {
     PACKAGE = "arrays"
   )
 
+  # translate ASCII back to char
   mat <- matrix(res$ascii_arr, nrow = clen)
   chars <- apply(mat, 2, function(col) rawToChar(as.raw(col[col > 0])))
 
@@ -131,6 +141,8 @@ serialize_int_array <- function(arr, filename) {
            PACKAGE = "arrays")
 }
 
+# BASE R arrays are column-major just like fortran, so no serialization is needed for the array structure.
+# Array can simply be passed with with as.double() to pass it in a flat format.
 serialize_real_array <- function(arr, filename) {
   flat <- as.double(arr)
 
@@ -152,6 +164,9 @@ serialize_real_array <- function(arr, filename) {
            PACKAGE = "arrays")
 }
 
+# Serializes a character array to a file, encoding it as an integer matrix
+# Each character is converted to its ASCII integer representation
+# The matrix is then serialized with Fortran
 serialize_char_array <- function(arr, filename) {
   stopifnot(is.character(arr))
   arr <- as.array(arr)
@@ -178,7 +193,7 @@ serialize_char_array <- function(arr, filename) {
   ))
 }
 
-# --- Testprogramm für alle Funktionen ---
+# --- Testing for all functions ---
 test_array_wrappers <- function(tmpdir = tempdir()) {
   cat("Start Wrapper-Tests...\n")
   fn <- function(name) file.path(tmpdir, name)
@@ -289,5 +304,5 @@ test_array_wrappers <- function(tmpdir = tempdir()) {
   cat("All ASCII string variation tests passed!\n")
 }
 
-# Am Ende der Datei automatisch testen (optional, auskommentieren falls nicht gewünscht)
+# start tests
 test_array_wrappers()

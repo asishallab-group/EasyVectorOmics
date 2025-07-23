@@ -158,6 +158,14 @@ contains
     close(unit)
   end subroutine
 
+  !> Serialize a character array of arbitrary dimensions to a binary file.
+  !! The file will contain a magic number, type code, dimension, shape, character length, and the array data.
+  !! @param flat The input character array to serialize.
+  !! @param dims The dimensions of the array.
+  !! @param ndim The number of dimensions.
+  !! @param clen The maximum character length.
+  !! @param filename The output filename.
+  !! @note This routine is onyl called by R and serializes only flat character arrays to the memory
   subroutine serialize_char_nd(flat, dims, ndim, clen, filename)
     use iso_c_binding
     implicit none
@@ -188,11 +196,13 @@ contains
 
 end module serialize_char
 
+!> @brief serializes a flat character array to a binary file.
 subroutine serialize_char_flat_r(ascii_arr, dims, ndim, clen, filename_ascii, fn_len)
   use iso_fortran_env
   use serialize_char
   implicit none
 
+  ! change to fixed size
   integer(int32), intent(in) :: ascii_arr(clen, *)
   integer(int32), intent(in) :: dims(ndim)
   integer(int32), intent(in) :: ndim
@@ -231,6 +241,13 @@ end subroutine serialize_char_flat_r
 
 ! --- C-Bindings für serialize_char_* ---
 
+!> @brief C binding for the subroutine to serialize a flat character array to a binary file.
+!> @param ascii_ptr Pointer to the flat character array in ASCII format
+!> @param dims Dimensions of the array
+!> @param ndim Number of dimensions
+!> @param clen Maximum character length
+!> @param filename_ascii Array of ASCII characters representing the filename
+!> @param fn_len Length of the filename array
 subroutine serialize_char_flat_C(ascii_ptr, dims, ndim, clen, filename_ascii, fn_len) bind(C, name="serialize_char_flat_C")
   use iso_c_binding
   use serialize_char
@@ -253,7 +270,7 @@ subroutine serialize_char_flat_C(ascii_ptr, dims, ndim, clen, filename_ascii, fn
   allocate(flat(total))
   allocate(character(len=fn_len) :: filename)
 
-  ! ASCII zu Fortran character(len=clen)
+  ! ASCII to Fortran character(len=clen)
   do i = 1, total
     flat(i) = ""
     do j = 1, clen
@@ -265,7 +282,7 @@ subroutine serialize_char_flat_C(ascii_ptr, dims, ndim, clen, filename_ascii, fn
     end do
   end do
 
-  ! Filename-Umwandlung
+  ! Filename-conversion
   do i = 1, fn_len
     filename(i:i) = char(filename_ascii(i))
   end do

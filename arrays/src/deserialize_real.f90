@@ -1,3 +1,4 @@
+!> Module for deserializing real (double precision) arrays from binary files
 module real_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding
@@ -12,7 +13,10 @@ module real_deserialize_mod
 
 contains
 
-  ! Hilfsroutine: Flaches Array + Dimensionen lesen
+  !> @brief Deserialize a flat real array from a file
+  !> @param flat Pointer to the output flat array
+  !> @param dims Output array for dimensions
+  !> @param filename Name of the file to read
   subroutine deserialize_real_flat(flat, dims, filename)
     use iso_c_binding
     real(real64), pointer, intent(out) :: flat(:)
@@ -34,7 +38,10 @@ contains
     close(unit)
   end subroutine deserialize_real_flat
 
-  ! 1D
+  !> @brief Deserialize a 1D real array from a file
+  !> @param arr Pointer to the output array
+  !> @param filename Name of the file to read
+  !> @note This file just moves a pointer, it exists for consistency
   subroutine deserialize_real_1d(arr, filename)
     use iso_c_binding
     real(real64), pointer, intent(out) :: arr(:)
@@ -48,7 +55,10 @@ contains
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1)])
   end subroutine deserialize_real_1d
 
-  ! 2D
+  !> @brief Deserialize a 2D real array from a file
+  !> @param arr Pointer to the output array
+  !> @param filename Name of the file to read
+  !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_real_2d(arr, filename)
     use iso_c_binding
     real(real64), pointer, intent(out) :: arr(:,:)
@@ -62,7 +72,10 @@ contains
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2)])
   end subroutine deserialize_real_2d
 
-  ! 3D
+  !> @brief Deserialize a 3D real array from a file
+  !> @param arr Pointer to the output array
+  !> @param filename Name of the file to read
+  !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_real_3d(arr, filename)
     use iso_c_binding
     real(real64), pointer, intent(out) :: arr(:,:,:)
@@ -76,7 +89,10 @@ contains
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3)])
   end subroutine deserialize_real_3d
 
-  ! 4D
+  !> @brief Deserialize a 4D real array from a file
+  !> @param arr Pointer to the output array
+  !> @param filename Name of the file to read
+  !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_real_4d(arr, filename)
     use iso_c_binding
     real(real64), pointer, intent(out) :: arr(:,:,:,:)
@@ -90,7 +106,10 @@ contains
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3), dims(4)])
   end subroutine deserialize_real_4d
 
-  ! 5D
+  !> @brief Deserialize a 5D real array from a file
+  !> @param arr Pointer to the output array
+  !> @param filename Name of the file to read
+  !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_real_5d(arr, filename)
     use iso_c_binding
     real(real64), pointer, intent(out) :: arr(:,:,:,:,:)
@@ -106,21 +125,27 @@ contains
 
 end module real_deserialize_mod
 
+!> @brief R binding for the subroutine to deserialize a flat real array from a file
+!> @param flat_arr Output flat array
+!> @param dims_out Output dimensions array
+!> @param ndim_out Number of dimensions
+!> @param filename_ascii Array of ASCII characters representing the filename
+!> @param fn_len Length of the filename array
 subroutine deserialize_real_flat_r(flat_arr, dims_out, ndim_out, filename_ascii, fn_len)
   use iso_fortran_env
   use real_deserialize_mod
   implicit none
 
-  ! Rückgabe an R
+  ! This needs fixed size and pass the size as parameter
   real(real64), intent(out) :: flat_arr(*)
   integer(int32), intent(out) :: dims_out(*)
   integer, intent(out) :: ndim_out
 
-  ! Dateiname
+  ! Filename
   integer(int32), intent(in) :: filename_ascii(fn_len)
   integer, intent(in) :: fn_len
 
-  ! Intern
+  ! Local
   character(len=:), allocatable :: filename
   integer :: i, k
   real(real64), pointer :: flat(:)
@@ -131,7 +156,7 @@ subroutine deserialize_real_flat_r(flat_arr, dims_out, ndim_out, filename_ascii,
     filename(i:i) = char(filename_ascii(i))
   end do
 
-  ! Lese Daten
+  ! Read file
   call deserialize_real_flat(flat, dims, filename)
 
   ndim_out = size(dims)
@@ -147,6 +172,12 @@ subroutine deserialize_real_flat_r(flat_arr, dims_out, ndim_out, filename_ascii,
   if (associated(flat)) deallocate(flat)
 end subroutine
 
+!> @brief C binding for the subroutine to deserialize a real array from a file
+!> @param arr Output array
+!> @param arr_size Size of the output array
+!> @param filename_ascii Array of ASCII characters representing the filename
+!> @param fn_len Length of the filename array
+!> @note It is assumed that the array is already allocated and passed together with its size
 subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len) bind(C, name="deserialize_real_C")
   use iso_c_binding
   use real_deserialize_mod, only: deserialize_real_flat
@@ -161,7 +192,7 @@ subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len) bind(C, nam
   character(len=:), allocatable :: filename
   integer :: i
 
-  ! arr_f ist das Ergebnis von deserialize_int_flat – muss kopiert werden
+  ! arr_f is a pointer to the Fortran array
   real(real64), pointer :: arr_f(:)
   integer(int32), allocatable :: dims(:)
 
@@ -171,20 +202,20 @@ subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len) bind(C, nam
     filename(i:i) = char(filename_ascii(i))
   end do
 
-  ! Daten einlesen – arr_f wird intern allokiert
+  ! Read data
   call deserialize_real_flat(arr_f, dims, filename)
 
-  ! Sicherheitschecks
+  ! Checks
   if (.not. associated(arr_f)) then
-      print *, "Fehler: arr_f nicht allokiert"
+      print *, "Error: arr_f not allocated"
       stop 1
   end if
 
   if (size(arr_f) /= arr_size) then
-      print *, "Fehler: Größe passt nicht: ", size(arr_f), arr_size
+      print *, "Error: Size does not match ", size(arr_f), arr_size
       stop 2
   end if
 
-  ! Jetzt in den Python-Puffer kopieren
+  ! Move to buffer
   arr(:) = arr_f(:)
 end subroutine

@@ -1,3 +1,5 @@
+!>@brief Test program for deserializing integer, real, and character arrays
+!> @note This program tests the serialization/deserialization routines for integer, real, and character arrays
 program test_arrays
   use array_utils
   use int_deserialize_mod

@@ -1,3 +1,4 @@
+!> Module for serializing integer arrays to binary files.
 module serialize_int
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only: c_loc
@@ -105,6 +106,12 @@ contains
     close(unit)
   end subroutine
 
+  !> @brief Serialize a flat integer array with specified dimensions and number of dimensions to a binary file.
+  !> @param arr The input integer array to serialize.
+  !> @param dims The dimensions of the array.
+  !> @param ndim The number of dimensions.
+  !> @param filename The output filename.
+  !> @note this is called by R
   subroutine serialize_int_nd(arr, dims, ndim, filename)
     integer(int32), intent(in) :: arr(:)
     integer(int32), intent(in) :: dims(:)
@@ -138,6 +145,7 @@ subroutine serialize_int_flat_r(arr, dims, ndim, filename_ascii, fn_len)
   use iso_fortran_env, only: int32
   use serialize_int, only: serialize_int_nd
   implicit none
+  !Change to fixed size
   integer(int32), intent(in) :: arr(*)         ! assumed-size array
   integer(int32), intent(in) :: dims(*)
   integer(int32), intent(in) :: ndim
@@ -167,32 +175,38 @@ end subroutine
 
 ! --- C-Bindings für serialize_int_* ---
 
+!> @brief C binding for the subroutine to serialize a flat integer array to a binary file.
+!> @param arr Pointer to the flat integer array
+!> @param dims Dimensions of the array
+!> @param ndim Number of dimensions
+!> @param filename_ascii Array of ASCII characters representing the filename
+!> @param fn_len Length of the filename array
 subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len) bind(C, name="serialize_int_nd_C")
   use iso_c_binding
   use serialize_int
   implicit none
 
-  ! Eingabeparameter
+  ! input
   type(c_ptr), value :: arr
   integer(c_int), intent(in) :: dims(ndim)
   integer(c_int), value :: ndim
   integer(c_int), intent(in) :: filename_ascii(fn_len)
   integer(c_int), value :: fn_len
 
-  ! Lokale Variablen
+  ! Local
   character(len=:), allocatable :: filename
   integer(c_int), pointer :: arr_f(:)
   integer :: i
 
-  ! Filename umwandeln
+  ! Filename conversion
   allocate(character(len=fn_len) :: filename)
   do i = 1, fn_len
     filename(i:i) = char(filename_ascii(i))
   end do
 
-  ! 1D-Array aus dem C-Pointer
+  ! 1D-Array to Fortran pointer
   call c_f_pointer(arr, arr_f, [product(dims(1:ndim))])
 
-  ! Speichern
+  ! save
   call serialize_int_nd(arr_f, dims, ndim, filename)
 end subroutine

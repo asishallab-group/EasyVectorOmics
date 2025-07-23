@@ -1,6 +1,7 @@
 !> Module providing serialization and routines for integer, real, and character arrays
 !! of up to 5 dimensions, as well as utility routines for extracting rows, columns, and cells from 2D arrays.
 !! Arrays are serialized to a custom binary format with a magic number and type/dimension metadata.
+!! @note this is currently not in use
 module serialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only: c_loc
