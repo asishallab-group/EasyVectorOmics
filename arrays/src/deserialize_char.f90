@@ -5,18 +5,10 @@ module char_deserialize_mod
   implicit none
 
   private
-  public :: deserialize_char, deserialize_char_flat
+  public :: deserialize_char_1d, deserialize_char_2d, deserialize_char_3d, deserialize_char_flat, &
+          deserialize_char_4d, deserialize_char_5d
 
   integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
-
-  ! Generic interface for deserialization of character arrays
-  interface deserialize_char
-    module procedure deserialize_char_1d
-    module procedure deserialize_char_2d
-    module procedure deserialize_char_3d
-    module procedure deserialize_char_4d
-    module procedure deserialize_char_5d
-  end interface
 
 contains
   !> @brief Subroutine to deserialize a flat character array from a file

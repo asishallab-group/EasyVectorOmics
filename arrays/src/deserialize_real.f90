@@ -5,17 +5,10 @@ module real_deserialize_mod
   implicit none
 
   private
-  public :: deserialize_real, deserialize_real_flat
+  public :: deserialize_real_flat, deserialize_real_1d, deserialize_real_2d, &
+           deserialize_real_3d, deserialize_real_4d, deserialize_real_5d
 
   integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
-
-  interface deserialize_real
-    module procedure deserialize_real_1d
-    module procedure deserialize_real_2d
-    module procedure deserialize_real_3d
-    module procedure deserialize_real_4d
-    module procedure deserialize_real_5d
-  end interface
 
 contains
 

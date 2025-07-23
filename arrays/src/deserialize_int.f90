@@ -5,19 +5,10 @@ module int_deserialize_mod
   implicit none
 
   private
-  public :: deserialize_int, deserialize_int_1d, deserialize_int_2d, &
+  public :: deserialize_int_1d, deserialize_int_2d, &
            deserialize_int_3d, deserialize_int_4d, deserialize_int_5d, deserialize_int_flat
 
   integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
-
-  !> Interface for deserializing integer arrays
-  interface deserialize_int
-    module procedure deserialize_int_1d
-    module procedure deserialize_int_2d
-    module procedure deserialize_int_3d
-    module procedure deserialize_int_4d
-    module procedure deserialize_int_5d
-  end interface
 
 contains
   !> @brief Deserialize a flat integer array from a file
