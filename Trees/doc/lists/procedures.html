@@ -6,11 +6,11 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="">
-    <meta name="author" content="" >
+      <meta name="description" content="Documentation for TensorOmics">
+    <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>All Procedures &ndash; EasyVectorOmics BST
+    <title>All Procedures &ndash; TensorOmics
 </title>
 
     <!-- Bootstrap -->
@@ -45,7 +45,7 @@
     <div class="container-fluid mb-sm-4 mb-xl-2">
       <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div class="container">
-          <a class="navbar-brand" href="../index.html">EasyVectorOmics BST </a>
+          <a class="navbar-brand" href="../index.html">TensorOmics </a>
           <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
                   aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
                   <span class="navbar-toggler-icon">
@@ -61,9 +61,6 @@
                 </li>
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="../lists/programs.html">Programs</a>
                 </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
@@ -84,52 +81,58 @@
 			 <thead><tr><th>Procedure</th><th>Location</th><th>Procedure Type</th><th>Description</th></tr></thead>
 			 <tbody>
 			   <tr>
-                 <td><a href='../proc/assert_permutation.html'>assert_permutation</a></td>
-                 <td><a href='../program/test_kd_tree.html'>test_kd_tree</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/bst_range_query.html'>bst_range_query</a></td>
                  <td><a href='../module/binary_search_tree.html'>binary_search_tree</a></td>
                  <td>Subroutine</td>
-                 <td><p>\brief Perform a 1D range query over the sorted index.
-\param x Input real array.
-\param ix Permutation index array (sorted).
-\param n Number of elements.
-\param lo Lower bound of range (inclusive).
-\param hi Upper bound of range (inclusive).
-\param out_ix Output array of indices in x that match the range.
-\param out_n Number of matches found.</p></td>
+                 <td><p>\brief Perform a 1D range query over the sorted index.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/bst_range_query_c.html'>bst_range_query_C</a></td>
+                 <td><a href='../sourcefile/binary_search_tree.f90.html'>binary_search_tree.f90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>\brief Wrapper using C for getting range query usable by python</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/bst_range_query_r.html'>bst_range_query_r</a></td>
+                 <td><a href='../sourcefile/binary_search_tree.f90.html'>binary_search_tree.f90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>\brief Wrapper for getting range query usable by R</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/build_bst_index.html'>build_bst_index</a></td>
                  <td><a href='../module/binary_search_tree.html'>binary_search_tree</a></td>
                  <td>Subroutine</td>
-                 <td><p>\brief Build the BST index by sorting indices using values in x.
-\param x Input real array to be indexed.
-\param n Number of elements in x.
-\param ix Output integer array holding the permutation index such that x(ix) is sorted.
-\param stack_left Manual stack of left indices for quicksort recursion (preallocated)
-\param stack_right Manual stack of right indices for quicksort recursion (preallocated)</p></td>
+                 <td><p>\brief Build the BST index by sorting indices using values in x.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_bst_index_c.html'>build_bst_index_C</a></td>
+                 <td><a href='../sourcefile/binary_search_tree.f90.html'>binary_search_tree.f90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>\brief Wrapper using C for building BST index usable by python</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_bst_index_r.html'>build_bst_index_r</a></td>
+                 <td><a href='../sourcefile/binary_search_tree.f90.html'>binary_search_tree.f90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>\brief Wrapper for building BST index usable by R</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/build_kd_index.html'>build_kd_index</a></td>
                  <td><a href='../module/kd_tree.html'>kd_tree</a></td>
                  <td>Subroutine</td>
-                 <td><p>Build a k-d tree index using a stack-based, non-recursive approach.
-Arguments:
-  X         - real(kind=8), dimension(d, n): data points
-  d         - integer: number of dimensions
-  n         - integer: number of points
-  kd_ix     - integer, dimension(n): output index array (k-d tree order)
-  dim_order - integer, dimension(d): dimension order (by variance)
-  work      - integer, dimension(n): workspace array
-  subarray  - real(8), dimension(n): workspace for sorting
-  perm      - integer, dimension(n): workspace for sorting
-  stack_left, stack_right - integer, dimension(max_depth): workspace for sorting
-Initialize kd_ix to 1:n (original indices)
-Choose split dimension by cycling through dim_order</p><a href="../proc/build_kd_index.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Build a k-d tree index using a stack-based, non-recursive approach.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_kd_index_c.html'>build_kd_index_C</a></td>
+                 <td><a href='../sourcefile/k_d_tree.f90.html'>k_d_tree.f90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C interface: Build k-d tree index (zero-copy, short lines, no duplicate declarations)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_kd_index_r.html'>build_kd_index_r</a></td>
+                 <td><a href='../sourcefile/k_d_tree.f90.html'>k_d_tree.f90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/build_spherical_kd.html'>build_spherical_kd</a></td>
@@ -138,34 +141,22 @@ Choose split dimension by cycling through dim_order</p><a href="../proc/build_kd
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/build_spherical_kd_c.html'>build_spherical_kd_C</a></td>
+                 <td><a href='../sourcefile/k_d_tree.f90.html'>k_d_tree.f90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C interface: Build spherical k-d tree (zero-copy, short lines, no duplicate declarations)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_spherical_kd_r.html'>build_spherical_kd_r</a></td>
+                 <td><a href='../sourcefile/k_d_tree.f90.html'>k_d_tree.f90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/get_sorted_value.html'>get_sorted_value</a></td>
                  <td><a href='../module/binary_search_tree.html'>binary_search_tree</a></td>
                  <td>Function</td>
-                 <td><p>\brief Get the value at the sorted position.
-\param x Input real array.
-\param ix Permutation index array.
-\param i Sorted position (1-based).
-\return Value x(ix(i)), i.e., the i-th smallest value in x.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/random_array.html'>random_array</a></td>
-                 <td><a href='../program/test_bst.html'>test_bst</a></td>
-                 <td>Subroutine</td>
-                 <td><p>\brief Fill an array with random real values in [0,1).
-\param arr Output real array.
-\param n Number of elements.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/random_matrix.html'>random_matrix</a></td>
-                 <td><a href='../program/test_kd_tree.html'>test_kd_tree</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/random_unit_vectors.html'>random_unit_vectors</a></td>
-                 <td><a href='../program/test_kd_tree.html'>test_kd_tree</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
+                 <td><p>\brief Get the value at the sorted position.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../interface/sort_array.html'>sort_array</a></td>
@@ -174,12 +165,6 @@ Choose split dimension by cycling through dim_order</p><a href="../proc/build_kd
                  <td><p>Generic interface to sort real, integer, or character arrays.
  Calls one of the module procedures <code>sort_real</code>, <code>sort_integer</code>, or <code>sort_character</code>
 depending on the input array type. Sorting is done indirectly through a permutation vector.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/sort_dim_order.html'>sort_dim_order</a></td>
-                 <td><a href='../program/test_kd_tree.html'>test_kd_tree</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
                </tr>
 			 </tbody></table>
              
@@ -192,8 +177,8 @@ depending on the input array type. Sorting is done indirectly through a permutat
         <div class="row justify-content-between">
           <div class="col">
             <p>
-              EasyVectorOmics BST
-              &copy; 2025 
+              TensorOmics
+ was developed by TensorOmics Developers<br>              &copy; 2025 
 </p>
           </div>
           <div class="col">

@@ -11,6 +11,7 @@ program test_kd_tree
     real(8), allocatable :: subarray(:)
     integer, allocatable :: perm(:), stack_left(:), stack_right(:)
     integer :: i, j, fail_count
+    real(8), allocatable :: val(:)
 
     ! --- Test 1: 2D, n=6, cartesian ---
     d = 2; n = 6
@@ -240,6 +241,9 @@ program test_kd_tree
     call random_matrix(X, d, n)
     dim_order = [1,2,3]
     call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right)
+    allocate(val(d))
+    call get_kd_point(X, kd_ix, 4, val)
+    print *, "Point: ", val
     call assert_permutation(kd_ix, n, '3D n=100')
 
     ! --- Additional Test: 5D, n=10 (medium random) ---

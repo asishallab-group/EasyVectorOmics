@@ -6,11 +6,11 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="">
-    <meta name="author" content="" >
+      <meta name="description" content="Documentation for TensorOmics">
+    <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>binary_search_tree &ndash; EasyVectorOmics BST</title>
+    <title>binary_search_tree &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -44,7 +44,7 @@
     <div class="container-fluid mb-sm-4 mb-xl-2">
       <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div class="container">
-          <a class="navbar-brand" href="../index.html">EasyVectorOmics BST </a>
+          <a class="navbar-brand" href="../index.html">TensorOmics </a>
           <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
                   aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
                   <span class="navbar-toggler-icon">
@@ -60,9 +60,6 @@
                 </li>
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="../lists/programs.html">Programs</a>
                 </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
@@ -88,7 +85,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="13.0% of total for modules and submodules.">41 statements</a>
+                 title="12.8% of total for modules and submodules.">42 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -171,10 +168,7 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>\file
-\brief Flat-index-based Binary Search Tree (BST) utilities for 1D range queries.</p>
-<p>This module provides routines to build a BST index (via sorting), access sorted values,
-and perform efficient range queries over a real-valued array.</p>
+      <p>\file</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
@@ -204,96 +198,7 @@ and perform efficient range queries over a real-valued array.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>\brief Get the value at the sorted position.
-\param x Input real array.
-\param ix Permutation index array.
-\param i Sorted position (1-based).
-\return Value x(ix(i)), i.e., the i-th smallest value in x.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-x~4"></span>
-              real(kind=8),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>x</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-ix~5"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>ix</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-i~15"></span>
-              integer,
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>i</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-    <h4>
-    Return Value
-    <small>real</small>
-    </h4>
-    
-
-    </div>
-  </div>
-
-        </section>
-        <br>
-
-        <section>
-          <h2>Subroutines</h2>
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-build_bst_index"></span> <h3>public  subroutine <a href='../proc/build_bst_index.html'>build_bst_index</a>(x, n, ix, stack_left, stack_right)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>\brief Build the BST index by sorting indices using values in x.
-\param x Input real array to be indexed.
-\param n Number of elements in x.
-\param ix Output integer array holding the permutation index such that x(ix) is sorted.
-\param stack_left Manual stack of left indices for quicksort recursion (preallocated)
-\param stack_right Manual stack of right indices for quicksort recursion (preallocated)</p>
+  <p>\brief Get the value at the sorted position.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -323,7 +228,87 @@ and perform efficient range queries over a real-valued array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~11"></span>
+              <span class="anchor" id="variable-ix~3"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ix</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i~9"></span>
+              integer,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>i</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+    <h4>
+    Return Value
+    <small>real(kind=8)</small>
+    </h4>
+    
+
+    </div>
+  </div>
+
+        </section>
+        <br>
+
+        <section>
+          <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-build_bst_index"></span> <h3>public  subroutine <a href='../proc/build_bst_index.html'>build_bst_index</a>(x, n, ix, stack_left, stack_right)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>\brief Build the BST index by sorting indices using values in x.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-x~2"></span>
+              real(kind=8),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>x</strong>(:)</td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n~10"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -338,7 +323,7 @@ and perform efficient range queries over a real-valued array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ix~4"></span>
+              <span class="anchor" id="variable-ix~2"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -353,7 +338,7 @@ and perform efficient range queries over a real-valued array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stack_left~13"></span>
+              <span class="anchor" id="variable-stack_left~14"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -368,7 +353,7 @@ and perform efficient range queries over a real-valued array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stack_right~13"></span>
+              <span class="anchor" id="variable-stack_right~14"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -393,14 +378,7 @@ and perform efficient range queries over a real-valued array.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>\brief Perform a 1D range query over the sorted index.
-\param x Input real array.
-\param ix Permutation index array (sorted).
-\param n Number of elements.
-\param lo Lower bound of range (inclusive).
-\param hi Upper bound of range (inclusive).
-\param out_ix Output array of indices in x that match the range.
-\param out_n Number of matches found.</p>
+  <p>\brief Perform a 1D range query over the sorted index.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -415,7 +393,7 @@ and perform efficient range queries over a real-valued array.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-x~5"></span>
+              <span class="anchor" id="variable-x~4"></span>
               real(kind=8),
             </td>
 <td>intent(in)</td>
@@ -430,7 +408,7 @@ and perform efficient range queries over a real-valued array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ix~6"></span>
+              <span class="anchor" id="variable-ix~4"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -445,7 +423,7 @@ and perform efficient range queries over a real-valued array.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~12"></span>
+              <span class="anchor" id="variable-n~11"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -461,7 +439,7 @@ and perform efficient range queries over a real-valued array.</p>
         <tr>
             <td>
               <span class="anchor" id="variable-lo"></span>
-              real,
+              real(kind=8),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -476,7 +454,7 @@ and perform efficient range queries over a real-valued array.</p>
         <tr>
             <td>
               <span class="anchor" id="variable-hi"></span>
-              real,
+              real(kind=8),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -540,8 +518,8 @@ and perform efficient range queries over a real-valued array.</p>
         <div class="row justify-content-between">
           <div class="col">
             <p>
-              EasyVectorOmics BST
-              &copy; 2025 
+              TensorOmics
+ was developed by TensorOmics Developers<br>              &copy; 2025 
 </p>
           </div>
           <div class="col">

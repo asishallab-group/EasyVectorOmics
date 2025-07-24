@@ -106,18 +106,17 @@ call sort_array(arr, perm, stack_left, stack_right)
 ### Running the Tests
 
 - **BST:**  
-  Compile and run `src/binary_search/bst_test.f90` to validate the binary search tree implementation.
+  Compile and run `test/bst_test.f90` to validate the binary search tree implementation.
 - **KD-Tree:**  
-  Compile and run `src/k-d_tree/test_kd.f90` to validate the KD-Tree implementation, including a wide range of edge cases and random data for robustness.
+  Compile and run `test/test_kd.f90` to validate the KD-Tree implementation, including a wide range of edge cases and random data for robustness.
 
 Example (from project root):
 
 ```sh
-cd src/
-./compile_files.sh
-cd ../build
+cd test/
+./build_tests.sh
+./test_bst
 ./test_kd
-./bst_test
 ```
 
 ### What is Tested
@@ -166,6 +165,7 @@ All tests currently pass:
 
 - See source files in `src/` for detailed documentation and comments.
 - Sorting routines are in `src/tox_sorting.f90`.
+- Full documentation is under `doc/`
 
 ---
 

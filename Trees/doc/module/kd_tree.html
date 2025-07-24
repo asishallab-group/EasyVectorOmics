@@ -6,11 +6,11 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="">
-    <meta name="author" content="" >
+      <meta name="description" content="Documentation for TensorOmics">
+    <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>kd_tree &ndash; EasyVectorOmics BST</title>
+    <title>kd_tree &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -44,7 +44,7 @@
     <div class="container-fluid mb-sm-4 mb-xl-2">
       <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div class="container">
-          <a class="navbar-brand" href="../index.html">EasyVectorOmics BST </a>
+          <a class="navbar-brand" href="../index.html">TensorOmics </a>
           <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
                   aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
                   <span class="navbar-toggler-icon">
@@ -60,9 +60,6 @@
                 </li>
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="../lists/programs.html">Programs</a>
                 </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
@@ -88,7 +85,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="33.3% of total for modules and submodules.">105 statements</a>
+                 title="35.7% of total for modules and submodules.">117 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -191,19 +188,7 @@
 </h3></div>
     <div class="card-body">
           
-  <p>Build a k-d tree index using a stack-based, non-recursive approach.
-Arguments:
-  X         - real(kind=8), dimension(d, n): data points
-  d         - integer: number of dimensions
-  n         - integer: number of points
-  kd_ix     - integer, dimension(n): output index array (k-d tree order)
-  dim_order - integer, dimension(d): dimension order (by variance)
-  work      - integer, dimension(n): workspace array
-  subarray  - real(8), dimension(n): workspace for sorting
-  perm      - integer, dimension(n): workspace for sorting
-  stack_left, stack_right - integer, dimension(max_depth): workspace for sorting
-Initialize kd_ix to 1:n (original indices)
-Choose split dimension by cycling through dim_order</p><a href="../proc/build_kd_index.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Build a k-d tree index using a stack-based, non-recursive approach.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -248,7 +233,7 @@ Choose split dimension by cycling through dim_order</p><a href="../proc/build_kd
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~2"></span>
+              <span class="anchor" id="variable-n"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -338,7 +323,7 @@ Choose split dimension by cycling through dim_order</p><a href="../proc/build_kd
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stack_left~2"></span>
+              <span class="anchor" id="variable-stack_left"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -353,7 +338,7 @@ Choose split dimension by cycling through dim_order</p><a href="../proc/build_kd
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stack_right~2"></span>
+              <span class="anchor" id="variable-stack_right"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -423,7 +408,7 @@ Choose split dimension by cycling through dim_order</p><a href="../proc/build_kd
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~3"></span>
+              <span class="anchor" id="variable-n~2"></span>
               integer,
             </td>
 <td>intent(in)</td>
@@ -513,7 +498,7 @@ Choose split dimension by cycling through dim_order</p><a href="../proc/build_kd
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stack_left~4"></span>
+              <span class="anchor" id="variable-stack_left~3"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -528,7 +513,7 @@ Choose split dimension by cycling through dim_order</p><a href="../proc/build_kd
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stack_right~4"></span>
+              <span class="anchor" id="variable-stack_right~3"></span>
               integer,
             </td>
 <td>intent(inout)</td>
@@ -563,8 +548,8 @@ Choose split dimension by cycling through dim_order</p><a href="../proc/build_kd
         <div class="row justify-content-between">
           <div class="col">
             <p>
-              EasyVectorOmics BST
-              &copy; 2025 
+              TensorOmics
+ was developed by TensorOmics Developers<br>              &copy; 2025 
 </p>
           </div>
           <div class="col">

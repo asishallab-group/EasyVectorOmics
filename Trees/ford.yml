@@ -1,7 +1,4 @@
-project: EasyVectorOmics BST
-summary: >
-  Flat-index-based Binary Search Tree (BST) utilities and tests for efficient 1D range queries.
-author: Aaron
-source: 
-  - src
-output-dir: doc
+project: TensorOmics
+output_dir: doc
+docmark: "!"
+author: TensorOmics Developers

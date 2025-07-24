@@ -2,7 +2,7 @@ module kd_tree
     use tox_sorting
     implicit none
     private
-    public :: build_kd_index, build_spherical_kd
+    public :: build_kd_index, build_spherical_kd 
 
 contains
 
@@ -57,9 +57,6 @@ contains
             !> Find median index
             mid = l + (r - l) / 2
 
-            !print *, "STACK POP: l=", l, " r=", r, " depth=", depth, " dim=", dim, " mid=", mid
-            !print *, "kd_ix before partition:", kd_ix(l:r)
-
             !> Partition kd_ix(l:r) by X(dim, kd_ix(:)), so that kd_ix(mid) is median in dim
             call partial_sort_by_dimension(X, d, kd_ix, l, r, dim, mid, work, subarray, perm, stack_left, stack_right)
 
@@ -71,14 +68,12 @@ contains
                 stack(1, stack_top) = mid + 1
                 stack(2, stack_top) = r
                 stack(3, stack_top) = depth + 1
-                !print *, "STACK PUSH RIGHT: l=", mid+1, " r=", r, " depth=", depth+1
             end if
             if (l < mid) then
                 stack_top = stack_top + 1
                 stack(1, stack_top) = l
                 stack(2, stack_top) = mid - 1
                 stack(3, stack_top) = depth + 1
-                !print *, "STACK PUSH LEFT: l=", l, " r=", mid-1, " depth=", depth+1
             end if
         end do
     end subroutine build_kd_index
@@ -97,20 +92,13 @@ contains
 
         n_sub = r - l + 1
         if (n_sub <= 1) return
-
-        !print *, "partial_sort_by_dimension: l=", l, " r=", r, " dim=", dim, " n_sub=", n_sub
-
         !> Fill subarray with the values of X(dim, kd_ix(l:r))
         do i = 1, n_sub
             subarray(i) = X(dim, kd_ix(l + i - 1))
             perm(i) = i
         end do
 
-        !print *, "subarray before sort:", subarray(1:n_sub)
-        !print *, "perm before sort:", perm(1:n_sub)
         call sort_array(subarray(1:n_sub), perm(1:n_sub), stack_left, stack_right)
-        !print *, "subarray after sort:", subarray(perm(1:n_sub))
-        !print *, "perm after sort:", perm(1:n_sub)
 
         !> Reorder kd_ix(l:r) according to perm
         do i = 1, n_sub
@@ -166,3 +154,103 @@ contains
     end subroutine get_kd_point
 
 end module kd_tree
+
+subroutine build_kd_index_r(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right)
+    use kd_tree
+    implicit none
+    integer, intent(in) :: d, n
+    real(kind=8), intent(in) :: X(d, n)
+    integer, intent(in) :: dim_order(d)
+    integer, intent(out) :: kd_ix(n)
+    integer, intent(inout) :: work(n)
+    real(8), intent(inout) :: subarray(n)
+    integer, intent(inout) :: perm(n)
+    integer, intent(inout) :: stack_left(n), stack_right(n)
+
+    ! Call the build_kd_index from the kd_tree module
+    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right)
+end subroutine build_kd_index_r
+
+subroutine build_spherical_kd_r(V, d, n, sphere_ix, dim_order, work, subarray, perm, stack_left, stack_right)
+    use kd_tree
+    implicit none
+    real(kind=8), intent(in) :: V(d,n)
+    integer, intent(in) :: d, n
+    integer, intent(out) :: sphere_ix(n)
+    integer, intent(inout) :: dim_order(n)
+    integer, intent(inout) :: work(n)
+    real(8), intent(inout) :: subarray(n)
+    integer, intent(inout) :: perm(n)
+    integer, intent(inout) :: stack_left(n), stack_right(n)
+
+    ! Call the build_spherical_kd from the kd_tree module
+    call build_spherical_kd(V, d, n, sphere_ix, dim_order, work, subarray, perm, stack_left, stack_right)
+end subroutine build_spherical_kd_r
+
+!> C interface: Build k-d tree index (zero-copy, short lines, no duplicate declarations)
+subroutine build_kd_index_C(X_flat, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right) &
+    bind(C, name="build_kd_index_C")
+    use iso_c_binding
+    use kd_tree
+    implicit none
+    integer(c_int), value :: d, n
+    real(c_double), intent(in), target :: X_flat(*)
+    integer(c_int), intent(in), target :: dim_order(*)
+    integer(c_int), intent(out), target :: kd_ix(*)
+    integer(c_int), intent(inout), target :: work(*)
+    real(c_double), intent(inout), target :: subarray(*)
+    integer(c_int), intent(inout), target :: perm(*)
+    integer(c_int), intent(inout), target :: stack_left(*), stack_right(*)
+
+    real(c_double), pointer :: X(:,:)
+    integer(c_int), pointer :: dim_order_p(:)
+    integer(c_int), pointer :: kd_ix_p(:)
+    integer(c_int), pointer :: work_p(:)
+    real(c_double), pointer :: subarray_p(:)
+    integer(c_int), pointer :: perm_p(:)
+    integer(c_int), pointer :: stack_left_p(:), stack_right_p(:)
+
+    call c_f_pointer(c_loc(X_flat(1)), X, [d, n])
+    call c_f_pointer(c_loc(dim_order(1)), dim_order_p, [d])
+    call c_f_pointer(c_loc(kd_ix(1)), kd_ix_p, [n])
+    call c_f_pointer(c_loc(work(1)), work_p, [n])
+    call c_f_pointer(c_loc(subarray(1)), subarray_p, [n])
+    call c_f_pointer(c_loc(perm(1)), perm_p, [n])
+    call c_f_pointer(c_loc(stack_left(1)), stack_left_p, [n])
+    call c_f_pointer(c_loc(stack_right(1)), stack_right_p, [n])
+
+    call build_kd_index(X, d, n, kd_ix_p, dim_order_p, work_p, subarray_p, perm_p, stack_left_p, stack_right_p)
+end subroutine build_kd_index_C
+
+!> C interface: Build spherical k-d tree (zero-copy, short lines, no duplicate declarations)
+subroutine build_spherical_kd_C(V_flat, d, n, sphere_ix, dim_order, work, subarray, perm, stack_left, stack_right) &
+    bind(C, name="build_spherical_kd_C")
+    use iso_c_binding
+    use kd_tree
+    implicit none
+    integer(c_int), value :: d, n
+    real(c_double), intent(in), target :: V_flat(*)
+    integer(c_int), intent(out), target :: sphere_ix(*)
+    integer(c_int), intent(inout), target :: dim_order(*), work(*), perm(*)
+    integer(c_int), intent(inout), target :: stack_left(*), stack_right(*)
+    real(c_double), intent(inout), target :: subarray(*)
+
+    real(c_double), pointer :: V(:,:)
+    integer(c_int), pointer :: sphere_ix_p(:)
+    integer(c_int), pointer :: dim_order_p(:)
+    integer(c_int), pointer :: work_p(:)
+    real(c_double), pointer :: subarray_p(:)
+    integer(c_int), pointer :: perm_p(:)
+    integer(c_int), pointer :: stack_left_p(:), stack_right_p(:)
+
+    call c_f_pointer(c_loc(V_flat(1)), V, [d, n])
+    call c_f_pointer(c_loc(sphere_ix(1)), sphere_ix_p, [n])
+    call c_f_pointer(c_loc(dim_order(1)), dim_order_p, [n])
+    call c_f_pointer(c_loc(work(1)), work_p, [n])
+    call c_f_pointer(c_loc(subarray(1)), subarray_p, [n])
+    call c_f_pointer(c_loc(perm(1)), perm_p, [n])
+    call c_f_pointer(c_loc(stack_left(1)), stack_left_p, [n])
+    call c_f_pointer(c_loc(stack_right(1)), stack_right_p, [n])
+
+    call build_spherical_kd(V, d, n, sphere_ix_p, dim_order_p, work_p, subarray_p, perm_p, stack_left_p, stack_right_p)
+end subroutine build_spherical_kd_C

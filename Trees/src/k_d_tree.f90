@@ -2,7 +2,7 @@ module kd_tree
     use tox_sorting
     implicit none
     private
-    public :: build_kd_index, build_spherical_kd 
+    public :: build_kd_index, build_spherical_kd, get_kd_point
 
 contains
 
@@ -145,12 +145,12 @@ contains
     end function get_value_sorted
 
     !> Get point from KD index
-    subroutine get_kd_point(X, kd_ix, i, point)
+    subroutine get_kd_point(X, kd_ix, i, val)
         real(8), intent(in) :: X(:, :)
         integer, intent(in) :: kd_ix(:)
         integer, intent(in) :: i
-        real(8), intent(out) :: point(:)
-        point = X(:, kd_ix(i))
+        real(8), intent(out) :: val(:)
+        val = X(:, kd_ix(i))
     end subroutine get_kd_point
 
 end module kd_tree
