@@ -29,10 +29,8 @@ The binary file format consists of:
    - For character arrays: each element preceded by its actual length (4 bytes)
    - Other types: contiguous binary data
 
-## Modules
-
-### Core Modules
-- `serialize_mod.f90`: Main interface module for serialization, provides generic interface
+## Core Modules
+- `serialize.f90`: Main interface module for serialization, provides generic interface
 - `serialize_int.f90`: Integer array serialization
 - `serialize_real.f90`: Real array serialization
 - `serialize_char.f90`: Character array serialization
@@ -41,9 +39,10 @@ The binary file format consists of:
 - `deserialize_char.f90`: Character array deserialization
 - `array_utils.f90`: Utility functions for array metadata
 
-### Language Bindings
+## Language Bindings
 - C bindings for all serialization/deserialization functions
 - R-compatible flat array interfaces
+- Note that both R and C only support the transfer of flat arrays, therefore the arrays need to be reshaped _before_ transfer.
 
 ## Build Instructions
 
@@ -58,7 +57,7 @@ This will generate:
 - Test executable (`test_arrays`)
 - Module files (`.mod`)
 
-## Usage Examples
+## Usage examples
 
 ### Fortran
 ```fortran
@@ -79,14 +78,14 @@ call deserialize_char(carr, "char_array.bin")
 ```
 
 ### C
-All functions are exposed to C using the `_C` functions in each module. 
+Since only flat arrays can be passed, the C Interface has a subroutine that accepts a flat array and all needed metadata to write the data in our custom format. For deserialization, the flat array including all metadata are returned, allowing the user to reshape the array to it's original format. Note that due to difference in the column/row - major memory layout between C/Python and R the array needs to be converted.
 
 ### R
 Since R can only pass/accepts flat arrays, the serialization and deserialization is not needed for multidimensional arrays. Both R and fortran use the same memory layout for arrays, therefore they can be passed without problems.
 
 Chars and pointers can also not be passed cia `.Fortran()`, therefore the char array is converted to ASCII and then passed as integer and in fortran reconverted. TO allow reading the data, the array needs to be preallocated by R. To allow efficient memory assignment, the metadata is read first and the array is then created based on size and dimensions read.
-## Testing
 
+## Testing
 The test program `test_arrays` validates all functionality including:
 - Basic serialization/deserialization for all types and dimensions
 - Edge cases (empty arrays, 1×1 arrays)

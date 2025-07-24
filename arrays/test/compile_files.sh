@@ -1,0 +1,28 @@
+#!/bin/bash
+
+# remove old binary files and shared libraries
+# rm -f *.bin *.so *.mod ../build/*
+
+# gfortran -O3 -shared -fPIC -o arrays.so serialize_int.f90 \
+#    serialize_real.f90 \
+#    serialize_char.f90 \
+#    serialize.f90 \
+#    deserialize_int.f90 \
+#    deserialize_real.f90 \
+#    deserialize_char.f90 \
+#    array_utils.f90
+   
+# compile the test program
+gfortran -O3 -o test_arrays test_arrays.f90 \
+   ../src/serialize_int.f90 \
+   ../src/serialize_real.f90 \
+   ../src/serialize_char.f90 \
+   ../src/deserialize_int.f90 \
+   ../src/deserialize_real.f90 \
+   ../src/deserialize_char.f90 \
+   ../src/serialize.f90 \
+   ../src/array_utils.f90
+
+# move libraries and modules to the build directory
+# mv *.so ../build
+# mv *.mod ../build

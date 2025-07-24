@@ -1,4 +1,4 @@
-dyn.load("./build/arrays.so")
+dyn.load("./build/libtensor-omics.so")
 
 # returns the dimensions of an array stored in a file, works for integer and real
 get_array_dims <- function(filename, max_dims = 5) {
@@ -11,7 +11,7 @@ get_array_dims <- function(filename, max_dims = 5) {
                   fn_len = as.integer(length(ascii)),
                   dims_out = dims,
                   ndims = ndims,
-                  PACKAGE = "arrays")
+                  PACKAGE = "libtensor-omics")
 
   res$dims_out[1:res$ndims]
 }
@@ -31,7 +31,7 @@ get_array_metadata_chars <- function(filename, max_dims = 5) {
                   ndims = ndims,
                   type_code_out = typecode,
                   clen_out = clen,
-                  PACKAGE = "arrays")
+                  PACKAGE = "libtensor-omics")
 
   list(dims = res$dims_out[1:res$ndims],
        type = res$type_code_out,
@@ -56,7 +56,7 @@ deserialize_int_array <- function(filename, max_dims = 5) {
                 ndim_out = ndim,
                 filename_ascii = as.integer(ascii),
                 fn_len = as.integer(length(ascii)),
-                PACKAGE = "arrays")
+                PACKAGE = "libtensor-omics")
 
     actual_dims <- res$dims_out[1:res$ndim_out]
     array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
@@ -80,7 +80,7 @@ deserialize_real_array <- function(filename, max_dims = 5) {
                 ndim_out = ndim,
                 filename_ascii = as.integer(ascii),
                 fn_len = as.integer(length(ascii)),
-                PACKAGE = "arrays")
+                PACKAGE = "libtensor-omics")
     actual_dims <- res$dims_out[1:res$ndim_out]
     array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
 }
@@ -113,7 +113,7 @@ deserialize_char_array <- function(filename, max_dims = 5) {
     filename_ascii = ascii,
     fn_len = length(ascii),
     ndim_actual = as.integer(length(actual_dims)),
-    PACKAGE = "arrays"
+    PACKAGE = "libtensor-omics"
   )
 
   # translate ASCII back to char
@@ -138,7 +138,7 @@ serialize_int_array <- function(arr, filename) {
            ndim = ndim,
            filename_ascii = as.integer(ascii),
            fn_len = as.integer(length(ascii)),
-           PACKAGE = "arrays")
+           PACKAGE = "libtensor-omics")
 }
 
 # BASE R arrays are column-major just like fortran, so no serialization is needed for the array structure.
@@ -161,7 +161,7 @@ serialize_real_array <- function(arr, filename) {
            ndim = ndim,
            filename_ascii = as.integer(ascii),
            fn_len = as.integer(length(ascii)),
-           PACKAGE = "arrays")
+           PACKAGE = "libtensor-omics")
 }
 
 # Serializes a character array to a file, encoding it as an integer matrix
@@ -189,7 +189,7 @@ serialize_char_array <- function(arr, filename) {
     clen = as.integer(clen),
     filename_ascii = utf8ToInt(filename),
     fn_len = nchar(filename),
-    PACKAGE = "arrays"
+    PACKAGE = "libtensor-omics"
   ))
 }
 
