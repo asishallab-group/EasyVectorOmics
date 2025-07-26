@@ -1,54 +1,54 @@
 {
 
-    "Parallel Loop": {
-    "prefix": "f42:do-parallel",
-    "body": [
-        "integer :: ${1:i}",
-        "integer :: ${2:N}",
-        "integer :: start_${1:i}, end_${1:i}",
-        "",
-        "${2:N} = ${3:10}",
-        "",
-        "! ----------------------",
-        "! START OF PARALLEL LOOP",
-        "! ----------------------",
-        "#ifdef USE_COARRAY",
-        "  start_${1:i} = (this_image() - 1) * ${2:N} / num_images() + 1",
-        "  end_${1:i}   = min(this_image() * ${2:N} / num_images(), ${2:N})",
-        "  do ${1:i} = start_${1:i}, end_${1:i}",
-        "",
-        "#elif defined(USE_OPENMP)",
-        "  !$$omp parallel do private(${1:i})",
-        "  do ${1:i} = 1, ${2:N}",
-        "",
-        "#else",
-        "  do ${1:i} = 1, ${2:N}",
-        "#endif",
-        "",
-        "! BODY OF THE PARALLEL LOOP",
-        "! -----------------------------",
-        "    ${4:! Your code here}",
-        "! -----------------------------",
-        "! END BODY OF THE PARALLEL LOOP",
-        "",
-        "  end do",
-        "",
-        "#ifdef USE_COARRAY",
-        "  sync all",
-        "#endif",
-        "",
-        "#ifdef USE_OPENMP",
-        "  !$$omp end parallel do",
-        "#endif",
-        "! --------------------",
-        "! END OF PARALLEL LOOP",
-        "! --------------------",
-        "$0"
-    ],
-    "description": "Unified parallel loop for Coarray, OpenMP, or serial fallback with tab stops"
-    },
+	"Parallel Loop": {
+	"prefix": "f42:do-parallel",
+	"body": [
+		"integer :: ${1:i}",
+		"integer :: ${2:N}",
+		"integer :: start_${1:i}, end_${1:i}",
+		"",
+		"${2:N} = ${3:10}",
+		"",
+		"! ----------------------",
+		"! START OF PARALLEL LOOP",
+		"! ----------------------",
+		"#ifdef USE_COARRAY",
+		"  start_${1:i} = (this_image() - 1) * ${2:N} / num_images() + 1",
+		"  end_${1:i}   = min(this_image() * ${2:N} / num_images(), ${2:N})",
+		"  do ${1:i} = start_${1:i}, end_${1:i}",
+		"",
+		"#elif defined(USE_OPENMP)",
+		"  !$$omp parallel do private(${1:i})",
+		"  do ${1:i} = 1, ${2:N}",
+		"",
+		"#else",
+		"  do ${1:i} = 1, ${2:N}",
+		"#endif",
+		"",
+		"! BODY OF THE PARALLEL LOOP",
+		"! -----------------------------",
+		"    ${4:! Your code here}",
+		"! -----------------------------",
+		"! END BODY OF THE PARALLEL LOOP",
+		"",
+		"  end do",
+		"",
+		"#ifdef USE_COARRAY",
+		"  sync all",
+		"#endif",
+		"",
+		"#ifdef USE_OPENMP",
+		"  !$$omp end parallel do",
+		"#endif",
+		"! --------------------",
+		"! END OF PARALLEL LOOP",
+		"! --------------------",
+		"$0"
+	],
+	"description": "Unified parallel loop for Coarray, OpenMP, or serial fallback with tab stops"
+	},
 
-    "Fortran call to sort_array": {
+	"Fortran call to sort_array": {
 		"prefix": "f42:sort_array",
 		"body": [
 		"! Fortran sort - automatically selects implementation based on data type",
@@ -56,7 +56,7 @@
 		],
 		"description": "Generic interface that resolves to appropriate sort function"
 	},
-  	"R call to sort_real": {
+	"R call to sort_real": {
 		"prefix": "f42:R_sort_real",
 		"body": [
 			"result <- .Fortran(\"sort_real_r\",",
@@ -161,7 +161,91 @@
 			"    return sort_char"
 		],
 		"description": "Setup sort_character_c function binding"
-	}
+	},
 
-  }
+	
+  "Fortran call to which": {
+	"prefix": "f42:which",
+	"body": [
+	  "! Fortran call to which subroutine",
+	  "call which(mask, n, idx_out, m_max, m_out)"
+	],
+	"description": "Call which subroutine in Fortran (logical mask, returns indices and count)"
   
+	},
+
+  "R call to which_r": {
+	"prefix": "f42:R_which",
+	"body": [
+	  "result <- .Fortran(\"which_r\",",
+	  "  mask = as.logical(${1:mask}),",
+	  "  n = as.integer(length(${1:mask})),",
+	  "  idx_out = integer(length(${1:mask})),",
+	  "  m_max = as.integer(length(${1:mask})),",
+	  "  m_out = integer(1))"
+	],
+	"description": "Call which_r Fortran function from R"
+  },
+  "Python call to which": {
+	"prefix": "f42:py_which",
+	"body": [
+	  "import numpy as np",
+	  "mask = np.array([${1:1, 0, 1, 0, 0}], dtype=np.int32)",
+	  "from which import which",
+	  "idx_out, m_out = which(mask)",
+	  "print(idx_out)",
+	  "print(m_out)"
+	],
+	"description": "Call which utility in Python (Fortran-compatible)"
+  },
+  "Fortran call to loess_smooth_2d": {
+	"prefix": "f42:loess",
+	"body": [
+	  "! Fortran call to loess_smooth_2d (univariate)",
+	  "call loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, x_query, ",
+	  "                   kernel_sigma, kernel_cutoff, y_out, workspace_weights, workspace_values, mask_in)"
+	],
+	"description": "Call loess_smooth_2d subroutine in Fortran (univariate, with mask)"
+  },
+  "R call to loess_smooth_2d_r": {
+	"prefix": "f42:R_loess",
+	"body": [
+	  "result <- .Fortran(\"loess_smooth_2d_r\",",
+	  "  n_total = as.integer(${1:n_total}),",
+	  "  n_target = as.integer(${2:n_target}),",
+	  "  x_ref = as.double(${3:x_ref}),",
+	  "  y_ref = as.double(${4:y_ref}),",
+	  "  indices_used = as.integer(${5:indices_used}),",
+	  "  x_query = as.double(${6:x_query}),",
+	  "  kernel_sigma = as.double(${7:kernel_sigma}),",
+	  "  kernel_cutoff = as.double(${8:kernel_cutoff}),",
+	  "  y_out = as.double(${9:y_out}),",
+	  "  workspace_weights = as.double(${10:workspace_weights}),",
+	  "  workspace_values = as.double(${11:workspace_values}),",
+	  "  mask_in = as.logical(${12:mask_in}))"
+	],
+	"description": "Call loess_smooth_2d_r Fortran function from R (univariate, with mask)"
+  },
+  "Python call to loess_smooth_2d_c": {
+	"prefix": "f42:py_loess",
+	"body": [
+
+	  "f = lib.loess_smooth_2d_c",
+	  "f.argtypes = [",
+	  "    ctypes.c_int, ctypes.c_int,",
+	  "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'),",
+	  "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'),",
+	  "    np.ctypeslib.ndpointer(dtype=np.int32, flags='C_CONTIGUOUS'),",
+	  "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'),",
+	  "    ctypes.c_double, ctypes.c_double,",
+	  "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'),",
+	  "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'),",
+	  "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'),",
+	  "    np.ctypeslib.ndpointer(dtype=np.int32, flags='C_CONTIGUOUS'),",
+	  "]",
+	  "f.restype = None"
+	  
+	],
+	"description": "Call loess_smooth_2d_c from Python using ctypes"
+  }
+}

@@ -333,7 +333,7 @@
   },
 
   "C call to distance_to_centroid": {
-	"prefix": "tox:C_distance_to_centroid",
+  "prefix": "tox:C_distance_to_centroid",
     "body": [
     "def setup_distance_to_centroid():",
     "    \"\"\"Setup distance to centroid function\"\"\"",
@@ -358,7 +358,7 @@
       "! Compute family scaling factors (dscale) for gene outlier detection",
       "call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &",
       "                        loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, &",
-      "                        workspace_weights, workspace_values, error_code, is_ortholog, max_distance_bw_orths)"
+      "                        workspace_weights, workspace_values, error_code)"
     ],
     "description": "Call compute_family_scaling Fortran subroutine for gene outlier detection"
   },
@@ -388,7 +388,7 @@
       "call detect_outliers(n_genes, n_families, distances, gene_to_fam, &",
       "                  work_array, perm, stack_left, stack_right, is_outlier, &",
       "                  loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &",
-      "                  is_ortholog, percentile, max_distance_bw_orths)"
+      "                  percentile)"
     ],
     "description": "Call detect_outliers Fortran subroutine for gene outlier detection"
   },
@@ -410,8 +410,6 @@
       "workspace_weights <- double(n_families)",
       "workspace_values <- matrix(0, 1, n_families)",
       "error_code <- integer(1)",
-      "is_ortholog <- as.logical(${5:is_ortholog})",
-      "max_distance_bw_orths <- as.double(${6:max_distance_bw_orths})",
       "result <- .Fortran(\"compute_family_scaling_r\",",
       "  n_genes = n_genes,",
       "  n_families = n_families,",
@@ -426,9 +424,7 @@
       "  stack_right_tmp = stack_right_tmp,",
       "  workspace_weights = workspace_weights,",
       "  workspace_values = workspace_values,",
-      "  error_code = error_code,",
-      "  is_ortholog = is_ortholog,",
-      "  max_distance_bw_orths = max_distance_bw_orths",
+      "  error_code = error_code",
       ")"
     ],
     "description": "Call compute_family_scaling_r Fortran function from R, with explicit array initializations"
@@ -497,9 +493,7 @@
       "workspace_weights <- double(n_families)",
       "workspace_values <- matrix(0, 1, n_families)",
       "error_code <- integer(1)",
-      "is_ortholog <- as.logical(${5:is_ortholog})",
-      "percentile <- as.double(${6:percentile})",
-      "max_distance_bw_orths <- as.double(${7:max_distance_bw_orths})",
+      "percentile <- as.double(${5:percentile})",
       "result <- .Fortran(\"detect_outliers_r\",",
       "  n_genes = n_genes,",
       "  n_families = n_families,",
@@ -516,9 +510,7 @@
       "  workspace_weights = workspace_weights,",
       "  workspace_values = workspace_values,",
       "  error_code = error_code,",
-      "  is_ortholog = is_ortholog,",
-      "  percentile = percentile,",
-      "  max_distance_bw_orths = max_distance_bw_orths",
+      "  percentile = percentile",
       ")"
     ],
     "description": "Call detect_outliers_r Fortran function from R, with explicit array initializations"
