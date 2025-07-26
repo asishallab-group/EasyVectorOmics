@@ -1,13 +1,9 @@
-!> TOX sorting module for TensorOmics.
-!> 
-!> Provides non-recursive quicksort implementations for real, integer, and character arrays.
-!> Sorting is performed indirectly via a permutation vector, preserving the original arrays.
-!> Suitable for expression data analysis workflows requiring stable and indirect sorting.
-module tox_sorting
+!> @brief Utility module for data analysis.
+!> @details This module provides general-purpose utility functions for data analysis, to be used as needed.
+
+module f42_utils
   use, intrinsic :: iso_fortran_env, only: real64
   implicit none
-
-  private
 
   ! Expose specific functions C/R
   public :: sort_real, sort_integer, sort_character
@@ -18,10 +14,9 @@ module tox_sorting
   interface sort_array
     module procedure sort_real, sort_integer, sort_character
   end interface sort_array
-
 contains
 
-  !> Sort a real(real64) array indirectly using quicksort.
+    !> Sort a real(real64) array indirectly using quicksort.
   !>  Creates a sorted version of the array by reordering the `perm` vector.
   !> The original data in `array` remains unchanged.
   !> 
@@ -229,12 +224,15 @@ contains
     temp = a; a = b; b = temp
   end subroutine swap_int
 
-end module tox_sorting
+
+end module f42_utils
+
+
 
 ! === R WRAPPERS ===
 subroutine sort_real_r(array, perm, stack_left, stack_right, n)
   use, intrinsic :: iso_fortran_env, only: real64
-  use tox_sorting, only: sort_real
+  use f42_utils, only: sort_real
   implicit none
   integer, intent(in) :: n
   real(real64), intent(in) :: array(n)
@@ -244,7 +242,7 @@ subroutine sort_real_r(array, perm, stack_left, stack_right, n)
 end subroutine sort_real_r
 
 subroutine sort_integer_r(array, perm, stack_left, stack_right, n)
-  use tox_sorting, only: sort_integer
+  use f42_utils, only: sort_integer
   implicit none
   integer, intent(in) :: n
   integer, intent(in) :: array(n)
@@ -254,7 +252,7 @@ subroutine sort_integer_r(array, perm, stack_left, stack_right, n)
 end subroutine sort_integer_r
 
 subroutine sort_character_r(char_matrix, perm, stack_left, stack_right, n, strlen)
-  use tox_sorting, only: sort_character
+  use f42_utils, only: sort_character
   implicit none
   integer, intent(in) :: n, strlen
   character(len=1), intent(in) :: char_matrix(strlen, n)
@@ -275,11 +273,10 @@ subroutine sort_character_r(char_matrix, perm, stack_left, stack_right, n, strle
 end subroutine
 
 
-
 ! === C WRAPPERS ===
 subroutine sort_real_c(array, perm, stack_left, stack_right, n) bind(C, name="sort_real_c")
   use iso_c_binding
-  use tox_sorting, only: sort_real
+  use f42_utils, only: sort_real
   implicit none
   integer(c_int), intent(in), value :: n
   real(c_double), intent(in) :: array(n)
@@ -292,7 +289,7 @@ end subroutine sort_real_c
 
 subroutine sort_integer_c(array, perm, stack_left, stack_right, n) bind(C, name="sort_integer_c")
   use iso_c_binding
-  use tox_sorting, only: sort_integer
+  use f42_utils, only: sort_integer
   implicit none
   integer(c_int), intent(in), value :: n
   integer(c_int), intent(in) :: array(n)
@@ -305,7 +302,7 @@ end subroutine sort_integer_c
 
 subroutine sort_character_c(array, perm, stack_left, stack_right, n, strlen) bind(C, name="sort_character_c")
   use iso_c_binding
-  use tox_sorting, only: sort_character
+  use f42_utils, only: sort_character
   implicit none
   integer(c_int), intent(in), value :: n, strlen
   character(len=strlen), intent(in) :: array(n)
@@ -315,3 +312,4 @@ subroutine sort_character_c(array, perm, stack_left, stack_right, n, strlen) bin
 
   call sort_character(array, perm, stack_left, stack_right)
 end subroutine sort_character_c
+

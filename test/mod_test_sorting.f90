@@ -1,7 +1,7 @@
 ! filepath: test/mod_test_sorting.f90
-!> @brief Unit test suite for tox_sorting module.
+!> @brief Unit test suite for f42_utils module.
 module mod_test_sorting
-  use tox_sorting
+  use f42_utils
   use asserts
   use, intrinsic :: iso_fortran_env, only: real64
   implicit none

@@ -55,7 +55,7 @@ contains
   !> @param max_stack     Stack size passed from R<br>
   pure subroutine quantile_normalization(n_genes, n_tissues, input_matrix, output_matrix, &
                                       temp_col, rank_means, perm, stack_left, stack_right, max_stack)
-    use tox_sorting, only: sort_array
+    use f42_utils, only: sort_array
 
     implicit none
 
