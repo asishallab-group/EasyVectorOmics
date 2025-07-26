@@ -25,21 +25,20 @@ def print_header(msg):
 def setup_compute_family_scaling():
     f = lib.compute_family_scaling_c
     f.argtypes = [
-        ctypes.c_int, ctypes.c_int,
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS")
+        ctypes.c_int,  # n_genes
+        ctypes.c_int,  # n_families
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # distances (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # gene_to_fam (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # dscale (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_x (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_y (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # indices_used (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # perm_tmp (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_left_tmp (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_right_tmp (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # workspace_weights (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # workspace_values (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # error_code (1,)
     ]
     f.restype = None
     return f
@@ -47,11 +46,12 @@ def setup_compute_family_scaling():
 def setup_compute_rdi():
     f = lib.compute_rdi_c
     f.argtypes = [
-        ctypes.c_int, ctypes.c_int,
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS")
+        ctypes.c_int,  # n_genes
+        ctypes.c_int,  # n_families
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # distances (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # gene_to_fam (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # dscale (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # rdi (n_genes,)
     ]
     f.restype = None
     return f
@@ -59,15 +59,15 @@ def setup_compute_rdi():
 def setup_identify_outliers():
     f = lib.identify_outliers_c
     f.argtypes = [
-        ctypes.c_int,
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        ctypes.POINTER(ctypes.c_double),
-        ctypes.c_double
+        ctypes.c_int,  # n
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # rdi (n,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # sorted_rdi (n,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # perm (n,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_left (n,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_right (n,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # is_outlier (n,)
+        ctypes.POINTER(ctypes.c_double),                                  # threshold (scalar)
+        ctypes.c_double                                                  # percentile (scalar)
     ]
     f.restype = None
     return f
@@ -75,30 +75,29 @@ def setup_identify_outliers():
 def setup_detect_outliers():
     f = lib.detect_outliers_c
     f.argtypes = [
-        ctypes.c_int, ctypes.c_int,
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
-        ctypes.c_double,
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS")
+        ctypes.c_int,  # n_genes
+        ctypes.c_int,  # n_families
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # distances (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # gene_to_fam (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # work_array (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # perm (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_left (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_right (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # is_outlier (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_x (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_y (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # loess_n (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # workspace_weights (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # workspace_values (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # error_code (1,)
+        ctypes.c_double                                                  # percentile (scalar)
     ]
     f.restype = None
     return f
 
 # Example: test for compute_family_scaling_c
 def test_compute_family_scaling():
-    print_header("[compute_family_scaling_c] Python test cases")
+    print_header("[compute_family_scaling_c] Python LOESS-only test cases")
     n_genes = 5
     n_families = 2
     distances = np.array([1, 2, 3, 4, 5], dtype=np.float64)
@@ -111,51 +110,24 @@ def test_compute_family_scaling():
     stack_left_tmp = np.zeros(n_genes, dtype=np.int32)
     stack_right_tmp = np.zeros(n_genes, dtype=np.int32)
     workspace_weights = np.zeros(n_families, dtype=np.float64)
-    workspace_values = np.zeros((1, n_families), dtype=np.float64)
+    workspace_values = np.zeros(n_families, dtype=np.float64)
     error_code = np.zeros(1, dtype=np.int32)
     f = setup_compute_family_scaling()
-    # 1. Both is_ortholog and max_distance_bw_orths present
-    print("\nCase 1: Both is_ortholog and max_distance_bw_orths present")
-    is_ortholog = np.array([1, 0, 1, 0, 1], dtype=np.int32)
-    max_distance_bw_orths = np.array([10, 20], dtype=np.float64)
-    f(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code, is_ortholog, max_distance_bw_orths)
+    # Caso 1: LOESS-only, familias válidas
+    print("\nCase 1: LOESS-only, familias válidas")
+    f(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)
     print('dscale:', dscale)
     print('error_code:', error_code[0])
-    # 2. Both is_ortholog and max_distance_bw_orths empty (LOESS only)
-    print("\nCase 2: Both is_ortholog and max_distance_bw_orths empty (LOESS only)")
-    is_ortholog = np.zeros(n_genes, dtype=np.int32)
-    max_distance_bw_orths = np.zeros(n_families, dtype=np.float64)
-    f(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code, is_ortholog, max_distance_bw_orths)
-    print('dscale:', dscale)
-    print('error_code:', error_code[0])
-    # 3. Only is_ortholog present, max_distance_bw_orths empty (should error if any orthologs)
-    print("\nCase 3: Only is_ortholog present, max_distance_bw_orths empty")
-    is_ortholog = np.array([1, 0, 1, 0, 1], dtype=np.int32)
-    max_distance_bw_orths = np.zeros(n_families, dtype=np.float64)
-    f(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code, is_ortholog, max_distance_bw_orths)
-    print('dscale:', dscale)
-    print('error_code:', error_code[0])
-    # 4. Only max_distance_bw_orths present, is_ortholog empty (should use LOESS)
-    print("\nCase 4: Only max_distance_bw_orths present, is_ortholog empty")
-    is_ortholog = np.zeros(n_genes, dtype=np.int32)
-    max_distance_bw_orths = np.array([10, 20], dtype=np.float64)
-    f(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code, is_ortholog, max_distance_bw_orths)
-    print('dscale:', dscale)
-    print('error_code:', error_code[0])
-    # 5. Invalid family indices (should return error_code -2)
-    print("\nCase 5: Invalid family indices")
+    # Caso 2: Familia inválida (índice fuera de rango)
+    print("\nCase 2: Familia inválida (índice fuera de rango)")
     gene_to_fam_invalid = np.array([1, 3, 2, 2, 2], dtype=np.int32)
-    is_ortholog = np.array([1, 0, 1, 0, 1], dtype=np.int32)
-    max_distance_bw_orths = np.array([10, 20], dtype=np.float64)
-    f(n_genes, n_families, distances, gene_to_fam_invalid, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code, is_ortholog, max_distance_bw_orths)
+    f(n_genes, n_families, distances, gene_to_fam_invalid, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)
     print('dscale:', dscale)
     print('error_code:', error_code[0])
-    # 6. Family with only one gene (should set dscale=0 for that family)
-    print("\nCase 6: Family with only one gene")
+    # Caso 3: Familia con un solo gen (dscale=0)
+    print("\nCase 3: Familia con un solo gen")
     gene_to_fam_single = np.array([1, 2, 2, 2, 2], dtype=np.int32)
-    is_ortholog = np.array([1, 0, 1, 0, 1], dtype=np.int32)
-    max_distance_bw_orths = np.array([10, 20], dtype=np.float64)
-    f(n_genes, n_families, distances, gene_to_fam_single, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code, is_ortholog, max_distance_bw_orths)
+    f(n_genes, n_families, distances, gene_to_fam_single, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)
     print('dscale:', dscale)
     print('error_code:', error_code[0])
 
@@ -258,16 +230,13 @@ def test_identify_outliers():
     print("threshold:", threshold5)
 
 def test_detect_outliers():
-    print_header("[detect_outliers_c] Python test cases")
+    print_header("[detect_outliers_c] Python LOESS-only test cases")
     f = setup_detect_outliers()
-    # Case 1: Typical input, both is_ortholog and max_distance_bw_orths present
-    print("\nCase 1: Typical input, both is_ortholog and max_distance_bw_orths present")
+    # Caso 1: LOESS-only, familias válidas
     n_genes = 6
     n_families = 2
     distances = np.array([1, 2, 3, 4, 5, 6], dtype=np.float64)
     gene_to_fam = np.array([1, 1, 2, 2, 2, 2], dtype=np.int32)
-    is_ortholog = np.array([1, 0, 1, 0, 1, 0], dtype=np.int32)
-    max_distance_bw_orths = np.array([10, 20], dtype=np.float64)
     work_array = np.zeros(n_genes, dtype=np.float64)
     perm = np.arange(1, n_genes+1, dtype=np.int32)
     stack_left = np.zeros(n_genes, dtype=np.int32)
@@ -280,36 +249,15 @@ def test_detect_outliers():
     workspace_values = np.zeros((1, n_families), dtype=np.float64)
     error_code = np.zeros(1, dtype=np.int32)
     percentile = 80.0
-    f(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, is_ortholog, percentile, max_distance_bw_orths)
+    f(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, percentile)
     print("is_outlier:", is_outlier)
     print("error_code:", error_code[0])
-    # Case 2: Only LOESS fallback (no orthologs, no max_distance_bw_orths)
-    print("\nCase 2: Only LOESS fallback (no orthologs, no max_distance_bw_orths)")
-    is_outlier[:] = 0
-    is_ortholog2 = np.zeros(n_genes, dtype=np.int32)
-    f(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, is_ortholog2, percentile, max_distance_bw_orths)
-    print("is_outlier:", is_outlier)
-    print("error_code:", error_code[0])
-    # Case 3: Invalid gene_to_fam indices (should return error_code -2)
-    print("\nCase 3: Invalid gene_to_fam indices (should return error_code -2)")
+    # Caso 2: Familia inválida (índice fuera de rango)
+    print("\nCase 2: Familia inválida (índice fuera de rango)")
     is_outlier[:] = 0
     gene_to_fam_invalid = np.array([1, 3, 2, 2, 2, 2], dtype=np.int32)
-    f(n_genes, n_families, distances, gene_to_fam_invalid, work_array, perm, stack_left, stack_right, is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, is_ortholog, percentile, max_distance_bw_orths)
-    print("is_outlier:", is_outlier)
-    print("error_code:", error_code[0])
-    # Case 4: Only max_distance_bw_orths present (should use LOESS)
-    print("\nCase 4: Only max_distance_bw_orths present (should use LOESS)")
-    is_outlier[:] = 0
-    is_ortholog3 = np.zeros(n_genes, dtype=np.int32)
-    max_distance_bw_orths2 = np.array([10, 20], dtype=np.float64)
-    f(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, is_ortholog3, percentile, max_distance_bw_orths2)
-    print("is_outlier:", is_outlier)
-    print("error_code:", error_code[0])
-    # Case 5: Only is_ortholog present (should fallback to LOESS if no orthologs)
-    print("\nCase 5: Only is_ortholog present (should fallback to LOESS if no orthologs)")
-    is_outlier[:] = 0
-    is_ortholog4 = np.zeros(n_genes, dtype=np.int32)
-    f(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, is_ortholog4, percentile, max_distance_bw_orths)
+    workspace_values = np.zeros((1, n_families), dtype=np.float64)
+    f(n_genes, n_families, distances, gene_to_fam_invalid, work_array, perm, stack_left, stack_right, is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, percentile)
     print("is_outlier:", is_outlier)
     print("error_code:", error_code[0])
 

@@ -20,14 +20,14 @@ contains
 
   !> @brief Get array of all available tests (as subroutine, not function).
   subroutine get_all_tests(all_tests)
-    type(test_case), intent(out) :: all_tests(25)
+    type(test_case), intent(out) :: all_tests(18)
     all_tests(1) = test_case("test_scaling_basic", test_scaling_basic)
-    all_tests(2) = test_case("test_scaling_no_orthologs", test_scaling_no_orthologs)
+    all_tests(2) = test_case("test_loess_fallback", test_loess_fallback)
     all_tests(3) = test_case("test_rdi_basic", test_rdi_basic)
     all_tests(4) = test_case("test_identify_outliers_basic", test_identify_outliers_basic)
     all_tests(5) = test_case("test_detect_outliers_basic", test_detect_outliers_basic)
-    all_tests(6) = test_case("test_all_orthologs", test_all_orthologs)
-    all_tests(7) = test_case("test_no_orthologs", test_no_orthologs)
+    all_tests(6) = test_case("test_all_zero_distances_scaling", test_all_zero_distances_scaling)
+    all_tests(7) = test_case("test_detect_outliers_invalid_indices", test_detect_outliers_invalid_indices)
     all_tests(8) = test_case("test_invalid_indices", test_invalid_indices)
     all_tests(9) = test_case("test_all_outliers", test_all_outliers)
     all_tests(10) = test_case("test_no_outliers", test_no_outliers)
@@ -37,15 +37,9 @@ contains
     all_tests(14) = test_case("test_percentile_boundaries", test_percentile_boundaries)
     all_tests(15) = test_case("test_negative_nan_distances", test_negative_nan_distances)
     all_tests(16) = test_case("test_identical_rdi_at_threshold", test_identical_rdi_at_threshold)
-    all_tests(17) = test_case("test_orthologs_missing_maxdist", test_orthologs_missing_maxdist)
-    all_tests(18) = test_case("test_orthologs_with_maxdist", test_orthologs_with_maxdist)
-    all_tests(19) = test_case("test_maxdist_no_orthologs", test_maxdist_no_orthologs)
-    all_tests(20) = test_case("test_invalid_family_indices", test_invalid_family_indices)
-    all_tests(21) = test_case("test_single_gene_family_scaling", test_single_gene_family_scaling)
-    all_tests(22) = test_case("test_all_zero_distances_scaling", test_all_zero_distances_scaling)
-    all_tests(23) = test_case("test_detect_outliers_invalid_indices", test_detect_outliers_invalid_indices)
-    all_tests(24) = test_case("test_detect_outliers_missing_maxdist", test_detect_outliers_missing_maxdist)
-    all_tests(25) = test_case("test_loess_fallback", test_loess_fallback)
+    all_tests(17) = test_case("test_invalid_family_indices", test_invalid_family_indices)
+    all_tests(18) = test_case("test_single_gene_family_scaling", test_single_gene_family_scaling)
+    
   end subroutine get_all_tests
 
   !> @brief Run specific get_outliers tests by name.
@@ -75,7 +69,7 @@ contains
 
   !> @brief Run all tox_get_outliers tests.
   subroutine run_all_tests_get_outliers()
-    type(test_case) :: all_tests(25)
+    type(test_case) :: all_tests(18)
     integer :: i
     call get_all_tests(all_tests)
     do i = 1, size(all_tests)
@@ -86,70 +80,23 @@ contains
   end subroutine run_all_tests_get_outliers
 
   !> Test: Basic scaling with orthologs and non-orthologs.
-  !> This test checks that when all genes are orthologs and max_distance_bw_orths is provided, the scaling for each family is set to the corresponding value in max_distance_bw_orths.
+  !> This test checks that the scaling for each family is set to the corresponding value using loess.
   subroutine test_scaling_basic()
     integer, parameter :: n_genes=4, n_families=2
     real(real64) :: distances(n_genes) = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64]
     integer :: gene_to_fam(n_genes) = [1,1,2,2]
-    logical :: is_ortholog(n_genes) = [.true., .true., .true., .true.]
     real(real64) :: dscale(n_families)
     integer :: error_code
-    real(real64) :: max_distance_bw_orths(n_families) = [2.0_real64, 3.0_real64]
     real(real64) :: loess_x(n_families), loess_y(n_families)
     integer :: indices_used(n_families)
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
-      is_ortholog, max_distance_bw_orths)
-    call assert_equal_int(error_code, 0, 'Error code 0 with is_ortholog and max_distance_bw_orths (test_scaling_basic)')
-    call assert_equal_real(dscale(1), 2.0_real64, 1e-12_real64, "Family 1 scaling (max_distance_bw_orths)")
-    call assert_equal_real(dscale(2), 3.0_real64, 1e-12_real64, "Family 2 scaling (max_distance_bw_orths)")
+      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
+    call assert_equal_int(error_code, 0, 'Error code 0 (test_scaling_basic)')
+    call assert_true(all(dscale > 0.0_real64), 'LOESS scaling should be positive for nontrivial families')
   end subroutine test_scaling_basic
-
-  !> Test: Fallback to stddev/LOESS when only one ortholog per family.
-  subroutine test_scaling_one_ortholog_per_family()
-    integer, parameter :: n_genes=4, n_families=2
-    real(real64) :: distances(n_genes) = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64]
-    integer :: gene_to_fam(n_genes) = [1,1,2,2]
-    logical :: is_ortholog(n_genes) = [.true., .false., .true., .false.]
-    real(real64) :: dscale(n_families)
-    integer :: error_code
-    real(real64) :: max_distance_bw_orths(n_families) = [2.0_real64, 3.0_real64]
-    real(real64) :: loess_x(n_families), loess_y(n_families)
-    integer :: indices_used(n_families)
-    integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
-    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
-      is_ortholog, max_distance_bw_orths)
-    call assert_equal_int(error_code, 0, 'Error code 0 with one ortholog per family (should use fallback)')
-    call assert_true(all(dscale /= -1.0_real64), 'dscale must not be -1.0 in valid fallback')
-  end subroutine test_scaling_one_ortholog_per_family
-
-  !> Test: No orthologs, should use fallback scaling 1.0.
-  !> Now checks dscale=-1.0_real64 on error and LOESS workspace arrays.
-  subroutine test_scaling_no_orthologs()
-    integer, parameter :: n_genes=3, n_families=2
-    real(real64) :: distances(n_genes) = [1.0_real64, 2.0_real64, 3.0_real64]
-    integer :: gene_to_fam(n_genes) = [1,2,2]
-    logical :: is_ortholog(n_genes) = [.false., .false., .false.]
-    real(real64) :: dscale(n_families)
-    real(real64), parameter :: expected_std = 0.7071067811865476_real64
-    integer :: error_code
-    real(real64) :: max_distance_bw_orths(n_families) = [0.0_real64, 0.0_real64]
-    real(real64) :: loess_x(n_families), loess_y(n_families)
-    integer :: indices_used(n_families)
-    integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
-    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
-      is_ortholog, max_distance_bw_orths)
-    call assert_true(all(dscale /= -1.0_real64), 'dscale must not be -1.0 in valid fallback')
-  end subroutine test_scaling_no_orthologs
 
   !> Test: Basic RDI calculation.
   !> This test checks that the RDI (relative distance index) is computed correctly for a simple case with two families.
@@ -191,12 +138,9 @@ contains
     integer, parameter :: n_genes=5, n_families=2
     real(real64) :: distances(n_genes)
     integer :: gene_to_fam(n_genes)
-    logical :: is_ortholog(n_genes)
     real(real64) :: work_array(n_genes)
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     logical :: is_outlier(n_genes)
-    real(real64) :: rdi(n_genes), rdi_threshold
-    real(real64) :: max_distance_bw_orths(n_families)
     integer :: error_code
     real(real64) :: loess_x(n_families), loess_y(n_families)
     integer :: loess_n(n_families)
@@ -204,57 +148,11 @@ contains
     real(real64) :: workspace_values(1, n_families)
     distances = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64, 5.0_real64]
     gene_to_fam = [1,1,2,2,2]
-    is_ortholog = [.true., .false., .true., .false., .true.]
-    max_distance_bw_orths = [2.0_real64, 5.0_real64]
     call detect_outliers(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, &
       is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &
-      is_ortholog, 60.0_real64, max_distance_bw_orths)
+      60.0_real64)
     call assert_true(any(is_outlier), "At least one outlier detected")
   end subroutine test_detect_outliers_basic
-
-  !> Test: All genes are orthologs.
-  !> This test checks that if all genes in a family are orthologs, the scaling is set to the value in max_distance_bw_orths for that family.
-  subroutine test_all_orthologs()
-    integer, parameter :: n_genes=3, n_families=1
-    real(real64) :: distances(n_genes) = [1.0_real64, 2.0_real64, 3.0_real64]
-    integer :: gene_to_fam(n_genes) = [1,1,1]
-    logical :: is_ortholog(n_genes) = [.true., .true., .true.]
-    real(real64) :: dscale(n_families)
-    real(real64) :: max_distance_bw_orths(n_families)
-    integer :: error_code
-    real(real64) :: loess_x(n_families), loess_y(n_families)
-    integer :: indices_used(n_families), loess_n(n_families)
-    integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
-    max_distance_bw_orths = [42.0_real64]
-    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
-      is_ortholog, max_distance_bw_orths)
-    call assert_equal_real(dscale(1), 42.0_real64, 1e-12_real64, "All orthologs scaling (max_distance_bw_orths override)")
-  end subroutine test_all_orthologs
-
-  !> Test: No genes are orthologs.
-  !> This test checks that if no genes in a family are orthologs, the scaling falls back to the standard deviation of distances for that family.
-  subroutine test_no_orthologs()
-    integer, parameter :: n_genes=2, n_families=1
-    real(real64) :: distances(n_genes) = [1.0_real64, 2.0_real64]
-    integer :: gene_to_fam(n_genes) = [1,1]
-    logical :: is_ortholog(n_genes) = [.false., .false.]
-    real(real64) :: dscale(n_families)
-    real(real64), parameter :: expected_std = 0.7071067811865476_real64
-    integer :: error_code
-    real(real64) :: max_distance_bw_orths(n_families) = [0.0_real64]
-    real(real64) :: loess_x(n_families), loess_y(n_families)
-    integer :: indices_used(n_families), loess_n(n_families)
-    integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
-    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
-      is_ortholog, max_distance_bw_orths)
-    call assert_equal_real(dscale(1), expected_std, 1e-12_real64, "No orthologs fallback scaling (stddev)")
-  end subroutine test_no_orthologs
 
   !> Test: Invalid family indices.
   !> This test checks that if gene_to_fam contains invalid indices (e.g., 0 or out of range), the error code is set to -2 and dscale falls back to -1.0 for all families.
@@ -262,8 +160,6 @@ contains
     integer, parameter :: n_genes=3, n_families=2
     real(real64) :: distances(n_genes) = [1.0_real64, 2.0_real64, 3.0_real64]
     integer :: gene_to_fam(n_genes) = [1,3,0] ! 3 and 0 invalid
-    logical :: is_ortholog(n_genes) = [.true., .true., .true.]
-    real(real64) :: max_distance_bw_orths(n_families) = [0.0_real64,0.0_real64]
     real(real64) :: dscale(n_families)
     integer :: error_code
     real(real64) :: loess_x(n_families), loess_y(n_families)
@@ -272,8 +168,7 @@ contains
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
-      is_ortholog, max_distance_bw_orths)
+      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
     call assert_equal_int(error_code, -2, 'Error code -2 for invalid family indices')
     call assert_true(all(dscale == -1.0_real64), 'dscale must be -1.0 on error')
   end subroutine test_invalid_indices
@@ -318,25 +213,21 @@ contains
     integer, parameter :: n_genes=1, n_families=1
     real(real64) :: distances(1) = [0.0_real64]
     integer :: gene_to_fam(1) = [1]
-    logical :: is_ortholog(1) = [.true.]
     real(real64) :: dscale(1), rdi(1), work_array(1)
     integer :: perm(1), stack_left(1), stack_right(1)
     logical :: is_outlier(1)
-    real(real64) :: rdi_threshold
     integer :: i, error_code
-    real(real64) :: max_distance_bw_orths(1) = [0.0_real64]
     real(real64) :: loess_x(1), loess_y(1)
     integer :: loess_n(1)
     real(real64) :: workspace_weights(1)
     real(real64) :: workspace_values(1,1)
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, loess_n, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
-      is_ortholog, max_distance_bw_orths)
+      loess_x, loess_y, loess_n, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
     call compute_rdi(n_genes, distances, gene_to_fam, dscale, rdi)
     perm = [(i, i=1,n_genes)]
     call detect_outliers(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, &
       is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &
-      is_ortholog, 95.0_real64, max_distance_bw_orths)
+      95.0_real64)
     call assert_equal_real(dscale(1), 0.0_real64, 1e-12_real64, &
          "Single gene scaling (should be 0.0)")
     call assert_equal_real(rdi(1), 0.0_real64, 1e-12_real64, &
@@ -373,19 +264,16 @@ contains
     integer, parameter :: n_genes=4, n_families=1
     real(real64) :: distances(n_genes) = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64]
     integer :: gene_to_fam(n_genes) = [1,1,1,1]
-    logical :: is_ortholog(n_genes) = [.true., .false., .true., .false.]
     real(real64) :: dscale(1)
     integer :: error_code
-    real(real64) :: max_distance_bw_orths(1) = [5.0_real64]
     real(real64) :: loess_x(1), loess_y(1), loess_n(1)
     integer :: indices_used(1)
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(1)
     real(real64) :: workspace_values(1,1)
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
-      is_ortholog, max_distance_bw_orths)
-    call assert_equal_real(dscale(1), 5.0_real64, 1e-12_real64, "All genes one family scaling (max ortholog distance)")
+      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
+    call assert_true(dscale(1) > 0.0_real64, "All genes one family scaling (LOESS, should be positive)")
   end subroutine test_all_genes_one_family
 
   !> Test: Percentile at boundaries (0 and 100).
@@ -412,7 +300,6 @@ contains
     integer, parameter :: n_genes=3, n_families=1
     real(real64) :: distances(n_genes)
     integer :: gene_to_fam(n_genes) = [1,1,1]
-    logical :: is_ortholog(n_genes) = [.true., .true., .true.]
     real(real64) :: dscale(1), rdi(n_genes)
     integer :: error_code
     real(real64) :: loess_x(n_families), loess_y(n_families)
@@ -420,11 +307,9 @@ contains
     integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
-    real(real64) :: max_distance_bw_orths(1) = [0.0_real64]
     distances = [0.0_real64, 0.0_real64, 0.0_real64]
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
-      is_ortholog, max_distance_bw_orths)
+      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
     distances(1) = -1.0_real64
     call compute_rdi(n_genes, distances, gene_to_fam, dscale, rdi)
     call assert_true(rdi(1) == 0.0_real64, "Negative distance with zero scaling gives RDI=0.0 (not outlier)")
@@ -447,73 +332,6 @@ contains
     call assert_true(is_outlier(3), "Identical RDI at threshold is outlier")
     call assert_true(is_outlier(2), "Identical RDI at threshold is outlier")
   end subroutine test_identical_rdi_at_threshold
-
-  !> Test: Error if is_ortholog is present but max_distance_bw_orths is missing.
-  !> Now checks dscale=-1.0_real64 on error and LOESS workspace arrays.
-  subroutine test_orthologs_missing_maxdist()
-    integer, parameter :: n_genes=3, n_families=2
-    real(real64) :: distances(n_genes) = [1.0_real64, 2.0_real64, 3.0_real64]
-    integer :: gene_to_fam(n_genes) = [1,2,2]
-    logical :: is_ortholog(n_genes) = [.true., .false., .true.]
-    real(real64) :: dscale(n_families)
-    integer :: error_code
-    real(real64) :: loess_x(n_families), loess_y(n_families)
-    integer :: indices_used(n_families), loess_n(n_families)
-    integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
-    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
-      is_ortholog)
-    call assert_equal_int(error_code, -1, 'Error code -1 if max_distance_bw_orths is missing')
-    call assert_true(all(dscale == -1.0_real64), 'dscale must be -1.0 on error')
-  end subroutine test_orthologs_missing_maxdist
-
-  !> Test: is_ortholog and max_distance_bw_orths both present.
-  !> This test checks that if both is_ortholog and max_distance_bw_orths are present, scaling is 0.0 for families with only one ortholog, and falls back to stddev for others.
-  subroutine test_orthologs_with_maxdist()
-    integer, parameter :: n_genes=3, n_families=2
-    real(real64) :: distances(n_genes) = [1.0_real64, 2.0_real64, 3.0_real64]
-    integer :: gene_to_fam(n_genes) = [1,2,2]
-    logical :: is_ortholog(n_genes) = [.true., .false., .false.]
-    real(real64) :: dscale(n_families)
-    real(real64) :: max_distance_bw_orths(n_families) = [5.0_real64, 7.0_real64]
-    integer :: error_code
-    real(real64), parameter :: expected_std = 0.7071067811865476_real64
-    real(real64) :: loess_x(n_families), loess_y(n_families)
-    integer :: indices_used(n_families), loess_n(n_families)
-    integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
-    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
-      is_ortholog, max_distance_bw_orths)
-    call assert_equal_int(error_code, 0, 'Error code 0 with is_ortholog and max_distance_bw_orths')
-    call assert_equal_real(dscale(1), 0.0_real64, 1e-12_real64, 'Family 1 scaling (single ortholog, should be 0.0)')
-    call assert_equal_real(dscale(2), 0.0_real64, 1e-12_real64, 'Family 2 scaling (stddev fallback, should be 0.0)')
-  end subroutine test_orthologs_with_maxdist
-
-  !> Exhaustive: max_distance_bw_orths present, is_ortholog missing (should fallback to stddev/LOESS).
-  !> This test checks that if max_distance_bw_orths is present but is_ortholog is missing, scaling does not use max_distance_bw_orths and falls back to stddev/LOESS.
-  subroutine test_maxdist_no_orthologs()
-    integer, parameter :: n_genes=3, n_families=2
-    real(real64) :: distances(n_genes) = [1.0_real64, 2.0_real64, 3.0_real64]
-    integer :: gene_to_fam(n_genes) = [1,2,2]
-    real(real64) :: dscale(n_families)
-    real(real64) :: max_distance_bw_orths(n_families) = [5.0_real64, 7.0_real64]
-    integer :: error_code
-    real(real64) :: loess_x(n_families), loess_y(n_families)
-    integer :: indices_used(n_families), loess_n(n_families)
-    integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
-    logical :: is_ortholog(n_genes)
-    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
-      max_distance_bw_orths=max_distance_bw_orths)
-    call assert_equal_int(error_code, 0, 'Error code 0 with max_distance_bw_orths but no is_ortholog')
-    call assert_true(all(dscale /= max_distance_bw_orths), 'Scaling should not use max_distance_bw_orths if is_ortholog missing')
-  end subroutine test_maxdist_no_orthologs
 
   !> Exhaustive: invalid family indices (should error -2).
   !> This test checks that if gene_to_fam contains invalid indices, error_code is -2 and dscale falls back to -1.0 for all families.
@@ -593,33 +411,11 @@ contains
     call assert_equal_int(error_code, -2, 'detect_outliers propagates error_code -2 for invalid indices')
   end subroutine test_detect_outliers_invalid_indices
 
-  !> Exhaustive: detect_outliers error propagation (missing max_distance_bw_orths).
-  !> This test checks that detect_outliers propagates error_code -1 if is_ortholog is present but max_distance_bw_orths is missing.
-  subroutine test_detect_outliers_missing_maxdist()
-    integer, parameter :: n_genes=3, n_families=2
-    real(real64) :: distances(n_genes) = [1.0_real64, 2.0_real64, 3.0_real64]
-    integer :: gene_to_fam(n_genes) = [1,2,2]
-    logical :: is_ortholog(n_genes) = [.true., .false., .true.]
-    real(real64) :: work_array(n_genes)
-    integer :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    logical :: is_outlier(n_genes)
-    integer :: error_code
-    real(real64) :: loess_x(n_families), loess_y(n_families)
-    integer :: indices_used(n_families), loess_n(n_families)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
-    call detect_outliers(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, &
-      is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, is_ortholog)
-    call assert_equal_int(error_code, -1, 'detect_outliers returns error_code -1 if max_distance_bw_orths is missing')
-  end subroutine test_detect_outliers_missing_maxdist
-
   !> Exhaustive: LOESS fallback for scaling (workspace arrays required).
   subroutine test_loess_fallback()
     integer, parameter :: n_genes=4, n_families=2
     real(real64) :: distances(n_genes) = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64]
     integer :: gene_to_fam(n_genes) = [1,1,2,2]
-    logical :: is_ortholog(n_genes) = [.false., .false., .false., .false.]
-    real(real64) :: max_distance_bw_orths(n_families)
     real(real64) :: dscale(n_families)
     integer :: error_code
     real(real64) :: loess_x(n_families), loess_y(n_families)
@@ -628,10 +424,9 @@ contains
     real(real64) :: workspace_weights(n_families)
     real(real64) :: workspace_values(1, n_families)
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code, &
-      is_ortholog, max_distance_bw_orths)
+      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
     call assert_equal_int(error_code, 0, 'Error code 0 for LOESS fallback')
-    call assert_true(any(dscale /= -1.0_real64), 'Scaling must not be -1.0 if LOESS fallback is successful')
+    call assert_true(any(dscale > 0.0_real64), 'Scaling must be positive if LOESS fallback is successful')
   end subroutine test_loess_fallback
 
   !> Test: identify_outliers uses default percentile (95) if not provided.

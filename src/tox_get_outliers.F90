@@ -1,31 +1,27 @@
 !> Module to identify gene outliers based on their distances to family centroids.
 module tox_get_outliers
   use, intrinsic :: iso_fortran_env, only: real64
-  use tox_sorting, only: sort_array
-  use loess_module, only: loess_smooth  ! LOESS smoothing module
+  use f42_utils, only: loess_smooth_2d,sort_array  
   implicit none
 
 contains
 
   !> Compute family scaling factors (dscale) to normalize distances.
-  !> If orthologs are present, uses the maximum distance between orthologs. Otherwise, uses LOESS on the median of intra-family distances or stddev.
+  !> Now always uses LOESS on the median/stddev of intra-family distances for scaling, regardless of orthologs.
   !>
   !> @param n_genes     Total number of genes
   !> @param n_families  Total number of gene families
   !> @param distances   Array of Euclidean distances for each gene
   !> @param gene_to_fam Mapping of each gene to its family (1-based)
-  !> @param is_ortholog Boolean array indicating orthologs
   !> @param dscale      Output: array of scaling factors per family
   !> @param loess_x     Work array, dimension n_families (LOESS reference x)
   !> @param loess_y     Work array, dimension n_families (LOESS reference y)
   !> @param indices_used Work array, dimension n_families (indices for LOESS)
   !> @param perm_tmp, stack_left_tmp, stack_right_tmp: work arrays, dimension n_genes
   !> @param workspace_weights, workspace_values: work arrays, dimension n_families (LOESS workspace)
-  !> @param max_distance_bw_orths (optional) array of max distances between orthologs per family
-  !> @param error_code  Error code: 0=ok, -1=missing max_distance_bw_orths, -2=invalid family indices (required)
+  !> @param error_code  Error code: 0=ok, -2=invalid family indices (required)
   pure subroutine compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-    loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code, &
-    is_ortholog, max_distance_bw_orths)
+    loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)
     implicit none
     integer, intent(in) :: n_genes, n_families
     real(real64), intent(in) :: distances(n_genes)
@@ -37,8 +33,6 @@ contains
     real(real64), intent(inout) :: workspace_weights(n_families)
     real(real64), intent(inout) :: workspace_values(1, n_families)
     integer, intent(out) :: error_code  ! Required
-    logical, intent(in), optional :: is_ortholog(n_genes)
-    real(real64), intent(in), optional :: max_distance_bw_orths(n_families)
 
     integer :: i, family_idx, n_in_family, n_orth_in_fam
     real(real64) :: family_distances(n_genes)
@@ -64,17 +58,6 @@ contains
         return
       end if
     end do
-
-    ! Only require max_distance_bw_orths if is_ortholog is present and at least one ortholog is true
-    if (present(is_ortholog)) then
-      if (any(is_ortholog)) then
-        if (.not. present(max_distance_bw_orths)) then
-          dscale = -1.0_real64  ! Set to -1 to indicate error, do not use if error_code /= 0
-          error_code = -1
-          return
-        end if
-      end if
-    end if
 
     ! First pass: compute median and stddev for each family, and build indices_used for LOESS
     n_valid = 0
@@ -117,43 +100,28 @@ contains
     ! Second pass: assign dscale per family
     do family_idx = 1, n_families
       n_in_family = 0
-      n_orth_in_fam = 0
       do i = 1, n_genes
         if (gene_to_fam(i) == family_idx) then
           n_in_family = n_in_family + 1
           family_distances(n_in_family) = abs(distances(i))
-          if (present(is_ortholog)) then
-            if (is_ortholog(i)) n_orth_in_fam = n_orth_in_fam + 1
-          end if
         end if
       end do
       if (n_in_family <= 1) then
         dscale(family_idx) = 0.0_real64
         cycle  ! Skip single-gene or empty families
       end if
-      ! If more than one ortholog in family, use max_distance_bw_orths if present
-      if (present(is_ortholog) .and. n_orth_in_fam > 1) then
-        if (present(max_distance_bw_orths)) then
-          dscale(family_idx) = max_distance_bw_orths(family_idx)
+      if (n_valid > 0) then
+        if (mod(n_in_family,2) == 0) then
+          median_dist = 0.5_real64 * (family_distances(n_in_family/2) + family_distances(n_in_family/2+1))
         else
-          dscale(family_idx) = 0.0_real64
-          err = -1
+          median_dist = family_distances((n_in_family+1)/2)
         end if
+        ! Only pass first n_valid elements of LOESS arrays
+        call loess_smooth_2d(n_valid, 1, loess_x, loess_y, indices_used, [median_dist], &
+                sigma, cutoff, loess_pred, workspace_weights, workspace_values)
+        dscale(family_idx) = loess_pred(1,1)
       else
-        ! Otherwise, use LOESS smoothing on median_dist
-        if (n_valid > 0) then
-          if (mod(n_in_family,2) == 0) then
-            median_dist = 0.5_real64 * (family_distances(n_in_family/2) + family_distances(n_in_family/2+1))
-          else
-            median_dist = family_distances((n_in_family+1)/2)
-          end if
-          ! Only pass first n_valid elements of LOESS arrays
-          call loess_smooth(n_valid, 1, 1, loess_x, reshape(loess_y, [n_valid,1]), indices_used, [median_dist], &
-                  sigma, cutoff, loess_pred, workspace_weights, workspace_values)
-          dscale(family_idx) = loess_pred(1,1)
-        else
-          dscale(family_idx) = 0.0_real64
-        end if
+        dscale(family_idx) = 0.0_real64
       end if
     end do
     error_code = err
@@ -271,26 +239,23 @@ contains
     end do
   end subroutine identify_outliers
 
-  !> Main hybrid routine to detect outliers using RDI.
-  !> If is_ortholog is not present, or if a family has no orthologs, uses LOESS.
+  !> Main routine to detect outliers using RDI and LOESS-based scaling.
   !>
   !> @param n_genes      Total number of genes
   !> @param n_families   Total number of gene families
   !> @param distances    Array of Euclidean distances for each gene to its centroid
   !> @param gene_to_fam  Gene-to-family mapping (1-based indexing)
-  !> @param is_ortholog  Boolean array indicating orthologs
   !> @param work_array   Work array for sorting (dimension n_genes)
   !> @param perm         Permutation array for sorting (dimension n_genes)
   !> @param stack_left   Stack array for sorting (dimension n_genes)
   !> @param stack_right  Stack array for sorting (dimension n_genes)
   !> @param is_outlier   Output boolean array indicating outliers
   !> @param percentile   (optional) Percentile threshold for outlier detection (default: 95)
-  !> @param max_distance_bw_orths (optional) array of max distances between orthologs per family
   !> @param loess_x, loess_y, loess_n, workspace_weights, workspace_values: work arrays, dimension n_families (for LOESS)
   pure subroutine detect_outliers(n_genes, n_families, distances, gene_to_fam, &
                             work_array, perm, stack_left, stack_right, &
                             is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &
-                            is_ortholog, percentile, max_distance_bw_orths)
+                            percentile)
     implicit none
     integer, intent(in) :: n_genes, n_families
     real(real64), intent(in) :: distances(n_genes)
@@ -305,9 +270,7 @@ contains
     real(real64), intent(inout) :: workspace_weights(n_families)
     real(real64), intent(inout) :: workspace_values(1, n_families)
     integer, intent(out) :: error_code  ! Required
-    logical, intent(in), optional :: is_ortholog(n_genes)
     real(real64), intent(in), optional :: percentile
-    real(real64), intent(in), optional :: max_distance_bw_orths(n_families)
     ! Local variables
     real(real64) :: dscale(n_families)
     real(real64) :: rdi(n_genes)
@@ -327,27 +290,9 @@ contains
       perm(i) = i
     end do
 
-    if (present(is_ortholog)) then
-      if (present(max_distance_bw_orths)) then
-        call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-                                          loess_x, loess_y, loess_n, perm, stack_left, stack_right, workspace_weights, &
-                                          workspace_values, error_code, is_ortholog, max_distance_bw_orths)
-      else
-        call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-                                          loess_x, loess_y, loess_n, perm, stack_left, stack_right, workspace_weights, &
-                                          workspace_values, error_code, is_ortholog)
-      end if
-    else
-      if (present(max_distance_bw_orths)) then
-        call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-                                          loess_x, loess_y, loess_n, perm, stack_left, stack_right, workspace_weights, &
-                                          workspace_values, error_code, max_distance_bw_orths=max_distance_bw_orths)
-      else
-        call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-                                          loess_x, loess_y, loess_n, perm, stack_left, stack_right, workspace_weights, &
-                                          workspace_values, error_code)
-      end if
-    end if
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
+                                loess_x, loess_y, loess_n, perm, stack_left, stack_right, workspace_weights, &
+                                workspace_values, error_code)
     if (error_code /= 0) return
     call compute_rdi(n_genes, distances, gene_to_fam, dscale, rdi)
     call identify_outliers(n_genes, rdi, work_array, perm, stack_left, &
@@ -358,9 +303,8 @@ contains
 end module tox_get_outliers
 
 
-subroutine compute_family_scaling_r(n_genes, n_families, distances, gene_to_fam, dscale, &
-    loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code, &
-    is_ortholog, max_distance_bw_orths)
+  subroutine compute_family_scaling_r(n_genes, n_families, distances, gene_to_fam, dscale, &
+      loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)
   use tox_get_outliers
   use iso_fortran_env, only: real64
   integer, intent(in) :: n_genes, n_families
@@ -373,34 +317,8 @@ subroutine compute_family_scaling_r(n_genes, n_families, distances, gene_to_fam,
   real(real64), intent(inout) :: workspace_weights(n_families)
   real(real64), intent(inout) :: workspace_values(1, n_families)
   integer, intent(out) :: error_code
-  logical, intent(in) :: is_ortholog(n_genes)
-  real(real64), intent(in) :: max_distance_bw_orths(n_families)
-
-  logical :: has_orthologs
-  integer :: i
-
-  has_orthologs = .false.
-  do i = 1, size(is_ortholog)
-    if (is_ortholog(i)) then
-      has_orthologs = .true.
-      exit
-    end if
-  end do
-
-  if (.not. has_orthologs) then
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)
-  else
-    if (all(max_distance_bw_orths > 0.0_real64)) then
-      call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-        loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, &
-        error_code, is_ortholog, max_distance_bw_orths)
-    else
-      error_code = -1
-      dscale = -1.0_real64
-      return
-    end if
-  end if
 end subroutine compute_family_scaling_r
 
 subroutine compute_rdi_r(n_genes, n_families, distances, gene_to_fam, dscale, rdi)
@@ -437,7 +355,7 @@ end subroutine identify_outliers_r
 subroutine detect_outliers_r(n_genes, n_families, distances, gene_to_fam, &
                             work_array, perm, stack_left, stack_right, &
                             is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &
-                            is_ortholog, percentile, max_distance_bw_orths)
+                            percentile)
   use tox_get_outliers
   use iso_fortran_env, only: real64
   integer, intent(in) :: n_genes, n_families
@@ -453,23 +371,19 @@ subroutine detect_outliers_r(n_genes, n_families, distances, gene_to_fam, &
   real(real64), intent(inout) :: workspace_weights(n_families)
   real(real64), intent(inout) :: workspace_values(1, n_families)
   integer, intent(out) :: error_code
-  logical, intent(in) :: is_ortholog(n_genes)
   real(real64), intent(in) :: percentile
-  real(real64), intent(in) :: max_distance_bw_orths(n_families)
-
 
   call detect_outliers(n_genes, n_families, distances, gene_to_fam, &
                       work_array, perm, stack_left, stack_right, &
                       is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &
-                      is_ortholog, percentile, max_distance_bw_orths)
-
+                      percentile)
 end
 
 ! C wrappers for RDI/outlier routines
 
-subroutine compute_family_scaling_c(n_genes, n_families, distances, gene_to_fam, dscale, &
-  loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code, &
-  is_ortholog_int, max_distance_bw_orths) bind(C, name="compute_family_scaling_c")
+  subroutine compute_family_scaling_c(n_genes, n_families, distances, gene_to_fam, dscale, &
+    loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, &
+    error_code) bind(C, name="compute_family_scaling_c")
   use iso_c_binding
   use tox_get_outliers
   integer(c_int), intent(in), value :: n_genes, n_families
@@ -482,39 +396,8 @@ subroutine compute_family_scaling_c(n_genes, n_families, distances, gene_to_fam,
   real(c_double), intent(inout), target :: workspace_weights(n_families)
   real(c_double), intent(inout), target :: workspace_values(1,n_families )
   integer(c_int), intent(out) :: error_code
-  integer(c_int), intent(in), target :: is_ortholog_int(n_genes)
-  real(c_double), intent(in), target :: max_distance_bw_orths(n_families)
-  logical :: is_ortholog(n_genes)
-  logical :: has_orthologs
-  integer :: i
-
-  ! Convert integer (0/1) to logical (.false./.true.)
-  do i = 1, n_genes
-    is_ortholog(i) = (is_ortholog_int(i) /= 0)
-  end do
-
-  has_orthologs = .false.
-  do i = 1, n_genes
-    if (is_ortholog(i)) then
-      has_orthologs = .true.
-      exit
-    end if
-  end do
-
-  if (.not. has_orthologs) then
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
       loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)
-  else
-    if (all(max_distance_bw_orths > 0.0_c_double)) then
-      call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-        loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, &
-        error_code, is_ortholog, max_distance_bw_orths)
-    else
-      error_code = -1
-      dscale = -1.0_c_double
-      return
-    end if
-  end if
 end subroutine compute_family_scaling_c
 
 subroutine compute_rdi_c(n_genes, n_families, distances, gene_to_fam, dscale, rdi) bind(C, name="compute_rdi_c")
@@ -543,6 +426,12 @@ subroutine identify_outliers_c(n_genes, rdi, sorted_rdi, perm, stack_left, stack
   real(c_double), intent(in), value :: percentile
   logical :: is_outlier(n_genes)
   integer :: i
+
+  ! Convert integer (0/1) to logical (.false./.true.) for is_outlier
+  do i = 1, n_genes
+    is_outlier(i) = (is_outlier_int(i) /= 0)
+  end do
+
   call identify_outliers(n_genes, rdi, sorted_rdi, perm, stack_left, stack_right, is_outlier, threshold, percentile)
   ! Convert logical (.true./.false.) to integer (1/0)
   do i = 1, n_genes
@@ -558,7 +447,7 @@ end subroutine identify_outliers_c
 subroutine detect_outliers_c(n_genes, n_families, distances, gene_to_fam, &
                           work_array, perm, stack_left, stack_right, &
                           is_outlier_int, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &
-                          is_ortholog_int, percentile, max_distance_bw_orths) bind(C, name="detect_outliers_c")
+                          percentile) bind(C, name="detect_outliers_c")
   use iso_c_binding
   use tox_get_outliers
   integer(c_int), intent(in), value :: n_genes, n_families
@@ -574,20 +463,13 @@ subroutine detect_outliers_c(n_genes, n_families, distances, gene_to_fam, &
   real(c_double), intent(inout), target :: workspace_weights(n_families)
   real(c_double), intent(inout), target :: workspace_values(1,n_families)
   integer(c_int), intent(out) :: error_code
-  integer(c_int), intent(in), target :: is_ortholog_int(n_genes)
   real(c_double), intent(in), value :: percentile
-  real(c_double), intent(in), target :: max_distance_bw_orths(n_families)
-  logical :: is_ortholog(n_genes)
   logical :: is_outlier(n_genes)
   integer :: i
-  ! Convert integer (0/1) to logical (.false./.true.) for is_ortholog
-  do i = 1, n_genes
-    is_ortholog(i) = (is_ortholog_int(i) /= 0)
-  end do
   call detect_outliers(n_genes, n_families, distances, gene_to_fam, &
                     work_array, perm, stack_left, stack_right, &
                     is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &
-                    is_ortholog, percentile, max_distance_bw_orths)
+                    percentile)
   ! Print output for debugging
   write(*, '(A)', advance='no') 'detect_outliers_c: is_outlier = ['
   do i = 1, n_genes
