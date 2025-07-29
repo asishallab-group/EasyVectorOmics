@@ -14,7 +14,7 @@ def _filename_to_ascii_array(filename):
 # Function to convert array of strings to integer ASCII array
 def _string_array_to_ascii_matrix(strings: np.ndarray) -> tuple[np.ndarray, int]:
     """
-    Wandelt ein n-dimensionales Array von Strings in eine ASCII-Matrix (clen, total_size)
+    Transforms a char array to integer
     """
     if not isinstance(strings, np.ndarray) or strings.dtype.kind != 'U':
         raise ValueError("Input must be a numpy array of strings (dtype='U')")
