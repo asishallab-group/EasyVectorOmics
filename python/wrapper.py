@@ -2,14 +2,16 @@ import ctypes
 import numpy as np
 import os
 
-# Lade die Fortran-Bibliothek
-lib_path = os.path.join(os.path.dirname(__file__), "../build/arrays.so")
+# load fortran library
+lib_path = os.path.join(os.path.dirname(__file__), "../build/libtensor-omics.so")
 arrays_lib = ctypes.CDLL(lib_path)
 
+# helper to convert a filename to ASCII chars to transfer it as integer to fortran
 def _filename_to_ascii_array(filename):
     ascii_arr = np.array([ord(c) for c in filename], dtype=np.int32)
     return ascii_arr, np.int32(len(ascii_arr))
 
+# Function to convert array of strings to integer ASCII array
 def _string_array_to_ascii_matrix(strings: np.ndarray) -> tuple[np.ndarray, int]:
     """
     Wandelt ein n-dimensionales Array von Strings in eine ASCII-Matrix (clen, total_size)
@@ -17,7 +19,7 @@ def _string_array_to_ascii_matrix(strings: np.ndarray) -> tuple[np.ndarray, int]
     if not isinstance(strings, np.ndarray) or strings.dtype.kind != 'U':
         raise ValueError("Input must be a numpy array of strings (dtype='U')")
     
-    flat = strings.flatten(order='F')  # wichtig: Fortran-order
+    flat = strings.flatten(order='F')  # important: Fortran-order
     clen = max(len(s) for s in flat)
     total = flat.size
 
@@ -28,9 +30,10 @@ def _string_array_to_ascii_matrix(strings: np.ndarray) -> tuple[np.ndarray, int]
 
     return mat, clen
 
+# Helper function to read dimensions of integer/real array
 def get_array_dims(filename, max_dims=5):
     """
-    Liest die Dimensionen eines gespeicherten Arrays über get_array_dims().
+    Reads the dimensions of an array saved in a given file
     """
     ascii_arr, fn_len = _filename_to_ascii_array(filename)
     dims_out = np.zeros(max_dims, dtype=np.int32, order='F')
@@ -50,19 +53,18 @@ def get_array_dims(filename, max_dims=5):
 
 def get_char_array_metadata(filename: str, max_ndims: int = 10):
     """
-    Ruft die Metadaten einer char-Array-Datei ab: Dimensionen, Anzahl Dimensionen, Typcode, clen.
-    Erwartet, dass die Fortran-Subroutine get_array_metadata_chars_C eingebunden ist.
+    Read metadata of a char array saved in a given file
     """
-    # ASCII-Filename vorbereiten
+    # ASCII-Filename preparation
     filename_ascii, fn_len = _filename_to_ascii_array(filename)
 
-    # Ausgabe-Puffer vorbereiten
+    # set up output buffer
     dims_out = np.zeros(max_ndims, dtype=np.int32)
     ndims = ctypes.c_int()
     type_code = ctypes.c_int()
     clen = ctypes.c_int()
 
-    # Argument-Typen deklarieren
+    # declare args
     arrays_lib.get_array_metadata_chars_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
         ctypes.c_int,                                                         # fn_len
@@ -74,7 +76,7 @@ def get_char_array_metadata(filename: str, max_ndims: int = 10):
     ]
     arrays_lib.get_array_metadata_chars_C.restype = None
 
-    # Aufruf
+    # call the function
     arrays_lib.get_array_metadata_chars_C(
         filename_ascii,
         fn_len,
@@ -85,28 +87,28 @@ def get_char_array_metadata(filename: str, max_ndims: int = 10):
         ctypes.byref(clen)
     )
 
-    # Rückgabe: nur relevante Dimensionen
+    # returns dims and clen, the length of strings
     return dims_out[:ndims.value], clen.value
 
-# Python-Wrapper
+# serilization of an n-dimensional integer array
 def serialize_int_nd(arr: np.ndarray, filename: str):
     """
-    Serialisiert ein n-dimensionales int32-Array in eine Binärdatei mit Header.
+    Serializes an n-dimensional integer32 array to a binary file
     """
     if not isinstance(arr, np.ndarray) or arr.dtype != np.int32:
         raise ValueError("arr must be a numpy array of int32")
 
-    # Sicherstellen: Fortran-kompatibles Layout
+    # Make sure layout is fortran compatible
     arr_f = np.asfortranarray(arr)
 
-    # Dimensionen
+    # dimensions
     dims = np.array(arr.shape, dtype=np.int32)
     ndim = arr.ndim
 
-    # Flaches Array (Fortran-richtig)
+    # flat array to pass to fortran
     flat = arr_f.ravel(order='F')
 
-    # ASCII-Filename vorbereiten
+    # prepare filename
     filename_ascii, fn_len = _filename_to_ascii_array(filename)
 
     # Fortran-Funktion deklarieren
@@ -119,7 +121,7 @@ def serialize_int_nd(arr: np.ndarray, filename: str):
     ]
     arrays_lib.serialize_int_nd_C.restype = None
 
-    # Aufruf
+    # call function
     arrays_lib.serialize_int_nd_C(
         flat,
         dims,
@@ -128,15 +130,17 @@ def serialize_int_nd(arr: np.ndarray, filename: str):
         fn_len
     )
 
-
+# Deserialize an n dimensional integer array
 def deserialize_int_nd(filename):
     """
-    Hauptfunktion: Deserialisiert ein beliebig-dimensionales int32-Array.
+    Deserializes an n-dimensional int32-Array.
     """
+    # read size of the array
     dims = get_array_dims(filename)
     print(f"Deserializing array with dimensions: {dims}")
+    # create array with the proper size
     total_size = np.prod(dims)
-    arr = np.zeros(total_size, dtype=np.int32, order='F')  # 1D flach, später reshapen
+    arr = np.zeros(total_size, dtype=np.int32, order='F')  # gets a 1D array
     ascii_arr, fn_len = _filename_to_ascii_array(filename)
 
     arrays_lib.deserialize_int_C.argtypes = [
@@ -148,29 +152,29 @@ def deserialize_int_nd(filename):
     arrays_lib.deserialize_int_C.restype = None
 
     arrays_lib.deserialize_int_C(arr, total_size, ascii_arr, fn_len)
-    return arr.reshape(dims, order='F')  # Reshape in die Originaldimensionen
+    return arr.reshape(dims, order='F')  # Reshape to original dimensions
 
 def serialize_real_nd(arr: np.ndarray, filename: str):
     """
-    Serialisiert ein n-dimensionales float64-Array in eine Binärdatei mit Header.
+    Serializes an n-dimensional real64 array to a binary file
     """
     if not isinstance(arr, np.ndarray) or arr.dtype != np.float64:
         raise ValueError("arr must be a numpy array of float64")
 
-    # Sicherstellen: Fortran-kompatibles Layout
+    # make sure layout is fortran compatible
     arr_f = np.asfortranarray(arr)
 
-    # Dimensionen
+    # dimensions
     dims = np.array(arr.shape, dtype=np.int32)
     ndim = arr.ndim
 
-    # Flaches Array (Fortran-richtig)
+    # flat array with fortran order
     flat = arr_f.ravel(order='F')
 
-    # ASCII-Filename vorbereiten
+    # ASCII-Filename preparation
     filename_ascii, fn_len = _filename_to_ascii_array(filename)
 
-    # Fortran-Funktion deklarieren
+    # declare args
     arrays_lib.serialize_real_nd_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS"), # arr
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims
@@ -180,7 +184,7 @@ def serialize_real_nd(arr: np.ndarray, filename: str):
     ]
     arrays_lib.serialize_real_nd_C.restype = None
 
-    # Aufruf
+    # call function
     arrays_lib.serialize_real_nd_C(
         flat,
         dims,
@@ -192,12 +196,14 @@ def serialize_real_nd(arr: np.ndarray, filename: str):
 
 def deserialize_real_nd(filename):
     """
-    Hauptfunktion: Deserialisiert ein beliebig-dimensionales int32-Array.
+    Deserializes an n-dimensional array of type real64
     """
+    #read dimensions
     dims = get_array_dims(filename)
     print(f"Deserializing array with dimensions: {dims}")
+    # create array with correct size
     total_size = np.prod(dims)
-    arr = np.zeros(total_size, dtype=np.float64, order='F')  # 1D flach, später reshapen
+    arr = np.zeros(total_size, dtype=np.float64, order='F')  # accept flat array
     ascii_arr, fn_len = _filename_to_ascii_array(filename)
 
     arrays_lib.deserialize_real_C.argtypes = [
@@ -209,11 +215,11 @@ def deserialize_real_nd(filename):
     arrays_lib.deserialize_real_C.restype = None
 
     arrays_lib.deserialize_real_C(arr, total_size, ascii_arr, fn_len)
-    return arr.reshape(dims, order='F')  # Reshape in die Originaldimensionen
+    return arr.reshape(dims, order='F')  # Reshape
 
 def serialize_char_nd(arr: np.ndarray, filename: str):
     """
-    Serialisiert ein n-dimensionales String-Array in eine Binärdatei (Fortran-kompatibel).
+    Serializes an n-dimensional character array to a binary file
     """
     if not isinstance(arr, np.ndarray) or arr.dtype.kind != 'U':
         raise ValueError("arr must be a numpy array of strings (dtype='U')")
@@ -248,26 +254,26 @@ def serialize_char_nd(arr: np.ndarray, filename: str):
 
 def deserialize_char_nd(filename: str, ndim_max=5):
     """
-    Deserialisiert ein n-dimensionales Array von Strings aus Binärformat.
+    Deserializes an n-dimensional character array from a file
     """
     #convert filename to ASCII array
     filename_ascii, fn_len = _filename_to_ascii_array(filename)
 
     dims_out = np.zeros(ndim_max, dtype=np.int32)
 
-    # Puffergrößen (zunächst nur Dateigröße abschätzen, hier z. B. max. 1000 Strings)
+    # Get metadata
     dims, clen = get_char_array_metadata(filename, ndim_max)
 
     print(f"Deserializing char array with dimensions: {dims}, clen: {clen}")
     total = np.prod(dims)
-    # ASCII-Puffer vorbereiten (clen x total)
+    # SCII array of size clen x total
     ascii_arr = np.asfortranarray(np.zeros((clen, total), dtype=np.int32))
 
-    # Rückgabewerte: byref-Variablen für ndim/clen_out
+    # returns
     ndim_out = ctypes.c_int()
     clen_out = ctypes.c_int()
 
-    # Fortran-Funktion definieren
+    # declare arguments
     arrays_lib.deserialize_char_flat_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags="F_CONTIGUOUS"), # ascii_arr
         ctypes.c_int,           # clen
@@ -298,7 +304,6 @@ def deserialize_char_nd(filename: str, ndim_max=5):
     shape = tuple(dims_out[:ndim])
     total = np.prod(shape)
 
-    # Wichtig: 2D wiederherstellen
     ascii_arr_2d = ascii_arr.reshape((clen, total), order='F')
 
     # ASCII → String-Array
@@ -311,7 +316,7 @@ def deserialize_char_nd(filename: str, ndim_max=5):
 
     return chars
 
-
+# Tests for integer
 def int_test():
     array = np.array([1, 2, 3, 4, 5], dtype=np.int32, order='F')
     filename = "test_int_1d.bin"
@@ -337,6 +342,7 @@ def int_test():
     print(res_3d)
     assert np.array_equal(res_3d, array_3d), "Deserialized 3D array does not match original"
     
+# Tests for real
 def real_test():
     array = np.array([1.5, 2.3, 3.2, 4.0, 5.0], dtype=np.float64, order='F')
     filename = "test_real_1d.bin"
@@ -369,6 +375,7 @@ def real_test():
     res_empty = deserialize_real_nd(empty_filename)
     assert res_empty.size == 0, "Deserialized empty array should be empty"
 
+# Tests for chars
 def char_test():
     array = np.array(["hello", "world"], dtype='U5', order='F')
     filename = "test_char_1d.bin"

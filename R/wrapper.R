@@ -10,8 +10,7 @@ get_array_dims <- function(filename, max_dims = 5) {
                   filename_ascii = as.integer(ascii),
                   fn_len = as.integer(length(ascii)),
                   dims_out = dims,
-                  ndims = ndims,
-                  PACKAGE = "libtensor-omics")
+                  ndims = ndims)
 
   res$dims_out[1:res$ndims]
 }
@@ -30,8 +29,7 @@ get_array_metadata_chars <- function(filename, max_dims = 5) {
                   dims_out = dims,
                   ndims = ndims,
                   type_code_out = typecode,
-                  clen_out = clen,
-                  PACKAGE = "libtensor-omics")
+                  clen_out = clen)
 
   list(dims = res$dims_out[1:res$ndims],
        type = res$type_code_out,
@@ -55,8 +53,7 @@ deserialize_int_array <- function(filename, max_dims = 5) {
                 dims_out = dims,
                 ndim_out = ndim,
                 filename_ascii = as.integer(ascii),
-                fn_len = as.integer(length(ascii)),
-                PACKAGE = "libtensor-omics")
+                fn_len = as.integer(length(ascii)))
 
     actual_dims <- res$dims_out[1:res$ndim_out]
     array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
@@ -79,8 +76,7 @@ deserialize_real_array <- function(filename, max_dims = 5) {
                 dims_out = dims,
                 ndim_out = ndim,
                 filename_ascii = as.integer(ascii),
-                fn_len = as.integer(length(ascii)),
-                PACKAGE = "libtensor-omics")
+                fn_len = as.integer(length(ascii)))
     actual_dims <- res$dims_out[1:res$ndim_out]
     array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
 }
@@ -94,7 +90,7 @@ deserialize_char_array <- function(filename, max_dims = 5) {
   ndim <- integer(1)
   clen <- integer(1)
 
-  # Lade Metadaten: Dimensionen + clen
+  # Load metadata dimensions + clen
   meta <- get_array_metadata_chars(filename, max_dims)
 
   actual_dims <- meta$dims
@@ -112,8 +108,7 @@ deserialize_char_array <- function(filename, max_dims = 5) {
     clen_out = clen,
     filename_ascii = ascii,
     fn_len = length(ascii),
-    ndim_actual = as.integer(length(actual_dims)),
-    PACKAGE = "libtensor-omics"
+    ndim_actual = as.integer(length(actual_dims))
   )
 
   # translate ASCII back to char
@@ -137,8 +132,7 @@ serialize_int_array <- function(arr, filename) {
            dims = dims,
            ndim = ndim,
            filename_ascii = as.integer(ascii),
-           fn_len = as.integer(length(ascii)),
-           PACKAGE = "libtensor-omics")
+           fn_len = as.integer(length(ascii)))
 }
 
 # BASE R arrays are column-major just like fortran, so no serialization is needed for the array structure.
@@ -147,7 +141,7 @@ serialize_real_array <- function(arr, filename) {
   flat <- as.double(arr)
 
   dims <- if (is.null(dim(arr))) {
-    as.integer(length(arr))  # 1D-Vektor
+    as.integer(length(arr))  # 1D-Vector
   } else {
     as.integer(dim(arr))
   }
@@ -160,8 +154,7 @@ serialize_real_array <- function(arr, filename) {
            dims = dims,
            ndim = ndim,
            filename_ascii = as.integer(ascii),
-           fn_len = as.integer(length(ascii)),
-           PACKAGE = "libtensor-omics")
+           fn_len = as.integer(length(ascii)))
 }
 
 # Serializes a character array to a file, encoding it as an integer matrix
@@ -188,8 +181,7 @@ serialize_char_array <- function(arr, filename) {
     ndim = as.integer(length(dims)),
     clen = as.integer(clen),
     filename_ascii = utf8ToInt(filename),
-    fn_len = nchar(filename),
-    PACKAGE = "libtensor-omics"
+    fn_len = nchar(filename)
   ))
 }
 
@@ -286,17 +278,17 @@ test_array_wrappers <- function(tmpdir = tempdir()) {
   serialize_char_array(arr5c, fn("char5d.bin"))
   stopifnot(all(deserialize_char_array(fn("char5d.bin")) == arr5c))
 
-  # 1D-Array mit verschiedenen ASCII-Längen
+  # 1D-Array with different char lengths
   arr_ascii1 <- c("A", "G1", "GENE003", "BRCA1", "XYZ", "", "12345678", "SEQ")
   serialize_char_array(arr_ascii1, fn("char_ascii1d.bin"))
   stopifnot(all(deserialize_char_array(fn("char_ascii1d.bin")) == arr_ascii1))
 
-  # 2D-Matrix mit ASCII-Zeichenketten verschiedener Länge
+  # 2D-Matrix with different length
   arr_ascii2 <- matrix(c("GENE1", "GENE22", "GENE333", "", "ID", "SEQ9999"), nrow = 2, byrow = TRUE)
   serialize_char_array(arr_ascii2, fn("char_ascii2d.bin"))
   stopifnot(all(deserialize_char_array(fn("char_ascii2d.bin")) == arr_ascii2))
 
-  # 3D-Array mit realistischerem biologischen Text
+  # 3D-Array with realistic data
   arr_ascii3 <- array(c("TP53", "BRCA1", "MT-ATP6", "CYTB", "ND1", "", "NRAS", "EGFR"), dim = c(2, 2, 2))
   serialize_char_array(arr_ascii3, fn("char_ascii3d.bin"))
   stopifnot(all(deserialize_char_array(fn("char_ascii3d.bin")) == arr_ascii3))
