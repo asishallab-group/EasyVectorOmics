@@ -1,8 +1,0 @@
-PhD	315
-HiWi	27
-Heigwer	65
-Troidl	15 + 35
-Dusel	15 + 40
-Reisekosten 9
-Server, Fesplatten, Laptop (PhD)	45
-Publikationen 20
