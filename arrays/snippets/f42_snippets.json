@@ -1,0 +1,49 @@
+{
+    "R call to get_array_dims":{
+        "prefix": "f42:R_get_array_dims",
+        "body": [
+            "res <- .Fortran('get_array_dims_r',",
+            "      filename_ascii = as.integer(ascii),",
+            "      fn_len = as.integer(length(ascii)),",
+            "      dims_out = dims,",
+            "      ndims = ndims,",
+            "      PACKAGE = 'libtensor-omics')",
+            "res$dims_out[1:res$ndims]"
+        ],
+        "description": "Gets arrays dimensions from a file"
+    },
+    "R call to get_array_metadata_chars":{
+        "prefix": "f42:R_get_array_metadata_chars",
+        "body": [
+            "res <- .Fortran('get_array_metadata_chars_r',",
+            "       filename_ascii = as.integer(ascii),",
+            "       fn_len = as.integer(length(ascii))",
+            "       dims_out = dims",
+            "       ndims = ndims",
+            "       type_code_out = typecode",
+            "       clen_out = clen",
+            "       PACKAGE = 'libtensor-omics')",
+            "list(dims = res$dims_out[1:res$ndims]",
+            "   type = res$type_code_out",
+            "   clen = res$clen_out)"
+        ],
+        "description": "Gets metadata of a character array from a file"
+    },
+    "R call to deserialize_int_array":{
+        "prefix": "f42:R_deserialize_int_array",
+        "body": [
+            "# Use get_array_dims to read dimensions before assigning array",
+            "res <- .Fortran('deserialize_int_r',",
+            "    flat_arr = flat,",
+            "    dims_out = dims,",
+            "    ndim_out = ndim,",
+            "    filename_ascii = as.integer(ascii),",
+            "    fn_len = as.integer(length(ascii)),",
+            "    PACKAGE = 'libtensor-omics')",
+            "",
+            "actual_dims <- res$dims_out[1:res$ndim_out]",
+            "array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)"
+        ],
+        "description": "Deserilizes an integer array. "
+    }
+}
