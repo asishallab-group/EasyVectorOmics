@@ -139,13 +139,13 @@ end module serialize_real
 !! @param ndim The number of dimensions.
 !! @param filename_ascii The output filename as an ASCII character array.
 !! @param fn_len The length of the filename ASCII character array.
-subroutine serialize_real_flat_r(arr, dims, ndim, filename_ascii, fn_len)
+subroutine serialize_real_flat_r(arr, n, dims, ndim, filename_ascii, fn_len)
   use iso_fortran_env
   use serialize_real, only: serialize_real_nd
   implicit none
-  real(real64), intent(in) :: arr(*)         ! assumed-size array
-  integer(int32), intent(in) :: dims(*)
-  integer(int32), intent(in) :: ndim
+  real(real64), intent(in) :: arr(n)         ! assumed-size array
+  integer(int32), intent(in) :: dims(ndim)
+  integer(int32), intent(in) :: ndim, n
   integer(int32), intent(in) :: filename_ascii(fn_len)
   integer(int32), intent(in) :: fn_len
 

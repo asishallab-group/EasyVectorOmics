@@ -141,14 +141,14 @@ end module serialize_int
 !! @param ndim The number of dimensions.
 !! @param filename_ascii The output filename as an ASCII character array.
 !! @param fn_len The length of the filename ASCII character array.
-subroutine serialize_int_flat_r(arr, dims, ndim, filename_ascii, fn_len)
+subroutine serialize_int_flat_r(arr, n, dims, ndim, filename_ascii, fn_len)
   use iso_fortran_env, only: int32
   use serialize_int, only: serialize_int_nd
   implicit none
   !Change to fixed size
-  integer(int32), intent(in) :: arr(*)         ! assumed-size array
-  integer(int32), intent(in) :: dims(*)
-  integer(int32), intent(in) :: ndim
+  integer(int32), intent(in) :: arr(n)         ! assumed-size array
+  integer(int32), intent(in) :: dims(ndim)
+  integer(int32), intent(in) :: ndim, n
   integer(int32), intent(in) :: filename_ascii(fn_len)
   integer(int32), intent(in) :: fn_len
 

@@ -33,10 +33,12 @@
             "# Use get_array_dims to read dimensions before assigning array",
             "res <- .Fortran(\"deserialize_int_r\",",
             "    flat_arr = flat,",
+            "    arr_size = as.integer(total_size),",
             "    dims_out = dims,",
             "    ndim_out = ndim,",
             "    filename_ascii = as.integer(ascii),",
             "    fn_len = as.integer(length(ascii)),",
+            "    ndim_actual = as.integer(length(actual_dims)))",
             "",
             "actual_dims <- res$dims_out[1:res$ndim_out]",
             "array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)"
@@ -49,10 +51,12 @@
             "# Use get_array_dims to read dimensions before assigning array",
             "res <- .Fortran(\"deserialize_real_r\",",
             "    flat_arr = flat,",
+            "    arr_size = as.integer(total_size),",
             "    dims_out = dims,",
             "    ndim_out = ndim,",
             "    filename_ascii = as.integer(ascii),",
             "    fn_len = as.integer(length(ascii)),",
+            "    ndim_actual = as.integer(length(actual_dims)))",
             "",
             "actual_dims <- res$dims_out[1:res$ndim_out]",
             "array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)"
@@ -87,10 +91,11 @@
         "body": [
             ".Fortran(\"serialize_int_flat_r\",",
             "       arr = flat,",
+            "       n = length(flat),",
             "       dims = dims,",
             "       ndim = ndim,",
             "       filename_ascii = as.integer(ascii),",
-            "       fn_len = as.integer(length(ascii))"
+            "       fn_len = as.integer(length(ascii)))"
         ],
         "description": "Serializes an n dimensional array of type integer to a binary file"
     },
@@ -99,10 +104,11 @@
         "body": [
             ".Fortran(\"serialize_real_flat_r\",",
             "       arr = flat,",
+            "       n = length(flat),",
             "       dims = dims,",
             "       ndim = ndim,",
             "       filename_ascii = as.integer(ascii),",
-            "       fn_len = as.integer(length(ascii))"
+            "       fn_len = as.integer(length(ascii)))"
         ],
         "description": "Serializes an n dimensional array of type real to a binary file"
     },
@@ -111,6 +117,7 @@
         "body":[
             ".Fortran(\"serialize_char_flat_r\",",
             "       ascii_arr = as.integer(mat),",
+            "       n = length(mat),",
             "       dims = as.integer(dims),",
             "       ndim = as.integer(length(dims)),",
             "       clen = as.integer(clen),",

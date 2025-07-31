@@ -197,15 +197,15 @@ contains
 end module serialize_char
 
 !> @brief serializes a flat character array to a binary file.
-subroutine serialize_char_flat_r(ascii_arr, dims, ndim, clen, filename_ascii, fn_len)
+subroutine serialize_char_flat_r(ascii_arr, n, dims, ndim, clen, filename_ascii, fn_len)
   use iso_fortran_env
   use serialize_char
   implicit none
 
   ! change to fixed size
-  integer(int32), intent(in) :: ascii_arr(clen, *)
+  integer(int32), intent(in) :: ascii_arr(clen, n)
   integer(int32), intent(in) :: dims(ndim)
-  integer(int32), intent(in) :: ndim
+  integer(int32), intent(in) :: ndim, n
   integer(int32), intent(in) :: clen
   integer(int32), intent(in) :: filename_ascii(fn_len)
   integer(int32), intent(in) :: fn_len

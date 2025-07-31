@@ -123,19 +123,18 @@ end module int_deserialize_mod
 !> @param filename_ascii ASCII representation of the filename
 !> @param fn_len Length of the filename array
 !> @note The output array is handled and preallocated by R
-subroutine deserialize_int_r(flat_arr, dims_out, ndim_out, filename_ascii, fn_len)
+subroutine deserialize_int_r(flat_arr, arr_size, dims_out, ndim_out, filename_ascii, fn_len, ndim_actual)
   use iso_fortran_env, only: int32
   use int_deserialize_mod
   implicit none
 
   ! Outputs
-  integer(int32), intent(out) :: flat_arr(*)
-  integer(int32), intent(out) :: dims_out(*)
+  integer(int32), intent(out) :: flat_arr(arr_size)
+  integer(int32), intent(out) :: dims_out(ndim_actual)
   integer, intent(out) :: ndim_out
 
-  ! Filename
   integer(int32), intent(in) :: filename_ascii(fn_len)
-  integer, intent(in) :: fn_len
+  integer(int32), intent(in) :: fn_len, arr_size, ndim_actual
 
   ! Local variables
   character(len=:), allocatable :: filename

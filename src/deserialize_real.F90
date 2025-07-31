@@ -131,23 +131,23 @@ end module real_deserialize_mod
 !> @param ndim_out Number of dimensions
 !> @param filename_ascii Array of ASCII characters representing the filename
 !> @param fn_len Length of the filename array
-subroutine deserialize_real_flat_r(flat_arr, dims_out, ndim_out, filename_ascii, fn_len)
+subroutine deserialize_real_flat_r(flat_arr, arr_size, dims_out, ndim_out, filename_ascii, fn_len, ndim_actual)
   use iso_fortran_env
   use real_deserialize_mod
   implicit none
 
   ! This needs fixed size and pass the size as parameter
-  real(real64), intent(out) :: flat_arr(*)
-  integer(int32), intent(out) :: dims_out(*)
-  integer, intent(out) :: ndim_out
+  real(real64), intent(out) :: flat_arr(arr_size)
+  integer(int32), intent(out) :: dims_out(ndim_actual)
+  integer(int32), intent(out) :: ndim_out
 
   ! Filename
   integer(int32), intent(in) :: filename_ascii(fn_len)
-  integer, intent(in) :: fn_len
+  integer(int32), intent(in) :: fn_len, arr_size, ndim_actual
 
   ! Local
   character(len=:), allocatable :: filename
-  integer :: i, k
+  integer(int32) :: i, k
   real(real64), pointer :: flat(:)
   integer(int32), allocatable, target :: dims(:)
 

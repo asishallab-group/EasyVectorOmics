@@ -50,10 +50,12 @@ deserialize_int_array <- function(filename, max_dims = 5) {
 
     res <- .Fortran("deserialize_int_r",
                 flat_arr = flat,
+                arr_size = as.integer(total_size),
                 dims_out = dims,
                 ndim_out = ndim,
                 filename_ascii = as.integer(ascii),
-                fn_len = as.integer(length(ascii)))
+                fn_len = as.integer(length(ascii)),
+                ndim_actual = as.integer(length(actual_dims)))
 
     actual_dims <- res$dims_out[1:res$ndim_out]
     array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
@@ -68,15 +70,17 @@ deserialize_real_array <- function(filename, max_dims = 5) {
     total_size <- prod(actual_dims)
 
     flat <- double(total_size)
-    dims <- integer(max_dims)
+    dims <- as.integer(actual_dims)
     ndim <- integer(1)
 
     res <- .Fortran("deserialize_real_flat_r",
                 flat_arr = flat,
+                arr_size = as.integer(total_size),
                 dims_out = dims,
                 ndim_out = ndim,
                 filename_ascii = as.integer(ascii),
-                fn_len = as.integer(length(ascii)))
+                fn_len = as.integer(length(ascii)),
+                ndim_actual = as.integer(length(actual_dims)))
     actual_dims <- res$dims_out[1:res$ndim_out]
     array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
 }
@@ -129,6 +133,7 @@ serialize_int_array <- function(arr, filename) {
 
   .Fortran("serialize_int_flat_r",
            arr = flat,
+           n = length(flat),
            dims = dims,
            ndim = ndim,
            filename_ascii = as.integer(ascii),
@@ -151,6 +156,7 @@ serialize_real_array <- function(arr, filename) {
 
   .Fortran("serialize_real_flat_r",
            arr = flat,
+           n = length(flat),
            dims = dims,
            ndim = ndim,
            filename_ascii = as.integer(ascii),
@@ -177,6 +183,7 @@ serialize_char_array <- function(arr, filename) {
 
   invisible(.Fortran("serialize_char_flat_r",
     ascii_arr = as.integer(mat),
+    n = length(mat),
     dims = as.integer(dims),
     ndim = as.integer(length(dims)),
     clen = as.integer(clen),
@@ -230,7 +237,6 @@ test_array_wrappers <- function(tmpdir = tempdir()) {
   cat("Real tests...\n")
   arr1r <- as.numeric(1:10) * 0.5
   serialize_real_array(arr1r, fn("real1d.bin"))
-  cat("serialized real 1D arr\n")
   stopifnot(all(deserialize_real_array(fn("real1d.bin")) == arr1r))
   cat("okay\n")
 
