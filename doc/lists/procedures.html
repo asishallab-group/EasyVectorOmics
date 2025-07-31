@@ -6,11 +6,11 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="">
-    <meta name="author" content="Vivian Bass" >
+      <meta name="description" content="Documentation for TensorOmics">
+    <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>All Procedures &ndash; TOX_Normalization
+    <title>All Procedures &ndash; TensorOmics
 </title>
 
     <!-- Bootstrap -->
@@ -45,7 +45,7 @@
     <div class="container-fluid mb-sm-4 mb-xl-2">
       <nav class="navbar navbar-expand-lg navbar-dark bg-dark fixed-top">
         <div class="container">
-          <a class="navbar-brand" href="../index.html">TOX_Normalization </a>
+          <a class="navbar-brand" href="../index.html">TensorOmics </a>
           <button type="button" class="navbar-toggler" data-bs-toggle="collapse" data-bs-target="#navbar"
                   aria-expanded="false" aria-controls="navbar" aria-label="Toggle navigation">
                   <span class="navbar-toggler-icon">
@@ -61,9 +61,6 @@
                 </li>
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
-                </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="../program/test_normalization.html">Program</a>
                 </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
@@ -85,7 +82,7 @@
 			 <tbody>
 			   <tr>
                  <td><a href='../proc/calc_fchange.html'>calc_fchange</a></td>
-                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.f90</a></td>
+                 <td><a href='../module/tox_normalization.html'>tox_normalization</a></td>
                  <td>Subroutine</td>
                  <td><p>Calculate <code>log2 fold changes</code> between condition and control columns.
 For each control-condition pair, this subroutine computes the <code>log2 fold change</code>
@@ -93,16 +90,76 @@ by subtracting the expression value in the control column from the corresponding
 value in the condition column, for all genes.</p><a href="../proc/calc_fchange.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/calc_fchange_c.html'>calc_fchange_c</a></td>
+                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_fchange_r.html'>calc_fchange_r</a></td>
+                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/calc_tiss_avg.html'>calc_tiss_avg</a></td>
-                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.f90</a></td>
+                 <td><a href='../module/tox_normalization.html'>tox_normalization</a></td>
                  <td>Subroutine</td>
                  <td><p>Calculate tissue averages by averaging replicates within each group.
 For each group of tissue replicates, this subroutine computes the average
 expression per gene. The input matrix is column-major, flattened as a 1D array.</p><a href="../proc/calc_tiss_avg.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/calc_tiss_avg_c.html'>calc_tiss_avg_c</a></td>
+                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_tiss_avg_r.html'>calc_tiss_avg_r</a></td>
+                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/distance_to_centroid.html'>distance_to_centroid</a></td>
+                 <td><a href='../module/tox_euclidean_distance.html'>tox_euclidean_distance</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Compute distance from each gene to its corresponding family centroid.</p><a href="../proc/distance_to_centroid.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/distance_to_centroid_c.html'>distance_to_centroid_c</a></td>
+                 <td><a href='../sourcefile/tox_euclidean_distance.f90.html'>tox_euclidean_distance.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/distance_to_centroid_r.html'>distance_to_centroid_r</a></td>
+                 <td><a href='../sourcefile/tox_euclidean_distance.f90.html'>tox_euclidean_distance.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/euclidean_distance.html'>euclidean_distance</a></td>
+                 <td><a href='../module/tox_euclidean_distance.html'>tox_euclidean_distance</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Compute the Euclidean distance between two vectors.</p><a href="../proc/euclidean_distance.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/euclidean_distance_c.html'>euclidean_distance_c</a></td>
+                 <td><a href='../sourcefile/tox_euclidean_distance.f90.html'>tox_euclidean_distance.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/euclidean_distance_r.html'>euclidean_distance_r</a></td>
+                 <td><a href='../sourcefile/tox_euclidean_distance.f90.html'>tox_euclidean_distance.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/log2_transformation.html'>log2_transformation</a></td>
-                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.f90</a></td>
+                 <td><a href='../module/tox_normalization.html'>tox_normalization</a></td>
                  <td>Subroutine</td>
                  <td><p>Apply <code>log2(x + 1)</code> transformation to each element of the input matrix.
 This subroutine performs element-wise <code>log2(x + 1)</code> transformation on a
@@ -111,26 +168,147 @@ matrix flattened in column-major order. The <code>log2</code> is computed via:
 non-portable <code>log2</code> intrinsic for compatibility with WebAssembly (WASM).</p><a href="../proc/log2_transformation.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/log2_transformation_c.html'>log2_transformation_c</a></td>
+                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/log2_transformation_r.html'>log2_transformation_r</a></td>
+                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/normalize_by_std_dev.html'>normalize_by_std_dev</a></td>
-                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.f90</a></td>
+                 <td><a href='../module/tox_normalization.html'>tox_normalization</a></td>
                  <td>Subroutine</td>
                  <td><p>Normalizes each gene's expression vector using <code>sqrt(mean(x^2))</code>
 across tissues (not classical standard deviation).</p><a href="../proc/normalize_by_std_dev.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/normalize_by_std_dev_c.html'>normalize_by_std_dev_c</a></td>
+                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C/Python interface (bind(C)), expects flat arrays.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/normalize_by_std_dev_r.html'>normalize_by_std_dev_r</a></td>
+                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Wrapper for R and Fortran usage (R .Fortran)</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/quantile_normalization.html'>quantile_normalization</a></td>
-                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.f90</a></td>
+                 <td><a href='../module/tox_normalization.html'>tox_normalization</a></td>
                  <td>Subroutine</td>
                  <td><p>Quantile normalization of a gene expression matrix (F42-compliant).
 Computes average expression per rank across tissues.</p><a href="../proc/quantile_normalization.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/quantile_normalization_c.html'>quantile_normalization_c</a></td>
+                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/quantile_normalization_r.html'>quantile_normalization_r</a></td>
+                 <td><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/quicksort_char.html'>quicksort_char</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Internal quicksort implementation for character arrays.
+ Lexicographic quicksort using string comparison, indirect via <code>perm</code>.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/quicksort_int.html'>quicksort_int</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Internal quicksort implementation for integer arrays.
+ Indirectly sorts <code>array</code> using <code>perm</code>, same algorithm as <code>quicksort_real</code>.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/quicksort_real.html'>quicksort_real</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Internal quicksort implementation for real arrays.
+ Sorts indirectly using the permutation vector <code>perm</code>. Manual stack replaces recursion.</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../interface/sort_array.html'>sort_array</a></td>
-                 <td><a href='../module/tox_sorting.html'>tox_sorting</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Interface</td>
-                 <td><p>Generic interface to sort real, integer, or character arrays.
- Calls one of the module procedures <code>sort_real</code>, <code>sort_integer</code>, or <code>sort_character</code>
-depending on the input array type. Sorting is done indirectly through a permutation vector.</p></td>
+                 <td><p>Generic interface for internal Fortran use only</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/sort_character.html'>sort_character</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Sort a character array indirectly using quicksort.
+ Uses lexicographic ordering and permutation vector sorting.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/sort_character_c.html'>sort_character_c</a></td>
+                 <td><a href='../sourcefile/f42_utils.f90.html'>f42_utils.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/sort_character_r.html'>sort_character_r</a></td>
+                 <td><a href='../sourcefile/f42_utils.f90.html'>f42_utils.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/sort_integer.html'>sort_integer</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Sort an integer array indirectly using quicksort.
+ Similar to <code>sort_real</code>, but for integer input.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/sort_integer_c.html'>sort_integer_c</a></td>
+                 <td><a href='../sourcefile/f42_utils.f90.html'>f42_utils.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/sort_integer_r.html'>sort_integer_r</a></td>
+                 <td><a href='../sourcefile/f42_utils.f90.html'>f42_utils.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/sort_real.html'>sort_real</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Sort a real(real64) array indirectly using quicksort.
+ Creates a sorted version of the array by reordering the <code>perm</code> vector.
+The original data in <code>array</code> remains unchanged.</p><a href="../proc/sort_real.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/sort_real_c.html'>sort_real_c</a></td>
+                 <td><a href='../sourcefile/f42_utils.f90.html'>f42_utils.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/sort_real_r.html'>sort_real_r</a></td>
+                 <td><a href='../sourcefile/f42_utils.f90.html'>f42_utils.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/swap_int.html'>swap_int</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Swap two integer values in-place.
+@param a First integer to swap<br>
+@param b Second integer to swap<br></p></td>
                </tr>
 			 </tbody></table>
              
@@ -143,8 +321,8 @@ depending on the input array type. Sorting is done indirectly through a permutat
         <div class="row justify-content-between">
           <div class="col">
             <p>
-              TOX_Normalization
- was developed by Vivian Bass<br>              &copy; 2025 
+              TensorOmics
+ was developed by TensorOmics Developers<br>              &copy; 2025 
 </p>
           </div>
           <div class="col">

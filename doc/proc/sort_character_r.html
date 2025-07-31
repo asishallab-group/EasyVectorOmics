@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="">
+      <meta name="description" content="Documentation for TensorOmics">
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
@@ -85,19 +85,19 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 5.3% of total for procedures.">8 statements</a>
+                 title=" 2.9% of total for procedures.">15 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/f42_sorting.F90"> Source File</a>
+              <a href="../src/f42_utils.F90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/f42_sorting.f90.html'>f42_sorting.F90</a></li>
+                <li class="breadcrumb-item"><a href='../sourcefile/f42_utils.f90.html'>f42_utils.F90</a></li>
             <li class="breadcrumb-item active" aria-current="page">sort_character_r</li>
           </ol>
         </nav>
@@ -145,7 +145,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2> subroutine sort_character_r(array, perm, stack_left, stack_right, n, strlen)  
+    <h2> subroutine sort_character_r(char_matrix, perm, stack_left, stack_right, n, strlen)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -153,7 +153,7 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/tox_sorting.html'>tox_sorting</a></li>
+                  <li class="list-inline-item"><a href='../module/f42_utils.html'>f42_utils</a></li>
               </ul>
             </li>
         </ul>
@@ -176,15 +176,15 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-array~9"></span>
-              character(len=strlen),
+              <span class="anchor" id="variable-char_matrix"></span>
+              character(len=1),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>array</strong>(n)</td>
+            <td><strong>char_matrix</strong>(strlen,n)</td>
             <td>
                 
             </td>
