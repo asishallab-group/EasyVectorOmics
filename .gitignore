@@ -47,6 +47,7 @@
 # latexrun
 latex.out/
 build/
+results/
 
 ## Auxiliary and intermediate files from other packages:
 # algorithms

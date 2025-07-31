@@ -300,16 +300,25 @@ subroutine sort_integer_c(array, perm, stack_left, stack_right, n) bind(C, name=
   call sort_integer(array, perm, stack_left, stack_right)
 end subroutine sort_integer_c
 
-subroutine sort_character_c(array, perm, stack_left, stack_right, n, strlen) bind(C, name="sort_character_c")
+subroutine sort_character_c(char_matrix, perm, stack_left, stack_right, n, strlen) bind(C, name="sort_character_c")
   use iso_c_binding
   use f42_utils, only: sort_character
   implicit none
   integer(c_int), intent(in), value :: n, strlen
-  character(len=strlen), intent(in) :: array(n)
+  character(kind=c_char,len=1), intent(in) :: char_matrix(strlen, n)
   integer(c_int), intent(inout) :: perm(n)
   integer(c_int), intent(inout) :: stack_left(n)
   integer(c_int), intent(inout) :: stack_right(n)
 
+  character(len=strlen) :: array(n)
+  integer :: i, j
+
+  ! Reconstruct Fortran strings from the C-style char matrix
+  do i = 1, n
+    do j = 1, strlen
+      array(i)(j:j) = char_matrix(j, i)
+    end do
+  end do
+
   call sort_character(array, perm, stack_left, stack_right)
 end subroutine sort_character_c
-

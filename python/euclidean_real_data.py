@@ -183,10 +183,10 @@ def run_real_data_example():
     print("=== EUCLIDEAN DISTANCE CALCULATION WITH REAL DATA ===\n")
     
     # Define file paths
-    base_path = Path("results/sex_data/")
+    base_path = Path("material/")
     orthogroups_file = base_path / "filtered_families.tsv"
-    centroids_file = base_path / "centroids_orthologs_only_2.tsv"
-    gene_expression_file = base_path / "normalization_2.tsv"
+    centroids_file = base_path / "centroids_orthologs_only.tsv"
+    gene_expression_file = base_path / "normalization.tsv"
     
     # Verify files exist
     for file_path in [orthogroups_file, centroids_file, gene_expression_file]:
@@ -231,7 +231,7 @@ def run_real_data_example():
     results_with_families = results_df[results_df['has_family']].copy()
     
     # Save results
-    output_file = base_path / "distance_to_centroids_python.tsv"
+    output_file = "results/distance_to_centroids_python.tsv"
     results_with_families.to_csv(output_file, sep='\t', index=False)
     
     print(f"Results saved to: {output_file}")
