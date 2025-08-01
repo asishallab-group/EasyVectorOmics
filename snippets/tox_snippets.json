@@ -1,116 +1,126 @@
 {
 	"Call to normalize_by_std_dev": {
-      "prefix": "tox:norm_by_std_dev",
-      "body": [
-        "! Normalize expression values using sqrt(mean(x^2)) across tissues",
-        "call normalize_by_std_dev_r(n_genes, n_tissues, input_matrix, output_matrix)"
-      ],
-      "description": "Invoke normalization by standard deviation"
-    },
-    
-    "Call to quantile_normalization": {
-      "prefix": "tox:norm_quantile",
-      "body": [
-        "! Quantile normalization - makes distributions identical across tissues",
-        "call quantile_normalization_r(n_genes, n_tissues, input_matrix, output_matrix, &",
-        "                           temp_col, rank_means, perm, stack_left, stack_right, max_stack)"
-      ],
-      "description": "Invoke quantile normalization with rank averaging"
-    },
-    
-    "Call to log2_transformation": {
-      "prefix": "tox:norm_log2_trans",
-      "body": [
-        "! Apply log2(x + 1) transformation to stabilize variance",
-        "call log2_transformation_r(n_genes, n_tissues, input_matrix, output_matrix)"
-      ],
-      "description": "Apply log2(x + 1) transformation to expression data"
-    },
-    
-    "Call to calc_tiss_avg": {
-      "prefix": "tox:norm_tiss_avg",
-      "body": [
-        "! Calculate tissue averages by grouping replicates",
-        "call calc_tiss_avg_r(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix)"
-      ],
-      "description": "Calculate average expression per tissue group from replicates"
-    },
-    
-    "Call to calc_fchange": {
-      "prefix": "tox:norm_fchange",
-      "body": [
-        "! Calculate log2 fold changes between condition and control pairs",
-        "call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)"
-      ],
-      "description": "Calculate log2 fold changes between condition-control pairs"
-    },
+	  "prefix": "tox:norm_by_std_dev",
+	  "body": [
+		"! Normalize expression values using sqrt(mean(x^2)) across tissues",
+		"call normalize_by_std_dev_r(n_genes, n_tissues, input_matrix, output_matrix)"
+	  ],
+	  "description": "Invoke normalization by standard deviation"
+	},
+	
+	"Call to quantile_normalization": {
+	  "prefix": "tox:norm_quantile",
+	  "body": [
+		"! Quantile normalization - makes distributions identical across tissues",
+		"call quantile_normalization_r(n_genes, n_tissues, input_matrix, output_matrix, &",
+		"                           temp_col, rank_means, perm, stack_left, stack_right, max_stack)"
+	  ],
+	  "description": "Invoke quantile normalization with rank averaging"
+	},
+	
+	"Call to log2_transformation": {
+	  "prefix": "tox:norm_log2_trans",
+	  "body": [
+		"! Apply log2(x + 1) transformation to stabilize variance",
+		"call log2_transformation_r(n_genes, n_tissues, input_matrix, output_matrix)"
+	  ],
+	  "description": "Apply log2(x + 1) transformation to expression data"
+	},
+	
+	"Call to calc_tiss_avg": {
+	  "prefix": "tox:norm_tiss_avg",
+	  "body": [
+		"! Calculate tissue averages by grouping replicates",
+		"call calc_tiss_avg_r(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix)"
+	  ],
+	  "description": "Calculate average expression per tissue group from replicates"
+	},
+	
+	"Call to calc_fchange": {
+	  "prefix": "tox:norm_fchange",
+	  "body": [
+		"! Calculate log2 fold changes between condition and control pairs",
+		"call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)"
+	  ],
+	  "description": "Calculate log2 fold changes between condition-control pairs"
+	},
 
-    "Call to euclidean_distance": {
-      "prefix": "tox:euclidean_distance",
-      "body": [
-        "! Calculate Euclidean distance between two vectors",
-        "call euclidean_distance(vec1, vec2, d, result)"
-      ],
-      "description": "Invoke Euclidean distance calculation between two vectors"
-    },
+	"Call to euclidean_distance": {
+	  "prefix": "tox:euclidean_distance",
+	  "body": [
+		"! Calculate Euclidean distance between two vectors",
+		"call euclidean_distance(vec1, vec2, d, result)"
+	  ],
+	  "description": "Invoke Euclidean distance calculation between two vectors"
+	},
 
-    "Call to distance_to_centroid": {
-      "prefix": "tox:distance_to_centroid",
-      "body": [
-        "! Calculate distance from each gene to its family centroid",
-        "call distance_to_centroid(n_genes, n_families, genes, centroids, &",
-        "                          gene_to_fam, distances, d)"
-      ],
-      "description": "Invoke distance calculation from genes to family centroids"
-    },
+	"Call to distance_to_centroid": {
+	  "prefix": "tox:distance_to_centroid",
+	  "body": [
+		"! Calculate distance from each gene to its family centroid",
+		"call distance_to_centroid(n_genes, n_families, genes, centroids, &",
+		"                          gene_to_fam, distances, d)"
+	  ],
+	  "description": "Invoke distance calculation from genes to family centroids"
+	},
+
+	"Call to tissue_versatility": {
+	  "prefix": "tox:tissue_versatility",
+	  "body": [
+		"! Calculate tissue versatility for selected expression vectors (C/Python interface)",
+		"call compute_tissue_versatility(n_axes, n_vectors, expression_vectors, &",
+		"    exp_vecs_selection_index, axes_selection, tissue_versatilities, tissue_angles_deg)"
+	  ],
+	  "description": "Invoke tissue versatility calculation"
+	},
 		
   "Wrapper R": {
-    "prefix": "wrapper_r",
-    "body": [
-      "subroutine ${1:core_name}_r(${2:args})",
-      "  use ${3:module}",
-      "  ${4:! -- declare arguments here as in the core routine --}",
-      "  call ${1:core_name}(${2:args})",
-      "end subroutine ${1:core_name}_r"
-    ],
-    "description": "Wrapper for R (2D arrays, no bind(C))"
+	"prefix": "wrapper_r",
+	"body": [
+	  "subroutine ${1:core_name}_r(${2:args})",
+	  "  use ${3:module}",
+	  "  ${4:! -- declare arguments here as in the core routine --}",
+	  "  call ${1:core_name}(${2:args})",
+	  "end subroutine ${1:core_name}_r"
+	],
+	"description": "Wrapper for R (2D arrays, no bind(C))"
   },
   "Wrapper C/Python": {
-    "prefix": "wrapper_c",
-    "body": [
+	"prefix": "wrapper_c",
+	"body": [
 	  "! -- use this snippet or helper_c_srapper.py to generate the C wrapper",
-      "subroutine ${1:core_name}_c(${2:args}) bind(C, name=\"${1:core_name}_c\")",
-      "  use iso_c_binding",
-      "  use ${3:module}",
-      "  ${4:! -- declare arguments here with snippets c_arg or flat_array_2d as needed --}",
-      "  call ${1:core_name}(${2:args})",
-      "end subroutine ${1:core_name}_c"
-    ],
-    "description": "Wrapper for C/Python (bind(C), flat arrays)"
+	  "subroutine ${1:core_name}_c(${2:args}) bind(C, name=\"${1:core_name}_c\")",
+	  "  use iso_c_binding",
+	  "  use ${3:module}",
+	  "  ${4:! -- declare arguments here with snippets c_arg or flat_array_2d as needed --}",
+	  "  call ${1:core_name}(${2:args})",
+	  "end subroutine ${1:core_name}_c"
+	],
+	"description": "Wrapper for C/Python (bind(C), flat arrays)"
   },
   "Fortran argument declaration": {
-    "prefix": "r_arg",
-    "body": [
-      "${1:type}, intent(${2:inout}) :: ${3:name}${4:(dimensions)}"
-    ],
-    "description": "Fortran standard argument declaration"
+	"prefix": "r_arg",
+	"body": [
+	  "${1:type}, intent(${2:inout}) :: ${3:name}${4:(dimensions)}"
+	],
+	"description": "Fortran standard argument declaration"
   },
   "C argument declaration": {
-    "prefix": "c_arg",
-    "body": [
-      "${1:c_type}, intent(${2:inout}), target :: ${3:name}(*)"
-    ],
-    "description": "C-style argument declaration"
+	"prefix": "c_arg",
+	"body": [
+	  "${1:c_type}, intent(${2:inout}), target :: ${3:name}(*)"
+	],
+	"description": "C-style argument declaration"
   },
   "c_f_pointer 2D": {
-    "prefix": "flat_array_2d",
-    "body": [
-      "real(c_double), pointer :: ${1:mat}(:,:)",
-      "call c_f_pointer(c_loc(${2:flat_array}(1)), ${1:mat}, [${3:n1}, ${4:n2}])"
-    ],
-    "description": "Map flat array to 2D with c_f_pointer"
+	"prefix": "flat_array_2d",
+	"body": [
+	  "real(c_double), pointer :: ${1:mat}(:,:)",
+	  "call c_f_pointer(c_loc(${2:flat_array}(1)), ${1:mat}, [${3:n1}, ${4:n2}])"
+	],
+	"description": "Map flat array to 2D with c_f_pointer"
   },
-  	"R call to normalize_by_std_dev": {
+	"R call to normalize_by_std_dev": {
 		"prefix": "tox:R_norm_by_std_dev",
 		"body": [
 		"result <- .Fortran(\"normalize_by_std_dev_r\",",
@@ -204,6 +214,20 @@
 		"                  d = as.integer(${6:dimension}))"
 		],
 		"description": "Call distance_to_centroid_r Fortran function from R"
+	},
+	"R call to tissue_versatility": {
+		"prefix": "tox:R_tissue_versatility",
+		"body": [
+		"result <- .Fortran(\"compute_tissue_versatility_r\",",
+		"                  n_axes = as.integer(${1:n_axes}),",
+		"                  n_vectors = as.integer(${2:n_vectors}),",
+		"                  expression_vectors = as.double(${3:expr_matrix}),",
+		"                  exp_vecs_selection_index = as.integer(${4:select_vec}),",
+		"                  axes_selection = as.integer(${5:select_axes}),",
+		"                  tissue_versatilities = as.double(numeric(sum(${4:select_vec}))),",
+		"                  tissue_angles_deg = as.double(numeric(sum(${4:select_vec}))))"
+		],
+		"description": "Call compute_tissue_versatility_r Fortran function from R"
 	},
   
   "Load libraries for C": {
@@ -350,6 +374,27 @@
 		"    return dist_to_centroid"
 		],
 		"description": "Setup distance_to_centroid_c function binding"
+	},
+	"C call to tissue_versatility": {
+		"prefix": "tox:C_tissue_versatility",
+		"body": [
+		"def setup_tissue_versatility():",
+		"    \"\"\"Setup tissue versatility C wrapper\"\"\"",
+		"    tv = lib.compute_tissue_versatility_c",
+		"    tv.argtypes = [",
+		"        ctypes.c_int,                    # n_axes",
+		"        ctypes.c_int,                    # n_vectors",
+		"        ctypes.c_int,                    # n_selected",
+		"        ctypes.POINTER(ctypes.c_double), # expression_vectors",
+		"        ctypes.POINTER(ctypes.c_int),    # exp_vecs_selection_index",
+		"        ctypes.POINTER(ctypes.c_int),    # axes_selection",
+		"        ctypes.POINTER(ctypes.c_double), # tissue_versatilities",
+		"        ctypes.POINTER(ctypes.c_double), # tissue_angles_deg",
+		"    ]",
+		"    tv.restype = None",
+		"    return tv"
+		],
+		"description": "Setup and call compute_tissue_versatility_c from Python/C"
 	}
 }
 
