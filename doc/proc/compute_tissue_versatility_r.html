@@ -10,7 +10,7 @@
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>calc_tiss_avg_c &ndash; TensorOmics</title>
+    <title>compute_tissue_versatility_r &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -74,7 +74,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>calc_tiss_avg_c
+    <h1>compute_tissue_versatility_r
       <small>Subroutine</small>
       
     </h1>
@@ -90,15 +90,15 @@
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/tox_normalization.F90"> Source File</a>
+              <a href="../src/tox_tissue_versatility.F90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/tox_normalization.f90.html'>tox_normalization.F90</a></li>
-            <li class="breadcrumb-item active" aria-current="page">calc_tiss_avg_c</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/tox_tissue_versatility.f90.html'>tox_tissue_versatility.F90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">compute_tissue_versatility_r</li>
           </ol>
         </nav>
       </div>
@@ -145,7 +145,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2> subroutine calc_tiss_avg_c(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix) bind(C, name="calc_tiss_avg_c")  
+    <h2>pure subroutine compute_tissue_versatility_r(n_axes, n_vectors, expression_vectors, exp_vecs_selection_index, axes_selection, tissue_versatilities, tissue_angles_deg)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -153,8 +153,7 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
-                  <li class="list-inline-item"><a href='../module/tox_normalization.html'>tox_normalization</a></li>
+                  <li class="list-inline-item"><a href='../module/avmod.html'>avmod</a></li>
               </ul>
             </li>
         </ul>
@@ -162,6 +161,8 @@
     </div>
 
 
+    <p>R wrapper for compute_tissue_versatility.
+Calls compute_tissue_versatility with standard Fortran types for R interface.</p>
 
 
     <h3>Arguments</h3>
@@ -177,92 +178,107 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_gene~3"></span>
-              integer(kind=c_int),
+              <span class="anchor" id="variable-n_axes~2"></span>
+              integer,
             </td>
-<td>intent(in),</td>
+<td>intent(in)</td>
               <td></td>            <td>
-              value
+              
             </td>
             <td>::</td>
-            <td><strong>n_gene</strong></td>
+            <td><strong>n_axes</strong></td>
             <td>
-                
+                <p>Number of axes (tissues/dimensions)</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_grps~3"></span>
-              integer(kind=c_int),
+              <span class="anchor" id="variable-n_vectors~2"></span>
+              integer,
             </td>
-<td>intent(in),</td>
+<td>intent(in)</td>
               <td></td>            <td>
-              value
+              
             </td>
             <td>::</td>
-            <td><strong>n_grps</strong></td>
+            <td><strong>n_vectors</strong></td>
             <td>
-                
+                <p>Number of expression vectors (genes)</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_s~3"></span>
-              integer(kind=c_int),
+              <span class="anchor" id="variable-expression_vectors~2"></span>
+              real(kind=real64),
             </td>
-<td>intent(in),</td>
+<td>intent(in)</td>
               <td></td>            <td>
-              target
+              
             </td>
             <td>::</td>
-            <td><strong>group_s</strong>(n_grps)</td>
+            <td><strong>expression_vectors</strong>(n_axes,n_vectors)</td>
             <td>
-                
+                <p>2D array (n_axes, n_vectors), each column is a gene expression vector</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-group_c~3"></span>
-              integer(kind=c_int),
+              <span class="anchor" id="variable-exp_vecs_selection_index~2"></span>
+              logical,
             </td>
-<td>intent(in),</td>
+<td>intent(in)</td>
               <td></td>            <td>
-              target
+              
             </td>
             <td>::</td>
-            <td><strong>group_c</strong>(n_grps)</td>
+            <td><strong>exp_vecs_selection_index</strong>(n_vectors)</td>
             <td>
-                
+                <p>Logical array (n_vectors), .TRUE. for vectors to process</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-input_matrix~12"></span>
-              real(kind=c_double),
+              <span class="anchor" id="variable-axes_selection~2"></span>
+              logical,
             </td>
-<td>intent(in),</td>
+<td>intent(in)</td>
               <td></td>            <td>
-              target
+              
             </td>
             <td>::</td>
-            <td><strong>input_matrix</strong>(n_gene*sum(group_c))</td>
+            <td><strong>axes_selection</strong>(n_axes)</td>
             <td>
-                
+                <p>Logical array (n_axes), .TRUE. for axes to include in calculation</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-output_matrix~12"></span>
-              real(kind=c_double),
+              <span class="anchor" id="variable-tissue_versatilities~2"></span>
+              real(kind=real64),
             </td>
 <td>intent(out)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>output_matrix</strong>(n_gene*n_grps)</td>
+            <td><strong>tissue_versatilities</strong>(count(exp_vecs_selection_index))</td>
             <td>
-                
+                <p>Output, real array, length = count(exp_vecs_selection_index), stores the calculated tissue versatilities</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-tissue_angles_deg~2"></span>
+              real(kind=real64),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>tissue_angles_deg</strong>(count(exp_vecs_selection_index))</td>
+            <td>
+                <p>Output, real array, length = count(exp_vecs_selection_index), stores the calculated angles in degrees</p>
             </td>
         </tr>
     </tbody>

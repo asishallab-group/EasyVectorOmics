@@ -85,7 +85,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 2.2% of total for procedures.">11 statements</a>
+                 title=" 3.0% of total for procedures.">18 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -145,7 +145,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2> subroutine sort_character_c(array, perm, stack_left, stack_right, n, strlen) bind(C, name="sort_character_c")  
+    <h2> subroutine sort_character_c(char_matrix, perm, stack_left, stack_right, n, strlen) bind(C, name="sort_character_c")  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -177,15 +177,15 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-array~12"></span>
-              character(len=strlen),
+              <span class="anchor" id="variable-char_matrix~2"></span>
+              character(kind=c_char, len=1),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>array</strong>(n)</td>
+            <td><strong>char_matrix</strong>(strlen,n)</td>
             <td>
                 
             </td>
