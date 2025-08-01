@@ -171,4 +171,19 @@ See `test/readme.md` for details.
 
 ---
 
+## Get latest gfortran with Docker
+
+Install and setup Docker as explained for your operating system in the Docker
+documentation.
+
+Use our Dockerfile `gfortran.docker`:
+```bash
+docker build -t arch-gfortran -f gfortran.docker .
+```
+
+Then build the project with:
+```bash
+docker run -it -v `pwd`:/opt arch-gfortran '/opt/build.sh'
+```
+
 Feel free to extend this README with additional information.
