@@ -17,11 +17,11 @@ contains
       integer, intent(in) :: n_vecs
          !! number of vectors per axis
       logical, dimension(n_vecs), intent(in) :: vecs_selection_mask
-         !! .true. where projection is to be computed
+         !! `.true.` for vectors where projection is to be computed
       integer, intent(in) :: n_selected_vecs
          !! count of `.true.` values in `vecs_selection_mask`
       logical, dimension(n_axes), intent(in) :: axes_selection_mask
-         !! .true. for axes to be included in RAP
+         !! `.true.` for axes to be included in RAP
       integer, intent(in) :: n_selected_axes
          !! count of `.true.` values in `axes_selection_mask`
       real(real64), dimension(n_selected_axes, n_selected_vecs), intent(out) :: projections
@@ -72,7 +72,7 @@ contains
          end do
          diagonal_component = diagonal_component / n_selected_axes
 
-         ! transform vetor to its projection
+         ! transform vector to its projection
          do i_axis = 1, n_selected_axes
             selected_vecs(i_axis, i_vec) = selected_vecs(i_axis, i_vec) - diagonal_component
          end do
