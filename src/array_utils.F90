@@ -10,13 +10,13 @@ module array_utils
 
    contains
   !> @brief returns type code of the array file
-  !> @param filename name of the file to read
   !> @return type code of the array file
   function get_type_code(filename) result(type_code)
     use iso_c_binding
     implicit none
 
     character(len=*), intent(in) :: filename
+      !! name of the file to read
     integer :: type_code
     integer :: unit, magic
 
@@ -28,13 +28,13 @@ module array_utils
   end function get_type_code
 
   !> @brief Get the dimensions of an array file
-  !> @param filename Name of the file to read
   !> @return Allocatable array of dimensions
   function get_array_dims(filename) result(dims)
     use iso_c_binding
     implicit none
 
     character(len=*), intent(in) :: filename
+      !! Name of the file to read
     integer(int32), allocatable :: dims(:)
     integer :: unit, magic, type_code, d
 
@@ -50,21 +50,21 @@ module array_utils
 end module array_utils
 
 !> @brief Subroutine to get the dimensions of an array file
-!> @param filename_ascii Array of ASCII characters representing the filename
-!> @param fn_len Length of the filename array
-!> @param dims_out Output array for dimensions
-!> @param ndims Output variable for the number of dimensions
 subroutine get_array_dims_r(filename_ascii, fn_len, dims_out, ndims)
   use iso_fortran_env, only: int32
   implicit none
 
   ! Input
   integer(int32), intent(in) :: filename_ascii(fn_len)
+    !! Array of ASCII characters representing the filename
   integer(int32), intent(in) :: fn_len
+    !! Length of the filename array
 
   ! Output
-  integer(int32), intent(out) :: dims_out(*)  ! R gibt festen Speicher vor
-  integer(int32), intent(out) :: ndims        ! Anzahl der Dimensionen
+  integer(int32), intent(out) :: dims_out(*)  ! R provides storage
+    !! Output array for dimensions
+  integer(int32), intent(out) :: ndims        ! Number of dimensions
+    !! Output variable for the number of dimensions
 
   ! Local variables
   character(len=:), allocatable :: filename
@@ -94,10 +94,6 @@ subroutine get_array_dims_r(filename_ascii, fn_len, dims_out, ndims)
 end subroutine get_array_dims_r
 
 !> @brief C binding for the subroutine to get the dimensions of an array file
-!> @param filename_ascii Array of ASCII characters representing the filename
-!> @param fn_len Length of the filename array
-!> @param dims_out Output array for dimensions
-!> @param ndims Output variable for the number of dimensions
 subroutine get_array_dims_C(filename_ascii, fn_len, dims_out, ndims) bind(C, name="get_array_dims_C")
   use iso_c_binding
   use iso_fortran_env
@@ -105,11 +101,15 @@ subroutine get_array_dims_C(filename_ascii, fn_len, dims_out, ndims) bind(C, nam
 
   ! Input
   integer(c_int), intent(in) :: filename_ascii(fn_len)
+    !! Array of ASCII characters representing the filename
   integer(c_int), value :: fn_len
+    !! Length of the filename array
 
   ! Output
   integer(c_int), intent(out) :: dims_out(*)
+    !! Output array for dimensions
   integer(c_int), intent(out) :: ndims
+    !! Output variable for the number of dimensions
 
   ! Local variables
   character(len=:), allocatable :: filename
