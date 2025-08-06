@@ -23,11 +23,12 @@ before_script:
   # set up git
   - git config --global user.email "ci-bot@yourdomain.com"
   - git config --global user.name "CI Bot"
-  - |
-    function git-push() {
-      git add "${@:2}"
+  - git remote set-url origin @gitlab.com/your-namespace/your-project.git
+  - function git-push() {
+      git add ${@:2}
       git commit -m "$1 [skip ci]" || echo "No changes to commit"
-      git push https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git HEAD:$CI_COMMIT_BRANCH
+      git push origin main
+      git push https://oauth2:${JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git HEAD:$CI_COMMIT_BRANCH
     }
 
   # show versions
@@ -67,4 +68,4 @@ generate-docs:  # generate documentation after tests have passed
     - echo "generated documentation successfully"
 
     # add and commit changes to docs folder
-    - git-push "Update generated documentation" doc
+    - git-push "Update generated documentation" docs
