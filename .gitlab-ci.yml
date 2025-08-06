@@ -67,4 +67,4 @@ generate-docs:  # generate documentation after tests have passed
     - echo "generated documentation successfully"
 
     # add and commit changes to docs folder
-    - git-push "Update generated documentation" docs
+    - git-push "Update generated documentation" doc
