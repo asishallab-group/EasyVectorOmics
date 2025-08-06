@@ -23,8 +23,9 @@ before_script:
   # set up git
   - git config --global user.email "ci-bot@yourdomain.com"
   - git config --global user.name "CI Bot"
-  - function git-push() {
-      git add ${@:2}
+  - |
+    function git-push() {
+      git add "${@:2}"
       git commit -m "$1 [skip ci]" || echo "No changes to commit"
       git push https://gitlab-ci-token:${CI_JOB_TOKEN}@${CI_SERVER_HOST}/${CI_PROJECT_PATH}.git HEAD:$CI_COMMIT_BRANCH
     }
