@@ -47,7 +47,7 @@ generate-docs:  # generate documentation after tests have passed
       when: always
     - when: never
   needs:
-    - job: test
+    - job: run-tests
   script:
     # generate docs
     - ford ford.yml
