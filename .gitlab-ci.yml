@@ -46,6 +46,7 @@ run-tests:
       changes:
         - src/**
         - test/**
+        - test_runner.sh
       when: always
 
     # trigger only when a MR to 'main' is created and src/ or test/ changed
@@ -53,6 +54,7 @@ run-tests:
       changes:
         - src/**
         - test/**
+        - test_runner.sh
       when: always
 
     # prevent running on other branches outside MR context
@@ -69,6 +71,7 @@ generate-docs:  # generate documentation after tests have passed
       changes:
         - src/**
         - test/**
+        - ford.yml
       when: always
     - when: never
   needs:
