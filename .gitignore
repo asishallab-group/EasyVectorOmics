@@ -48,6 +48,7 @@
 latex.out/
 build/
 results/
+doc/
 
 ## Auxiliary and intermediate files from other packages:
 # algorithms

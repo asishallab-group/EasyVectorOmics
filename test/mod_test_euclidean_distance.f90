@@ -3,7 +3,7 @@
 module mod_test_euclidean_distance
   use asserts
   use tox_euclidean_distance
-  use, intrinsic :: iso_fortran_env, only: real64
+  use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
   public
 
@@ -47,7 +47,7 @@ contains
   !> @brief Run all euclidean distance tests.
   subroutine run_all_tests_euclidean_distance()
     type(test_case) :: all_tests(17)
-    integer :: i
+    integer(int32) :: i
     
     all_tests = get_all_tests()
     
@@ -62,7 +62,7 @@ contains
   subroutine run_named_tests_euclidean_distance(test_names)
     character(len=*), intent(in) :: test_names(:)
     type(test_case) :: all_tests(17)
-    integer :: i, j
+    integer(int32) :: i, j
     logical :: found
     
     all_tests = get_all_tests()
@@ -134,7 +134,7 @@ contains
   !> @brief Test euclidean distance with high-dimensional vectors.
   subroutine test_euclidean_distance_high_dim()
     real(real64) :: vec1(10), vec2(10), result, expected
-    integer :: i
+    integer(int32) :: i
     
     ! Create test vectors with unit shift
     do i = 1, 10
@@ -197,9 +197,9 @@ contains
 
   !> @brief Test basic distance_to_centroid functionality.
   subroutine test_distance_to_centroid_basic()
-    integer, parameter :: n_genes = 4, n_families = 2, d = 3
+    integer(int32), parameter :: n_genes = 4, n_families = 2, d = 3
     real(real64) :: genes(d, n_genes), centroids(d, n_families)
-    integer :: gene_to_fam(n_genes)
+    integer(int32) :: gene_to_fam(n_genes)
     real(real64) :: distances(n_genes)
     real(real64) :: expected_distances(n_genes)
     
@@ -235,9 +235,9 @@ contains
 
   !> @brief Test distance_to_centroid with single gene/family.
   subroutine test_distance_to_centroid_single()
-    integer, parameter :: n_genes = 1, n_families = 1, d = 2
+    integer(int32), parameter :: n_genes = 1, n_families = 1, d = 2
     real(real64) :: genes(d, n_genes), centroids(d, n_families)
-    integer :: gene_to_fam(n_genes)
+    integer(int32) :: gene_to_fam(n_genes)
     real(real64) :: distances(n_genes)
     
     genes(:, 1) = [1.0_real64, 2.0_real64]
@@ -252,11 +252,11 @@ contains
 
   !> @brief Test distance_to_centroid with high-dimensional case.
   subroutine test_distance_to_centroid_high_dim()
-    integer, parameter :: n_genes = 3, n_families = 1, d = 100
+    integer(int32), parameter :: n_genes = 3, n_families = 1, d = 100
     real(real64) :: genes(d, n_genes), centroids(d, n_families)
-    integer :: gene_to_fam(n_genes)
+    integer(int32) :: gene_to_fam(n_genes)
     real(real64) :: distances(n_genes)
-    integer :: i
+    integer(int32) :: i
     
     ! Initialize data
     do i = 1, d
@@ -278,9 +278,9 @@ contains
 
   !> @brief Test distance_to_centroid with invalid family indices.
   subroutine test_distance_to_centroid_invalid_families()
-    integer, parameter :: n_genes = 3, n_families = 2, d = 2
+    integer(int32), parameter :: n_genes = 3, n_families = 2, d = 2
     real(real64) :: genes(d, n_genes), centroids(d, n_families)
-    integer :: gene_to_fam(n_genes)
+    integer(int32) :: gene_to_fam(n_genes)
     real(real64) :: distances(n_genes)
     
     genes(:, 1) = [1.0_real64, 2.0_real64]
@@ -329,11 +329,11 @@ contains
 
   !> @brief Test performance with large-scale data.
   subroutine test_performance_large_scale()
-    integer, parameter :: n_genes = 1000, n_families = 10, d = 50
+    integer(int32), parameter :: n_genes = 1000, n_families = 10, d = 50
     real(real64) :: genes(d, n_genes), centroids(d, n_families)
-    integer :: gene_to_fam(n_genes)
+    integer(int32) :: gene_to_fam(n_genes)
     real(real64) :: distances(n_genes)
-    integer :: i, j
+    integer(int32) :: i, j
     
     ! Initialize test data
     do i = 1, n_genes
@@ -358,11 +358,11 @@ contains
 
   !> @brief Test column-major memory optimization.
   subroutine test_column_major_optimization()
-    integer, parameter :: n_genes = 3, n_families = 2, d = 4
+    integer(int32), parameter :: n_genes = 3, n_families = 2, d = 4
     real(real64) :: genes(d, n_genes), centroids(d, n_families)
-    integer :: gene_to_fam(n_genes)
+    integer(int32) :: gene_to_fam(n_genes)
     real(real64) :: distances(n_genes)
-    integer :: i
+    integer(int32) :: i
     
     ! Fill with known pattern to verify column-major access
     do i = 1, n_genes

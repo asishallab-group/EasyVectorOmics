@@ -2,7 +2,7 @@
 !> @brief Unit test suite for normalize_by_std_dev routine.
 module mod_test_normalize_by_std_dev
   use asserts
-  use, intrinsic :: iso_fortran_env, only: real64
+  use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
   public
 
@@ -42,7 +42,7 @@ contains
   !> @brief Run all normalize_by_std_dev tests.
   subroutine run_all_tests_normalize_by_std_dev()
     type(test_case) :: all_tests(13)
-    integer :: i
+    integer(int32) :: i
     
     all_tests = get_all_tests()
     
@@ -57,7 +57,7 @@ contains
   subroutine run_named_tests_normalize_by_std_dev(test_names)
     character(len=*), intent(in) :: test_names(:)
     type(test_case) :: all_tests(13)
-    integer :: i, j
+    integer(int32) :: i, j
     logical :: found
     
     all_tests = get_all_tests()
@@ -82,7 +82,7 @@ contains
   subroutine test_normalize_by_std_dev_basic()
     real(real64), dimension(2,2) :: mat, result, expected
     real(real64), dimension(2) :: std_dev
-    integer :: i, j
+    integer(int32) :: i, j
 
     mat = reshape([2.0d0, 4.0d0, 6.0d0, 8.0d0], [2,2])
     call normalize_by_std_dev_r(2, 2, mat, result)
@@ -100,7 +100,7 @@ contains
   !> @brief Test that normalize_by_std_dev handles constant rows (should normalize to 1).
   subroutine test_normalize_by_std_dev_constant_rows()
     real(real64), dimension(2,2) :: mat, result, expected
-    integer :: i, j
+    integer(int32) :: i, j
 
     mat = reshape([5.0d0, 5.0d0, 5.0d0, 5.0d0], [2,2])
     call normalize_by_std_dev_r(2, 2, mat, result)
@@ -115,7 +115,7 @@ contains
   subroutine test_normalize_by_std_dev_large_numbers()
     real(real64), dimension(2,2) :: mat, result, expected
     real(real64), dimension(2) :: std_dev
-    integer :: i, j
+    integer(int32) :: i, j
 
     mat = reshape([1e6, 2e6, 1e6, 2e6], [2,2])
     call normalize_by_std_dev_r(2, 2, mat, result)
@@ -135,7 +135,7 @@ contains
   !> @brief Test normalization of the identity matrix.
   subroutine test_identity_matrix()
     real(real64), dimension(3,3) :: mat, result
-    integer :: i, j
+    integer(int32) :: i, j
     mat = 0.0d0
     do i = 1, 3
       mat(i,i) = 1.0d0
@@ -162,7 +162,7 @@ contains
   subroutine test_negative_rows()
     real(real64), dimension(2,3) :: mat, result, expected
     real(real64), dimension(2) :: std_dev
-    integer :: i, j
+    integer(int32) :: i, j
     mat = reshape([-2.0d0, -4.0d0, -6.0d0, -8.0d0, -10.0d0, -12.0d0], [2,3])
     call normalize_by_std_dev_r(2, 3, mat, result)
     do i = 1, 2
@@ -176,11 +176,11 @@ contains
 
   !> @brief Test normalization of a large random matrix.
   subroutine test_large_random_matrix()
-    integer, parameter :: nrow=20, ncol=30
+    integer(int32), parameter :: nrow=20, ncol=30
     real(real64), dimension(nrow,ncol) :: mat, result
-    integer :: i
-    integer :: n_seed
-    integer, allocatable :: seed_array(:)
+    integer(int32) :: i
+    integer(int32) :: n_seed
+    integer(int32), allocatable :: seed_array(:)
     ! For reproducibility: initialize the random number generator seed
     call random_seed(size=n_seed)
     allocate(seed_array(n_seed))
@@ -198,7 +198,7 @@ contains
   !> @brief Test normalization of rows with a single nonzero value.
   subroutine test_single_nonzero()
     real(real64), dimension(2,4) :: mat, result, expected
-    integer :: i
+    integer(int32) :: i
 
     mat = 0.0d0
     mat(1,3) = 5.0d0
@@ -217,7 +217,7 @@ contains
   subroutine test_small_large_values()
     real(real64), dimension(2,2) :: mat, result, expected
     real(real64), dimension(2) :: std_dev
-    integer :: i, j
+    integer(int32) :: i, j
     mat = reshape([1e-10, 1e10, 1e-10, 1e10], [2,2])
     call normalize_by_std_dev_r(2, 2, mat, result)
     do i = 1, 2
@@ -243,7 +243,7 @@ contains
     real(real64), dimension(1,4) :: mat1, result1, expected1
     real(real64), dimension(4,1) :: mat2, result2
     real(real64) :: std_dev
-    integer :: j
+    integer(int32) :: j
 
     mat1 = reshape([2.0d0, 4.0d0, 6.0d0, 8.0d0], [1,4])
     call normalize_by_std_dev_r(1, 4, mat1, result1)
@@ -269,7 +269,7 @@ contains
   !> @brief Test normalization of symmetric rows.
   subroutine test_symmetric_rows()
     real(real64), dimension(2,3) :: mat, result
-    integer :: j
+    integer(int32) :: j
     mat(1,:) = [1.0d0, 2.0d0, 3.0d0]
     mat(2,:) = [2.0d0, 4.0d0, 6.0d0]
     call normalize_by_std_dev_r(2, 3, mat, result)
@@ -282,7 +282,7 @@ contains
   function isfinite_mat(arr) result(mask)
     real(real64), intent(in) :: arr(:,:)
     logical :: mask(size(arr,1), size(arr,2))
-    integer :: i, j
+    integer(int32) :: i, j
     do i = 1, size(arr,1)
       do j = 1, size(arr,2)
         mask(i,j) = abs(arr(i,j)) < huge(1.0d0)

@@ -2,7 +2,7 @@
 !| This module implements the angle-based metric for tissue versatility,
 !| quantifying how uniformly a gene is expressed across selected axes (tissues).
 module avmod
-  use, intrinsic :: iso_fortran_env, only: real64
+  use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
 contains
 
@@ -14,9 +14,9 @@ contains
                                              exp_vecs_selection_index, axes_selection, &
                                              tissue_versatilities, tissue_angles_deg)
     !| Number of axes (tissues/dimensions)
-    integer, intent(in) :: n_axes
+    integer(int32), intent(in) :: n_axes
     !| Number of expression vectors (genes)
-    integer, intent(in) :: n_vectors
+    integer(int32), intent(in) :: n_vectors
     !| 2D array (n_axes, n_vectors), each column is a gene expression vector
     real(real64), intent(in) :: expression_vectors(n_axes, n_vectors)
     !| Logical array (n_vectors), .TRUE. for vectors to process
@@ -28,7 +28,7 @@ contains
     !| Output, real array, length = count(exp_vecs_selection_index), stores the calculated angles in degrees
     real(real64), intent(out) :: tissue_angles_deg(count(exp_vecs_selection_index))
     ! Local variables
-    integer :: i_vec, i_axis, n_selected_axes, out_idx
+    integer(int32) :: i_vec, i_axis, n_selected_axes, out_idx
     real(real64) :: norm_diag, dot_prod, norm_v, cos_phi, angle_rad, norm_factor
     real(real64), parameter :: rad2deg = 180.0_real64 / acos(-1.0_real64)
 
@@ -89,9 +89,9 @@ pure subroutine compute_tissue_versatility_r(n_axes, n_vectors, expression_vecto
                                               tissue_versatilities, tissue_angles_deg)
   use avmod
   !| Number of axes (tissues/dimensions)
-  integer, intent(in) :: n_axes
+  integer(int32), intent(in) :: n_axes
   !| Number of expression vectors (genes)
-  integer, intent(in) :: n_vectors
+  integer(int32), intent(in) :: n_vectors
   !| 2D array (n_axes, n_vectors), each column is a gene expression vector
   real(real64), intent(in) :: expression_vectors(n_axes, n_vectors)
   !| Logical array (n_vectors), .TRUE. for vectors to process
@@ -131,7 +131,7 @@ pure subroutine compute_tissue_versatility_c(n_axes, n_vectors, n_selected, expr
   real(c_double), intent(out), target :: tissue_versatilities(n_selected)
   !| Output, real array, length = n_selected, stores the calculated angles in degrees for selected vectors
   real(c_double), intent(out), target :: tissue_angles_deg(n_selected)
-  integer :: i
+  integer(int32) :: i
   logical :: exp_vecs_selection_index_log(n_vectors)
   logical :: axes_selection_log(n_axes)
 

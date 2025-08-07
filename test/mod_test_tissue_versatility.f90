@@ -2,7 +2,7 @@
 module mod_test_tissue_versatility
   use asserts
   use avmod
-  use, intrinsic :: iso_fortran_env, only: real64
+  use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
   public
 
@@ -37,7 +37,7 @@ contains
   !> @brief Run all tissue versatility tests.
   subroutine run_all_tests_tissue_versatility()
     type(test_case) :: all_tests(11)
-    integer :: i
+    integer(int32) :: i
     all_tests = get_all_tests()
     do i = 1, size(all_tests)
       call all_tests(i)%test_proc()
@@ -50,7 +50,7 @@ contains
   subroutine run_named_tests_tissue_versatility(test_names)
     character(len=*), intent(in) :: test_names(:)
     type(test_case) :: all_tests(11)
-    integer :: i, j
+    integer(int32) :: i, j
     logical :: found
     all_tests = get_all_tests()
     do i = 1, size(test_names)
@@ -90,10 +90,10 @@ contains
 
   !> @brief Test tissue versatility with randomized vectors and axis selections.
   subroutine test_randomized_vectors_axes()
-    integer, parameter :: n_axes = 5, n_vecs = 4
+    integer(int32), parameter :: n_axes = 5, n_vecs = 4
     real(real64) :: expr(n_axes, n_vecs), tv(n_vecs), angle(n_vecs)
     logical :: select_vec(n_vecs), select_axes(n_axes)
-    integer :: i
+    integer(int32) :: i
     call random_seed()
     call random_number(expr)
     select_vec = [.true., .true., .true., .true.]

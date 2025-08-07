@@ -2,7 +2,7 @@
 !> @brief Unit test suite for quantile_normalization routine.
 module mod_test_quantile_normalization
   use asserts
-  use, intrinsic :: iso_fortran_env, only: real64
+  use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
   public
 
@@ -41,7 +41,7 @@ contains
   !> @brief Run all quantile_normalization tests.
   subroutine run_all_tests_quantile_normalization()
     type(test_case) :: all_tests(12)
-    integer :: i
+    integer(int32) :: i
     
     all_tests = get_all_tests()
     
@@ -56,7 +56,7 @@ contains
   subroutine run_named_tests_quantile_normalization(test_names)
     character(len=*), intent(in) :: test_names(:)
     type(test_case) :: all_tests(12)
-    integer :: i, j
+    integer(int32) :: i, j
     logical :: found
     
     all_tests = get_all_tests()
@@ -79,10 +79,10 @@ contains
 
   !> @brief Test that quantile normalization preserves matrix dimensions.
   subroutine test_qn_preserves_dimensions()
-    integer :: nrow, ncol, max_stack
+    integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(2,3) :: mat, result
     real(real64) :: temp_col(2), rank_means(2)
-    integer :: perm(2), stack_left(10), stack_right(10)
+    integer(int32) :: perm(2), stack_left(10), stack_right(10)
     
     nrow = 2; ncol = 3; max_stack = 10
     mat(:,1) = [0.1d0, 0.2d0]
@@ -97,10 +97,10 @@ contains
 
   !> @brief Test that quantile normalization handles identical rows correctly.
   subroutine test_qn_identical_rows()
-    integer :: nrow, ncol, max_stack
+    integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(2,3) :: mat, result, expected
     real(real64) :: temp_col(2), rank_means(2)
-    integer :: perm(2), stack_left(10), stack_right(10)
+    integer(int32) :: perm(2), stack_left(10), stack_right(10)
     
     nrow = 2; ncol = 3; max_stack = 10
     mat(1,:) = [5.0d0, 5.0d0, 5.0d0]
@@ -115,11 +115,11 @@ contains
 
   !> @brief Test that quantile normalization produces finite values and standardizes distributions.
   subroutine test_qn_no_nans_and_standardizes()
-    integer :: nrow, ncol, i, max_stack
+    integer(int32) :: nrow, ncol, i, max_stack
     real(real64), dimension(2,3) :: mat, result
     real(real64), allocatable :: sorted_cols(:,:)
     real(real64) :: temp_col(2), rank_means(2)
-    integer :: perm(2), stack_left(10), stack_right(10)
+    integer(int32) :: perm(2), stack_left(10), stack_right(10)
     
     nrow = 2; ncol = 3; max_stack = 10
     mat(:,1) = [2.0d0, 0.0d0]
@@ -147,10 +147,10 @@ contains
 
   !> @brief Test quantile normalization with single row matrix.
   subroutine test_qn_single_row()
-    integer :: nrow, ncol, max_stack
+    integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(1,4) :: mat, result, expected
     real(real64) :: temp_col(1), rank_means(1)
-    integer :: perm(1), stack_left(10), stack_right(10)
+    integer(int32) :: perm(1), stack_left(10), stack_right(10)
     real(real64) :: row_mean
     
     nrow = 1; ncol = 4; max_stack = 10
@@ -167,10 +167,10 @@ contains
 
   !> @brief Test quantile normalization with single column matrix.
   subroutine test_qn_single_column()
-    integer :: nrow, ncol, max_stack
+    integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(3,1) :: mat, result, expected
     real(real64) :: temp_col(3), rank_means(3)
-    integer :: perm(3), stack_left(10), stack_right(10)
+    integer(int32) :: perm(3), stack_left(10), stack_right(10)
     
     nrow = 3; ncol = 1; max_stack = 10
     mat(:,1) = [7.0d0, 2.0d0, 5.0d0]
@@ -184,10 +184,10 @@ contains
 
   !> @brief Test quantile normalization with all equal values.
   subroutine test_qn_all_equal()
-    integer :: nrow, ncol, max_stack
+    integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(4,4) :: mat, result, expected
     real(real64) :: temp_col(4), rank_means(4)
-    integer :: perm(4), stack_left(10), stack_right(10)
+    integer(int32) :: perm(4), stack_left(10), stack_right(10)
     
     nrow = 4; ncol = 4; max_stack = 10
     mat = 3.14d0
@@ -200,14 +200,14 @@ contains
 
   !> @brief Test quantile normalization with large random matrix.
   subroutine test_qn_large_random()
-    integer, parameter :: nrow=10, ncol=10
-    integer :: i, max_stack
+    integer(int32), parameter :: nrow=10, ncol=10
+    integer(int32) :: i, max_stack
     real(real64), dimension(nrow,ncol) :: mat, result
     real(real64), allocatable :: sorted_cols(:,:)
     real(real64) :: temp_col(nrow), rank_means(nrow)
-    integer :: perm(nrow), stack_left(100), stack_right(100)
-    integer :: n_seed
-    integer, allocatable :: seed_array(:)
+    integer(int32) :: perm(nrow), stack_left(100), stack_right(100)
+    integer(int32) :: n_seed
+    integer(int32), allocatable :: seed_array(:)
     max_stack = 100
     ! For reproducibility: initialize the random number generator seed
     call random_seed(size=n_seed)
@@ -231,10 +231,10 @@ contains
 
   !> @brief Test quantile normalization with negative values.
   subroutine test_qn_negative_values()
-    integer :: nrow, ncol, max_stack
+    integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(2,3) :: mat, result
     real(real64) :: temp_col(2), rank_means(2)
-    integer :: perm(2), stack_left(10), stack_right(10)
+    integer(int32) :: perm(2), stack_left(10), stack_right(10)
     
     nrow = 2; ncol = 3; max_stack = 10
     mat(:,1) = [-1.0d0, -2.0d0]
@@ -249,10 +249,10 @@ contains
 
   !> @brief Test quantile normalization with zero matrix.
   subroutine test_qn_zero_matrix()
-    integer :: nrow, ncol, max_stack
+    integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(3,3) :: mat, result, expected
     real(real64) :: temp_col(3), rank_means(3)
-    integer :: perm(3), stack_left(10), stack_right(10)
+    integer(int32) :: perm(3), stack_left(10), stack_right(10)
     
     nrow = 3; ncol = 3; max_stack = 10
     mat = 0.0d0
@@ -265,10 +265,10 @@ contains
 
   !> @brief Test quantile normalization with pre-sorted input.
   subroutine test_qn_sorted_input()
-    integer :: nrow, ncol, max_stack
+    integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(3,3) :: mat, result
     real(real64) :: temp_col(3), rank_means(3)
-    integer :: perm(3), stack_left(10), stack_right(10)
+    integer(int32) :: perm(3), stack_left(10), stack_right(10)
     
     nrow = 3; ncol = 3; max_stack = 10
     mat(:,1) = [1.0d0, 2.0d0, 3.0d0]
@@ -282,10 +282,10 @@ contains
 
   !> @brief Test quantile normalization with reverse sorted input.
   subroutine test_qn_reverse_sorted()
-    integer :: nrow, ncol, max_stack
+    integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(3,3) :: mat, result, expected
     real(real64) :: temp_col(3), rank_means(3)
-    integer :: perm(3), stack_left(10), stack_right(10)
+    integer(int32) :: perm(3), stack_left(10), stack_right(10)
     
     nrow = 3; ncol = 3; max_stack = 10
     mat(:,1) = [3.0d0, 3.0d0, 3.0d0]
@@ -300,10 +300,10 @@ contains
 
   !> @brief Test edge cases for quantile normalization.
   subroutine test_qn_edge_cases()
-    integer :: nrow, ncol, max_stack
+    integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(2,2) :: mat, result
     real(real64) :: temp_col(2), rank_means(2)
-    integer :: perm(2), stack_left(10), stack_right(10)
+    integer(int32) :: perm(2), stack_left(10), stack_right(10)
     
     nrow = 2; ncol = 2; max_stack = 10
     mat = reshape([1e-10, 1e10, 1e-5, 1e5], [2,2])
@@ -318,7 +318,7 @@ contains
   function isfinite_mat(arr) result(mask)
     real(real64), intent(in) :: arr(:,:)
     logical :: mask(size(arr,1), size(arr,2))
-    integer :: i, j
+    integer(int32) :: i, j
     do i = 1, size(arr,1)
       do j = 1, size(arr,2)
         mask(i,j) = abs(arr(i,j)) < huge(arr(i,j)) .and. arr(i,j) == arr(i,j)
@@ -330,7 +330,7 @@ contains
   function isnan_mat(arr) result(mask)
     real(real64), intent(in) :: arr(:,:)
     logical :: mask(size(arr,1), size(arr,2))
-    integer :: i, j
+    integer(int32) :: i, j
     do i = 1, size(arr,1)
       do j = 1, size(arr,2)
         mask(i,j) = arr(i,j) /= arr(i,j)
@@ -342,7 +342,7 @@ contains
   function sort_vec(vec) result(sorted)
     real(real64), intent(in) :: vec(:)
     real(real64) :: sorted(size(vec))
-    integer :: i, j
+    integer(int32) :: i, j
     sorted = vec
     do i = 1, size(vec)-1
       do j = i+1, size(vec)

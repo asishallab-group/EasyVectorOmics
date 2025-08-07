@@ -14,18 +14,23 @@ dll_path = os.path.abspath("build/libtensor-omics.so")
 ctypes.CDLL("libgomp.so.1", mode=ctypes.RTLD_GLOBAL)
 lib = ctypes.CDLL(dll_path)
 
+import numpy as np
+import ctypes
+
 def setup_tissue_versatility():
-    """Setup tissue versatility C wrapper"""
+    """Setup tissue versatility C wrapper using ndpointer for safety"""
     tv = lib.compute_tissue_versatility_c
     tv.argtypes = [
-        ctypes.c_int,                    # n_axes
-        ctypes.c_int,                    # n_vectors
-        ctypes.c_int,                    # n_selected
-        ctypes.POINTER(ctypes.c_double), # expression_vectors
-        ctypes.POINTER(ctypes.c_int),    # exp_vecs_selection_index
-        ctypes.POINTER(ctypes.c_int),    # axes_selection
-        ctypes.POINTER(ctypes.c_double), # tissue_versatilities
-        ctypes.POINTER(ctypes.c_double), # tissue_angles_deg
+        ctypes.c_int,  # n_axes
+        ctypes.c_int,  # n_vectors
+        ctypes.c_int,  # n_selected
+
+        # Use ndpointer for arrays
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # expression_vectors (Fortran order)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # exp_vecs_selection_index
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # axes_selection
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # tissue_versatilities
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # tissue_angles_deg
     ]
     tv.restype = None
     return tv
@@ -34,24 +39,29 @@ def tv_call(expr, select_vec, select_axes):
     """Call the C wrapper for tissue versatility, return dict of results"""
     n_axes = expr.shape[0]
     n_vectors = expr.shape[1]
-    select_vec = np.array(select_vec, dtype=np.int32)
-    select_axes = np.array(select_axes, dtype=np.int32)
-    n_selected = int(np.sum(select_vec))
-    tissue_versatilities = np.zeros(n_selected, dtype=np.float64)
-    tissue_angles_deg = np.zeros(n_selected, dtype=np.float64)
-    # Fortran expects column-major order
+
+    # Ensure arrays have correct dtype and memory layout
     expr_f = np.asfortranarray(expr, dtype=np.float64)
+    select_vec = np.ascontiguousarray(select_vec, dtype=np.int32)
+    select_axes = np.ascontiguousarray(select_axes, dtype=np.int32)
+
+    n_selected = int(np.sum(select_vec))
+    tissue_versatilities = np.empty(n_selected, dtype=np.float64)
+    tissue_angles_deg = np.empty(n_selected, dtype=np.float64)
+
+    # Call the C/Fortran wrapper
     tv = setup_tissue_versatility()
     tv(
-        ctypes.c_int(n_axes),
-        ctypes.c_int(n_vectors),
-        ctypes.c_int(n_selected),
-        expr_f.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-        select_vec.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
-        select_axes.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
-        tissue_versatilities.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-        tissue_angles_deg.ctypes.data_as(ctypes.POINTER(ctypes.c_double))
+        n_axes,
+        n_vectors,
+        n_selected,
+        expr_f,
+        select_vec,
+        select_axes,
+        tissue_versatilities,
+        tissue_angles_deg
     )
+
     return {
         'tissue_versatilities': tissue_versatilities,
         'tissue_angles_deg': tissue_angles_deg
@@ -59,11 +69,12 @@ def tv_call(expr, select_vec, select_axes):
 
 # 1. Uniform expression (should yield TV=0)
 def test_uniform_expression():
-    expr = np.full((3,1), 2.0)
-    res = tv_call(expr, [1], [1,1,1])
+    expr = np.full((3, 1), 2.0)
+    res = tv_call(expr, [1], [1, 1, 1])
     assert abs(res['tissue_versatilities'][0]) < 1e-12
     assert abs(res['tissue_angles_deg'][0]) < 1e-12
     print("test_uniform_expression passed")
+
 
 # 2. Single axis expression (should yield TV=1)
 def test_single_axis_expression():
