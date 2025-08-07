@@ -2,8 +2,3 @@ project: TensorOmics
 output_dir: doc
 docmark: "!"
 author: TensorOmics Developers
-summary: >
-  Fortran subroutines for normalizing gene expression data..
-doc_block_style: doxygen
-files:
-  - src/*.f90

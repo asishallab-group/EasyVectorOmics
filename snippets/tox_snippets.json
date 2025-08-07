@@ -35,35 +35,35 @@
       ],
       "description": "Calculate average expression per tissue group from replicates"
     },
-    
-    "Call to calc_fchange": {
-      "prefix": "tox:norm_fchange",
-      "body": [
-        "! Calculate log2 fold changes between condition and control pairs",
-        "call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)"
-      ],
-      "description": "Calculate log2 fold changes between condition-control pairs"
-    },
+  
+  "Call to calc_fchange": {
+    "prefix": "tox:norm_fchange",
+    "body": [
+      "! Calculate log2 fold changes between condition and control pairs",
+      "call calc_fchange_r(n_genes, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)"
+    ],
+    "description": "Calculate log2 fold changes between condition-control pairs"
+  },
 
-    "Call to euclidean_distance": {
-      "prefix": "tox:euclidean_distance",
-      "body": [
-        "! Calculate Euclidean distance between two vectors",
-        "call euclidean_distance(vec1, vec2, d, result)"
-      ],
-      "description": "Invoke Euclidean distance calculation between two vectors"
-    },
+  "Call to euclidean_distance": {
+    "prefix": "tox:euclidean_distance",
+    "body": [
+      "! Calculate Euclidean distance between two vectors",
+      "call euclidean_distance(vec1, vec2, d, result)"
+    ],
+    "description": "Invoke Euclidean distance calculation between two vectors"
+  },
 
-    "Call to distance_to_centroid": {
-      "prefix": "tox:distance_to_centroid",
-      "body": [
-        "! Calculate distance from each gene to its family centroid",
-        "call distance_to_centroid(n_genes, n_families, genes, centroids, &",
-        "                          gene_to_fam, distances, d)"
-      ],
-      "description": "Invoke distance calculation from genes to family centroids"
-    },
-    
+  "Call to distance_to_centroid": {
+    "prefix": "tox:distance_to_centroid",
+    "body": [
+      "! Calculate distance from each gene to its family centroid",
+      "call distance_to_centroid(n_genes, n_families, genes, centroids, &",
+      "  gene_to_fam, distances, d)"
+    ],
+    "description": "Invoke distance calculation from genes to family centroids"
+  },
+  
   "Wrapper R": {
     "prefix": "wrapper_r",
     "body": [
@@ -222,39 +222,36 @@
   "C call to normalize_by_std_dev": {
     "prefix": "tox:C_norm_by_std_dev",
     "body": [
-    "def setup_normalize_by_std_dev():",
-    "    \"\"\"Setup normalize function\"\"\"",
-    "    normalize = lib.normalize_by_std_dev_c",
-    "    normalize.argtypes = [",
-    "        ctypes.c_int, ctypes.c_int,",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+    "    lib.normalize_by_std_dev_c.argtypes = [",
+    "        ctypes.c_int, # n_genes",
+    "        ctypes.c_int, # n_tissues",
+    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), # input_matrix",
+    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), # output_matrix",
     "    ]",
-    "    normalize.restype = None",
-    "    return normalize"
+    "    lib.normalize_by_std_dev_c.restype = None",
+    "    lib.normalize_by_std_dev_c(n_genes, n_tissues, input_matrix, output_matrix)"
     ],
+
     "description": "Setup normalize_by_std_dev_c function binding"
   },
 
   "C call to quantile_normalization": {
     "prefix": "tox:C_quantile_norm",
     "body": [
-    "def setup_quantile():",
-    "    \"\"\"Setup quantile normalization function\"\"\"",
-    "    quantile_norm = lib.quantile_normalization_c",
-    "    quantile_norm.argtypes = [",
-    "        ctypes.c_int, ctypes.c_int,",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-    "        ctypes.c_int",
+    "    lib.quantile_normalization_c.argtypes = [",
+    "        ctypes.c_int, # n_genes", 
+    "        ctypes.c_int, # n_tissues",
+    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), # input_matrix",
+    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), # output_matrix",
+    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), # temp_col",
+    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), # rank_means",
+    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"), # perm",
+    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"), # stack_left",
+    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"), # stack_right",
+    "        ctypes.c_int, max_stack",
     "    ]",
-    "    quantile_norm.restype = None",
-    "    return quantile_norm"
+    "    lib.quantile_normalization_c.restype = None",
+    "    lib.quantile_normalization_c(n_genes, n_tissues, input_matrix, output_matrix, temp_col, rank_means, perm, stack_left, stack_right, max_stack)"
     ],
     "description": "Setup quantile_normalization_c function binding"
   },
@@ -262,16 +259,15 @@
   "C call to log2_transformation": {
     "prefix": "tox:C_norm_log2_trans",
     "body": [
-    "def setup_log2():",
-    "    \"\"\"Setup log2 transformation function\"\"\"",
-    "    log2_transform = lib.log2_transformation_c",
-    "    log2_transform.argtypes = [",
-    "        ctypes.c_int, ctypes.c_int,",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+    "    lib.log2_transformation_c.argtypes = [",
+    "        ctypes.c_int, # n_genes ",
+    "        ctypes.c_int, # n_tissues",
+    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), # input_matrix",
+    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), # output_matrix",
     "    ]",
-    "    log2_transform.restype = None",
-    "    return log2_transform"
+    "    lib.log2_transformation_c.restype = None",
+    "    lib.log2_transformation_c(n_genes, n_tissues, input_matrix, output_matrix)"
+
     ],
     "description": "Setup log2_transformation_c function binding"
   },
@@ -279,18 +275,17 @@
   "C call to calc_tiss_avg": {
     "prefix": "tox:C_calc_tiss_avg",
     "body": [
-    "def setup_calc_tiss_avg():",
-    "    \"\"\"Setup tissue averaging function\"\"\"",
-    "    tiss_avg = lib.calc_tiss_avg_c",
-    "    tiss_avg.argtypes = [",
-    "        ctypes.c_int, ctypes.c_int,",
-    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+    "    lib.calc_tiss_avg_c.argtypes = [",
+    "        ctypes.c_int, # n_gene", 
+    "        ctypes.c_int, # n_grps",
+    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"), # group_s",
+    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"), # group_c",
+    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), # input_matrix",
+    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), # output_matrix",
     "    ]",
-    "    tiss_avg.restype = None",
-    "    return tiss_avg"
+    "    lib.calc_tiss_avg_c.restype = None",
+    "    lib.calc_tiss_avg_c(n_genes, n_grps, group_s, group_c, input_matrix, output_matrix)"
+
     ],
     "description": "Setup calc_tiss_avg_c function binding"
   },
@@ -298,18 +293,17 @@
   "C call to calc_fchange": {
     "prefix": "tox:C_calc_fchange",
     "body": [
-    "def setup_calc_fchange():",
-    "    \"\"\"Setup fold change function\"\"\"",
-    "    fchange = lib.calc_fchange_c",
-    "    fchange.argtypes = [",
-    "        ctypes.c_int, ctypes.c_int,",
-    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+    "    lib.calc_fchange_c.argtypes = [",
+    "        ctypes.c_int, # n_genes ",
+    "        ctypes.c_int, # n_cols",
+    "        ctypes.c_int,  # n_pairs",
+    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"), control_cols",
+    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"), cond_cols",
+    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), i_matrix",
+    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), o_matrix",
     "    ]",
-    "    fchange.restype = None",
-    "    return fchange"
+    "    lib.calc_fchange_c.restype = None",
+    "    lib.calc_fchange_c(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)"
     ],
     "description": "Setup calc_fchange_c function binding"
   },
@@ -317,17 +311,15 @@
   "C call to euclidean_distance": {
     "prefix": "tox:C_euclidean_distance",
     "body": [
-    "def setup_euclidean_distance():",
-    "    \"\"\"Setup euclidean distance function\"\"\"",
-    "    euclidean_dist = lib.euclidean_distance_c",
-    "    euclidean_dist.argtypes = [",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-    "        ctypes.c_int,",
-    "        ctypes.POINTER(ctypes.c_double)",
+    "    lib.euclidean_distance_c.argtypes = [",
+    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), # vec1",
+    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), # vec2",
+    "        ctypes.c_int, # dimension",
+    "        ctypes.POINTER(ctypes.c_double) # result",
     "    ]",
-    "    euclidean_dist.restype = None",
-    "    return euclidean_dist"
+    "    lib.euclidean_distance_c.restype = None",
+    "    lib.euclidean_distance_c(vec1, vec2, dimension, result)"
+
     ],
     "description": "Setup euclidean_distance_c function binding"
   },
@@ -335,19 +327,18 @@
   "C call to distance_to_centroid": {
   "prefix": "tox:C_distance_to_centroid",
     "body": [
-    "def setup_distance_to_centroid():",
-    "    \"\"\"Setup distance to centroid function\"\"\"",
-    "    dist_to_centroid = lib.distance_to_centroid_c",
-    "    dist_to_centroid.argtypes = [",
-    "        ctypes.c_int, ctypes.c_int,",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-    "        ctypes.c_int",
+    "    lib.distance_to_centroid_c.argtypes = [",
+    "    ctypes.c_int,  # n_genes",
+    "    ctypes.c_int,  # n_families",
+    "    np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # genes",
+    "    np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # centroids",
+    "    np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # gene_to_fam",
+    "    np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # distances",
+    "    ctypes.c_int   # dimension",
     "    ]",
-    "    dist_to_centroid.restype = None",
-    "    return dist_to_centroid"
+    "    lib.distance_to_centroid_c.restype = None",
+    "    lib.distance_to_centroid_c(n_genes, n_families, genes, centroids, gene_to_fam, distances, dimension)"
+
     ],
     "description": "Setup distance_to_centroid_c function binding"
   },
@@ -367,7 +358,7 @@
     "prefix": "tox:compute_rdi",
     "body": [
       "! Compute RDI (Relative Distance Index) for each gene",
-      "call compute_rdi(n_genes, distances, gene_to_fam, dscale, rdi)"
+      "call compute_rdi(n_genes, distances, gene_to_fam, dscale, rdi, sorted_rdi, perm, stack_left, stack_right)"
     ],
     "description": "Call compute_rdi Fortran subroutine for gene outlier detection"
   },
@@ -376,7 +367,7 @@
     "prefix": "tox:identify_outliers",
     "body": [
       "! Identify gene outliers based on RDI and percentile threshold",
-      "call identify_outliers(n_genes, rdi, sorted_rdi, perm, stack_left, stack_right, is_outlier, threshold, percentile)"
+      "call identify_outliers(n_genes, rdi, sorted_rdi, is_outlier, threshold, percentile)"
     ],
     "description": "Call identify_outliers Fortran subroutine for gene outlier detection"
   },
@@ -438,6 +429,10 @@
       "gene_to_fam <- as.integer(${4:gene_to_fam})",
       "dscale <- as.double(${5:dscale})",
       "rdi <- double(n_genes)",
+      "sorted_rdi <- double(length(distances))",
+      "perm <- as.integer(seq_along(distances))",
+      "stack_left <- integer(length(distances))",
+      "stack_right <- integer(length(distances))",
       "result <- .Fortran(\"compute_rdi_r\",",
       "  n_genes = n_genes,",
       "  n_families = n_families,",
@@ -445,6 +440,10 @@
       "  gene_to_fam = gene_to_fam,",
       "  dscale = dscale,",
       "  rdi = rdi",
+      "  sorted_rdi = sorted_rdi,",
+      "  perm = perm,",
+      "  stack_left = stack_left,",
+      "  stack_right = stack_right",
       ")"
     ],
     "description": "Call compute_rdi_r Fortran function from R, with explicit array initializations"
@@ -519,27 +518,25 @@
     "C call for compute_family_scaling": {
     "prefix": "tox:setup_py_compute_family_scaling_c",
     "body": [
-      "def setup_compute_family_scaling():",
-      "    \"\"\"Setup compute_family_scaling_c function\"\"\"",
-      "    func = lib.compute_family_scaling_c",
-      "    func.argtypes = [",
-      "        ctypes.c_int, ctypes.c_int,",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\")",
+      "    lib.compute_family_scaling_c.argtypes = [",
+      "        ctypes.c_int,  # n_genes",
+      "        ctypes.c_int,  # n_families",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # distances (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # gene_to_fam (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # dscale (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # loess_x (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # loess_y (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # indices_used (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # perm_tmp (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # stack_left_tmp (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # stack_right_tmp (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # workspace_weights (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # workspace_values (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # error_code (1,)",
       "    ]",
-      "    func.restype = None",
+      "    lib.compute_family_scaling_c.restype = None",
+      "    lib.compute_family_scaling_c(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)",
+
       "    return func"
     ],
     "description": "Setup compute_family_scaling_c function binding for Python/ctypes"
@@ -547,70 +544,62 @@
   "C call for compute_rdi": {
     "prefix": "tox:setup_py_compute_rdi_c",
     "body": [
-      "def setup_compute_rdi():",
-      "    \"\"\"Setup compute_rdi_c function\"\"\"",
-      "    func = lib.compute_rdi_c",
-      "    func.argtypes = [",
-      "        ctypes.c_int, ctypes.c_int,",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\")",
+      "    lib.compute_rdi_c.argtypes = [",
+      "        ctypes.c_int,  # n_genes",
+      "        ctypes.c_int,  # n_families",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # distances (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # gene_to_fam (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # dscale (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # rdi (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # sorted_rdi (n,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # perm (n,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # stack_left (n,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # stack_right (n,)",
       "    ]",
-      "    func.restype = None",
-      "    return func"
+      "    lib.compute_rdi_c.restype = None",
+      "    lib.compute_rdi_c(n_genes, n_families, distances, gene_to_fam, dscale, rdi, sorted_rdi, perm, stack_left, stack_right)"
     ],
     "description": "Setup compute_rdi_c function binding for Python/ctypes"
   },
   "C call for identify_outliers": {
     "prefix": "tox:setup_py_identify_outliers_c",
     "body": [
-      "def setup_identify_outliers():",
-      "    \"\"\"Setup identify_outliers_c function\"\"\"",
-      "    func = lib.identify_outliers_c",
-      "    func.argtypes = [",
-      "        ctypes.c_int,",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        ctypes.POINTER(ctypes.c_double),",
-      "        ctypes.c_double",
+      "    lib.identify_outliers_c.argtypes = [",
+      "        ctypes.c_int,  # n",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # rdi (n,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # sorted_rdi (n,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # is_outlier (n,)",
+      "        ctypes.POINTER(ctypes.c_double),                                  # threshold (scalar)",
+      "        ctypes.c_double                                                   # percentile (scalar)",
       "    ]",
-      "    func.restype = None",
-      "    return func"
+      "    lib.identify_outliers_c.restype = None",
+      "    lib.identify_outliers_c(n, rdi, sorted_rdi, is_outlier, threshold, percentile)"
     ],
     "description": "Setup identify_outliers_c function binding for Python/ctypes"
   },
   "C call for detect_outliers": {
     "prefix": "tox:setup_py_detect_outliers_c",
     "body": [
-      "def setup_detect_outliers():",
-      "    \"\"\"Setup detect_outliers_c function\"\"\"",
-      "    func = lib.detect_outliers_c",
-      "    func.argtypes = [",
-      "        ctypes.c_int, ctypes.c_int,",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        ctypes.c_double,",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\")",
+      "    lib.detect_outliers_c.argtypes = [",
+      "        ctypes.c_int,  # n_genes ",
+      "        ctypes.c_int,  # n_families",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # distances (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # gene_to_fam (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # work_array (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # perm (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # stack_left (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # stack_right (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # is_outlier (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # loess_x (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # loess_y (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # loess_n (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # workspace_weights (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # workspace_values (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # error_code (1,)",
+      "        ctypes.c_double                                                  # percentile (scalar)",
       "    ]",
-      "    func.restype = None",
-      "    return func"
+      "    lib.detect_outliers_c.restype = None",
+      "    lib.detect_outliers_c(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, percentile)"
     ],
     "description": "Setup detect_outliers_c function binding for Python/ctypes"
   }

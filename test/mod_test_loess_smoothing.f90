@@ -4,7 +4,7 @@
 
 module mod_test_loess_smoothing
   use f42_utils
-  use, intrinsic :: iso_fortran_env, only: real64
+  use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
   public
 
@@ -41,7 +41,7 @@ contains
   !> @brief Run all LOESS smoothing tests.
   subroutine run_all_tests_loess_smoothing()
     type(test_case) :: all_tests(11)
-    integer :: i
+    integer(int32) :: i
     all_tests = get_all_tests()
     do i = 1, size(all_tests)
       call all_tests(i)%test_proc()
@@ -54,7 +54,7 @@ contains
   subroutine run_named_tests_loess_smoothing(test_names)
     character(len=*), intent(in) :: test_names(:)
     type(test_case) :: all_tests(11)
-    integer :: i, j
+    integer(int32) :: i, j
     logical :: found
     all_tests = get_all_tests()
     do i = 1, size(test_names)
@@ -74,9 +74,9 @@ contains
   end subroutine run_named_tests_loess_smoothing
 
   subroutine test_loess_constant_input()
-    integer, parameter :: n = 100
+    integer(int32), parameter :: n = 100
     real(real64) :: x_ref(n), y_ref(n), x_query(n/2), y_out(n/2)
-    integer :: indices_used(n), i
+    integer(int32) :: indices_used(n), i
     real(real64) :: workspace_weights(n), workspace_values(n)
     x_ref = 5.0_real64; y_ref = 10.0_real64; x_query = 5.0_real64; indices_used = [(i, i = 1, n)]
     call loess_smooth_2d(n, n/2, x_ref, y_ref, indices_used, x_query, 1.0_real64, 3.0_real64, y_out, &
@@ -89,9 +89,9 @@ contains
   end subroutine
 
   subroutine test_loess_linear_trend()
-    integer, parameter :: n = 100
+    integer(int32), parameter :: n = 100
     real(real64) :: x_ref(n), y_ref(n), x_query(n/2), y_out(n/2)
-    integer :: indices_used(n), i
+    integer(int32) :: indices_used(n), i
     real(real64) :: workspace_weights(n), workspace_values(n)
     x_ref = [(real(i, kind=real64), i = 1, n)]
     y_ref = 0.5_real64 * x_ref
@@ -107,9 +107,9 @@ contains
   end subroutine
 
   subroutine test_loess_outlier_suppression()
-    integer, parameter :: n = 100
+    integer(int32), parameter :: n = 100
     real(real64) :: x_ref(n), y_ref(n), x_query(50), y_out(50)
-    integer :: indices_used(n), i
+    integer(int32) :: indices_used(n), i
     real(real64) :: workspace_weights(n), workspace_values(n)
     x_ref(1:n-1) = 10.0_real64
     x_ref(n) = 100.0_real64
@@ -127,9 +127,9 @@ contains
   end subroutine
 
   subroutine test_loess_sparse_fallback()
-    integer, parameter :: n = 100
+    integer(int32), parameter :: n = 100
     real(real64) :: x_ref(n), y_ref(n), x_query(50), y_out(50)
-    integer :: indices_used(n), i
+    integer(int32) :: indices_used(n), i
     real(real64) :: workspace_weights(n), workspace_values(n)
     x_ref = [(real(i, kind=real64) * 100.0_real64, i = 1, n)]
     y_ref = [(real(i, kind=real64), i = 1, n)]
@@ -160,7 +160,7 @@ contains
 
   subroutine test_loess_identical_points()
     real(real64) :: x2(2), y2(2), xq2(1), yout2(1)
-    integer :: idx2(2)
+    integer(int32) :: idx2(2)
     real(real64) :: workspace_weights(2), workspace_values(2)
     x2 = (/0.0_real64, 1.0_real64/); y2 = (/1.0_real64, 1.0_real64/); xq2 = 0.0_real64; idx2 = (/1,2/)
     call loess_smooth_2d(2, 1, x2, y2, idx2, xq2, 0.1_real64, 1.0_real64, yout2, workspace_weights, workspace_values)
@@ -173,7 +173,7 @@ contains
 
   subroutine test_loess_linear_interp()
     real(real64) :: x3(2), y3(2), xq3(1), yout3(1)
-    integer :: idx3(2)
+    integer(int32) :: idx3(2)
     real(real64) :: workspace_weights(2), workspace_values(2)
     x3 = (/0.0_real64, 2.0_real64/); y3 = (/0.0_real64, 2.0_real64/); xq3 = 1.0_real64; idx3 = (/1,2/)
     call loess_smooth_2d(2, 1, x3, y3, idx3, xq3, 0.5_real64, 3.0_real64, yout3, workspace_weights, workspace_values)
@@ -186,7 +186,7 @@ contains
 
   subroutine test_loess_weight_decay()
     real(real64) :: x2(2), y2(2), xq2(1), yout2(1)
-    integer :: idx2(2)
+    integer(int32) :: idx2(2)
     real(real64) :: workspace_weights(2), workspace_values(2)
     x2 = (/0.0_real64, 10.0_real64/); y2 = (/0.0_real64, 10.0_real64/); xq2 = 0.0_real64; idx2 = (/1,2/)
     call loess_smooth_2d(2, 1, x2, y2, idx2, xq2, 1.0_real64, 3.0_real64, yout2, workspace_weights, workspace_values)
@@ -199,7 +199,7 @@ contains
 
   subroutine test_loess_mask_exclusion()
     real(real64) :: x3(3), y3(3), xq3(1), yout3(1)
-    integer :: idx3(3)
+    integer(int32) :: idx3(3)
     real(real64) :: workspace_weights(3), workspace_values(3)
     logical :: mask3(3)
     x3 = (/0.0_real64, 10.0_real64, 20.0_real64/)
@@ -232,7 +232,7 @@ contains
   subroutine test_loess_edge_query()
     ! Test edge query points (extrapolation)
     real(real64) :: x(5), y(5), xq(2), yout(2)
-    integer :: idx(5)
+    integer(int32) :: idx(5)
     real(real64) :: workspace_weights(5), workspace_values(5)
     x = (/1.0, 2.0, 3.0, 4.0, 5.0/)
     y = (/10.0, 20.0, 30.0, 40.0, 50.0/)

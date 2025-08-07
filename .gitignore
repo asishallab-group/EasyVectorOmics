@@ -46,6 +46,8 @@
 ## Build tool directories for auxiliary files
 # latexrun
 latex.out/
+build/
+doc/
 
 ## Auxiliary and intermediate files from other packages:
 # algorithms

@@ -3,6 +3,8 @@
 module mod_test_sorting
   use f42_utils
   use asserts
+  use, intrinsic :: iso_fortran_env, only: real64, int32
+
   implicit none
   public
 
@@ -38,7 +40,7 @@ contains
   !> @brief Run all sorting tests.
   subroutine run_all_tests_sorting()
     type(test_case) :: all_tests(9)
-    integer :: i
+    integer(int32) :: i
     
     all_tests = get_all_tests()
     
@@ -53,7 +55,7 @@ contains
   subroutine run_named_tests_sorting(test_names)
     character(len=*), intent(in) :: test_names(:)
     type(test_case) :: all_tests(9)
-    integer :: i, j
+    integer(int32) :: i, j
     logical :: found
     
     all_tests = get_all_tests()
@@ -76,9 +78,9 @@ contains
 
   !> @brief Test sorting of a real array using permutation vector.
   subroutine test_sort_real()
-    real(8), dimension(5) :: data = [3.0d0, 1.0d0, 5.0d0, 2.0d0, 4.0d0]
-    integer, dimension(5) :: perm, expected = [2, 4, 1, 5, 3]
-    integer :: stack_left(20), stack_right(20), i
+    real(real64), dimension(5) :: data = [3.0d0, 1.0d0, 5.0d0, 2.0d0, 4.0d0]
+    integer(int32), dimension(5) :: perm, expected = [2, 4, 1, 5, 3]
+    integer(int32) :: stack_left(20), stack_right(20), i
     
     perm = [(i, i = 1, 5)]
     call sort_array(data, perm, stack_left, stack_right)
@@ -88,10 +90,10 @@ contains
 
   !> @brief Test sorting of an integer array using permutation vector.
   subroutine test_sort_integer()
-    integer, dimension(4) :: data = [10, 3, 7, 1]
-    integer, dimension(4) :: perm, expected = [4, 2, 3, 1]
-    integer :: stack_left(20), stack_right(20)
-    integer :: i
+    integer(int32), dimension(4) :: data = [10, 3, 7, 1]
+    integer(int32), dimension(4) :: perm, expected = [4, 2, 3, 1]
+    integer(int32) :: stack_left(20), stack_right(20)
+    integer(int32) :: i
     
     perm = [(i, i = 1, 4)]
     call sort_array(data, perm, stack_left, stack_right)
@@ -102,9 +104,9 @@ contains
   !> @brief Test sorting of a character array using permutation vector.
   subroutine test_sort_character()
     character(len=6), dimension(3) :: data = ['delta ', 'alpha ', 'beta  ']
-    integer, dimension(3) :: perm, expected = [2, 3, 1]
-    integer :: stack_left(20), stack_right(20)
-    integer :: i
+    integer(int32), dimension(3) :: perm, expected = [2, 3, 1]
+    integer(int32) :: stack_left(20), stack_right(20)
+    integer(int32) :: i
     
     perm = [(i, i = 1, 3)]
     call sort_array(data, perm, stack_left, stack_right)
@@ -114,10 +116,10 @@ contains
 
   !> @brief Test that sorted values are in ascending order for integers.
   subroutine test_sort_integer_ascending()
-    integer, dimension(5) :: data = [5, 2, 9, 1, 6]
-    integer, dimension(5) :: perm, expected_sorted = [1, 2, 5, 6, 9]
-    integer :: stack_left(20), stack_right(20)
-    integer :: i
+    integer(int32), dimension(5) :: data = [5, 2, 9, 1, 6]
+    integer(int32), dimension(5) :: perm, expected_sorted = [1, 2, 5, 6, 9]
+    integer(int32) :: stack_left(20), stack_right(20)
+    integer(int32) :: i
     
     perm = [(i, i = 1, 5)]
     call sort_array(data, perm, stack_left, stack_right)
@@ -127,11 +129,11 @@ contains
 
   !> @brief Test that sorted values are in ascending order for reals.
   subroutine test_sort_real_descending()
-    real(8), dimension(5) :: data = [3.5d0, 2.2d0, 8.8d0, 1.1d0, 7.7d0]
-    real(8), dimension(5) :: expected_sorted = [1.1d0, 2.2d0, 3.5d0, 7.7d0, 8.8d0]
-    integer, dimension(5) :: perm
-    integer :: stack_left(20), stack_right(20)
-    integer :: i
+    real(real64), dimension(5) :: data = [3.5d0, 2.2d0, 8.8d0, 1.1d0, 7.7d0]
+    real(real64), dimension(5) :: expected_sorted = [1.1d0, 2.2d0, 3.5d0, 7.7d0, 8.8d0]
+    integer(int32), dimension(5) :: perm
+    integer(int32) :: stack_left(20), stack_right(20)
+    integer(int32) :: i
     
     perm = [(i, i = 1, 5)]
     call sort_array(data, perm, stack_left, stack_right)
@@ -144,9 +146,9 @@ contains
   subroutine test_sort_char_random()
     character(len=8), dimension(5) :: data = ['dog     ', 'apple   ', 'zebra   ', 'cat     ', 'bird    ']
     character(len=8), dimension(5) :: expected = ['apple   ', 'bird    ', 'cat     ', 'dog     ', 'zebra   ']
-    integer, dimension(5) :: perm
-    integer :: stack_left(20), stack_right(20)
-    integer :: i
+    integer(int32), dimension(5) :: perm
+    integer(int32) :: stack_left(20), stack_right(20)
+    integer(int32) :: i
     
     perm = [(i, i = 1, 5)]
     call sort_array(data, perm, stack_left, stack_right)
@@ -156,11 +158,11 @@ contains
 
   !> @brief Test sorting stability with already sorted array.
   subroutine test_sort_sorted_stability()
-    integer, dimension(5) :: data = [1, 2, 3, 4, 5]
-    integer, dimension(5) :: expected = [1, 2, 3, 4, 5]
-    integer, dimension(5) :: perm
-    integer :: stack_left(20), stack_right(20)
-    integer :: i
+    integer(int32), dimension(5) :: data = [1, 2, 3, 4, 5]
+    integer(int32), dimension(5) :: expected = [1, 2, 3, 4, 5]
+    integer(int32), dimension(5) :: perm
+    integer(int32) :: stack_left(20), stack_right(20)
+    integer(int32) :: i
     
     perm = [(i, i = 1, 5)]
     call sort_array(data, perm, stack_left, stack_right)
@@ -170,9 +172,9 @@ contains
 
   !> @brief Test sorting with empty array (edge case).
   subroutine test_sort_empty_array()
-    integer, dimension(0) :: data
-    integer, dimension(0) :: perm
-    integer :: stack_left(1), stack_right(1)
+    integer(int32), dimension(0) :: data
+    integer(int32), dimension(0) :: perm
+    integer(int32) :: stack_left(1), stack_right(1)
     
     ! This should not crash - just testing robustness
     call sort_array(data, perm, stack_left, stack_right)
@@ -182,11 +184,11 @@ contains
 
   !> @brief Test sorting with large random array for performance and correctness.
   subroutine test_sort_large_random()
-    real(8), allocatable :: rdata(:)
-    integer, allocatable :: data(:), perm(:), sorted(:)
-    integer :: n
-    integer, allocatable :: stack_left(:), stack_right(:), dummy_perm(:)
-    integer :: i
+    real(real64), allocatable :: rdata(:)
+    integer(int32), allocatable :: data(:), perm(:), sorted(:)
+    integer(int32) :: n
+    integer(int32), allocatable :: stack_left(:), stack_right(:), dummy_perm(:)
+    integer(int32) :: i
 
     n = 1000
     allocate(rdata(n), data(n), perm(n), sorted(n))

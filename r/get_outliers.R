@@ -1,3 +1,4 @@
+
 # =====================
 # Test cases for compute_family_scaling_r Fortran wrapper
 # Each case checks a different combination of optional arguments and error handling
@@ -93,11 +94,13 @@ print(result3$dscale)
 print(result3$error_code)
 
 
+
 # =====================
 # Test cases for compute_rdi_r Fortran wrapper
 # =====================
 
 ##
+
 # [compute_rdi_r] Case 1: normal input
 # Expectation: rdi = abs(distances) / dscale; should be c(0.5, 1, 0.75, 1, 1.25) for dscale = c(2,4).
 cat("\n[compute_rdi_r] Case 1: normal input\n")
@@ -105,45 +108,71 @@ distances <- as.double(c(1, 2, 3, 4, 5))
 gene_to_fam <- as.integer(c(1, 1, 2, 2, 2))
 dscale <- as.double(c(2, 4))
 rdi <- double(length(distances))
+sorted_rdi <- double(length(distances))
+perm <- as.integer(seq_along(distances))
+stack_left <- integer(length(distances))
+stack_right <- integer(length(distances))
 res1 <- .Fortran("compute_rdi_r",
   n_genes = as.integer(length(distances)),
   n_families = n_families,
   distances = distances,
   gene_to_fam = gene_to_fam,
   dscale = as.double(c(2, 4)),
-  rdi = rdi
+  rdi = rdi,
+  sorted_rdi = sorted_rdi,
+  perm = perm,
+  stack_left = stack_left,
+  stack_right = stack_right
 )
 print(res1$rdi)
 
 ##
+
 # [compute_rdi_r] Case 2: dscale with zeros
 # Expectation: All rdi values should be 0 (since scaling is zero for all families).
 cat("\n[compute_rdi_r] Case 2: dscale with zeros\n")
 dscale <- as.double(c(0, 0))
 rdi <- double(length(distances))
+sorted_rdi <- double(length(distances))
+perm <- as.integer(seq_along(distances))
+stack_left <- integer(length(distances))
+stack_right <- integer(length(distances))
 res2 <- .Fortran("compute_rdi_r",
   n_genes = as.integer(length(distances)),
   n_families = n_families,
   distances = distances,
   gene_to_fam = gene_to_fam,
   dscale = dscale,
-  rdi = rdi
+  rdi = rdi,
+  sorted_rdi = sorted_rdi,
+  perm = perm,
+  stack_left = stack_left,
+  stack_right = stack_right
 )
 print(res2$rdi)
 
 ##
+
 # [compute_rdi_r] Case 3: gene_to_fam out of range
 # Expectation: rdi for genes with invalid family index should be -1, others normal.
 cat("\n[compute_rdi_r] Case 3: gene_to_fam out of range\n")
 gene_to_fam_bad <- as.integer(c(1, 3, 2, 2, 2)) # 3 doesn't exist in dscale
 rdi <- double(length(distances))
+sorted_rdi <- double(length(distances))
+perm <- as.integer(seq_along(distances))
+stack_left <- integer(length(distances))
+stack_right <- integer(length(distances))
 res3 <- .Fortran("compute_rdi_r",
   n_genes = as.integer(length(distances)),
   n_families = n_families,
   distances = distances,
   gene_to_fam = gene_to_fam_bad,
   dscale = as.double(c(2, 4)),
-  rdi = rdi
+  rdi = rdi,
+  sorted_rdi = sorted_rdi,
+  perm = perm,
+  stack_left = stack_left,
+  stack_right = stack_right
 )
 print(res3$rdi)
 
@@ -161,11 +190,16 @@ print(res3$rdi)
 # print(res4$rdi)
 
 ##
+
 # [compute_rdi_r] Case 5: dscale shorter than max(gene_to_fam)
-# Expectation: Should error or produce -1 for genes with out-of-bounds family index.
+# Expectation: Should produce 0 for genes with out-of-bounds family index.
 cat("\n[compute_rdi_r] Case 5: dscale shorter than max(gene_to_fam)\n")
 dscale_short <- as.double(2) # only 1 value, but there are families 1 and 2
 rdi <- double(length(distances))
+sorted_rdi <- double(length(distances))
+perm <- as.integer(seq_along(distances))
+stack_left <- integer(length(distances))
+stack_right <- integer(length(distances))
 tryCatch({
   res5 <- .Fortran("compute_rdi_r",
     n_genes = as.integer(length(distances)),
@@ -173,18 +207,27 @@ tryCatch({
     distances = distances,
     gene_to_fam = gene_to_fam,
     dscale = dscale_short,
-    rdi = rdi
+    rdi = rdi,
+    sorted_rdi = sorted_rdi,
+    perm = perm,
+    stack_left = stack_left,
+    stack_right = stack_right
   )
   print(res5$rdi)
 }, error = function(e) cat("Unexpected error:", e$message, "\n"))
 
 ##
+
 # [compute_rdi_r] Case 6: vectors with incompatible length
-# Expectation: Should error due to mismatched vector lengths.
+# Expectation: Should process only the first n_genes elements, rest ignored.
 cat("\n[compute_rdi_r] Case 6: vectors with incompatible length\n")
 distances_short <- as.double(c(1, 2, 3))
 gene_to_fam_short <- as.integer(c(1, 1, 2))
 rdi <- double(length(distances_short))
+sorted_rdi <- double(length(distances_short))
+perm <- as.integer(seq_along(distances_short))
+stack_left <- integer(length(distances_short))
+stack_right <- integer(length(distances_short))
 tryCatch({
   res6 <- .Fortran("compute_rdi_r",
     n_genes = as.integer(length(distances_short)),
@@ -192,29 +235,36 @@ tryCatch({
     distances = distances_short,
     gene_to_fam = gene_to_fam_short,
     dscale = as.double(c(2, 4)),
-    rdi = rdi
+    rdi = rdi,
+    sorted_rdi = sorted_rdi,
+    perm = perm,
+    stack_left = stack_left,
+    stack_right = stack_right
   )
   print(res6$rdi)
 }, error = function(e) cat("Unexpected error:", e$message, "\n"))
+
 
 
 # =====================
 # End of compute_rdi_r tests
 # =====================
 
+
 # =====================
 # Test cases for identify_outliers_r Fortran wrapper
 # =====================
 
 ##
+
+
+
 # [identify_outliers_r] Case 1: Simple RDI, percentile 50
 # Expectation: Top 50% (highest 3) should be outliers (TRUE), others FALSE.
 cat("\n[identify_outliers_r] Case 1: Simple RDI, percentile 50\n")
-rdi <- as.double(c(0.1, 0.2, 0.3, 0.4, 0.5))
-sorted_rdi <- double(length(rdi))
-perm <- seq_along(rdi)
-stack_left <- integer(length(rdi))
-stack_right <- integer(length(rdi))
+rdi <- as.double(c(0.3, 0.1, 0.5, 0.2, 0.4)) # intentionally unsorted
+sorted_rdi <- sort(rdi[rdi >= 0])
+if (length(sorted_rdi) < length(rdi)) sorted_rdi <- c(sorted_rdi, rep(0, length(rdi) - length(sorted_rdi)))
 is_outlier <- logical(length(rdi))
 threshold <- double(1)
 percentile <- 50.0
@@ -222,9 +272,6 @@ res1 <- .Fortran("identify_outliers_r",
   n_genes = as.integer(length(rdi)),
   rdi = rdi,
   sorted_rdi = sorted_rdi,
-  perm = perm,
-  stack_left = stack_left,
-  stack_right = stack_right,
   is_outlier = is_outlier,
   threshold = threshold,
   percentile = as.double(percentile)
@@ -233,14 +280,15 @@ print(res1$is_outlier)
 print(res1$threshold)
 
 ##
+
+
+
 # [identify_outliers_r] Case 2: RDI with negative values (should be ignored)
 # Expectation: Negative RDI values are ignored for outlier detection; only positive values considered.
 cat("\n[identify_outliers_r] Case 2: RDI with negative values (should be ignored)\n")
-rdi <- as.double(c(-1, 0.2, 0.3, 0.4, 0.5))
-sorted_rdi <- double(length(rdi))
-perm <- seq_along(rdi)
-stack_left <- integer(length(rdi))
-stack_right <- integer(length(rdi))
+rdi <- as.double(c(0.3, -1, 0.5, 0.2, 0.4)) # intentionally unsorted, with negative
+sorted_rdi <- sort(rdi[rdi >= 0])
+if (length(sorted_rdi) < length(rdi)) sorted_rdi <- c(sorted_rdi, rep(0, length(rdi) - length(sorted_rdi)))
 is_outlier <- logical(length(rdi))
 threshold <- double(1)
 percentile <- 80.0
@@ -248,9 +296,6 @@ res2 <- .Fortran("identify_outliers_r",
   n_genes = as.integer(length(rdi)),
   rdi = rdi,
   sorted_rdi = sorted_rdi,
-  perm = perm,
-  stack_left = stack_left,
-  stack_right = stack_right,
   is_outlier = is_outlier,
   threshold = threshold,
   percentile = as.double(percentile)
@@ -259,14 +304,15 @@ print(res2$is_outlier)
 print(res2$threshold)
 
 ##
+
+
+
 # [identify_outliers_r] Case 3: All RDI zeros
 # Expectation: No outliers detected; all is_outlier should be FALSE.
 cat("\n[identify_outliers_r] Case 3: All RDI zeros\n")
-rdi <- as.double(rep(0, 5))
-sorted_rdi <- double(length(rdi))
-perm <- seq_along(rdi)
-stack_left <- integer(length(rdi))
-stack_right <- integer(length(rdi))
+rdi <- as.double(c(0, 0, 0, 0, 0)) # unsorted, but all zero
+sorted_rdi <- sort(rdi[rdi >= 0])
+if (length(sorted_rdi) < length(rdi)) sorted_rdi <- c(sorted_rdi, rep(0, length(rdi) - length(sorted_rdi)))
 is_outlier <- logical(length(rdi))
 threshold <- double(1)
 percentile <- 90.0
@@ -274,9 +320,6 @@ res3 <- .Fortran("identify_outliers_r",
   n_genes = as.integer(length(rdi)),
   rdi = rdi,
   sorted_rdi = sorted_rdi,
-  perm = perm,
-  stack_left = stack_left,
-  stack_right = stack_right,
   is_outlier = is_outlier,
   threshold = threshold,
   percentile = as.double(percentile)
@@ -285,14 +328,15 @@ print(res3$is_outlier)
 print(res3$threshold)
 
 ##
+
+
+
 # [identify_outliers_r] Case 4: Percentile 0 (all outliers)
 # Expectation: All genes should be outliers (all TRUE).
 cat("\n[identify_outliers_r] Case 4: Percentile 0 (all outliers)\n")
-rdi <- as.double(c(0.1, 0.2, 0.3, 0.4, 0.5))
-sorted_rdi <- double(length(rdi))
-perm <- seq_along(rdi)
-stack_left <- integer(length(rdi))
-stack_right <- integer(length(rdi))
+rdi <- as.double(c(0.3, 0.1, 0.5, 0.2, 0.4)) # intentionally unsorted
+sorted_rdi <- sort(rdi[rdi >= 0])
+if (length(sorted_rdi) < length(rdi)) sorted_rdi <- c(sorted_rdi, rep(0, length(rdi) - length(sorted_rdi)))
 is_outlier <- logical(length(rdi))
 threshold <- double(1)
 percentile <- 0.0
@@ -300,9 +344,6 @@ res5 <- .Fortran("identify_outliers_r",
   n_genes = as.integer(length(rdi)),
   rdi = rdi,
   sorted_rdi = sorted_rdi,
-  perm = perm,
-  stack_left = stack_left,
-  stack_right = stack_right,
   is_outlier = is_outlier,
   threshold = threshold,
   percentile = as.double(percentile)
@@ -311,14 +352,15 @@ print(res5$is_outlier)
 print(res5$threshold)
 
 ##
+
+
+
 # [identify_outliers_r] Case 5: Percentile 100 (1 outlier)
 # Expectation: Only the highest RDI should be outlier (TRUE), rest FALSE.
 cat("\n[identify_outliers_r] Case 5: Percentile 100 (1 outlier)\n")
-rdi <- as.double(c(0.1, 0.2, 0.3, 0.4, 0.5))
-sorted_rdi <- double(length(rdi))
-perm <- seq_along(rdi)
-stack_left <- integer(length(rdi))
-stack_right <- integer(length(rdi))
+rdi <- as.double(c(0.3, 0.1, 0.5, 0.2, 0.4)) # intentionally unsorted
+sorted_rdi <- sort(rdi[rdi >= 0])
+if (length(sorted_rdi) < length(rdi)) sorted_rdi <- c(sorted_rdi, rep(0, length(rdi) - length(sorted_rdi)))
 is_outlier <- logical(length(rdi))
 threshold <- double(1)
 percentile <- 100.0
@@ -326,9 +368,6 @@ res6 <- .Fortran("identify_outliers_r",
   n_genes = as.integer(length(rdi)),
   rdi = rdi,
   sorted_rdi = sorted_rdi,
-  perm = perm,
-  stack_left = stack_left,
-  stack_right = stack_right,
   is_outlier = is_outlier,
   threshold = threshold,
   percentile = as.double(percentile)
@@ -336,10 +375,36 @@ res6 <- .Fortran("identify_outliers_r",
 print(res6$is_outlier)
 print(res6$threshold)
 
+##
+
+
+
+# [identify_outliers_r] Case 6: All RDI negative (should be ignored)
+# Expectation: All negative RDI values should be ignored for outlier detection; all is_outlier should be FALSE.
+cat("\n[identify_outliers_r] Case 6: All RDI negative (should be ignored)\n")
+rdi <- as.double(c(-0.1, -0.2, -0.3, -0.4, -0.5)) # all negative
+sorted_rdi <- sort(rdi[rdi >= 0])
+if (length(sorted_rdi) < length(rdi)) sorted_rdi <- c(sorted_rdi, rep(0, length(rdi) - length(sorted_rdi)))
+is_outlier <- logical(length(rdi))
+threshold <- double(1)
+percentile <- 80.0
+res7 <- .Fortran("identify_outliers_r",
+  n_genes = as.integer(length(rdi)),
+  rdi = rdi,
+  sorted_rdi = sorted_rdi,
+  is_outlier = is_outlier,
+  threshold = threshold,
+  percentile = as.double(percentile)
+)
+print(res7$is_outlier)
+print(res7$threshold)
+
+
 
 # =====================
 # End of identify_outliers_r tests
 # =====================
+
 
 
 # =====================
@@ -428,6 +493,7 @@ res2 <- .Fortran("detect_outliers_r",
 )
 print(res2$is_outlier)
 print(res2$error_code)
+
 
 # =====================
 # End of detect_outliers_r tests
