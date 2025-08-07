@@ -13,7 +13,7 @@ program main
 
   ! Type for suite registry
   type :: suite_entry
-    character(len=32) :: name
+    character(len=64) :: name
     procedure(run_all_interface), pointer, nopass :: run_all => null()
     procedure(run_named_interface), pointer, nopass :: run_named => null()
   end type suite_entry
@@ -32,7 +32,7 @@ program main
   type(suite_entry), allocatable :: available_suites(:)
 
   integer :: nargs
-  character(len=64) :: suite_name, test_list
+  character(len=64) :: requested_suite, test_list
 
   ! Initialize the suite registry
   call initialize_suites()
@@ -45,14 +45,14 @@ program main
     
   else if (nargs == 1) then
     ! Run all tests in specified suite
-    call get_command_argument(1, suite_name)
-    call run_suite_all(trim(suite_name))
+    call get_command_argument(1, requested_suite)
+    call run_suite_all(trim(requested_suite))
     
   else if (nargs == 2) then
     ! Run specific tests in suite
-    call get_command_argument(1, suite_name)
+    call get_command_argument(1, requested_suite)
     call get_command_argument(2, test_list)
-    call run_suite_named(trim(suite_name), test_list)
+    call run_suite_named(trim(requested_suite), test_list)
     
   else
     print *, "Too many arguments"
@@ -115,35 +115,35 @@ contains
   end subroutine run_all_suites
 
   !> Run all tests in a specific suite
-  subroutine run_suite_all(suite_name)
-    character(len=*), intent(in) :: suite_name
+  subroutine run_suite_all(requested_suite)
+    character(len=*), intent(in) :: requested_suite
     integer :: i
     
     do i = 1, size(available_suites)
-      if (trim(available_suites(i)%name) == suite_name) then
+      if (trim(available_suites(i)%name) == requested_suite) then
         call available_suites(i)%run_all()
         return
       end if
     end do
     
-    print *, "Unknown test suite: ", suite_name
+    print *, "Unknown test suite: ", requested_suite
     call print_usage()
     stop 1
   end subroutine run_suite_all
 
   !> Run named tests in a specific suite
-  subroutine run_suite_named(suite_name, test_list)
-    character(len=*), intent(in) :: suite_name, test_list
+  subroutine run_suite_named(requested_suite, test_list)
+    character(len=*), intent(in) :: requested_suite, test_list
     integer :: i
     
     do i = 1, size(available_suites)
-      if (trim(available_suites(i)%name) == suite_name) then
+      if (trim(available_suites(i)%name) == requested_suite) then
         call run_tests_from_list(test_list, available_suites(i)%run_named)
         return
       end if
     end do
     
-    print *, "Unknown test suite: ", suite_name
+    print *, "Unknown test suite: ", requested_suite
     call print_usage()
     stop 1
   end subroutine run_suite_named
@@ -152,8 +152,8 @@ contains
   subroutine run_tests_from_list(test_list, run_named_proc)
     character(len=*), intent(in) :: test_list
     procedure(run_named_interface) :: run_named_proc
-    character(len=32) :: test_name
-    character(len=32) :: single_test_array(1)
+    character(len=64) :: test_name
+    character(len=64) :: single_test_array(1)
     integer :: start, end, pos
     
     start = 1
