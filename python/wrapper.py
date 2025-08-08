@@ -265,51 +265,38 @@ def deserialize_char_nd(filename: str, ndim_max=5):
     dims, clen = get_char_array_metadata(filename, ndim_max)
 
     print(f"Deserializing char array with dimensions: {dims}, clen: {clen}")
-    total = np.prod(dims)
+    total_array_size = np.prod(dims)
     # SCII array of size clen x total
-    ascii_arr = np.asfortranarray(np.zeros((clen, total), dtype=np.int32))
-
-    # returns
-    ndim_out = ctypes.c_int()
-    clen_out = ctypes.c_int()
+    ascii_arr = np.asfortranarray(np.zeros((clen, total_array_size), dtype=np.int32))
 
     # declare arguments
     arrays_lib.deserialize_char_flat_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags="F_CONTIGUOUS"), # ascii_arr
         ctypes.c_int,           # clen
         ctypes.c_int,           # total
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims_out
-        ctypes.POINTER(ctypes.c_int),  # ndim_out
-        ctypes.POINTER(ctypes.c_int),  # clen_out
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
-        ctypes.c_int,           # fn_len
-        ctypes.c_int            # ndim_actual
+        ctypes.c_int            # fn_len
     ]
     arrays_lib.deserialize_char_flat_C.restype = None
 
     arrays_lib.deserialize_char_flat_C(
         ascii_arr,
         clen,
-        total,
-        dims_out,
-        ctypes.byref(ndim_out),
-        ctypes.byref(clen_out),
+        total_array_size,
         filename_ascii,
-        fn_len,
-        ndim_max
+        fn_len
     )
 
-    ndim = ndim_out.value
-    clen = clen_out.value
-    shape = tuple(dims_out[:ndim])
-    total = np.prod(shape)
+    ndim = len(dims)
+    shape = tuple(dims)
+    total_array_size = np.prod(shape)
 
-    ascii_arr_2d = ascii_arr.reshape((clen, total), order='F')
+    ascii_arr_2d = ascii_arr.reshape((clen, total_array_size), order='F')
 
     # ASCII → String-Array
     chars = np.array([
     ''.join(chr(c) for c in ascii_arr_2d[:clen, i] if c > 0)
-        for i in range(total)
+        for i in range(total_array_size)
     ], dtype=f'U{clen}')
 
     chars = chars.reshape(shape, order='F')

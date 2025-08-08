@@ -216,6 +216,7 @@ end module char_deserialize_mod
 subroutine deserialize_char_flat_r(ascii_arr, arr_size, filename_ascii, fn_len)
   use iso_fortran_env
   use char_deserialize_mod
+  use array_utils
   implicit none
 
   ! Arrays are allocated by R
@@ -233,11 +234,7 @@ subroutine deserialize_char_flat_r(ascii_arr, arr_size, filename_ascii, fn_len)
   integer(int32), allocatable :: dims(:)
   integer :: i, j, clen, total_array_size
 
-  ! ASCII → String
-  allocate(character(len=fn_len) :: filename)
-  do i = 1, fn_len
-    filename(i:i) = char(filename_ascii(i))
-  end do
+  call ascii_to_string(filename_ascii, fn_len, filename)
 
   ! Deserialize flat character array
   call deserialize_char_flat(flat, dims, clen, filename)
@@ -257,10 +254,11 @@ end subroutine deserialize_char_flat_r
 
 !> C binding for the subroutine to deserialize a flat character array from a file
 !> @note The array is returned flat and needs to be reshaped in C/python
-subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, dims_out, ndim_out, clen_out, &
-                                   filename_ascii, fn_len, ndim_actual) bind(C, name="deserialize_char_flat_C")
+subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, &
+                                   filename_ascii, fn_len) bind(C, name="deserialize_char_flat_C")
   use iso_c_binding
   use char_deserialize_mod
+  use array_utils
   implicit none
 
   ! Arguments
@@ -270,36 +268,20 @@ subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, dims_out, 
   !! Length of each character string
   integer(c_int), value :: total_array_size
   !! Total size of the ASCII array
-  integer(c_int), intent(out) :: dims_out(ndim_actual)
-  !! Output array for dimensions, preallocated by C/Python
-  integer(c_int), intent(out) :: ndim_out, clen_out
-  !! Output variables for number of dimensions and character length
   integer(c_int), intent(in)  :: filename_ascii(fn_len)
   !! Array of ASCII characters representing the filename
   integer(c_int), value       :: fn_len
   !! Length of the filename array
-  integer(c_int) :: ndim_actual
-  !! Actual number of dimensions
 
   character(len=:), allocatable :: filename
   character(len=:), pointer     :: flat(:)
   integer(c_int), allocatable   :: dims(:)
   integer :: i, j, actual_clen
 
-  ! Convert Filename
-  allocate(character(len=fn_len) :: filename)
-  do i = 1, fn_len
-    filename(i:i) = char(filename_ascii(i))
-  end do
+  call ascii_to_string(filename_ascii, fn_len, filename)
 
   ! Deserialize
   call deserialize_char_flat(flat, dims, actual_clen, filename)
-  clen_out = actual_clen
-  ndim_out = size(dims)
-
-  do i = 1, min(ndim_out, ndim_actual)
-    dims_out(i) = dims(i)
-  end do
 
   ! Convert to ASCII (Null-padding)
   do i = 1, total_array_size
