@@ -1,18 +1,43 @@
 dyn.load("./build/libtensor-omics.so")
 
+
+check_err_code <- function(ierr) {
+  msg <- switch(
+    as.character(ierr),
+    "0" = NULL,
+    "101" = "File could not be opened",
+    "102" = "Could not read magic number",
+    "103" = "Could not read array type code",
+    "104" = "Could not read array dimension number",
+    "105" = "Could not read array dimensions",
+    "106" = "Could not read character length",
+    "200" = "Invalid file format (magic number mismatch)",
+    "5002" = "File not open or unit not connected",
+    "9999" = "Unknown error",
+    paste("Unknown Fortran error code:", ierr)
+  )
+  if (!is.null(msg)) stop(msg)
+}
+
 # returns the dimensions of an array stored in a file, works for integer and real
 get_array_dims <- function(filename, max_dims = 5) {
   ascii <- utf8ToInt(filename)
   dims <- integer(max_dims)
   ndims <- integer(1)
+  ierr <- integer(1)
+  errmsg <- paste(rep(" ", 128), collapse = "") 
 
   res <- .Fortran("get_array_dims_r",
                   filename_ascii = as.integer(ascii),
                   fn_len = as.integer(length(ascii)),
                   dims_out = dims,
-                  ndims = ndims)
+                  ndims = ndims,
+                  ierr = ierr)
+
+  check_err_code(res$ierr)
 
   res$dims_out[1:res$ndims]
+  print(res$dims_out[1:res$ndims])
 }
 
 #returns the dimensions, type code and character length of an array stored in a file; works for character arrays
@@ -22,6 +47,8 @@ get_array_metadata_chars <- function(filename, max_dims = 5) {
   ndims <- integer(1)
   typecode <- integer(1)
   clen <- integer(1)
+  ierr <- integer(1)
+  errmsg <- paste(rep(" ", 128), collapse = "")
 
   res <- .Fortran("get_array_metadata_chars_r",
                   filename_ascii = as.integer(ascii),
@@ -29,7 +56,10 @@ get_array_metadata_chars <- function(filename, max_dims = 5) {
                   dims_out = dims,
                   ndims = ndims,
                   type_code_out = typecode,
-                  clen_out = clen)
+                  clen_out = clen,
+                  ierr = ierr)
+
+  check_err_code(res$ierr)
 
   list(dims = res$dims_out[1:res$ndims],
        type = res$type_code_out,

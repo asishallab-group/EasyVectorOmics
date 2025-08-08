@@ -36,47 +36,56 @@ def get_array_dims(filename, max_dims=5):
     Reads the dimensions of an array saved in a given file
     """
     ascii_arr, fn_len = _filename_to_ascii_array(filename)
-    dims_out = np.zeros(max_dims, dtype=np.int32, order='F')
-    ndims = np.zeros(1, dtype=np.int32, order='F')
+    dims_out = np.zeros(max_dims, dtype=np.int32)
+    ndims = ctypes.c_int()
+    ierr = ctypes.c_int()
 
     arrays_lib.get_array_dims_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
         ctypes.c_int,                                                          # fn_len
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims_out
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS")   # ndims
+        ctypes.POINTER(ctypes.c_int),                                          # ndims
+        ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
     arrays_lib.get_array_dims_C.restype = None
 
-    arrays_lib.get_array_dims_C(ascii_arr, fn_len, dims_out, ndims)
+    arrays_lib.get_array_dims_C(
+        ascii_arr,
+        fn_len,
+        dims_out,
+        ctypes.byref(ndims),
+        ctypes.byref(ierr)
+    )
 
-    return dims_out[:ndims[0]]
+    if ierr.value != 0:
+        raise RuntimeError(f"Fortran error code: {ierr.value}")
+
+    return dims_out[:ndims.value]
 
 def get_char_array_metadata(filename: str, max_ndims: int = 10):
     """
     Read metadata of a char array saved in a given file
     """
-    # ASCII-Filename preparation
     filename_ascii, fn_len = _filename_to_ascii_array(filename)
 
-    # set up output buffer
     dims_out = np.zeros(max_ndims, dtype=np.int32)
     ndims = ctypes.c_int()
     type_code = ctypes.c_int()
     clen = ctypes.c_int()
+    ierr = ctypes.c_int()
 
-    # declare args
     arrays_lib.get_array_metadata_chars_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
         ctypes.c_int,                                                         # fn_len
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims_out
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"), # dims_out
         ctypes.c_int,                                                         # dims_len
         ctypes.POINTER(ctypes.c_int),                                         # ndims
         ctypes.POINTER(ctypes.c_int),                                         # type_code_out
         ctypes.POINTER(ctypes.c_int),                                         # clen_out
+        ctypes.POINTER(ctypes.c_int)                                          # ierr
     ]
     arrays_lib.get_array_metadata_chars_C.restype = None
 
-    # call the function
     arrays_lib.get_array_metadata_chars_C(
         filename_ascii,
         fn_len,
@@ -84,10 +93,13 @@ def get_char_array_metadata(filename: str, max_ndims: int = 10):
         max_ndims,
         ctypes.byref(ndims),
         ctypes.byref(type_code),
-        ctypes.byref(clen)
+        ctypes.byref(clen),
+        ctypes.byref(ierr)
     )
 
-    # returns dims and clen, the length of strings
+    if ierr.value != 0:
+        raise RuntimeError(f"Fortran error code: {ierr.value}")
+
     return dims_out[:ndims.value], clen.value
 
 # serilization of an n-dimensional integer array
