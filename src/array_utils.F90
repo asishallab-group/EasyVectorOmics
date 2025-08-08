@@ -9,8 +9,7 @@ module array_utils
     integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
 
    contains
-  !> @brief returns type code of the array file
-  !> @return type code of the array file
+  !> returns type code of the array file
   function get_type_code(filename) result(type_code)
     use iso_c_binding
     implicit none
@@ -27,16 +26,20 @@ module array_utils
     close(unit)
   end function get_type_code
 
-  !> @brief Get the dimensions of an array file
-  !> @return Allocatable array of dimensions
-  function get_array_dims(filename) result(dims)
+  !> Get the dimensions of an array file
+  subroutine get_array_dims(filename, dims_out, ndims)
     use iso_c_binding
     implicit none
 
     character(len=*), intent(in) :: filename
       !! Name of the file to read
-    integer(int32), allocatable :: dims(:)
-    integer :: unit, magic, type_code, d
+    integer(int32), intent(out) :: dims_out(*)
+      !! Output array for dimensions
+    integer(int32), intent(out) :: ndims
+      !! Number of dimensions
+    integer(int32), ALLOCATABLE:: dims(:)
+      !! Output array for dimensions
+    integer :: unit, magic, type_code, d, i
 
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='old')
     read(unit) magic
@@ -46,12 +49,87 @@ module array_utils
     allocate(dims(d))
     read(unit) dims
     close(unit)
-  end function get_array_dims
+
+    ndims = d
+    do i = 1, d
+      dims_out(i) = dims(i)
+    end do
+  end subroutine get_array_dims
+
+subroutine ascii_to_string(ascii_array, clen, str)
+  use iso_fortran_env, only: int32
+  implicit none
+
+  integer(int32), intent(in) :: ascii_array(clen)
+    !! Array of ASCII characters
+  integer(int32), intent(in) :: clen
+    !! Length of the ASCII array
+  character(len=:), allocatable, INTENT(INOUT) :: str
+  integer :: i
+
+  allocate(character(len=clen) :: str)
+  do i = 1, clen
+    str(i:i) = char(ascii_array(i))
+  end do
+
+  ! Return the string (or use it as needed)
+end subroutine ascii_to_string
+
+subroutine get_array_metadata_chars(filename, dims_out, ndims, type_code_out, clen_out)
+  use iso_fortran_env, only: int32
+  implicit none
+
+  ! Input
+  character(len=*), intent(in) :: filename
+    !! Name of the file to read
+  integer(int32), intent(out) :: dims_out(*)
+    !! Output array for dimensions
+  integer(int32), intent(out) :: ndims
+    !! Number of dimensions
+  integer(int32), intent(out) :: type_code_out
+    !! Type code of the array
+  integer(int32), intent(out) :: clen_out
+    !! Character length if applicable
+
+  ! Local variables
+  integer :: unit, magic, type_code, d, i
+  integer(int32), allocatable :: dims(:)
+
+  ! Open file
+  open(newunit=unit, file=filename, form='unformatted', access='stream', status='old')
+
+  ! Read Header
+  read(unit) magic
+  if (magic /= ARRAY_FILE_MAGIC) error stop "Invalid file format"
+  read(unit) type_code
+  read(unit) d
+  allocate(dims(d))
+  read(unit) dims
+
+  if (type_code == 3) then
+    read(unit) clen_out
+  else
+    clen_out = 0
+  end if
+
+  close(unit)
+
+  ! Return values
+  type_code_out = type_code
+  ndims = d
+
+  do i = 1, d
+    dims_out(i) = dims(i)
+  end do
+
+end subroutine get_array_metadata_chars
+
 end module array_utils
 
-!> @brief Subroutine to get the dimensions of an array file
+!> Subroutine to get the dimensions of an array file
 subroutine get_array_dims_r(filename_ascii, fn_len, dims_out, ndims)
   use iso_fortran_env, only: int32
+  use array_utils
   implicit none
 
   ! Input
@@ -59,6 +137,7 @@ subroutine get_array_dims_r(filename_ascii, fn_len, dims_out, ndims)
     !! Array of ASCII characters representing the filename
   integer(int32), intent(in) :: fn_len
     !! Length of the filename array
+  character(len=:), allocatable :: filename
 
   ! Output
   integer(int32), intent(out) :: dims_out(*)  ! R provides storage
@@ -67,36 +146,21 @@ subroutine get_array_dims_r(filename_ascii, fn_len, dims_out, ndims)
     !! Output variable for the number of dimensions
 
   ! Local variables
-  character(len=:), allocatable :: filename
   integer :: unit, magic, type_code, d, i
   integer(int32), allocatable :: dims(:)
 
   ! ASCII → String
-  allocate(character(len=fn_len) :: filename)
-  do i = 1, fn_len
-    filename(i:i) = char(filename_ascii(i))
-  end do
+  call ascii_to_string(filename_ascii, fn_len, filename)
 
-  ! open file and read header
-  open(newunit=unit, file=filename, form='unformatted', access='stream', status='old')
-  read(unit) magic
-  read(unit) type_code
-  read(unit) d
-  allocate(dims(d))
-  read(unit) dims
-  close(unit)
+  call get_array_dims(filename, dims_out, ndims)
 
-  ! return values
-  ndims = d
-  do i = 1, d
-    dims_out(i) = dims(i)
-  end do
 end subroutine get_array_dims_r
 
-!> @brief C binding for the subroutine to get the dimensions of an array file
+!> C binding for the subroutine to get the dimensions of an array file
 subroutine get_array_dims_C(filename_ascii, fn_len, dims_out, ndims) bind(C, name="get_array_dims_C")
   use iso_c_binding
   use iso_fortran_env
+  use array_utils
   implicit none
 
   ! Input
@@ -118,48 +182,32 @@ subroutine get_array_dims_C(filename_ascii, fn_len, dims_out, ndims) bind(C, nam
 
 
   ! ASCII → String
-  allocate(character(len=fn_len) :: filename)
-  do i = 1, fn_len
-    filename(i:i) = char(filename_ascii(i))
-  end do
+  call ascii_to_string(filename_ascii, fn_len, filename)
 
-  ! open file and read header
-  open(newunit=unit, file=filename, form='unformatted', access='stream', status='old')
-  read(unit) magic
-  read(unit) type_code
-  read(unit) d
-  allocate(dims(d))
-  read(unit) dims
-  close(unit)
-
-  ! return values
-  ndims = d
-  do i = 1, d
-    dims_out(i) = dims(i)
-  end do
+  call get_array_dims(filename, dims_out, ndims)
 end subroutine get_array_dims_C
 
-!> @brief Subroutine to get metadata of a char array file
-!> @param filename_ascii Array of ASCII characters representing the filename
-!> @param fn_len Length of the filename array
-!> @param dims_out Output array for dimensions
-!> @param ndims Output variable for the number of dimensions
-!> @param type_code_out Output variable for the type code
-!> @param clen_out Output variable for the character length
+!> Subroutine to get metadata of a char array file
 subroutine get_array_metadata_chars_r(filename_ascii, fn_len, dims_out, ndims, type_code_out, clen_out)
   use iso_fortran_env, only: int32
+  use array_utils
   implicit none
 
-  integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
   ! input
   integer(int32), intent(in) :: filename_ascii(fn_len)
+    !! Array of ASCII characters representing the filename
   integer(int32), intent(in) :: fn_len
+    !! Length of the filename array
 
   ! Output
   integer(int32), intent(out) :: dims_out(*)
+    !! Output array for dimensions
   integer(int32), intent(out) :: ndims
+    !! Output variable for the number of dimensions
   integer(int32), intent(out) :: type_code_out
+    !! Output variable for the type code
   integer(int32), intent(out) :: clen_out
+    !! Output variable for the character length
 
   ! Internally
   character(len=:), allocatable :: filename
@@ -167,94 +215,40 @@ subroutine get_array_metadata_chars_r(filename_ascii, fn_len, dims_out, ndims, t
   integer(int32), allocatable :: dims(:)
 
   ! ASCII → String
-  allocate(character(len=fn_len) :: filename)
-  do i = 1, fn_len
-    filename(i:i) = char(filename_ascii(i))
-  end do
+  call ascii_to_string(filename_ascii, fn_len, filename)
 
-  ! open file
-  open(newunit=unit, file=filename, form='unformatted', access='stream', status='old')
-
-  ! read Header
-  read(unit) magic
-  if (magic /= ARRAY_FILE_MAGIC) error stop "Invalid file format"
-  read(unit) type_code
-  read(unit) d
-  allocate(dims(d))
-  read(unit) dims
-  if (type_code == 3) then
-    read(unit) clen_out
-  else
-    clen_out = 0
-  end if
-
-  close(unit)
-
-  ! return
-  type_code_out = type_code
-  ndims = d
-  do i = 1, d
-    dims_out(i) = dims(i)
-  end do
+  call get_array_metadata_chars(filename, dims_out, ndims, type_code_out, clen_out)
 end subroutine
 
-!> @brief C binding for the subroutine to get metadata of a char array file
-!> @param filename_ascii Array of ASCII characters representing the filename
-!> @param fn_len Length of the filename array
-!> @param dims_out Output array for dimensions
-!> @param dims_len Length of the output dimensions array
-!> @param ndims Output variable for the number of dimensions
-!> @param type_code_out Output variable for the type code
-!> @param clen_out Output variable for the character length
+!> C binding for the subroutine to get metadata of a char array file
 subroutine get_array_metadata_chars_C(filename_ascii, fn_len, dims_out, dims_len, ndims, &
                           type_code_out, clen_out) bind(C, name="get_array_metadata_chars_C")
   use iso_c_binding
+  use array_utils
   implicit none
 
   ! Output
   integer(c_int), intent(in) :: filename_ascii(fn_len)
+    !! Length of the filename array
   integer(c_int), value :: fn_len, dims_len
 
   ! Input
   integer(c_int), intent(out) :: dims_out(dims_len)
+  !! Output array for dimensions
   integer(c_int), intent(out) :: ndims
+  !! Output variable for the number of dimensions
   integer(c_int), intent(out) :: type_code_out
+  !! Output variable for the type code
   integer(c_int), intent(out) :: clen_out
+  !! Output variable for the character length
 
   ! Locally
   character(len=:), allocatable :: filename
   integer :: unit, magic, type_code, d, i
   integer(c_int), allocatable :: dims(:)
-  integer(c_int), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', c_int) ! 'FA20' in hex
 
   ! ASCII → String
-  allocate(character(len=fn_len) :: filename)
-  do i = 1, fn_len
-    filename(i:i) = char(filename_ascii(i))
-  end do
+  call ascii_to_string(filename_ascii, fn_len, filename)
 
-  ! open unit
-  open(newunit=unit, file=filename, form='unformatted', access='stream', status='old')
-  read(unit) magic
-  if (magic /= ARRAY_FILE_MAGIC) error stop "Invalid file format"
-  read(unit) type_code
-  read(unit) d
-
-  allocate(dims(d))
-  read(unit) dims
-
-  if (type_code == 3) then
-    read(unit) clen_out
-  else
-    clen_out = 0
-  end if
-  close(unit)
-
-  ! return
-  type_code_out = type_code
-  ndims = d 
-
-  do i = 1, min(d, dims_len)
-    dims_out(i) = dims(i)
-  end do
+  call get_array_metadata_chars(filename, dims_out, ndims, type_code_out, clen_out)
 end subroutine
