@@ -76,6 +76,7 @@ generate-docs:  # generate documentation after tests have passed
     - when: never
   needs:
     - job: run-tests
+      optional: true  # if ford.yml was changed, the test stage does not exist in the pipeline
   script:
     # generate docs
     - ford ford.yml
