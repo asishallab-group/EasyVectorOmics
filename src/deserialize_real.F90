@@ -178,7 +178,7 @@ subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len) bind(C, nam
   !! Length of the filename array
 
   character(len=:), allocatable :: filename
-  integer :: i
+  integer(int32) :: i, ierr
 
   ! arr_f is a pointer to the Fortran array
   real(real64), pointer :: arr_f(:)
@@ -190,16 +190,21 @@ subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len) bind(C, nam
   call deserialize_real_flat(arr_f, dims, filename)
 
   ! Checks
-  if (.not. associated(arr_f)) then
-      print *, "Error: arr_f not allocated"
-      stop 1
+  ierr = 0
+  if (.not. associated(array_ptr)) then
+    print *, "Error: arr_f not allocated"
+    ierr = 301
   end if
 
-  if (size(arr_f) /= arr_size) then
-      print *, "Error: Size does not match ", size(arr_f), arr_size
-      stop 2
+  if (size(array_ptr) /= arr_size) then
+    print *, "Error: Size does not match ", size(array_ptr), arr_size
+    ierr = 302
   end if
 
+  if (ierr /= 0) then
+    print *, "Error in array pointer check ", ierr
+    stop
+  end if
   ! Move to buffer
   arr(:) = arr_f(:)
 end subroutine
