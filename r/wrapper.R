@@ -33,7 +33,8 @@ get_array_metadata_chars <- function(filename, max_dims = 5) {
 
   list(dims = res$dims_out[1:res$ndims],
        type = res$type_code_out,
-       clen = res$clen_out)
+       clen = res$clen_out,
+       ndim = res$ndims)
 }
 
 # deserializes an integer array from a file, reads array dimensions first and then creates a proper array
@@ -99,27 +100,23 @@ deserialize_char_array <- function(filename, max_dims = 5) {
 
   actual_dims <- meta$dims
   clen <- meta$clen
-  total <- prod(actual_dims)
+  total_array_size <- prod(actual_dims)
   cat("actual_dims:", actual_dims, "clen:", clen, "\n")
 
-  ascii_arr <- integer(clen * total)
+  ascii_arr <- integer(clen * total_array_size)
 
   res <- .Fortran("deserialize_char_flat_r",
     ascii_arr = ascii_arr,
-    arr_size = integer(clen * total),  # size is ignored in the Fortran code
-    dims_out = actual_dims,
-    ndim_out = ndim,
-    clen_out = clen,
+    arr_size = as.integer(clen * total_array_size),
     filename_ascii = ascii,
-    fn_len = length(ascii),
-    ndim_actual = as.integer(length(actual_dims))
+    fn_len = as.integer(length(ascii))
   )
 
   # translate ASCII back to char
   mat <- matrix(res$ascii_arr, nrow = clen)
   chars <- apply(mat, 2, function(col) rawToChar(as.raw(col[col > 0])))
 
-  array(chars, dim = res$dims_out[1:res$ndim_out])
+  array(chars, dim = meta$dims[1:meta$ndim])
 }
 
 
