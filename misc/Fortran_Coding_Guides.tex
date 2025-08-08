@@ -862,89 +862,120 @@ All R–Fortran interfacing, control flow, and memory management in TOX must fol
 
 These principles ensure safety, readability, WASM compatibility, and long-term maintainability.
 
-\section{Unified Parallel Loop Snippet}
+\section{Scientific Kernel and API Design Specification}
 
-To streamline parallel execution across different computing environments, we
-define a unified Fortran snippet that automatically generates precompiler code
-enabling compilation to one of three execution modes: \textbf{Coarrays},
-\textbf{OpenMP}, or \textbf{serial fallback}. This is achieved using
-preprocessor directives that adapt the loop structure based on compiler flags.
-The loop body itself remains unchanged, ensuring that the parallelization
-mechanism is orthogonal to the logic being executed.
+\subsection{Scope}
+This specification defines the design principles, coding conventions, and interface structure for the Tensor Omics Scientific Kernel (SK) and its associated API helper layers. The aim is to ensure performance, reproducibility, portability, and clarity of responsibility between computational components.
 
-Below is the result of expanding the \texttt{f42:do-parallel} snippet, which
-selects the appropriate backend at compile time:
+\subsection{Scientific Kernel (SK)}
 
-\begin{verbatim}
+\subsubsection{Definition}
+The Scientific Kernel consists exclusively of pure Fortran subroutines and functions implementing the numerical and geometric methods of Tensor Omics.
 
-! ----------------------
-! START OF PARALLEL LOOP
-! ----------------------
-# ifdef USE_COARRAY
-start_i = (this_image() - 1) * N / num_images() + 1
-end_i   = min(this_image() * N / num_images(), N)
+\subsubsection{Core Properties}
+\begin{enumerate}
+  \item \textbf{Purity:} SK routines must have no side effects beyond modifying their output arguments.
+  \item \textbf{No I/O:} SK routines must not perform any file or console I/O.
+  \item \textbf{No Dynamic Allocation:} SK routines must not contain any \texttt{allocate} or \texttt{deallocate} statements.
+  \item \textbf{Memory Alignment:} All array arguments must be Fortran \texttt{allocatable} arrays to ensure alignment and contiguity.
+  \item \textbf{Transient Memory:} Any intermediate (scratch) memory must be preallocated by the caller and passed as arguments.
+  \item \textbf{Determinism:} Given the same inputs, SK routines must always return identical outputs.
+\end{enumerate}
 
-do i = start_i, end_i
-# endif
+\subsubsection{Argument Requirements}
+\begin{enumerate}
+  \item Arrays must be \texttt{allocatable} and contiguous.
+  \item All intent must be explicitly declared (\texttt{intent(in)}, \texttt{intent(out)}, \texttt{intent(inout)}).
+  \item Kind parameters for floating-point arguments must be specified using \texttt{real64} from \texttt{iso\_fortran\_env}.
+\end{enumerate}
 
-# ifdef USE_OPENMP
-!$omp parallel do private(i)
-do i = 1, N
-# endif
+\subsection{Helper Routines}
 
-#if !defined(USE_COARRAY) && !defined(USE_OPENMP)
-do i = 1, N
-#endif
+\subsubsection{Purpose}
+Helper routines manage memory allocation, type handling, and API exposure for SK routines. They may have side effects such as allocation or type conversion.
 
-! BODY OF THE PARALLEL LOOP
-! -----------------------------
-
-! -----------------------------
-! END BODY OF THE PARALLEL LOOP
-
-end do ! END OF DO-LOOP
-
-# ifdef USE_COARRAY
-sync all
-# endif
-
-# ifdef USE_OPENMP
-!$OMP END PARALLEL
-# endif
-
-! --------------------
-! END OF PARALLEL LOOP
-! --------------------
-\end{verbatim}
-
-Compile with:
+\subsubsection{Naming Convention}
+Helper routines follow suffix-based naming to indicate their role:
 \begin{itemize}
-  \item \texttt{-DUSE\_OPENMP} and \texttt{-fopenmp} for OpenMP
-  \item \texttt{-DUSE\_COARRAY} for Coarrays (e.g. with
-    \texttt{-fcoarray=single} for shared memory, or \texttt{-fcoarray=lib} for
-    distributed)
+  \item \textbf{No suffix:} Pure SK routine.
+  \item \textbf{\_alloc:} Allocation helper that computes required sizes and allocates memory.
+  \item \textbf{\_C:} C-facing API wrapper exposing SK routines via \texttt{bind(C)} and \texttt{iso\_c\_binding}.
+  \item \textbf{\_R:} R-facing API wrapper calling SK routines via \texttt{.Fortran} or \texttt{.Call}.
+  \item \textbf{\_tox:} Helper operating on the \texttt{tox\_data} derived type.
+  \item \textbf{\_tox\_C:} C-facing API wrapper for a \_tox helper.
+  \item \textbf{\_helper:} General-purpose orchestration helper not bound to a specific API.
 \end{itemize}
 
-\subsection{Guideline: Use \texttt{f42:do-parallel} only in ``Root Loops''}
+\subsubsection{Module Organization}
+\begin{enumerate}
+  \item All SK and helper routines reside in the same Fortran module for discoverability.
+  \item Naming conventions are strictly enforced to distinguish pure SK code from helpers.
+  \item Helpers may call SK routines or other helpers but must not duplicate SK logic.
+\end{enumerate}
 
-To ensure clarity, efficiency, and robustness of parallel execution in Tensor
-Omics, parallel loops using the \texttt{f42:do-parallel} snippet should only be
-used at the \emph{root level} of computational routines—that is, in the
-outermost loops directly executed within a parallelized function or subroutine.
-These \emph{root-loops} are not nested inside other loops or deeply obscured by
-function calls.
+\subsection{API Exposure Layers}
 
-This restriction avoids unnecessary overhead, data locality issues, and
-potential thread contention that can arise when parallelization is applied
-within inner or nested computation layers. Keeping parallelization explicit and
-confined to root-loops ensures predictable control over memory access and
-parallel execution, aligning with the minimalist and efficient design
-principles of F42. Developers are encouraged to refactor inner computations
-into pure, stateless subroutines and apply parallelization only where it
-governs the outermost iteration logic.
+\subsubsection{C API (\_C, \_tox\_C)}
+\begin{enumerate}
+  \item Implemented using \texttt{bind(C)} and \texttt{iso\_c\_binding}.
+  \item Accept and return only C-interoperable types.
+  \item May perform allocation if required.
+  \item Designed to be callable directly from C, Python (via \texttt{ctypes} or \texttt{cffi}), and other C-compatible languages.
+\end{enumerate}
 
+\subsubsection{R API (\_R)}
+\begin{enumerate}
+  \item Implemented as R functions calling \texttt{.Fortran} for direct array access.
+  \item \texttt{.Fortran} calls may incur data copying and cannot pass pointers directly.
+  \item \textbf{Note} that we will implement a thin \texttt{C glue layer} to
+    expose the above `\_tox\_C` helpers to R and enable pointer passing.
+\end{enumerate}
+
+\subsection{tox\_data Type}
+
+\subsubsection{Purpose}
+A Fortran derived type \texttt{tox\_data} serves as a container for all related Tensor Omics datasets, ensuring data integrity and preventing unintentional modification from higher-level languages.
+
+\subsubsection{Access Policy}
+\begin{enumerate}
+  \item Access to \texttt{tox\_data} contents is via getter functions.
+  \item Setter functions might be provided but discouraged for normal use. As
+    we expose the scientific kernel functions directly, users who want to be
+    able to modify expression-vectors, family-centroids, or similar will be
+    required to manage memory and their data manually.
+  \item Rich querying is provided via a GraphQL interface. We might implement a
+    `jq` interface on top of that, too.
+\end{enumerate}
+
+\subsection{Coarray Considerations}
+\begin{enumerate}
+  \item SK routines are compatible with coarrays as they operate on preallocated, caller-provided memory.
+  \item C API wrappers do not expose coarrays; coarray usage requires direct Fortran coding by the user.
+\end{enumerate}
+
+\subsection{WebAssembly (WASM) Considerations}
+\begin{enumerate}
+  \item SK routines are compilable to WASM as they are pure and self-contained.
+  \item API helpers may require adaptation or (most likely) exclusion depending
+    on WASM environment capabilities. This can be done via Fortran precompiler
+    flag usage:
+\begin{verbatim}
+#ifndef WASM
+subroutine family_centroid_alloc(...)
+  ! ...
+end subroutine family_centroid_alloc
+#endif
+\end{verbatim}
+\end{enumerate}
+
+\subsection{Enforcement}
+\textbf{Naming conventions must be validated during peer revision.}
 
 \section{High-Performance Fortran Compilation and Memory Alignment}
+
+\textbf{Note that this section is largely deprecated, except the Coarray
+section and the content on how to optimize for certain compilers and hardware.
+But we likely want to avoid such manual optimizations.}
 
 This section provides practical guidelines for scientific programmers to write memory-efficient and performance-optimized Fortran code using OpenMP, SIMD, and compiler-specific features. It also includes instructions on compiler configuration and memory alignment strategies suitable for AVX2 and AVX-512 systems.
 
