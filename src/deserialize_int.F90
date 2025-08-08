@@ -128,7 +128,7 @@ end module int_deserialize_mod
 
 !> R interface for deserializing an integer array from a file
 !> @note The output array is handled and preallocated by R
-subroutine deserialize_int_r(flat_arr, arr_size, dims_out, ndim_out, filename_ascii, fn_len, ndim_actual)
+subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len)
   use iso_fortran_env, only: int32
   use int_deserialize_mod
   use array_utils
@@ -137,14 +137,10 @@ subroutine deserialize_int_r(flat_arr, arr_size, dims_out, ndim_out, filename_as
   ! Outputs
   integer(int32), intent(out) :: flat_arr(arr_size)
   !! Output flat array
-  integer(int32), intent(out) :: dims_out(ndim_actual)
-  !! Output dimensions array
-  integer, intent(out) :: ndim_out
-  !! Number of dimensions in the output array
 
   integer(int32), intent(in) :: filename_ascii(fn_len)
   !! ASCII representation of the filename
-  integer(int32), intent(in) :: fn_len, arr_size, ndim_actual
+  integer(int32), intent(in) :: fn_len, arr_size
   !! Length of the filename array and size of the output array
 
   ! Local variables
@@ -158,11 +154,6 @@ subroutine deserialize_int_r(flat_arr, arr_size, dims_out, ndim_out, filename_as
 
   ! Read file
   call deserialize_int_flat(flat, dims, filename)
-
-  ndim_out = size(dims)
-  do i = 1, ndim_out
-    dims_out(i) = dims(i)
-  end do
 
   do i = 1, product(dims)
     flat_arr(i) = flat(i)
