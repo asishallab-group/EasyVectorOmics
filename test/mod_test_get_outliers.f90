@@ -92,10 +92,8 @@ contains
     real(real64) :: loess_x(n_families), loess_y(n_families)
     integer(int32) :: indices_used(n_families)
     integer(int32) :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
+      loess_x, loess_y, indices_used, perm, stack_left, stack_right, error_code)
     call assert_equal_int(error_code, 0, 'Error code 0 (test_scaling_basic)')
     call assert_true(all(dscale > 0.0_real64), 'LOESS scaling should be positive for nontrivial families')
   end subroutine test_scaling_basic
@@ -148,12 +146,10 @@ contains
     integer(int32) :: error_code
     real(real64) :: loess_x(n_families), loess_y(n_families)
     integer(int32) :: loess_n(n_families)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
     distances = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64, 5.0_real64]
     gene_to_fam = [1,1,2,2,2]
     call detect_outliers(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, &
-      is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &
+      is_outlier, loess_x, loess_y, loess_n, error_code, &
       60.0_real64)
     call assert_true(any(is_outlier), "At least one outlier detected")
   end subroutine test_detect_outliers_basic
@@ -169,10 +165,8 @@ contains
     real(real64) :: loess_x(n_families), loess_y(n_families)
     integer(int32) :: indices_used(n_families), loess_n(n_families)
     integer(int32) :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
+      loess_x, loess_y, indices_used, perm, stack_left, stack_right, error_code)
     call assert_equal_int(error_code, -2, 'Error code -2 for invalid family indices')
     call assert_true(all(dscale == -1.0_real64), 'dscale must be -1.0 on error')
   end subroutine test_invalid_indices
@@ -217,17 +211,15 @@ contains
     integer(int32) :: i, error_code
     real(real64) :: loess_x(1), loess_y(1)
     integer(int32) :: loess_n(1)
-    real(real64) :: workspace_weights(1)
-    real(real64) :: workspace_values(1,1)
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, loess_n, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
+      loess_x, loess_y, loess_n, perm, stack_left, stack_right, error_code)
     perm = [(i, i=1,n_genes)]
     stack_left = 0
     stack_right = 0
     call compute_rdi(n_genes, distances, gene_to_fam, dscale, rdi, sorted_rdi, perm, stack_left, stack_right)
     perm = [(i, i=1,n_genes)]
     call detect_outliers(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, &
-      is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &
+      is_outlier, loess_x, loess_y, loess_n, error_code, &
       95.0_real64)
     call assert_equal_real(dscale(1), 0.0_real64, 1e-12_real64, &
          "Single gene scaling (should be 0.0)")
@@ -250,10 +242,8 @@ contains
     integer(int32) :: indices_used(1)
     integer(int32) :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
     integer(int32) :: i
-    real(real64) :: workspace_weights(1)
-    real(real64) :: workspace_values(1,1)
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
+      loess_x, loess_y, indices_used, perm, stack_left, stack_right, error_code)
     perm = [(i, i=1,n_genes)]
     stack_left = 0
     stack_right = 0
@@ -274,10 +264,8 @@ contains
     real(real64) :: loess_x(1), loess_y(1), loess_n(1)
     integer(int32) :: indices_used(1)
     integer(int32) :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    real(real64) :: workspace_weights(1)
-    real(real64) :: workspace_values(1,1)
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
+      loess_x, loess_y, indices_used, perm, stack_left, stack_right, error_code)
     call assert_true(dscale(1) > 0.0_real64, "All genes one family scaling (LOESS, should be positive)")
   end subroutine test_all_genes_one_family
 
@@ -308,12 +296,10 @@ contains
     real(real64) :: loess_x(n_families), loess_y(n_families)
     integer(int32) :: indices_used(n_families), loess_n(n_families)
     integer(int32) :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
     integer(int32) :: i
     distances = [0.0_real64, 0.0_real64, 0.0_real64]
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
+      loess_x, loess_y, indices_used, perm, stack_left, stack_right, error_code)
     distances(1) = -1.0_real64
     perm = [(i, i=1,n_genes)]
     stack_left = 0
@@ -350,10 +336,8 @@ contains
     real(real64) :: loess_x(n_families), loess_y(n_families)
     integer(int32) :: indices_used(n_families), loess_n(n_families)
     integer(int32) :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
+      loess_x, loess_y, indices_used, perm, stack_left, stack_right, error_code)
     call assert_equal_int(error_code, -2, 'Error code -2 for invalid family indices')
     call assert_true(all(dscale == -1.0_real64), 'dscale fallback to -1.0 on invalid indices')
   end subroutine test_invalid_family_indices
@@ -369,10 +353,8 @@ contains
     real(real64) :: loess_x(n_families), loess_y(n_families)
     integer(int32) :: indices_used(n_families), loess_n(n_families)
     integer(int32) :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
+      loess_x, loess_y, indices_used, perm, stack_left, stack_right, error_code)
     call assert_equal_int(error_code, 0, 'Error code 0 for single-gene families')
     call assert_equal_real(dscale(1), 0.0_real64, 1e-12_real64, 'Single-gene family scaling 0.0')
     call assert_equal_real(dscale(2), 0.0_real64, 1e-12_real64, 'Single-gene family scaling 0.0')
@@ -389,10 +371,8 @@ contains
     real(real64) :: loess_x(1), loess_y(1), loess_n(1)
     integer(int32) :: indices_used(1)
     integer(int32) :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    real(real64) :: workspace_weights(1)
-    real(real64) :: workspace_values(1,1)
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
+      loess_x, loess_y, indices_used, perm, stack_left, stack_right, error_code)
     call assert_equal_int(error_code, 0, 'Error code 0 for all-zero distances')
     call assert_equal_real(dscale(1), 0.0_real64, 1e-12_real64, 'All-zero distances scaling 0.0')
   end subroutine test_all_zero_distances_scaling
@@ -410,10 +390,8 @@ contains
     logical :: is_ortholog(n_genes) = [.false., .false., .false.]
     real(real64) :: loess_x(n_families), loess_y(n_families)
     integer(int32) :: indices_used(n_families), loess_n(n_families)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
     call detect_outliers(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, &
-      is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code)
+      is_outlier, loess_x, loess_y, loess_n, error_code)
     call assert_equal_int(error_code, -2, 'detect_outliers propagates error_code -2 for invalid indices')
   end subroutine test_detect_outliers_invalid_indices
 
@@ -427,10 +405,8 @@ contains
     real(real64) :: loess_x(n_families), loess_y(n_families)
     integer(int32) :: indices_used(n_families),loess_n(n_families)
     integer(int32) :: perm(n_genes), stack_left(n_genes), stack_right(n_genes)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm, stack_left, stack_right, workspace_weights, workspace_values, error_code)
+      loess_x, loess_y, indices_used, perm, stack_left, stack_right, error_code)
     call assert_equal_int(error_code, 0, 'Error code 0 for LOESS fallback')
     call assert_true(any(dscale > 0.0_real64), 'Scaling must be positive if LOESS fallback is successful')
   end subroutine test_loess_fallback
@@ -461,10 +437,8 @@ contains
     integer(int32) :: error_code
     real(real64) :: loess_x(n_families), loess_y(n_families)
     integer(int32) :: loess_n(n_families)
-    real(real64) :: workspace_weights(n_families)
-    real(real64) :: workspace_values(1, n_families)
     call detect_outliers(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, &
-      is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code)
+      is_outlier, loess_x, loess_y, loess_n, error_code)
     ! At 95th percentile, only the highest value should be outlier
     call assert_true(is_outlier(4), "Highest distance is outlier (default percentile)")
     call assert_false(any(is_outlier(1:3)), "Others are not outliers (default percentile)")

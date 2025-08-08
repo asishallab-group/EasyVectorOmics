@@ -279,10 +279,10 @@ contains
   end subroutine which
 
   !> Performs LOESS smoothing on a set of data points.
-  !| Smooths y_ref at x_query using reference points x_ref, y_ref, and kernel parameters. Optionally excludes points using mask_in.
-  pure subroutine loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, x_query, &
-                          kernel_sigma, kernel_cutoff, y_out, workspace_weights, &
-                          workspace_values, mask_in)
+  !| Smooths y_ref at x_query using reference points x_ref, y_ref, and kernel parameters.
+  !| The user must pre-filter data and provide only valid indices in indices_used.
+  pure subroutine loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
+                          kernel_sigma, kernel_cutoff, y_out)
     !| Total number of reference points.
     integer(int32), intent(in) :: n_total
     !| Number of target points to smooth.
@@ -291,109 +291,78 @@ contains
     real(real64), intent(in) :: x_ref(n_total)
     !| Reference y-coordinates (length n_total).
     real(real64), intent(in) :: y_ref(n_total)
+    !| Indices of reference points used for smoothing (only valid indices).
+    integer(int32), intent(in) :: indices_used(n_used)
+    !| Number of indices actually used for smoothing.
+    integer(int32), intent(in) :: n_used
     !| Target x-coordinates to smooth.
     real(real64), intent(in) :: x_query(n_target)
-    !| Indices of reference points used for smoothing.
-    integer(int32), intent(in) :: indices_used(n_total)
     !| Bandwidth parameter for the kernel.
     real(real64), intent(in) :: kernel_sigma
     !| Cutoff for the kernel.
     real(real64), intent(in) :: kernel_cutoff
     !| Output smoothed values (length n_target).
     real(real64), intent(out) :: y_out(n_target)
-    !| Temporary array for weights.
-    real(real64), intent(inout) :: workspace_weights(n_total)
-    !| Temporary array for values.
-    real(real64), intent(inout) :: workspace_values(n_total)
-    !| Optional logical mask for explicit exclusion.
-    logical, intent(in), optional :: mask_in(n_total)
 
-    integer(int32) :: q, i, idx, m_out, valid_indices(n_total)
+    integer(int32) :: q, i, idx
     real(real64) :: query_x, ref_x, delta, sum_weights, weight
-    logical :: mask(n_total)
-    logical :: found_exact
-    integer(int32) :: exact_idx
     real(real64) :: min_dist
-    integer(int32) :: min_idx, j
-    integer(int32) :: n_mask_true, last_true_idx
-    logical :: in_range(n_total)
+    integer(int32) :: min_idx
+    logical :: exact_match_found, use_kernel
+
+    ! Input validation
+    if (n_used <= 0) then
+      y_out = 0.0_real64  ! Initialize output for safety
+      return
+    end if
+
+    ! Check if we should use kernel smoothing
+    use_kernel = (kernel_sigma > 0.0_real64)
 
     do q = 1, n_target
       query_x = x_query(q)
-      sum_weights = 0.0
-      y_out(q) = 0.0
-      if (present(mask_in)) then
-        do i = 1, n_total
-          idx = indices_used(i)
-          mask(i) = mask_in(idx)
-        end do
-        ! If the mask leaves only one allowed point, return it directly and cycle
-        n_mask_true = 0
-        last_true_idx = -1
-        do i = 1, n_total
-          if (mask(i)) then
-            n_mask_true = n_mask_true + 1
-            last_true_idx = indices_used(i)
-          end if
-        end do
-        if (n_mask_true == 1) then
-          y_out(q) = y_ref(last_true_idx)
-          cycle
-        end if
-      else
-        mask = .true.
-      end if
-      ! --- Check for exact match ---
-      found_exact = .false.
-      exact_idx = -1
-      do i = 1, n_total
+      sum_weights = 0.0_real64
+      y_out(q) = 0.0_real64
+      min_dist = huge(1.0_real64)
+      min_idx = indices_used(1)
+      exact_match_found = .false.
+
+      ! Process all reference points
+      do i = 1, n_used
         idx = indices_used(i)
-        if (query_x == x_ref(idx)) then
-          found_exact = .true.
-          exact_idx = idx
+        ref_x = x_ref(idx)
+        delta = abs(query_x - ref_x)
+        
+        ! Check for exact match
+        if (delta == 0.0_real64) then
+          y_out(q) = y_ref(idx)
+          exact_match_found = .true.
           exit
         end if
+        
+        ! Track closest point for potential fallback
+        if (delta < min_dist) then
+          min_dist = delta
+          min_idx = idx
+        end if
+        
+        ! Apply kernel smoothing if enabled and within cutoff
+        if (use_kernel .and. delta <= kernel_cutoff * kernel_sigma) then
+          weight = exp(-(delta / kernel_sigma)**2)
+          sum_weights = sum_weights + weight
+          y_out(q) = y_out(q) + weight * y_ref(idx)
+        end if
       end do
-      if (found_exact) then
-        y_out(q) = y_ref(exact_idx)
-        cycle
-      end if
-      ! --- Usual LOESS smoothing ---
-      
-      do i = 1, n_total
-        idx = indices_used(i)
-        ref_x = x_ref(idx)
-        delta = abs(query_x - ref_x)
-        in_range(i) = (delta <= kernel_cutoff * kernel_sigma)
-        mask(i) = mask(i) .and. in_range(i)
-      end do
-      call which(mask, n_total, valid_indices, n_total, m_out)
-      if (m_out == 1) then
-        idx = indices_used(valid_indices(1))
-        y_out(q) = y_ref(idx)
-        cycle
-      end if
-      do i = 1, m_out
-        idx = indices_used(valid_indices(i))
-        ref_x = x_ref(idx)
-        delta = abs(query_x - ref_x)
-        weight = exp(-(delta / kernel_sigma)**2)
-        sum_weights = sum_weights + weight
-        y_out(q) = y_out(q) + weight * y_ref(idx)
-      end do
-      if (sum_weights > 0.0) then
-        y_out(q) = y_out(q) / sum_weights
-      else
-        ! Extrapolation: return y_ref at the closest x_ref (among indices_used)
-        min_dist = abs(query_x - x_ref(indices_used(1)))
-        min_idx = indices_used(1)
-        do j = 2, n_total
-          if (abs(query_x - x_ref(indices_used(j))) < min_dist) then
-            min_dist = abs(query_x - x_ref(indices_used(j)))
-            min_idx = indices_used(j)
-          end if
-        end do
-        y_out(q) = y_ref(min_idx)
+
+      ! Finalize result if no exact match was found
+      if (.not. exact_match_found) then
+        if (sum_weights > 0.0_real64) then
+          ! We have weighted average from kernel smoothing
+          y_out(q) = y_out(q) / sum_weights
+        else
+          ! Fallback: use nearest neighbor
+          y_out(q) = y_ref(min_idx)
+        end if
       end if
     end do
   end subroutine loess_smooth_2d
@@ -405,9 +374,9 @@ end module f42_utils
 ! === R WRAPPERS ===
 
 !> R wrapper for loess_smooth_2d.
-!| Calls loess_smooth_2d with standard Fortran types for R interface.
-subroutine loess_smooth_2d_r(n_total, n_target, x_ref, y_ref, indices_used, x_query, &
-    kernel_sigma, kernel_cutoff, y_out, workspace_weights, workspace_values, mask_in)
+!| Direct wrapper - user must pre-filter indices in R before calling.
+subroutine loess_smooth_2d_r(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
+    kernel_sigma, kernel_cutoff, y_out)
   use f42_utils, only: loess_smooth_2d
   use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
@@ -419,38 +388,21 @@ subroutine loess_smooth_2d_r(n_total, n_target, x_ref, y_ref, indices_used, x_qu
   real(real64), intent(in) :: x_ref(n_total)
   !| Reference y-coordinates (length n_total).
   real(real64), intent(in) :: y_ref(n_total)
+  !| Indices of reference points used for smoothing (pre-filtered).
+  integer(int32), intent(in) :: indices_used(n_used)
+  !| Number of indices actually used for smoothing.
+  integer(int32), intent(in) :: n_used
   !| Target x-coordinates to smooth.
   real(real64), intent(in) :: x_query(n_target)
-  !| Indices of reference points used for smoothing.
-  integer(int32), intent(in) :: indices_used(n_total)
   !| Bandwidth parameter for the kernel.
   real(real64), intent(in) :: kernel_sigma
   !| Cutoff for the kernel.
   real(real64), intent(in) :: kernel_cutoff
   !| Output smoothed values (length n_target).
   real(real64), intent(out) :: y_out(n_target)
-  !| Temporary array for weights.
-  real(real64), intent(inout) :: workspace_weights(n_total)
-  !| Temporary array for values.
-  real(real64), intent(inout) :: workspace_values(n_total)
-  !| Logical mask for explicit exclusion.
-  logical, intent(in) :: mask_in(n_total)
-  integer(int32) :: i
-  logical :: any_true
-  any_true = .false.
-  do i = 1, n_total
-    if (mask_in(i)) then
-      any_true = .true.
-      exit
-    end if
-  end do
-  if (any_true) then
-    call loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, x_query, &
-      kernel_sigma, kernel_cutoff, y_out, workspace_weights, workspace_values, mask_in)
-  else
-    call loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, x_query, &
-      kernel_sigma, kernel_cutoff, y_out, workspace_weights, workspace_values)
-  end if
+  
+  call loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
+    kernel_sigma, kernel_cutoff, y_out)
 end subroutine loess_smooth_2d_r
 
 ! === C WRAPPERS ===
@@ -481,9 +433,9 @@ subroutine which_c(mask, n, idx_out, m_max, m_out) bind(C, name="which_c")
 end subroutine which_c
 
 !> C wrapper for loess_smooth_2d.
-!| Converts integer mask to logical and calls loess_smooth_2d for C interface.
-subroutine loess_smooth_2d_c(n_total, n_target, x_ref, y_ref, indices_used, x_query, &
-    kernel_sigma, kernel_cutoff, y_out, workspace_weights, workspace_values, mask_in) bind(C, name="loess_smooth_2d_c")
+!| Direct wrapper - user must pre-filter indices in C before calling.
+subroutine loess_smooth_2d_c(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
+    kernel_sigma, kernel_cutoff, y_out) bind(C, name="loess_smooth_2d_c")
   use iso_c_binding
   use, intrinsic :: iso_fortran_env, only: int32
   use f42_utils, only: loess_smooth_2d
@@ -496,31 +448,20 @@ subroutine loess_smooth_2d_c(n_total, n_target, x_ref, y_ref, indices_used, x_qu
   real(c_double), intent(in) :: x_ref(n_total)
   !| Reference y-coordinates (length n_total).
   real(c_double), intent(in) :: y_ref(n_total)
+  !| Indices of reference points used for smoothing (pre-filtered).
+  integer(c_int), intent(in) :: indices_used(n_used)
+  !| Number of indices actually used for smoothing.
+  integer(c_int), intent(in), value :: n_used
   !| Target x-coordinates to smooth.
   real(c_double), intent(in) :: x_query(n_target)
-  !| Indices of reference points used for smoothing.
-  integer(c_int), intent(in) :: indices_used(n_total)
   !| Bandwidth parameter for the kernel.
   real(c_double), intent(in), value :: kernel_sigma
   !| Cutoff for the kernel.
   real(c_double), intent(in), value :: kernel_cutoff
   !| Output smoothed values (length n_target).
   real(c_double), intent(out) :: y_out(n_target)
-  !| Temporary array for weights.
-  real(c_double), intent(inout) :: workspace_weights(n_total)
-  !| Temporary array for values.
-  real(c_double), intent(inout) :: workspace_values(n_total)
-  !| Integer mask array (0/1 values).
-  integer(c_int), intent(in) :: mask_in(n_total)
-  logical :: mask_f(n_total)
-  integer(int32) :: i
-  logical :: all_true
 
-  do i = 1, size(mask_in)
-    mask_f(i) = (mask_in(i) /= 0)
-  end do
-
-  call loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, x_query, &
-    kernel_sigma, kernel_cutoff, y_out, workspace_weights, workspace_values, mask_f)
+  call loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
+    kernel_sigma, kernel_cutoff, y_out)
 
 end subroutine loess_smooth_2d_c

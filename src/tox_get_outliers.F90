@@ -9,7 +9,7 @@ contains
   !> Compute family scaling factors (dscale) to normalize distances.
   !| Uses LOESS on the median/stddev of intra-family distances for scaling, regardless of orthologs.
   pure subroutine compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-    loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)
+    loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, error_code)
     !| Total number of genes
     integer(int32), intent(in) :: n_genes
     !| Total number of gene families
@@ -32,10 +32,6 @@ contains
     integer(int32), intent(inout) :: stack_left_tmp(n_genes)
     !| Stack array for right indices during sorting
     integer(int32), intent(inout) :: stack_right_tmp(n_genes)
-    !| Workspace for LOESS weights (dimension n_families)
-    real(real64), intent(inout) :: workspace_weights(n_families)
-    !| Workspace for LOESS values (dimension 1 x n_families)
-    real(real64), intent(inout) :: workspace_values(1, n_families)
     !| Error code: 0=ok, -2=invalid family indices (required)
     integer(int32), intent(out) :: error_code
 
@@ -87,9 +83,9 @@ contains
       call sort_array(family_distances(1:n_in_family), perm_tmp(1:n_in_family), stack_left_tmp(1:n_in_family), &
                       stack_right_tmp(1:n_in_family))
       if (mod(n_in_family,2) == 0) then
-        median_dist = 0.5_real64 * (family_distances(n_in_family/2) + family_distances(n_in_family/2+1))
+        median_dist = 0.5_real64 * (family_distances(perm_tmp(n_in_family/2)) + family_distances(perm_tmp(n_in_family/2+1)))
       else
-        median_dist = family_distances((n_in_family+1)/2)
+        median_dist = family_distances(perm_tmp((n_in_family+1)/2))
       end if
       mean_dist = sum(family_distances(1:n_in_family)) / n_in_family
       sumsq = sum((family_distances(1:n_in_family) - mean_dist)**2)
@@ -116,14 +112,21 @@ contains
         cycle  ! Skip single-gene or empty families
       end if
       if (n_valid > 0) then
+        ! Sort the family distances to compute median
+        do j = 1, n_in_family
+          perm_tmp(j) = j
+        end do
+        call sort_array(family_distances(1:n_in_family), perm_tmp(1:n_in_family), stack_left_tmp(1:n_in_family), &
+                        stack_right_tmp(1:n_in_family))
+        
         if (mod(n_in_family,2) == 0) then
-          median_dist = 0.5_real64 * (family_distances(n_in_family/2) + family_distances(n_in_family/2+1))
+          median_dist = 0.5_real64 * (family_distances(perm_tmp(n_in_family/2)) + family_distances(perm_tmp(n_in_family/2+1)))
         else
-          median_dist = family_distances((n_in_family+1)/2)
+          median_dist = family_distances(perm_tmp((n_in_family+1)/2))
         end if
         ! Only pass first n_valid elements of LOESS arrays
-        call loess_smooth_2d(n_valid, 1, loess_x, loess_y, indices_used, [median_dist], &
-                sigma, cutoff, loess_pred, workspace_weights, workspace_values)
+        call loess_smooth_2d(n_families, 1, loess_x, loess_y, indices_used(1:n_valid), n_valid, [median_dist], &
+                sigma, cutoff, loess_pred)
         dscale(family_idx) = loess_pred(1,1)
       else
         dscale(family_idx) = 0.0_real64
@@ -244,7 +247,7 @@ contains
   !> Main routine to detect outliers using RDI and LOESS-based scaling.
   pure subroutine detect_outliers(n_genes, n_families, distances, gene_to_fam, &
                             work_array, perm, stack_left, stack_right, &
-                            is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &
+                            is_outlier, loess_x, loess_y, loess_n, error_code, &
                             percentile)
     implicit none
 
@@ -272,10 +275,6 @@ contains
     real(real64), intent(inout) :: loess_y(n_families)
     !| Indices of reference points used for smoothing.
     integer(int32), intent(inout) :: loess_n(n_families)
-    !| Workspace for LOESS weights (dimension n_families)
-    real(real64), intent(inout) :: workspace_weights(n_families)
-    !| Workspace for LOESS values (dimension 1 x n_families)
-    real(real64), intent(inout) :: workspace_values(1, n_families)
     !| Error code: 0=ok, -2=invalid family indices (required)
     integer(int32), intent(out) :: error_code
     !| (optional) Percentile threshold for outlier detection (default: 95)
@@ -301,8 +300,7 @@ contains
     end do
 
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-                                loess_x, loess_y, loess_n, perm, stack_left, stack_right, workspace_weights, &
-                                workspace_values, error_code)
+                                loess_x, loess_y, loess_n, perm, stack_left, stack_right, error_code)
     if (error_code /= 0) return
     call compute_rdi(n_genes, distances, gene_to_fam, dscale, rdi, work_array, perm, stack_left, stack_right)
     call identify_outliers(n_genes, rdi, work_array, is_outlier, threshold, percentile_val)
@@ -315,7 +313,7 @@ end module tox_get_outliers
 !> R wrapper for compute_family_scaling.
 !| Calls compute_family_scaling with standard Fortran types for R interface.
 subroutine compute_family_scaling_r(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)
+      loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, error_code)
   use tox_get_outliers
   use iso_fortran_env, only: real64, int32
   !| Total number of genes
@@ -340,14 +338,10 @@ subroutine compute_family_scaling_r(n_genes, n_families, distances, gene_to_fam,
   integer(int32), intent(inout) :: stack_left_tmp(n_genes)
   !| Stack array for right indices during sorting
   integer(int32), intent(inout) :: stack_right_tmp(n_genes)
-  !| Workspace for LOESS weights (dimension n_families)
-  real(real64), intent(inout) :: workspace_weights(n_families)
-  !| Workspace for LOESS values (dimension 1 x n_families)
-  real(real64), intent(inout) :: workspace_values(1, n_families)
   !| Error code: 0=ok, -2=invalid family indices (required)
   integer(int32), intent(out) :: error_code
   call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)
+      loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, error_code)
 end subroutine compute_family_scaling_r
 
 !> R wrapper for compute_rdi.
@@ -403,7 +397,7 @@ end subroutine identify_outliers_r
 !| Calls detect_outliers with standard Fortran types for R interface.
 subroutine detect_outliers_r(n_genes, n_families, distances, gene_to_fam, &
                             work_array, perm, stack_left, stack_right, &
-                            is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &
+                            is_outlier, loess_x, loess_y, loess_n, error_code, &
                             percentile)
   use tox_get_outliers
   use iso_fortran_env, only: real64, int32
@@ -431,17 +425,13 @@ subroutine detect_outliers_r(n_genes, n_families, distances, gene_to_fam, &
   real(real64), intent(inout) :: loess_y(n_families)
   !| Indices of reference points used for smoothing.
   integer(int32), intent(inout) :: loess_n(n_families)
-  !| Workspace for LOESS weights (dimension n_families)
-  real(real64), intent(inout) :: workspace_weights(n_families)
-  !| Workspace for LOESS values (dimension 1 x n_families)
-  real(real64), intent(inout) :: workspace_values(1, n_families)
   !| Error code: 0=ok, -2=invalid family indices (required)
   integer(int32), intent(out) :: error_code
   !| (optional) Percentile threshold for outlier detection (default: 95)
   real(real64), intent(in), optional :: percentile
   call detect_outliers(n_genes, n_families, distances, gene_to_fam, &
                       work_array, perm, stack_left, stack_right, &
-                      is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &
+                      is_outlier, loess_x, loess_y, loess_n, error_code, &
                       percentile)
 end subroutine detect_outliers_r
 
@@ -450,7 +440,7 @@ end subroutine detect_outliers_r
   !> C wrapper for compute_family_scaling.
   !| Calls compute_family_scaling with C-compatible types for external interface.
   subroutine compute_family_scaling_c(n_genes, n_families, distances, gene_to_fam, dscale, &
-    loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, &
+    loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, &
     error_code) bind(C, name="compute_family_scaling_c")
   use iso_c_binding
   use tox_get_outliers
@@ -474,14 +464,10 @@ end subroutine detect_outliers_r
   integer(c_int), intent(inout), target :: stack_left_tmp(n_genes)
   !| Stack array for right indices during sorting
   integer(c_int), intent(inout), target :: stack_right_tmp(n_genes)
-  !| Workspace for LOESS weights (dimension n_families)
-  real(c_double), intent(inout), target :: workspace_weights(n_families)
-  !| Workspace for LOESS values (dimension 1 x n_families)
-  real(c_double), intent(inout), target :: workspace_values(1,n_families )
   !| Error code: 0=ok, -2=invalid family indices (required)
   integer(c_int), intent(out) :: error_code
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)
+      loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, error_code)
 end subroutine compute_family_scaling_c
 
 !> C wrapper for compute_rdi.
@@ -553,7 +539,7 @@ end subroutine identify_outliers_c
 !| Calls detect_outliers with C-compatible types for external interface.
 subroutine detect_outliers_c(n_genes, n_families, distances, gene_to_fam, &
                           work_array, perm, stack_left, stack_right, &
-                          is_outlier_int, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &
+                          is_outlier_int, loess_x, loess_y, loess_n, error_code, &
                           percentile) bind(C, name="detect_outliers_c")
   use iso_c_binding
   use tox_get_outliers
@@ -579,10 +565,6 @@ subroutine detect_outliers_c(n_genes, n_families, distances, gene_to_fam, &
   real(c_double), intent(inout), target :: loess_y(n_families)
   !| Indices of reference points used for smoothing
   integer(c_int), intent(inout), target :: loess_n(n_families)
-  !| Workspace for LOESS weights (dimension n_families)
-  real(c_double), intent(inout), target :: workspace_weights(n_families)
-  !| Workspace for LOESS values (dimension 1 x n_families)
-  real(c_double), intent(inout), target :: workspace_values(1,n_families)
   !| Error code: 0=ok, -2=invalid family indices (required)
   integer(c_int), intent(out) :: error_code
   !| Percentile threshold for outlier detection
@@ -591,7 +573,7 @@ subroutine detect_outliers_c(n_genes, n_families, distances, gene_to_fam, &
   integer :: i
   call detect_outliers(n_genes, n_families, distances, gene_to_fam, &
                     work_array, perm, stack_left, stack_right, &
-                    is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, &
+                    is_outlier, loess_x, loess_y, loess_n, error_code, &
                     percentile)
   ! Print output for debugging
   write(*, '(A)', advance='no') 'detect_outliers_c: is_outlier = ['
