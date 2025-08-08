@@ -123,7 +123,6 @@ def serialize_int_nd(arr: np.ndarray, filename: str):
     # prepare filename
     filename_ascii, fn_len = _filename_to_ascii_array(filename)
 
-    # Fortran-Funktion deklarieren
     arrays_lib.serialize_int_nd_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # arr
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims

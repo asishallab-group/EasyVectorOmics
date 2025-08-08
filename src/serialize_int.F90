@@ -154,14 +154,10 @@ subroutine serialize_int_flat_r(arr, array_size, dims, ndim, filename_ascii, fn_
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 
-  ! Gesamtgröße berechnen (z. B. für Sicherheit oder Logging)
   total_len = 1
   do i = 1, ndim
     total_len = total_len * dims(i)
   end do
-
-  ! optional check
-  ! print *, "Serializing array with ", total_len, " elements and ", ndim, " dimensions."
 
   call serialize_int_nd(arr(1:total_len), dims(1:ndim), ndim, filename)
 end subroutine
@@ -191,7 +187,7 @@ subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len) bind(C, n
   integer :: i
 
   call ascii_to_string(filename_ascii, fn_len, filename)
-  ! 1D-Array to Fortran pointer
+
   call c_f_pointer(arr, arr_f, [product(dims(1:ndim))])
 
   ! save
