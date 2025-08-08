@@ -56,6 +56,7 @@ module array_utils
     end do
   end subroutine get_array_dims
 
+  !> subroutine to convert an ASCII array to a string
 subroutine ascii_to_string(ascii_array, clen, str)
   use iso_fortran_env, only: int32
   implicit none
@@ -75,6 +76,7 @@ subroutine ascii_to_string(ascii_array, clen, str)
   ! Return the string (or use it as needed)
 end subroutine ascii_to_string
 
+!> Subroutine to get metadata of a char array file
 subroutine get_array_metadata_chars(filename, dims_out, ndims, type_code_out, clen_out)
   use iso_fortran_env, only: int32
   implicit none
