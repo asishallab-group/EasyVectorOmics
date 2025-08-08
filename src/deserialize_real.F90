@@ -2,14 +2,13 @@
 module real_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding
+  use array_utils
   use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
 
   private
   public :: deserialize_real_flat, deserialize_real_1d, deserialize_real_2d, &
            deserialize_real_3d, deserialize_real_4d, deserialize_real_5d
-
-  integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
 
 contains
 
@@ -22,16 +21,10 @@ contains
     !! dimensions array
     character(len=*), intent(in) :: filename
 
-    integer :: unit, magic, type_code, d
+    integer :: unit, magic, type_code, ndims, ierr, clen
 
-    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old')
-    read(unit) magic
-    if (magic /= ARRAY_FILE_MAGIC) error stop "Invalid file format"
-    read(unit) type_code
-    if (type_code /= 2) error stop "Expected real64 data"
-    read(unit) d
-    allocate(dims(d))
-    read(unit) dims
+    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
+    call check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     allocate(flat(product(dims)))
     read(unit) flat
     close(unit)

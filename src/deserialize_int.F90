@@ -2,13 +2,12 @@
 module int_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char
+  use array_utils
   implicit none
 
   private
   public :: deserialize_int_1d, deserialize_int_2d, &
            deserialize_int_3d, deserialize_int_4d, deserialize_int_5d, deserialize_int_flat
-
-  integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
 
 contains
   !> Deserialize a flat integer array from a file
@@ -21,17 +20,11 @@ contains
     character(len=*), intent(in) :: filename
     !! Name of the file to read
 
-    integer :: unit, magic, type_code, d
+    integer(int32) :: unit, magic, type_code, ndims, ierr, clen
 
     ! Read file
-    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old')
-    read(unit) magic
-    if (magic /= ARRAY_FILE_MAGIC) error stop "Invalid file format"
-    read(unit) type_code
-    if (type_code /= 1) error stop "Expected int32 data"
-    read(unit) d
-    allocate(dims(d))
-    read(unit) dims
+    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
+    call check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     ! Allocate array of proper size
     allocate(flat(product(dims)))
     read(unit) flat

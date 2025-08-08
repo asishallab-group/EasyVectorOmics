@@ -4,7 +4,7 @@ module array_utils
     use iso_c_binding
     implicit none
 
-    PUBLIC :: get_array_dims, get_array_metadata_chars, ascii_to_string
+    PUBLIC :: get_array_dims, get_array_metadata_chars, ascii_to_string, check_file_header
 
     integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
 
@@ -21,7 +21,7 @@ module array_utils
     ierr = 0
     clen = 0
 
-    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
+    
     if (ierr /= 0) then
       ierr = 101
       close(unit)
@@ -73,7 +73,6 @@ module array_utils
     else
       clen = 0 ! Not applicable for non-character types
     end if
-    close(unit)
 
   end subroutine
 
@@ -92,7 +91,9 @@ module array_utils
     integer(int32) :: type_code, clen
 
     ! error handling
+    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
     call check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    close(unit)
     if (ierr /= 0) then
       return
     end if
@@ -144,7 +145,9 @@ end subroutine ascii_to_string
     integer(int32), allocatable :: dims(:)
 
     ! error handling
+    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
     call check_file_header(filename, unit, type_code_out, ndims, dims, clen_out, ierr)
+    close(unit)
     if (ierr /= 0) then
       return
     end if

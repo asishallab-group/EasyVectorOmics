@@ -1,14 +1,13 @@
 !> Module for deserializing character arrays from files
 module char_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
+  use array_utils
   use iso_c_binding
   implicit none
 
   private
   public :: deserialize_char_1d, deserialize_char_2d, deserialize_char_3d, deserialize_char_flat, &
           deserialize_char_4d, deserialize_char_5d
-
-  integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
 
 contains
   !> Subroutine to deserialize a flat character array from a file
@@ -23,19 +22,12 @@ contains
     character(len=*), intent(in) :: filename
       !! Name of the file to read
 
-    integer :: unit, magic, type_code, d, i, str_len
+    integer(int32) :: unit, magic, type_code, ndim, i, str_len, ierr
     character(len=:), allocatable :: temp_str
 
     ! open file and read header
-    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old')
-    read(unit) magic
-    if (magic /= ARRAY_FILE_MAGIC) error stop "Invalid file format"
-    read(unit) type_code
-    if (type_code /= 3) error stop "Expected character data"
-    read(unit) d
-    allocate(dims(d))
-    read(unit) dims
-    read(unit) clen
+    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
+    call check_file_header(filename, unit, type_code, ndim, dims, clen, ierr)
     !allocate proper length for flat array
     allocate(character(len=clen) :: flat(product(dims)))
     do i = 1, product(dims)
