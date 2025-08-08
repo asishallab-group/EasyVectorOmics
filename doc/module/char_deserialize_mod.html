@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="">
+      <meta name="description" content="Documentation for TensorOmics">
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
@@ -61,9 +61,6 @@
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
                 </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="../program/test_arrays.html">Program</a>
-                </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
                 <form action="../search.html" role="search" class="ms-auto">
@@ -88,19 +85,19 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="20.4% of total for modules and submodules.">140 statements</a>
+                 title="19.8% of total for modules and submodules.">140 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/deserialize_char.f90"> Source File</a>
+              <a href="../src/deserialize_char.F90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/deserialize_char.f90.html'>deserialize_char.f90</a></li>
+                <li class="breadcrumb-item"><a href='../sourcefile/deserialize_char.f90.html'>deserialize_char.F90</a></li>
             <li class="breadcrumb-item active" aria-current="page">char_deserialize_mod</li>
           </ol>
         </nav>
@@ -196,11 +193,7 @@
 </h3></div>
     <div class="card-body">
           
-  <p>@brief Subroutine to deserialize a flat character array from a file
-@param flat Output flat character array
-@param dims Output dimensions of the array
-@param clen Output maximum length of character string
-@param filename Name of the file to read</p>
+  <p>Subroutine to deserialize a flat character array from a file</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -215,7 +208,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-flat~4"></span>
+              <span class="anchor" id="variable-flat~11"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -225,12 +218,12 @@
             <td>::</td>
             <td><strong>flat</strong>(:)</td>
             <td>
-
+<p>Output flat character array</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dims~9"></span>
+              <span class="anchor" id="variable-dims~18"></span>
               integer(kind=int32),
             </td>
 <td>intent(out),</td>
@@ -240,12 +233,12 @@
             <td>::</td>
             <td><strong>dims</strong>(:)</td>
             <td>
-
+<p>Output dimensions of the array</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-clen~9"></span>
+              <span class="anchor" id="variable-clen~10"></span>
               integer,
             </td>
 <td>intent(out)</td>
@@ -255,12 +248,12 @@
             <td>::</td>
             <td><strong>clen</strong></td>
             <td>
-
+<p>Maximum length of character string</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~9"></span>
+              <span class="anchor" id="variable-filename~17"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -270,7 +263,7 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
-
+<p>Name of the file to read</p>
             </td>
         </tr>
     </tbody>
@@ -285,9 +278,8 @@
 </h3></div>
     <div class="card-body">
           
-  <p>@brief Subroutine to deserialize a 1D character array from a file
-@param arr Output character array
-@param filename Name of the file to read</p><a href="../proc/deserialize_char_1d.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Subroutine to deserialize a 1D character array from a file
+only moves a pointer for completeness</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -302,7 +294,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~6"></span>
+              <span class="anchor" id="variable-arr~12"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -312,12 +304,12 @@
             <td>::</td>
             <td><strong>arr</strong>(:)</td>
             <td>
-
+<p>Output character array</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~10"></span>
+              <span class="anchor" id="variable-filename~18"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -327,7 +319,7 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
-
+<p>Name of the file to read</p>
             </td>
         </tr>
     </tbody>
@@ -342,9 +334,8 @@
 </h3></div>
     <div class="card-body">
           
-  <p>@brief Subroutine to deserialize a 2D character array from a file
-@param arr Output character array
-@param filename Name of the file to read</p>
+  <p>Subroutine to deserialize a 2D character array from a file
+!&gt; The array is read as flat and then reshaped to 2D</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -359,7 +350,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~7"></span>
+              <span class="anchor" id="variable-arr~13"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -369,12 +360,12 @@
             <td>::</td>
             <td><strong>arr</strong>(:,:)</td>
             <td>
-
+<p>Output character array</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~11"></span>
+              <span class="anchor" id="variable-filename~19"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -384,7 +375,7 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
-
+<p>Name of the file to read</p>
             </td>
         </tr>
     </tbody>
@@ -399,9 +390,7 @@
 </h3></div>
     <div class="card-body">
           
-  <p>@brief Subroutine to deserialize a 3D character array from a file
-@param arr Output character array
-@param filename Name of the file to read</p>
+  <p>Subroutine to deserialize a 3D character array from a file</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -416,7 +405,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~8"></span>
+              <span class="anchor" id="variable-arr~14"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -426,12 +415,12 @@
             <td>::</td>
             <td><strong>arr</strong>(:,:,:)</td>
             <td>
-
+<p>Output character array</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~12"></span>
+              <span class="anchor" id="variable-filename~20"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -441,7 +430,7 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
-
+<p>Name of the file to read</p>
             </td>
         </tr>
     </tbody>
@@ -456,9 +445,7 @@
 </h3></div>
     <div class="card-body">
           
-  <p>@brief Subroutine to deserialize a 4D character array from a file
-@param arr Output character array
-@param filename Name of the file to read</p>
+  <p>Subroutine to deserialize a 4D character array from a file</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -473,7 +460,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~9"></span>
+              <span class="anchor" id="variable-arr~15"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -483,12 +470,12 @@
             <td>::</td>
             <td><strong>arr</strong>(:,:,:,:)</td>
             <td>
-
+<p>Output character array</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~13"></span>
+              <span class="anchor" id="variable-filename~21"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -498,7 +485,7 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
-
+<p>Name of the file to read</p>
             </td>
         </tr>
     </tbody>
@@ -513,9 +500,7 @@
 </h3></div>
     <div class="card-body">
           
-  <p>@brief Subroutine to deserialize a 5D character array from a file
-@param arr Output character array
-@param filename Name of the file to read</p>
+  <p>Subroutine to deserialize a 5D character array from a file</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -530,7 +515,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~10"></span>
+              <span class="anchor" id="variable-arr~16"></span>
               character(len=:),
             </td>
 <td>intent(out),</td>
@@ -540,12 +525,12 @@
             <td>::</td>
             <td><strong>arr</strong>(:,:,:,:,:)</td>
             <td>
-
+<p>Output character array</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~14"></span>
+              <span class="anchor" id="variable-filename~22"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -555,7 +540,7 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
-
+<p>Name of the file to read</p>
             </td>
         </tr>
     </tbody>
@@ -588,7 +573,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
-            </p>
+ on "2025-08-08 17:43 +0200"             </p>
           </div>
         </div>
         <br>

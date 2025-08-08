@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="">
+      <meta name="description" content="Documentation for TensorOmics">
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
@@ -61,9 +61,6 @@
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
                 </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="../program/test_arrays.html">Program</a>
-                </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
                 <form action="../search.html" role="search" class="ms-auto">
@@ -88,19 +85,19 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 3.1% of total for procedures.">33 statements</a>
+                 title=" 3.2% of total for procedures.">31 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/serialize_char.f90"> Source File</a>
+              <a href="../src/serialize_char.F90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/serialize_char.f90.html'>serialize_char.f90</a></li>
+                <li class="breadcrumb-item"><a href='../sourcefile/serialize_char.f90.html'>serialize_char.F90</a></li>
             <li class="breadcrumb-item active" aria-current="page">serialize_char_flat_C</li>
           </ol>
         </nav>
@@ -156,8 +153,9 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/serialize_char.html'>serialize_char</a></li>
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
+                  <li class="list-inline-item"><a href='../module/serialize_char.html'>serialize_char</a></li>
+                  <li class="list-inline-item"><a href='../module/array_utils.html'>array_utils</a></li>
               </ul>
             </li>
         </ul>
@@ -165,13 +163,7 @@
     </div>
 
 
-    <p>@brief C binding for the subroutine to serialize a flat character array to a binary file.
-@param ascii_ptr Pointer to the flat character array in ASCII format
-@param dims Dimensions of the array
-@param ndim Number of dimensions
-@param clen Maximum character length
-@param filename_ascii Array of ASCII characters representing the filename
-@param fn_len Length of the filename array</p>
+    <p>C binding for the subroutine to serialize a flat character array to a binary file.</p>
 
 
     <h3>Arguments</h3>
@@ -202,7 +194,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dims~8"></span>
+              <span class="anchor" id="variable-dims~9"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -212,12 +204,12 @@
             <td>::</td>
             <td><strong>dims</strong>(ndim)</td>
             <td>
-                
+                <p>Dimensions of the array</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndim~3"></span>
+              <span class="anchor" id="variable-ndim~4"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -227,12 +219,12 @@
             <td>::</td>
             <td><strong>ndim</strong></td>
             <td>
-                
+                <p>Number of dimensions</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-clen~8"></span>
+              <span class="anchor" id="variable-clen~9"></span>
               integer(kind=c_int),
             </td>
 <td></td>
@@ -242,7 +234,7 @@
             <td>::</td>
             <td><strong>clen</strong></td>
             <td>
-                
+                <p>Character length</p>
             </td>
         </tr>
         <tr>
@@ -257,7 +249,7 @@
             <td>::</td>
             <td><strong>filename_ascii</strong>(fn_len)</td>
             <td>
-                
+                <p>Array of ASCII characters representing the filename</p>
             </td>
         </tr>
         <tr>
@@ -272,7 +264,7 @@
             <td>::</td>
             <td><strong>fn_len</strong></td>
             <td>
-                
+                <p>Length of the filename array</p>
             </td>
         </tr>
     </tbody>
@@ -309,7 +301,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
-            </p>
+ on "2025-08-08 17:43 +0200"             </p>
           </div>
         </div>
         <br>

@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="">
+      <meta name="description" content="Documentation for TensorOmics">
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
@@ -61,9 +61,6 @@
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
                 </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="../program/test_arrays.html">Program</a>
-                </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
                 <form action="../search.html" role="search" class="ms-auto">
@@ -93,14 +90,14 @@
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/serialize.f90"> Source File</a>
+              <a href="../src/serialize.F90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/serialize.f90.html'>serialize.f90</a></li>
+                <li class="breadcrumb-item"><a href='../sourcefile/serialize.f90.html'>serialize.F90</a></li>
             <li class="breadcrumb-item active" aria-current="page">serialize_mod</li>
           </ol>
         </nav>
@@ -159,7 +156,13 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>Module providing serialization and routines for integer, real, and character arrays</p>
+      <p>Module providing serialization and routines for integer, real, and character arrays
+of up to 5 dimensions, as well as utility routines for extracting rows, columns, and cells from 2D arrays.
+Arrays are serialized to a custom binary format with a magic number and type/dimension metadata.</p>
+<div class="alert alert-info">
+<p class="alert-title h4">Note</p>
+<p>this is currently not in use</p>
+</div>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
@@ -168,8 +171,8 @@
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
                   <li class="list-inline-item"><a href='serialize_int.html'>serialize_int</a></li>
-                  <li class="list-inline-item"><a href='serialize_char.html'>serialize_char</a></li>
                   <li class="list-inline-item"><a href='serialize_real.html'>serialize_real</a></li>
+                  <li class="list-inline-item"><a href='serialize_char.html'>serialize_char</a></li>
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
               </ul>
             </li>
@@ -198,277 +201,8 @@
 
     </h3>
     
-  <p>Serialize a 1D integer(int32) array to a binary file.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-arr~25"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>arr</strong>(:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-filename~33"></span>
-              character(len=*),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>filename</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-          </li>
-          <li class="list-group-item">
-                <h3>
-    public  subroutine <a href='../proc/serialize_int_2d.html'>serialize_int_2d</a>(arr, filename)  
-
-    </h3>
-    
-  <p>Serialize a 2D integer(int32) array to a binary file.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-arr~26"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>arr</strong>(:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-filename~34"></span>
-              character(len=*),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>filename</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-          </li>
-          <li class="list-group-item">
-                <h3>
-    public  subroutine <a href='../proc/serialize_int_3d.html'>serialize_int_3d</a>(arr, filename)  
-
-    </h3>
-    
-  <p>Serialize a 3D integer(int32) array to a binary file.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-arr~27"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>arr</strong>(:,:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-filename~35"></span>
-              character(len=*),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>filename</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-          </li>
-          <li class="list-group-item">
-                <h3>
-    public  subroutine <a href='../proc/serialize_int_4d.html'>serialize_int_4d</a>(arr, filename)  
-
-    </h3>
-    
-  <p>Serialize a 4D integer(int32) array to a binary file.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-arr~28"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>arr</strong>(:,:,:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-filename~36"></span>
-              character(len=*),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>filename</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-          </li>
-          <li class="list-group-item">
-                <h3>
-    public  subroutine <a href='../proc/serialize_int_5d.html'>serialize_int_5d</a>(arr, filename)  
-
-    </h3>
-    
-  <p>Serialize a 5D integer(int32) array to a binary file.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-arr~29"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>arr</strong>(:,:,:,:,:)</td>
-            <td>
-
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-filename~37"></span>
-              character(len=*),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>filename</strong></td>
-            <td>
-
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-          </li>
-          <li class="list-group-item">
-                <h3>
-    public  subroutine <a href='../proc/serialize_real_1d.html'>serialize_real_1d</a>(arr, filename)  
-
-    </h3>
-    
-  <p>Serialize a 1D real(real64) array to a binary file.</p>
+  <p>Serialize a 1D integer(int32) array to a binary file.
+The file will contain a magic number, type code, dimension, shape, and the array data.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -484,7 +218,7 @@
         <tr>
             <td>
               <span class="anchor" id="variable-arr~17"></span>
-              real(kind=real64),
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -493,7 +227,7 @@
             <td>::</td>
             <td><strong>arr</strong>(:)</td>
             <td>
-
+<p>array to save</p>
             </td>
         </tr>
         <tr>
@@ -508,7 +242,7 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
-
+<p>output filename</p>
             </td>
         </tr>
     </tbody>
@@ -518,11 +252,12 @@
           </li>
           <li class="list-group-item">
                 <h3>
-    public  subroutine <a href='../proc/serialize_real_2d.html'>serialize_real_2d</a>(arr, filename)  
+    public  subroutine <a href='../proc/serialize_int_2d.html'>serialize_int_2d</a>(arr, filename)  
 
     </h3>
     
-  <p>Serialize a 2D real(real64) array to a binary file.</p>
+  <p>Serialize a 2D integer(int32) array to a binary file.
+The file will contain a magic number, type code, dimension, shape, and the array data.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -538,7 +273,7 @@
         <tr>
             <td>
               <span class="anchor" id="variable-arr~18"></span>
-              real(kind=real64),
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -547,7 +282,7 @@
             <td>::</td>
             <td><strong>arr</strong>(:,:)</td>
             <td>
-
+<p>array to save</p>
             </td>
         </tr>
         <tr>
@@ -562,7 +297,7 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
-
+<p>output filename</p>
             </td>
         </tr>
     </tbody>
@@ -572,11 +307,12 @@
           </li>
           <li class="list-group-item">
                 <h3>
-    public  subroutine <a href='../proc/serialize_real_3d.html'>serialize_real_3d</a>(arr, filename)  
+    public  subroutine <a href='../proc/serialize_int_3d.html'>serialize_int_3d</a>(arr, filename)  
 
     </h3>
     
-  <p>Serialize a 3D real(real64) array to a binary file.</p>
+  <p>Serialize a 3D integer(int32) array to a binary file.
+The file will contain a magic number, type code, dimension, shape, and the array data.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -592,7 +328,7 @@
         <tr>
             <td>
               <span class="anchor" id="variable-arr~19"></span>
-              real(kind=real64),
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -601,7 +337,7 @@
             <td>::</td>
             <td><strong>arr</strong>(:,:,:)</td>
             <td>
-
+<p>array to save</p>
             </td>
         </tr>
         <tr>
@@ -616,7 +352,7 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
-
+<p>output filename</p>
             </td>
         </tr>
     </tbody>
@@ -626,11 +362,12 @@
           </li>
           <li class="list-group-item">
                 <h3>
-    public  subroutine <a href='../proc/serialize_real_4d.html'>serialize_real_4d</a>(arr, filename)  
+    public  subroutine <a href='../proc/serialize_int_4d.html'>serialize_int_4d</a>(arr, filename)  
 
     </h3>
     
-  <p>Serialize a 4D real(real64) array to a binary file.</p>
+  <p>Serialize a 4D integer(int32) array to a binary file.
+The file will contain a magic number, type code, dimension, shape, and the array data.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -646,7 +383,7 @@
         <tr>
             <td>
               <span class="anchor" id="variable-arr~20"></span>
-              real(kind=real64),
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -655,7 +392,7 @@
             <td>::</td>
             <td><strong>arr</strong>(:,:,:,:)</td>
             <td>
-
+<p>array to save</p>
             </td>
         </tr>
         <tr>
@@ -670,7 +407,7 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
-
+<p>output filename</p>
             </td>
         </tr>
     </tbody>
@@ -680,11 +417,12 @@
           </li>
           <li class="list-group-item">
                 <h3>
-    public  subroutine <a href='../proc/serialize_real_5d.html'>serialize_real_5d</a>(arr, filename)  
+    public  subroutine <a href='../proc/serialize_int_5d.html'>serialize_int_5d</a>(arr, filename)  
 
     </h3>
     
-  <p>Serialize a 5D real(real64) array to a binary file.</p>
+  <p>Serialize a 5D integer(int32) array to a binary file.
+The file will contain a magic number, type code, dimension, shape, and the array data.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -700,7 +438,7 @@
         <tr>
             <td>
               <span class="anchor" id="variable-arr~21"></span>
-              real(kind=real64),
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -709,7 +447,7 @@
             <td>::</td>
             <td><strong>arr</strong>(:,:,:,:,:)</td>
             <td>
-
+<p>array to save</p>
             </td>
         </tr>
         <tr>
@@ -724,7 +462,284 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
+<p>output filename</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
 
+
+          </li>
+          <li class="list-group-item">
+                <h3>
+    public  subroutine <a href='../proc/serialize_real_1d.html'>serialize_real_1d</a>(arr, filename)  
+
+    </h3>
+    
+  <p>Serialize a 1D real(real64) array to a binary file.
+The file will contain a magic number, type code, dimension, shape, and the array data.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-arr~25"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>arr</strong>(:)</td>
+            <td>
+<p>array to save</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-filename~40"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>filename</strong></td>
+            <td>
+<p>output filename</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+          </li>
+          <li class="list-group-item">
+                <h3>
+    public  subroutine <a href='../proc/serialize_real_2d.html'>serialize_real_2d</a>(arr, filename)  
+
+    </h3>
+    
+  <p>Serialize a 2D real(real64) array to a binary file.
+The file will contain a magic number, type code, dimension, shape, and the array data.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-arr~26"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>arr</strong>(:,:)</td>
+            <td>
+<p>array to save</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-filename~41"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>filename</strong></td>
+            <td>
+<p>filename</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+          </li>
+          <li class="list-group-item">
+                <h3>
+    public  subroutine <a href='../proc/serialize_real_3d.html'>serialize_real_3d</a>(arr, filename)  
+
+    </h3>
+    
+  <p>Serialize a 3D real(real64) array to a binary file.
+The file will contain a magic number, type code, dimension, shape, and the array data.
+@param arr The input real array to serialize.
+@param filename The output filename.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-arr~27"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>arr</strong>(:,:,:)</td>
+            <td>
+<p>array to save</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-filename~42"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>filename</strong></td>
+            <td>
+<p>filename</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+          </li>
+          <li class="list-group-item">
+                <h3>
+    public  subroutine <a href='../proc/serialize_real_4d.html'>serialize_real_4d</a>(arr, filename)  
+
+    </h3>
+    
+  <p>Serialize a 4D real(real64) array to a binary file.
+The file will contain a magic number, type code, dimension, shape, and the array data.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-arr~28"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>arr</strong>(:,:,:,:)</td>
+            <td>
+<p>array to save</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-filename~43"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>filename</strong></td>
+            <td>
+<p>filename</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+          </li>
+          <li class="list-group-item">
+                <h3>
+    public  subroutine <a href='../proc/serialize_real_5d.html'>serialize_real_5d</a>(arr, filename)  
+
+    </h3>
+    
+  <p>Serialize a 5D real(real64) array to a binary file.
+The file will contain a magic number, type code, dimension, shape, and the array data.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-arr~29"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>arr</strong>(:,:,:,:,:)</td>
+            <td>
+<p>array to save</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-filename~44"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>filename</strong></td>
+            <td>
+<p>filename</p>
             </td>
         </tr>
     </tbody>
@@ -738,7 +753,8 @@
 
     </h3>
     
-  <p>Serialize a 1D character array to a binary file.</p>
+  <p>Serialize a 1D character array to a binary file.
+The file will contain a magic number, type code, dimension, shape, character length, and the array data.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -763,7 +779,7 @@
             <td>::</td>
             <td><strong>arr</strong>(:)</td>
             <td>
-
+<p>array to save</p>
             </td>
         </tr>
         <tr>
@@ -778,7 +794,7 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
-
+<p>output filename</p>
             </td>
         </tr>
     </tbody>
@@ -792,7 +808,10 @@
 
     </h3>
     
-  <p>Serialize a 2D character array to a binary file.</p>
+  <p>Serialize a 2D character array to a binary file.
+The file will contain a magic number, type code, dimension, shape, character length, and the array data.
+@param arr The input character array to serialize.
+@param filename The output filename.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -817,7 +836,7 @@
             <td>::</td>
             <td><strong>arr</strong>(:,:)</td>
             <td>
-
+<p>array to save</p>
             </td>
         </tr>
         <tr>
@@ -832,7 +851,7 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
-
+<p>output filename</p>
             </td>
         </tr>
     </tbody>
@@ -846,7 +865,8 @@
 
     </h3>
     
-  <p>Serialize a 3D character array to a binary file.</p>
+  <p>Serialize a 3D character array to a binary file.
+The file will contain a magic number, type code, dimension, shape, character length, and the array data.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -871,7 +891,7 @@
             <td>::</td>
             <td><strong>arr</strong>(:,:,:)</td>
             <td>
-
+<p>array to save</p>
             </td>
         </tr>
         <tr>
@@ -886,7 +906,7 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
-
+<p>output filename</p>
             </td>
         </tr>
     </tbody>
@@ -900,7 +920,8 @@
 
     </h3>
     
-  <p>Serialize a 4D character array to a binary file.</p>
+  <p>Serialize a 4D character array to a binary file.
+The file will contain a magic number, type code, dimension, shape, character length, and the array data.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -925,7 +946,7 @@
             <td>::</td>
             <td><strong>arr</strong>(:,:,:,:)</td>
             <td>
-
+<p>array to save</p>
             </td>
         </tr>
         <tr>
@@ -940,7 +961,7 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
-
+<p>output filename</p>
             </td>
         </tr>
     </tbody>
@@ -954,7 +975,8 @@
 
     </h3>
     
-  <p>Serialize a 5D character array to a binary file.</p>
+  <p>Serialize a 5D character array to a binary file.
+The file will contain a magic number, type code, dimension, shape, character length, and the array data.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -979,7 +1001,7 @@
             <td>::</td>
             <td><strong>arr</strong>(:,:,:,:,:)</td>
             <td>
-
+<p>array to save</p>
             </td>
         </tr>
         <tr>
@@ -994,7 +1016,7 @@
             <td>::</td>
             <td><strong>filename</strong></td>
             <td>
-
+<p>output filename</p>
             </td>
         </tr>
     </tbody>
@@ -1032,7 +1054,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
-            </p>
+ on "2025-08-08 17:43 +0200"             </p>
           </div>
         </div>
         <br>

@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="">
+      <meta name="description" content="Documentation for TensorOmics">
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
@@ -61,9 +61,6 @@
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
                 </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="../program/test_arrays.html">Program</a>
-                </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
                 <form action="../search.html" role="search" class="ms-auto">
@@ -88,19 +85,19 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 3.4% of total for procedures.">36 statements</a>
+                 title=" 1.6% of total for procedures.">16 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/array_utils.f90"> Source File</a>
+              <a href="../src/array_utils.F90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/array_utils.f90.html'>array_utils.f90</a></li>
+                <li class="breadcrumb-item"><a href='../sourcefile/array_utils.f90.html'>array_utils.F90</a></li>
             <li class="breadcrumb-item active" aria-current="page">get_array_metadata_chars_r</li>
           </ol>
         </nav>
@@ -157,6 +154,7 @@
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
+                  <li class="list-inline-item"><a href='../module/array_utils.html'>array_utils</a></li>
               </ul>
             </li>
         </ul>
@@ -164,13 +162,7 @@
     </div>
 
 
-    <p>@brief Subroutine to get metadata of a char array file
-@param filename_ascii Array of ASCII characters representing the filename
-@param fn_len Length of the filename array
-@param dims_out Output array for dimensions
-@param ndims Output variable for the number of dimensions
-@param type_code_out Output variable for the type code
-@param clen_out Output variable for the character length</p>
+    <p>Subroutine to get metadata of a char array file</p>
 
 
     <h3>Arguments</h3>
@@ -186,7 +178,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename_ascii~15"></span>
+              <span class="anchor" id="variable-filename_ascii~11"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -196,12 +188,12 @@
             <td>::</td>
             <td><strong>filename_ascii</strong>(fn_len)</td>
             <td>
-                
+                <p>Array of ASCII characters representing the filename</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fn_len~15"></span>
+              <span class="anchor" id="variable-fn_len~11"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -211,12 +203,12 @@
             <td>::</td>
             <td><strong>fn_len</strong></td>
             <td>
-                
+                <p>Length of the filename array</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dims_out~7"></span>
+              <span class="anchor" id="variable-dims_out~5"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -226,12 +218,12 @@
             <td>::</td>
             <td><strong>dims_out</strong>(*)</td>
             <td>
-                
+                <p>Output array for dimensions</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndims~3"></span>
+              <span class="anchor" id="variable-ndims~5"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -241,12 +233,12 @@
             <td>::</td>
             <td><strong>ndims</strong></td>
             <td>
-                
+                <p>Output variable for the number of dimensions</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-type_code_out"></span>
+              <span class="anchor" id="variable-type_code_out~2"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -256,12 +248,12 @@
             <td>::</td>
             <td><strong>type_code_out</strong></td>
             <td>
-                
+                <p>Output variable for the type code</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-clen_out~3"></span>
+              <span class="anchor" id="variable-clen_out~2"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -271,7 +263,7 @@
             <td>::</td>
             <td><strong>clen_out</strong></td>
             <td>
-                
+                <p>Output variable for the character length</p>
             </td>
         </tr>
     </tbody>
@@ -308,7 +300,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
-            </p>
+ on "2025-08-08 17:43 +0200"             </p>
           </div>
         </div>
         <br>

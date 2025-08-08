@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="">
+      <meta name="description" content="Documentation for TensorOmics">
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
@@ -62,9 +62,6 @@
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
                 </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="../program/test_arrays.html">Program</a>
-                </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
                 <form action="../search.html" role="search" class="ms-auto">
@@ -85,42 +82,45 @@
 			 <tbody>
 			   <tr class="active">
                  <td><a href='../module/array_utils.html'>array_utils</a></td>
-                 <td><a href='../sourcefile/array_utils.f90.html'>array_utils.f90</a></td>
+                 <td><a href='../sourcefile/array_utils.f90.html'>array_utils.F90</a></td>
                  <td><p>Module for array utilities</p></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/char_deserialize_mod.html'>char_deserialize_mod</a></td>
-                 <td><a href='../sourcefile/deserialize_char.f90.html'>deserialize_char.f90</a></td>
+                 <td><a href='../sourcefile/deserialize_char.f90.html'>deserialize_char.F90</a></td>
                  <td><p>Module for deserializing character arrays from files</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/int_deserialize_mod.html'>int_deserialize_mod</a></td>
-                 <td><a href='../sourcefile/deserialize_int.f90.html'>deserialize_int.f90</a></td>
+                 <td><a href='../sourcefile/deserialize_int.f90.html'>deserialize_int.F90</a></td>
                  <td><p>Module for deserializing integer arrays from files</p></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/real_deserialize_mod.html'>real_deserialize_mod</a></td>
-                 <td><a href='../sourcefile/deserialize_real.f90.html'>deserialize_real.f90</a></td>
+                 <td><a href='../sourcefile/deserialize_real.f90.html'>deserialize_real.F90</a></td>
                  <td><p>Module for deserializing real (double precision) arrays from binary files</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/serialize_char.html'>serialize_char</a></td>
-                 <td><a href='../sourcefile/serialize_char.f90.html'>serialize_char.f90</a></td>
-                 <td><p>Module providing serialization and deserialization routines for character arrays</p></td>
+                 <td><a href='../sourcefile/serialize_char.f90.html'>serialize_char.F90</a></td>
+                 <td><p>Module providing serialization and deserialization routines for character arrays
+of up to 5 dimensions, arrays are serialized to a custom binary format with a magic number and type/dimension metadata.</p></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/serialize_int.html'>serialize_int</a></td>
-                 <td><a href='../sourcefile/serialize_int.f90.html'>serialize_int.f90</a></td>
+                 <td><a href='../sourcefile/serialize_int.f90.html'>serialize_int.F90</a></td>
                  <td><p>Module for serializing integer arrays to binary files.</p></td>
                </tr>
 <!---->			   <tr class="active">
                  <td><a href='../module/serialize_mod.html'>serialize_mod</a></td>
-                 <td><a href='../sourcefile/serialize.f90.html'>serialize.f90</a></td>
-                 <td><p>Module providing serialization and routines for integer, real, and character arrays</p></td>
+                 <td><a href='../sourcefile/serialize.f90.html'>serialize.F90</a></td>
+                 <td><p>Module providing serialization and routines for integer, real, and character arrays
+of up to 5 dimensions, as well as utility routines for extracting rows, columns, and cells from 2D arrays.
+Arrays are serialized to a custom binary format with a magic number and type/dimension metadata.</p><a href="../module/serialize_mod.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 <!--active-->			   <tr class="">
                  <td><a href='../module/serialize_real.html'>serialize_real</a></td>
-                 <td><a href='../sourcefile/serialize_real.f90.html'>serialize_real.f90</a></td>
+                 <td><a href='../sourcefile/serialize_real.f90.html'>serialize_real.F90</a></td>
                  <td></td>
                </tr>
 <!---->			 </tbody></table>
@@ -142,7 +142,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
-            </p>
+ on "2025-08-08 17:43 +0200"             </p>
           </div>
         </div>
         <br>

@@ -6,7 +6,7 @@
     <meta charset="utf-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-      <meta name="description" content="">
+      <meta name="description" content="Documentation for TensorOmics">
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
@@ -61,9 +61,6 @@
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
                 </li>
-                <li class="nav-item">
-                  <a class="nav-link" href="../program/test_arrays.html">Program</a>
-                </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
                 <form action="../search.html" role="search" class="ms-auto">
@@ -88,19 +85,19 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 2.5% of total for procedures.">27 statements</a>
+                 title=" 1.9% of total for procedures.">19 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/deserialize_int.f90"> Source File</a>
+              <a href="../src/deserialize_int.F90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/deserialize_int.f90.html'>deserialize_int.f90</a></li>
+                <li class="breadcrumb-item"><a href='../sourcefile/deserialize_int.f90.html'>deserialize_int.F90</a></li>
             <li class="breadcrumb-item active" aria-current="page">deserialize_int_r</li>
           </ol>
         </nav>
@@ -148,7 +145,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2> subroutine deserialize_int_r(flat_arr, dims_out, ndim_out, filename_ascii, fn_len)  
+    <h2> subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len)  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -158,6 +155,7 @@
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='../module/int_deserialize_mod.html'>int_deserialize_mod</a></li>
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
+                  <li class="list-inline-item"><a href='../module/array_utils.html'>array_utils</a></li>
               </ul>
             </li>
         </ul>
@@ -165,12 +163,7 @@
     </div>
 
 
-    <p>@brief R interface for deserializing an integer array from a file
-@param flat_arr Output flat array
-@param dims_out Output dimensions array
-@param ndim_out Output number of dimensions
-@param filename_ascii ASCII representation of the filename
-@param fn_len Length of the filename array</p>
+    <p>R interface for deserializing an integer array from a file</p>
 <div class="alert alert-info">
 <p class="alert-title h4">Note</p>
 <p>The output array is handled and preallocated by R</p>
@@ -198,44 +191,29 @@
               
             </td>
             <td>::</td>
-            <td><strong>flat_arr</strong>(*)</td>
+            <td><strong>flat_arr</strong>(arr_size)</td>
             <td>
-                
+                <p>Output flat array</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dims_out~3"></span>
+              <span class="anchor" id="variable-arr_size"></span>
               integer(kind=int32),
             </td>
-<td>intent(out)</td>
+<td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>dims_out</strong>(*)</td>
+            <td><strong>arr_size</strong></td>
             <td>
-                
+                <p>Length of the filename array and size of the output array</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndim_out~3"></span>
-              integer,
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>ndim_out</strong></td>
-            <td>
-                
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-filename_ascii~5"></span>
+              <span class="anchor" id="variable-filename_ascii~3"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -245,13 +223,13 @@
             <td>::</td>
             <td><strong>filename_ascii</strong>(fn_len)</td>
             <td>
-                
+                <p>ASCII representation of the filename</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-fn_len~5"></span>
-              integer,
+              <span class="anchor" id="variable-fn_len~3"></span>
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -260,7 +238,7 @@
             <td>::</td>
             <td><strong>fn_len</strong></td>
             <td>
-                
+                <p>Length of the filename array and size of the output array</p>
             </td>
         </tr>
     </tbody>
@@ -297,7 +275,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
-            </p>
+ on "2025-08-08 17:43 +0200"             </p>
           </div>
         </div>
         <br>
