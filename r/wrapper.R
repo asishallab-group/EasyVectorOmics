@@ -120,7 +120,7 @@ serialize_int_array <- function(arr, filename) {
 
   .Fortran("serialize_int_flat_r",
            arr = flat,
-           n = length(flat),
+           array_size = length(flat),
            dims = dims,
            ndim = ndim,
            filename_ascii = as.integer(ascii),
@@ -143,7 +143,7 @@ serialize_real_array <- function(arr, filename) {
 
   .Fortran("serialize_real_flat_r",
            arr = flat,
-           n = length(flat),
+           array_size = length(flat),
            dims = dims,
            ndim = ndim,
            filename_ascii = as.integer(ascii),
