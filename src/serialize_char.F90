@@ -13,23 +13,33 @@ module serialize_char
 
 contains
 
+  subroutine write_char_array_header(unit, type_code, ndim, dims, clen)
+    use iso_fortran_env, only: int32
+    implicit none
+    integer, intent(in) :: unit
+    integer, intent(in) :: type_code, ndim, clen
+    integer(int32), intent(in) :: dims(ndim)
+
+    write(unit) ARRAY_FILE_MAGIC
+    write(unit) type_code
+    write(unit) ndim
+    write(unit) dims
+    write(unit) clen
+  end subroutine write_char_array_header
+
   !> Serialize a 1D character array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, character length, and the array data.
-  !! @param arr The input character array to serialize.
-  !! @param filename The output filename.
   subroutine serialize_char_1d(arr, filename)
     character(len=*), intent(in) :: arr(:)
+    !! array to save
     character(len=*), intent(in) :: filename
+    !! output filename
     integer :: unit, clen, i, str_len
     integer(int32) :: dims(1)
     dims = shape(arr)
     clen = len(arr)
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace')
-    write(unit) ARRAY_FILE_MAGIC
-    write(unit) 3
-    write(unit) 1
-    write(unit) dims
-    write(unit) clen
+    call write_char_array_header(unit, 3, 1, dims, clen)
     do i = 1, dims(1)
       str_len = len_trim(arr(i))
       write(unit) str_len
@@ -44,17 +54,15 @@ contains
   !! @param filename The output filename.
   subroutine serialize_char_2d(arr, filename)
     character(len=*), intent(in) :: arr(:,:)
+    !! array to save
     character(len=*), intent(in) :: filename
+    !! output filename
     integer :: unit, clen, i, j, str_len
     integer(int32) :: dims(2)
     dims = shape(arr)
     clen = len(arr)
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace')
-    write(unit) ARRAY_FILE_MAGIC
-    write(unit) 3  ! Typcode für CHAR
-    write(unit) 2  ! Dimension
-    write(unit) dims
-    write(unit) clen
+    call write_char_array_header(unit, 3, 2, dims, clen)
     do j = 1, dims(2)
       do i = 1, dims(1)
         str_len = len_trim(arr(i,j))
@@ -67,21 +75,17 @@ contains
 
   !> Serialize a 3D character array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, character length, and the array data.
-  !! @param arr The input character array to serialize.
-  !! @param filename The output filename.
   subroutine serialize_char_3d(arr, filename)
     character(len=*), intent(in) :: arr(:,:,:)
+    !! array to save
     character(len=*), intent(in) :: filename
+    !! output filename
     integer :: unit, clen, i, j, k, str_len
     integer(int32) :: dims(3)
     dims = shape(arr)
     clen = len(arr)
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace')
-    write(unit) ARRAY_FILE_MAGIC
-    write(unit) 3
-    write(unit) 3
-    write(unit) dims
-    write(unit) clen
+    call write_char_array_header(unit, 3, 3, dims, clen)
     do k = 1, dims(3)
       do j = 1, dims(2)
         do i = 1, dims(1)
@@ -96,21 +100,17 @@ contains
 
   !> Serialize a 4D character array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, character length, and the array data.
-  !! @param arr The input character array to serialize.
-  !! @param filename The output filename.
   subroutine serialize_char_4d(arr, filename)
     character(len=*), intent(in) :: arr(:,:,:,:)
+    !! array to save
     character(len=*), intent(in) :: filename
+    !! output filename
     integer :: unit, clen, i, j, k, l, str_len
     integer(int32) :: dims(4)
     dims = shape(arr)
     clen = len(arr)
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace')
-    write(unit) ARRAY_FILE_MAGIC
-    write(unit) 3
-    write(unit) 4
-    write(unit) dims
-    write(unit) clen
+    call write_char_array_header(unit, 3, 4, dims, clen)
     do l = 1, dims(4)
       do k = 1, dims(3)
         do j = 1, dims(2)
@@ -127,21 +127,17 @@ contains
 
   !> Serialize a 5D character array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, character length, and the array data.
-  !! @param arr The input character array to serialize.
-  !! @param filename The output filename.
   subroutine serialize_char_5d(arr, filename)
     character(len=*), intent(in) :: arr(:,:,:,:,:)
+    !! array to save
     character(len=*), intent(in) :: filename
-    integer :: unit, clen, i, j, k, l, m, str_len
+    !! output filename
+    integer(int32) :: unit, clen, i, j, k, l, m, str_len
     integer(int32) :: dims(5)
     dims = shape(arr)
     clen = len(arr)
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace')
-    write(unit) ARRAY_FILE_MAGIC
-    write(unit) 3                    ! Typecode für CHARACTER
-    write(unit) 5                    ! Dimension
-    write(unit) dims                 ! Shape
-    write(unit) clen                 ! Maximale Zeichenlänge
+    call write_char_array_header(unit, 3, 5, dims, clen)
     do m = 1, dims(5)
       do l = 1, dims(4)
         do k = 1, dims(3)
@@ -160,28 +156,23 @@ contains
 
   !> Serialize a character array of arbitrary dimensions to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, character length, and the array data.
-  !! @param flat The input character array to serialize.
-  !! @param dims The dimensions of the array.
-  !! @param ndim The number of dimensions.
-  !! @param clen The maximum character length.
-  !! @param filename The output filename.
   !! @note This routine is onyl called by R and serializes only flat character arrays to the memory
   subroutine serialize_char_nd(flat, dims, ndim, clen, filename)
     use iso_c_binding
     implicit none
     character(len=*), intent(in) :: flat(:)
+    !! flat array to save
     integer(int32), intent(in) :: dims(:)
-    integer, intent(in) :: ndim, clen
+    !! dimensions of the array
+    integer(int32), intent(in) :: ndim
+    integer(int32), intent(in) :: clen
     character(len=*), intent(in) :: filename
+    !! output filename
 
     integer :: unit, i, str_len
 
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace')
-    write(unit) ARRAY_FILE_MAGIC
-    write(unit) 3  ! type code for character data
-    write(unit) ndim
-    write(unit) dims
-    write(unit) clen
+    call write_char_array_header(unit, 3, ndim, dims, clen)
 
     do i = 1, size(flat)
       str_len = len_trim(flat(i))
@@ -196,16 +187,20 @@ contains
 
 end module serialize_char
 
-!> @brief serializes a flat character array to a binary file.
-subroutine serialize_char_flat_r(ascii_arr, n, dims, ndim, clen, filename_ascii, fn_len)
+!> serializes a flat character array to a binary file.
+subroutine serialize_char_flat_r(ascii_arr, array_size, dims, ndim, clen, filename_ascii, fn_len)
   use iso_fortran_env
   use serialize_char
+  use array_utils
   implicit none
 
   ! change to fixed size
-  integer(int32), intent(in) :: ascii_arr(clen, n)
+  integer(int32), intent(in) :: ascii_arr(clen, array_size)
+  !! Flat character array in ASCII format
   integer(int32), intent(in) :: dims(ndim)
-  integer(int32), intent(in) :: ndim, n
+  !! Dimensions of the array
+  integer(int32), intent(in) :: ndim, array_size
+  !! Number of dimensions
   integer(int32), intent(in) :: clen
   integer(int32), intent(in) :: filename_ascii(fn_len)
   integer(int32), intent(in) :: fn_len
@@ -216,7 +211,6 @@ subroutine serialize_char_flat_r(ascii_arr, n, dims, ndim, clen, filename_ascii,
 
   total = product(dims)
   allocate(flat(total))
-  allocate(character(len=fn_len) :: filename)
 
   ! ASCII to character conversion
   do i = 1, total
@@ -230,35 +224,30 @@ subroutine serialize_char_flat_r(ascii_arr, n, dims, ndim, clen, filename_ascii,
     end do
   end do
 
-  do i = 1, fn_len
-    filename(i:i) = char(filename_ascii(i))
-  end do
+  call ascii_to_string(filename_ascii, fn_len, filename)
 
   call serialize_char_nd(flat, dims, ndim, clen, filename)
 
 end subroutine serialize_char_flat_r
 
-
-! --- C-Bindings für serialize_char_* ---
-
-!> @brief C binding for the subroutine to serialize a flat character array to a binary file.
-!> @param ascii_ptr Pointer to the flat character array in ASCII format
-!> @param dims Dimensions of the array
-!> @param ndim Number of dimensions
-!> @param clen Maximum character length
-!> @param filename_ascii Array of ASCII characters representing the filename
-!> @param fn_len Length of the filename array
+!> C binding for the subroutine to serialize a flat character array to a binary file.
 subroutine serialize_char_flat_C(ascii_ptr, dims, ndim, clen, filename_ascii, fn_len) bind(C, name="serialize_char_flat_C")
   use iso_c_binding
   use serialize_char
+  use array_utils
   implicit none
 
   type(c_ptr), value :: ascii_ptr
   integer(c_int), intent(in) :: dims(ndim)
+  !! Dimensions of the array
   integer(c_int), value :: ndim
+  !! Number of dimensions
   integer(c_int), value :: clen
+  !! Character length
   integer(c_int), intent(in) :: filename_ascii(fn_len)
+  !! Array of ASCII characters representing the filename
   integer(c_int), value :: fn_len
+  !! Length of the filename array
 
   integer(c_int), pointer :: ascii_arr(:)
   character(len=:), allocatable :: filename
@@ -268,7 +257,6 @@ subroutine serialize_char_flat_C(ascii_ptr, dims, ndim, clen, filename_ascii, fn
   total = product(dims)
   call c_f_pointer(ascii_ptr, ascii_arr, [clen * total])
   allocate(flat(total))
-  allocate(character(len=fn_len) :: filename)
 
   ! ASCII to Fortran character(len=clen)
   do i = 1, total
@@ -282,10 +270,7 @@ subroutine serialize_char_flat_C(ascii_ptr, dims, ndim, clen, filename_ascii, fn
     end do
   end do
 
-  ! Filename-conversion
-  do i = 1, fn_len
-    filename(i:i) = char(filename_ascii(i))
-  end do
+  call ascii_to_string(filename_ascii, fn_len, filename)
 
   call serialize_char_nd(flat, dims, ndim, clen, filename)
 end subroutine serialize_char_flat_C

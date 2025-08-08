@@ -170,7 +170,7 @@ serialize_char_array <- function(arr, filename) {
 
   invisible(.Fortran("serialize_char_flat_r",
     ascii_arr = as.integer(mat),
-    n = length(mat),
+    array_size = length(mat),
     dims = as.integer(dims),
     ndim = as.integer(length(dims)),
     clen = as.integer(clen),
