@@ -13,14 +13,13 @@ module real_deserialize_mod
 
 contains
 
-  !> @brief Deserialize a flat real array from a file
-  !> @param flat Pointer to the output flat array
-  !> @param dims Output array for dimensions
-  !> @param filename Name of the file to read
+  !> Deserialize a flat real array from a file
   subroutine deserialize_real_flat(flat, dims, filename)
     use iso_c_binding
     real(real64), pointer, intent(out) :: flat(:)
+    !! Output flat array
     integer(int32), allocatable, intent(out), target :: dims(:)
+    !! dimensions array
     character(len=*), intent(in) :: filename
 
     integer :: unit, magic, type_code, d
@@ -38,82 +37,90 @@ contains
     close(unit)
   end subroutine deserialize_real_flat
 
-  !> @brief Deserialize a 1D real array from a file
-  !> @param arr Pointer to the output array
-  !> @param filename Name of the file to read
+  !> Deserialize a 1D real array from a file
   !> @note This file just moves a pointer, it exists for consistency
   subroutine deserialize_real_1d(arr, filename)
     use iso_c_binding
     real(real64), pointer, intent(out) :: arr(:)
+    !! Output array
     character(len=*), intent(in) :: filename
+    !! Name of the file to read
 
     real(real64), pointer :: flat(:)
+    !! Output flat array
     integer(int32), allocatable :: dims(:)
+    !! dimensions array
 
     call deserialize_real_flat(flat, dims, filename)
     if (size(dims) /= 1) error stop "Expected 1D array"
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1)])
   end subroutine deserialize_real_1d
 
-  !> @brief Deserialize a 2D real array from a file
-  !> @param arr Pointer to the output array
-  !> @param filename Name of the file to read
+  !> Deserialize a 2D real array from a file
   !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_real_2d(arr, filename)
     use iso_c_binding
     real(real64), pointer, intent(out) :: arr(:,:)
+    !! Output array
     character(len=*), intent(in) :: filename
+    !! Name of the file to read
 
     real(real64), pointer :: flat(:)
+    !! Output flat array
     integer(int32), allocatable :: dims(:)
+    !! dimensions array
 
     call deserialize_real_flat(flat, dims, filename)
     if (size(dims) /= 2) error stop "Expected 2D array"
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2)])
   end subroutine deserialize_real_2d
 
-  !> @brief Deserialize a 3D real array from a file
-  !> @param arr Pointer to the output array
-  !> @param filename Name of the file to read
+  !> Deserialize a 3D real array from a file
   !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_real_3d(arr, filename)
     use iso_c_binding
     real(real64), pointer, intent(out) :: arr(:,:,:)
+    !! Output array
     character(len=*), intent(in) :: filename
+    !! Name of the file to read
 
     real(real64), pointer :: flat(:)
+    !! Output flat array
     integer(int32), allocatable :: dims(:)
+    !! dimensions array
 
     call deserialize_real_flat(flat, dims, filename)
     if (size(dims) /= 3) error stop "Expected 3D array"
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3)])
   end subroutine deserialize_real_3d
 
-  !> @brief Deserialize a 4D real array from a file
-  !> @param arr Pointer to the output array
-  !> @param filename Name of the file to read
+  !> Deserialize a 4D real array from a file
   !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_real_4d(arr, filename)
     use iso_c_binding
     real(real64), pointer, intent(out) :: arr(:,:,:,:)
+    !! Output array
     character(len=*), intent(in) :: filename
+    !! Name of the file to read
 
     real(real64), pointer :: flat(:)
+    !! Output flat array
     integer(int32), allocatable :: dims(:)
+    !! dimensions array
 
     call deserialize_real_flat(flat, dims, filename)
     if (size(dims) /= 4) error stop "Expected 4D array"
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3), dims(4)])
   end subroutine deserialize_real_4d
 
-  !> @brief Deserialize a 5D real array from a file
-  !> @param arr Pointer to the output array
-  !> @param filename Name of the file to read
+  !> Deserialize a 5D real array from a file
   !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_real_5d(arr, filename)
     use iso_c_binding
     real(real64), pointer, intent(out) :: arr(:,:,:,:,:)
+    !! Output array
     character(len=*), intent(in) :: filename
+    !! Name of the file to read
 
     real(real64), pointer :: flat(:)
     integer(int32), allocatable :: dims(:)
@@ -125,25 +132,20 @@ contains
 
 end module real_deserialize_mod
 
-!> @brief R binding for the subroutine to deserialize a flat real array from a file
-!> @param flat_arr Output flat array
-!> @param dims_out Output dimensions array
-!> @param ndim_out Number of dimensions
-!> @param filename_ascii Array of ASCII characters representing the filename
-!> @param fn_len Length of the filename array
-subroutine deserialize_real_flat_r(flat_arr, arr_size, dims_out, ndim_out, filename_ascii, fn_len, ndim_actual)
+!> R binding for the subroutine to deserialize a flat real array from a file
+!> @note It is assumed that the array is already allocated and passed together with its size
+subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_ascii, fn_len)
   use iso_fortran_env
+  use array_utils
   use real_deserialize_mod
   implicit none
 
-  ! This needs fixed size and pass the size as parameter
   real(real64), intent(out) :: flat_arr(arr_size)
-  integer(int32), intent(out) :: dims_out(ndim_actual)
-  integer(int32), intent(out) :: ndim_out
+  !! Output array
 
   ! Filename
   integer(int32), intent(in) :: filename_ascii(fn_len)
-  integer(int32), intent(in) :: fn_len, arr_size, ndim_actual
+  integer(int32), intent(in) :: fn_len, arr_size
 
   ! Local
   character(len=:), allocatable :: filename
@@ -151,18 +153,10 @@ subroutine deserialize_real_flat_r(flat_arr, arr_size, dims_out, ndim_out, filen
   real(real64), pointer :: flat(:)
   integer(int32), allocatable, target :: dims(:)
 
-  allocate(character(len=fn_len) :: filename)
-  do i = 1, fn_len
-    filename(i:i) = char(filename_ascii(i))
-  end do
+  call ascii_to_string(filename_ascii, fn_len, filename)
 
   ! Read file
   call deserialize_real_flat(flat, dims, filename)
-
-  ndim_out = size(dims)
-  do i = 1, ndim_out
-    dims_out(i) = dims(i)
-  end do
 
   do i = 1, product(dims)
     flat_arr(i) = flat(i)
@@ -172,22 +166,23 @@ subroutine deserialize_real_flat_r(flat_arr, arr_size, dims_out, ndim_out, filen
   if (associated(flat)) deallocate(flat)
 end subroutine
 
-!> @brief C binding for the subroutine to deserialize a real array from a file
-!> @param arr Output array
-!> @param arr_size Size of the output array
-!> @param filename_ascii Array of ASCII characters representing the filename
-!> @param fn_len Length of the filename array
+!> C binding for the subroutine to deserialize a real array from a file
 !> @note It is assumed that the array is already allocated and passed together with its size
 subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len) bind(C, name="deserialize_real_C")
   use iso_c_binding
+  use array_utils
   use real_deserialize_mod, only: deserialize_real_flat
   use iso_fortran_env
   implicit none
 
   real(c_double), intent(inout) :: arr(arr_size)
+  !! Output array, must be allocated with the correct size
   integer(c_int), value :: arr_size
+  !! Size of the array to read
   integer(c_int), intent(in) :: filename_ascii(fn_len)
+  !! Array of ASCII characters representing the filename
   integer(c_int), value :: fn_len
+  !! Length of the filename array
 
   character(len=:), allocatable :: filename
   integer :: i
@@ -196,11 +191,7 @@ subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len) bind(C, nam
   real(real64), pointer :: arr_f(:)
   integer(int32), allocatable :: dims(:)
 
-  ! ASCII → String
-  allocate(character(len=fn_len) :: filename)
-  do i = 1, fn_len
-    filename(i:i) = char(filename_ascii(i))
-  end do
+  call ascii_to_string(filename_ascii, fn_len, filename)
 
   ! Read data
   call deserialize_real_flat(arr_f, dims, filename)

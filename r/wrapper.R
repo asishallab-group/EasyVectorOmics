@@ -71,12 +71,8 @@ deserialize_real_array <- function(filename, max_dims = 5) {
     res <- .Fortran("deserialize_real_flat_r",
                 flat_arr = flat,
                 arr_size = as.integer(total_size),
-                dims_out = dims,
-                ndim_out = ndim,
                 filename_ascii = as.integer(ascii),
-                fn_len = as.integer(length(ascii)),
-                ndim_actual = as.integer(length(actual_dims)))
-    actual_dims <- res$dims_out[1:res$ndim_out]
+                fn_len = as.integer(length(ascii)))
     array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
 }
 
