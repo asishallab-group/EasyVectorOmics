@@ -1,5 +1,5 @@
 !> @file mod_test_loess_smoothing.f90
-!> @brief Unit test suite for LOESS smoothing (f42_loess_smoothing.F90)
+!> Unit test suite for LOESS smoothing (f42_loess_smoothing.F90)
 !> @details Unit tests for LOESS smoothing, including masking and edge cases.
 
 module mod_test_loess_smoothing
@@ -23,7 +23,7 @@ module mod_test_loess_smoothing
 
 contains
 
-  !> @brief Get array of all available LOESS tests.
+  !> Get array of all available LOESS tests.
   subroutine get_all_tests(all_tests)
     type(test_case), intent(out) :: all_tests(11)
     all_tests(1) = test_case("test_loess_constant_input", test_loess_constant_input)
@@ -39,7 +39,7 @@ contains
     all_tests(11) = test_case("test_loess_edge_query", test_loess_edge_query)
   end subroutine get_all_tests
 
-  !> @brief Run all LOESS smoothing tests.
+  !> Run all LOESS smoothing tests.
   subroutine run_all_tests_loess_smoothing()
     type(test_case) :: all_tests(11)
     integer(int32) :: i
@@ -51,7 +51,7 @@ contains
     print *, "All LOESS smoothing tests passed successfully."
   end subroutine run_all_tests_loess_smoothing
 
-  !> @brief Run specific LOESS smoothing tests by name.
+  !> Run specific LOESS smoothing tests by name.
   subroutine run_named_tests_loess_smoothing(test_names)
     character(len=*), intent(in) :: test_names(:)
     type(test_case) :: all_tests(11)

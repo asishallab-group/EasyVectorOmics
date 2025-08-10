@@ -1,5 +1,5 @@
 ! filepath: test/mod_test_quantile_normalization.f90
-!> @brief Unit test suite for quantile_normalization routine.
+!> Unit test suite for quantile_normalization routine.
 module mod_test_quantile_normalization
   use asserts
   use, intrinsic :: iso_fortran_env, only: real64, int32
@@ -20,7 +20,7 @@ module mod_test_quantile_normalization
 
 contains
 
-  !> @brief Get array of all available tests.
+  !> Get array of all available tests.
   function get_all_tests() result(all_tests)
     type(test_case) :: all_tests(12)
     
@@ -38,7 +38,7 @@ contains
     all_tests(12) = test_case("test_qn_edge_cases", test_qn_edge_cases)
   end function get_all_tests
 
-  !> @brief Run all quantile_normalization tests.
+  !> Run all quantile_normalization tests.
   subroutine run_all_tests_quantile_normalization()
     type(test_case) :: all_tests(12)
     integer(int32) :: i
@@ -52,7 +52,7 @@ contains
     print *, "All quantile_normalization tests passed successfully."
   end subroutine run_all_tests_quantile_normalization
 
-  !> @brief Run specific quantile_normalization tests by name.
+  !> Run specific quantile_normalization tests by name.
   subroutine run_named_tests_quantile_normalization(test_names)
     character(len=*), intent(in) :: test_names(:)
     type(test_case) :: all_tests(12)
@@ -77,7 +77,7 @@ contains
     end do
   end subroutine run_named_tests_quantile_normalization
 
-  !> @brief Test that quantile normalization preserves matrix dimensions.
+  !> Test that quantile normalization preserves matrix dimensions.
   subroutine test_qn_preserves_dimensions()
     integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(2,3) :: mat, result
@@ -95,7 +95,7 @@ contains
     call assert_equal_int(size(result,2), ncol, "qn_preserves_dimensions: col count not preserved")
   end subroutine test_qn_preserves_dimensions
 
-  !> @brief Test that quantile normalization handles identical rows correctly.
+  !> Test that quantile normalization handles identical rows correctly.
   subroutine test_qn_identical_rows()
     integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(2,3) :: mat, result, expected
@@ -113,7 +113,7 @@ contains
     call assert_true(all(reshape(isfinite_mat(result), [size(result)])), "qn_identical_rows: result has non-finite values")
   end subroutine test_qn_identical_rows
 
-  !> @brief Test that quantile normalization produces finite values and standardizes distributions.
+  !> Test that quantile normalization produces finite values and standardizes distributions.
   subroutine test_qn_no_nans_and_standardizes()
     integer(int32) :: nrow, ncol, i, max_stack
     real(real64), dimension(2,3) :: mat, result
@@ -145,7 +145,7 @@ contains
     deallocate(sorted_cols)
   end subroutine test_qn_no_nans_and_standardizes
 
-  !> @brief Test quantile normalization with single row matrix.
+  !> Test quantile normalization with single row matrix.
   subroutine test_qn_single_row()
     integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(1,4) :: mat, result, expected
@@ -165,7 +165,7 @@ contains
     call assert_true(all(reshape(isfinite_mat(result), [size(result)])), "qn_single_row: result has non-finite values")
   end subroutine test_qn_single_row
 
-  !> @brief Test quantile normalization with single column matrix.
+  !> Test quantile normalization with single column matrix.
   subroutine test_qn_single_column()
     integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(3,1) :: mat, result, expected
@@ -182,7 +182,7 @@ contains
     call assert_equal_array_real(result, expected, 3, 1d-12, "qn_single_column: single column should remain unchanged")
   end subroutine test_qn_single_column
 
-  !> @brief Test quantile normalization with all equal values.
+  !> Test quantile normalization with all equal values.
   subroutine test_qn_all_equal()
     integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(4,4) :: mat, result, expected
@@ -198,7 +198,7 @@ contains
     call assert_equal_array_real(result, expected, 16, 1d-12, "qn_all_equal: all equal values not preserved")
   end subroutine test_qn_all_equal
 
-  !> @brief Test quantile normalization with large random matrix.
+  !> Test quantile normalization with large random matrix.
   subroutine test_qn_large_random()
     integer(int32), parameter :: nrow=10, ncol=10
     integer(int32) :: i, max_stack
@@ -229,7 +229,7 @@ contains
     deallocate(sorted_cols)
   end subroutine test_qn_large_random
 
-  !> @brief Test quantile normalization with negative values.
+  !> Test quantile normalization with negative values.
   subroutine test_qn_negative_values()
     integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(2,3) :: mat, result
@@ -247,7 +247,7 @@ contains
     call assert_true(all(reshape(isfinite_mat(result), [size(result)])), "qn_negative_values: non-finite values in result")
   end subroutine test_qn_negative_values
 
-  !> @brief Test quantile normalization with zero matrix.
+  !> Test quantile normalization with zero matrix.
   subroutine test_qn_zero_matrix()
     integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(3,3) :: mat, result, expected
@@ -263,7 +263,7 @@ contains
     call assert_equal_array_real(result, expected, 9, 1d-12, "qn_zero_matrix: zero matrix not preserved")
   end subroutine test_qn_zero_matrix
 
-  !> @brief Test quantile normalization with pre-sorted input.
+  !> Test quantile normalization with pre-sorted input.
   subroutine test_qn_sorted_input()
     integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(3,3) :: mat, result
@@ -280,7 +280,7 @@ contains
     call assert_equal_array_real(result, mat, 9, 1d-12, "qn_sorted_input: sorted input not preserved")
   end subroutine test_qn_sorted_input
 
-  !> @brief Test quantile normalization with reverse sorted input.
+  !> Test quantile normalization with reverse sorted input.
   subroutine test_qn_reverse_sorted()
     integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(3,3) :: mat, result, expected
@@ -298,7 +298,7 @@ contains
     call assert_equal_array_real(result, expected, 9, 1d-12, "qn_reverse_sorted: reverse sorted input not normalized to mean")
   end subroutine test_qn_reverse_sorted
 
-  !> @brief Test edge cases for quantile normalization.
+  !> Test edge cases for quantile normalization.
   subroutine test_qn_edge_cases()
     integer(int32) :: nrow, ncol, max_stack
     real(real64), dimension(2,2) :: mat, result
@@ -314,7 +314,7 @@ contains
     call assert_true(all(reshape(isfinite_mat(result), [size(result)])), "qn_edge_cases: non-finite values in result")
   end subroutine test_qn_edge_cases
 
-  !> @brief Helper function to check if all values are finite (matrix version).
+  !> Helper function to check if all values are finite (matrix version).
   function isfinite_mat(arr) result(mask)
     real(real64), intent(in) :: arr(:,:)
     logical :: mask(size(arr,1), size(arr,2))
@@ -326,7 +326,7 @@ contains
     end do
   end function isfinite_mat
 
-  !> @brief Helper function to check for NaN values (matrix version).
+  !> Helper function to check for NaN values (matrix version).
   function isnan_mat(arr) result(mask)
     real(real64), intent(in) :: arr(:,:)
     logical :: mask(size(arr,1), size(arr,2))
@@ -338,7 +338,7 @@ contains
     end do
   end function isnan_mat
 
-  !> @brief Helper function to sort a vector (simple bubble sort).
+  !> Helper function to sort a vector (simple bubble sort).
   function sort_vec(vec) result(sorted)
     real(real64), intent(in) :: vec(:)
     real(real64) :: sorted(size(vec))
@@ -353,7 +353,7 @@ contains
     end do
   end function sort_vec
 
-  !> @brief Helper subroutine to swap two real values.
+  !> Helper subroutine to swap two real values.
   subroutine swap(a, b)
     real(real64), intent(inout) :: a, b
     real(real64) :: tmp

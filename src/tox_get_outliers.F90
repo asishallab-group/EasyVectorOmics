@@ -9,7 +9,7 @@ contains
   !> Compute family scaling factors (dscale) to normalize distances.
   !| Uses LOESS on the median/stddev of intra-family distances for scaling, regardless of orthologs.
   pure subroutine compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-    loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, error_code)
+    loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, error_code)
     !| Total number of genes
     integer(int32), intent(in) :: n_genes
     !| Total number of gene families
@@ -32,11 +32,12 @@ contains
     integer(int32), intent(inout) :: stack_left_tmp(n_genes)
     !| Stack array for right indices during sorting
     integer(int32), intent(inout) :: stack_right_tmp(n_genes)
+    !| Pre-allocated work array for family distances (dimension n_genes)
+    real(real64), intent(inout) :: family_distances(n_genes)
     !| Error code: 0=ok, -2=invalid family indices (required)
     integer(int32), intent(out) :: error_code
 
     integer(int32) :: i, family_idx, n_in_family, n_orth_in_fam
-    real(real64) :: family_distances(n_genes)
     real(real64) :: median_dist, stddev_dist, mean_dist, sumsq
     real(real64), parameter :: default_sigma = 0.5_real64, default_cutoff = 3.0_real64
     real(real64) :: sigma, cutoff
@@ -134,6 +135,40 @@ contains
     end do
     error_code = err
   end subroutine compute_family_scaling
+
+  !> Helper routine that allocates internal arrays and calls compute_family_scaling.
+  !| This makes usage easier since users don't need to care about internal array requirements.
+  pure subroutine compute_family_scaling_alloc(n_genes, n_families, distances, gene_to_fam, dscale, &
+    loess_x, loess_y, indices_used, error_code)
+    !| Total number of genes
+    integer(int32), intent(in) :: n_genes
+    !| Total number of gene families
+    integer(int32), intent(in) :: n_families
+    !| Array of Euclidean distances for each gene
+    real(real64), intent(in) :: distances(n_genes)
+    !| Mapping of each gene to its family (1-based)
+    integer(int32), intent(in) :: gene_to_fam(n_genes)
+    !| Output: array of scaling factors per family
+    real(real64), intent(out) :: dscale(n_families)
+    !| Reference x-coordinates.
+    real(real64), intent(inout) :: loess_x(n_families)
+    !| Reference y-coordinates (length n_total).
+    real(real64), intent(inout) :: loess_y(n_families)
+    !| Indices of reference points used for smoothing.
+    integer(int32), intent(inout) :: indices_used(n_families)
+    !| Error code: 0=ok, -2=invalid family indices (required)
+    integer(int32), intent(out) :: error_code
+
+    ! Local work arrays
+    real(real64) :: family_distances(n_genes)
+    integer(int32) :: perm_tmp(n_genes)
+    integer(int32) :: stack_left_tmp(n_genes)
+    integer(int32) :: stack_right_tmp(n_genes)
+
+    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
+      loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, &
+      family_distances, error_code)
+  end subroutine compute_family_scaling_alloc
 
   !> Compute the hybrid RDI for each gene.
   !| RDI = Euclidean distance / family scaling factor
@@ -299,8 +334,8 @@ contains
       perm(i) = i
     end do
 
-    call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-                                loess_x, loess_y, loess_n, perm, stack_left, stack_right, error_code)
+    call compute_family_scaling_alloc(n_genes, n_families, distances, gene_to_fam, dscale, &
+                                loess_x, loess_y, loess_n, error_code)
     if (error_code /= 0) return
     call compute_rdi(n_genes, distances, gene_to_fam, dscale, rdi, work_array, perm, stack_left, stack_right)
     call identify_outliers(n_genes, rdi, work_array, is_outlier, threshold, percentile_val)
@@ -310,10 +345,11 @@ contains
 end module tox_get_outliers
 
 
-!> R wrapper for compute_family_scaling.
+!> R wrapper for compute_family_scaling (expert version with pre-allocated arrays).
 !| Calls compute_family_scaling with standard Fortran types for R interface.
-subroutine compute_family_scaling_r(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, error_code)
+!| This version requires pre-allocated work arrays for maximum performance and control.
+subroutine compute_family_scaling_expert_r(n_genes, n_families, distances, gene_to_fam, dscale, &
+      loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, error_code)
   use tox_get_outliers
   use iso_fortran_env, only: real64, int32
   !| Total number of genes
@@ -338,10 +374,41 @@ subroutine compute_family_scaling_r(n_genes, n_families, distances, gene_to_fam,
   integer(int32), intent(inout) :: stack_left_tmp(n_genes)
   !| Stack array for right indices during sorting
   integer(int32), intent(inout) :: stack_right_tmp(n_genes)
+  !| Pre-allocated work array for family distances (dimension n_genes)
+  real(real64), intent(inout) :: family_distances(n_genes)
   !| Error code: 0=ok, -2=invalid family indices (required)
   integer(int32), intent(out) :: error_code
   call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, error_code)
+      loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, error_code)
+end subroutine compute_family_scaling_expert_r
+
+!> R wrapper for compute_family_scaling (main version with automatic allocation).
+!| Calls compute_family_scaling_alloc with standard Fortran types for R interface.
+!| This is the recommended version for most users as it handles memory allocation automatically.
+subroutine compute_family_scaling_r(n_genes, n_families, distances, gene_to_fam, dscale, &
+      loess_x, loess_y, indices_used, error_code)
+  use tox_get_outliers
+  use iso_fortran_env, only: real64, int32
+  !| Total number of genes
+  integer(int32), intent(in) :: n_genes
+  !| Total number of gene families
+  integer(int32), intent(in) :: n_families
+  !| Array of Euclidean distances for each gene
+  real(real64), intent(in) :: distances(n_genes)
+  !| Mapping of each gene to its family (1-based)
+  integer(int32), intent(in) :: gene_to_fam(n_genes)
+  !| Output: array of scaling factors per family
+  real(real64), intent(out) :: dscale(n_families)
+  !| Reference x-coordinates.
+  real(real64), intent(inout) :: loess_x(n_families)
+  !| Reference y-coordinates (length n_total).
+  real(real64), intent(inout) :: loess_y(n_families)
+  !| Indices of reference points used for smoothing.
+  integer(int32), intent(inout) :: indices_used(n_families)
+  !| Error code: 0=ok, -2=invalid family indices (required)
+  integer(int32), intent(out) :: error_code
+  call compute_family_scaling_alloc(n_genes, n_families, distances, gene_to_fam, dscale, &
+      loess_x, loess_y, indices_used, error_code)
 end subroutine compute_family_scaling_r
 
 !> R wrapper for compute_rdi.
@@ -437,11 +504,12 @@ end subroutine detect_outliers_r
 
 ! C wrappers for RDI/outlier routines
 
-  !> C wrapper for compute_family_scaling.
+  !> C wrapper for compute_family_scaling (expert version with pre-allocated arrays).
   !| Calls compute_family_scaling with C-compatible types for external interface.
-  subroutine compute_family_scaling_c(n_genes, n_families, distances, gene_to_fam, dscale, &
+  !| This version requires pre-allocated work arrays for maximum performance and control.
+  subroutine compute_family_scaling_expert_c(n_genes, n_families, distances, gene_to_fam, dscale, &
     loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, &
-    error_code) bind(C, name="compute_family_scaling_c")
+    family_distances, error_code) bind(C, name="compute_family_scaling_expert_c")
   use iso_c_binding
   use tox_get_outliers
   !| Total number of genes
@@ -464,10 +532,39 @@ end subroutine detect_outliers_r
   integer(c_int), intent(inout), target :: stack_left_tmp(n_genes)
   !| Stack array for right indices during sorting
   integer(c_int), intent(inout), target :: stack_right_tmp(n_genes)
+  !| Pre-allocated work array for family distances (dimension n_genes)
+  real(c_double), intent(inout), target :: family_distances(n_genes)
   !| Error code: 0=ok, -2=invalid family indices (required)
   integer(c_int), intent(out) :: error_code
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, error_code)
+      loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, error_code)
+end subroutine compute_family_scaling_expert_c
+
+!> C wrapper for compute_family_scaling (main version with automatic allocation).
+!| Calls compute_family_scaling_alloc with C-compatible types for external interface.
+!| This is the recommended version for most users as it handles memory allocation automatically.
+subroutine compute_family_scaling_c(n_genes, n_families, distances, gene_to_fam, dscale, &
+  loess_x, loess_y, indices_used, error_code) bind(C, name="compute_family_scaling_c")
+use iso_c_binding
+use tox_get_outliers
+!| Total number of genes
+integer(c_int), intent(in), value :: n_genes, n_families
+!| Array of Euclidean distances for each gene
+real(c_double), intent(in), target :: distances(n_genes)
+!| Mapping of each gene to its family (1-based)
+integer(c_int), intent(in), target :: gene_to_fam(n_genes)
+!| Output: array of scaling factors per family
+real(c_double), intent(out), target :: dscale(n_families)
+!| Reference x-coordinates for LOESS
+real(c_double), intent(inout), target :: loess_x(n_families)
+!| Reference y-coordinates for LOESS
+real(c_double), intent(inout), target :: loess_y(n_families)
+!| Indices of reference points used for smoothing
+integer(c_int), intent(inout), target :: indices_used(n_families)
+!| Error code: 0=ok, -2=invalid family indices (required)
+integer(c_int), intent(out) :: error_code
+  call compute_family_scaling_alloc(n_genes, n_families, distances, gene_to_fam, dscale, &
+    loess_x, loess_y, indices_used, error_code)
 end subroutine compute_family_scaling_c
 
 !> C wrapper for compute_rdi.

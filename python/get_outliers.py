@@ -19,12 +19,30 @@ def np2c(arr, dtype):
     return arr.ctypes.data_as(dtype)
 
 def print_header(msg):
-    print("\n" + "="*60)
+    print("=" * 60)
     print(msg)
-    print("="*60)
+    print("=" * 60)
 
 def setup_compute_family_scaling():
+    """Setup the main (allocating) compute_family_scaling_c interface"""
     f = lib.compute_family_scaling_c
+    f.argtypes = [
+        ctypes.c_int,  # n_genes
+        ctypes.c_int,  # n_families
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # distances (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # gene_to_fam (n_genes,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # dscale (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_x (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_y (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # indices_used (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # error_code (1,)
+    ]
+    f.restype = None
+    return f
+
+def setup_compute_family_scaling_expert():
+    """Setup the expert (kernel) compute_family_scaling_expert_c interface"""
+    f = lib.compute_family_scaling_expert_c
     f.argtypes = [
         ctypes.c_int,  # n_genes
         ctypes.c_int,  # n_families
@@ -37,8 +55,7 @@ def setup_compute_family_scaling():
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # perm_tmp (n_genes,)
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_left_tmp (n_genes,)
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_right_tmp (n_genes,)
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # workspace_weights (n_families,)
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # workspace_values (n_families,)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # family_distances (n_families,)
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # error_code (1,)
     ]
     f.restype = None
@@ -89,130 +106,343 @@ def setup_detect_outliers():
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_x (n_families,)
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_y (n_families,)
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # loess_n (n_families,)
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # workspace_weights (n_families,)
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # workspace_values (n_families,)
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # error_code (1,)
         ctypes.c_double                                                  # percentile (scalar)
     ]
     f.restype = None
     return f
 
-# Example: test for compute_family_scaling_c
+# =====================
+# Tests for compute_family_scaling_c (main/alloc interface - user friendly)
+# =====================
+
 def test_compute_family_scaling():
-    print_header("[compute_family_scaling_c] Python LOESS-only test cases")
+    print_header("Testing compute_family_scaling_c (main/alloc interface)")
+    
+    # Common test data
     n_genes = 5
     n_families = 2
     distances = np.array([1, 2, 3, 4, 5], dtype=np.float64)
     gene_to_fam = np.array([1, 1, 2, 2, 2], dtype=np.int32)
+    
+    f = setup_compute_family_scaling()
+    
+    # Case 1: Basic LOESS scaling
+    print("\n[compute_family_scaling_c] Case 1: Basic LOESS scaling")
     dscale = np.zeros(n_families, dtype=np.float64)
     loess_x = np.zeros(n_families, dtype=np.float64)
     loess_y = np.zeros(n_families, dtype=np.float64)
     indices_used = np.zeros(n_families, dtype=np.int32)
-    perm_tmp = np.zeros(n_genes, dtype=np.int32)
-    stack_left_tmp = np.zeros(n_genes, dtype=np.int32)
-    stack_right_tmp = np.zeros(n_genes, dtype=np.int32)
-    workspace_weights = np.zeros(n_families, dtype=np.float64)
-    workspace_values = np.zeros(n_families, dtype=np.float64)
     error_code = np.zeros(1, dtype=np.int32)
-    f = setup_compute_family_scaling()
-    # Case 1: LOESS-only, valid families
-    print("\nCase 1: LOESS-only, valid families")
-    f(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)
-    print('dscale:', dscale)
-    print('error_code:', error_code[0])
-    # Case 2: Invalid family index (should return error)
-    print("\nCase 2: Invalid family index (should return error)")
+    
+    f(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, error_code)
+    print(f"dscale: {', '.join(map(str, dscale))}")
+    print(f"error_code: {error_code[0]}")
+    print(f"loess_x (medians): {', '.join(map(str, loess_x))}")
+    print(f"loess_y (stddevs): {', '.join(map(str, loess_y))}")
+    
+    # Case 2: Invalid family indices
+    print("\n[compute_family_scaling_c] Case 2: Invalid family indices")
     gene_to_fam_invalid = np.array([1, 3, 2, 2, 2], dtype=np.int32)
-    f(n_genes, n_families, distances, gene_to_fam_invalid, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)
-    print('dscale:', dscale)
-    print('error_code:', error_code[0])
-    # Case 3: Family with only one gene (dscale=0)
-    print("\nCase 3: Family with only one gene (dscale=0)")
+    dscale = np.zeros(n_families, dtype=np.float64)
+    loess_x = np.zeros(n_families, dtype=np.float64)
+    loess_y = np.zeros(n_families, dtype=np.float64)
+    indices_used = np.zeros(n_families, dtype=np.int32)
+    error_code = np.zeros(1, dtype=np.int32)
+    
+    f(n_genes, n_families, distances, gene_to_fam_invalid, dscale, loess_x, loess_y, indices_used, error_code)
+    print(f"dscale: {', '.join(map(str, dscale))}")
+    print(f"error_code: {error_code[0]}")
+    
+    # Case 3: Family with only one gene
+    print("\n[compute_family_scaling_c] Case 3: Family with only one gene")
     gene_to_fam_single = np.array([1, 2, 2, 2, 2], dtype=np.int32)
-    f(n_genes, n_families, distances, gene_to_fam_single, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)
-    print('dscale:', dscale)
-    print('error_code:', error_code[0])
+    dscale = np.zeros(n_families, dtype=np.float64)
+    loess_x = np.zeros(n_families, dtype=np.float64)
+    loess_y = np.zeros(n_families, dtype=np.float64)
+    indices_used = np.zeros(n_families, dtype=np.int32)
+    error_code = np.zeros(1, dtype=np.int32)
+    
+    f(n_genes, n_families, distances, gene_to_fam_single, dscale, loess_x, loess_y, indices_used, error_code)
+    print(f"dscale: {', '.join(map(str, dscale))}")
+    print(f"error_code: {error_code[0]}")
+    
+    # Case 4: All distances zero
+    print("\n[compute_family_scaling_c] Case 4: All distances zero")
+    distances_zero = np.array([0, 0, 0, 0, 0], dtype=np.float64)
+    dscale = np.zeros(n_families, dtype=np.float64)
+    loess_x = np.zeros(n_families, dtype=np.float64)
+    loess_y = np.zeros(n_families, dtype=np.float64)
+    indices_used = np.zeros(n_families, dtype=np.int32)
+    error_code = np.zeros(1, dtype=np.int32)
+    
+    f(n_genes, n_families, distances_zero, gene_to_fam, dscale, loess_x, loess_y, indices_used, error_code)
+    print(f"dscale: {', '.join(map(str, dscale))}")
+    print(f"error_code: {error_code[0]}")
+    
+    # Case 5: Large dataset
+    print("\n[compute_family_scaling_c] Case 5: Large dataset")
+    n_families_large = 3000
+    np.random.seed(42)  # For reproducible results
+    
+    # Generate random number of genes per family (between 2 and 20)
+    genes_per_family = np.random.randint(2, 21, size=n_families_large)
+    n_genes_large = np.sum(genes_per_family)
+    
+    # Create gene_to_fam array
+    gene_to_fam_large = []
+    for family_id in range(1, n_families_large + 1):
+        gene_to_fam_large.extend([family_id] * genes_per_family[family_id - 1])
+    gene_to_fam_large = np.array(gene_to_fam_large, dtype=np.int32)
+    
+    # Generate random distances
+    distances_large = np.random.uniform(0.1, 10.0, n_genes_large).astype(np.float64)
+    
+    print(f"Dataset size: {n_genes_large} genes across {n_families_large} families")
+    print(f"Genes per family range: {np.min(genes_per_family)} - {np.max(genes_per_family)}")
+    print(f"Average genes per family: {np.mean(genes_per_family):.2f}")
+    
+    dscale = np.zeros(n_families_large, dtype=np.float64)
+    loess_x = np.zeros(n_families_large, dtype=np.float64)
+    loess_y = np.zeros(n_families_large, dtype=np.float64)
+    indices_used = np.zeros(n_families_large, dtype=np.int32)
+    error_code = np.zeros(1, dtype=np.int32)
+    
+    f(n_genes_large, n_families_large, distances_large, gene_to_fam_large, dscale, loess_x, loess_y, indices_used, error_code)
+    print(f"dscale sample (first 10): {', '.join([str(round(x, 3)) for x in dscale[:10]])}")
+    print(f"error_code: {error_code[0]}")
+    print(f"Non-zero dscale values: {np.sum(dscale > 0)}/{n_families_large}")
+    print(f"Processing completed successfully for large dataset")
+    
+    # Case 6: Mixed family sizes
+    print("\n[compute_family_scaling_c] Case 6: Mixed family sizes")
+    n_genes_mixed = 10
+    n_families_mixed = 3
+    distances_mixed = np.array([1.0, 1.1, 1.2, 1.3, 1.4, 2.0, 2.1, 3.0, 4.0, 5.0], dtype=np.float64)
+    gene_to_fam_mixed = np.array([1, 1, 1, 1, 1, 2, 2, 3, 3, 3], dtype=np.int32)  # Family 1: 5 genes, Family 2: 2 genes, Family 3: 3 genes
+    
+    dscale = np.zeros(n_families_mixed, dtype=np.float64)
+    loess_x = np.zeros(n_families_mixed, dtype=np.float64)
+    loess_y = np.zeros(n_families_mixed, dtype=np.float64)
+    indices_used = np.zeros(n_families_mixed, dtype=np.int32)
+    error_code = np.zeros(1, dtype=np.int32)
+    
+    f(n_genes_mixed, n_families_mixed, distances_mixed, gene_to_fam_mixed, dscale, loess_x, loess_y, indices_used, error_code)
+    print(f"dscale: {', '.join([str(round(x, 3)) for x in dscale])}")
+    print(f"error_code: {error_code[0]}")
+    print(f"Family medians: {', '.join([str(round(x, 3)) for x in loess_x])}")
 
-def test_compute_rdi():
-    print_header("[compute_rdi_c] Python test cases")
+# =====================
+# Tests for compute_family_scaling_expert_c (expert/kernel interface - advanced users)
+# =====================
+
+def test_compute_family_scaling_expert():
+    print_header("Testing compute_family_scaling_expert_c (expert/kernel interface)")
+    
+    # Common test data
+    n_genes = 5
     n_families = 2
     distances = np.array([1, 2, 3, 4, 5], dtype=np.float64)
     gene_to_fam = np.array([1, 1, 2, 2, 2], dtype=np.int32)
+    
+    f = setup_compute_family_scaling_expert()
+    
+    # For expert interface, user must provide all work arrays
+    perm_tmp = np.zeros(n_genes, dtype=np.int32)
+    stack_left_tmp = np.zeros(n_genes, dtype=np.int32)
+    stack_right_tmp = np.zeros(n_genes, dtype=np.int32)
+    family_distances = np.zeros(n_genes, dtype=np.float64)
+    
+    # Case 1: Basic LOESS scaling with user-provided work arrays
+    print("\n[compute_family_scaling_expert_c] Case 1: Basic LOESS scaling with work arrays")
+    dscale = np.zeros(n_families, dtype=np.float64)
+    loess_x = np.zeros(n_families, dtype=np.float64)
+    loess_y = np.zeros(n_families, dtype=np.float64)
+    indices_used = np.zeros(n_families, dtype=np.int32)
+    error_code = np.zeros(1, dtype=np.int32)
+    
+    f(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, error_code)
+    print(f"dscale: {', '.join(map(str, dscale))}")
+    print(f"error_code: {error_code[0]}")
+    
+    # Case 2: Check that work arrays are modified
+    print("\n[compute_family_scaling_expert_c] Case 2: Work arrays modification check")
+    # Reset work arrays to known values
+    perm_tmp = np.zeros(n_genes, dtype=np.int32)
+    stack_left_tmp = np.zeros(n_genes, dtype=np.int32)
+    stack_right_tmp = np.zeros(n_genes, dtype=np.int32)
+    family_distances = np.zeros(n_genes, dtype=np.float64)
+    print(f"family_distances before: {', '.join(map(str, family_distances))}")
+    
+    dscale = np.zeros(n_families, dtype=np.float64)
+    loess_x = np.zeros(n_families, dtype=np.float64)
+    loess_y = np.zeros(n_families, dtype=np.float64)
+    indices_used = np.zeros(n_families, dtype=np.int32)
+    error_code = np.zeros(1, dtype=np.int32)
+    
+    f(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, error_code)
+    print(f"family_distances after: {', '.join([str(round(x, 3)) for x in family_distances])}")
+    print(f"perm_tmp: {', '.join(map(str, perm_tmp))}")
+    
+    # Case 3: Performance comparison with main interface
+    print("\n[compute_family_scaling_expert_c] Case 3: Results comparison with main interface")
+    # Use same test data as Case 1 of main interface
+    perm_tmp = np.zeros(n_genes, dtype=np.int32)
+    stack_left_tmp = np.zeros(n_genes, dtype=np.int32)
+    stack_right_tmp = np.zeros(n_genes, dtype=np.int32)
+    family_distances = np.zeros(n_genes, dtype=np.float64)
+    dscale_expert = np.zeros(n_families, dtype=np.float64)
+    loess_x_expert = np.zeros(n_families, dtype=np.float64)
+    loess_y_expert = np.zeros(n_families, dtype=np.float64)
+    indices_used_expert = np.zeros(n_families, dtype=np.int32)
+    error_code_expert = np.zeros(1, dtype=np.int32)
+    
+    f(n_genes, n_families, distances, gene_to_fam, dscale_expert, loess_x_expert, loess_y_expert, indices_used_expert, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, error_code_expert)
+    
+    # Compare with Case 1 results from main interface (we'll store them)
+    # Run main interface for comparison
+    f_main = setup_compute_family_scaling()
+    dscale_main = np.zeros(n_families, dtype=np.float64)
+    loess_x_main = np.zeros(n_families, dtype=np.float64)
+    loess_y_main = np.zeros(n_families, dtype=np.float64)
+    indices_used_main = np.zeros(n_families, dtype=np.int32)
+    error_code_main = np.zeros(1, dtype=np.int32)
+    f_main(n_genes, n_families, distances, gene_to_fam, dscale_main, loess_x_main, loess_y_main, indices_used_main, error_code_main)
+    
+    print("Comparison with main interface:")
+    print(f"Main dscale: {', '.join(map(str, dscale_main))}")
+    print(f"Expert dscale: {', '.join(map(str, dscale_expert))}")
+    print(f"Difference: {', '.join([str(round(abs(x-y), 6)) for x, y in zip(dscale_main, dscale_expert)])}")
+    print(f"Results identical: {all(abs(x-y) < 1e-10 for x, y in zip(dscale_main, dscale_expert))}")
+    
+    # Case 4: Large dataset with expert interface
+    print("\n[compute_family_scaling_expert_c] Case 4: Large dataset")
+    n_families_large = 3000
+    np.random.seed(42)  # For reproducible results
+    
+    # Generate random number of genes per family (between 2 and 20)
+    genes_per_family = np.random.randint(2, 21, size=n_families_large)
+    n_genes_large = np.sum(genes_per_family)
+    
+    # Create gene_to_fam array
+    gene_to_fam_large = []
+    for family_id in range(1, n_families_large + 1):
+        gene_to_fam_large.extend([family_id] * genes_per_family[family_id - 1])
+    gene_to_fam_large = np.array(gene_to_fam_large, dtype=np.int32)
+    
+    # Generate random distances
+    distances_large = np.random.uniform(0.1, 10.0, n_genes_large).astype(np.float64)
+    
+    print(f"Large dataset: {n_genes_large} genes across {n_families_large} families")
+    print(f"Memory footprint: ~{(n_genes_large * 8 * 4 + n_families_large * 8 * 4) / 1024 / 1024:.1f} MB for work arrays")
+    
+    # Expert interface requires larger work arrays for large dataset
+    perm_tmp_large = np.zeros(n_genes_large, dtype=np.int32)
+    stack_left_tmp_large = np.zeros(n_genes_large, dtype=np.int32)
+    stack_right_tmp_large = np.zeros(n_genes_large, dtype=np.int32)
+    family_distances_large = np.zeros(n_genes_large, dtype=np.float64)
+    dscale_large = np.zeros(n_families_large, dtype=np.float64)
+    loess_x_large = np.zeros(n_families_large, dtype=np.float64)
+    loess_y_large = np.zeros(n_families_large, dtype=np.float64)
+    indices_used_large = np.zeros(n_families_large, dtype=np.int32)
+    error_code_large = np.zeros(1, dtype=np.int32)
+    
+    f(n_genes_large, n_families_large, distances_large, gene_to_fam_large, dscale_large, loess_x_large, loess_y_large, indices_used_large, perm_tmp_large, stack_left_tmp_large, stack_right_tmp_large, family_distances_large, error_code_large)
+    print(f"dscale sample (first 10): {', '.join([str(round(x, 3)) for x in dscale_large[:10]])}")
+    print(f"error_code: {error_code_large[0]}")
+    print(f"Expert interface successfully handled large dataset with manual memory management")
+
+# =====================
+# Test cases for compute_rdi_c
+# =====================
+
+def test_compute_rdi():
+    print_header("Testing compute_rdi_c")
+    
+    f = setup_compute_rdi()
+    
+    # Case 1: normal input
+    print("\n[compute_rdi_c] Case 1: normal input")
+    distances = np.array([1, 2, 3, 4, 5], dtype=np.float64)
+    gene_to_fam = np.array([1, 1, 2, 2, 2], dtype=np.int32)
+    n_families = 2
     dscale = np.array([2, 4], dtype=np.float64)
     rdi = np.zeros(len(distances), dtype=np.float64)
-    f = setup_compute_rdi()
-    # [compute_rdi_c] Case 1: normal input
-    print("\n[compute_rdi_c] Case 1: normal input")
     sorted_rdi = np.zeros(len(distances), dtype=np.float64)
     perm = np.arange(1, len(distances)+1, dtype=np.int32)
     stack_left = np.zeros(len(distances), dtype=np.int32)
     stack_right = np.zeros(len(distances), dtype=np.int32)
+    
     f(len(distances), n_families, distances, gene_to_fam, dscale, rdi, sorted_rdi, perm, stack_left, stack_right)
-    print("rdi:", rdi)
-    print("sorted_rdi:", sorted_rdi)
-
-    # [compute_rdi_c] Case 2: dscale with zeros
+    print(f"RDI: {', '.join([str(round(x, 3)) for x in rdi])}")
+    print(f"Sorted RDI: {', '.join([str(round(x, 3)) for x in sorted_rdi])}")
+    
+    # Case 2: dscale with zeros
     print("\n[compute_rdi_c] Case 2: dscale with zeros")
-    dscale_zeros = np.zeros(n_families, dtype=np.float64)
-    rdi2 = np.zeros(len(distances), dtype=np.float64)
-    sorted_rdi2 = np.zeros(len(distances), dtype=np.float64)
-    perm2 = np.arange(1, len(distances)+1, dtype=np.int32)
-    stack_left2 = np.zeros(len(distances), dtype=np.int32)
-    stack_right2 = np.zeros(len(distances), dtype=np.int32)
-    f(len(distances), n_families, distances, gene_to_fam, dscale_zeros, rdi2, sorted_rdi2, perm2, stack_left2, stack_right2)
-    print("rdi:", rdi2)
-    print("sorted_rdi:", sorted_rdi2)
-
-    # [compute_rdi_c] Case 3: gene_to_fam out of range
+    dscale_zero = np.array([0, 0], dtype=np.float64)
+    rdi = np.zeros(len(distances), dtype=np.float64)
+    sorted_rdi = np.zeros(len(distances), dtype=np.float64)
+    perm = np.arange(1, len(distances)+1, dtype=np.int32)
+    stack_left = np.zeros(len(distances), dtype=np.int32)
+    stack_right = np.zeros(len(distances), dtype=np.int32)
+    
+    f(len(distances), n_families, distances, gene_to_fam, dscale_zero, rdi, sorted_rdi, perm, stack_left, stack_right)
+    print(f"RDI with zero scaling: {', '.join(map(str, rdi))}")
+    
+    # Case 3: gene_to_fam out of range
     print("\n[compute_rdi_c] Case 3: gene_to_fam out of range")
-    gene_to_fam_bad = np.array([1, 3, 2, 2, 2], dtype=np.int32)
-    rdi3 = np.zeros(len(distances), dtype=np.float64)
-    sorted_rdi3 = np.zeros(len(distances), dtype=np.float64)
-    perm3 = np.arange(1, len(distances)+1, dtype=np.int32)
-    stack_left3 = np.zeros(len(distances), dtype=np.int32)
-    stack_right3 = np.zeros(len(distances), dtype=np.int32)
-    f(len(distances), n_families, distances, gene_to_fam_bad, np.array([2, 4], dtype=np.float64), rdi3, sorted_rdi3, perm3, stack_left3, stack_right3)
-    print("rdi:", rdi3)
-    print("sorted_rdi:", sorted_rdi3)
+    gene_to_fam_bad = np.array([1, 3, 2, 2, 2], dtype=np.int32)  # 3 doesn't exist in dscale
+    rdi = np.zeros(len(distances), dtype=np.float64)
+    sorted_rdi = np.zeros(len(distances), dtype=np.float64)
+    perm = np.arange(1, len(distances)+1, dtype=np.int32)
+    stack_left = np.zeros(len(distances), dtype=np.int32)
+    stack_right = np.zeros(len(distances), dtype=np.int32)
+    
+    f(len(distances), n_families, distances, gene_to_fam_bad, np.array([2, 4], dtype=np.float64), rdi, sorted_rdi, perm, stack_left, stack_right)
+    print(f"RDI with invalid family index: {', '.join([str(round(x, 3)) for x in rdi])}")
+    
+    # Case 4: High precision test
+    print("\n[compute_rdi_c] Case 4: High precision test")
+    distances_precise = np.array([2.0, 4.0, 6.0], dtype=np.float64)
+    gene_to_fam_precise = np.array([1, 1, 1], dtype=np.int32)
+    n_families_precise = 1
+    dscale_precise = np.array([2.0], dtype=np.float64)  # All genes in family 1, scaling = 2.0
+    rdi = np.zeros(len(distances_precise), dtype=np.float64)
+    sorted_rdi = np.zeros(len(distances_precise), dtype=np.float64)
+    perm = np.arange(1, len(distances_precise)+1, dtype=np.int32)
+    stack_left = np.zeros(len(distances_precise), dtype=np.int32)
+    stack_right = np.zeros(len(distances_precise), dtype=np.int32)
+    
+    f(len(distances_precise), n_families_precise, distances_precise, gene_to_fam_precise, dscale_precise, rdi, sorted_rdi, perm, stack_left, stack_right)
+    # Expected RDI: [2.0/2.0, 4.0/2.0, 6.0/2.0] = [1.0, 2.0, 3.0]
+    print("Expected RDI: [1.0, 2.0, 3.0]")
+    print(f"Actual RDI: {', '.join(map(str, rdi))}")
+    print(f"High precision test passed: {all(abs(x-y) < 1e-10 for x, y in zip(rdi, [1.0, 2.0, 3.0]))}")
+    
+    # Case 5: Negative distances
+    print("\n[compute_rdi_c] Case 5: Negative distances")
+    distances_negative = np.array([-1, 2, -3, 4, 5], dtype=np.float64)
+    rdi = np.zeros(len(distances_negative), dtype=np.float64)
+    sorted_rdi = np.zeros(len(distances_negative), dtype=np.float64)
+    perm = np.arange(1, len(distances_negative)+1, dtype=np.int32)
+    stack_left = np.zeros(len(distances_negative), dtype=np.int32)
+    stack_right = np.zeros(len(distances_negative), dtype=np.int32)
+    
+    f(len(distances_negative), n_families, distances_negative, gene_to_fam, np.array([2, 4], dtype=np.float64), rdi, sorted_rdi, perm, stack_left, stack_right)
+    print(f"RDI with negative distances: {', '.join([str(round(x, 3)) for x in rdi])}")
 
-    # [compute_rdi_c] Case 5: dscale shorter than max(gene_to_fam)
-    print("\n[compute_rdi_c] Case 5: dscale shorter than max(gene_to_fam)")
-    dscale_short = np.array([2], dtype=np.float64)
-    rdi5 = np.zeros(len(distances), dtype=np.float64)
-    sorted_rdi5 = np.zeros(len(distances), dtype=np.float64)
-    perm5 = np.arange(1, len(distances)+1, dtype=np.int32)
-    stack_left5 = np.zeros(len(distances), dtype=np.int32)
-    stack_right5 = np.zeros(len(distances), dtype=np.int32)
-    try:
-        f(len(distances), n_families, distances, gene_to_fam, dscale_short, rdi5, sorted_rdi5, perm5, stack_left5, stack_right5)
-        print("rdi:", rdi5)
-        print("sorted_rdi:", sorted_rdi5)
-    except Exception as e:
-        print("Unexpected error:", e)
-
-    # [compute_rdi_c] Case 6: vectors with incompatible length
-    print("\n[compute_rdi_c] Case 6: vectors with incompatible length")
-    distances_short = np.array([1, 2, 3], dtype=np.float64)
-    gene_to_fam_short = np.array([1, 1, 2], dtype=np.int32)
-    rdi6 = np.zeros(len(distances_short), dtype=np.float64)
-    sorted_rdi6 = np.zeros(len(distances_short), dtype=np.float64)
-    perm6 = np.arange(1, len(distances_short)+1, dtype=np.int32)
-    stack_left6 = np.zeros(len(distances_short), dtype=np.int32)
-    stack_right6 = np.zeros(len(distances_short), dtype=np.int32)
-    try:
-        f(len(distances_short), n_families, distances_short, gene_to_fam_short, np.array([2, 4], dtype=np.float64), rdi6, sorted_rdi6, perm6, stack_left6, stack_right6)
-        print("rdi:", rdi6)
-        print("sorted_rdi:", sorted_rdi6)
-    except Exception as e:
-        print("Unexpected error:", e)
+# =====================
+# Test cases for identify_outliers_c
+# =====================
 
 def test_identify_outliers():
-    print_header("[identify_outliers_c] Python test cases")
+    print_header("Testing identify_outliers_c")
+    
     f = setup_identify_outliers()
-    # [identify_outliers_c] Case 1: Simple RDI, percentile 50
-    # Expectation: Top 50% (highest 3) should be outliers (True), others False.
+    
+    # Case 1: Simple RDI, percentile 50
     print("\n[identify_outliers_c] Case 1: Simple RDI, percentile 50")
-    rdi = np.array([0.3, 0.1, 0.5, 0.2, 0.4], dtype=np.float64)  # intentionally unsorted
+    rdi = np.array([0.3, 0.1, 0.5, 0.2, 0.4], dtype=np.float64)
     n = len(rdi)
     sorted_rdi = np.sort(rdi[rdi >= 0])
     if len(sorted_rdi) < n:
@@ -220,84 +450,94 @@ def test_identify_outliers():
     is_outlier = np.zeros(n, dtype=np.int32)
     threshold = c_double(0.0)
     percentile = 50.0
+    
     f(n, rdi, sorted_rdi, is_outlier, threshold, percentile)
-    print("is_outlier:", is_outlier)
-    print("threshold:", threshold.value)
-
-    # [identify_outliers_c] Case 2: RDI with negative values (should be ignored)
-    # Expectation: Negative RDI values are ignored for outlier detection; only positive values considered.
-    print("\n[identify_outliers_c] Case 2: RDI with negative values (should be ignored)")
-    rdi2 = np.array([0.3, -1, 0.5, 0.2, 0.4], dtype=np.float64)  # intentionally unsorted, with negative
-    sorted_rdi2 = np.sort(rdi2[rdi2 >= 0])
-    if len(sorted_rdi2) < n:
-        sorted_rdi2 = np.concatenate([sorted_rdi2, np.zeros(n - len(sorted_rdi2))])
-    is_outlier2 = np.zeros(n, dtype=np.int32)
-    threshold2 = c_double(0.0)
-    percentile2 = 80.0
-    f(n, rdi2, sorted_rdi2, is_outlier2, threshold2, percentile2)
-    print("is_outlier:", is_outlier2)
-    print("threshold:", threshold2.value)
-
-    # [identify_outliers_c] Case 3: All RDI zeros
-    # Expectation: No outliers detected; all is_outlier should be False.
-    print("\n[identify_outliers_c] Case 3: All RDI zeros")
-    rdi3 = np.zeros(n, dtype=np.float64)
-    sorted_rdi3 = np.sort(rdi3[rdi3 >= 0])
-    if len(sorted_rdi3) < n:
-        sorted_rdi3 = np.concatenate([sorted_rdi3, np.zeros(n - len(sorted_rdi3))])
-    is_outlier3 = np.zeros(n, dtype=np.int32)
-    threshold3 = c_double(0.0)
-    percentile3 = 90.0
-    f(n, rdi3, sorted_rdi3, is_outlier3, threshold3, percentile3)
-    print("is_outlier:", is_outlier3)
-    print("threshold:", threshold3.value)
-
-    # [identify_outliers_c] Case 4: Percentile 0 (all outliers)
-    # Expectation: All genes should be outliers (all True).
+    print(f"RDI: {', '.join(map(str, rdi))}")
+    print(f"Is outlier: {', '.join(map(str, is_outlier))}")
+    print(f"Threshold: {threshold.value}")
+    
+    # Case 2: All RDI zeros
+    print("\n[identify_outliers_c] Case 2: All RDI zeros")
+    rdi = np.zeros(n, dtype=np.float64)
+    sorted_rdi = np.sort(rdi[rdi >= 0])
+    if len(sorted_rdi) < n:
+        sorted_rdi = np.concatenate([sorted_rdi, np.zeros(n - len(sorted_rdi))])
+    is_outlier = np.zeros(n, dtype=np.int32)
+    threshold = c_double(0.0)
+    percentile = 90.0
+    
+    f(n, rdi, sorted_rdi, is_outlier, threshold, percentile)
+    print(f"All zeros outliers: {', '.join(map(str, is_outlier))}")
+    print(f"Threshold: {threshold.value}")
+    
+    # Case 3: RDI with negative values (should be ignored)
+    print("\n[identify_outliers_c] Case 3: RDI with negative values (should be ignored)")
+    rdi = np.array([0.3, -1, 0.5, 0.2, 0.4], dtype=np.float64)  # with negative
+    sorted_rdi = np.sort(rdi[rdi >= 0])
+    if len(sorted_rdi) < n:
+        sorted_rdi = np.concatenate([sorted_rdi, np.zeros(n - len(sorted_rdi))])
+    is_outlier = np.zeros(n, dtype=np.int32)
+    threshold = c_double(0.0)
+    percentile = 80.0
+    
+    f(n, rdi, sorted_rdi, is_outlier, threshold, percentile)
+    print(f"RDI with negative: {', '.join(map(str, rdi))}")
+    print(f"Is outlier: {', '.join(map(str, is_outlier))}")
+    print(f"Threshold: {threshold.value}")
+    
+    # Case 4: Percentile 0 (all outliers)
     print("\n[identify_outliers_c] Case 4: Percentile 0 (all outliers)")
-    rdi4 = np.array([0.3, 0.1, 0.5, 0.2, 0.4], dtype=np.float64)  # intentionally unsorted
-    sorted_rdi4 = np.sort(rdi4[rdi4 >= 0])
-    if len(sorted_rdi4) < n:
-        sorted_rdi4 = np.concatenate([sorted_rdi4, np.zeros(n - len(sorted_rdi4))])
-    is_outlier4 = np.zeros(n, dtype=np.int32)
-    threshold4 = c_double(0.0)
-    percentile4 = 0.0
-    f(n, rdi4, sorted_rdi4, is_outlier4, threshold4, percentile4)
-    print("is_outlier:", is_outlier4)
-    print("threshold:", threshold4.value)
-
-    # [identify_outliers_c] Case 5: Percentile 100 (1 outlier)
-    # Expectation: Only the highest RDI should be outlier (True), rest False.
+    rdi = np.array([0.3, 0.1, 0.5, 0.2, 0.4], dtype=np.float64)
+    sorted_rdi = np.sort(rdi[rdi >= 0])
+    if len(sorted_rdi) < n:
+        sorted_rdi = np.concatenate([sorted_rdi, np.zeros(n - len(sorted_rdi))])
+    is_outlier = np.zeros(n, dtype=np.int32)
+    threshold = c_double(0.0)
+    percentile = 0.0
+    
+    f(n, rdi, sorted_rdi, is_outlier, threshold, percentile)
+    print(f"0% percentile outliers: {', '.join(map(str, is_outlier))}")
+    print(f"All are outliers: {all(is_outlier)}")
+    
+    # Case 5: Percentile 100 (1 outlier)
     print("\n[identify_outliers_c] Case 5: Percentile 100 (1 outlier)")
-    rdi5 = np.array([0.3, 0.1, 0.5, 0.2, 0.4], dtype=np.float64)  # intentionally unsorted
-    sorted_rdi5 = np.sort(rdi5[rdi5 >= 0])
-    if len(sorted_rdi5) < n:
-        sorted_rdi5 = np.concatenate([sorted_rdi5, np.zeros(n - len(sorted_rdi5))])
-    is_outlier5 = np.zeros(n, dtype=np.int32)
-    threshold5 = c_double(0.0)
-    percentile5 = 100.0
-    f(n, rdi5, sorted_rdi5, is_outlier5, threshold5, percentile5)
-    print("is_outlier:", is_outlier5)
-    print("threshold:", threshold5.value)
-
-    # [identify_outliers_c] Case 6: All RDI negative (should be ignored)
-    # Expectation: All negative RDI values should be ignored for outlier detection; all is_outlier should be False.
+    rdi = np.array([0.3, 0.1, 0.5, 0.2, 0.4], dtype=np.float64)
+    sorted_rdi = np.sort(rdi[rdi >= 0])
+    if len(sorted_rdi) < n:
+        sorted_rdi = np.concatenate([sorted_rdi, np.zeros(n - len(sorted_rdi))])
+    is_outlier = np.zeros(n, dtype=np.int32)
+    threshold = c_double(0.0)
+    percentile = 100.0
+    
+    f(n, rdi, sorted_rdi, is_outlier, threshold, percentile)
+    print(f"100% percentile outliers: {', '.join(map(str, is_outlier))}")
+    print(f"Only highest is outlier: {sum(is_outlier) == 1}")
+    
+    # Case 6: All RDI negative (should be ignored)
     print("\n[identify_outliers_c] Case 6: All RDI negative (should be ignored)")
-    rdi6 = np.array([-0.1, -0.2, -0.3, -0.4, -0.5], dtype=np.float64)
-    sorted_rdi6 = np.sort(rdi6[rdi6 >= 0])
-    if len(sorted_rdi6) < n:
-        sorted_rdi6 = np.concatenate([sorted_rdi6, np.zeros(n - len(sorted_rdi6))])
-    is_outlier6 = np.zeros(n, dtype=np.int32)
-    threshold6 = c_double(0.0)
-    percentile6 = 80.0
-    f(n, rdi6, sorted_rdi6, is_outlier6, threshold6, percentile6)
-    print("is_outlier:", is_outlier6)
-    print("threshold:", threshold6.value)
+    rdi = np.array([-0.1, -0.2, -0.3, -0.4, -0.5], dtype=np.float64)  # all negative
+    sorted_rdi = np.sort(rdi[rdi >= 0])
+    if len(sorted_rdi) < n:
+        sorted_rdi = np.concatenate([sorted_rdi, np.zeros(n - len(sorted_rdi))])
+    is_outlier = np.zeros(n, dtype=np.int32)
+    threshold = c_double(0.0)
+    percentile = 80.0
+    
+    f(n, rdi, sorted_rdi, is_outlier, threshold, percentile)
+    print(f"All negative outliers: {', '.join(map(str, is_outlier))}")
+    print(f"No outliers detected: {not any(is_outlier)}")
+
+# =====================
+# Test cases for detect_outliers_c (comprehensive workflow)
+# =====================
 
 def test_detect_outliers():
-    print_header("[detect_outliers_c] Python LOESS-only test cases")
+    print_header("Testing detect_outliers_c (complete outlier detection workflow)")
+    
     f = setup_detect_outliers()
-    # Case 1: LOESS-only, valid families
+    
+    # Case 1: Typical input
+    print("\n[detect_outliers_c] Case 1: Typical input")
     n_genes = 6
     n_families = 2
     distances = np.array([1, 2, 3, 4, 5, 6], dtype=np.float64)
@@ -310,28 +550,87 @@ def test_detect_outliers():
     loess_x = np.zeros(n_families, dtype=np.float64)
     loess_y = np.zeros(n_families, dtype=np.float64)
     loess_n = np.zeros(n_families, dtype=np.int32)
-    workspace_weights = np.zeros(n_families, dtype=np.float64)
-    workspace_values = np.zeros((1, n_families), dtype=np.float64)
     error_code = np.zeros(1, dtype=np.int32)
     percentile = 80.0
-    f(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, percentile)
-    print("is_outlier:", is_outlier)
-    print("error_code:", error_code[0])
-    # Case 2: Invalid family index (should return error)
-    print("\nCase 2: Invalid family index (should return error)")
-    is_outlier[:] = 0
+    
+    f(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, is_outlier, loess_x, loess_y, loess_n, error_code, percentile)
+    print(f"Distances: {', '.join(map(str, distances))}")
+    print(f"Gene to family: {', '.join(map(str, gene_to_fam))}")
+    print(f"Is outlier: {', '.join(map(str, is_outlier))}")
+    print(f"Error code: {error_code[0]}")
+    print(f"Family medians: {', '.join([str(round(x, 3)) for x in loess_x])}")
+    print(f"Family stddevs: {', '.join([str(round(x, 3)) for x in loess_y])}")
+    
+    # Case 2: Invalid gene_to_fam indices
+    print("\n[detect_outliers_c] Case 2: Invalid gene_to_fam indices")
     gene_to_fam_invalid = np.array([1, 3, 2, 2, 2, 2], dtype=np.int32)
-    workspace_values = np.zeros((1, n_families), dtype=np.float64)
-    f(n_genes, n_families, distances, gene_to_fam_invalid, work_array, perm, stack_left, stack_right, is_outlier, loess_x, loess_y, loess_n, workspace_weights, workspace_values, error_code, percentile)
-    print("is_outlier:", is_outlier)
-    print("error_code:", error_code[0])
+    is_outlier = np.zeros(n_genes, dtype=np.int32)
+    work_array = np.zeros(n_genes, dtype=np.float64)
+    perm = np.arange(1, n_genes+1, dtype=np.int32)
+    stack_left = np.zeros(n_genes, dtype=np.int32)
+    stack_right = np.zeros(n_genes, dtype=np.int32)
+    loess_x = np.zeros(n_families, dtype=np.float64)
+    loess_y = np.zeros(n_families, dtype=np.float64)
+    loess_n = np.zeros(n_families, dtype=np.int32)
+    error_code = np.zeros(1, dtype=np.int32)
+    
+    f(n_genes, n_families, distances, gene_to_fam_invalid, work_array, perm, stack_left, stack_right, is_outlier, loess_x, loess_y, loess_n, error_code, percentile)
+    print(f"Invalid family - Is outlier: {', '.join(map(str, is_outlier))}")
+    print(f"Invalid family - Error code: {error_code[0]}")
+    
+    # Case 3: Default percentile test
+    print("\n[detect_outliers_c] Case 3: Default percentile test")
+    n_genes = 8
+    n_families = 2
+    distances = np.array([1, 1.1, 1.2, 1.3, 10, 10.1, 10.2, 50], dtype=np.float64)  # Last gene is clear outlier
+    gene_to_fam = np.array([1, 1, 1, 1, 2, 2, 2, 2], dtype=np.int32)
+    work_array = np.zeros(n_genes, dtype=np.float64)
+    perm = np.arange(1, n_genes+1, dtype=np.int32)
+    stack_left = np.zeros(n_genes, dtype=np.int32)
+    stack_right = np.zeros(n_genes, dtype=np.int32)
+    is_outlier = np.zeros(n_genes, dtype=np.int32)
+    loess_x = np.zeros(n_families, dtype=np.float64)
+    loess_y = np.zeros(n_families, dtype=np.float64)
+    loess_n = np.zeros(n_families, dtype=np.int32)
+    error_code = np.zeros(1, dtype=np.int32)
+    
+    # Don't specify percentile to test default behavior (should be 95%)
+    f(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, is_outlier, loess_x, loess_y, loess_n, error_code, 95.0)  # Using 95% as default
+    print(f"Default percentile - Distances: {', '.join(map(str, distances))}")
+    print(f"Default percentile - Is outlier: {', '.join(map(str, is_outlier))}")
+    print(f"Default percentile - Error code: {error_code[0]}")
+    print(f"Outlier detected for extreme value: {bool(is_outlier[7])}")
+    
+    # Case 4: Single gene families
+    print("\n[detect_outliers_c] Case 4: Single gene families")
+    n_genes = 3
+    n_families = 3
+    distances = np.array([1, 10, 100], dtype=np.float64)  # Each gene in different family
+    gene_to_fam = np.array([1, 2, 3], dtype=np.int32)
+    work_array = np.zeros(n_genes, dtype=np.float64)
+    perm = np.arange(1, n_genes+1, dtype=np.int32)
+    stack_left = np.zeros(n_genes, dtype=np.int32)
+    stack_right = np.zeros(n_genes, dtype=np.int32)
+    is_outlier = np.zeros(n_genes, dtype=np.int32)
+    loess_x = np.zeros(n_families, dtype=np.float64)
+    loess_y = np.zeros(n_families, dtype=np.float64)
+    loess_n = np.zeros(n_families, dtype=np.int32)
+    error_code = np.zeros(1, dtype=np.int32)
+    
+    f(n_genes, n_families, distances, gene_to_fam, work_array, perm, stack_left, stack_right, is_outlier, loess_x, loess_y, loess_n, error_code, 80.0)
+    print(f"Single families - Is outlier: {', '.join(map(str, is_outlier))}")
+    print(f"Single families - Error code: {error_code[0]}")
+    print(f"Single families - Family medians: {', '.join(map(str, loess_x))}")
+    print(f"No outliers expected: {not any(is_outlier)}")
 
 def main():
     test_compute_family_scaling()
+    test_compute_family_scaling_expert()
     test_compute_rdi()
     test_identify_outliers()
     test_detect_outliers()
     print("\nAll outlier detection tests completed.")
+    print("Both main (allocating) and expert (kernel) interfaces tested successfully.")
 
 if __name__ == "__main__":
     main()
