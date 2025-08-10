@@ -23,12 +23,13 @@ def setup_tissue_versatility():
     tv.argtypes = [
         ctypes.c_int,  # n_axes
         ctypes.c_int,  # n_vectors
-        ctypes.c_int,  # n_selected
 
         # Use ndpointer for arrays
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # expression_vectors (Fortran order)
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # exp_vecs_selection_index
+        ctypes.c_int,  # n_selected_vectors
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # axes_selection
+        ctypes.c_int,  # n_selected_axes
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # tissue_versatilities
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # tissue_angles_deg
     ]
@@ -45,19 +46,21 @@ def tv_call(expr, select_vec, select_axes):
     select_vec = np.ascontiguousarray(select_vec, dtype=np.int32)
     select_axes = np.ascontiguousarray(select_axes, dtype=np.int32)
 
-    n_selected = int(np.sum(select_vec))
-    tissue_versatilities = np.empty(n_selected, dtype=np.float64)
-    tissue_angles_deg = np.empty(n_selected, dtype=np.float64)
+    n_selected_vectors = int(np.sum(select_vec))
+    n_selected_axes = int(np.sum(select_axes))
+    tissue_versatilities = np.empty(n_selected_vectors, dtype=np.float64)
+    tissue_angles_deg = np.empty(n_selected_vectors, dtype=np.float64)
 
     # Call the C/Fortran wrapper
     tv = setup_tissue_versatility()
     tv(
         n_axes,
         n_vectors,
-        n_selected,
         expr_f,
         select_vec,
+        n_selected_vectors,
         select_axes,
+        n_selected_axes,
         tissue_versatilities,
         tissue_angles_deg
     )

@@ -602,7 +602,8 @@
     "body": [
       "! Calculate tissue versatility for selected expression vectors (C/Python interface)",
       "call compute_tissue_versatility(n_axes, n_vectors, expression_vectors, &",
-      "    exp_vecs_selection_index, axes_selection, tissue_versatilities, tissue_angles_deg)"
+      "    exp_vecs_selection_index, n_selected_vectors, axes_selection, n_selected_axes, &",
+      "    tissue_versatilities, tissue_angles_deg)"
     ],
     "description": "Invoke tissue versatility calculation"
   },
@@ -614,7 +615,9 @@
       "                  n_vectors = as.integer(${2:n_vectors}),",
       "                  expression_vectors = as.double(${3:expr_matrix}),",
       "                  exp_vecs_selection_index = as.integer(${4:select_vec}),",
+      "                  n_selected_vectors = as.integer(sum(${4:select_vec})),",
       "                  axes_selection = as.integer(${5:select_axes}),",
+      "                  n_selected_axes = as.integer(sum(${5:select_axes})),",
       "                  tissue_versatilities = as.double(numeric(sum(${4:select_vec}))),",
       "                  tissue_angles_deg = as.double(numeric(sum(${4:select_vec}))))"
     ],
@@ -626,16 +629,18 @@
       "    lib.compute_tissue_versatility_c.argtypes = [",
       "        ctypes.c_int,  # n_axes",
       "        ctypes.c_int,  # n_vectors",
-      "        ctypes.c_int,                    # n_selected",
       "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), # expression_vectors",
       "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # exp_vecs_selection_index",
+      "        ctypes.c_int,  # n_selected_vectors",
       "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # axes_selection",
+      "        ctypes.c_int,  # n_selected_axes",
       "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # tissue_versatilities",
       "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\")   # tissue_angles_deg",
       "    ]",
       "    lib.compute_tissue_versatility_c.restype = None",
       "    lib.compute_tissue_versatility_c(n_axes, n_vectors, expression_vectors, &",
-      "        exp_vecs_selection_index, axes_selection, tissue_versatilities, tissue_angles_deg)"
+      "        exp_vecs_selection_index, n_selected_vectors, axes_selection, n_selected_axes, &",
+      "        tissue_versatilities, tissue_angles_deg)"
     ],
     "description": "Setup compute_tissue_versatility_c function binding for Python/ctypes"
   }

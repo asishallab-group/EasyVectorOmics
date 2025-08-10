@@ -47,27 +47,6 @@ if [ -e "$EXECUTABLE" ]; then
   rm -rf "$EXECUTABLE"
 fi
 
-echo "Compiling source modules..."
-# First compile src/ modules to generate .mod files
-$COMPILER $FLAGS $MODULE_FLAG -DDEFAULT_ALIGNMENT=$ALIGN $MAX_PERF_FLAG \
-  -I$BUILD_DIR -I$SOURCE_DIR \
-  -c $SOURCE_DIR/*.F90
-
-compilation_result=$?
-echo "Source compilation exit code: $compilation_result"
-
-if [ $compilation_result -ne 0 ]; then
-  echo "Source compilation failed."
-  echo "Generated files before exit:"
-  ls -la *.o *.mod 2>/dev/null || echo "No .o or .mod files found"
-  exit 1
-fi
-
-# Move object files to build/
-mv *.o $BUILD_DIR/ 2>/dev/null || true
-mv *.mod $BUILD_DIR/ 2>/dev/null || true
-
-
 echo "Compiling test modules..."
 # Then compile test/ modules using .mod files from build/
 $COMPILER $FLAGS $MODULE_FLAG -DDEFAULT_ALIGNMENT=$ALIGN $MAX_PERF_FLAG \

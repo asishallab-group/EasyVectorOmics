@@ -6,14 +6,18 @@ dyn.load("build/libtensor-omics.so")
 tv_call <- function(expr, select_vec, select_axes) {
   n_axes <- nrow(expr)
   n_vectors <- ncol(expr)
-  tissue_versatilities <- rep(0.0, sum(select_vec))
-  tissue_angles_deg <- rep(0.0, sum(select_vec))
+  n_selected_vectors <- sum(select_vec)
+  n_selected_axes <- sum(select_axes)
+  tissue_versatilities <- rep(0.0, n_selected_vectors)
+  tissue_angles_deg <- rep(0.0, n_selected_vectors)
   .Fortran("compute_tissue_versatility_r",
            n_axes = as.integer(n_axes),
            n_vectors = as.integer(n_vectors),
            expression_vectors = as.double(expr),
            exp_vecs_selection_index = as.integer(select_vec),
+           n_selected_vectors = as.integer(n_selected_vectors),
            axes_selection = as.integer(select_axes),
+           n_selected_axes = as.integer(n_selected_axes),
            tissue_versatilities = as.double(tissue_versatilities),
            tissue_angles_deg = as.double(tissue_angles_deg))
 }

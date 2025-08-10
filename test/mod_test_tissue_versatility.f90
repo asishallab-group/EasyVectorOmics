@@ -80,8 +80,8 @@ contains
     select_vec = [.true.]
     select_axes4 = [.true., .true., .true., .true.]
     select_axes5 = [.true., .true., .true., .true., .true.]
-    call compute_tissue_versatility(4, 1, expr4, select_vec, select_axes4, tv4, angle4)
-    call compute_tissue_versatility(5, 1, expr5, select_vec, select_axes5, tv5, angle5)
+    call compute_tissue_versatility(4, 1, expr4, select_vec, 1, select_axes4, 4, tv4, angle4)
+    call compute_tissue_versatility(5, 1, expr5, select_vec, 1, select_axes5, 5, tv5, angle5)
     call assert_equal_real(tv4(1), 0.0_real64, 1e-12_real64, "4D uniform TV")
     call assert_equal_real(angle4(1), 0.0_real64, 1e-12_real64, "4D uniform angle")
     call assert_equal_real(tv5(1), 0.0_real64, 1e-12_real64, "5D uniform TV")
@@ -98,7 +98,7 @@ contains
     call random_number(expr)
     select_vec = [.true., .true., .true., .true.]
     select_axes = [.true., .false., .true., .false., .true.]
-    call compute_tissue_versatility(n_axes, n_vecs, expr, select_vec, select_axes, tv, angle)
+    call compute_tissue_versatility(n_axes, n_vecs, expr, select_vec, 4, select_axes, 3, tv, angle)
     do i = 1, n_vecs
       call assert_true(tv(i) >= 0.0_real64 .and. tv(i) <= 1.0_real64, "Randomized TV in [0,1]")
       call assert_true(angle(i) >= 0.0_real64 .and. angle(i) <= 90.0_real64, "Randomized angle in [0,90]")
@@ -113,7 +113,7 @@ contains
     expr(:,2) = [1e15_real64, 1e15_real64, 1e15_real64]
     select_vec = [.true., .true.]
     select_axes = [.true., .true., .true.]
-    call compute_tissue_versatility(3, 2, expr, select_vec, select_axes, tv, angle)
+    call compute_tissue_versatility(3, 2, expr, select_vec, 2, select_axes, 3, tv, angle)
     call assert_equal_real(tv(1), 0.0_real64, 1e-12_real64, "Small numbers TV")
     call assert_equal_real(angle(1), 0.0_real64, 1e-12_real64, "Small numbers angle")
     call assert_equal_real(tv(2), 0.0_real64, 1e-12_real64, "Large numbers TV")
@@ -127,7 +127,7 @@ contains
     expr(:,1) = [1.0_real64, 2.0_real64, 3.0_real64]
     select_vec = [.true.]
     select_axes = [.false., .false., .false.]
-    call compute_tissue_versatility(3, 1, expr, select_vec, select_axes, tv, angle)
+    call compute_tissue_versatility(3, 1, expr, select_vec, 1, select_axes, 0, tv, angle)
     call assert_equal_real(tv(1), -1.0_real64, 0.0_real64, "No axes selected TV error")
   end subroutine test_invalid_input_no_axes
 
@@ -138,7 +138,7 @@ contains
     expr(:,1) = [2.0_real64, 2.0_real64, 2.0_real64]
     select_vec = [.true.]
     select_axes = [.true., .true., .true.]
-    call compute_tissue_versatility(3, 1, expr, select_vec, select_axes, tv, angle)
+    call compute_tissue_versatility(3, 1, expr, select_vec, 1, select_axes, 3, tv, angle)
     call assert_equal_real(tv(1), 0.0_real64, 1e-12_real64, "Uniform expression TV")
     call assert_equal_real(angle(1), 0.0_real64, 1e-12_real64, "Uniform expression angle")
   end subroutine test_uniform_expression
@@ -150,7 +150,7 @@ contains
     expr(:,1) = [0.0_real64, 0.0_real64, 5.0_real64]
     select_vec = [.true.]
     select_axes = [.true., .true., .true.]
-    call compute_tissue_versatility(3, 1, expr, select_vec, select_axes, tv, angle)
+    call compute_tissue_versatility(3, 1, expr, select_vec, 1, select_axes, 3, tv, angle)
     call assert_equal_real(tv(1), 1.0_real64, 1e-12_real64, "Single axis TV")
     call assert_true(angle(1) > 0.0_real64, "Single axis angle > 0")
   end subroutine test_single_axis_expression
@@ -162,7 +162,7 @@ contains
     expr(:,1) = [0.0_real64, 0.0_real64, 0.0_real64]
     select_vec = [.true.]
     select_axes = [.true., .true., .true.]
-    call compute_tissue_versatility(3, 1, expr, select_vec, select_axes, tv, angle)
+    call compute_tissue_versatility(3, 1, expr, select_vec, 1, select_axes, 3, tv, angle)
     call assert_equal_real(tv(1), 1.0_real64, 1e-12_real64, "Null vector TV")
     call assert_equal_real(angle(1), 90.0_real64, 1e-12_real64, "Null vector angle")
   end subroutine test_null_vector
@@ -174,7 +174,7 @@ contains
     expr(:,1) = [1.0_real64, 2.0_real64, 3.0_real64]
     select_vec = [.true.]
     select_axes = [.true., .false., .true.]
-    call compute_tissue_versatility(3, 1, expr, select_vec, select_axes, tv, angle)
+    call compute_tissue_versatility(3, 1, expr, select_vec, 1, select_axes, 2, tv, angle)
     ! Should behave as a 2D vector [1,3]
     call assert_true(tv(1) >= 0.0_real64 .and. tv(1) <= 1.0_real64, "Partial axis TV in [0,1]")
     call assert_true(angle(1) >= 0.0_real64 .and. angle(1) <= 90.0_real64, "Partial axis angle in [0,90]")
@@ -189,7 +189,7 @@ contains
     expr(:,3) = [0.0_real64, 0.0_real64, 0.0_real64] ! null
     select_vec = [.true., .true., .true.]
     select_axes = [.true., .true., .true.]
-    call compute_tissue_versatility(3, 3, expr, select_vec, select_axes, tv, angle)
+    call compute_tissue_versatility(3, 3, expr, select_vec, 3, select_axes, 3, tv, angle)
     call assert_equal_real(tv(1), 0.0_real64, 1e-12_real64, "Mixed: uniform TV")
     call assert_equal_real(tv(2), 1.0_real64, 1e-12_real64, "Mixed: single axis TV")
     call assert_equal_real(tv(3), 1.0_real64, 1e-12_real64, "Mixed: null TV")
@@ -205,7 +205,7 @@ contains
     expr(:,1) = [1.0_real64, 0.0_real64]
     select_vec = [.true.]
     select_axes = [.true., .true.]
-    call compute_tissue_versatility(2, 1, expr, select_vec, select_axes, tv, angle)
+    call compute_tissue_versatility(2, 1, expr, select_vec, 1, select_axes, 2, tv, angle)
     ! Angle should be 45 degrees (between [1,0] and [1,1])
     call assert_true(abs(angle(1) - 45.0_real64) < 1e-12_real64, "Angle output is 45 degrees")
   end subroutine test_angle_degrees
@@ -219,7 +219,7 @@ contains
     expr(:,3) = [0.0_real64, 0.0_real64] ! null
     select_vec = [.true., .false., .true.]
     select_axes = [.true., .true.]
-    call compute_tissue_versatility(2, 3, expr, select_vec, select_axes, tv, angle)
+    call compute_tissue_versatility(2, 3, expr, select_vec, 2, select_axes, 2, tv, angle)
     call assert_equal_real(tv(1), 0.0_real64, 1e-12_real64, "Multiple: uniform TV")
     call assert_equal_real(tv(2), 1.0_real64, 1e-12_real64, "Multiple: null TV")
     call assert_equal_real(angle(1), 0.0_real64, 1e-12_real64, "Multiple: uniform angle")
