@@ -82,8 +82,8 @@
     "prefix": "f42:loess",
     "body": [
       "! Fortran call to loess_smooth_2d",
-      "call loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, x_query, ",
-      "                   kernel_sigma, kernel_cutoff, y_out, workspace_weights, workspace_values, mask_in)"
+      "call loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, & ",
+      "                   kernel_sigma, kernel_cutoff, y_out)"
     ],
     "description": "Call loess_smooth_2d subroutine in Fortran"
   },
@@ -96,15 +96,13 @@
       "  x_ref = as.double(${3:x_ref}),",
       "  y_ref = as.double(${4:y_ref}),",
       "  indices_used = as.integer(${5:indices_used}),",
-      "  x_query = as.double(${6:x_query}),",
-      "  kernel_sigma = as.double(${7:kernel_sigma}),",
-      "  kernel_cutoff = as.double(${8:kernel_cutoff}),",
-      "  y_out = as.double(${9:y_out}),",
-      "  workspace_weights = as.double(${10:workspace_weights}),",
-      "  workspace_values = as.double(${11:workspace_values}),",
-      "  mask_in = as.logical(${12:mask_in}))"
+      "  n_used = as.integer(${6:n_used}),",
+      "  x_query = as.double(${7:x_query}),",
+      "  kernel_sigma = as.double(${8:kernel_sigma}),",
+      "  kernel_cutoff = as.double(${9:kernel_cutoff}),",
+      "  y_out = as.double(${10:y_out}),"
     ],
-    "description": "Call loess_smooth_2d_r Fortran function from R (univariate, with mask)"
+    "description": "Call loess_smooth_2d_r Fortran function from R"
   },
   "Python call to loess_smooth_2d_c": {
     "prefix": "f42:py_loess",
@@ -115,16 +113,15 @@
       "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'), # x_ref",
       "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'), # y_ref",
       "    np.ctypeslib.ndpointer(dtype=np.int32, flags='C_CONTIGUOUS'), # indices_used",
+      "    ctypes.c_int,  # n_used",
       "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'), # x_query",
       "    ctypes.c_double, # kernel_sigma",
 	  "    ctypes.c_double, # kernel_cutoff",
       "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'), # y_out",
-      "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'), # workspace_weights",
-      "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'), # workspace_values",
-      "    np.ctypeslib.ndpointer(dtype=np.int32, flags='C_CONTIGUOUS'), # mask_in",
       "]",
       "lib.loess_smooth_2d_c.restype = None",
-      "lib.loess_smooth_2d_c(ascii_arr, fn_len, dims_out, ndims)"
+      "lib.loess_smooth_2d_c(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, ",
+      "                   kernel_sigma, kernel_cutoff, y_out)"
 
     ],
     "description": "Call loess_smooth_2d_c from Python using ctypes"

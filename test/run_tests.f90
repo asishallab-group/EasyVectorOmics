@@ -1,5 +1,7 @@
 program main
   use mod_test_sorting
+  use mod_test_get_outliers
+  use mod_test_loess_smoothing
   use mod_test_normalize_by_std_dev
   use mod_test_quantile_normalization
   use mod_test_log2_transformation
@@ -7,7 +9,6 @@ program main
   use mod_test_calc_fchange
   use mod_test_euclidean_distance
   use mod_test_tissue_versatility
-
 
   implicit none
 
@@ -69,6 +70,8 @@ contains
     
     ! Add each suite 
     call add_suite("sorting", run_all_tests_sorting, run_named_tests_sorting)
+    call add_suite("get_outliers",run_all_tests_get_outliers, run_named_tests_get_outliers)
+    call add_suite("loess_smoothing",run_all_tests_loess_smoothing, run_named_tests_loess_smoothing)
     call add_suite("normalization", run_all_tests_normalize_by_std_dev, run_named_tests_normalize_by_std_dev)
     call add_suite("quantile_normalization", run_all_tests_quantile_normalization, run_named_tests_quantile_normalization)
     call add_suite("log2_transformation", run_all_tests_log2_transformation, run_named_tests_log2_transformation)

@@ -123,10 +123,10 @@ run_real_data_example <- function() {
   cat("=== EUCLIDEAN DISTANCE CALCULATION WITH REAL DATA ===\n\n")
   
   # Define file paths
-  base_path <- "results/sex_data/"
+  base_path <- "material"
   orthogroups_file <- file.path(base_path, "filtered_families.tsv")
-  centroids_file <- file.path(base_path, "centroids_orthologs_only_2.tsv")  
-  gene_expression_file <- file.path(base_path, "normalization_2.tsv")
+  centroids_file <- file.path(base_path, "centroids_orthologs_only.tsv")  
+  gene_expression_file <- file.path(base_path, "normalization.tsv")
   
   # Verify files exist
   for (file in c(orthogroups_file, centroids_file, gene_expression_file)) {
@@ -169,7 +169,7 @@ run_real_data_example <- function() {
   results_with_families <- results_df[results_df$has_family, ]
   
   # Save results
-  output_file <- file.path(base_path, "distance_to_centroids_fortran.tsv")
+  output_file <- file.path("results/distance_to_centroids_fortran.tsv")
   write_tsv(results_with_families, output_file)
   
   cat("Results saved to:", output_file, "\n")

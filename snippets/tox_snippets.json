@@ -363,13 +363,21 @@
     "prefix": "tox:compute_family_scaling",
     "body": [
       "! Compute family scaling factors (dscale) for gene outlier detection",
-      "call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &",
-      "                        loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, &",
-      "                        workspace_weights, workspace_values, error_code)"
+      "call compute_family_scaling_alloc(n_genes, n_families, distances, gene_to_fam, dscale, &",
+      "                        loess_x, loess_y, indices_used, error_code)"
     ],
     "description": "Call compute_family_scaling Fortran subroutine for gene outlier detection"
   },
-
+  "Call to compute_family_scaling expert level": {
+    "prefix": "tox:compute_family_scaling_expert",
+    "body": [
+      "! Compute family scaling factors (dscale) for gene outlier detection expert level",
+      "call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &",
+      "                        loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, &",
+      "                        family_distances, error_code)"
+    ],
+    "description": "Call compute_family_scaling Fortran subroutine for gene outlier detection"
+  },
   "Call to compute_rdi": {
     "prefix": "tox:compute_rdi",
     "body": [
@@ -399,9 +407,34 @@
     ],
     "description": "Call detect_outliers Fortran subroutine for gene outlier detection"
   },
-  
   "R call to compute family scaling": {
     "prefix": "tox:R_compute_family_scaling_r",
+    "body": [
+      "n_genes <- as.integer(${1:n_genes})",
+      "n_families <- as.integer(${2:n_families})",
+      "distances <- as.double(${3:distances})",
+      "gene_to_fam <- as.integer(${4:gene_to_fam})",
+      "dscale <- double(n_families)",
+      "loess_x <- double(n_families)",
+      "loess_y <- double(n_families)",
+      "indices_used <- integer(n_families)",
+      "error_code <- integer(1)",
+      "result <- .Fortran(\"compute_family_scaling_r\",",
+      "  n_genes = n_genes,",
+      "  n_families = n_families,",
+      "  distances = distances,",
+      "  gene_to_fam = gene_to_fam,",
+      "  dscale = dscale,",
+      "  loess_x = loess_x,",
+      "  loess_y = loess_y,",
+      "  indices_used = indices_used,",
+      "  error_code = error_code",
+      ")"
+    ],
+    "description": "Call compute_family_scaling_r Fortran function from R, with explicit array initializations"
+  },  
+  "R call to compute family scaling expert level": {
+    "prefix": "tox:R_compute_family_scaling_expert",
     "body": [
       "n_genes <- as.integer(${1:n_genes})",
       "n_families <- as.integer(${2:n_families})",
@@ -414,10 +447,9 @@
       "perm_tmp <- integer(n_genes)",
       "stack_left_tmp <- integer(n_genes)",
       "stack_right_tmp <- integer(n_genes)",
-      "workspace_weights <- double(n_families)",
-      "workspace_values <- matrix(0, 1, n_families)",
+      "family_distances <- double(n_genes)",
       "error_code <- integer(1)",
-      "result <- .Fortran(\"compute_family_scaling_r\",",
+      "result <- .Fortran(\"compute_family_scaling_expert_r\",",
       "  n_genes = n_genes,",
       "  n_families = n_families,",
       "  distances = distances,",
@@ -429,12 +461,11 @@
       "  perm_tmp = perm_tmp,",
       "  stack_left_tmp = stack_left_tmp,",
       "  stack_right_tmp = stack_right_tmp,",
-      "  workspace_weights = workspace_weights,",
-      "  workspace_values = workspace_values,",
+      "  family_distances = family_distances,",
       "  error_code = error_code",
       ")"
     ],
-    "description": "Call compute_family_scaling_r Fortran function from R, with explicit array initializations"
+    "description": "Call compute_family_scaling_expert_r Fortran function from R, with explicit array initializations"
   },
   "R call to compute_rdi": {
     "prefix": "tox:R_compute_rdi_r",
@@ -525,6 +556,31 @@
     "description": "Call detect_outliers_r Fortran function from R, with explicit array initializations"
   },
 
+    "C call for compute_family_scaling expert level": {
+    "prefix": "tox:setup_py_compute_family_scaling_expert_c",
+    "body": [
+      "    lib.compute_family_scaling_expert_c.argtypes = [",
+      "        ctypes.c_int,  # n_genes",
+      "        ctypes.c_int,  # n_families",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # distances (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # gene_to_fam (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # dscale (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # loess_x (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # loess_y (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # indices_used (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # perm_tmp (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # stack_left_tmp (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # stack_right_tmp (n_genes,)",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),    # family_distances (n_families,)",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # error_code (1,)",
+      "    ]",
+      "    lib.compute_family_scaling_expert_c.restype = None",
+      "    lib.compute_family_scaling_expert_c(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, error_code)",
+
+      "    return func"
+    ],
+    "description": "Setup compute_family_scaling_expert_c function binding for Python/ctypes"
+  },
     "C call for compute_family_scaling": {
     "prefix": "tox:setup_py_compute_family_scaling_c",
     "body": [
@@ -537,15 +593,10 @@
       "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # loess_x (n_families,)",
       "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # loess_y (n_families,)",
       "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # indices_used (n_families,)",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # perm_tmp (n_genes,)",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # stack_left_tmp (n_genes,)",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # stack_right_tmp (n_genes,)",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # workspace_weights (n_families,)",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # workspace_values (n_families,)",
       "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # error_code (1,)",
       "    ]",
       "    lib.compute_family_scaling_c.restype = None",
-      "    lib.compute_family_scaling_c(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, workspace_weights, workspace_values, error_code)",
+      "    lib.compute_family_scaling_c(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, error_code)",
 
       "    return func"
     ],

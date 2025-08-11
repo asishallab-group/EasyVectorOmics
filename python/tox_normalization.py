@@ -9,7 +9,8 @@ def setup_normalize():
     """Setup normalize function"""
     normalize = lib.normalize_by_std_dev_c
     normalize.argtypes = [
-        ctypes.c_int, ctypes.c_int,
+        ctypes.c_int, 
+        ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
     ]
@@ -20,7 +21,8 @@ def setup_quantile():
     """Setup quantile normalization function"""
     quantile_norm = lib.quantile_normalization_c
     quantile_norm.argtypes = [
-        ctypes.c_int, ctypes.c_int,
+        ctypes.c_int, 
+        ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
@@ -44,7 +46,8 @@ def setup_log2():
     """Setup log2 transformation function"""
     log2_transform = lib.log2_transformation_c
     log2_transform.argtypes = [
-        ctypes.c_int, ctypes.c_int,
+        ctypes.c_int, 
+        ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
     ]
@@ -55,7 +58,8 @@ def setup_calc_tiss_avg():
     """Setup tissue averaging function"""
     tiss_avg = lib.calc_tiss_avg_c
     tiss_avg.argtypes = [
-        ctypes.c_int, ctypes.c_int,
+        ctypes.c_int, 
+        ctypes.c_int,
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
