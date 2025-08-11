@@ -1,5 +1,21 @@
 {
-  "Call to normalize_by_std_dev": {
+	"R wrapper legend": {
+		"prefix": "tox:legend_r",
+		"body": [
+		"!> IMPORTANT - When using these R wrapper functions, copies of the arrays will be created.",
+		"!| No direct modification of the original R objects occurs."
+		],
+		"description": "Standard legend for R wrappers about array copy behavior"
+	},
+	"C wrapper legend": {
+		"prefix": "tox:legend_c",
+		"body": [
+		"!> IMPORTANT - When using these C wrapper functions, no copies of the arrays will be created.",
+		"!| The Fortran routine will operate directly on the memory provided by the caller."
+		],
+		"description": "Standard legend for C wrappers about direct memory access"
+	},
+	"Call to normalize_by_std_dev": {
       "prefix": "tox:norm_by_std_dev",
       "body": [
         "! Normalize expression values using sqrt(mean(x^2)) across tissues",
