@@ -1,62 +1,75 @@
-!> @brief Utility module for data analysis.
-!> @details This module provides general-purpose utility functions for data analysis, to be used as needed.
+!> Utility module for data analysis.
+!| This module provides general-purpose utility functions for data analysis, to be used as needed.
 
 module f42_utils
-  use, intrinsic :: iso_fortran_env, only: real64
+  use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
 
-  ! Expose specific functions C/R
   public :: sort_real, sort_integer, sort_character
-  ! Only internal use since R and Python can't resolve interfaces (can't use sort_array)
   public :: sort_array
 
-  !> Generic interface for internal Fortran use only
   interface sort_array
     module procedure sort_real, sort_integer, sort_character
   end interface sort_array
 contains
 
-    !> Sort a real(real64) array indirectly using quicksort.
-  !>  Creates a sorted version of the array by reordering the `perm` vector.
-  !> The original data in `array` remains unchanged.
-  !> 
-  !> @param array        Real input array to sort<br>
-  !> @param perm         Permutation vector that will be sorted<br>
-  !> @param stack_left   Manual stack of left indices for quicksort recursion<br>
-  !> @param stack_right  Manual stack of right indices for quicksort recursion<br>
+  !> Sort a real array indirectly using quicksort.
+  !| Creates a sorted version of the array by reordering the `perm` vector. The original data in `array` remains unchanged.
   pure subroutine sort_real(array, perm, stack_left, stack_right)
+    !| Real input array to sort
     real(real64), intent(in) :: array(:)
-    integer, intent(inout) :: perm(:)
-    integer, intent(inout) :: stack_left(:), stack_right(:)
+    !| Permutation vector that will be sorted
+    integer(int32), intent(inout) :: perm(:)
+    !| Manual stack of left indices for quicksort recursion
+    integer(int32), intent(inout) :: stack_left(:)
+    !| Manual stack of right indices for quicksort recursion
+    integer(int32), intent(inout) :: stack_right(:)
     call quicksort_real(array, perm, size(array), stack_left, stack_right)
   end subroutine sort_real
 
   !> Sort an integer array indirectly using quicksort.
-  !>  Similar to `sort_real`, but for integer input.
+  !| Similar to `sort_real`, but for integer input.
   pure subroutine sort_integer(array, perm, stack_left, stack_right)
-    integer, intent(in) :: array(:)
-    integer, intent(inout) :: perm(:)
-    integer, intent(inout) :: stack_left(:), stack_right(:)
+    !| Integer input array to sort
+    integer(int32), intent(in) :: array(:)
+    !| Permutation vector that will be sorted
+    integer(int32), intent(inout) :: perm(:)
+    !| Manual stack of left indices for quicksort recursion
+    integer(int32), intent(inout) :: stack_left(:)
+    !| Manual stack of right indices for quicksort recursion
+    integer(int32), intent(inout) :: stack_right(:)
     call quicksort_int(array, perm, size(array), stack_left, stack_right)
   end subroutine sort_integer
 
   !> Sort a character array indirectly using quicksort.
-  !>  Uses lexicographic ordering and permutation vector sorting.
+  !| Uses lexicographic ordering and permutation vector sorting.
   pure subroutine sort_character(array, perm, stack_left, stack_right)
+    !| Character input array to sort
     character(len=*), intent(in) :: array(:)
-    integer, intent(inout) :: perm(:)
-    integer, intent(inout) :: stack_left(:), stack_right(:)
+    !| Permutation vector that will be sorted
+    integer(int32), intent(inout) :: perm(:)
+    !| Manual stack of left indices for quicksort recursion
+    integer(int32), intent(inout) :: stack_left(:)
+    !| Manual stack of right indices for quicksort recursion
+    integer(int32), intent(inout) :: stack_right(:)
     call quicksort_char(array, perm, size(array), stack_left, stack_right)
   end subroutine sort_character
 
   !> Internal quicksort implementation for real arrays.
-  !>  Sorts indirectly using the permutation vector `perm`. Manual stack replaces recursion.
+  !| Sorts indirectly using the permutation vector `perm`. Manual stack replaces recursion.
   pure subroutine quicksort_real(array, perm, n, stack_left, stack_right)
+    !| Real input array to sort
     real(real64), intent(in) :: array(:)
-    integer, intent(inout) :: perm(:)
-    integer, intent(in) :: n
-    integer, intent(inout) :: stack_left(:), stack_right(:)
-    integer :: left, right, i, j, top, pivot_idx
+    !| Permutation vector that will be sorted
+    integer(int32), intent(inout) :: perm(:)
+    !| Size of the array
+    integer(int32), intent(in) :: n
+    !| Manual stack of left indices for quicksort recursion
+    integer(int32), intent(inout) :: stack_left(:)
+    !| Manual stack of right indices for quicksort recursion
+    integer(int32), intent(inout) :: stack_right(:)
+
+    integer(int32) :: left, right, i, j, top, pivot_idx
     real(real64) :: pivot_val
 
     top = 1
@@ -108,14 +121,21 @@ contains
   end subroutine quicksort_real
 
   !> Internal quicksort implementation for integer arrays.
-  !>  Indirectly sorts `array` using `perm`, same algorithm as `quicksort_real`.
+  !| Indirectly sorts `array` using `perm`, same algorithm as `quicksort_real`.
   pure subroutine quicksort_int(array, perm, n, stack_left, stack_right)
-    integer, intent(in) :: array(:)
-    integer, intent(inout) :: perm(:)
-    integer, intent(in) :: n
-    integer, intent(inout) :: stack_left(:), stack_right(:)
-    integer :: left, right, i, j, top, pivot_idx
-    integer :: pivot_val
+    !| Integer input array to sort
+    integer(int32), intent(in) :: array(:)
+    !| Permutation vector that will be sorted
+    integer(int32), intent(inout) :: perm(:)
+    !| Size of the array
+    integer(int32), intent(in) :: n
+    !| Manual stack of left indices for quicksort recursion
+    integer(int32), intent(inout) :: stack_left(:)
+    !| Manual stack of right indices for quicksort recursion
+    integer(int32), intent(inout) :: stack_right(:)
+
+    integer(int32) :: left, right, i, j, top, pivot_idx
+    integer(int32) :: pivot_val
 
     top = 1
     stack_left(top) = 1
@@ -162,13 +182,20 @@ contains
   end subroutine quicksort_int
 
   !> Internal quicksort implementation for character arrays.
-  !>  Lexicographic quicksort using string comparison, indirect via `perm`.
+  !| Lexicographic quicksort using string comparison, indirect via `perm`.
   pure subroutine quicksort_char(array, perm, n, stack_left, stack_right)
+    !| Character input array to sort
     character(len=*), intent(in) :: array(:)
-    integer, intent(inout) :: perm(:)
-    integer, intent(in) :: n
-    integer, intent(inout) :: stack_left(:), stack_right(:)
-    integer :: left, right, i, j, top, pivot_idx
+    !| Permutation vector that will be sorted
+    integer(int32), intent(inout) :: perm(:)
+    !| Size of the array
+    integer(int32), intent(in) :: n
+    !| Manual stack of left indices for quicksort recursion
+    integer(int32), intent(inout) :: stack_left(:)
+    !| Manual stack of right indices for quicksort recursion
+    integer(int32), intent(inout) :: stack_right(:)
+
+    integer(int32) :: left, right, i, j, top, pivot_idx
     character(len=len(array)) :: pivot_val
 
     top = 1
@@ -216,109 +243,225 @@ contains
   end subroutine quicksort_char
 
   !> Swap two integer values in-place.
-  !> @param a First integer to swap<br>
-  !> @param b Second integer to swap<br>
   pure subroutine swap_int(a, b)
-    integer, intent(inout) :: a, b
-    integer :: temp
+    !| First integer to swap
+    integer(int32), intent(inout) :: a
+    !| Second integer to swap
+    integer(int32), intent(inout) :: b
+    integer(int32) :: temp
     temp = a; a = b; b = temp
   end subroutine swap_int
 
+  !> Finds the indices of the true values in a logical mask.
+  pure subroutine which(mask, n, idx_out, m_max, m_out)
+    !| Logical array of size n.
+    logical, intent(in) :: mask(:)
+    !| Size of the mask.
+    integer(int32), intent(in) :: n
+    !| Integer array to store the indices of true values.
+    integer(int32), intent(out) :: idx_out(:)
+    !| Maximum size of idx_out.
+    integer(int32), intent(in) :: m_max
+    !| Actual size of idx_out (number of true values found).
+    integer(int32), intent(out) :: m_out
+    integer(int32) :: i, count
+    count = 0
+    idx_out = 0  ! Initialize to avoid garbage values
+    do i = 1, n
+      if (mask(i)) then
+        count = count + 1
+        if (count <= m_max) then
+          idx_out(count) = i
+        end if
+      end if
+    end do
+    m_out = count
+  end subroutine which
+
+  !> Performs LOESS smoothing on a set of data points.
+  !| Smooths y_ref at x_query using reference points x_ref, y_ref, and kernel parameters.
+  !| The user must pre-filter data and provide only valid indices in indices_used.
+  pure subroutine loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
+                          kernel_sigma, kernel_cutoff, y_out)
+    !| Total number of reference points.
+    integer(int32), intent(in) :: n_total
+    !| Number of target points to smooth.
+    integer(int32), intent(in) :: n_target
+    !| Reference x-coordinates.
+    real(real64), intent(in) :: x_ref(n_total)
+    !| Reference y-coordinates (length n_total).
+    real(real64), intent(in) :: y_ref(n_total)
+    !| Indices of reference points used for smoothing (only valid indices).
+    integer(int32), intent(in) :: indices_used(n_used)
+    !| Number of indices actually used for smoothing.
+    integer(int32), intent(in) :: n_used
+    !| Target x-coordinates to smooth.
+    real(real64), intent(in) :: x_query(n_target)
+    !| Bandwidth parameter for the kernel.
+    real(real64), intent(in) :: kernel_sigma
+    !| Cutoff for the kernel.
+    real(real64), intent(in) :: kernel_cutoff
+    !| Output smoothed values (length n_target).
+    real(real64), intent(out) :: y_out(n_target)
+
+    integer(int32) :: q, i, idx
+    real(real64) :: query_x, ref_x, delta, sum_weights, weight
+    real(real64) :: min_dist
+    integer(int32) :: min_idx
+    logical :: exact_match_found, use_kernel
+
+    ! Input validation
+    if (n_used <= 0) then
+      y_out = 0.0_real64  ! Initialize output for safety
+      return
+    end if
+
+    ! Check if we should use kernel smoothing
+    use_kernel = (kernel_sigma > 0.0_real64)
+
+    do q = 1, n_target
+      query_x = x_query(q)
+      sum_weights = 0.0_real64
+      y_out(q) = 0.0_real64
+      min_dist = huge(1.0_real64)
+      min_idx = indices_used(1)
+      exact_match_found = .false.
+
+      ! Process all reference points
+      do i = 1, n_used
+        idx = indices_used(i)
+        ref_x = x_ref(idx)
+        delta = abs(query_x - ref_x)
+        
+        ! Check for exact match
+        if (delta == 0.0_real64) then
+          y_out(q) = y_ref(idx)
+          exact_match_found = .true.
+          exit
+        end if
+        
+        ! Track closest point for potential fallback
+        if (delta < min_dist) then
+          min_dist = delta
+          min_idx = idx
+        end if
+        
+        ! Apply kernel smoothing if enabled and within cutoff
+        if (use_kernel .and. delta <= kernel_cutoff * kernel_sigma) then
+          weight = exp(-(delta / kernel_sigma)**2)
+          sum_weights = sum_weights + weight
+          y_out(q) = y_out(q) + weight * y_ref(idx)
+        end if
+      end do
+
+      ! Finalize result if no exact match was found
+      if (.not. exact_match_found) then
+        if (sum_weights > 0.0_real64) then
+          ! We have weighted average from kernel smoothing
+          y_out(q) = y_out(q) / sum_weights
+        else
+          ! Fallback: use nearest neighbor
+          y_out(q) = y_ref(min_idx)
+        end if
+      end if
+    end do
+  end subroutine loess_smooth_2d
 
 end module f42_utils
 
 
 
 ! === R WRAPPERS ===
-subroutine sort_real_r(array, perm, stack_left, stack_right, n)
-  use, intrinsic :: iso_fortran_env, only: real64
-  use f42_utils, only: sort_real
+
+!> R wrapper for loess_smooth_2d.
+!| Direct wrapper - user must pre-filter indices in R before calling.
+subroutine loess_smooth_2d_r(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
+    kernel_sigma, kernel_cutoff, y_out)
+  use f42_utils, only: loess_smooth_2d
+  use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
-  integer, intent(in) :: n
-  real(real64), intent(in) :: array(n)
-  integer, intent(inout) :: perm(n), stack_left(n), stack_right(n)
-
-  call sort_real(array, perm, stack_left, stack_right)
-end subroutine sort_real_r
-
-subroutine sort_integer_r(array, perm, stack_left, stack_right, n)
-  use f42_utils, only: sort_integer
-  implicit none
-  integer, intent(in) :: n
-  integer, intent(in) :: array(n)
-  integer, intent(inout) :: perm(n), stack_left(n), stack_right(n)
-
-  call sort_integer(array, perm, stack_left, stack_right)
-end subroutine sort_integer_r
-
-subroutine sort_character_r(char_matrix, perm, stack_left, stack_right, n, strlen)
-  use f42_utils, only: sort_character
-  implicit none
-  integer, intent(in) :: n, strlen
-  character(len=1), intent(in) :: char_matrix(strlen, n)
-  integer, intent(inout) :: perm(n), stack_left(n), stack_right(n)
-
-  character(len=strlen) :: array(n)
-  integer :: i, j
-
-  ! Reconstruct each full string from the character matrix
-  do i = 1, n
-    do j = 1, strlen
-      array(i)(j:j) = char_matrix(j, i)
-    end do
-  end do
-
-  ! Call the original sorting routine
-  call sort_character(array, perm, stack_left, stack_right)
-end subroutine
-
+  !| Total number of reference points.
+  integer(int32), intent(in) :: n_total
+  !| Number of target points to smooth.
+  integer(int32), intent(in) :: n_target
+  !| Reference x-coordinates.
+  real(real64), intent(in) :: x_ref(n_total)
+  !| Reference y-coordinates (length n_total).
+  real(real64), intent(in) :: y_ref(n_total)
+  !| Indices of reference points used for smoothing (pre-filtered).
+  integer(int32), intent(in) :: indices_used(n_used)
+  !| Number of indices actually used for smoothing.
+  integer(int32), intent(in) :: n_used
+  !| Target x-coordinates to smooth.
+  real(real64), intent(in) :: x_query(n_target)
+  !| Bandwidth parameter for the kernel.
+  real(real64), intent(in) :: kernel_sigma
+  !| Cutoff for the kernel.
+  real(real64), intent(in) :: kernel_cutoff
+  !| Output smoothed values (length n_target).
+  real(real64), intent(out) :: y_out(n_target)
+  
+  call loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
+    kernel_sigma, kernel_cutoff, y_out)
+end subroutine loess_smooth_2d_r
 
 ! === C WRAPPERS ===
-subroutine sort_real_c(array, perm, stack_left, stack_right, n) bind(C, name="sort_real_c")
+
+!> C wrapper for which.
+!| Converts integer mask to logical and calls which.
+subroutine which_c(mask, n, idx_out, m_max, m_out) bind(C, name="which_c")
   use iso_c_binding
-  use f42_utils, only: sort_real
+  use, intrinsic :: iso_fortran_env, only: int32
+  use f42_utils, only: which
   implicit none
+  !| Size of the mask.
   integer(c_int), intent(in), value :: n
-  real(c_double), intent(in) :: array(n)
-  integer(c_int), intent(inout) :: perm(n)
-  integer(c_int), intent(inout) :: stack_left(n)
-  integer(c_int), intent(inout) :: stack_right(n)
-
-  call sort_real(array, perm, stack_left, stack_right)
-end subroutine sort_real_c
-
-subroutine sort_integer_c(array, perm, stack_left, stack_right, n) bind(C, name="sort_integer_c")
-  use iso_c_binding
-  use f42_utils, only: sort_integer
-  implicit none
-  integer(c_int), intent(in), value :: n
-  integer(c_int), intent(in) :: array(n)
-  integer(c_int), intent(inout) :: perm(n)
-  integer(c_int), intent(inout) :: stack_left(n)
-  integer(c_int), intent(inout) :: stack_right(n)
-
-  call sort_integer(array, perm, stack_left, stack_right)
-end subroutine sort_integer_c
-
-subroutine sort_character_c(char_matrix, perm, stack_left, stack_right, n, strlen) bind(C, name="sort_character_c")
-  use iso_c_binding
-  use f42_utils, only: sort_character
-  implicit none
-  integer(c_int), intent(in), value :: n, strlen
-  character(kind=c_char,len=1), intent(in) :: char_matrix(strlen, n)
-  integer(c_int), intent(inout) :: perm(n)
-  integer(c_int), intent(inout) :: stack_left(n)
-  integer(c_int), intent(inout) :: stack_right(n)
-
-  character(len=strlen) :: array(n)
-  integer :: i, j
-
-  ! Reconstruct Fortran strings from the C-style char matrix
+  !| Maximum size of idx_out.
+  integer(c_int), intent(in), value :: m_max
+  !| Integer mask array (0/1 values).
+  integer(c_int), intent(in) :: mask(n)
+  !| Output array for indices of true values.
+  integer(c_int), intent(out) :: idx_out(m_max)
+  !| Actual size of idx_out (number of true values found).
+  integer(c_int), intent(out) :: m_out
+  logical :: mask_f(n)
+  integer(int32) :: i
   do i = 1, n
-    do j = 1, strlen
-      array(i)(j:j) = char_matrix(j, i)
-    end do
+    mask_f(i) = (mask(i) /= 0)
   end do
+  call which(mask_f, n, idx_out, m_max, m_out)
+end subroutine which_c
 
-  call sort_character(array, perm, stack_left, stack_right)
-end subroutine sort_character_c
+!> C wrapper for loess_smooth_2d.
+!| Direct wrapper - user must pre-filter indices in C before calling.
+subroutine loess_smooth_2d_c(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
+    kernel_sigma, kernel_cutoff, y_out) bind(C, name="loess_smooth_2d_c")
+  use iso_c_binding
+  use, intrinsic :: iso_fortran_env, only: int32
+  use f42_utils, only: loess_smooth_2d
+  implicit none
+  !| Total number of reference points.
+  integer(c_int), intent(in), value :: n_total
+  !| Number of target points to smooth.
+  integer(c_int), intent(in), value :: n_target
+  !| Reference x-coordinates.
+  real(c_double), intent(in) :: x_ref(n_total)
+  !| Reference y-coordinates (length n_total).
+  real(c_double), intent(in) :: y_ref(n_total)
+  !| Indices of reference points used for smoothing (pre-filtered).
+  integer(c_int), intent(in) :: indices_used(n_used)
+  !| Number of indices actually used for smoothing.
+  integer(c_int), intent(in), value :: n_used
+  !| Target x-coordinates to smooth.
+  real(c_double), intent(in) :: x_query(n_target)
+  !| Bandwidth parameter for the kernel.
+  real(c_double), intent(in), value :: kernel_sigma
+  !| Cutoff for the kernel.
+  real(c_double), intent(in), value :: kernel_cutoff
+  !| Output smoothed values (length n_target).
+  real(c_double), intent(out) :: y_out(n_target)
+
+  call loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
+    kernel_sigma, kernel_cutoff, y_out)
+
+end subroutine loess_smooth_2d_c
