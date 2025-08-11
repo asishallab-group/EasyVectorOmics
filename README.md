@@ -176,7 +176,7 @@ See `test/readme.md` for details.
 Install and setup Docker as explained for your operating system in the Docker
 documentation.
 
-Use our Dockerfile `gfortran.docker`:
+Use our Dockerfile `gfortran.docker` in `misc` directory:
 ```bash
 docker build -t arch-gfortran -f gfortran.docker .
 ```
