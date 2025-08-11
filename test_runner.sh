@@ -30,6 +30,9 @@ else
   COMPILER="gfortran"
 fi
 
+echo "Compiling src/"
+bash build.sh 
+
 echo "Using compiler: $COMPILER"
 
 MAX_PERF_FLAG=""
