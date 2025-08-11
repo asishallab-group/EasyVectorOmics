@@ -1,5 +1,5 @@
 ! filepath: test/mod_test_log2_transformation.f90
-!> @brief Unit test suite for log2_transformation routine.
+!> Unit test suite for log2_transformation routine.
 module mod_test_log2_transformation
   use asserts
   use, intrinsic :: iso_fortran_env, only: real64, int32
@@ -20,7 +20,7 @@ module mod_test_log2_transformation
 
 contains
 
-  !> @brief Get array of all available tests.
+  !> Get array of all available tests.
   function get_all_tests() result(all_tests)
     type(test_case) :: all_tests(12)
     
@@ -38,7 +38,7 @@ contains
     all_tests(12) = test_case("test_log2_mathematical_properties", test_log2_mathematical_properties)
   end function get_all_tests
 
-  !> @brief Run all log2_transformation tests.
+  !> Run all log2_transformation tests.
   subroutine run_all_tests_log2_transformation()
     type(test_case) :: all_tests(12)
     integer(int32) :: i
@@ -52,7 +52,7 @@ contains
     print *, "All log2_transformation tests passed successfully."
   end subroutine run_all_tests_log2_transformation
 
-  !> @brief Run specific log2_transformation tests by name.
+  !> Run specific log2_transformation tests by name.
   subroutine run_named_tests_log2_transformation(test_names)
     character(len=*), intent(in) :: test_names(:)
     type(test_case) :: all_tests(12)
@@ -77,7 +77,7 @@ contains
     end do
   end subroutine run_named_tests_log2_transformation
 
-  !> @brief Test log2(x+1) transformation with basic known values (from R test).
+  !> Test log2(x+1) transformation with basic known values (from R test).
   subroutine test_log2_basic_values()
     integer(int32) :: n_genes, n_tissues
     real(real64), dimension(4) :: input_flat, output_flat, expected_flat
@@ -100,7 +100,7 @@ contains
     call assert_equal_real(output_flat(4), 4.0d0, 1d-12, "test_log2_basic_values: log2(15+1) should be 4")
   end subroutine test_log2_basic_values
 
-  !> @brief Test that log2(0+1) = 0 for all zeros (from R test).
+  !> Test that log2(0+1) = 0 for all zeros (from R test).
   subroutine test_log2_zeros_handling()
     integer(int32) :: n_genes, n_tissues
     real(real64), dimension(4) :: input_flat, output_flat, expected_flat
@@ -116,7 +116,7 @@ contains
     call assert_true(all(output_flat == 0.0d0), "test_log2_zeros_handling: all values should be exactly 0")
   end subroutine test_log2_zeros_handling
 
-  !> @brief Test that dimensions are preserved (from R test concept).
+  !> Test that dimensions are preserved (from R test concept).
   subroutine test_log2_preserves_dimensions()
     integer(int32) :: n_genes, n_tissues
     real(real64), dimension(6) :: input_flat, output_flat
@@ -133,7 +133,7 @@ contains
                      "test_log2_preserves_dimensions: input/output size mismatch")
   end subroutine test_log2_preserves_dimensions
 
-  !> @brief Test single element matrix.
+  !> Test single element matrix.
   subroutine test_log2_single_element()
     integer(int32) :: n_genes, n_tissues
     real(real64), dimension(1) :: input_flat, output_flat
@@ -148,7 +148,7 @@ contains
                       "test_log2_single_element: log2(7+1) incorrect")
   end subroutine test_log2_single_element
 
-  !> @brief Test with large values to check numerical stability.
+  !> Test with large values to check numerical stability.
   subroutine test_log2_large_values()
     integer(int32) :: n_genes, n_tissues
     real(real64), dimension(4) :: input_flat, output_flat
@@ -168,7 +168,7 @@ contains
     call assert_in_range_real(output_flat(1), 19.0d0, 21.0d0, "test_log2_large_values: log2(1e6+1) out of range")
   end subroutine test_log2_large_values
 
-  !> @brief Test with very small positive values.
+  !> Test with very small positive values.
   subroutine test_log2_small_values()
     integer(int32) :: n_genes, n_tissues
     real(real64), dimension(4) :: input_flat, output_flat
@@ -186,7 +186,7 @@ contains
     call assert_in_range_real(output_flat(4), 0.0d0, 1d-10, "test_log2_small_values: very small values should be near 0")
   end subroutine test_log2_small_values
 
-  !> @brief Test with powers of 2 minus 1 for exact results.
+  !> Test with powers of 2 minus 1 for exact results.
   subroutine test_log2_powers_of_two()
     integer(int32) :: n_genes, n_tissues
     real(real64), dimension(4) :: input_flat, output_flat, expected_flat
@@ -202,7 +202,7 @@ contains
                             "test_log2_powers_of_two: powers of 2 results incorrect")
   end subroutine test_log2_powers_of_two
 
-  !> @brief Test with random matrix for general properties.
+  !> Test with random matrix for general properties.
   subroutine test_log2_random_matrix()
     integer(int32), parameter :: n_genes = 5, n_tissues = 4
     real(real64), dimension(n_genes * n_tissues) :: input_flat, output_flat
@@ -231,7 +231,7 @@ contains
     end do
   end subroutine test_log2_random_matrix
 
-  !> @brief Test behavior with negative values (should still work due to +1).
+  !> Test behavior with negative values (should still work due to +1).
   subroutine test_log2_negative_handling()
     integer(int32) :: n_genes, n_tissues
     real(real64), dimension(4) :: input_flat, output_flat
@@ -249,7 +249,7 @@ contains
     call assert_equal_real(output_flat(1), -1.0d0, 1d-12, "test_log2_negative_handling: log2(-0.5+1) should be -1")
   end subroutine test_log2_negative_handling
 
-  !> @brief Test edge cases and boundary conditions.
+  !> Test edge cases and boundary conditions.
   subroutine test_log2_edge_cases()
     integer(int32) :: n_genes, n_tissues
     real(real64), dimension(4) :: input_flat, output_flat
@@ -267,7 +267,7 @@ contains
     call assert_equal_real(output_flat(2), 1.0d0, 1d-12, "test_log2_edge_cases: log2(1+1) should be 1")
   end subroutine test_log2_edge_cases
 
-  !> @brief Test monotonic property: log2(x+1) is strictly increasing.
+  !> Test monotonic property: log2(x+1) is strictly increasing.
   subroutine test_log2_monotonic_property()
     integer(int32) :: n_genes, n_tissues
     real(real64), dimension(5) :: input_flat, output_flat
@@ -285,7 +285,7 @@ contains
     end do
   end subroutine test_log2_monotonic_property
 
-  !> @brief Test mathematical properties of log2 transformation.
+  !> Test mathematical properties of log2 transformation.
   subroutine test_log2_mathematical_properties()
     integer(int32) :: n_genes, n_tissues
     real(real64), dimension(8) :: input_flat, output_flat

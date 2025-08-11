@@ -1,5 +1,5 @@
 ! filepath: test/mod_test_calc_tiss_avg.f90
-!> @brief Unit test suite for calc_tiss_avg routine.
+!> Unit test suite for calc_tiss_avg routine.
 module mod_test_calc_tiss_avg
   use asserts
   use, intrinsic :: iso_fortran_env, only: real64, int32
@@ -20,7 +20,7 @@ module mod_test_calc_tiss_avg
 
 contains
 
-  !> @brief Get array of all available tests.
+  !> Get array of all available tests.
   function get_all_tests() result(all_tests)
     type(test_case) :: all_tests(10)
     
@@ -36,7 +36,7 @@ contains
     all_tests(10) = test_case("test_calc_tiss_avg_mixed_values", test_calc_tiss_avg_mixed_values)
   end function get_all_tests
 
-  !> @brief Run all calc_tiss_avg tests.
+  !> Run all calc_tiss_avg tests.
   subroutine run_all_tests_calc_tiss_avg()
     type(test_case) :: all_tests(10)
     integer(int32) :: i
@@ -50,7 +50,7 @@ contains
     print *, "All calc_tiss_avg tests passed successfully."
   end subroutine run_all_tests_calc_tiss_avg
 
-  !> @brief Run specific calc_tiss_avg tests by name.
+  !> Run specific calc_tiss_avg tests by name.
   subroutine run_named_tests_calc_tiss_avg(test_names)
     character(len=*), intent(in) :: test_names(:)
     type(test_case) :: all_tests(10)
@@ -76,7 +76,7 @@ contains
   end subroutine run_named_tests_calc_tiss_avg
 
 ! filepath: test/mod_test_calc_tiss_avg.f90
-  !> @brief Test tissue averaging with 3 tissues and 2 replicates each (from R test).
+  !> Test tissue averaging with 3 tissues and 2 replicates each (from R test).
   subroutine test_calc_tiss_avg_three_tissues()
     integer(int32) :: n_gene, n_grps
     integer(int32), dimension(3) :: group_s, group_c
@@ -106,7 +106,7 @@ contains
     call assert_no_nan_real(output_matrix(1:6), 6, "test_calc_tiss_avg_three_tissues: NaN in result")
   end subroutine test_calc_tiss_avg_three_tissues
 
-  !> @brief Test tissue averaging with generic tissue names (from R test).
+  !> Test tissue averaging with generic tissue names (from R test).
   subroutine test_calc_tiss_avg_generic_tissues()
     integer(int32) :: n_gene, n_grps
     integer(int32), dimension(3) :: group_s, group_c
@@ -130,7 +130,7 @@ contains
                             "test_calc_tiss_avg_generic_tissues: averaging calculation incorrect")
   end subroutine test_calc_tiss_avg_generic_tissues
 
-  !> @brief Test with single tissue group.
+  !> Test with single tissue group.
   subroutine test_calc_tiss_avg_single_tissue()
     integer(int32) :: n_gene, n_grps
     integer(int32), dimension(1) :: group_s, group_c
@@ -152,7 +152,7 @@ contains
                             "test_calc_tiss_avg_single_tissue: single tissue averaging incorrect")
   end subroutine test_calc_tiss_avg_single_tissue
 
-  !> @brief Test that dimensions are properly calculated.
+  !> Test that dimensions are properly calculated.
   subroutine test_calc_tiss_avg_preserves_dimensions()
     integer(int32) :: n_gene, n_grps
     integer(int32), dimension(2) :: group_s, group_c
@@ -173,7 +173,7 @@ contains
                        "test_calc_tiss_avg_preserves_dimensions: NaN in result")
   end subroutine test_calc_tiss_avg_preserves_dimensions
 
-  !> @brief Test with unequal number of replicates per tissue.
+  !> Test with unequal number of replicates per tissue.
   subroutine test_calc_tiss_avg_unequal_replicates()
     integer(int32) :: n_gene, n_grps
     integer(int32), dimension(3) :: group_s, group_c
@@ -200,7 +200,7 @@ contains
                          "test_calc_tiss_avg_unequal_replicates: unequal replicate averaging incorrect")
   end subroutine test_calc_tiss_avg_unequal_replicates
 
-  !> @brief Test with single replicate per tissue (no averaging needed).
+  !> Test with single replicate per tissue (no averaging needed).
   subroutine test_calc_tiss_avg_single_replicate()
     integer(int32) :: n_gene, n_grps
     integer(int32), dimension(3) :: group_s, group_c
@@ -220,7 +220,7 @@ contains
                             "test_calc_tiss_avg_single_replicate: single replicate should preserve values")
   end subroutine test_calc_tiss_avg_single_replicate
 
-  !> @brief Test with large values for numerical stability.
+  !> Test with large values for numerical stability.
   subroutine test_calc_tiss_avg_large_values()
     integer(int32) :: n_gene, n_grps
     integer(int32), dimension(2) :: group_s, group_c
@@ -243,7 +243,7 @@ contains
                          "test_calc_tiss_avg_large_values: large number averaging incorrect")
   end subroutine test_calc_tiss_avg_large_values
 
-  !> @brief Test with negative values.
+  !> Test with negative values.
   subroutine test_calc_tiss_avg_negative_values()
     integer(int32) :: n_gene, n_grps
     integer(int32), dimension(2) :: group_s, group_c
@@ -265,7 +265,7 @@ contains
                       "test_calc_tiss_avg_negative_values: negative averaging incorrect")
   end subroutine test_calc_tiss_avg_negative_values
 
-  !> @brief Test with zero values.
+  !> Test with zero values.
   subroutine test_calc_tiss_avg_zero_values()
     integer(int32) :: n_gene, n_grps
     integer(int32), dimension(2) :: group_s, group_c
@@ -285,7 +285,7 @@ contains
                             "test_calc_tiss_avg_zero_values: zero averaging incorrect")
   end subroutine test_calc_tiss_avg_zero_values
 
-  !> @brief Test with mixed positive, negative, and zero values.
+  !> Test with mixed positive, negative, and zero values.
   subroutine test_calc_tiss_avg_mixed_values()
     integer(int32) :: n_gene, n_grps
     integer(int32), dimension(3) :: group_s, group_c

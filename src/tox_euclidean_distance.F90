@@ -80,12 +80,12 @@ end subroutine euclidean_distance_r
 subroutine euclidean_distance_c(vec1, vec2, d, result) bind(C, name="euclidean_distance_c")
   use iso_c_binding
   use tox_euclidean_distance
-  !| First expression vector
-  real(c_double), intent(in), target :: vec1(*)
-  !| Second expression vector
-  real(c_double), intent(in), target :: vec2(*)
   !| Dimension of both vectors
   integer(c_int), intent(in), value :: d
+  !| First expression vector
+  real(c_double), intent(in), target :: vec1(d)
+  !| Second expression vector
+  real(c_double), intent(in), target :: vec2(d)
   !| Output scalar distance
   real(c_double), intent(out) :: result
   call euclidean_distance(vec1, vec2, d, result)
@@ -125,13 +125,13 @@ subroutine distance_to_centroid_c(n_genes, n_families, genes, centroids, &
   !| Total number of gene families
   integer(c_int), intent(in), value :: n_families
   !| Gene expression matrix (d × n_genes), column-major
-  real(c_double), intent(in), target :: genes(*)
+  real(c_double), intent(in), target :: genes(d, n_genes)
   !| Family centroid matrix (d × n_families), column-major
-  real(c_double), intent(in), target :: centroids(*)
+  real(c_double), intent(in), target :: centroids(d, n_genes)
   !| Gene-to-family mapping (1-based indexing)
-  integer(c_int), intent(in), target :: gene_to_fam(*)
+  integer(c_int), intent(in), target :: gene_to_fam(n_genes)
   !| Output distances array
-  real(c_double), intent(out), target :: distances(*)
+  real(c_double), intent(out), target :: distances(n_genes)
   !| Expression vector dimension
   integer(c_int), intent(in), value :: d
   call distance_to_centroid(n_genes, n_families, genes, centroids, &

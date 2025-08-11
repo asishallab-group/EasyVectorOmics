@@ -1,5 +1,4 @@
-!> @brief General assertion utilities for Fortran unit testing.
-!! @details
+!> General assertion utilities for Fortran unit testing.
 !! Provides a set of reusable assertion subroutines for verifying
 !! expected behavior in tests of any kind (numeric, string, array, etc).
 module asserts

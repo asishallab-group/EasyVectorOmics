@@ -63,8 +63,9 @@ contains
       end do
 
       out_idx = out_idx + 1
-      ! If the vector is zero, set TV = 1 (maximum specificity)
-      if (norm_v <= 0.0_real64) then
+      ! If the vector is zero or numerically negligible, set TV = 1 (maximum specificity)
+      ! Use sqrt(epsilon) for extra-robust threshold to avoid numerical instability in cos_phi calculation
+      if (norm_v <= sqrt(epsilon(1.0_real64))) then
         tissue_versatilities(out_idx) = 1.0_real64
         tissue_angles_deg(out_idx) = 90.0_real64
         cycle
