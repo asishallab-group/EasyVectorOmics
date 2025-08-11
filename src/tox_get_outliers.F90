@@ -33,7 +33,7 @@ contains
     !| Stack array for right indices during sorting
     integer(int32), intent(inout) :: stack_right_tmp(n_genes)
     !| Pre-allocated work array for family distances (dimension n_genes)
-    real(real64), intent(inout) :: family_distances(n_genes)
+    real(real64), intent(out) :: family_distances(n_genes)
     !| Error code: 0=ok, -2=invalid family indices (required)
     integer(int32), intent(out) :: error_code
 
@@ -375,7 +375,7 @@ subroutine compute_family_scaling_expert_r(n_genes, n_families, distances, gene_
   !| Stack array for right indices during sorting
   integer(int32), intent(inout) :: stack_right_tmp(n_genes)
   !| Pre-allocated work array for family distances (dimension n_genes)
-  real(real64), intent(inout) :: family_distances(n_genes)
+  real(real64), intent(out) :: family_distances(n_genes)
   !| Error code: 0=ok, -2=invalid family indices (required)
   integer(int32), intent(out) :: error_code
   call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
@@ -533,7 +533,7 @@ end subroutine detect_outliers_r
   !| Stack array for right indices during sorting
   integer(c_int), intent(inout), target :: stack_right_tmp(n_genes)
   !| Pre-allocated work array for family distances (dimension n_genes)
-  real(c_double), intent(inout), target :: family_distances(n_genes)
+  real(c_double), intent(out), target :: family_distances(n_genes)
   !| Error code: 0=ok, -2=invalid family indices (required)
   integer(c_int), intent(out) :: error_code
     call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
