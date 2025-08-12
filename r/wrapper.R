@@ -35,7 +35,6 @@ get_array_dims <- function(filename, max_dims = 5) {
                   ierr = ierr)
 
   check_err_code(res$ierr)
-
   res$dims_out[1:res$ndims]
   print(res$dims_out[1:res$ndims])
 }
@@ -150,7 +149,11 @@ deserialize_char_array <- function(filename, max_dims = 5) {
 # Array can simply be passed with with as.integer()
 serialize_int_array <- function(arr, filename) {
   flat <- as.integer(arr)
-  dims <- as.integer(dim(arr))
+  dims <- if (is.null(dim(arr))) {
+    as.integer(length(arr))  # 1D-Vector
+  } else {
+    as.integer(dim(arr))
+  }
   ndim <- as.integer(length(dims))
   ascii <- utf8ToInt(filename)
 

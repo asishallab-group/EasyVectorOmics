@@ -30,7 +30,6 @@ contains
     if (ierr /= 0) then
       return
     end if
-    ! Allocate array of proper size
     allocate(flat(product(dims)))
     read(unit, iostat=ierr) flat
     close(unit)
@@ -142,40 +141,36 @@ end module int_deserialize_mod
 !> @note The output array is handled and preallocated by R
 subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
   use iso_fortran_env, only: int32
-  use int_deserialize_mod
   use array_utils
   implicit none
 
-  ! Outputs
   integer(int32), intent(out) :: flat_arr(arr_size)
-  !! Output flat array
   integer(int32), intent(out) :: ierr
-  !! Error code
+  integer(int32), intent(in)  :: filename_ascii(fn_len)
+  integer(int32), intent(in)  :: fn_len, arr_size
 
-  integer(int32), intent(in) :: filename_ascii(fn_len)
-  !! ASCII representation of the filename
-  integer(int32), intent(in) :: fn_len, arr_size
-  !! Length of the filename array and size of the output array
-
-  ! Local variables
   character(len=:), allocatable :: filename
-  !! Filename as a string
-  integer :: i, k
-  integer(int32), pointer :: flat(:)
-  integer(int32), allocatable, target :: dims(:)
+  integer(int32), allocatable   :: dims(:)
+  integer                       :: unit, type_code, ndims, clen
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 
-  ! Read file
-  call deserialize_int_flat(flat, dims, filename, ierr)
+  ! Check header and get dims
+  open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
+  call check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+  if (ierr /= 0) return
 
-  do i = 1, product(dims)
-    flat_arr(i) = flat(i)
-  end do
+  if (product(dims) /= arr_size) then
+    ierr = 201
+    return
+  end if
 
-  ! flat is no longer needed but manually created so it needs to be deallocated
-  if (associated(flat)) deallocate(flat)
+  ! Read directly into R buffer
+  read(unit, iostat=ierr) flat_arr
+  close(unit)
+  if (ierr /= 0) ierr = 107
 end subroutine
+
 
 !> C binding for the subroutine to deserialize an integer array from a file
 !>@note It is assumed that the array is already allocated and passed together with its size
@@ -197,17 +192,16 @@ subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C
   integer(c_int), INTENT(OUT) :: ierr
 
   character(len=:), allocatable :: filename
-  integer(int32) :: i
 
   integer(int32), pointer :: arr_f(:)
   integer(int32), allocatable :: dims(:)
+  ierr = 0
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 
   call deserialize_int_flat(arr_f, dims, filename, ierr)
 
   ! safety
-  ierr = 0
   if (.not. associated(arr_f)) then
     print *, "Error: arr_f not allocated"
     ierr = 301

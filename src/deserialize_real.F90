@@ -148,37 +148,42 @@ end module real_deserialize_mod
 !> R binding for the subroutine to deserialize a flat real array from a file
 !> @note It is assumed that the array is already allocated and passed together with its size
 subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
-  use iso_fortran_env
+  use iso_fortran_env, only: real64, int32
   use array_utils
-  use real_deserialize_mod
   implicit none
 
   real(real64), intent(out) :: flat_arr(arr_size)
-  !! Output array
-
-  ! Filename
   integer(int32), intent(in) :: filename_ascii(fn_len)
   integer(int32), intent(in) :: fn_len, arr_size
-
   integer(int32), intent(out) :: ierr
-  ! Local
+
   character(len=:), allocatable :: filename
-  integer(int32) :: i, k
-  real(real64), pointer :: flat(:)
-  integer(int32), allocatable, target :: dims(:)
+  integer(int32), allocatable :: dims(:)
+  integer :: unit, type_code, ndims, clen
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 
-  ! Read file
-  call deserialize_real_flat(flat, dims, filename, ierr)
+  open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
+  if (ierr /= 0) return
 
-  do i = 1, product(dims)
-    flat_arr(i) = flat(i)
-  end do
+  call check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+  if (ierr /= 0) then
+    close(unit)
+    return
+  end if
 
-  !Flat is no longer needed but created manually so it needs to be deallocated
-  if (associated(flat)) deallocate(flat)
+  if (product(dims) /= arr_size) then
+    ierr = 201
+    close(unit)
+    return
+  end if
+
+  read(unit, iostat=ierr) flat_arr
+  close(unit)
+  if (ierr /= 0) ierr = 107
+
 end subroutine
+
 
 !> C binding for the subroutine to deserialize a real array from a file
 !> @note It is assumed that the array is already allocated and passed together with its size
