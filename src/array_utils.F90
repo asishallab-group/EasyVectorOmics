@@ -1,16 +1,59 @@
 !> Module for array utilities
 module array_utils
     use, intrinsic :: iso_fortran_env, only: int32, real64
-    use iso_c_binding
     implicit none
 
-    PUBLIC :: get_array_dims, get_array_metadata_chars, ascii_to_string, check_file_header
+    PUBLIC :: get_array_dims, get_array_metadata_chars, ascii_to_string, read_file_header, write_file_header
 
     integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
 
    contains
 
-  subroutine check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+  subroutine write_file_header(filename, unit, type_code, ndim, dims, ierr, clen)
+    use iso_fortran_env, only: int32
+    implicit none
+    character(len=*), intent(in) :: filename
+    integer(int32), intent(in) :: type_code, ndim
+    integer(int32), intent(in) :: dims(ndim)
+    integer(int32), intent(in), optional :: clen
+    integer(int32), intent(out) :: ierr
+    integer(int32), INTENT(OUT) :: unit
+
+    open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace', iostat=ierr)
+    if (ierr /= 0) then
+      ierr = 400
+      return
+    end if
+    write(unit, iostat=ierr) ARRAY_FILE_MAGIC
+    if (ierr /= 0) then
+      ierr = 401
+      return
+    end if
+    write(unit, iostat=ierr) type_code
+    if (ierr /= 0) then
+      ierr = 402
+      return
+    end if
+    write(unit, iostat=ierr) ndim
+    if (ierr /= 0) then
+      ierr = 403
+      return
+    end if
+    write(unit, iostat=ierr) dims
+    if (ierr /= 0) then
+      ierr = 404
+      return
+    end if
+    if (type_code == 3 .and. present(clen)) then
+      write(unit, iostat=ierr) clen
+      if (ierr /= 0) then
+        ierr = 405
+        return
+      end if
+    end if
+  end subroutine write_file_header
+
+  subroutine read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     character(len=*), intent(in) :: filename
     integer(int32), intent(out) :: unit
     integer(int32), intent(out) :: type_code, ndims, clen
@@ -78,7 +121,6 @@ module array_utils
 
   !> Get the dimensions of an array file
   subroutine get_array_dims(filename, dims_out, ndims, ierr)
-    use iso_fortran_env, only: int32
     implicit none
 
     character(len=*), intent(in) :: filename
@@ -92,7 +134,7 @@ module array_utils
 
     ! error handling
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
-    call check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     close(unit)
     if (ierr /= 0) then
       return
@@ -105,7 +147,6 @@ module array_utils
 
   !> subroutine to convert an ASCII array to a string
 subroutine ascii_to_string(ascii_array, clen, str)
-  use iso_fortran_env, only: int32
   implicit none
 
   integer(int32), intent(in) :: ascii_array(clen)
@@ -125,7 +166,6 @@ end subroutine ascii_to_string
 
 !> Subroutine to get metadata of a char array file
   subroutine get_array_metadata_chars(filename, dims_out, ndims, type_code_out, clen_out, ierr)
-    use iso_fortran_env, only: int32
     implicit none
 
     character(len=*), intent(in) :: filename
@@ -146,7 +186,7 @@ end subroutine ascii_to_string
 
     ! error handling
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
-    call check_file_header(filename, unit, type_code_out, ndims, dims, clen_out, ierr)
+    call read_file_header(filename, unit, type_code_out, ndims, dims, clen_out, ierr)
     close(unit)
     if (ierr /= 0) then
       return
@@ -162,7 +202,7 @@ end module array_utils
 !> Subroutine to get the dimensions of an array file
 subroutine get_array_dims_r(filename_ascii, fn_len, dims_out, ndims, ierr)
   use iso_fortran_env, only: int32
-  use array_utils
+  use array_utils, only: ascii_to_string, get_array_dims
   implicit none
 
   ! Input
@@ -194,9 +234,9 @@ end subroutine get_array_dims_r
 
 !> C binding for the subroutine to get the dimensions of an array file
 subroutine get_array_dims_C(filename_ascii, fn_len, dims_out, ndims, ierr) bind(C, name="get_array_dims_C")
-  use iso_c_binding
-  use iso_fortran_env
-  use array_utils
+  use iso_c_binding, only: c_int
+  use iso_fortran_env, only : int32
+  use array_utils, only : ascii_to_string, get_array_dims
   implicit none
 
   ! Input
@@ -228,7 +268,7 @@ end subroutine get_array_dims_C
 !> Subroutine to get metadata of a char array file
 subroutine get_array_metadata_chars_r(filename_ascii, fn_len, dims_out, ndims, type_code_out, clen_out, ierr)
   use iso_fortran_env, only: int32
-  use array_utils
+  use array_utils, only : ascii_to_string, get_array_metadata_chars
   implicit none
 
   ! input
@@ -263,8 +303,9 @@ end subroutine
 !> C binding for the subroutine to get metadata of a char array file
 subroutine get_array_metadata_chars_C(filename_ascii, fn_len, dims_out, dims_len, ndims, &
                           type_code_out, clen_out, ierr) bind(C, name="get_array_metadata_chars_C")
-  use iso_c_binding
-  use array_utils
+  use iso_c_binding, only: c_int
+  use iso_fortran_env, only: int32
+  use array_utils, only: ascii_to_string, get_array_metadata_chars
   implicit none
 
   ! Output

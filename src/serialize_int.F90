@@ -2,6 +2,7 @@
 module serialize_int
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only: c_loc
+  use array_utils, only: write_file_header
   implicit none
 
   public:: serialize_int_1d, serialize_int_2d, serialize_int_3d, &
@@ -11,18 +12,6 @@ module serialize_int
 
 contains
 
-  subroutine write_int_array(unit, type_code, ndim, dims)
-    use iso_fortran_env, only: int32
-    implicit none
-    integer, intent(in) :: unit
-    integer, intent(in) :: type_code, ndim
-    integer(int32), intent(in) :: dims(ndim)
-
-    write(unit) ARRAY_FILE_MAGIC
-    write(unit) type_code
-    write(unit) ndim
-    write(unit) dims
-  end subroutine write_int_array
   !> Serialize a 1D integer(int32) array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, and the array data.
   subroutine serialize_int_1d(arr, filename)
@@ -30,12 +19,21 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer :: unit
+    integer(int32) :: ierr
+    integer(int32) :: unit
     integer(int32) :: dims(1)
     dims = shape(arr)
-    open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace')
-    call write_int_array(unit, 1, 1, dims)
-    write(unit) arr
+    ierr = 0
+    call write_file_header(filename, unit, 1, 1, dims, ierr)
+    if (ierr /= 0) then
+      return
+    end if
+    write(unit, iostat=ierr) arr
+    if (ierr /= 0) then
+      ierr = 405
+      close(unit)
+      return
+    end if
     close(unit)
   end subroutine
 
@@ -46,12 +44,21 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer :: unit
+    integer(int32) :: ierr
+    integer(int32) :: unit
     integer(int32) :: dims(2)
     dims = shape(arr)
-    open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace')
-    call write_int_array(unit, 1, 2, dims)
-    write(unit) arr
+    ierr = 0
+    call write_file_header(filename, unit, 1, 2, dims, ierr)
+    if (ierr /= 0) then
+      return
+    end if
+    write(unit, iostat=ierr) arr
+    if (ierr /= 0) then
+      ierr = 405
+      close(unit)
+      return
+    end if
     close(unit)
   end subroutine
 
@@ -62,12 +69,21 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer :: unit
+    integer(int32) :: ierr
+    integer(int32) :: unit
     integer(int32) :: dims(3)
     dims = shape(arr)
-    open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace')
-    call write_int_array(unit, 1, 3, dims)
-    write(unit) arr
+    ierr = 0
+    call write_file_header(filename, unit, 1, 3, dims, ierr)
+    if (ierr /= 0) then
+      return
+    end if
+    write(unit, iostat=ierr) arr
+    if (ierr /= 0) then
+      ierr = 405
+      close(unit)
+      return
+    end if
     close(unit)
   end subroutine
 
@@ -78,12 +94,21 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer :: unit
+    integer(int32) :: unit
+    integer(int32) :: ierr
     integer(int32) :: dims(4)
     dims = shape(arr)
-    open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace')
-    call write_int_array(unit, 1, 4, dims)
-    write(unit) arr
+    ierr = 0
+    call write_file_header(filename, unit, 1, 4, dims, ierr)
+    if (ierr /= 0) then
+      return
+    end if
+    write(unit, iostat=ierr) arr
+    if (ierr /= 0) then
+      ierr = 405
+      close(unit)
+      return
+    end if
     close(unit)
   end subroutine
 
@@ -94,18 +119,27 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer :: unit
+    integer(int32) :: unit
     integer(int32) :: dims(5)
+    integer(int32) :: ierr
     dims = shape(arr)
-    open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace')
-    call write_int_array(unit, 1, 5, dims)
-    write(unit) arr
+    ierr = 0
+    call write_file_header(filename, unit, 1, 5, dims, ierr)
+    if (ierr /= 0) then
+      return
+    end if
+    write(unit, iostat=ierr) arr
+    if (ierr /= 0) then
+      ierr = 405
+      close(unit)
+      return
+    end if
     close(unit)
   end subroutine
 
   !> Serialize a flat integer array with specified dimensions and number of dimensions to a binary file.
   !> @note this is called by R
-  subroutine serialize_int_nd(arr, dims, ndim, filename)
+  subroutine serialize_int_nd(arr, dims, ndim, filename, ierr)
     integer(int32), intent(in) :: arr(:)
     !! Flat integer array to serialize
     integer(int32), intent(in) :: dims(:)
@@ -114,15 +148,23 @@ contains
     !! Number of dimensions
     character(len=*), intent(in) :: filename
     !! filename
-    integer :: unit
+    integer(int32) :: unit
+    integer(int32), INTENT(OUT) :: ierr
 
     if (size(dims) /= ndim) then
       error stop "Dimension mismatch in serialize_int_nd"
     end if
-
-    open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace')
-    call write_int_array(unit, 1, ndim, dims)
-    write(unit) arr
+    ierr = 0
+    call write_file_header(filename, unit, 1, ndim, dims, ierr)
+    if (ierr /= 0) then
+      return
+    end if
+    write(unit, iostat=ierr) arr
+    if (ierr /= 0) then
+      ierr = 406
+      close(unit)
+      return
+    end if
     close(unit)
   end subroutine
 end module serialize_int
@@ -130,7 +172,7 @@ end module serialize_int
 
 !> Serialize a flat integer array with specified dimensions and number of dimensions to a binary file.
 !! R can not pass a multidimensional array directly, so we use a flat array and dimensions. Therefore, exposing serialize_int_*d to R is not needed.
-subroutine serialize_int_flat_r(arr, array_size, dims, ndim, filename_ascii, fn_len)
+subroutine serialize_int_flat_r(arr, array_size, dims, ndim, filename_ascii, fn_len, ierr)
   use iso_fortran_env, only: int32
   use array_utils
   use serialize_int, only: serialize_int_nd
@@ -148,25 +190,27 @@ subroutine serialize_int_flat_r(arr, array_size, dims, ndim, filename_ascii, fn_
   !! Array of ASCII characters representing the filename
   integer(int32), intent(in) :: fn_len
   !! Length of the filename array
+  integer(int32), intent(out) :: ierr
+  !! Error code
 
   character(len=:), allocatable :: filename
   integer :: i, total_len
 
   call ascii_to_string(filename_ascii, fn_len, filename)
-
+  ierr = 0
   total_len = 1
   do i = 1, ndim
     total_len = total_len * dims(i)
   end do
 
-  call serialize_int_nd(arr(1:total_len), dims(1:ndim), ndim, filename)
+  call serialize_int_nd(arr(1:total_len), dims(1:ndim), ndim, filename, ierr)
 end subroutine
 
 !> C binding for the subroutine to serialize a flat integer array to a binary file.
-subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len) bind(C, name="serialize_int_nd_C")
-  use iso_c_binding
-  use array_utils
-  use serialize_int
+subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bind(C, name="serialize_int_nd_C")
+  use iso_c_binding, only: c_ptr, c_int, c_f_pointer
+  use array_utils, only: ascii_to_string
+  use serialize_int, only: serialize_int_nd
   implicit none
 
   ! input
@@ -180,6 +224,8 @@ subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len) bind(C, n
     !! Array of ASCII characters representing the filename
   integer(c_int), value :: fn_len
     !! Length of the filename array
+  integer(c_int), intent(out) :: ierr
+    !! Error code
 
   ! Local
   character(len=:), allocatable :: filename
@@ -191,5 +237,5 @@ subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len) bind(C, n
   call c_f_pointer(arr, arr_f, [product(dims(1:ndim))])
 
   ! save
-  call serialize_int_nd(arr_f, dims, ndim, filename)
+  call serialize_int_nd(arr_f, dims, ndim, filename, ierr)
 end subroutine

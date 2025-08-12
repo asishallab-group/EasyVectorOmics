@@ -1,8 +1,7 @@
 !> Module for deserializing character arrays from files
 module char_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
-  use array_utils
-  use iso_c_binding
+  use array_utils, only : ascii_to_string, read_file_header
   implicit none
 
   private
@@ -12,7 +11,6 @@ module char_deserialize_mod
 contains
   !> Subroutine to deserialize a flat character array from a file
   subroutine deserialize_char_flat(flat, dims, clen, filename, ierr)
-    use iso_c_binding
     character(len=:), pointer, intent(out) :: flat(:)
       !! Output flat character array
     integer(int32), allocatable, intent(out) :: dims(:)
@@ -29,7 +27,7 @@ contains
 
     ! open file and read header
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
-    call check_file_header(filename, unit, type_code, ndim, dims, clen, ierr)
+    call read_file_header(filename, unit, type_code, ndim, dims, clen, ierr)
     if (ierr /= 0) then
       return
     end if
@@ -62,7 +60,6 @@ contains
   !> Subroutine to deserialize a 1D character array from a file
   !> only moves a pointer for completeness
   subroutine deserialize_char_1d(arr, filename)
-    use iso_c_binding
     character(len=:), pointer, intent(out) :: arr(:)
       !! Output character array
     character(len=*), intent(in) :: filename
@@ -86,7 +83,6 @@ contains
   !> Subroutine to deserialize a 2D character array from a file
   !!!> The array is read as flat and then reshaped to 2D
   subroutine deserialize_char_2d(arr, filename)
-    use iso_c_binding
     character(len=:), pointer, intent(out) :: arr(:,:)
     !! Output character array
     character(len=*), intent(in) :: filename
@@ -117,7 +113,6 @@ contains
 
   !> Subroutine to deserialize a 3D character array from a file
   subroutine deserialize_char_3d(arr, filename)
-    use iso_c_binding
     character(len=:), pointer, intent(out) :: arr(:,:,:)
     !! Output character array
     character(len=*), intent(in) :: filename
@@ -152,7 +147,6 @@ contains
 
   !> Subroutine to deserialize a 4D character array from a file
   subroutine deserialize_char_4d(arr, filename)
-    use iso_c_binding
     character(len=:), pointer, intent(out) :: arr(:,:,:,:)
     !! Output character array
     character(len=*), intent(in) :: filename
@@ -162,7 +156,7 @@ contains
     !! Flat character array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions of the array
-    integer :: clen, i, j, k, l, idx
+    integer(int32) :: clen, i, j, k, l, idx
     integer(int32) :: ierr
     !! Error code
     !Read file
@@ -197,7 +191,7 @@ contains
       !! Flat character array
       integer(int32), allocatable :: dims(:)
       !! Output dimensions of the array
-      integer :: max_len, i, j, k, l, m, idx
+      integer(int32) :: max_len, i, j, k, l, m, idx
       integer(int32) :: ierr
 
       !Avoid memory leaks
@@ -230,9 +224,9 @@ end module char_deserialize_mod
 !> Subroutine to deserialize a flat character array from a file and return it as an ASCII array callable by R
 !> @note The array is returned flat and needs to be reshaped in R
 subroutine deserialize_char_flat_r(ascii_arr, arr_size, filename_ascii, fn_len, ierr)
-  use iso_fortran_env
-  use char_deserialize_mod
-  use array_utils
+  use iso_fortran_env, only: int32
+  use char_deserialize_mod, only: deserialize_char_flat
+  use array_utils, only: ascii_to_string
   implicit none
 
   ! Arrays are allocated by R
@@ -249,7 +243,7 @@ subroutine deserialize_char_flat_r(ascii_arr, arr_size, filename_ascii, fn_len, 
   character(len=:), allocatable :: filename
   character(len=:), pointer :: flat(:)
   integer(int32), allocatable :: dims(:)
-  integer :: i, j, clen, total_array_size
+  integer(int32) :: i, j, clen, total_array_size
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 
@@ -273,9 +267,10 @@ end subroutine deserialize_char_flat_r
 !> @note The array is returned flat and needs to be reshaped in C/python
 subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, &
                                    filename_ascii, fn_len, ierr) bind(C, name="deserialize_char_flat_C")
-  use iso_c_binding
-  use char_deserialize_mod
-  use array_utils
+  use iso_c_binding, only: c_int, c_char, c_ptr
+  use iso_fortran_env, only: int32
+  use char_deserialize_mod, only: deserialize_char_flat
+  use array_utils, only : ascii_to_string
   implicit none
 
   ! Arguments
@@ -294,7 +289,7 @@ subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, &
   character(len=:), allocatable :: filename
   character(len=:), pointer     :: flat(:)
   integer(c_int), allocatable   :: dims(:)
-  integer :: i, j, actual_clen
+  integer(int32) :: i, j, actual_clen
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 

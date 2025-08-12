@@ -116,6 +116,7 @@ def serialize_int_nd(arr: np.ndarray, filename: str):
     # dimensions
     dims = np.array(arr.shape, dtype=np.int32)
     ndim = arr.ndim
+    ierr = ctypes.c_int()
 
     # flat array to pass to fortran
     flat = arr_f.ravel(order='F')
@@ -128,7 +129,8 @@ def serialize_int_nd(arr: np.ndarray, filename: str):
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims
         ctypes.c_int,  # ndim
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
-        ctypes.c_int  # fn_len
+        ctypes.c_int,  # fn_len
+        ctypes.POINTER(ctypes.c_int) 
     ]
     arrays_lib.serialize_int_nd_C.restype = None
 
@@ -138,7 +140,8 @@ def serialize_int_nd(arr: np.ndarray, filename: str):
         dims,
         ndim,
         filename_ascii,
-        fn_len
+        fn_len,
+        ctypes.byref(ierr)
     )
 
 # Deserialize an n dimensional integer array
@@ -180,6 +183,7 @@ def serialize_real_nd(arr: np.ndarray, filename: str):
     # dimensions
     dims = np.array(arr.shape, dtype=np.int32)
     ndim = arr.ndim
+    ierr = ctypes.c_int()
 
     # flat array with fortran order
     flat = arr_f.ravel(order='F')
@@ -193,7 +197,8 @@ def serialize_real_nd(arr: np.ndarray, filename: str):
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims
         ctypes.c_int,  # ndim
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
-        ctypes.c_int  # fn_len
+        ctypes.c_int,  # fn_len
+        ctypes.POINTER(ctypes.c_int)  # ierr
     ]
     arrays_lib.serialize_real_nd_C.restype = None
 
@@ -203,7 +208,8 @@ def serialize_real_nd(arr: np.ndarray, filename: str):
         dims,
         ndim,
         filename_ascii,
-        fn_len
+        fn_len,
+        ctypes.byref(ierr)
     )
 
 
@@ -241,6 +247,7 @@ def serialize_char_nd(arr: np.ndarray, filename: str):
 
     dims = np.array(arr.shape, dtype=np.int32)
     ndim = arr.ndim
+    ierr = ctypes.c_int()
 
     ascii_mat, clen = _string_array_to_ascii_matrix(arr)
     ascii_ptr = np.ascontiguousarray(ascii_mat.ravel(order='F'))
@@ -253,7 +260,8 @@ def serialize_char_nd(arr: np.ndarray, filename: str):
         ctypes.c_int,                                                          # ndim
         ctypes.c_int,                                                          # clen
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),  # filename_ascii
-        ctypes.c_int                                                           # fn_len
+        ctypes.c_int,                                                           # fn_len
+        ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
     arrays_lib.serialize_char_flat_C.restype = None
 
@@ -263,7 +271,8 @@ def serialize_char_nd(arr: np.ndarray, filename: str):
         ndim,
         clen,
         filename_ascii,
-        fn_len
+        fn_len,
+        ctypes.byref(ierr)
     )
 
 
@@ -302,7 +311,7 @@ def deserialize_char_nd(filename: str, ndim_max=5):
         total_array_size,
         filename_ascii,
         fn_len,
-        ierr
+        ctypes.byref(ierr)
     )
 
     ndim = len(dims)

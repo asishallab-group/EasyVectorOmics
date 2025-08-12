@@ -1,8 +1,8 @@
 !> Module for deserializing integer arrays from files
 module int_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
-  use iso_c_binding, only: c_ptr, c_loc, c_char, c_null_char
-  use array_utils
+  use iso_c_binding, only : c_loc, c_f_pointer
+  use array_utils, only: ascii_to_string, read_file_header
   implicit none
 
   private
@@ -12,7 +12,6 @@ module int_deserialize_mod
 contains
   !> Deserialize a flat integer array from a file
   subroutine deserialize_int_flat(flat, dims, filename, ierr)
-    use iso_c_binding
     integer(int32), pointer, intent(out) :: flat(:)
     !! Output flat array
     integer(int32), allocatable, intent(out), target :: dims(:)
@@ -26,7 +25,7 @@ contains
 
     ! Read file
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
-    call check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (ierr /= 0) then
       return
     end if
@@ -43,7 +42,6 @@ contains
   !> @note The array must be allocated before calling this subroutine, this is just for consistency since 
   !> a 1D array can not be deserialized to 1D
   subroutine deserialize_int_1d(arr, filename)
-    use iso_c_binding
     integer(int32), pointer, intent(out) :: arr(:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -62,7 +60,6 @@ contains
   !> Deserialize a 2D integer array from a file
   !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_int_2d(arr, filename)
-    use iso_c_binding
     integer(int32), pointer, intent(out) :: arr(:,:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -81,7 +78,6 @@ contains
   !> Deserialize a 3D integer array from a file
   !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_int_3d(arr, filename)
-    use iso_c_binding
     integer(int32), pointer, intent(out) :: arr(:,:,:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -100,7 +96,6 @@ contains
   !> Deserialize a 4D integer array from a file
   !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_int_4d(arr, filename)
-    use iso_c_binding
     integer(int32), pointer, intent(out) :: arr(:,:,:,:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -119,7 +114,6 @@ contains
   !> Deserialize a 5D integer array from a file
   !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_int_5d(arr, filename)
-    use iso_c_binding
     integer(int32), pointer, intent(out) :: arr(:,:,:,:,:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -141,7 +135,7 @@ end module int_deserialize_mod
 !> @note The output array is handled and preallocated by R
 subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
   use iso_fortran_env, only: int32
-  use array_utils
+  use array_utils, only : ascii_to_string, read_file_header
   implicit none
 
   integer(int32), intent(out) :: flat_arr(arr_size)
@@ -157,7 +151,7 @@ subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
 
   ! Check header and get dims
   open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
-  call check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+  call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
   if (ierr /= 0) return
 
   if (product(dims) /= arr_size) then
@@ -175,9 +169,9 @@ end subroutine
 !> C binding for the subroutine to deserialize an integer array from a file
 !>@note It is assumed that the array is already allocated and passed together with its size
 subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C, name="deserialize_int_C")
-    use iso_c_binding
+    use iso_c_binding, only: c_int
     use iso_fortran_env, only: int32
-    use array_utils, only: ascii_to_string, check_file_header
+    use array_utils, only: ascii_to_string, read_file_header
     implicit none
 
     ! Inputs / Outputs
@@ -202,7 +196,7 @@ subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
     if (ierr /= 0) return
 
-    call check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (ierr /= 0) then
         close(unit)
         return

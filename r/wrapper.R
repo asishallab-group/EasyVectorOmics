@@ -156,14 +156,17 @@ serialize_int_array <- function(arr, filename) {
   }
   ndim <- as.integer(length(dims))
   ascii <- utf8ToInt(filename)
+  ierr <- integer(1)
 
-  .Fortran("serialize_int_flat_r",
+  res <- .Fortran("serialize_int_flat_r",
            arr = flat,
            array_size = length(flat),
            dims = dims,
            ndim = ndim,
            filename_ascii = as.integer(ascii),
-           fn_len = as.integer(length(ascii)))
+           fn_len = as.integer(length(ascii)),
+           ierr = ierr)
+  check_err_code(res$ierr)
 }
 
 # BASE R arrays are column-major just like fortran, so no serialization is needed for the array structure.
@@ -179,14 +182,17 @@ serialize_real_array <- function(arr, filename) {
 
   ndim <- as.integer(length(dims))
   ascii <- utf8ToInt(filename)
+  ierr <- integer(1)
 
-  .Fortran("serialize_real_flat_r",
+  res <- .Fortran("serialize_real_flat_r",
            arr = flat,
            array_size = length(flat),
            dims = dims,
            ndim = ndim,
            filename_ascii = as.integer(ascii),
-           fn_len = as.integer(length(ascii)))
+           fn_len = as.integer(length(ascii)),
+           ierr = ierr)
+  check_err_code(res$ierr)
 }
 
 # Serializes a character array to a file, encoding it as an integer matrix
@@ -198,6 +204,7 @@ serialize_char_array <- function(arr, filename) {
   dims <- dim(arr)
   if (is.null(dims)) dims <- length(arr)
   clen <- max(nchar(arr, type = "chars"))
+  ierr <- integer(1)
 
   # encode to integer matrix
   # Chars can not be passed via .Fortran directly
@@ -207,15 +214,17 @@ serialize_char_array <- function(arr, filename) {
     mat[seq_along(chars), i] <- chars
   }
 
-  invisible(.Fortran("serialize_char_flat_r",
+  res <- .Fortran("serialize_char_flat_r",
     ascii_arr = as.integer(mat),
     array_size = length(mat),
     dims = as.integer(dims),
     ndim = as.integer(length(dims)),
     clen = as.integer(clen),
     filename_ascii = utf8ToInt(filename),
-    fn_len = nchar(filename)
-  ))
+    fn_len = nchar(filename),
+    ierr = ierr
+  )
+  check_err_code(res$ierr)
 }
 
 # --- Testing for all functions ---

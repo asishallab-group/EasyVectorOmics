@@ -1,8 +1,8 @@
 !> Module for deserializing real (double precision) arrays from binary files
 module real_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
-  use iso_c_binding
-  use array_utils
+  use iso_c_binding, only : c_loc, c_f_pointer
+  use array_utils, only: ascii_to_string, read_file_header
   use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
 
@@ -14,7 +14,6 @@ contains
 
   !> Deserialize a flat real array from a file
   subroutine deserialize_real_flat(flat, dims, filename, ierr)
-    use iso_c_binding
     real(real64), pointer, intent(out) :: flat(:)
     !! Output flat array
     integer(int32), allocatable, intent(out), target :: dims(:)
@@ -24,10 +23,10 @@ contains
     integer(int32), intent(out) :: ierr
     !! Error code
 
-    integer :: unit, magic, type_code, ndims, clen
+    integer(int32) :: unit, magic, type_code, ndims, clen
 
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
-    call check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (ierr /= 0) then
       return
     end if
@@ -43,7 +42,6 @@ contains
   !> Deserialize a 1D real array from a file
   !> @note This file just moves a pointer, it exists for consistency
   subroutine deserialize_real_1d(arr, filename)
-    use iso_c_binding
     real(real64), pointer, intent(out) :: arr(:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -64,7 +62,6 @@ contains
   !> Deserialize a 2D real array from a file
   !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_real_2d(arr, filename)
-    use iso_c_binding
     real(real64), pointer, intent(out) :: arr(:,:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -85,7 +82,6 @@ contains
   !> Deserialize a 3D real array from a file
   !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_real_3d(arr, filename)
-    use iso_c_binding
     real(real64), pointer, intent(out) :: arr(:,:,:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -106,7 +102,6 @@ contains
   !> Deserialize a 4D real array from a file
   !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_real_4d(arr, filename)
-    use iso_c_binding
     real(real64), pointer, intent(out) :: arr(:,:,:,:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -127,7 +122,6 @@ contains
   !> Deserialize a 5D real array from a file
   !> @note The array is allocated by the deserialize flat routine
   subroutine deserialize_real_5d(arr, filename)
-    use iso_c_binding
     real(real64), pointer, intent(out) :: arr(:,:,:,:,:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -149,7 +143,7 @@ end module real_deserialize_mod
 !> @note It is assumed that the array is already allocated and passed together with its size
 subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
   use iso_fortran_env, only: real64, int32
-  use array_utils
+  use array_utils, only : ascii_to_string, read_file_header
   implicit none
 
   real(real64), intent(out) :: flat_arr(arr_size)
@@ -166,7 +160,7 @@ subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_ascii, fn_len, i
   open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
   if (ierr /= 0) return
 
-  call check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+  call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
   if (ierr /= 0) then
     close(unit)
     return
@@ -188,9 +182,9 @@ end subroutine
 !> C binding for the subroutine to deserialize a real array from a file
 !> @note It is assumed that the array is already allocated and passed together with its size
 subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C, name="deserialize_real_C")
-    use iso_c_binding
+    use iso_c_binding, only : c_int, c_double
     use iso_fortran_env, only: int32, real64
-    use array_utils, only: ascii_to_string, check_file_header
+    use array_utils, only: ascii_to_string, read_file_header
     implicit none
 
     ! Inputs / Outputs
@@ -215,7 +209,7 @@ subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
     if (ierr /= 0) return
 
-    call check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (ierr /= 0) then
         close(unit)
         return
