@@ -188,51 +188,51 @@ end subroutine
 !> C binding for the subroutine to deserialize a real array from a file
 !> @note It is assumed that the array is already allocated and passed together with its size
 subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C, name="deserialize_real_C")
-  use iso_c_binding
-  use array_utils
-  use real_deserialize_mod, only: deserialize_real_flat
-  use iso_fortran_env
-  implicit none
+    use iso_c_binding
+    use iso_fortran_env, only: int32, real64
+    use array_utils, only: ascii_to_string, check_file_header
+    implicit none
 
-  real(c_double), intent(inout) :: arr(arr_size)
-  !! Output array, must be allocated with the correct size
-  integer(c_int), value :: arr_size
-  !! Size of the array to read
-  integer(c_int), intent(in) :: filename_ascii(fn_len)
-  !! Array of ASCII characters representing the filename
-  integer(c_int), value :: fn_len
-  !! Length of the filename array
-  integer(c_int), intent(out) :: ierr
-  !! Error code
+    ! Inputs / Outputs
+    real(c_double), intent(inout) :: arr(arr_size)   ! Preallocated buffer from C/Python
+    integer(c_int), value         :: arr_size        ! Buffer length
+    integer(c_int), intent(in)    :: filename_ascii(fn_len)
+    integer(c_int), value         :: fn_len
+    integer(c_int), intent(out)   :: ierr
 
-  character(len=:), allocatable :: filename
-  integer(int32) :: i
+    ! Locals
+    character(len=:), allocatable :: filename
+    integer(int32), allocatable   :: dims(:)
+    integer                       :: unit
+    integer(int32)                :: type_code, ndims, clen
 
-  ! arr_f is a pointer to the Fortran array
-  real(real64), pointer :: arr_f(:)
-  integer(int32), allocatable :: dims(:)
+    ierr = 0
 
-  call ascii_to_string(filename_ascii, fn_len, filename)
+    ! ASCII → String
+    call ascii_to_string(filename_ascii, fn_len, filename)
 
-  ! Read data
-  call deserialize_real_flat(arr_f, dims, filename, ierr)
+    ! Open and read header
+    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
+    if (ierr /= 0) return
 
-  ! Checks
-  ierr = 0
-  if (.not. associated(arr_f)) then
-    print *, "Error: arr_f not allocated"
-    ierr = 301
-  end if
+    call check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    if (ierr /= 0) then
+        close(unit)
+        return
+    end if
 
-  if (size(arr_f) /= arr_size) then
-    print *, "Error: Size does not match ", size(arr_f), arr_size
-    ierr = 302
-  end if
+    ! Safety check: ensure provided buffer matches size in file
+    if (product(dims) /= arr_size) then
+        ierr = 302
+        close(unit)
+        return
+    end if
 
-  if (ierr /= 0) then
-    print *, "Error in array pointer check ", ierr
-    stop
-  end if
-  ! Move to buffer
-  arr(:) = arr_f(:)
-end subroutine
+    ! Read directly into provided buffer → ZERO COPY
+    read(unit, iostat=ierr) arr
+    close(unit)
+    if (ierr /= 0) then
+        ierr = 107
+        return
+    end if
+end subroutine deserialize_real_C

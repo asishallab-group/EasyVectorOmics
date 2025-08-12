@@ -175,50 +175,51 @@ end subroutine
 !> C binding for the subroutine to deserialize an integer array from a file
 !>@note It is assumed that the array is already allocated and passed together with its size
 subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C, name="deserialize_int_C")
-  use iso_c_binding
-  use int_deserialize_mod, only: deserialize_int_flat
-  use iso_fortran_env, only: int32
-  use array_utils
-  implicit none
+    use iso_c_binding
+    use iso_fortran_env, only: int32
+    use array_utils, only: ascii_to_string, check_file_header
+    implicit none
 
-  integer(c_int), intent(inout) :: arr(arr_size)
-  !! Output array, must be preallocated with the correct size
-  integer(c_int), value :: arr_size
-  !! Size of the output array
-  integer(c_int), intent(in) :: filename_ascii(fn_len)
-  !! ASCII representation of the filename
-  integer(c_int), value :: fn_len
-  !! Length of the filename array
-  integer(c_int), INTENT(OUT) :: ierr
+    ! Inputs / Outputs
+    integer(c_int), intent(inout) :: arr(arr_size)      ! Preallocated buffer from C/Python
+    integer(c_int), value         :: arr_size           ! Buffer length
+    integer(c_int), intent(in)    :: filename_ascii(fn_len)
+    integer(c_int), value         :: fn_len
+    integer(c_int), intent(out)   :: ierr
 
-  character(len=:), allocatable :: filename
+    ! Locals
+    character(len=:), allocatable :: filename
+    integer(int32), allocatable   :: dims(:)
+    integer                       :: unit
+    integer(int32)                :: type_code, ndims, clen
 
-  integer(int32), pointer :: arr_f(:)
-  integer(int32), allocatable :: dims(:)
-  ierr = 0
+    ierr = 0
 
-  call ascii_to_string(filename_ascii, fn_len, filename)
+    ! ASCII → String
+    call ascii_to_string(filename_ascii, fn_len, filename)
 
-  call deserialize_int_flat(arr_f, dims, filename, ierr)
+    ! Open and read header
+    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
+    if (ierr /= 0) return
 
-  ! safety
-  if (.not. associated(arr_f)) then
-    print *, "Error: arr_f not allocated"
-    ierr = 301
-    return
-  end if
+    call check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    if (ierr /= 0) then
+        close(unit)
+        return
+    end if
 
-  if (size(arr_f) /= arr_size) then
-    print *, "Error: Size does not match ", size(arr_f), arr_size
-    ierr = 302
-    return
-  end if
+    ! Safety check: ensure provided buffer matches size in file
+    if (product(dims) /= arr_size) then
+        ierr = 302
+        close(unit)
+        return
+    end if
 
-  if (ierr /= 0) then
-    print *, "Error in array pointer check ", ierr
-    stop
-  end if
-
-  ! Move data in C buffer
-  arr(:) = arr_f(:)
-end subroutine
+    ! Read directly into C/Python-provided buffer → ZERO COPY
+    read(unit, iostat=ierr) arr
+    close(unit)
+    if (ierr /= 0) then
+        ierr = 107
+        return
+    end if
+end subroutine deserialize_int_C
