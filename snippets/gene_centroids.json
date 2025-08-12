@@ -13,7 +13,7 @@
         "body": [
             "! Computes centroids for multiple gene groups.",
             "call group_centroid(${1:vectors}, ${2:num_genes}, ${3:gene_to_family_map}, ${4:num_families}, &",
-            "                    ${5:centroid_matrix_out}, ${6:'all'}, ${7:ortholog_set}, ${8:workspace_indices})",
+            "                    ${5:centroid_matrix_out}, ${6:mode_ascii}, ${7:mode_len}, ${8:ortholog_set_int}, ${9:workspace_indices})",
             "$0"
         ],
         "description": "Call the core Fortran subroutine to compute group centroids."
@@ -30,8 +30,9 @@
             "    centroid_matrix = matrix(0.0, nrow=${3:num_families}, ncol=nrow(${1:vectors_matrix})),",
             "    mode_ascii = as.integer(charToRaw(${4:'all'})),",
             "    mode_len = as.integer(nchar(${4:'all'})),",
-            "    ortholog_set = as.logical(${5:ortholog_vector}),",
-            "    selected_indices = integer(ncol(${1:vectors_matrix})))",
+            "    ortholog_set_int = as.integer(${5:ortholog_logical_vector}),",
+            "    selected_indices = integer(ncol(${1:vectors_matrix})),",
+            "    selected_indices_len = as.integer(ncol(${1:vectors_matrix})))",
             "$0"
         ],
         "description": "Call the group_centroid_r Fortran function from R."
@@ -49,8 +50,9 @@
             "    np.ctypeslib.ndpointer(dtype=np.float64), # centroid_matrix",
             "    np.ctypeslib.ndpointer(dtype=np.int32), # mode_ascii",
             "    ctypes.c_int,                            # mode_len",
-            "    np.ctypeslib.ndpointer(dtype=np.bool_),  # ortholog_set",
-            "    np.ctypeslib.ndpointer(dtype=np.int32)  # selected_indices",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),  # ortholog_set_int",
+            "    np.ctypeslib.ndpointer(dtype=np.int32), # selected_indices",
+            "    ctypes.c_int                             # selected_indices_len",
             "]",
             "group_centroid.restype = None"
         ],
