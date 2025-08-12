@@ -11,6 +11,7 @@ check_err_code <- function(ierr) {
     "104" = "Could not read array dimension number",
     "105" = "Could not read array dimensions",
     "106" = "Could not read character length",
+    "107" = "Could not read array data",
     "200" = "Invalid file format (magic number mismatch)",
     "5002" = "File not open or unit not connected",
     "9999" = "Unknown error",
@@ -25,7 +26,6 @@ get_array_dims <- function(filename, max_dims = 5) {
   dims <- integer(max_dims)
   ndims <- integer(1)
   ierr <- integer(1)
-  errmsg <- paste(rep(" ", 128), collapse = "") 
 
   res <- .Fortran("get_array_dims_r",
                   filename_ascii = as.integer(ascii),
@@ -48,7 +48,6 @@ get_array_metadata_chars <- function(filename, max_dims = 5) {
   typecode <- integer(1)
   clen <- integer(1)
   ierr <- integer(1)
-  errmsg <- paste(rep(" ", 128), collapse = "")
 
   res <- .Fortran("get_array_metadata_chars_r",
                   filename_ascii = as.integer(ascii),
@@ -60,7 +59,6 @@ get_array_metadata_chars <- function(filename, max_dims = 5) {
                   ierr = ierr)
 
   check_err_code(res$ierr)
-
   list(dims = res$dims_out[1:res$ndims],
        type = res$type_code_out,
        clen = res$clen_out,
@@ -77,12 +75,16 @@ deserialize_int_array <- function(filename, max_dims = 5) {
 
     flat <- integer(total_size)
     ndim <- integer(1)
+    ierr <- integer(1)
 
     res <- .Fortran("deserialize_int_r",
                 flat_arr = flat,
                 arr_size = as.integer(total_size),
                 filename_ascii = as.integer(ascii),
-                fn_len = as.integer(length(ascii)))
+                fn_len = as.integer(length(ascii)),
+                ierr = ierr)
+    check_err_code(res$ierr)
+
     array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
 }
 
@@ -97,12 +99,15 @@ deserialize_real_array <- function(filename, max_dims = 5) {
     flat <- double(total_size)
     dims <- as.integer(actual_dims)
     ndim <- integer(1)
+    ierr <- integer(1)
 
     res <- .Fortran("deserialize_real_flat_r",
                 flat_arr = flat,
                 arr_size = as.integer(total_size),
                 filename_ascii = as.integer(ascii),
-                fn_len = as.integer(length(ascii)))
+                fn_len = as.integer(length(ascii)),
+                ierr = ierr)
+    check_err_code(res$ierr)
     array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
 }
 
@@ -114,7 +119,7 @@ deserialize_char_array <- function(filename, max_dims = 5) {
   dims <- integer(max_dims)
   ndim <- integer(1)
   clen <- integer(1)
-
+  ierr <- integer(1)
   # Load metadata dimensions + clen
   meta <- get_array_metadata_chars(filename, max_dims)
 
@@ -129,9 +134,10 @@ deserialize_char_array <- function(filename, max_dims = 5) {
     ascii_arr = ascii_arr,
     arr_size = as.integer(clen * total_array_size),
     filename_ascii = ascii,
-    fn_len = as.integer(length(ascii))
+    fn_len = as.integer(length(ascii)),
+    ierr = ierr
   )
-
+  check_err_code(res$ierr)
   # translate ASCII back to char
   mat <- matrix(res$ascii_arr, nrow = clen)
   chars <- apply(mat, 2, function(col) rawToChar(as.raw(col[col > 0])))

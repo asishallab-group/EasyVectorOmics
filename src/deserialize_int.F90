@@ -11,7 +11,7 @@ module int_deserialize_mod
 
 contains
   !> Deserialize a flat integer array from a file
-  subroutine deserialize_int_flat(flat, dims, filename)
+  subroutine deserialize_int_flat(flat, dims, filename, ierr)
     use iso_c_binding
     integer(int32), pointer, intent(out) :: flat(:)
     !! Output flat array
@@ -19,16 +19,25 @@ contains
     !! Output dimensions array
     character(len=*), intent(in) :: filename
     !! Name of the file to read
+    INTEGER(int32), INTENT(OUT) :: ierr
+    !! Error code
 
-    integer(int32) :: unit, magic, type_code, ndims, ierr, clen
+    integer(int32) :: unit, magic, type_code, ndims, clen
 
     ! Read file
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
     call check_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    if (ierr /= 0) then
+      return
+    end if
     ! Allocate array of proper size
     allocate(flat(product(dims)))
-    read(unit) flat
+    read(unit, iostat=ierr) flat
     close(unit)
+    if (ierr /= 0) then
+      ierr = 107
+      return
+    end if
   end subroutine deserialize_int_flat
 
   !> Deserialize a 1D integer array from a file
@@ -44,7 +53,9 @@ contains
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions array
-    call deserialize_int_flat(flat, dims, filename)
+    integer(int32) :: ierr
+    !! Error code
+    call deserialize_int_flat(flat, dims, filename, ierr)
     if (size(dims) /= 1) error stop "Expected 1D array"
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1)])
   end subroutine deserialize_int_1d
@@ -61,7 +72,9 @@ contains
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions array
-    call deserialize_int_flat(flat, dims, filename)
+    integer(int32) :: ierr
+    !! Error code
+    call deserialize_int_flat(flat, dims, filename, ierr)
     if (size(dims) /= 2) error stop "Expected 2D array"
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2)])
   end subroutine deserialize_int_2d
@@ -78,7 +91,9 @@ contains
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions array
-    call deserialize_int_flat(flat, dims, filename)
+    integer(int32) :: ierr
+    !! Error code
+    call deserialize_int_flat(flat, dims, filename, ierr)
     if (size(dims) /= 3) error stop "Expected 3D array"
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3)])
   end subroutine deserialize_int_3d
@@ -95,7 +110,9 @@ contains
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions array
-    call deserialize_int_flat(flat, dims, filename)
+    integer(int32) :: ierr
+    !! Error code
+    call deserialize_int_flat(flat, dims, filename, ierr)
     if (size(dims) /= 4) error stop "Expected 4D array"
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3), dims(4)])
   end subroutine deserialize_int_4d
@@ -112,7 +129,9 @@ contains
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions array
-    call deserialize_int_flat(flat, dims, filename)
+    integer(int32) :: ierr
+    !! Error code
+    call deserialize_int_flat(flat, dims, filename, ierr)
     if (size(dims) /= 5) error stop "Expected 5D array"
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3), dims(4), dims(5)])
   end subroutine deserialize_int_5d
@@ -121,7 +140,7 @@ end module int_deserialize_mod
 
 !> R interface for deserializing an integer array from a file
 !> @note The output array is handled and preallocated by R
-subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len)
+subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
   use iso_fortran_env, only: int32
   use int_deserialize_mod
   use array_utils
@@ -130,6 +149,8 @@ subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len)
   ! Outputs
   integer(int32), intent(out) :: flat_arr(arr_size)
   !! Output flat array
+  integer(int32), intent(out) :: ierr
+  !! Error code
 
   integer(int32), intent(in) :: filename_ascii(fn_len)
   !! ASCII representation of the filename
@@ -146,7 +167,7 @@ subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len)
   call ascii_to_string(filename_ascii, fn_len, filename)
 
   ! Read file
-  call deserialize_int_flat(flat, dims, filename)
+  call deserialize_int_flat(flat, dims, filename, ierr)
 
   do i = 1, product(dims)
     flat_arr(i) = flat(i)
@@ -158,7 +179,7 @@ end subroutine
 
 !> C binding for the subroutine to deserialize an integer array from a file
 !>@note It is assumed that the array is already allocated and passed together with its size
-subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len) bind(C, name="deserialize_int_C")
+subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C, name="deserialize_int_C")
   use iso_c_binding
   use int_deserialize_mod, only: deserialize_int_flat
   use iso_fortran_env, only: int32
@@ -173,27 +194,30 @@ subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len) bind(C, name
   !! ASCII representation of the filename
   integer(c_int), value :: fn_len
   !! Length of the filename array
+  integer(c_int), INTENT(OUT) :: ierr
 
   character(len=:), allocatable :: filename
-  integer(int32) :: i, ierr
+  integer(int32) :: i
 
   integer(int32), pointer :: arr_f(:)
   integer(int32), allocatable :: dims(:)
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 
-  call deserialize_int_flat(arr_f, dims, filename)
+  call deserialize_int_flat(arr_f, dims, filename, ierr)
 
   ! safety
   ierr = 0
-  if (.not. associated(array_ptr)) then
+  if (.not. associated(arr_f)) then
     print *, "Error: arr_f not allocated"
     ierr = 301
+    return
   end if
 
-  if (size(array_ptr) /= arr_size) then
-    print *, "Error: Size does not match ", size(array_ptr), arr_size
+  if (size(arr_f) /= arr_size) then
+    print *, "Error: Size does not match ", size(arr_f), arr_size
     ierr = 302
+    return
   end if
 
   if (ierr /= 0) then

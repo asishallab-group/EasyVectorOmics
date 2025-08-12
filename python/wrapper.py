@@ -153,16 +153,18 @@ def deserialize_int_nd(filename):
     total_size = np.prod(dims)
     arr = np.zeros(total_size, dtype=np.int32, order='F')  # gets a 1D array
     ascii_arr, fn_len = _filename_to_ascii_array(filename)
+    ierr = ctypes.c_int()
 
     arrays_lib.deserialize_int_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # arr
         ctypes.c_int,                                                          # total size
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
-        ctypes.c_int                                                           # fn_len
+        ctypes.c_int,                                                          # fn_len
+        ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
     arrays_lib.deserialize_int_C.restype = None
 
-    arrays_lib.deserialize_int_C(arr, total_size, ascii_arr, fn_len)
+    arrays_lib.deserialize_int_C(arr, total_size, ascii_arr, fn_len, ierr)
     return arr.reshape(dims, order='F')  # Reshape to original dimensions
 
 def serialize_real_nd(arr: np.ndarray, filename: str):
@@ -216,16 +218,18 @@ def deserialize_real_nd(filename):
     total_size = np.prod(dims)
     arr = np.zeros(total_size, dtype=np.float64, order='F')  # accept flat array
     ascii_arr, fn_len = _filename_to_ascii_array(filename)
+    ierr = ctypes.c_int()
 
     arrays_lib.deserialize_real_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS"),  # arr
         ctypes.c_int,                                                          # total size
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
-        ctypes.c_int                                                           # fn_len
+        ctypes.c_int,                                                           # fn_len
+        ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
     arrays_lib.deserialize_real_C.restype = None
 
-    arrays_lib.deserialize_real_C(arr, total_size, ascii_arr, fn_len)
+    arrays_lib.deserialize_real_C(arr, total_size, ascii_arr, fn_len, ierr)
     return arr.reshape(dims, order='F')  # Reshape
 
 def serialize_char_nd(arr: np.ndarray, filename: str):
@@ -274,6 +278,7 @@ def deserialize_char_nd(filename: str, ndim_max=5):
 
     # Get metadata
     dims, clen = get_char_array_metadata(filename, ndim_max)
+    ierr = ctypes.c_int()
 
     print(f"Deserializing char array with dimensions: {dims}, clen: {clen}")
     total_array_size = np.prod(dims)
@@ -286,7 +291,8 @@ def deserialize_char_nd(filename: str, ndim_max=5):
         ctypes.c_int,           # clen
         ctypes.c_int,           # total
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
-        ctypes.c_int            # fn_len
+        ctypes.c_int,            # fn_len
+        ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
     arrays_lib.deserialize_char_flat_C.restype = None
 
@@ -295,7 +301,8 @@ def deserialize_char_nd(filename: str, ndim_max=5):
         clen,
         total_array_size,
         filename_ascii,
-        fn_len
+        fn_len,
+        ierr
     )
 
     ndim = len(dims)

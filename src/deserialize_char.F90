@@ -11,7 +11,7 @@ module char_deserialize_mod
 
 contains
   !> Subroutine to deserialize a flat character array from a file
-  subroutine deserialize_char_flat(flat, dims, clen, filename)
+  subroutine deserialize_char_flat(flat, dims, clen, filename, ierr)
     use iso_c_binding
     character(len=:), pointer, intent(out) :: flat(:)
       !! Output flat character array
@@ -21,20 +21,35 @@ contains
       !! Maximum length of character string
     character(len=*), intent(in) :: filename
       !! Name of the file to read
+    integer(int32), intent(out) :: ierr
+      !! Error code
 
-    integer(int32) :: unit, magic, type_code, ndim, i, str_len, ierr
+    integer(int32) :: unit, magic, type_code, ndim, i, str_len
     character(len=:), allocatable :: temp_str
 
     ! open file and read header
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
     call check_file_header(filename, unit, type_code, ndim, dims, clen, ierr)
+    if (ierr /= 0) then
+      return
+    end if
     !allocate proper length for flat array
     allocate(character(len=clen) :: flat(product(dims)))
     do i = 1, product(dims)
-      read(unit) str_len
+      read(unit, iostat=ierr) str_len
+      if (ierr /= 0) then
+        ierr = 107
+        close(unit)
+        return
+      end if
       if (str_len > 0) then
         allocate(character(len=str_len) :: temp_str)
-        read(unit) temp_str
+        read(unit, iostat=ierr) temp_str
+        if (ierr /= 0) then
+          ierr = 107
+          close(unit)
+          return
+        end if
         flat(i) = temp_str
         deallocate(temp_str)
       else
@@ -59,9 +74,11 @@ contains
       !! Output dimensions of the array
     integer :: clen
       !! Maximum length of character string
+    integer(int32) :: ierr
+      !! Error code
 
     if (associated(arr)) nullify(arr)
-    call deserialize_char_flat(flat, dims, clen, filename)
+    call deserialize_char_flat(flat, dims, clen, filename, ierr)
     if (size(dims) /= 1) error stop "Expected 1D array"
     arr => flat
   end subroutine
@@ -80,8 +97,10 @@ contains
     integer(int32), allocatable :: dims(:)
     !! Output dimensions of the array
     integer :: clen, i, j, idx
+    integer(int32) :: ierr
+    !! Error code
 
-    call deserialize_char_flat(flat, dims, clen, filename)
+    call deserialize_char_flat(flat, dims, clen, filename, ierr)
     if (size(dims) /= 2) error stop "Expected 2D array"
     allocate(character(len=clen) :: arr(dims(1), dims(2)))
     ! Reshape flat array to 2D, c_f_pointer is not used here since it is note very stable for character arrays
@@ -109,9 +128,11 @@ contains
     integer(int32), allocatable :: dims(:)
     !! Output dimensions of the array
     integer :: clen, i, j, k, idx
+    integer(int32) :: ierr
+    !! Error code
 
     !Read file
-    call deserialize_char_flat(flat, dims, clen, filename)
+    call deserialize_char_flat(flat, dims, clen, filename, ierr)
     if (size(dims) /= 3) error stop "Expected 3D array"
     !Allocate 3D array
     allocate(character(len=clen) :: arr(dims(1), dims(2), dims(3)))
@@ -142,8 +163,10 @@ contains
     integer(int32), allocatable :: dims(:)
     !! Output dimensions of the array
     integer :: clen, i, j, k, l, idx
+    integer(int32) :: ierr
+    !! Error code
     !Read file
-    call deserialize_char_flat(flat, dims, clen, filename)
+    call deserialize_char_flat(flat, dims, clen, filename, ierr)
     if (size(dims) /= 4) error stop "Expected 4D array"
     !Allocate 4D array
     allocate(character(len=clen) :: arr(dims(1), dims(2), dims(3), dims(4)))
@@ -175,11 +198,12 @@ contains
       integer(int32), allocatable :: dims(:)
       !! Output dimensions of the array
       integer :: max_len, i, j, k, l, m, idx
+      integer(int32) :: ierr
 
       !Avoid memory leaks
       if (associated(arr)) nullify(arr)
       !Read file
-      call deserialize_char_flat(flat, dims, max_len, filename)
+      call deserialize_char_flat(flat, dims, max_len, filename, ierr)
       if (size(dims) /= 5) error stop "Expected 5D array"
       !Allocate 5D array
       allocate(character(len=max_len) :: arr(dims(1), dims(2), dims(3), dims(4), dims(5)))
@@ -205,7 +229,7 @@ end module char_deserialize_mod
 
 !> Subroutine to deserialize a flat character array from a file and return it as an ASCII array callable by R
 !> @note The array is returned flat and needs to be reshaped in R
-subroutine deserialize_char_flat_r(ascii_arr, arr_size, filename_ascii, fn_len)
+subroutine deserialize_char_flat_r(ascii_arr, arr_size, filename_ascii, fn_len, ierr)
   use iso_fortran_env
   use char_deserialize_mod
   use array_utils
@@ -220,6 +244,7 @@ subroutine deserialize_char_flat_r(ascii_arr, arr_size, filename_ascii, fn_len)
   !! Length of the filename array
   integer(int32), intent(in) :: arr_size
   !! Size of the ASCII array
+  integer(int32), intent(out) :: ierr
 
   character(len=:), allocatable :: filename
   character(len=:), pointer :: flat(:)
@@ -229,7 +254,7 @@ subroutine deserialize_char_flat_r(ascii_arr, arr_size, filename_ascii, fn_len)
   call ascii_to_string(filename_ascii, fn_len, filename)
 
   ! Deserialize flat character array
-  call deserialize_char_flat(flat, dims, clen, filename)
+  call deserialize_char_flat(flat, dims, clen, filename, ierr)
   total_array_size = product(dims)
 
   ! Write data to ASCII array
@@ -247,7 +272,7 @@ end subroutine deserialize_char_flat_r
 !> C binding for the subroutine to deserialize a flat character array from a file
 !> @note The array is returned flat and needs to be reshaped in C/python
 subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, &
-                                   filename_ascii, fn_len) bind(C, name="deserialize_char_flat_C")
+                                   filename_ascii, fn_len, ierr) bind(C, name="deserialize_char_flat_C")
   use iso_c_binding
   use char_deserialize_mod
   use array_utils
@@ -264,6 +289,7 @@ subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, &
   !! Array of ASCII characters representing the filename
   integer(c_int), value       :: fn_len
   !! Length of the filename array
+  integer(c_int), intent(out) :: ierr
 
   character(len=:), allocatable :: filename
   character(len=:), pointer     :: flat(:)
@@ -273,7 +299,7 @@ subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, &
   call ascii_to_string(filename_ascii, fn_len, filename)
 
   ! Deserialize
-  call deserialize_char_flat(flat, dims, actual_clen, filename)
+  call deserialize_char_flat(flat, dims, actual_clen, filename, ierr)
 
   ! Convert to ASCII (Null-padding)
   do i = 1, total_array_size
