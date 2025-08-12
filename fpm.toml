@@ -1,33 +1,10 @@
-# ==============================================================================
-# This file configures the Fortran Package Manager (fpm) for building the
-# shared library and running the associated tests.
-# ==============================================================================
-
-name = "GeneCentroidCalculator"
-version = "1.0.0"
-license = "Proprietary"
-author = "Luka Faensen"
-maintainer = "faensen.luka@th-bingen.de"
-copyright = "Copyright 2025, Asis Hallab"
-
-[build]
-# Disable automatic discovery of executables and examples.
-# Tests will be defined explicitly below.
-auto-executables = false
-auto-tests = true
-auto-examples = false
-
-# This tells fpm to build a library using your custom script,
-# which is useful for creating shared libraries (.so, .dll).
-[library]
-source-dir = "src"
-build-script = "scripts/build_shared.sh"
+name = "tensor-omics"
+version = "0.1.0"
+license = "MIT"
 
 [install]
 library = true
 
-# Explicitly define the test suite for the centroid calculator.
-[test]
-name = "centroid_calculator_test"
-source-dir = "test"
-main = "test_gene_centroid_calculator.f90"
+[library]
+type = "shared" 
+

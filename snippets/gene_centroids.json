@@ -1,0 +1,59 @@
+{
+    "Fortran: Call mean_vector": {
+        "prefix": "f42:mean_vector",
+        "body": [
+            "! Computes the element-wise mean of specified vectors.",
+            "call mean_vector(${1:vectors}, ${2:gene_indices}, ${3:n_genes}, ${4:centroid_out})",
+            "$0"
+        ],
+        "description": "Call the core Fortran subroutine to compute a mean vector."
+    },
+    "Fortran: Call group_centroid": {
+        "prefix": "f42:group_centroid",
+        "body": [
+            "! Computes centroids for multiple gene groups.",
+            "call group_centroid(${1:vectors}, ${2:num_genes}, ${3:gene_to_family_map}, ${4:num_families}, &",
+            "                    ${5:centroid_matrix_out}, ${6:'all'}, ${7:ortholog_set}, ${8:workspace_indices})",
+            "$0"
+        ],
+        "description": "Call the core Fortran subroutine to compute group centroids."
+    },
+    "R: Call group_centroid_r": {
+        "prefix": "f42:R_group_centroid",
+        "body": [
+            "result <- .Fortran(\"group_centroid_r\",",
+            "    vectors = as.double(${1:vectors_matrix}),",
+            "    d = as.integer(nrow(${1:vectors_matrix})),",
+            "    n = as.integer(ncol(${1:vectors_matrix})),",
+            "    gene_to_family_map = as.integer(${2:family_map_vector}),",
+            "    num_families = as.integer(${3:num_families}),",
+            "    centroid_matrix = matrix(0.0, nrow=${3:num_families}, ncol=nrow(${1:vectors_matrix})),",
+            "    mode_ascii = as.integer(charToRaw(${4:'all'})),",
+            "    mode_len = as.integer(nchar(${4:'all'})),",
+            "    ortholog_set = as.logical(${5:ortholog_vector}),",
+            "    selected_indices = integer(ncol(${1:vectors_matrix})))",
+            "$0"
+        ],
+        "description": "Call the group_centroid_r Fortran function from R."
+    },
+    "Python/C: Setup group_centroid_c": {
+        "prefix": "f42:C_setup_group_centroid",
+        "body": [
+            "group_centroid = lib.group_centroid_c",
+            "group_centroid.argtypes = [",
+            "    np.ctypeslib.ndpointer(dtype=np.float64), # vectors",
+            "    ctypes.c_int,                            # d",
+            "    ctypes.c_int,                            # n",
+            "    np.ctypeslib.ndpointer(dtype=np.int32), # gene_to_family_map",
+            "    ctypes.c_int,                            # num_families",
+            "    np.ctypeslib.ndpointer(dtype=np.float64), # centroid_matrix",
+            "    np.ctypeslib.ndpointer(dtype=np.int32), # mode_ascii",
+            "    ctypes.c_int,                            # mode_len",
+            "    np.ctypeslib.ndpointer(dtype=np.bool_),  # ortholog_set",
+            "    np.ctypeslib.ndpointer(dtype=np.int32)  # selected_indices",
+            "]",
+            "group_centroid.restype = None"
+        ],
+        "description": "Setup ctypes interface for the group_centroid_c function."
+    }
+}
