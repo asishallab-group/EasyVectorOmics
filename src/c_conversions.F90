@@ -1,6 +1,6 @@
 module c_conversions
     use iso_fortran_env, only: int32, real64
-    use iso_c_binding, only: c_ptr, c_int, c_double
+    use iso_c_binding, only: c_int, c_double
     implicit none
 
 contains
@@ -39,17 +39,17 @@ contains
         end if
     end subroutine c_int_as_char
 
-    !> Treats a c_char array as ascii char array and translates it into Fortran character
-    pure subroutine c_int_1d_as_string(c_int_array, array_len, str_out)
-        integer(c_int), dimension(array_len), intent(in) :: c_int_array
+    !> Casts a 1D c_int array into string
+    pure subroutine c_int_1d_as_string(c_int_array, str_out)
+        integer(c_int), dimension(:), intent(in) :: c_int_array
          !! c int array, representing characters
         character(len=:), allocatable, intent(out) :: str_out
          !! Fortran string of input length
-        integer(int32), intent(in) :: array_len
-         !! string length
 
-        integer(int32) :: i, str_len
+        integer(int32) :: i, str_len, array_len
         character(len=1) :: char
+
+        array_len = size(c_int_array, 1)
 
         ! identify string length
         str_len = array_len
@@ -68,24 +68,23 @@ contains
         end do
     end subroutine c_int_1d_as_string
 
-    !> Treats a c_char array as ascii char array and translates it into Fortran character
-    pure subroutine c_int_2d_as_string(c_int_array, n_rows, n_strings, str_out)
-        integer(c_int), dimension(n_rows, n_strings), intent(in) :: c_int_array
+    !> Casts a 2D c_int array into 1D string array
+    pure subroutine c_int_2d_as_string(c_int_array, str_out)
+        integer(c_int), dimension(:, :), intent(in) :: c_int_array
          !! c int array, columns as ascii arrays
         character(len=:), dimension(:), allocatable, intent(out) :: str_out
          !! Fortran string of input length
-        integer(int32), intent(in) :: n_rows
-         !! number of rows in `c_int_array`, so maximum string length
-        integer(int32), intent(in) :: n_strings
-         !! number of columns/strings in `c_int_array`
 
-        integer(int32) :: i_str
+        integer(int32) :: i_str, n_rows, n_strings
         character(len=:), allocatable :: string
+
+        n_rows = size(c_int_array, 1)
+        n_strings = size(c_int_array, 2)
 
         allocate (character(len=n_rows) :: str_out(n_strings))
         ! create strings
         do i_str = 1, n_strings
-            call c_int_1d_as_string(c_int_array(:, i_str), n_rows, string)
+            call c_int_1d_as_string(c_int_array(:, i_str), string)
             str_out(i_str) = string
         end do
     end subroutine c_int_2d_as_string

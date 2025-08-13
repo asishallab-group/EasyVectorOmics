@@ -46,7 +46,7 @@ contains
         call assert_equal_real(casted_scalar, expected_scalar, TOL, "test_c_conversions_c_double_as_real64: value mismatch")
 
         call c_double_as_real64([c_val], casted_array)
-      call assert_equal_array_real(casted_array, [expected_scalar], 1, TOL, "test_c_conversions_c_double_as_real64: value mismatch")
+        call assert_equal_array_real(casted_array, [expected_scalar], 1, TOL, "test_c_conversions_c_double_as_real64: value mismatch")
     end subroutine test_c_conversions_c_double_as_real64
 
     subroutine test_c_conversions_c_int_as_int32
@@ -81,10 +81,10 @@ contains
         ! non ascii
         expected_scalar = "?"
         call c_int_as_char(128_c_int, casted_scalar)
-    call assert_true(casted_scalar == expected_scalar, "test_c_conversions_c_int_as_char: value mismatch for non ascii (too large)")
+        call assert_true(casted_scalar == expected_scalar, "test_c_conversions_c_int_as_char: value mismatch for non ascii (too large)")
 
         call c_int_as_char(-1_c_int, casted_scalar)
-     call assert_true(casted_scalar == expected_scalar, "test_c_conversions_c_int_as_char: value mismatch for non ascii (negative)")
+        call assert_true(casted_scalar == expected_scalar, "test_c_conversions_c_int_as_char: value mismatch for non ascii (negative)")
     end subroutine test_c_conversions_c_int_as_char
 
     subroutine test_c_conversions_c_int_1d_as_string
@@ -92,11 +92,12 @@ contains
         character(len=:), allocatable :: f_char
 
         c_int_array = [72_c_int, 101_c_int, -11_c_int, 108_c_int, 111_c_int] ! 'H', 'e', non-ASCII, 'l', 'o'
-        call c_int_1d_as_string(c_int_array, 5_int32, f_char)
+        call c_int_1d_as_string(c_int_array, f_char)
         call assert_true(f_char == "He?lo", "test_c_conversions_c_int_1d_as_string: value mismatch")
 
         ! test empty string
-        call c_int_1d_as_string([0_c_int, 101_c_int, -11_c_int, 108_c_int, 111_c_int], 5_int32, f_char)
+        c_int_array = [0_c_int, 101_c_int, -11_c_int, 108_c_int, 111_c_int]
+        call c_int_1d_as_string(c_int_array, f_char)
         call assert_true(f_char == "", "test_c_conversions_c_int_1d_as_string: value mismatch")
     end subroutine test_c_conversions_c_int_1d_as_string
 
@@ -107,7 +108,7 @@ contains
         c_int_array(:, 1) = [72_c_int, 101_c_int, -11_c_int, 108_c_int, 111_c_int] ! 'H', 'e', non-ASCII, 'l', 'o'
         c_int_array(:, 2) = [0_c_int, 101_c_int, -11_c_int, 108_c_int, 111_c_int] ! string ends at first element
 
-        call c_int_2d_as_string(c_int_array, 5_int32, 2_int32, f_char)
+        call c_int_2d_as_string(c_int_array, f_char)
         call assert_equal_int(size(f_char, 1), 2, "test_c_conversions_c_int_2d_as_string: Did not get two strings")
         call assert_true(f_char(1) == "He?lo" .and. f_char(2) == "", "test_c_conversions_c_int_2d_as_string: value mismatch")
     end subroutine test_c_conversions_c_int_2d_as_string
