@@ -4,6 +4,7 @@ module real_deserialize_mod
   use iso_c_binding, only : c_loc, c_f_pointer
   use array_utils, only: ascii_to_string, read_file_header
   use, intrinsic :: iso_fortran_env, only: real64, int32
+  use tox_errors
   implicit none
 
   private
@@ -22,18 +23,22 @@ contains
     !! Name of the file to read
     integer(int32), intent(out) :: ierr
     !! Error code
+    integer(int32) :: ioerror
+    !! Fortran internal error code
 
     integer(int32) :: unit, magic, type_code, ndims, clen
 
+    call set_ok(ierr)
+    call set_ok(ioerror)
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
-    if (ierr /= 0) then
-      return
-    end if
+    if (.not. is_ok(ierr)) return
+
     allocate(flat(product(dims)))
-    read(unit, iostat=ierr) flat
+    read(unit, iostat=ioerror) flat
     close(unit)
-    if (ierr /= 0) then
-      ierr = 107
+    if (.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_READ_DATA)
+      deallocate(flat)
       return
     end if
   end subroutine deserialize_real_flat
@@ -53,8 +58,14 @@ contains
     integer(int32) :: ierr
     !! Error code
 
+    call set_ok(ierr)
+
     call deserialize_real_flat(flat, dims, filename, ierr)
-    if (size(dims) /= 1) error stop "Expected 1D array"
+    if(.not. is_ok(ierr)) return
+    if (size(dims) /= 1) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      RETURN
+    end if
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1)])
   end subroutine deserialize_real_1d
 
@@ -73,8 +84,14 @@ contains
     integer(int32) :: ierr
     !! Error code
 
+    call set_ok(ierr)
+
     call deserialize_real_flat(flat, dims, filename, ierr)
-    if (size(dims) /= 2) error stop "Expected 2D array"
+    if (.not. is_ok(ierr)) return
+    if (size(dims) /= 2) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      RETURN
+    end if
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2)])
   end subroutine deserialize_real_2d
 
@@ -93,8 +110,14 @@ contains
     integer(int32) :: ierr
     !! Error code
 
+    call set_ok(ierr)
+
     call deserialize_real_flat(flat, dims, filename, ierr)
-    if (size(dims) /= 3) error stop "Expected 3D array"
+    if(.not. is_ok(ierr)) return
+    if (size(dims) /= 3) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      RETURN
+    end if
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3)])
   end subroutine deserialize_real_3d
 
@@ -113,8 +136,14 @@ contains
     integer(int32) :: ierr
     !! Error code
 
+    call set_ok(ierr)
+
     call deserialize_real_flat(flat, dims, filename, ierr)
-    if (size(dims) /= 4) error stop "Expected 4D array"
+    if(.not. is_ok(ierr)) return
+    if (size(dims) /= 4) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      RETURN
+    end if
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3), dims(4)])
   end subroutine deserialize_real_4d
 
@@ -129,10 +158,18 @@ contains
     !! Error code
 
     real(real64), pointer :: flat(:)
+    !! pointer to read into
     integer(int32), allocatable :: dims(:)
+    !! dimensions
+
+    call set_ok(ierr)
 
     call deserialize_real_flat(flat, dims, filename, ierr)
-    if (size(dims) /= 5) error stop "Expected 5D array"
+    if(.not. is_ok(ierr)) return
+    if (size(dims) /= 5) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      RETURN
+    end if
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3), dims(4), dims(5)])
   end subroutine deserialize_real_5d
 
@@ -143,34 +180,46 @@ end module real_deserialize_mod
 subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
   use iso_fortran_env, only: real64, int32
   use array_utils, only : ascii_to_string, read_file_header
+  use tox_errors
   implicit none
 
   real(real64), intent(out) :: flat_arr(arr_size)
+  !! array provided by R
   integer(int32), intent(in) :: filename_ascii(fn_len)
-  integer(int32), intent(in) :: fn_len, arr_size
+  !! filename in ascii
+  integer(int32), intent(in) :: fn_len
+  !! length of the filename
+  integer(int32), intent(in) :: arr_size
+  !! size of the array
   integer(int32), intent(out) :: ierr
+  !! error code
+  integer(int32) :: ioerror
+  !! internal fortran error
 
   character(len=:), allocatable :: filename
+  !! filename
   integer(int32), allocatable :: dims(:)
+  !! dimensions
   integer :: unit, type_code, ndims, clen
 
+  call set_ok(ierr)
+  call set_ok(ioerror)
   call ascii_to_string(filename_ascii, fn_len, filename)
 
   call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
-  if (ierr /= 0) then
-    close(unit)
-    return
-  end if
+  if(.not. is_ok(ierr)) return
 
   if (product(dims) /= arr_size) then
-    ierr = 201
+    call set_err_once(ierr, ERR_DIM_MISMATCH)
     close(unit)
     return
   end if
 
-  read(unit, iostat=ierr) flat_arr
+  read(unit, iostat=ioerror) flat_arr
   close(unit)
-  if (ierr /= 0) ierr = 107
+  if (.not. is_ok(ioerror)) then
+    call set_err_once(ierr, ERR_READ_DATA)
+  end if
 
 end subroutine
 
@@ -181,44 +230,51 @@ subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(
     use iso_c_binding, only : c_int, c_double
     use iso_fortran_env, only: int32, real64
     use array_utils, only: ascii_to_string, read_file_header
+    use tox_errors
     implicit none
 
     ! Inputs / Outputs
-    real(c_double), intent(inout) :: arr(arr_size)   ! Preallocated buffer from C/Python
-    integer(c_int), value         :: arr_size        ! Buffer length
+    real(c_double), intent(inout) :: arr(arr_size)
+    !! output array
+    integer(c_int), value         :: arr_size  
+    !! size of the output array
     integer(c_int), intent(in)    :: filename_ascii(fn_len)
+    !! Filename in ascii
     integer(c_int), value         :: fn_len
+    !! length of the filename
     integer(c_int), intent(out)   :: ierr
+    !! error code
+    integer(int32) :: ioerror
+    !! internal fortran error
 
     ! Locals
     character(len=:), allocatable :: filename
+    !! filename
     integer(int32), allocatable   :: dims(:)
+    !! dimensions
     integer                       :: unit
     integer(int32)                :: type_code, ndims, clen
 
     ierr = 0
 
-    ! ASCII → String
+    ! ASCII to String
     call ascii_to_string(filename_ascii, fn_len, filename)
 
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
-    if (ierr /= 0) then
-        close(unit)
-        return
-    end if
+    if(.not. is_ok(ierr)) return
 
     ! Safety check: ensure provided buffer matches size in file
     if (product(dims) /= arr_size) then
-        ierr = 302
+        call set_err_once(ierr, ERR_DIM_MISMATCH)
         close(unit)
         return
     end if
 
-    ! Read directly into provided buffer → ZERO COPY
-    read(unit, iostat=ierr) arr
+    ! Read directly into provided buffer
+    read(unit, iostat=ioerror) arr
     close(unit)
-    if (ierr /= 0) then
-        ierr = 107
+    if (.not. is_ok(ioerror)) then
+        call set_err_once(ierr, ERR_READ_DATA)
         return
     end if
 end subroutine deserialize_real_C

@@ -3,6 +3,7 @@ module int_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only : c_loc, c_f_pointer
   use array_utils, only: ascii_to_string, read_file_header
+  use tox_errors
   implicit none
 
   private
@@ -21,18 +22,25 @@ contains
     INTEGER(int32), INTENT(OUT) :: ierr
     !! Error code
 
-    integer(int32) :: unit, magic, type_code, ndims, clen
+    integer(int32) :: unit
+    !! fortran representation of unit number
+    integer(int32) :: ioerror
+    !! internal error code
+    integer(int32) :: magic, type_code, ndims, clen
 
+    call set_ok(ierr)
+    call set_ok(ioerror)
     ! Read file
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
-    if (ierr /= 0) then
+    if (.not. is_ok(ierr)) then
       return
     end if
     allocate(flat(product(dims)))
-    read(unit, iostat=ierr) flat
+    read(unit, iostat=ioerror) flat
     close(unit)
-    if (ierr /= 0) then
-      ierr = 107
+    if (.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_READ_DATA)
+      deallocate(flat)
       return
     end if
   end subroutine deserialize_int_flat
@@ -51,8 +59,12 @@ contains
     !! Output dimensions array
     integer(int32) :: ierr
     !! Error code
+    call set_ok(ierr)
     call deserialize_int_flat(flat, dims, filename, ierr)
-    if (size(dims) /= 1) error stop "Expected 1D array"
+    if (size(dims) /= 1) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      RETURN
+    end if
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1)])
   end subroutine deserialize_int_1d
 
@@ -69,8 +81,12 @@ contains
     !! Output dimensions array
     integer(int32) :: ierr
     !! Error code
+    call set_ok(ierr)
     call deserialize_int_flat(flat, dims, filename, ierr)
-    if (size(dims) /= 2) error stop "Expected 2D array"
+    if (size(dims) /= 2) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      RETURN
+    end if
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2)])
   end subroutine deserialize_int_2d
 
@@ -87,8 +103,12 @@ contains
     !! Output dimensions array
     integer(int32) :: ierr
     !! Error code
+    call set_ok(ierr)
     call deserialize_int_flat(flat, dims, filename, ierr)
-    if (size(dims) /= 3) error stop "Expected 3D array"
+    if (size(dims) /= 3) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      RETURN
+    end if
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3)])
   end subroutine deserialize_int_3d
 
@@ -105,8 +125,13 @@ contains
     !! Output dimensions array
     integer(int32) :: ierr
     !! Error code
+
+    call set_ok(ierr)
     call deserialize_int_flat(flat, dims, filename, ierr)
-    if (size(dims) /= 4) error stop "Expected 4D array"
+    if (size(dims) /= 4) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      RETURN
+    end if
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3), dims(4)])
   end subroutine deserialize_int_4d
 
@@ -123,8 +148,12 @@ contains
     !! Output dimensions array
     integer(int32) :: ierr
     !! Error code
+    call set_ok(ierr)
     call deserialize_int_flat(flat, dims, filename, ierr)
-    if (size(dims) /= 5) error stop "Expected 5D array"
+    if (size(dims) /= 5) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      RETURN
+    end if
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3), dims(4), dims(5)])
   end subroutine deserialize_int_5d
 
@@ -135,31 +164,47 @@ end module int_deserialize_mod
 subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
   use iso_fortran_env, only: int32
   use array_utils, only : ascii_to_string, read_file_header
+  use tox_errors
   implicit none
 
   integer(int32), intent(out) :: flat_arr(arr_size)
+  !! array passed by R
   integer(int32), intent(out) :: ierr
+  !! error code
   integer(int32), intent(in)  :: filename_ascii(fn_len)
-  integer(int32), intent(in)  :: fn_len, arr_size
+  !! filename to read from
+  integer(int32), intent(in)  :: fn_len
+  !! length of the filename
+  integer(int32), intent(in)  :: arr_size
+  !! size of the array
+  integer(int32) :: ioerror
 
   character(len=:), allocatable :: filename
+  !! filename in characters
   integer(int32), allocatable   :: dims(:)
-  integer                       :: unit, type_code, ndims, clen
+  !! dimensions of the array
+  integer(int32)                :: unit, type_code, ndims, clen
+
+  call set_ok(ierr)
+  call set_ok(ioerror)
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 
   call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
-  if (ierr /= 0) return
+  if (.not. is_ok(ierr)) return
 
   if (product(dims) /= arr_size) then
-    ierr = 201
+    call set_err_once(ierr, ERR_SIZE_MISMATCH)
     return
   end if
 
   ! Read directly into R buffer
-  read(unit, iostat=ierr) flat_arr
+  read(unit, iostat=ioerror) flat_arr
   close(unit)
-  if (ierr /= 0) ierr = 107
+  if (.not. is_ok(ioerror)) then
+    call set_err_once(ierr, ERR_READ_DATA)
+    RETURN
+  end if
 end subroutine
 
 
@@ -169,6 +214,7 @@ subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C
     use iso_c_binding, only: c_int
     use iso_fortran_env, only: int32
     use array_utils, only: ascii_to_string, read_file_header
+    use tox_errors
     implicit none
 
     ! Inputs / Outputs
@@ -181,32 +227,33 @@ subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C
     ! Locals
     character(len=:), allocatable :: filename
     integer(int32), allocatable   :: dims(:)
-    integer                       :: unit
+    integer(int32)                :: unit
+    integer(int32)                :: ioerror
     integer(int32)                :: type_code, ndims, clen
 
-    ierr = 0
+    call set_ok(ierr)
+    call set_ok(ioerror)
 
     ! ASCII → String
     call ascii_to_string(filename_ascii, fn_len, filename)
 
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
-    if (ierr /= 0) then
-        close(unit)
+    if (.not. is_ok(ierr)) then
         return
     end if
 
     ! Safety check: ensure provided buffer matches size in file
     if (product(dims) /= arr_size) then
-        ierr = 302
+        call set_err_once(ierr, ERR_SIZE_MISMATCH)
         close(unit)
         return
     end if
 
     ! Read directly into C/Python-provided buffer → ZERO COPY
-    read(unit, iostat=ierr) arr
+    read(unit, iostat=ioerror) arr
     close(unit)
-    if (ierr /= 0) then
-        ierr = 107
+    if (.not. is_ok(ioerror)) then
+        call set_err_once(ierr, ERR_READ_DATA)
         return
     end if
 end subroutine deserialize_int_C

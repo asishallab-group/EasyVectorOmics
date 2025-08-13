@@ -39,7 +39,7 @@ contains
     do i = 1, product(dims)
       read(unit, iostat=ioerror) str_len
       if (.not. is_ok(ioerror)) then
-        call set_error_once(ierr, ERR_READ_CHARLEN)
+        call set_err_once(ierr, ERR_READ_CHARLEN)
         close(unit)
         return
       end if
@@ -47,7 +47,7 @@ contains
         allocate(character(len=str_len) :: temp_str)
         read(unit, iostat=ioerror) temp_str
         if (ierr /= 0) then
-          call set_error_once(ierr, ERR_READ_DATA)
+          call set_err_once(ierr, ERR_READ_DATA)
           close(unit)
           return
         end if
@@ -81,7 +81,7 @@ contains
     if (associated(arr)) nullify(arr)
     call deserialize_char_flat(flat, dims, clen, filename, ierr)
     if (size(dims) /= 1) then
-      call set_error_once(ierr, ERR_DIM_MISMATCH)
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
       if (associated(flat)) nullify(flat)
       return
     end if
@@ -114,7 +114,7 @@ contains
     call deserialize_char_flat(flat, dims, clen, filename, ierr)
 
     if (size(dims) /= 2) then
-      call set_error_once(ierr, ERR_DIM_MISMATCH)
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
       if (associated(flat)) nullify(flat)
       return
     end if
@@ -154,7 +154,7 @@ contains
     !Read file
     call deserialize_char_flat(flat, dims, clen, filename, ierr)
     if (size(dims) /= 3) then
-      call set_error_once(ierr, ERR_DIM_MISMATCH)
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
       if (associated(flat)) nullify(flat)
       return
     end if
@@ -197,7 +197,7 @@ contains
     !Read file
     call deserialize_char_flat(flat, dims, clen, filename, ierr)
     if (size(dims) /= 4) then
-      call set_error_once(ierr, ERR_DIM_MISMATCH)
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
       if (associated(flat)) nullify(flat)
       return
     end if
@@ -243,7 +243,7 @@ contains
       !Read file
       call deserialize_char_flat(flat, dims, clen, filename, ierr)
       if (size(dims) /= 5) then
-          call set_error_once(ierr, ERR_DIM_MISMATCH)
+          call set_err_once(ierr, ERR_DIM_MISMATCH)
           if (associated(flat)) nullify(flat)
           return
       end if
@@ -276,7 +276,7 @@ subroutine deserialize_char_flat_r(ascii_arr, arr_size, filename_ascii, fn_len, 
   use iso_fortran_env, only: int32
   use char_deserialize_mod, only: deserialize_char_flat
   use array_utils, only: ascii_to_string
-  use tox_errors, only: is_ok, set_error_once
+  use tox_errors, only : set_ok, is_ok
   implicit none
 
   ! Arrays are allocated by R
@@ -337,7 +337,7 @@ subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, &
   use iso_fortran_env, only: int32
   use char_deserialize_mod, only: deserialize_char_flat
   use array_utils, only : ascii_to_string
-  use tox_errors
+  use tox_errors, only : is_ok, set_ok
   implicit none
 
   ! Arguments

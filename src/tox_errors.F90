@@ -53,6 +53,8 @@ module tox_errors
     !! NaN or Inf found where not allowed
   integer(int32), parameter :: ERR_UNSUPPORTED_TYPE   = 205 
     !! unsupported data type encountered
+  integer(int32), parameter :: ERR_SIZE_MISMATCH      = 206
+    !! Array size mismatch
 
   !------------------------------
   ! 3xx: Memory
