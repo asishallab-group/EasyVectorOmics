@@ -2,6 +2,7 @@
 module char_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use array_utils, only : ascii_to_string, read_file_header
+  use tox_errors
   implicit none
 
   private
@@ -15,35 +16,38 @@ contains
       !! Output flat character array
     integer(int32), allocatable, intent(out) :: dims(:)
       !! Output dimensions of the array
-    integer, intent(out) :: clen
+    integer(int32), intent(out) :: clen
       !! Maximum length of character string
     character(len=*), intent(in) :: filename
       !! Name of the file to read
     integer(int32), intent(out) :: ierr
       !! Error code
+    integer(int32) :: ioerror
+      !! Internal I/O error code
 
     integer(int32) :: unit, magic, type_code, ndim, i, str_len
     character(len=:), allocatable :: temp_str
 
+    call set_ok(ierr)
     ! open file and read header
     call read_file_header(filename, unit, type_code, ndim, dims, clen, ierr)
-    if (ierr /= 0) then
+    if (.not. is_ok(ierr)) then
       return
     end if
     !allocate proper length for flat array
     allocate(character(len=clen) :: flat(product(dims)))
     do i = 1, product(dims)
-      read(unit, iostat=ierr) str_len
-      if (ierr /= 0) then
-        ierr = 107
+      read(unit, iostat=ioerror) str_len
+      if (.not. is_ok(ioerror)) then
+        call set_error_once(ierr, ERR_READ_CHARLEN)
         close(unit)
         return
       end if
       if (str_len > 0) then
         allocate(character(len=str_len) :: temp_str)
-        read(unit, iostat=ierr) temp_str
+        read(unit, iostat=ioerror) temp_str
         if (ierr /= 0) then
-          ierr = 107
+          call set_error_once(ierr, ERR_READ_DATA)
           close(unit)
           return
         end if
@@ -72,10 +76,15 @@ contains
       !! Maximum length of character string
     integer(int32) :: ierr
       !! Error code
+    call set_ok(ierr)
 
     if (associated(arr)) nullify(arr)
     call deserialize_char_flat(flat, dims, clen, filename, ierr)
-    if (size(dims) /= 1) error stop "Expected 1D array"
+    if (size(dims) /= 1) then
+      call set_error_once(ierr, ERR_DIM_MISMATCH)
+      if (associated(flat)) nullify(flat)
+      return
+    end if
     arr => flat
   end subroutine
 
@@ -91,12 +100,25 @@ contains
     !! Flat character array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions of the array
-    integer :: clen, i, j, idx
+    integer(int32) :: clen
+    !! Maximum length of character string
+    integer(int32) :: i, j, idx
+    !! Loop indices
     integer(int32) :: ierr
     !! Error code
 
+    call set_ok(ierr)
+
+    if (associated(arr)) nullify(arr)
+
     call deserialize_char_flat(flat, dims, clen, filename, ierr)
-    if (size(dims) /= 2) error stop "Expected 2D array"
+
+    if (size(dims) /= 2) then
+      call set_error_once(ierr, ERR_DIM_MISMATCH)
+      if (associated(flat)) nullify(flat)
+      return
+    end if
+
     allocate(character(len=clen) :: arr(dims(1), dims(2)))
     ! Reshape flat array to 2D, c_f_pointer is not used here since it is note very stable for character arrays
     idx = 1
@@ -121,13 +143,21 @@ contains
     !! Flat character array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions of the array
-    integer :: clen, i, j, k, idx
+    integer(int32) :: clen
+    !! Maximum length of character string
+    integer(int32) :: i, j, k, idx
+    !! Loop indices
     integer(int32) :: ierr
     !! Error code
 
+    call set_ok(ierr)
     !Read file
     call deserialize_char_flat(flat, dims, clen, filename, ierr)
-    if (size(dims) /= 3) error stop "Expected 3D array"
+    if (size(dims) /= 3) then
+      call set_error_once(ierr, ERR_DIM_MISMATCH)
+      if (associated(flat)) nullify(flat)
+      return
+    end if
     !Allocate 3D array
     allocate(character(len=clen) :: arr(dims(1), dims(2), dims(3)))
     !Reshape flat array to 3D
@@ -155,12 +185,22 @@ contains
     !! Flat character array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions of the array
-    integer(int32) :: clen, i, j, k, l, idx
+    integer(int32) :: clen
+    !! Maximum length of character string
+    integer(int32) :: i, j, k, l, idx
+    !! Loop indices
     integer(int32) :: ierr
     !! Error code
+
+    call set_ok(ierr)
+
     !Read file
     call deserialize_char_flat(flat, dims, clen, filename, ierr)
-    if (size(dims) /= 4) error stop "Expected 4D array"
+    if (size(dims) /= 4) then
+      call set_error_once(ierr, ERR_DIM_MISMATCH)
+      if (associated(flat)) nullify(flat)
+      return
+    end if
     !Allocate 4D array
     allocate(character(len=clen) :: arr(dims(1), dims(2), dims(3), dims(4)))
     !Reshape flat array to 4D
@@ -190,16 +230,25 @@ contains
       !! Flat character array
       integer(int32), allocatable :: dims(:)
       !! Output dimensions of the array
-      integer(int32) :: max_len, i, j, k, l, m, idx
+      integer(int32) :: clen 
+      !! Maximum length of character string
+      integer(int32) :: i, j, k, l, m, idx
+      !! Loop indices
       integer(int32) :: ierr
+      !! Error code
 
+      call set_ok(ierr)
       !Avoid memory leaks
       if (associated(arr)) nullify(arr)
       !Read file
-      call deserialize_char_flat(flat, dims, max_len, filename, ierr)
-      if (size(dims) /= 5) error stop "Expected 5D array"
+      call deserialize_char_flat(flat, dims, clen, filename, ierr)
+      if (size(dims) /= 5) then
+          call set_error_once(ierr, ERR_DIM_MISMATCH)
+          if (associated(flat)) nullify(flat)
+          return
+      end if
       !Allocate 5D array
-      allocate(character(len=max_len) :: arr(dims(1), dims(2), dims(3), dims(4), dims(5)))
+      allocate(character(len=clen) :: arr(dims(1), dims(2), dims(3), dims(4), dims(5)))
       !RESHAPE
       idx = 1
       do m = 1, dims(5)
@@ -227,6 +276,7 @@ subroutine deserialize_char_flat_r(ascii_arr, arr_size, filename_ascii, fn_len, 
   use iso_fortran_env, only: int32
   use char_deserialize_mod, only: deserialize_char_flat
   use array_utils, only: ascii_to_string
+  use tox_errors, only: is_ok, set_error_once
   implicit none
 
   ! Arrays are allocated by R
@@ -239,16 +289,31 @@ subroutine deserialize_char_flat_r(ascii_arr, arr_size, filename_ascii, fn_len, 
   integer(int32), intent(in) :: arr_size
   !! Size of the ASCII array
   integer(int32), intent(out) :: ierr
+  !! Error code
 
   character(len=:), allocatable :: filename
+  !! Filename as a string
   character(len=:), pointer :: flat(:)
+  !! Flat character array
   integer(int32), allocatable :: dims(:)
-  integer(int32) :: i, j, clen, total_array_size
+  !! Output dimensions of the array
+  integer(int32) :: clen
+  !! Maximum length of character string
+  integer(int32) :: total_array_size
+  !! Total size of the ASCII array
+  integer(int32) :: i, j
+  !! Loop indices
+
+  call set_ok(ierr)
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 
   ! Deserialize flat character array
   call deserialize_char_flat(flat, dims, clen, filename, ierr)
+  if(.not. is_ok(ierr)) then
+    DEALLOCATE(flat)
+    return
+  end if
   total_array_size = product(dims)
 
   ! Write data to ASCII array
@@ -261,6 +326,7 @@ subroutine deserialize_char_flat_r(ascii_arr, arr_size, filename_ascii, fn_len, 
       end if
     end do
   end do
+  deallocate(flat)
 end subroutine deserialize_char_flat_r
 
 !> C binding for the subroutine to deserialize a flat character array from a file
@@ -271,6 +337,7 @@ subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, &
   use iso_fortran_env, only: int32
   use char_deserialize_mod, only: deserialize_char_flat
   use array_utils, only : ascii_to_string
+  use tox_errors
   implicit none
 
   ! Arguments
@@ -287,14 +354,24 @@ subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, &
   integer(c_int), intent(out) :: ierr
 
   character(len=:), allocatable :: filename
+  !! Filename as a string
   character(len=:), pointer     :: flat(:)
+  !! Flat character array
   integer(c_int), allocatable   :: dims(:)
+  !! Output dimensions of the array
+  
   integer(int32) :: i, j, actual_clen
+
+  call set_ok(ierr)
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 
   ! Deserialize
   call deserialize_char_flat(flat, dims, actual_clen, filename, ierr)
+  if (.not. is_ok(ierr)) then
+    DEALLOCATE(flat)
+    return
+  end if
 
   ! Convert to ASCII (Null-padding)
   do i = 1, total_array_size
