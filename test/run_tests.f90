@@ -8,6 +8,7 @@ program main
   use mod_test_calc_tiss_avg
   use mod_test_calc_fchange
   use mod_test_euclidean_distance
+  use mod_test_c_conversions
 
   implicit none
 
@@ -77,6 +78,7 @@ contains
     call add_suite("calc_tiss_avg", run_all_tests_calc_tiss_avg, run_named_tests_calc_tiss_avg)
     call add_suite("calc_fchange", run_all_tests_calc_fchange, run_named_tests_calc_fchange)
     call add_suite("euclidean_distance", run_all_tests_euclidean_distance, run_named_tests_euclidean_distance)
+    call add_suite("c_conversions", run_all_tests_c_conversions, run_named_tests_c_conversions)
     
   end subroutine initialize_suites
 
