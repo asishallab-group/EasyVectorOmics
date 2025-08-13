@@ -24,7 +24,6 @@ contains
     integer(int32) :: unit, magic, type_code, ndims, clen
 
     ! Read file
-    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (ierr /= 0) then
       return
@@ -149,8 +148,6 @@ subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 
-  ! Check header and get dims
-  open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
   call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
   if (ierr /= 0) return
 
@@ -191,10 +188,6 @@ subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C
 
     ! ASCII → String
     call ascii_to_string(filename_ascii, fn_len, filename)
-
-    ! Open and read header
-    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
-    if (ierr /= 0) return
 
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (ierr /= 0) then

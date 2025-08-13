@@ -26,7 +26,6 @@ contains
     character(len=:), allocatable :: temp_str
 
     ! open file and read header
-    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
     call read_file_header(filename, unit, type_code, ndim, dims, clen, ierr)
     if (ierr /= 0) then
       return

@@ -25,7 +25,6 @@ contains
 
     integer(int32) :: unit, magic, type_code, ndims, clen
 
-    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (ierr /= 0) then
       return
@@ -157,9 +156,6 @@ subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_ascii, fn_len, i
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 
-  open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
-  if (ierr /= 0) return
-
   call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
   if (ierr /= 0) then
     close(unit)
@@ -204,10 +200,6 @@ subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(
 
     ! ASCII → String
     call ascii_to_string(filename_ascii, fn_len, filename)
-
-    ! Open and read header
-    open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ierr)
-    if (ierr /= 0) return
 
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (ierr /= 0) then

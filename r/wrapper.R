@@ -20,48 +20,43 @@ check_err_code <- function(ierr) {
   if (!is.null(msg)) stop(msg)
 }
 
-# returns the dimensions of an array stored in a file, works for integer and real
-get_array_dims <- function(filename, max_dims = 5) {
+get_array_metadata <- function(filename, max_dims = 5, with_clen = FALSE) {
   ascii <- utf8ToInt(filename)
   dims <- integer(max_dims)
   ndims <- integer(1)
   ierr <- integer(1)
-
-  res <- .Fortran("get_array_dims_r",
-                  filename_ascii = as.integer(ascii),
-                  fn_len = as.integer(length(ascii)),
-                  dims_out = dims,
-                  ndims = ndims,
-                  ierr = ierr)
-
-  check_err_code(res$ierr)
-  res$dims_out[1:res$ndims]
-  print(res$dims_out[1:res$ndims])
-}
-
-#returns the dimensions, type code and character length of an array stored in a file; works for character arrays
-get_array_metadata_chars <- function(filename, max_dims = 5) {
-  ascii <- utf8ToInt(filename)
-  dims <- integer(max_dims)
-  ndims <- integer(1)
-  typecode <- integer(1)
-  clen <- integer(1)
-  ierr <- integer(1)
-
-  res <- .Fortran("get_array_metadata_chars_r",
-                  filename_ascii = as.integer(ascii),
-                  fn_len = as.integer(length(ascii)),
-                  dims_out = dims,
-                  ndims = ndims,
-                  type_code_out = typecode,
-                  clen_out = clen,
-                  ierr = ierr)
-
-  check_err_code(res$ierr)
-  list(dims = res$dims_out[1:res$ndims],
-       type = res$type_code_out,
-       clen = res$clen_out,
-       ndim = res$ndims)
+  
+  if (with_clen) {
+    clen <- integer(1)
+    res <- .Fortran("get_array_metadata_r",
+                    as.integer(ascii),          # filename_ascii
+                    as.integer(length(ascii)),  # fn_len
+                    dims,                       # dims_out
+                    ndims,                      # ndims
+                    ierr,                       # ierr
+                    clen)                       # clen (present)
+    
+    check_err_code(res[[5]])  # ierr
+    return(list(
+      dims = res[[3]][1:res[[4]]],  # dims_out[1:ndims]
+      ndim = res[[4]],              # ndims
+      clen = res[[6]]               # clen
+    ))
+    
+  } else {
+    res <- .Fortran("get_array_metadata_r",
+                    as.integer(ascii),          # filename_ascii
+                    as.integer(length(ascii)),  # fn_len
+                    dims,                       # dims_out
+                    ndims,                      # ndims
+                    ierr)                       # ierr (kein clen)
+    
+    check_err_code(res[[5]])  # ierr
+    return(list(
+      dims = res[[3]][1:res[[4]]],  # dims_out[1:ndims]
+      ndim = res[[4]]               # ndims
+    ))
+  }
 }
 
 # deserializes an integer array from a file, reads array dimensions first and then creates a proper array
@@ -69,8 +64,8 @@ get_array_metadata_chars <- function(filename, max_dims = 5) {
 deserialize_int_array <- function(filename, max_dims = 5) {
     ascii <- utf8ToInt(filename)
 
-    actual_dims <- get_array_dims(filename, max_dims)
-    total_size <- prod(actual_dims)
+    meta <- get_array_metadata(filename, max_dims)
+    total_size <- prod(meta$dims)
 
     flat <- integer(total_size)
     ndim <- integer(1)
@@ -84,7 +79,7 @@ deserialize_int_array <- function(filename, max_dims = 5) {
                 ierr = ierr)
     check_err_code(res$ierr)
 
-    array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
+    array(res$flat_arr[1:prod(meta$dims)], dim = meta$dims)
 }
 
 # Deserializes a real array from a file, reads array dimensions first and then creates a proper array
@@ -92,11 +87,11 @@ deserialize_int_array <- function(filename, max_dims = 5) {
 deserialize_real_array <- function(filename, max_dims = 5) {
     ascii <- utf8ToInt(filename)
 
-    actual_dims <- get_array_dims(filename, max_dims)
-    total_size <- prod(actual_dims)
+    meta <- get_array_metadata(filename, max_dims)
+    total_size <- prod(meta$dims)
 
     flat <- double(total_size)
-    dims <- as.integer(actual_dims)
+    dims <- as.integer(meta$dims)
     ndim <- integer(1)
     ierr <- integer(1)
 
@@ -107,7 +102,7 @@ deserialize_real_array <- function(filename, max_dims = 5) {
                 fn_len = as.integer(length(ascii)),
                 ierr = ierr)
     check_err_code(res$ierr)
-    array(res$flat_arr[1:prod(actual_dims)], dim = actual_dims)
+    array(res$flat_arr[1:prod(meta$dims)], dim = meta$dims)
 }
 
 # Deserializes a character array from a file, reads array dimensions and character length first
@@ -120,7 +115,7 @@ deserialize_char_array <- function(filename, max_dims = 5) {
   clen <- integer(1)
   ierr <- integer(1)
   # Load metadata dimensions + clen
-  meta <- get_array_metadata_chars(filename, max_dims)
+  meta <- get_array_metadata(filename, max_dims, with_clen = TRUE)
 
   actual_dims <- meta$dims
   clen <- meta$clen
