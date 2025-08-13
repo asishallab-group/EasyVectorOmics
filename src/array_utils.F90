@@ -236,12 +236,10 @@ subroutine get_array_metadata_r(filename_ascii, fn_len, dims_out, ndims, ierr, c
     !! Output array for dimensions
   integer(int32), intent(out) :: ndims        ! Number of dimensions
     !! Output variable for the number of dimensions
-  integer(int32), allocatable :: dims(:)
-    !! Dimensions of the array
   integer(int32), intent(out), optional :: clen
     !! Character length (only for character arrays)
 
-  integer(int32), intent(inout) :: ierr
+  integer(int32), intent(out) :: ierr
   !! Error code
 
   call ascii_to_string(filename_ascii, fn_len, filename)
@@ -251,7 +249,7 @@ subroutine get_array_metadata_r(filename_ascii, fn_len, dims_out, ndims, ierr, c
 end subroutine get_array_metadata_r
 
 !> C binding for the subroutine to get the dimensions of an array file
-subroutine get_array_metadata_C(filename_ascii, fn_len, dims_out, ndims, ierr, clen) bind(C, name="get_array_dims_C")
+subroutine get_array_metadata_C(filename_ascii, fn_len, dims_out, ndims, ierr, clen) bind(C, name="get_array_metadata_C")
   use iso_c_binding, only: c_int
   use iso_fortran_env, only : int32
   use array_utils, only : ascii_to_string, get_array_metadata
@@ -272,13 +270,12 @@ subroutine get_array_metadata_C(filename_ascii, fn_len, dims_out, ndims, ierr, c
   ! Local variables
   character(len=:), allocatable :: filename
    !! Filename as a string
-  integer(c_int), allocatable :: dims(:)
-  !! Dimensions of the array
-
   integer(c_int), intent(out) :: ierr
     !! Error code
-  integer(c_int), intent(out), optional :: clen
+  integer(c_int), intent(out) :: clen
     !! Character length (only for character arrays)
+  
+  clen = 0  ! Default value for non-character arrays
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 

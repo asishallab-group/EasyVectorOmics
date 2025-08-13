@@ -31,76 +31,47 @@ def _string_array_to_ascii_matrix(strings: np.ndarray) -> tuple[np.ndarray, int]
     return mat, clen
 
 # Helper function to read dimensions of integer/real array
-def get_array_dims(filename, max_dims=5):
+def get_array_metadata(filename, max_dims=5, with_clen=False):
     """
-    Reads the dimensions of an array saved in a given file
-    """
-    ascii_arr, fn_len = _filename_to_ascii_array(filename)
-    dims_out = np.zeros(max_dims, dtype=np.int32)
-    ndims = ctypes.c_int()
-    ierr = ctypes.c_int()
-
-    arrays_lib.get_array_dims_C.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
-        ctypes.c_int,                                                          # fn_len
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims_out
-        ctypes.POINTER(ctypes.c_int),                                          # ndims
-        ctypes.POINTER(ctypes.c_int)                                           # ierr
-    ]
-    arrays_lib.get_array_dims_C.restype = None
-
-    arrays_lib.get_array_dims_C(
-        ascii_arr,
-        fn_len,
-        dims_out,
-        ctypes.byref(ndims),
-        ctypes.byref(ierr)
-    )
-
-    if ierr.value != 0:
-        raise RuntimeError(f"Fortran error code: {ierr.value}")
-
-    return dims_out[:ndims.value]
-
-def get_char_array_metadata(filename: str, max_ndims: int = 10):
-    """
-    Read metadata of a char array saved in a given file
+    Reads dimensions (and optionally character length) of an array file.
+    with_clen=True -> returns (dims, clen)
+    with_clen=False -> returns dims only
     """
     filename_ascii, fn_len = _filename_to_ascii_array(filename)
 
-    dims_out = np.zeros(max_ndims, dtype=np.int32)
+    dims_out = np.zeros(max_dims, dtype=np.int32)
     ndims = ctypes.c_int()
-    type_code = ctypes.c_int()
-    clen = ctypes.c_int()
     ierr = ctypes.c_int()
+    clen = ctypes.c_int()  # immer vorhanden
 
-    arrays_lib.get_array_metadata_chars_C.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
+    # Gemeinsamer Prototyp
+    arrays_lib.get_array_metadata_C.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"), # filename_ascii
         ctypes.c_int,                                                         # fn_len
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"), # dims_out
-        ctypes.c_int,                                                         # dims_len
         ctypes.POINTER(ctypes.c_int),                                         # ndims
-        ctypes.POINTER(ctypes.c_int),                                         # type_code_out
-        ctypes.POINTER(ctypes.c_int),                                         # clen_out
-        ctypes.POINTER(ctypes.c_int)                                          # ierr
+        ctypes.POINTER(ctypes.c_int),                                         # ierr
+        ctypes.POINTER(ctypes.c_int)                                          # clen
     ]
-    arrays_lib.get_array_metadata_chars_C.restype = None
+    arrays_lib.get_array_metadata_C.restype = None
 
-    arrays_lib.get_array_metadata_chars_C(
+    # Aufruf
+    arrays_lib.get_array_metadata_C(
         filename_ascii,
         fn_len,
         dims_out,
-        max_ndims,
         ctypes.byref(ndims),
-        ctypes.byref(type_code),
-        ctypes.byref(clen),
-        ctypes.byref(ierr)
+        ctypes.byref(ierr),
+        ctypes.byref(clen)
     )
 
     if ierr.value != 0:
         raise RuntimeError(f"Fortran error code: {ierr.value}")
 
-    return dims_out[:ndims.value], clen.value
+    if with_clen:
+        return dims_out[:ndims.value], clen.value
+    else:
+        return dims_out[:ndims.value]
 
 # serilization of an n-dimensional integer array
 def serialize_int_nd(arr: np.ndarray, filename: str):
@@ -150,7 +121,7 @@ def deserialize_int_nd(filename):
     Deserializes an n-dimensional int32-Array.
     """
     # read size of the array
-    dims = get_array_dims(filename)
+    dims = get_array_metadata(filename)
     print(f"Deserializing array with dimensions: {dims}")
     # create array with the proper size
     total_size = np.prod(dims)
@@ -218,7 +189,7 @@ def deserialize_real_nd(filename):
     Deserializes an n-dimensional array of type real64
     """
     #read dimensions
-    dims = get_array_dims(filename)
+    dims = get_array_metadata(filename)
     print(f"Deserializing array with dimensions: {dims}")
     # create array with correct size
     total_size = np.prod(dims)
@@ -283,10 +254,8 @@ def deserialize_char_nd(filename: str, ndim_max=5):
     #convert filename to ASCII array
     filename_ascii, fn_len = _filename_to_ascii_array(filename)
 
-    dims_out = np.zeros(ndim_max, dtype=np.int32)
-
     # Get metadata
-    dims, clen = get_char_array_metadata(filename, ndim_max)
+    dims, clen = get_array_metadata(filename, max_dims=ndim_max, with_clen=True)
     ierr = ctypes.c_int()
 
     print(f"Deserializing char array with dimensions: {dims}, clen: {clen}")
