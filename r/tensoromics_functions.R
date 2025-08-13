@@ -1,7 +1,32 @@
 # === Load the shared library ===
 dyn.load("build/libtensor-omics.so")
 
-
+#' Check error code and throw informative error if needed
+#' 
+#' @param ierr Error code from Fortran routine
+tox_errors <- function(ierr) {
+  msg <- switch(
+    as.character(ierr),
+    "0" = NULL,
+    "101" = "File could not be opened",
+    "102" = "Could not read magic number", 
+    "103" = "Could not read array type code",
+    "104" = "Could not read array dimension number",
+    "105" = "Could not read array dimensions",
+    "106" = "Could not read character length",
+    "107" = "Could not read array data",
+    "200" = "Invalid file format (magic number mismatch)",
+    "201" = "Invalid input parameters",
+    "202" = "No axes selected (empty input)",
+    "5002" = "File not open or unit not connected",
+    "9999" = "Unknown error",
+    paste("Unknown Fortran error code:", ierr)
+  )
+  
+  if (!is.null(msg)) {
+    stop(msg)
+  }
+}
 
 #' Normalize gene expression values by standard deviation
 #'
@@ -16,8 +41,8 @@ dyn.load("build/libtensor-omics.so")
 #' - Restores the original row and column names after normalization.
 #'
 #' @examples
-#' normalized_matrix <- normalize_by_std_dev(input_matrix)
-normalize_by_std_dev <- function(input_matrix) {
+#' normalized_matrix <- tox_normalize_by_std_dev(input_matrix)
+tox_normalize_by_std_dev <- function(input_matrix) {
   n_genes <- nrow(input_matrix)  # Number of genes (rows)
   n_tissues <- ncol(input_matrix)  # Number of tissues (columns)
 
@@ -63,8 +88,8 @@ normalize_by_std_dev <- function(input_matrix) {
 #' - After normalization, the original row and column names are restored.
 #'
 #' @examples
-#' normalized_matrix <- quantile_normalization(input_matrix)
-quantile_normalization <- function(input_matrix) {
+#' normalized_matrix <- tox_quantile_normalization(input_matrix)
+tox_quantile_normalization <- function(input_matrix) {
   n_genes <- nrow(input_matrix)
   n_tissues <- ncol(input_matrix)
 
@@ -127,8 +152,8 @@ quantile_normalization <- function(input_matrix) {
 #' - After transformation, the original row and column names are restored.
 #'
 #' @examples
-#' log_matrix <- log2_transformation(input_matrix)
-log2_transformation <- function(input_matrix) {
+#' log_matrix <- tox_log2_transformation(input_matrix)
+tox_log2_transformation <- function(input_matrix) {
   n_genes <- nrow(input_matrix)  # Number of genes (rows)
   n_tissues <- ncol(input_matrix)  # Number of tissues (columns)
 
@@ -170,10 +195,10 @@ log2_transformation <- function(input_matrix) {
 #' @param colname A string with the column name to parse.
 #' @return A string representing the parsed tissue group name.
 #' @examples
-#' parse_tissue_group("muscle_dietM_1") # returns "muscle_dietM"
-#' parse_tissue_group("Adipose_rep1")   # returns "Adipose"
-#' parse_tissue_group("brain_dietP")    # returns "brain_dietP"
-parse_tissue_group <- function(colname) {
+#' tox_parse_tissue_group("muscle_dietM_1") # returns "muscle_dietM"
+#' tox_parse_tissue_group("Adipose_rep1")   # returns "Adipose"
+#' tox_parse_tissue_group("brain_dietP")    # returns "brain_dietP"
+tox_parse_tissue_group <- function(colname) {
   parts <- strsplit(colname, "_")[[1]]
   
   # Pattern 1: ends with just a number (e.g., "muscle_dietM_1")
@@ -210,13 +235,13 @@ parse_tissue_group <- function(colname) {
 #' - The result restores the original gene IDs as row names.
 #'
 #' @examples
-#' averaged_df <- calculate_tissue_averages(df)
-calculate_tissue_averages <- function(df) {
+#' averaged_df <- tox_calculate_tissue_averages(df)
+tox_calculate_tissue_averages <- function(df) {
   n_genes <- nrow(df)      # Number of genes (rows)
   n_columns <- ncol(df)    # Number of columns (tissues)
 
   # --- Parse all column names to find their corresponding tissue group ---
-  tissue_groups <- sapply(colnames(df), parse_tissue_group)
+  tissue_groups <- sapply(colnames(df), tox_parse_tissue_group)
 
   # --- Identify unique tissue groups ---
   unique_groups <- unique(tissue_groups)
@@ -288,8 +313,8 @@ calculate_tissue_averages <- function(df) {
 #' }
 #'
 #' @examples
-#' indices_info <- prepare_indices_by_patterns(df, control_pattern = "dietM", condition_patterns = c("dietP"))
-prepare_indices_by_patterns <- function(df, control_pattern, condition_patterns) {
+#' indices_info <- tox_prepare_indices_by_patterns(df, control_pattern = "dietM", condition_patterns = c("dietP"))
+tox_prepare_indices_by_patterns <- function(df, control_pattern, condition_patterns) {
   colnames_df <- colnames(df)
 
   control_cols <- integer(0)         # Will store control column indices
@@ -337,13 +362,13 @@ prepare_indices_by_patterns <- function(df, control_pattern, condition_patterns)
 #' @return A data frame with genes as rows and log2 fold change values as columns.
 #'
 #' @examples
-#' fc_df <- calculate_fc_by_patterns(df, control_pattern = "dietM", condition_patterns = c("dietP"))
-calculate_fc_by_patterns <- function(df, control_pattern, condition_patterns) {
+#' fc_df <- tox_calculate_fc_by_patterns(df, control_pattern = "dietM", condition_patterns = c("dietP"))
+tox_calculate_fc_by_patterns <- function(df, control_pattern, condition_patterns) {
   n_genes <- nrow(df)       # Number of genes
   n_columns <- ncol(df)     # Number of columns (conditions)
 
   # --- Identify control and condition columns ---
-  indices_info <- prepare_indices_by_patterns(df, control_pattern, condition_patterns)
+  indices_info <- tox_prepare_indices_by_patterns(df, control_pattern, condition_patterns)
   control_cols <- indices_info$control_cols
   condition_cols <- indices_info$condition_cols
   condition_labels <- indices_info$condition_labels
@@ -384,8 +409,8 @@ calculate_fc_by_patterns <- function(df, control_pattern, condition_patterns) {
 #' @param show_details Logical indicating whether to show detailed information.
 #' @return A list with diagnostic information about the data quality.
 #' @examples
-#' diagnostics <- diagnose_data_quality(input_matrix)
-diagnose_data_quality <- function(input_matrix, show_details = TRUE) {
+#' diagnostics <- tox_diagnose_data_quality(input_matrix)
+tox_diagnose_data_quality <- function(input_matrix, show_details = TRUE) {
   n_genes <- nrow(input_matrix)
   n_tissues <- ncol(input_matrix)
   total_values <- n_genes * n_tissues
@@ -487,7 +512,7 @@ diagnose_data_quality <- function(input_matrix, show_details = TRUE) {
 #' @param na_strategy Strategy for handling NA values: "remove_genes", "remove_samples", "impute_zero", "impute_mean"
 #' @param min_expression_threshold Minimum expression value to consider (values below this become 0)
 #' @return A cleaned matrix ready for normalization
-clean_data_for_normalization <- function(df_matrix, 
+tox_clean_data_for_normalization <- function(df_matrix, 
                                         remove_all_zero_genes = TRUE,
                                         na_strategy = "remove_genes",
                                         min_expression_threshold = 0.0,  # Changed default to 0.0
@@ -623,3 +648,554 @@ clean_data_for_normalization <- function(df_matrix,
   return(df_matrix)
 }
 
+# ===================================================================
+# TISSUE VERSATILITY FUNCTIONS
+# ===================================================================
+
+#' Calculate Tissue Versatility
+#' 
+#' Computes normalized tissue versatility for selected expression vectors.
+#' The metric is based on the angle between each gene expression vector and the space diagonal.
+#' Versatility is normalized to [0, 1], where 0 means uniform expression and 1 means expression in only one axis.
+#' This function automatically checks for errors and throws informative exceptions.
+#' 
+#' @param expression_vectors Matrix where each column is a gene expression vector (n_axes x n_vectors)
+#' @param vector_selection Logical vector indicating which vectors to process (length n_vectors)
+#' @param axis_selection Logical vector indicating which axes to include in calculation (length n_axes)
+#' 
+#' @return List containing:
+#'   \item{tissue_versatilities}{Normalized tissue versatility values [0,1] for selected vectors}
+#'   \item{tissue_angles_deg}{Angles in degrees [0,90] for selected vectors}
+#'   \item{n_selected_vectors}{Number of vectors processed}
+#'   \item{n_selected_axes}{Number of axes used in calculation}
+#' 
+tox_calculate_tissue_versatility <- function(expression_vectors, vector_selection, axis_selection) {
+  # Input validation
+  if (!is.matrix(expression_vectors)) {
+    stop("expression_vectors must be a matrix")
+  }
+  if (!is.logical(vector_selection) && !is.numeric(vector_selection)) {
+    stop("vector_selection must be logical or numeric")
+  }
+  if (!is.logical(axis_selection) && !is.numeric(axis_selection)) {
+    stop("axis_selection must be logical or numeric")
+  }
+  
+  # Convert to logical if numeric (0/1)
+  if (is.numeric(vector_selection)) {
+    vector_selection <- as.logical(vector_selection)
+  }
+  if (is.numeric(axis_selection)) {
+    axis_selection <- as.logical(axis_selection)
+  }
+  
+  # Dimensions and counts
+  n_axes <- nrow(expression_vectors)
+  n_vectors <- ncol(expression_vectors)
+  n_selected_vectors <- sum(vector_selection)
+  n_selected_axes <- sum(axis_selection)
+  
+  # Validate dimensions
+  if (length(vector_selection) != n_vectors) {
+    stop("vector_selection length must match number of columns in expression_vectors")
+  }
+  if (length(axis_selection) != n_axes) {
+    stop("axis_selection length must match number of rows in expression_vectors")
+  }
+  
+  # Prepare output arrays
+  tissue_versatilities <- rep(0.0, n_selected_vectors)
+  tissue_angles_deg <- rep(0.0, n_selected_vectors)
+  ierr <- as.integer(0)
+  
+  # Call Fortran wrapper
+  result <- .Fortran("compute_tissue_versatility_r",
+                     n_axes = as.integer(n_axes),
+                     n_vectors = as.integer(n_vectors),
+                     expression_vectors = as.double(expression_vectors),
+                     exp_vecs_selection_index = as.logical(vector_selection),
+                     n_selected_vectors = as.integer(n_selected_vectors),
+                     axes_selection = as.logical(axis_selection),
+                     n_selected_axes = as.integer(n_selected_axes),
+                     tissue_versatilities = as.double(tissue_versatilities),
+                     tissue_angles_deg = as.double(tissue_angles_deg),
+                     ierr = ierr)
+  
+  # Check for errors and throw informative messages
+  tox_errors(result$ierr)
+  
+  # Return structured result (no ierr since we checked for errors)
+  return(list(
+    tissue_versatilities = result$tissue_versatilities,
+    tissue_angles_deg = result$tissue_angles_deg,
+    n_selected_vectors = n_selected_vectors,
+    n_selected_axes = n_selected_axes
+  ))
+}
+
+
+#' Compute family scaling factors using LOESS smoothing
+#'
+#' This function calculates scaling factors for gene families based on distance distributions.
+#' It uses LOESS smoothing to estimate the relationship between family median distances
+#' and their standard deviations.
+#'
+#' @param distances Numeric vector of gene distances
+#' @param gene_to_fam Integer vector mapping genes to family indices
+#' @param n_families Integer number of families
+#' @return List with components:
+#'   - dscale: Scaling factors for each family
+#'   - loess_x: Family median distances 
+#'   - loess_y: Family standard deviations
+#'   - indices_used: Number of genes used per family
+tox_compute_family_scaling <- function(distances, gene_to_fam, n_families) {
+  n_genes <- length(distances)
+  
+ 
+  # Prepare output arrays
+  dscale <- double(n_families)
+  loess_x <- double(n_families)
+  loess_y <- double(n_families)
+  indices_used <- integer(n_families)
+  error_code <- integer(1)
+  
+  # Call the main interface Fortran wrapper
+  result <- .Fortran("compute_family_scaling_r",
+    n_genes = as.integer(n_genes),
+    n_families = as.integer(n_families),
+    distances = as.double(distances),
+    gene_to_fam = as.integer(gene_to_fam),
+    dscale = dscale,
+    loess_x = loess_x,
+    loess_y = loess_y,
+    indices_used = indices_used,
+    error_code = error_code
+  )
+  
+  # Check for errors and throw informative messages
+  tox_errors(result$error_code)
+  
+  return(list(
+    dscale = result$dscale,
+    loess_x = result$loess_x,
+    loess_y = result$loess_y,
+    indices_used = result$indices_used
+  ))
+}
+
+
+#' Compute family scaling factors using LOESS smoothing (Expert Version)
+#'
+#' Expert version of compute_family_scaling with user-provided work arrays.
+#' This version requires pre-allocated work arrays for maximum performance and control.
+#' Use this when you need fine-grained control over memory allocation or are calling
+#' this function many times in a tight loop.
+#'
+#' @param distances Numeric vector of gene distances
+#' @param gene_to_fam Integer vector mapping genes to family indices
+#' @param n_families Integer number of families
+#' @param perm_tmp Pre-allocated permutation array for sorting (n_genes)
+#' @param stack_left_tmp Pre-allocated stack array for sorting (n_genes)
+#' @param stack_right_tmp Pre-allocated stack array for sorting (n_genes)
+#' @param family_distances Pre-allocated work array for family distances (n_genes)
+#' @return List with components:
+#'   - dscale: Scaling factors for each family
+#'   - loess_x: Family median distances 
+#'   - loess_y: Family standard deviations
+#'   - indices_used: Number of genes used per family
+#'   - perm_tmp: Final state of permutation array
+#'   - stack_left_tmp: Final state of left stack array
+#'   - stack_right_tmp: Final state of right stack array
+#'   - family_distances: Final state of family distances array
+tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families, 
+                                        perm_tmp, stack_left_tmp, stack_right_tmp, family_distances) {
+  n_genes <- length(distances)
+  
+  # Validate inputs
+  if (length(gene_to_fam) != n_genes) {
+    stop("Length of gene_to_fam must equal length of distances")
+  }
+  if (any(gene_to_fam < 1 | gene_to_fam > n_families)) {
+    stop("gene_to_fam indices must be between 1 and n_families")
+  }
+  if (length(perm_tmp) != n_genes) {
+    stop("perm_tmp must have same length as distances")
+  }
+  if (length(stack_left_tmp) != n_genes) {
+    stop("stack_left_tmp must have same length as distances")
+  }
+  if (length(stack_right_tmp) != n_genes) {
+    stop("stack_right_tmp must have same length as distances")
+  }
+  if (length(family_distances) != n_genes) {
+    stop("family_distances must have same length as distances")
+  }
+  
+  # Prepare output arrays
+  dscale <- numeric(n_families)
+  loess_x <- numeric(n_families)
+  loess_y <- numeric(n_families)
+  indices_used <- integer(n_families)
+  error_code <- integer(1)
+  
+  # Call Fortran expert routine
+  result <- .Fortran("compute_family_scaling_expert_r",
+    n_genes = as.integer(n_genes),
+    n_families = as.integer(n_families),
+    distances = as.double(distances),
+    gene_to_fam = as.integer(gene_to_fam),
+    dscale = dscale,
+    loess_x = loess_x,
+    loess_y = loess_y,
+    indices_used = indices_used,
+    perm_tmp = as.integer(perm_tmp),
+    stack_left_tmp = as.integer(stack_left_tmp),
+    stack_right_tmp = as.integer(stack_right_tmp),
+    family_distances = as.double(family_distances),
+    error_code = error_code
+  )
+  
+  # Check for errors and throw informative messages
+  tox_errors(result$error_code)
+  
+  return(list(
+    dscale = result$dscale,
+    loess_x = result$loess_x,
+    loess_y = result$loess_y,
+    indices_used = result$indices_used,
+    perm_tmp = result$perm_tmp,
+    stack_left_tmp = result$stack_left_tmp,
+    stack_right_tmp = result$stack_right_tmp,
+    family_distances = result$family_distances
+  ))
+}
+
+
+#' Compute Relative Distance Index (RDI) for genes
+#'
+#' This function calculates the Relative Distance Index for each gene,
+#' which is the absolute distance divided by the family scaling factor.
+#'
+#' @param distances Numeric vector of gene distances
+#' @param gene_to_fam Integer vector mapping genes to family indices
+#' @param dscale Numeric vector of scaling factors for each family
+#' @return List with components:
+#'   - rdi: Relative Distance Index for each gene
+#'   - sorted_rdi: RDI values sorted in ascending order
+tox_compute_rdi <- function(distances, gene_to_fam, dscale) {
+  n_genes <- length(distances)
+  n_families <- length(dscale)
+  
+  # Validate inputs
+  if (length(gene_to_fam) != n_genes) {
+    stop("Length of gene_to_fam must equal length of distances")
+  }
+  if (any(gene_to_fam < 1 | gene_to_fam > n_families)) {
+    stop("gene_to_fam indices must be between 1 and n_families")
+  }
+  
+  # Prepare output arrays and work arrays
+  rdi <- double(n_genes)
+  sorted_rdi <- double(n_genes)
+  perm <- as.integer(seq_along(distances))
+  stack_left <- integer(n_genes)
+  stack_right <- integer(n_genes)
+  
+  # Call the Fortran wrapper
+  result <- .Fortran("compute_rdi_r",
+    n_genes = as.integer(n_genes),
+    n_families = as.integer(n_families),
+    distances = as.double(distances),
+    gene_to_fam = as.integer(gene_to_fam),
+    dscale = as.double(dscale),
+    rdi = rdi,
+    sorted_rdi = sorted_rdi,
+    perm = perm,
+    stack_left = stack_left,
+    stack_right = stack_right
+  )
+  
+  return(list(
+    rdi = result$rdi,
+    sorted_rdi = result$sorted_rdi
+  ))
+}
+
+
+#' Identify outliers based on RDI percentiles
+#'
+#' This function identifies outliers by comparing each gene's RDI value
+#' against a percentile threshold of the sorted RDI distribution.
+#'
+#' @param rdi Numeric vector of RDI values
+#' @param percentile Percentile threshold (default: 95.0)
+#' @return List with components:
+#'   - is_outlier: Logical vector indicating outliers
+#'   - threshold: The RDI threshold value used
+tox_identify_outliers <- function(rdi, percentile = 95.0) {
+  n_genes <- length(rdi)
+  
+
+  # Prepare sorted RDI array (only non-negative values)
+  sorted_rdi <- sort(rdi[rdi >= 0])
+  if (length(sorted_rdi) < n_genes) {
+    sorted_rdi <- c(sorted_rdi, rep(0, n_genes - length(sorted_rdi)))
+  }
+  
+  # Prepare output arrays
+  is_outlier <- logical(n_genes)
+  threshold <- double(1)
+  
+  # Call the Fortran wrapper
+  result <- .Fortran("identify_outliers_r",
+    n_genes = as.integer(n_genes),
+    rdi = as.double(rdi),
+    sorted_rdi = as.double(sorted_rdi),
+    is_outlier = is_outlier,
+    threshold = threshold,
+    percentile = as.double(percentile)
+  )
+  
+  return(list(
+    is_outlier = result$is_outlier,
+    threshold = result$threshold
+  ))
+}
+
+
+#' Complete outlier detection workflow
+#'
+#' This function performs the complete outlier detection workflow:
+#' 1. Computes family scaling factors using LOESS
+#' 2. Calculates RDI values
+#' 3. Identifies outliers based on percentile threshold
+#'
+#' @param distances Numeric vector of gene distances
+#' @param gene_to_fam Integer vector mapping genes to family indices
+#' @param n_families Integer number of families
+#' @param percentile Percentile threshold for outlier detection (default: 95.0)
+#' @return List with components:
+#'   - is_outlier: Logical vector indicating outliers
+#'   - loess_x: Family median distances
+#'   - loess_y: Family standard deviations
+#'   - loess_n: Number of genes used per family
+tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile = 95.0) {
+  n_genes <- length(distances)
+  
+  
+  # Prepare output arrays and work arrays
+  work_array <- double(n_genes)
+  perm <- seq_len(n_genes)
+  stack_left <- integer(n_genes)
+  stack_right <- integer(n_genes)
+  is_outlier <- logical(n_genes)
+  loess_x <- double(n_families)
+  loess_y <- double(n_families)
+  loess_n <- integer(n_families)
+  error_code <- integer(1)
+  
+  # Call the comprehensive Fortran wrapper
+  result <- .Fortran("detect_outliers_r",
+    n_genes = as.integer(n_genes),
+    n_families = as.integer(n_families),
+    distances = as.double(distances),
+    gene_to_fam = as.integer(gene_to_fam),
+    work_array = work_array,
+    perm = perm,
+    stack_left = stack_left,
+    stack_right = stack_right,
+    is_outlier = is_outlier,
+    loess_x = loess_x,
+    loess_y = loess_y,
+    loess_n = loess_n,
+    error_code = error_code,
+    percentile = as.double(percentile)
+  )
+  
+  # Check for errors and throw informative messages
+  tox_errors(result$error_code)
+  
+  return(list(
+    is_outlier = result$is_outlier,
+    loess_x = result$loess_x,
+    loess_y = result$loess_y,
+    loess_n = result$loess_n
+  ))
+}
+
+#' Perform 2D LOESS smoothing
+#'
+#' This function wraps the Fortran subroutine `loess_smooth_2d_r`
+#' to perform 2D LOESS smoothing with kernel weighting.
+#' Error handling is performed by Fortran and reported via error codes.
+#'
+#' @param x_ref Reference x coordinates (numeric vector)
+#' @param y_ref Reference y values (numeric matrix, 1 row)
+#' @param x_query Query x coordinates where smoothed values are needed (numeric vector)
+#' @param indices_used Indices of reference points to use (integer vector, 1-based)
+#' @param kernel_sigma Kernel bandwidth parameter (numeric)
+#' @param kernel_cutoff Kernel cutoff distance (numeric)
+#' @return A list containing the smoothed y values at query points
+#' @details
+#' - Uses a Gaussian kernel for distance weighting
+#' - Only uses reference points specified by indices_used
+#' - Returns smoothed values at all query points
+#' - Fortran handles all validation and error checking
+#'
+tox_loess_smooth_2d <- function(x_ref, y_ref, x_query, indices_used = NULL, 
+                           kernel_sigma, kernel_cutoff) {
+  
+  # Ensure y_ref is a matrix with proper dimensions
+  if (!is.matrix(y_ref)) {
+    y_ref <- matrix(y_ref, nrow = 1)
+  }
+  
+  n_total <- as.integer(length(x_ref))
+  n_target <- as.integer(length(x_query))
+  
+  # If indices_used not provided, use all points
+  if (is.null(indices_used)) {
+    indices_used <- 1:n_total
+  }
+  n_used <- as.integer(length(indices_used))
+  
+  # Prepare output matrix and error code
+  y_out <- matrix(0.0, nrow = 1, ncol = n_target)
+  ierr <- as.integer(0)
+  
+  # Ensure all inputs are proper types for Fortran
+  x_ref <- as.double(x_ref)
+  y_ref <- matrix(as.double(y_ref), nrow = 1)
+  x_query <- as.double(x_query)
+  indices_used <- as.integer(indices_used)
+  kernel_sigma <- as.double(kernel_sigma)
+  kernel_cutoff <- as.double(kernel_cutoff)
+  
+  # Call Fortran subroutine - let Fortran handle all validation
+  result <- .Fortran("loess_smooth_2d_r",
+    n_total = n_total,
+    n_target = n_target,
+    x_ref = x_ref,
+    y_ref = y_ref,
+    indices_used = indices_used,
+    n_used = n_used,
+    x_query = x_query,
+    kernel_sigma = kernel_sigma,
+    kernel_cutoff = kernel_cutoff,
+    y_out = y_out,
+    ierr = ierr
+  )
+  
+  # Check for errors and throw informative messages
+  tox_errors(result$ierr)
+  
+  return(list(
+    y_out = result$y_out,
+    smoothed_values = as.vector(result$y_out)
+  ))
+}
+
+# ===================================================================
+# EUCLIDEAN DISTANCE FUNCTIONS
+# ===================================================================
+
+#' Calculate Euclidean distance between two vectors
+#' 
+#' Computes the Euclidean distance between two vectors of the same dimension.
+#' This function automatically checks for errors and throws informative exceptions.
+#' 
+#' @param vec1 First vector (numeric)
+#' @param vec2 Second vector (numeric, same length as vec1)
+#' 
+#' @return Numeric value representing the Euclidean distance between the vectors
+#' 
+tox_euclidean_distance <- function(vec1, vec2) {
+  # Input validation
+  if (!is.numeric(vec1) || !is.numeric(vec2)) {
+    stop("Both vectors must be numeric")
+  }
+  if (length(vec1) != length(vec2)) {
+    stop("Vectors must have the same length")
+  }
+  if (length(vec1) == 0) {
+    stop("Vectors cannot be empty")
+  }
+  
+  d <- as.integer(length(vec1))
+  result <- 0.0
+  
+  # Call Fortran wrapper
+  fortran_result <- .Fortran("euclidean_distance_r",
+                            vec1 = as.double(vec1),
+                            vec2 = as.double(vec2),
+                            d = d,
+                            result = as.double(result))
+  
+  return(fortran_result$result)
+}
+
+#' Calculate distances from genes to their family centroids
+#' 
+#' Computes the Euclidean distance from each gene to its corresponding family centroid.
+#' This function automatically checks for errors and throws informative exceptions.
+#' 
+#' @param genes Matrix of gene expression data (genes as columns, dimensions as rows)
+#' @param centroids Matrix of family centroids (families as columns, dimensions as rows) 
+#' @param gene_to_fam Integer vector mapping each gene to its family index (1-based)
+#' @param d Integer number of dimensions
+#' 
+#' @return Numeric vector of distances from each gene to its family centroid
+#' 
+tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
+  # Input validation
+  if (!is.numeric(genes) || !is.numeric(centroids)) {
+    stop("genes and centroids must be numeric")
+  }
+  if (!is.numeric(gene_to_fam) && !is.integer(gene_to_fam)) {
+    stop("gene_to_fam must be numeric or integer")
+  }
+  if (!is.numeric(d) && !is.integer(d)) {
+    stop("d must be numeric or integer")
+  }
+  
+  # Convert to appropriate types
+  genes <- as.double(genes)
+  centroids <- as.double(centroids)
+  gene_to_fam <- as.integer(gene_to_fam)
+  d <- as.integer(d)
+  
+  # Calculate dimensions
+  n_genes <- as.integer(length(genes) / d)
+  n_families <- as.integer(length(centroids) / d)
+  
+  # Validate dimensions
+  if (length(genes) %% d != 0) {
+    stop("Length of genes must be divisible by d")
+  }
+  if (length(centroids) %% d != 0) {
+    stop("Length of centroids must be divisible by d")
+  }
+  if (length(gene_to_fam) != n_genes) {
+    stop("Length of gene_to_fam must equal number of genes")
+  }
+  if (any(gene_to_fam < 0)) {
+    stop("gene_to_fam indices must be between 0 and n_families (0 = no family assignment)")
+  }
+  
+  # Prepare output array
+  distances <- rep(0.0, n_genes)
+  
+  # Call Fortran wrapper
+  result <- .Fortran("distance_to_centroid_r",
+                    n_genes = n_genes,
+                    n_families = n_families,
+                    genes = genes,
+                    centroids = centroids,
+                    gene_to_fam = gene_to_fam,
+                    distances = as.double(distances),
+                    d = d)
+  
+  # Fortran returns -1 for genes without valid family assignment
+  
+  return(result$distances)
+}

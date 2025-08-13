@@ -3,6 +3,7 @@
 
 module f42_utils
   use, intrinsic :: iso_fortran_env, only: real64, int32
+  use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, ERR_EMPTY_INPUT, set_ok, set_err_once
   implicit none
 
   public :: sort_real, sort_integer, sort_character
@@ -253,7 +254,7 @@ contains
   end subroutine swap_int
 
   !> Finds the indices of the true values in a logical mask.
-  pure subroutine which(mask, n, idx_out, m_max, m_out)
+  pure subroutine which(mask, n, idx_out, m_max, m_out, ierr)
     !| Logical array of size n.
     logical, intent(in) :: mask(:)
     !| Size of the mask.
@@ -264,7 +265,29 @@ contains
     integer(int32), intent(in) :: m_max
     !| Actual size of idx_out (number of true values found).
     integer(int32), intent(out) :: m_out
+    !| Error code: 0=ok, 201=invalid input, 202=empty input
+    integer(int32), intent(out) :: ierr
+    
     integer(int32) :: i, count
+    
+    ! Initialize error code
+    call set_ok(ierr)
+    
+    ! Validate inputs
+    if (n <= 0 .or. m_max <= 0) then
+      call set_err_once(ierr, ERR_INVALID_INPUT)
+      m_out = 0
+      idx_out = 0
+      return
+    end if
+    
+    if (size(mask) < n .or. size(idx_out) < m_max) then
+      call set_err_once(ierr, ERR_INVALID_INPUT)
+      m_out = 0
+      idx_out = 0
+      return
+    end if
+    
     count = 0
     idx_out = 0  ! Initialize to avoid garbage values
     do i = 1, n
@@ -282,7 +305,7 @@ contains
   !| Smooths y_ref at x_query using reference points x_ref, y_ref, and kernel parameters.
   !| The user must pre-filter data and provide only valid indices in indices_used.
   pure subroutine loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
-                          kernel_sigma, kernel_cutoff, y_out)
+                          kernel_sigma, kernel_cutoff, y_out, ierr)
     !| Total number of reference points.
     integer(int32), intent(in) :: n_total
     !| Number of target points to smooth.
@@ -303,6 +326,8 @@ contains
     real(real64), intent(in) :: kernel_cutoff
     !| Output smoothed values (length n_target).
     real(real64), intent(out) :: y_out(n_target)
+    !| Error code: 0=ok, 201=invalid input, 202=empty input
+    integer(int32), intent(out) :: ierr
 
     integer(int32) :: q, i, idx
     real(real64) :: query_x, ref_x, delta, sum_weights, weight
@@ -310,11 +335,45 @@ contains
     integer(int32) :: min_idx
     logical :: exact_match_found, use_kernel
 
+    ! Initialize error code
+    call set_ok(ierr)
+
     ! Input validation
-    if (n_used <= 0) then
-      y_out = 0.0_real64  ! Initialize output for safety
+    if (n_total <= 0 .or. n_target <= 0) then
+      call set_err_once(ierr, ERR_EMPTY_INPUT)
+      y_out = 0.0_real64
       return
     end if
+    
+    if (n_used <= 0) then
+      call set_err_once(ierr, ERR_EMPTY_INPUT)
+      y_out = 0.0_real64
+      return
+    end if
+    
+    if (kernel_sigma < 0.0_real64 .or. kernel_cutoff < 0.0_real64) then
+      call set_err_once(ierr, ERR_INVALID_INPUT)
+      y_out = 0.0_real64
+      return
+    end if
+    
+    ! Validate array sizes
+    if (size(x_ref) < n_total .or. size(y_ref) < n_total .or. &
+        size(indices_used) < n_used .or. size(x_query) < n_target .or. &
+        size(y_out) < n_target) then
+      call set_err_once(ierr, ERR_INVALID_INPUT)
+      y_out = 0.0_real64
+      return
+    end if
+    
+    ! Validate indices are within bounds
+    do i = 1, n_used
+      if (indices_used(i) < 1 .or. indices_used(i) > n_total) then
+        call set_err_once(ierr, ERR_INVALID_INPUT)
+        y_out = 0.0_real64
+        return
+      end if
+    end do
 
     ! Check if we should use kernel smoothing
     use_kernel = (kernel_sigma > 0.0_real64)
@@ -376,7 +435,7 @@ end module f42_utils
 !> R wrapper for loess_smooth_2d.
 !| Direct wrapper - user must pre-filter indices in R before calling.
 subroutine loess_smooth_2d_r(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
-    kernel_sigma, kernel_cutoff, y_out)
+    kernel_sigma, kernel_cutoff, y_out, ierr)
   use f42_utils, only: loess_smooth_2d
   use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
@@ -400,16 +459,18 @@ subroutine loess_smooth_2d_r(n_total, n_target, x_ref, y_ref, indices_used, n_us
   real(real64), intent(in) :: kernel_cutoff
   !| Output smoothed values (length n_target).
   real(real64), intent(out) :: y_out(n_target)
+  !| Error code: 0=ok, 201=invalid input, 202=empty input
+  integer(int32), intent(out) :: ierr
   
   call loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
-    kernel_sigma, kernel_cutoff, y_out)
+    kernel_sigma, kernel_cutoff, y_out, ierr)
 end subroutine loess_smooth_2d_r
 
 ! === C WRAPPERS ===
 
 !> C wrapper for which.
 !| Converts integer mask to logical and calls which.
-subroutine which_c(mask, n, idx_out, m_max, m_out) bind(C, name="which_c")
+subroutine which_c(mask, n, idx_out, m_max, m_out, ierr) bind(C, name="which_c")
   use iso_c_binding
   use, intrinsic :: iso_fortran_env, only: int32
   use f42_utils, only: which
@@ -424,18 +485,21 @@ subroutine which_c(mask, n, idx_out, m_max, m_out) bind(C, name="which_c")
   integer(c_int), intent(out) :: idx_out(m_max)
   !| Actual size of idx_out (number of true values found).
   integer(c_int), intent(out) :: m_out
+  !| Error code: 0=ok, 201=invalid input, 202=empty input
+  integer(c_int), intent(out) :: ierr
   logical :: mask_f(n)
-  integer(int32) :: i
+  integer(int32) :: i, ierr_f
   do i = 1, n
     mask_f(i) = (mask(i) /= 0)
   end do
-  call which(mask_f, n, idx_out, m_max, m_out)
+  call which(mask_f, n, idx_out, m_max, m_out, ierr_f)
+  ierr = ierr_f
 end subroutine which_c
 
 !> C wrapper for loess_smooth_2d.
 !| Direct wrapper - user must pre-filter indices in C before calling.
 subroutine loess_smooth_2d_c(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
-    kernel_sigma, kernel_cutoff, y_out) bind(C, name="loess_smooth_2d_c")
+    kernel_sigma, kernel_cutoff, y_out, ierr) bind(C, name="loess_smooth_2d_c")
   use iso_c_binding
   use, intrinsic :: iso_fortran_env, only: int32
   use f42_utils, only: loess_smooth_2d
@@ -460,8 +524,12 @@ subroutine loess_smooth_2d_c(n_total, n_target, x_ref, y_ref, indices_used, n_us
   real(c_double), intent(in), value :: kernel_cutoff
   !| Output smoothed values (length n_target).
   real(c_double), intent(out) :: y_out(n_target)
+  !| Error code: 0=ok, 201=invalid input, 202=empty input
+  integer(c_int), intent(out) :: ierr
 
+  integer(int32) :: ierr_f
   call loess_smooth_2d(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
-    kernel_sigma, kernel_cutoff, y_out)
+    kernel_sigma, kernel_cutoff, y_out, ierr_f)
+  ierr = ierr_f
 
 end subroutine loess_smooth_2d_c

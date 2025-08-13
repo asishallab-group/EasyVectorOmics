@@ -3,6 +3,7 @@
 !| quantifying how uniformly a gene is expressed across selected axes (tissues).
 module avmod
   use, intrinsic :: iso_fortran_env, only: real64, int32
+  use tox_errors, only: ERR_EMPTY_INPUT, set_ok, set_err_once
   implicit none
 contains
 
@@ -12,7 +13,7 @@ contains
   
   pure subroutine compute_tissue_versatility(n_axes, n_vectors, expression_vectors, exp_vecs_selection_index, &
                                              n_selected_vectors, axes_selection, n_selected_axes, &
-                                             tissue_versatilities, tissue_angles_deg)
+                                             tissue_versatilities, tissue_angles_deg, ierr)
     !| Number of axes (tissues/dimensions)
     integer(int32), intent(in) :: n_axes
     !| Number of expression vectors (genes)
@@ -31,14 +32,20 @@ contains
     real(real64), intent(out) :: tissue_versatilities(n_selected_vectors)
     !| Output, real array, length = n_selected_vectors, stores the calculated angles in degrees
     real(real64), intent(out) :: tissue_angles_deg(n_selected_vectors)
+    !| Error code: 0 = success, non-zero = error
+    integer(int32), intent(out) :: ierr
     ! Local variables
     integer(int32) :: i_vec, i_axis, out_idx
     real(real64) :: norm_diag, dot_prod, norm_v, cos_phi, angle_rad, norm_factor
     real(real64), parameter :: rad2deg = 180.0_real64 / acos(-1.0_real64)
 
+    ! Initialize error code
+    call set_ok(ierr)
+
     ! Compute the norm of the space diagonal (only active axes)
     if (n_selected_axes <= 0) then
-      tissue_versatilities = -1.0_real64   ! Error: no axes selected
+      ! Set error code to 202 (Empty input arrays)
+      call set_err_once(ierr, ERR_EMPTY_INPUT)
       return
     end if
     norm_diag = sqrt(real(n_selected_axes, real64))
@@ -90,7 +97,7 @@ end module avmod
 !| Calls compute_tissue_versatility with standard Fortran types for R interface.
 pure subroutine compute_tissue_versatility_r(n_axes, n_vectors, expression_vectors, exp_vecs_selection_index, &
                                              n_selected_vectors, axes_selection, n_selected_axes, &
-                                             tissue_versatilities, tissue_angles_deg)
+                                             tissue_versatilities, tissue_angles_deg, ierr)
   use avmod
   !| Number of axes (tissues/dimensions)
   integer(int32), intent(in) :: n_axes
@@ -110,8 +117,10 @@ pure subroutine compute_tissue_versatility_r(n_axes, n_vectors, expression_vecto
   real(real64), intent(out) :: tissue_versatilities(n_selected_vectors)
   !| Output, real array, length = n_selected_vectors, stores the calculated angles in degrees
   real(real64), intent(out) :: tissue_angles_deg(n_selected_vectors)
+  !| Error code: 0 = success, non-zero = error
+  integer(int32), intent(out) :: ierr
   call compute_tissue_versatility(n_axes, n_vectors, expression_vectors, exp_vecs_selection_index, n_selected_vectors, axes_selection, &
-                                  n_selected_axes, tissue_versatilities, tissue_angles_deg)
+                                  n_selected_axes, tissue_versatilities, tissue_angles_deg, ierr)
 end subroutine compute_tissue_versatility_r
 
 
@@ -119,7 +128,7 @@ end subroutine compute_tissue_versatility_r
 !| Exposes compute_tissue_versatility to C via iso_c_binding types with explicit dimensions.
 pure subroutine compute_tissue_versatility_c(n_axes, n_vectors, expression_vectors, exp_vecs_selection_index, &
                                              n_selected_vectors, axes_selection, n_selected_axes, &
-                                             tissue_versatilities, tissue_angles_deg) bind(C, name="compute_tissue_versatility_c")
+                                             tissue_versatilities, tissue_angles_deg, ierr) bind(C, name="compute_tissue_versatility_c")
   use iso_c_binding
   use avmod
   !| Number of axes (tissues/dimensions)
@@ -140,8 +149,10 @@ pure subroutine compute_tissue_versatility_c(n_axes, n_vectors, expression_vecto
   real(c_double), intent(out), target :: tissue_versatilities(n_selected_vectors)
   !| Output, real array, length = n_selected_vectors, stores the calculated angles in degrees for selected vectors
   real(c_double), intent(out), target :: tissue_angles_deg(n_selected_vectors)
+  !| Error code: 0 = success, non-zero = error  
+  integer(c_int), intent(out) :: ierr
 
   call compute_tissue_versatility(n_axes, n_vectors, expression_vectors, exp_vecs_selection_index /= 0, n_selected_vectors, &
-                                  axes_selection /= 0, n_selected_axes, tissue_versatilities, tissue_angles_deg)
+                                  axes_selection /= 0, n_selected_axes, tissue_versatilities, tissue_angles_deg, ierr)
 end subroutine compute_tissue_versatility_c
 
