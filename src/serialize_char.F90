@@ -4,6 +4,7 @@
 module serialize_char
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use array_utils, only: write_file_header
+  use tox_errors
   implicit none
 
   public:: serialize_char_1d, serialize_char_2d, serialize_char_3d, &
@@ -15,26 +16,33 @@ contains
 
   !> Serialize a 1D character array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, character length, and the array data.
-  subroutine serialize_char_1d(arr, filename)
+  subroutine serialize_char_1d(arr, filename, ierr)
     character(len=*), intent(in) :: arr(:)
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
     integer(int32) :: unit, clen, i, str_len
     integer(int32) :: dims(1)
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr 
+    !! error code
+    integer(int32) :: ioerror
     dims = shape(arr)
     clen = len(arr)
-    ierr = 0
+
+    call set_ok(ierr)
+    call set_ok(ioerror)
+
     call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 1, dims, ierr, clen)
-    if (ierr /= 0) then
-      return
-    end if
+    if (.not. is_ok(ierr)) return
+
     do i = 1, dims(1)
       str_len = len_trim(arr(i))
-      write(unit) str_len
-      write(unit) arr(i)(1:str_len)
+      write(unit, iostat=ioerror) str_len    
+      write(unit, iostat=ioerror) arr(i)(1:str_len)
     end do
+    if(.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_WRITE_DATA)
+    end if
     close(unit)
   end subroutine
 
@@ -42,123 +50,147 @@ contains
   !! The file will contain a magic number, type code, dimension, shape, character length, and the array data.
   !! @param arr The input character array to serialize.
   !! @param filename The output filename.
-  subroutine serialize_char_2d(arr, filename)
+  subroutine serialize_char_2d(arr, filename, ierr)
     character(len=*), intent(in) :: arr(:,:)
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
     integer(int32) :: unit, clen, i, j, str_len
     integer(int32) :: dims(2)
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
+    !! error code
+    integer(int32) :: ioerror
     dims = shape(arr)
     clen = len(arr)
-    ierr = 0
+
+    call set_ok(ierr)
     call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 2, dims, ierr, clen)
-    if (ierr /= 0) then
-      return
-    end if
+
+    if (.not. is_ok(ierr)) return
+
     do j = 1, dims(2)
       do i = 1, dims(1)
         str_len = len_trim(arr(i,j))
-        write(unit) str_len
-        write(unit) arr(i,j)(1:str_len)
+        write(unit, iostat=ioerror) str_len
+        write(unit, iostat=ioerror) arr(i,j)(1:str_len)
       end do
     end do
+    if(.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_WRITE_DATA)
+    end if
     close(unit)
   end subroutine
 
   !> Serialize a 3D character array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, character length, and the array data.
-  subroutine serialize_char_3d(arr, filename)
+  subroutine serialize_char_3d(arr, filename, ierr)
     character(len=*), intent(in) :: arr(:,:,:)
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
     integer(int32) :: unit, clen, i, j, k, str_len
     integer(int32) :: dims(3)
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
+    !! error code
+    integer(int32) :: ioerror
     dims = shape(arr)
     clen = len(arr)
-    ierr = 0
+    
+    call set_ok(ierr)
+    call set_ok(ioerror)
     call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 3, dims, ierr, clen)
-    if (ierr /= 0) then
-      return
-    end if
+    if (.not. is_ok(ierr)) return
+
     do k = 1, dims(3)
       do j = 1, dims(2)
         do i = 1, dims(1)
           str_len = len_trim(arr(i,j,k))
-          write(unit, iostat=ierr) str_len
-          write(unit, iostat=ierr) arr(i,j,k)(1:str_len)
+          write(unit, iostat=ioerror) str_len
+          write(unit, iostat=ioerror) arr(i,j,k)(1:str_len)
         end do
       end do
     end do
-    if (ierr /= 0) then
-      ierr = 405
+    if (.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_WRITE_DATA)
     end if
     close(unit)
   end subroutine
 
   !> Serialize a 4D character array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, character length, and the array data.
-  subroutine serialize_char_4d(arr, filename)
+  subroutine serialize_char_4d(arr, filename, ierr)
     character(len=*), intent(in) :: arr(:,:,:,:)
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
     integer :: unit, clen, i, j, k, l, str_len
     integer(int32) :: dims(4)
-    integer(int32) :: ierr
-    ierr = 0
+    integer(int32), intent(out) :: ierr
+    !! error code
+    integer(int32) :: ioerror
+
     dims = shape(arr)
     clen = len(arr)
+
+    call set_ok(ierr)
+    call set_ok(ioerror)
+
     call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 4, dims, ierr, clen)
+    if (.not. is_ok(ierr)) return
+
     do l = 1, dims(4)
       do k = 1, dims(3)
         do j = 1, dims(2)
           do i = 1, dims(1)
             str_len = len_trim(arr(i,j,k,l))
-            write(unit, iostat=ierr) str_len
-            write(unit, iostat=ierr) arr(i,j,k,l)(1:str_len)
+            write(unit, iostat=ioerror) str_len
+            write(unit, iostat=ioerror) arr(i,j,k,l)(1:str_len)
           end do
         end do
       end do
     end do
-    if (ierr /= 0) then
-      ierr = 405
+    if (.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_WRITE_DATA)
     end if
     close(unit)
   end subroutine
 
   !> Serialize a 5D character array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, character length, and the array data.
-  subroutine serialize_char_5d(arr, filename)
+  subroutine serialize_char_5d(arr, filename, ierr)
     character(len=*), intent(in) :: arr(:,:,:,:,:)
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
     integer(int32) :: unit, clen, i, j, k, l, m, str_len
     integer(int32) :: dims(5)
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
+    !! error code
+    integer(int32) :: ioerror
     dims = shape(arr)
     clen = len(arr)
-    ierr = 0
-    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 5, dims, ierr, clen)
+
+    call set_ok(ierr)
+    call set_ok(ioerror)
+
+    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 5, dims, ierr, clen)if (.not. is_ok(ierr)) return
+    if (.not. is_ok(ierr)) return
+
     do m = 1, dims(5)
       do l = 1, dims(4)
         do k = 1, dims(3)
           do j = 1, dims(2)
             do i = 1, dims(1)
               str_len = len_trim(arr(i,j,k,l,m))
-              write(unit, iostat=ierr) str_len
-              write(unit, iostat=ierr) arr(i,j,k,l,m)(1:str_len)
+              write(unit, iostat=ioerror) str_len
+              write(unit, iostat=ioerror) arr(i,j,k,l,m)(1:str_len)
             end do
           end do
         end do
       end do
     end do
-    if (ierr /= 0) then
-      ierr = 405
+    if (.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_WRITE_DATA)
     end if
     close(unit)
   end subroutine
@@ -177,20 +209,25 @@ contains
     character(len=*), intent(in) :: filename
     !! output filename
     integer(int32), intent(out) :: ierr
+    !! error code
+    integer(int32) :: ioerror
     integer(int32) :: unit, i, str_len
 
-    ierr = 0
+    call set_ok(ierr)
+    call set_ok(ioerror)
+
     call write_file_header(filename, unit, ARRAY_TYPE_CHAR, ndim, dims, ierr, clen)
+    if(.not. is_ok(ierr)) return
 
     do i = 1, size(flat)
       str_len = len_trim(flat(i))
-      write(unit, iostat=ierr) str_len
+      write(unit, iostat=ioerror) str_len
       if (str_len > 0) then
-        write(unit, iostat=ierr) flat(i)(1:str_len)
+        write(unit, iostat=ioerror) flat(i)(1:str_len)
       end if
     end do
-    if (ierr /= 0) then
-      ierr = 405
+    if (.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_WRITE_DATA)
     end if
 
     close(unit)
@@ -203,6 +240,7 @@ subroutine serialize_char_flat_r(ascii_arr, array_size, dims, ndim, clen, filena
   use iso_fortran_env, only: int32
   use serialize_char, only: serialize_char_nd
   use array_utils, only: ascii_to_string
+  use tox_errors, only : set_ok
   implicit none
 
   ! change to fixed size
@@ -213,9 +251,14 @@ subroutine serialize_char_flat_r(ascii_arr, array_size, dims, ndim, clen, filena
   integer(int32), intent(in) :: ndim, array_size
   !! Number of dimensions
   integer(int32), intent(in) :: clen
+  !! character length
   integer(int32), intent(in) :: filename_ascii(fn_len)
+  !! filename in ascii
   integer(int32), intent(in) :: fn_len
+  !! length of the filename
   integer(int32), intent(out) :: ierr
+  !! error code
+  integer(int32) :: ioerror
 
   character(len=:), allocatable :: filename
   character(len=clen), allocatable :: flat(:)
@@ -223,6 +266,8 @@ subroutine serialize_char_flat_r(ascii_arr, array_size, dims, ndim, clen, filena
 
   total = product(dims)
   allocate(flat(total))
+
+  call set_ok(ierr)
 
   ! ASCII to character conversion
   do i = 1, total
@@ -248,6 +293,7 @@ subroutine serialize_char_flat_C(ascii_ptr, dims, ndim, clen, filename_ascii, fn
   use iso_fortran_env, only: int32
   use serialize_char, only: serialize_char_nd
   use array_utils, only: ascii_to_string
+  use tox_errors, only : set_ok
   implicit none
 
   type(c_ptr), value :: ascii_ptr
@@ -262,6 +308,7 @@ subroutine serialize_char_flat_C(ascii_ptr, dims, ndim, clen, filename_ascii, fn
   integer(c_int), value :: fn_len
   !! Length of the filename array
   integer(c_int), intent(out) :: ierr
+  !! error code
 
   integer(c_int), pointer :: ascii_arr(:)
   character(len=:), allocatable :: filename
@@ -271,6 +318,8 @@ subroutine serialize_char_flat_C(ascii_ptr, dims, ndim, clen, filename_ascii, fn
   total = product(dims)
   call c_f_pointer(ascii_ptr, ascii_arr, [clen * total])
   allocate(flat(total))
+
+  call set_ok(ierr)
 
   ! ASCII to Fortran character(len=clen)
   do i = 1, total

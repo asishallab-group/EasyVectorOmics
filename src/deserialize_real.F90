@@ -45,7 +45,7 @@ contains
 
   !> Deserialize a 1D real array from a file
   !> @note This file just moves a pointer, it exists for consistency
-  subroutine deserialize_real_1d(arr, filename)
+  subroutine deserialize_real_1d(arr, filename, ierr)
     real(real64), pointer, intent(out) :: arr(:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -55,7 +55,7 @@ contains
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! dimensions array
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code
 
     call set_ok(ierr)
@@ -71,7 +71,7 @@ contains
 
   !> Deserialize a 2D real array from a file
   !> @note The array is allocated by the deserialize flat routine
-  subroutine deserialize_real_2d(arr, filename)
+  subroutine deserialize_real_2d(arr, filename, ierr)
     real(real64), pointer, intent(out) :: arr(:,:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -81,7 +81,7 @@ contains
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! dimensions array
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code
 
     call set_ok(ierr)
@@ -97,7 +97,7 @@ contains
 
   !> Deserialize a 3D real array from a file
   !> @note The array is allocated by the deserialize flat routine
-  subroutine deserialize_real_3d(arr, filename)
+  subroutine deserialize_real_3d(arr, filename, ierr)
     real(real64), pointer, intent(out) :: arr(:,:,:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -107,7 +107,7 @@ contains
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! dimensions array
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code
 
     call set_ok(ierr)
@@ -123,7 +123,7 @@ contains
 
   !> Deserialize a 4D real array from a file
   !> @note The array is allocated by the deserialize flat routine
-  subroutine deserialize_real_4d(arr, filename)
+  subroutine deserialize_real_4d(arr, filename, ierr)
     real(real64), pointer, intent(out) :: arr(:,:,:,:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -133,7 +133,7 @@ contains
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! dimensions array
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code
 
     call set_ok(ierr)
@@ -149,12 +149,12 @@ contains
 
   !> Deserialize a 5D real array from a file
   !> @note The array is allocated by the deserialize flat routine
-  subroutine deserialize_real_5d(arr, filename)
+  subroutine deserialize_real_5d(arr, filename, ierr)
     real(real64), pointer, intent(out) :: arr(:,:,:,:,:)
     !! Output array
     character(len=*), intent(in) :: filename
     !! Name of the file to read#
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code
 
     real(real64), pointer :: flat(:)
@@ -234,7 +234,7 @@ subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(
     implicit none
 
     ! Inputs / Outputs
-    real(c_double), intent(inout) :: arr(arr_size)
+    real(c_double), intent(out)   :: arr(arr_size)
     !! output array
     integer(c_int), value         :: arr_size  
     !! size of the output array

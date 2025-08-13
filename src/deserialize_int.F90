@@ -48,7 +48,7 @@ contains
   !> Deserialize a 1D integer array from a file
   !> @note The array must be allocated before calling this subroutine, this is just for consistency since 
   !> a 1D array can not be deserialized to 1D
-  subroutine deserialize_int_1d(arr, filename)
+  subroutine deserialize_int_1d(arr, filename, ierr)
     integer(int32), pointer, intent(out) :: arr(:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -57,7 +57,7 @@ contains
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions array
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code
     call set_ok(ierr)
     call deserialize_int_flat(flat, dims, filename, ierr)
@@ -70,7 +70,7 @@ contains
 
   !> Deserialize a 2D integer array from a file
   !> @note The array is allocated by the deserialize flat routine
-  subroutine deserialize_int_2d(arr, filename)
+  subroutine deserialize_int_2d(arr, filename, ierr)
     integer(int32), pointer, intent(out) :: arr(:,:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -79,7 +79,7 @@ contains
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions array
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code
     call set_ok(ierr)
     call deserialize_int_flat(flat, dims, filename, ierr)
@@ -92,7 +92,7 @@ contains
 
   !> Deserialize a 3D integer array from a file
   !> @note The array is allocated by the deserialize flat routine
-  subroutine deserialize_int_3d(arr, filename)
+  subroutine deserialize_int_3d(arr, filename, ierr)
     integer(int32), pointer, intent(out) :: arr(:,:,:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -101,7 +101,7 @@ contains
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions array
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code
     call set_ok(ierr)
     call deserialize_int_flat(flat, dims, filename, ierr)
@@ -114,7 +114,7 @@ contains
 
   !> Deserialize a 4D integer array from a file
   !> @note The array is allocated by the deserialize flat routine
-  subroutine deserialize_int_4d(arr, filename)
+  subroutine deserialize_int_4d(arr, filename, ierr)
     integer(int32), pointer, intent(out) :: arr(:,:,:,:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -123,7 +123,7 @@ contains
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions array
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code
 
     call set_ok(ierr)
@@ -137,7 +137,7 @@ contains
 
   !> Deserialize a 5D integer array from a file
   !> @note The array is allocated by the deserialize flat routine
-  subroutine deserialize_int_5d(arr, filename)
+  subroutine deserialize_int_5d(arr, filename, ierr)
     integer(int32), pointer, intent(out) :: arr(:,:,:,:,:)
     !! Output array
     character(len=*), intent(in) :: filename
@@ -146,7 +146,7 @@ contains
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions array
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code
     call set_ok(ierr)
     call deserialize_int_flat(flat, dims, filename, ierr)
@@ -218,7 +218,7 @@ subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C
     implicit none
 
     ! Inputs / Outputs
-    integer(c_int), intent(inout) :: arr(arr_size)      ! Preallocated buffer from C/Python
+    integer(c_int), intent(out)   :: arr(arr_size)      ! Preallocated buffer from C/Python
     integer(c_int), value         :: arr_size           ! Buffer length
     integer(c_int), intent(in)    :: filename_ascii(fn_len)
     integer(c_int), value         :: fn_len

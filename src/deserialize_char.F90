@@ -62,7 +62,7 @@ contains
 
   !> Subroutine to deserialize a 1D character array from a file
   !> only moves a pointer for completeness
-  subroutine deserialize_char_1d(arr, filename)
+  subroutine deserialize_char_1d(arr, filename, ierr)
     character(len=:), pointer, intent(out) :: arr(:)
       !! Output character array
     character(len=*), intent(in) :: filename
@@ -74,7 +74,7 @@ contains
       !! Output dimensions of the array
     integer :: clen
       !! Maximum length of character string
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
       !! Error code
     call set_ok(ierr)
 
@@ -90,7 +90,7 @@ contains
 
   !> Subroutine to deserialize a 2D character array from a file
   !!!> The array is read as flat and then reshaped to 2D
-  subroutine deserialize_char_2d(arr, filename)
+  subroutine deserialize_char_2d(arr, filename, ierr)
     character(len=:), pointer, intent(out) :: arr(:,:)
     !! Output character array
     character(len=*), intent(in) :: filename
@@ -104,7 +104,7 @@ contains
     !! Maximum length of character string
     integer(int32) :: i, j, idx
     !! Loop indices
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code
 
     call set_ok(ierr)
@@ -133,7 +133,7 @@ contains
   end subroutine
 
   !> Subroutine to deserialize a 3D character array from a file
-  subroutine deserialize_char_3d(arr, filename)
+  subroutine deserialize_char_3d(arr, filename, ierr)
     character(len=:), pointer, intent(out) :: arr(:,:,:)
     !! Output character array
     character(len=*), intent(in) :: filename
@@ -147,7 +147,7 @@ contains
     !! Maximum length of character string
     integer(int32) :: i, j, k, idx
     !! Loop indices
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code
 
     call set_ok(ierr)
@@ -175,7 +175,7 @@ contains
   end subroutine
 
   !> Subroutine to deserialize a 4D character array from a file
-  subroutine deserialize_char_4d(arr, filename)
+  subroutine deserialize_char_4d(arr, filename, ierr)
     character(len=:), pointer, intent(out) :: arr(:,:,:,:)
     !! Output character array
     character(len=*), intent(in) :: filename
@@ -189,7 +189,7 @@ contains
     !! Maximum length of character string
     integer(int32) :: i, j, k, l, idx
     !! Loop indices
-    integer(int32) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code
 
     call set_ok(ierr)
@@ -220,7 +220,7 @@ contains
   end subroutine
 
   !> Subroutine to deserialize a 5D character array from a file
-  subroutine deserialize_char_5d(arr, filename)
+  subroutine deserialize_char_5d(arr, filename, ierr)
       character(len=:), pointer, intent(out) :: arr(:,:,:,:,:)
       !! Output character array
       character(len=*), intent(in) :: filename
@@ -234,7 +234,7 @@ contains
       !! Maximum length of character string
       integer(int32) :: i, j, k, l, m, idx
       !! Loop indices
-      integer(int32) :: ierr
+      integer(int32), intent(out) :: ierr
       !! Error code
 
       call set_ok(ierr)
@@ -352,6 +352,7 @@ subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, &
   integer(c_int), value       :: fn_len
   !! Length of the filename array
   integer(c_int), intent(out) :: ierr
+  !! error code
 
   character(len=:), allocatable :: filename
   !! Filename as a string
