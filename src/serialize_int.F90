@@ -8,7 +8,7 @@ module serialize_int
   public:: serialize_int_1d, serialize_int_2d, serialize_int_3d, &
            serialize_int_4d, serialize_int_5d, serialize_int_nd
 
-  integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
+  integer(int32), parameter :: ARRAY_TYPE_INT = 1
 
 contains
 
@@ -24,7 +24,7 @@ contains
     integer(int32) :: dims(1)
     dims = shape(arr)
     ierr = 0
-    call write_file_header(filename, unit, 1, 1, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, 1, dims, ierr)
     if (ierr /= 0) then
       return
     end if
@@ -49,7 +49,7 @@ contains
     integer(int32) :: dims(2)
     dims = shape(arr)
     ierr = 0
-    call write_file_header(filename, unit, 1, 2, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, 2, dims, ierr)
     if (ierr /= 0) then
       return
     end if
@@ -74,7 +74,7 @@ contains
     integer(int32) :: dims(3)
     dims = shape(arr)
     ierr = 0
-    call write_file_header(filename, unit, 1, 3, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, 3, dims, ierr)
     if (ierr /= 0) then
       return
     end if
@@ -99,7 +99,7 @@ contains
     integer(int32) :: dims(4)
     dims = shape(arr)
     ierr = 0
-    call write_file_header(filename, unit, 1, 4, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, 4, dims, ierr)
     if (ierr /= 0) then
       return
     end if
@@ -124,7 +124,7 @@ contains
     integer(int32) :: ierr
     dims = shape(arr)
     ierr = 0
-    call write_file_header(filename, unit, 1, 5, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, 5, dims, ierr)
     if (ierr /= 0) then
       return
     end if
@@ -155,7 +155,7 @@ contains
       error stop "Dimension mismatch in serialize_int_nd"
     end if
     ierr = 0
-    call write_file_header(filename, unit, 1, ndim, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, ndim, dims, ierr)
     if (ierr /= 0) then
       return
     end if

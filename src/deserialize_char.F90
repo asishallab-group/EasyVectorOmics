@@ -219,6 +219,7 @@ contains
       !Deallocate flat array to avoid memory leaks
       deallocate(flat) 
   end subroutine
+  
 end module char_deserialize_mod
 
 !> Subroutine to deserialize a flat character array from a file and return it as an ASCII array callable by R

@@ -7,8 +7,7 @@ module serialize_real
   public:: serialize_real_1d, serialize_real_2d, serialize_real_3d, &
            serialize_real_4d, serialize_real_5d, serialize_real_nd
 
-  integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
-
+  integer(int32), parameter :: ARRAY_TYPE_REAL = 2
 contains
 
   !> Serialize a 1D real(real64) array to a binary file.
@@ -23,7 +22,7 @@ contains
     integer(int32) :: ierr
     dims = shape(arr)
     ierr = 0
-    call write_file_header(filename, unit, 2, 1, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_REAL, 1, dims, ierr)
     if (ierr /= 0) then
       return
     end if
@@ -46,7 +45,7 @@ contains
     integer(int32) :: ierr
     ierr = 0
     dims = shape(arr)
-    call write_file_header(filename, unit, 2, 2, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_REAL, 2, dims, ierr)
     write(unit, iostat=ierr) arr
     if (ierr /= 0) then
       ierr = 405
@@ -68,7 +67,7 @@ contains
     integer(int32) :: ierr
     ierr = 0
     dims = shape(arr)
-    call write_file_header(filename, unit, 2, 3, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_REAL, 3, dims, ierr)
     write(unit, iostat=ierr) arr
     if (ierr /= 0) then
       ierr = 405
@@ -88,7 +87,7 @@ contains
     integer(int32) :: ierr
     ierr = 0
     dims = shape(arr)
-    call write_file_header(filename, unit, 2, 4, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_REAL, 4, dims, ierr)
     write(unit, iostat=ierr) arr
     if (ierr /= 0) then
       ierr = 405
@@ -108,7 +107,7 @@ contains
     integer(int32) :: ierr
     ierr = 0
     dims = shape(arr)
-    call write_file_header(filename, unit, 2, 5, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_REAL, 5, dims, ierr)
     write(unit, iostat=ierr) arr
     if (ierr /= 0) then
       ierr = 405
@@ -134,7 +133,7 @@ contains
       error stop "Dimension mismatch in serialize_real_nd"
     end if
 
-    call write_file_header(filename, unit, 2, ndim, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_REAL, ndim, dims, ierr)
     write(unit, iostat=ierr) arr
     if (ierr /= 0) then
       ierr = 405

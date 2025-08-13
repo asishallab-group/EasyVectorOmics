@@ -9,7 +9,7 @@ module serialize_char
   public:: serialize_char_1d, serialize_char_2d, serialize_char_3d, &
            serialize_char_4d, serialize_char_5d, serialize_char_nd
 
-  integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
+  integer(int32), parameter :: ARRAY_TYPE_CHAR = 3
 
 contains
 
@@ -26,7 +26,7 @@ contains
     dims = shape(arr)
     clen = len(arr)
     ierr = 0
-    call write_file_header(filename, unit, 3, 1, dims, ierr, clen)
+    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 1, dims, ierr, clen)
     if (ierr /= 0) then
       return
     end if
@@ -53,7 +53,7 @@ contains
     dims = shape(arr)
     clen = len(arr)
     ierr = 0
-    call write_file_header(filename, unit, 3, 2, dims, ierr, clen)
+    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 2, dims, ierr, clen)
     if (ierr /= 0) then
       return
     end if
@@ -80,7 +80,7 @@ contains
     dims = shape(arr)
     clen = len(arr)
     ierr = 0
-    call write_file_header(filename, unit, 3, 3, dims, ierr, clen)
+    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 3, dims, ierr, clen)
     if (ierr /= 0) then
       return
     end if
@@ -112,7 +112,7 @@ contains
     ierr = 0
     dims = shape(arr)
     clen = len(arr)
-    call write_file_header(filename, unit, 3, 4, dims, ierr, clen)
+    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 4, dims, ierr, clen)
     do l = 1, dims(4)
       do k = 1, dims(3)
         do j = 1, dims(2)
@@ -143,7 +143,7 @@ contains
     dims = shape(arr)
     clen = len(arr)
     ierr = 0
-    call write_file_header(filename, unit, 3, 5, dims, ierr, clen)
+    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 5, dims, ierr, clen)
     do m = 1, dims(5)
       do l = 1, dims(4)
         do k = 1, dims(3)
@@ -180,7 +180,7 @@ contains
     integer(int32) :: unit, i, str_len
 
     ierr = 0
-    call write_file_header(filename, unit, 3, ndim, dims, ierr, clen)
+    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, ndim, dims, ierr, clen)
 
     do i = 1, size(flat)
       str_len = len_trim(flat(i))

@@ -1,11 +1,13 @@
 !> Module for array utilities
 module array_utils
     use, intrinsic :: iso_fortran_env, only: int32, real64
+    use tox_errors
     implicit none
 
     PUBLIC :: get_array_dims, get_array_metadata_chars, ascii_to_string, read_file_header, write_file_header
 
     integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
+    !! Magic number for array files
 
    contains
 
@@ -13,15 +15,24 @@ module array_utils
     use iso_fortran_env, only: int32
     implicit none
     character(len=*), intent(in) :: filename
-    integer(int32), intent(in) :: type_code, ndim
+    !! filename to write to
+    integer(int32), intent(in) :: type_code
+    !! type code of the array (1=int, 2=real, 3=char)
+    integer(int32), intent(in) :: ndim
+    !! number of dimensions
     integer(int32), intent(in) :: dims(ndim)
+    !! dimensions of the array
     integer(int32), intent(in), optional :: clen
+    !! character length (only for character arrays)
     integer(int32), intent(out) :: ierr
+    !! error code
     integer(int32), INTENT(OUT) :: unit
+    !! Fortran unit number for the file
 
+    call set_ok(ierr)
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace', iostat=ierr)
-    if (ierr /= 0) then
-      ierr = 400
+    if (.not. is_ok(ierr)) then
+      call set_err_once(ierr, ERR_FILE_OPEN)
       return
     end if
     write(unit, iostat=ierr) ARRAY_FILE_MAGIC
@@ -55,8 +66,12 @@ module array_utils
 
   subroutine read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     character(len=*), intent(in) :: filename
+    !! filename to read from
     integer(int32), intent(out) :: unit
-    integer(int32), intent(out) :: type_code, ndims, clen
+    !! Fortran unit number for the file
+    integer(int32), intent(out) :: type_code 
+    integer(int32), INTENT(out) :: ndims 
+    integer(int32), intent(out) :: clen
     integer(int32), intent(out) :: ierr
     integer(int32), allocatable :: dims(:)
 
@@ -124,12 +139,17 @@ module array_utils
     implicit none
 
     character(len=*), intent(in) :: filename
+    !! Name of the file to read
     integer(int32), intent(out) :: dims_out(*)
+    !! Output array for dimensions
     integer(int32), intent(out) :: ndims
+    !! Output variable for the number of dimensions
     integer, intent(out) :: ierr
+    !! Error code
 
-    integer :: unit, i
+    integer(int32) :: unit, i
     integer(int32), allocatable :: dims(:)
+    !! dimensions
     integer(int32) :: type_code, clen
 
     ! error handling
@@ -154,14 +174,13 @@ subroutine ascii_to_string(ascii_array, clen, str)
   integer(int32), intent(in) :: clen
     !! Length of the ASCII array
   character(len=:), allocatable, INTENT(INOUT) :: str
+  !! Output string
   integer(int32) :: i
 
   allocate(character(len=clen) :: str)
   do i = 1, clen
     str(i:i) = char(ascii_array(i))
   end do
-
-  ! Return the string (or use it as needed)
 end subroutine ascii_to_string
 
 !> Subroutine to get metadata of a char array file
