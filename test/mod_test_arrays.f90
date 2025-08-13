@@ -9,6 +9,7 @@ module mod_test_arrays
     use serialize_real
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use iso_c_binding
+    use tox_errors
     implicit none
     PUBLIC
 
@@ -92,13 +93,20 @@ contains
     integer(int32), ALLOCATABLE :: iarr1d(:)
     integer(int32), pointer :: iarr1d2(:)
     character(len=100) :: fname
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     allocate(iarr1d(5)) 
     iarr1d = [10,20,30,40,50]
     fname = "test_iarr1d.bin"
 
-    call serialize_int_1d(iarr1d, fname)
-    call deserialize_int_1d(iarr1d2, fname)
+    call serialize_int_1d(iarr1d, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+    call set_ok(ierr)
+    call deserialize_int_1d(iarr1d2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+
 
     call assert_equal_array_int(iarr1d, iarr1d2, size(iarr1d), "Original array does not match deserialized array")
   end subroutine test_integer_array_1d
@@ -108,12 +116,22 @@ contains
     INTEGER(int32), ALLOCATABLE :: iarr(:,:)
     INTEGER(int32), POINTER :: iarr2(:,:)
     CHARACTER(len=100) :: fname
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     allocate(iarr(2,3))
     iarr = reshape([1,2,3,4,5,6], [2,3])
     fname = "test_iarr2d.bin"
-    call serialize_int_2d(iarr, fname)
-    call deserialize_int_2d(iarr2, fname)
+
+    call serialize_int_2d(iarr, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+
+    call set_ok(ierr)
+
+    call deserialize_int_2d(iarr2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+
     call assert_equal_array_int(iarr, iarr2, size(iarr), "Original array does not match deserialized array")
   end subroutine test_integer_array_2d
 
@@ -122,13 +140,20 @@ contains
     integer(int32), allocatable :: iarr3d(:,:,:)
     integer(int32), pointer :: iarr3d2(:,:,:)
     character(len=100) :: fname
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     allocate(iarr3d(2,2,2))
     iarr3d = reshape([1,2,3,4,5,6,7,8], [2,2,2])
     fname = "test_iarr3d.bin"
 
-    call serialize_int_3d(iarr3d, fname)
-    call deserialize_int_3d(iarr3d2, fname)
+    call serialize_int_3d(iarr3d, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+    call set_ok(ierr)
+
+    call deserialize_int_3d(iarr3d2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
 
     call assert_equal_array_int(iarr3d, iarr3d2, size(iarr3d), "Original array does not match deserialized array")
   end subroutine test_integer_array_3d
@@ -138,14 +163,21 @@ contains
     integer(int32), allocatable :: iarr4d(:,:,:,:)
     integer(int32), pointer :: iarr4d2(:,:,:,:)
     character(len=100) :: fname
-    integer :: i
+    integer(int32) :: i
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     allocate(iarr4d(2,2,1,2))
     iarr4d = reshape([(i, i=1,8)], [2,2,1,2])
     fname = "test_iarr4d.bin"
 
-    call serialize_int_4d(iarr4d, fname)
-    call deserialize_int_4d(iarr4d2, fname)
+    call serialize_int_4d(iarr4d, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+    call set_ok(ierr)
+
+    call deserialize_int_4d(iarr4d2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
 
     call assert_equal_array_int(iarr4d, iarr4d2, size(iarr4d), "Original array does not match deserialized array")
   end subroutine test_integer_array_4d
@@ -155,14 +187,21 @@ contains
     integer(int32), allocatable :: iarr5d(:,:,:,:,:)
     integer(int32), pointer :: iarr5d2(:,:,:,:,:)
     character(len=100) :: fname
-    integer :: i
+    integer(int32) :: i
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     allocate(iarr5d(2,1,2,1,2))
     iarr5d = reshape([(i, i=1,8)], [2,1,2,1,2])
     fname = "test_iarr5d.bin"
 
-    call serialize_int_5d(iarr5d, fname)
-    call deserialize_int_5d(iarr5d2, fname)
+    call serialize_int_5d(iarr5d, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+    call set_ok(ierr)
+
+    call deserialize_int_5d(iarr5d2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
 
     call assert_equal_array_int(iarr5d, iarr5d2, size(iarr5d), "Original array does not match deserialized array")
   end subroutine test_integer_array_5d
@@ -172,13 +211,20 @@ contains
     real(real64), ALLOCATABLE :: rarr1d(:)
     real(real64), POINTER :: rarr1d2(:)
     CHARACTER(len=100) :: fname
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     allocate(rarr1d(4)) 
     rarr1d = [1.1_real64, 2.2_real64, 3.3_real64, 4.4_real64]
     fname = "test_rarr1d.bin"
 
-    call serialize_real_1d(rarr1d, fname)
-    call deserialize_real_1d(rarr1d2, fname)
+    call serialize_real_1d(rarr1d, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+    call set_ok(ierr)
+
+    call deserialize_real_1d(rarr1d2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
 
     call assert_equal_array_real(rarr1d, rarr1d2, size(rarr1d), 1d-12, "Original array does not match deserialized array")
   end subroutine test_real_array_1d
@@ -188,13 +234,20 @@ contains
     real(real64), ALLOCATABLE :: rarr2d(:,:)
     real(real64), POINTER :: rarr2d2(:,:)
     CHARACTER(len=100) :: fname
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     allocate(rarr2d(2,2))
     rarr2d = reshape([1.5_real64, 2.5_real64, 3.5_real64, 4.5_real64], [2,2])
     fname = "test_rarr2d.bin"
 
-    call serialize_real_2d(rarr2d, fname)
-    call deserialize_real_2d(rarr2d2, fname)
+    call serialize_real_2d(rarr2d, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+    call set_ok(ierr)
+
+    call deserialize_real_2d(rarr2d2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
 
     call assert_equal_array_real(rarr2d, rarr2d2, size(rarr2d), 1d-12, "Original array does not match deserialized array")
   end subroutine test_real_array_2d
@@ -204,13 +257,20 @@ contains
     real(real64), ALLOCATABLE :: rarr3d(:,:,:)
     real(real64), POINTER :: rarr3d2(:,:,:)
     CHARACTER(len=100) :: fname
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     allocate(rarr3d(2,2,2))
     rarr3d = reshape([1.0_real64,2.0_real64,3.0_real64,4.0_real64,5.0_real64,6.0_real64,7.0_real64,8.0_real64], [2,2,2])
     fname = "test_rarr3d.bin"
     
-    call serialize_real_3d(rarr3d, fname)
-    call deserialize_real_3d(rarr3d2, fname)
+    call serialize_real_3d(rarr3d, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+    call set_ok(ierr)
+
+    call deserialize_real_3d(rarr3d2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
 
     call assert_equal_array_real(rarr3d, rarr3d2, size(rarr3d), 1d-12, "Original array does not match deserialized array")
   end subroutine test_real_array_3d
@@ -220,13 +280,20 @@ contains
     real(real64), ALLOCATABLE :: rarr4d(:,:,:,:)
     real(real64), POINTER :: rarr4d2(:,:,:,:)
     CHARACTER(len=100) :: fname
-    integer :: i
+    integer(int32) :: i
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     allocate(rarr4d(2,2,1,2)) 
     rarr4d = reshape([(real(i,real64), i=1,8)], [2,2,1,2])
     fname = "test_rarr4d.bin"
-    call serialize_real_4d(rarr4d, fname)
-    call deserialize_real_4d(rarr4d2, fname)
+    call serialize_real_4d(rarr4d, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+    call set_ok(ierr)
+
+    call deserialize_real_4d(rarr4d2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
 
     call assert_equal_array_real(rarr4d, rarr4d2, size(rarr4d), 1d-12, "Original array does not match deserialized array")
   end subroutine test_real_array_4d
@@ -236,13 +303,20 @@ contains
     real(real64), ALLOCATABLE :: rarr5d(:,:,:,:,:)
     real(real64), POINTER :: rarr5d2(:,:,:,:,:)
     CHARACTER(len=100) :: fname
-    integer :: i
+    integer(int32) :: i
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     allocate(rarr5d(2,1,2,1,2)) 
     rarr5d = reshape([(real(i,real64), i=1,8)], [2,1,2,1,2])
     fname = "test_rarr5d.bin"
-    call serialize_real_5d(rarr5d, fname)
-    call deserialize_real_5d(rarr5d2, fname)
+    call serialize_real_5d(rarr5d, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+    call set_ok(ierr)
+
+    call deserialize_real_5d(rarr5d2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
 
     call assert_equal_array_real(rarr5d, rarr5d2, size(rarr5d), 1d-12, "Original array does not match deserialized array")
   end subroutine test_real_array_5d
@@ -252,15 +326,22 @@ contains
     character(len=:), ALLOCATABLE :: carr1d(:)
     character(len=:), pointer :: carr1d2(:)
     character(len=100) :: fname
-    integer :: clen
+    integer(int32) :: clen
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     clen = 5
     allocate(character(len=clen):: carr1d(3))
     carr1d = ['foo  ','bar  ','baz  ']
     fname = "test_carr1d.bin"
 
-    call serialize_char_1d(carr1d, fname)
-    call deserialize_char_1d(carr1d2, fname)
+    call serialize_char_1d(carr1d, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+    call set_ok(ierr)
+
+    call deserialize_char_1d(carr1d2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
 
     call assert_equal_array_char(carr1d, carr1d2, size(carr1d), "Original array does not match deserialized array")
   end subroutine test_char_array_1d
@@ -270,15 +351,22 @@ contains
     character(len=:), ALLOCATABLE :: carr2d(:,:)
     character(len=:), pointer :: carr2d2(:,:)
     character(len=100) :: fname
-    integer :: clen
+    integer(int32) :: clen
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     clen = 5
     allocate(character(len=clen):: carr2d(2,2))
     carr2d = reshape(['foo  ','bar  ','baz  ','qux  '], [2,2])
     fname = "test_carr2d.bin"
 
-    call serialize_char_2d(carr2d, fname)
-    call deserialize_char_2d(carr2d2, fname)
+    call serialize_char_2d(carr2d, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+    call set_ok(ierr)
+
+    call deserialize_char_2d(carr2d2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
 
     call assert_equal_array_char(carr2d, carr2d2, size(carr2d), "Original array does not match deserialized array")
   end subroutine test_char_array_2d
@@ -288,15 +376,21 @@ contains
     character(len=:), ALLOCATABLE :: carr3d(:,:,:)
     character(len=:), pointer :: carr3d2(:,:,:)
     character(len=100) :: fname
-    integer :: clen
+    integer(int32) :: clen
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     clen = 5
     allocate(character(len=clen):: carr3d(2,2,1))
     carr3d = reshape(['foo  ','bar  ','baz  ','qux  '], [2,2,1])
     fname = "test_carr3d.bin"
     
-    call serialize_char_3d(carr3d, fname)
-    call deserialize_char_3d(carr3d2, fname)
+    call serialize_char_3d(carr3d, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+
+    call deserialize_char_3d(carr3d2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
 
     call assert_equal_array_char(carr3d, carr3d2, size(carr3d), "Original array does not match deserialized array")
   end subroutine test_char_array_3d
@@ -306,15 +400,21 @@ contains
     character(len=:), ALLOCATABLE :: carr4d(:,:,:,:)
     character(len=:), pointer :: carr4d2(:,:,:,:)
     character(len=100) :: fname
-    integer :: clen
+    integer(int32) :: clen
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     clen = 5
     allocate(character(len=clen):: carr4d(2,1,1,2))
     carr4d = reshape(['foo  ','bar  ','baz  ','qux  '], [2,1,1,2])
     fname = "test_carr4d.bin"
 
-    call serialize_char_4d(carr4d, fname)
-    call deserialize_char_4d(carr4d2, fname)
+    call serialize_char_4d(carr4d, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+
+    call deserialize_char_4d(carr4d2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
 
     call assert_equal_array_char(carr4d, carr4d2, size(carr4d), "Original array does not match deserialized array")
   end subroutine test_char_array_4d
@@ -324,15 +424,21 @@ contains
     character(len=:), ALLOCATABLE :: carr5d(:,:,:,:,:)
     character(len=:), pointer :: carr5d2(:,:,:,:,:)
     character(len=100) :: fname
-    integer :: clen
+    integer(int32) :: clen
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     clen = 5
     allocate(character(len=clen):: carr5d(2,1,2,1,2))
     carr5d = reshape(['foo  ','bar  ','baz  ','qux  ','aaa  ','bbb  ','ccc  ','ddd  '], [2,1,2,1,2])
     fname = "test_carr5d.bin"
 
-    call serialize_char_5d(carr5d, fname)
-    call deserialize_char_5d(carr5d2, fname)
+    call serialize_char_5d(carr5d, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+
+    call deserialize_char_5d(carr5d2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
 
     call assert_equal_array_char(carr5d, carr5d2, size(carr5d), "Original array does not match deserialized array")
   end subroutine test_char_array_5d
@@ -343,14 +449,20 @@ contains
     integer(int32), allocatable :: iarr(:,:)
     integer(int32), pointer :: iarr2(:,:)
     character(len=100) :: fname
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     if (allocated(iarr)) deallocate(iarr)
     allocate(iarr(1,1))
     iarr = 42
     fname = "test_iarr_1x1.bin"
 
-    call serialize_int_2d(iarr, fname)
-    call deserialize_int_2d(iarr2, fname)
+    call serialize_int_2d(iarr, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+
+    call deserialize_int_2d(iarr2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
 
     call assert_equal_array_int(iarr, iarr2, size(iarr), "Original array does not match deserialized array")
   end subroutine test_integer_array_1x1
@@ -360,13 +472,19 @@ contains
     integer(int32), allocatable :: iarr(:,:)
     integer(int32), pointer :: iarr2(:,:)
     character(len=100) :: fname
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
 
     if (allocated(iarr)) deallocate(iarr)
     allocate(iarr(0,3))
     fname = "test_iarr_empty.bin"
 
-    call serialize_int_2d(iarr, fname)
-    call deserialize_int_2d(iarr2, fname)
+    call serialize_int_2d(iarr, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+
+    call deserialize_int_2d(iarr2, fname, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
 
     call assert_equal_array_int(iarr, iarr2, size(iarr), "Original array does not match deserialized array")
   end subroutine test_integer_array_empty
@@ -375,8 +493,11 @@ contains
   subroutine test_char_array_protein()
     character(len=:), pointer :: protein_data(:,:,:,:,:) => null()
     character(len=:), pointer :: protein_data_loaded(:,:,:,:,:) => null()
+    integer(int32) :: ierr
     character(len=*), parameter :: test_file = "test_proteins.bin"
     allocate(character(len=12) :: protein_data(2,1,2,1,2))  ! max 12 Symbols
+    
+    call set_ok(ierr)
 
     protein_data(1,1,1,1,1) = "P12345"         ! 6 Symbols
     protein_data(2,1,1,1,1) = "Q9Y6K8-2"       ! 8 Symbols
@@ -387,7 +508,11 @@ contains
     protein_data(1,1,2,1,2) = "X6R8Y4"         ! 6 Symbols
     protein_data(2,1,2,1,2) = "A0A0B4J2F5-1"   ! 12 Symbols
 
-    call serialize_char_5d(protein_data, test_file)
-    call deserialize_char_5d(protein_data_loaded, test_file)
+    call serialize_char_5d(protein_data, test_file, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+
+    call deserialize_char_5d(protein_data_loaded, test_file, ierr)
+    if(.not. is_ok(ierr)) error stop ierr
+
   end subroutine test_char_array_protein
 end module mod_test_arrays

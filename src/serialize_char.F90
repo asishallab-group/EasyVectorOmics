@@ -173,7 +173,8 @@ contains
     call set_ok(ierr)
     call set_ok(ioerror)
 
-    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 5, dims, ierr, clen)if (.not. is_ok(ierr)) return
+    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 5, dims, ierr, clen)
+
     if (.not. is_ok(ierr)) return
 
     do m = 1, dims(5)

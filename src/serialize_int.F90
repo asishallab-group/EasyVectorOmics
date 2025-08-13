@@ -88,7 +88,7 @@ contains
 
     write(unit, iostat=ioerror) arr
     if (.not. is_ok(ioerror)) then
-      call set_er_once(ierr, ERR_WRITE_DATA)
+      call set_err_once(ierr, ERR_WRITE_DATA)
     end if
     close(unit)
   end subroutine
@@ -103,6 +103,7 @@ contains
     integer(int32) :: unit
     integer(int32), intent(out) :: ierr
     !! error code
+    integer(int32) :: ioerror
     integer(int32) :: dims(4)
     dims = shape(arr)
 
@@ -186,7 +187,7 @@ subroutine serialize_int_flat_r(arr, array_size, dims, ndim, filename_ascii, fn_
   use iso_fortran_env, only: int32
   use array_utils
   use serialize_int, only: serialize_int_nd
-  use tox_errors
+  use tox_errors, only : set_ok
   implicit none
 
   integer(int32), intent(in) :: arr(array_size)
@@ -224,6 +225,7 @@ subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bin
   use iso_c_binding, only: c_ptr, c_int, c_f_pointer
   use array_utils, only: ascii_to_string
   use serialize_int, only: serialize_int_nd
+  use tox_errors, only : set_ok
   implicit none
 
   ! input
@@ -246,7 +248,7 @@ subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bin
   integer :: i
 
   call set_ok(ierr)
-  
+
   call ascii_to_string(filename_ascii, fn_len, filename)
 
   call c_f_pointer(arr, arr_f, [product(dims(1:ndim))])
