@@ -1,21 +1,21 @@
 {
-	"R wrapper legend": {
-		"prefix": "tox:legend_r",
-		"body": [
-		"!> IMPORTANT - When using these R wrapper functions, copies of the arrays will be created.",
-		"!| No direct modification of the original R objects occurs."
-		],
-		"description": "Standard legend for R wrappers about array copy behavior"
-	},
-	"C wrapper legend": {
-		"prefix": "tox:legend_c",
-		"body": [
-		"!> IMPORTANT - When using these C wrapper functions, no copies of the arrays will be created.",
-		"!| The Fortran routine will operate directly on the memory provided by the caller."
-		],
-		"description": "Standard legend for C wrappers about direct memory access"
-	},
-	"Call to normalize_by_std_dev": {
+  "R wrapper legend": {
+    "prefix": "tox:legend_r",
+    "body": [
+    "!> IMPORTANT - When using these R wrapper functions, copies of the arrays will be created.",
+    "!| No direct modification of the original R objects occurs."
+    ],
+    "description": "Standard legend for R wrappers about array copy behavior"
+  },
+  "C wrapper legend": {
+    "prefix": "tox:legend_c",
+    "body": [
+    "!> IMPORTANT - When using these C wrapper functions, no copies of the arrays will be created.",
+    "!| The Fortran routine will operate directly on the memory provided by the caller."
+    ],
+    "description": "Standard legend for C wrappers about direct memory access"
+  },
+  "Call to normalize_by_std_dev": {
       "prefix": "tox:norm_by_std_dev",
       "body": [
         "! Normalize expression values using sqrt(mean(x^2)) across tissues",
@@ -575,10 +575,7 @@
       "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # error_code (1,)",
       "    ]",
       "    lib.compute_family_scaling_expert_c.restype = None",
-      "    lib.compute_family_scaling_expert_c(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, error_code)",
-
-      "    return func"
-    ],
+      "    lib.compute_family_scaling_expert_c(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, error_code)"    ],
     "description": "Setup compute_family_scaling_expert_c function binding for Python/ctypes"
   },
     "C call for compute_family_scaling": {
@@ -596,10 +593,7 @@
       "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # error_code (1,)",
       "    ]",
       "    lib.compute_family_scaling_c.restype = None",
-      "    lib.compute_family_scaling_c(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, error_code)",
-
-      "    return func"
-    ],
+      "    lib.compute_family_scaling_c(n_genes, n_families, distances, gene_to_fam, dscale, loess_x, loess_y, indices_used, error_code)"    ],
     "description": "Setup compute_family_scaling_c function binding for Python/ctypes"
   },
   "C call for compute_rdi": {
@@ -716,9 +710,7 @@
       "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),  # selected_axes_for_signed",
       "    ]",
       "    lib.clock_hand_angle_between_vectors_c.restype = None",
-      "    lib.clock_hand_angle_between_vectors_c(v1, v2, n_dims, signed_angle, selected_axes_for_signed)",
-
-      "    return func"
+      "    lib.clock_hand_angle_between_vectors_c(v1, v2, n_dims, signed_angle, selected_axes_for_signed)"
     ],
     "description": "Setup clock_hand_angle_between_vectors function binding for Python/ctypes"
   },
@@ -736,11 +728,53 @@
       "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # signed_angles",
       "    ]",
       "    lib.clock_hand_angles_for_shift_vectors_c.restype = None",
-      "    lib.clock_hand_angles_for_shift_vectors_c(origins, targets, n_dims, n_vecs, vecs_selection_mask, n_selected_vecs, selected_axes_for_signed, signed_angles)",
-
-      "    return func"
+      "    lib.clock_hand_angles_for_shift_vectors_c(origins, targets, n_dims, n_vecs, vecs_selection_mask, n_selected_vecs, selected_axes_for_signed, signed_angles)"
     ],
     "description": "Setup clock_hand_angles_for_shift_vectors function binding for Python/ctypes"
+  },
+  "Call to relative_axes_changes_from_shift_vector": {
+    "prefix": "tox:relative_axes_changes_from_shift_vector",
+    "body": [
+      "! Compute relative axis contributions from a shift vector (RAP space)",
+      "call relative_axes_changes_from_shift_vector(vec, n_dims, contrib)"
+    ],
+    "description": "Invoke relative axis contributions calculation from shift vector"
+  },
+  "R call to relative_axes_changes_from_shift_vector": {
+    "prefix": "tox:R_relative_axes_changes_from_shift_vector",
+    "body": [
+      "result <- .Fortran(\"relative_axes_changes_from_shift_vector_r\",",
+      "                  vec = as.double(vec),",
+      "                  n_dims = as.integer(n_dims),",
+      "                  contrib = as.double(numeric(n_dims)))"
+    ],
+    "description": "Call relative_axes_changes_from_shift_vector Fortran function from R"
+  },
+  "C call for relative_axes_changes_from_shift_vector": {
+    "prefix": "tox:setup_py_relative_axes_changes_from_shift_vector_c",
+    "body": [
+      "    lib.relative_axes_changes_from_shift_vector_c.argtypes = [",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # vec",
+      "        ctypes.c_int,  # n_dims",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # contrib",
+      "    ]",
+      "    lib.relative_axes_changes_from_shift_vector_c.restype = None",
+      "    lib.relative_axes_changes_from_shift_vector_c(vec, n_dims, contrib)"
+    ],
+    "description": "Setup relative_axes_changes_from_shift_vector function binding for Python/ctypes"
+  },
+  "C call for relative_axes_expression_from_expression_vector": {
+    "prefix": "tox:setup_py_relative_axes_expression_from_expression_vector_c",
+    "body": [
+      "    lib.relative_axes_expression_from_expression_vector_c.argtypes = [",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # vec",
+      "        ctypes.c_int,  # n_dims",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # contrib",
+      "    ]",
+      "    lib.relative_axes_expression_from_expression_vector_c.restype = None",
+      "    lib.relative_axes_expression_from_expression_vector_c(vec, n_dims, contrib)"
+    ],
+    "description": "Setup relative_axes_expression_from_expression_vector function binding for Python/ctypes"
   }
 }
 

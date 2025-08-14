@@ -168,7 +168,117 @@ contains
    end subroutine clock_hand_angles_for_shift_vectors
 
 
+   !> Compute fractional contribution of each axis to a RAP-projected and normalized shift vector.
+   !! Shared utility: computes fractional contribution of each axis to a RAP-projected and normalized vector.
+   pure subroutine compute_relative_axis_contributions(vec, n_axes, contributions)
+      real(real64), dimension(n_axes), intent(in) :: vec
+         !! RAP-projected and normalized vector (expression or shift)
+      integer(int32), intent(in) :: n_axes
+         !! Number of axes (length of vec and contributions)
+      real(real64), dimension(n_axes), intent(out) :: contributions
+         !! Fractional contribution of each axis (output), values in [0,1], sum to 1
+      real(real64) :: total_abs
+      integer(int32) :: i_axis
+
+      total_abs = 0.0_real64
+      do i_axis = 1, n_axes
+         total_abs = total_abs + abs(vec(i_axis))
+      end do
+
+      if (total_abs > 0.0_real64) then
+         do i_axis = 1, n_axes
+            contributions(i_axis) = abs(vec(i_axis)) / total_abs
+         end do
+      else
+         contributions = 0.0_real64
+      end if
+   end subroutine compute_relative_axis_contributions
+
+   !> Compute fractional contribution of each axis to a RAP-projected and normalized shift vector.
+   !! Wrapper for shift vectors (e.g. difference between two RAP-projected vectors)
+   pure subroutine relative_axes_changes_from_shift_vector(vec, n_axes, contributions)
+      real(real64), dimension(n_axes), intent(in) :: vec
+         !! RAP-projected and normalized shift vector
+      integer(int32), intent(in) :: n_axes
+         !! Number of axes
+      real(real64), dimension(n_axes), intent(out) :: contributions
+         !! Fractional contribution of each axis (output), values in [0,1], sum to 1
+      call compute_relative_axis_contributions(vec, n_axes, contributions)
+   end subroutine relative_axes_changes_from_shift_vector
+
+   !> Compute fractional contribution of each axis to a RAP-projected and normalized expression vector.
+   !! Wrapper for single RAP-projected expression vectors
+   pure subroutine relative_axes_expression_from_expression_vector(vec, n_axes, contributions)
+      real(real64), dimension(n_axes), intent(in) :: vec
+         !! RAP-projected and normalized expression vector
+      integer(int32), intent(in) :: n_axes
+         !! Number of axes
+      real(real64), dimension(n_axes), intent(out) :: contributions
+         !! Fractional contribution of each axis (output), values in [0,1], sum to 1
+      call compute_relative_axis_contributions(vec, n_axes, contributions)
+   end subroutine relative_axes_expression_from_expression_vector
+
 end module relative_axis_plane_tools
+
+subroutine relative_axes_changes_from_shift_vector_r(vec, n_axes, contributions)
+   use relative_axis_plane_tools
+   use, intrinsic :: iso_fortran_env, only: real64, int32
+   implicit none
+
+   real(real64), dimension(n_axes), intent(in) :: vec
+      !! RAP-projected and normalized shift vector
+   integer(int32), intent(in) :: n_axes
+      !! Number of axes
+   real(real64), dimension(n_axes), intent(out) :: contributions
+      !! Relative axis contributions (output), values in [0,1], sum to 1
+
+   call relative_axes_changes_from_shift_vector(vec, n_axes, contributions)
+end subroutine relative_axes_changes_from_shift_vector_r
+
+subroutine relative_axes_changes_from_shift_vector_c(vec, n_axes, contributions) bind(C, name="relative_axes_changes_from_shift_vector_c")
+   use iso_c_binding
+   use relative_axis_plane_tools
+   implicit none
+
+   real(c_double), dimension(n_axes), intent(in) :: vec
+      !! RAP-projected and normalized shift vector
+   integer(c_int), intent(in), value :: n_axes
+      !! Number of axes
+   real(c_double), dimension(n_axes), intent(out) :: contributions
+      !! Relative axis contributions (output), values in [0,1], sum to 1
+
+   call relative_axes_changes_from_shift_vector(vec, n_axes, contributions)
+end subroutine relative_axes_changes_from_shift_vector_c
+
+subroutine relative_axes_expression_from_expression_vector_r(vec, n_axes, contributions)
+   use relative_axis_plane_tools
+   use, intrinsic :: iso_fortran_env, only: real64, int32
+   implicit none
+
+   real(real64), dimension(n_axes), intent(in) :: vec
+      !! RAP-projected and normalized expression vector
+   integer(int32), intent(in) :: n_axes
+      !! Number of axes
+   real(real64), dimension(n_axes), intent(out) :: contributions
+      !! Relative axis contributions (output), values in [0,1], sum to 1
+
+   call relative_axes_expression_from_expression_vector(vec, n_axes, contributions)
+end subroutine relative_axes_expression_from_expression_vector_r
+
+subroutine relative_axes_expression_from_expression_vector_c(vec, n_axes, contributions) bind(C, name="relative_axes_expression_from_expression_vector_c")
+   use iso_c_binding
+   use relative_axis_plane_tools
+   implicit none
+
+   real(c_double), dimension(n_axes), intent(in) :: vec
+      !! RAP-projected and normalized expression vector
+   integer(c_int), intent(in), value :: n_axes
+      !! Number of axes
+   real(c_double), dimension(n_axes), intent(out) :: contributions
+      !! Relative axis contributions (output), values in [0,1], sum to 1
+
+   call relative_axes_expression_from_expression_vector(vec, n_axes, contributions)
+end subroutine relative_axes_expression_from_expression_vector_c
 
 subroutine omics_vector_RAP_projection_r(vecs, n_axes, n_vecs, vecs_selection_mask, n_selected_vecs, axes_selection_mask, n_selected_axes, projections)
    use relative_axis_plane_tools

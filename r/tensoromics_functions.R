@@ -623,3 +623,115 @@ clean_data_for_normalization <- function(df_matrix,
   return(df_matrix)
 }
 
+#' Calculate signed clock hand angle between two normalized vectors
+#' 
+#' @param v1 First normalized vector in RAP space
+#' @param v2 Second normalized vector in RAP space
+#' @param selected_axes_for_signed Indices of 3 axes for directionality (ignored if dim <= 3)
+#' @return Signed angle in radians [-π, π]
+tox_clock_hand_angle_between_vectors <- function(v1, v2, selected_axes_for_signed = c(1, 2, 3)) {
+  n_dims <- length(v1)
+  if (length(v2) != n_dims) {
+    stop("Vectors must have the same dimension")
+  }
+  
+  # Ensure selected_axes_for_signed has exactly 3 elements
+  if (length(selected_axes_for_signed) != 3) {
+    stop("selected_axes_for_signed must have exactly 3 elements")
+  }
+  
+  # Call Fortran wrapper
+  result <- .Fortran("clock_hand_angle_between_vectors_r",
+                    v1 = as.double(v1),
+                    v2 = as.double(v2),
+                    n_dims = as.integer(n_dims),
+                    signed_angle = as.double(0),
+                    selected_axes_for_signed = as.integer(selected_axes_for_signed))
+  
+  return(result$signed_angle)
+}
+
+#' Calculate signed clock hand angles for multiple vector pairs
+#' 
+#' @param origins Matrix of origin vectors (n_dims x n_vecs)
+#' @param targets Matrix of target vectors (n_dims x n_vecs)
+#' @param vecs_selection_mask Logical vector indicating which pairs to compute
+#' @param selected_axes_for_signed Indices of 3 axes for directionality
+#' @return Vector of signed angles in radians [-π, π]
+tox_clock_hand_angles_for_shift_vectors <- function(origins, targets, 
+                                               vecs_selection_mask = NULL,
+                                               selected_axes_for_signed = c(1, 2, 3)) {
+  if (!is.matrix(origins) || !is.matrix(targets)) {
+    stop("origins and targets must be matrices")
+  }
+  
+  if (!identical(dim(origins), dim(targets))) {
+    stop("origins and targets must have the same dimensions")
+  }
+  
+  n_dims <- nrow(origins)
+  n_vecs <- ncol(origins)
+  
+  # Default selection mask (all TRUE)
+  if (is.null(vecs_selection_mask)) {
+    vecs_selection_mask <- rep(TRUE, n_vecs)
+  }
+  
+  if (length(vecs_selection_mask) != n_vecs) {
+    stop("vecs_selection_mask length must equal number of vector pairs")
+  }
+  
+  n_selected_vecs <- sum(vecs_selection_mask)
+  
+  # Ensure selected_axes_for_signed has exactly 3 elements
+  if (length(selected_axes_for_signed) != 3) {
+    stop("selected_axes_for_signed must have exactly 3 elements")
+  }
+  
+  # Call Fortran wrapper
+  result <- .Fortran("clock_hand_angles_for_shift_vectors_r",
+                    origins = as.double(origins),
+                    targets = as.double(targets),
+                    n_dims = as.integer(n_dims),
+                    n_vecs = as.integer(n_vecs),
+                    vecs_selection_mask = as.logical(vecs_selection_mask),
+                    n_selected_vecs = as.integer(n_selected_vecs),
+                    selected_axes_for_signed = as.integer(selected_axes_for_signed),
+                    signed_angles = as.double(rep(0, n_selected_vecs)))
+  
+  return(result$signed_angles)
+}
+
+#' Calculate relative axis contributions from a shift vector
+#'
+#' This function wraps the Fortran subroutine `relative_axes_changes_from_shift_vector_r`
+#' to compute the relative axis contributions for a given shift vector in RAP space.
+#'
+#' @param shift_vector Numeric vector representing the shift in RAP space.
+#' @return Numeric vector of relative axis contributions (sums to 1).
+relative_axes_changes_from_shift_vector <- function(shift_vector) {
+  n_dims <- length(shift_vector)
+  contrib <- numeric(n_dims)
+  result <- .Fortran("relative_axes_changes_from_shift_vector_r",
+                     as.double(shift_vector),
+                     as.integer(n_dims),
+                     contrib)
+  return(result[[3]])
+}
+
+#' Calculate relative axis contributions from an expression vector
+#'
+#' This function wraps the Fortran subroutine `relative_axes_expression_from_expression_vector_r`
+#' to compute the relative axis contributions for a given expression vector in RAP space.
+#'
+#' @param expression_vector Numeric vector representing the expression in RAP space.
+#' @return Numeric vector of relative axis contributions (sums to 1).
+relative_axes_expression_from_expression_vector <- function(expression_vector) {
+  n_dims <- length(expression_vector)
+  contrib <- numeric(n_dims)
+  result <- .Fortran("relative_axes_expression_from_expression_vector_r",
+                     as.double(expression_vector),
+                     as.integer(n_dims),
+                     contrib)
+  return(result[[3]])
+}
