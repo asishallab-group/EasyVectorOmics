@@ -7,6 +7,8 @@ program main
   use mod_test_calc_fchange
   use mod_test_euclidean_distance
   use mod_test_rap_tools_omics_vector_RAP_projection
+  use mod_test_clock_hand_angles
+  use mod_test_relative_axis_contributions
 
   implicit none
 
@@ -75,6 +77,8 @@ contains
     call add_suite("calc_fchange", run_all_tests_calc_fchange, run_named_tests_calc_fchange)
     call add_suite("euclidean_distance", run_all_tests_euclidean_distance, run_named_tests_euclidean_distance)
     call add_suite("rap_tools_omics_vector_RAP_projection", run_all_tests_rap_tools_omics_vector_RAP_projection, run_named_tests_rap_tools_omics_vector_RAP_projection)
+    call add_suite("clock_hand_angles", run_all_tests_clock_hand_angles, run_named_tests_clock_hand_angles)
+    call add_suite("relative_axis_contributions", run_all_tests_relative_axis, run_named_tests_relative_axis)
   end subroutine initialize_suites
 
   !> Add a suite to the registry (grows automatically)
