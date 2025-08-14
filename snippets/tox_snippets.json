@@ -710,7 +710,237 @@
       "        tissue_versatilities, tissue_angles_deg)"
     ],
     "description": "Setup compute_tissue_versatility_c function binding for Python/ctypes"
+  },
+  "tox:set_ok": {
+    "prefix": "tox:set_ok",
+    "body": [
+      "! Set error code to 0 (Success)",
+      "call set_ok(ierr)"
+    ],
+    "description": "Set error code to 0 (Success)"
+  },
+  "tox:set_could_not_open_file": {
+    "prefix": "tox:set_could_not_open_file",
+    "body": [
+      "! Set error code to 101 (Could not open file)",
+      "call set_err_once(ierr, ERR_FILE_OPEN)"
+    ],
+    "description": "Set error code to 101 (Could not open file)"
+  },
+  "tox:set_could_not_read_magic": {
+    "prefix": "tox:set_could_not_read_magic",
+    "body": [
+      "! Set error code to 102 (Could not read magic number)",
+      "call set_err_once(ierr, ERR_READ_MAGIC)"
+    ],
+    "description": "Set error code to 102 (Could not read magic number)"
+  },
+  "tox:set_could_not_read_type_code": {
+    "prefix": "tox:set_could_not_read_type_code",
+    "body": [
+      "! Set error code to 103 (Could not read type code)",
+      "call set_err_once(ierr, ERR_READ_TYPE)"
+    ],
+    "description": "Set error code to 103 (Could not read type code)"
+  },
+  "tox:set_could_not_read_ndims": {
+    "prefix": "tox:set_could_not_read_ndims",
+    "body": [
+      "! Set error code to 104 (Could not read number of dimensions)",
+      "call set_err_once(ierr, ERR_READ_NDIMS)"
+    ],
+    "description": "Set error code to 104 (Could not read number of dimensions)"
+  },
+  "tox:set_could_not_read_dims": {
+    "prefix": "tox:set_could_not_read_dims",
+    "body": [
+      "! Set error code to 105 (Could not read array dimensions)",
+      "call set_err_once(ierr, ERR_READ_DIMS)"
+    ],
+    "description": "Set error code to 105 (Could not read array dimensions)"
+  },
+  "tox:set_could_not_read_charlen": {
+    "prefix": "tox:set_could_not_read_charlen",
+    "body": [
+      "! Set error code to 106 (Could not read character length)",
+      "call set_err_once(ierr, ERR_READ_CHARLEN)"
+    ],
+    "description": "Set error code to 106 (Could not read character length)"
+  },
+  "tox:set_could_not_read_data": {
+    "prefix": "tox:set_could_not_read_data",
+    "body": [
+      "! Set error code to 107 (Could not read array data)",
+      "call set_err_once(ierr, ERR_READ_DATA)"
+    ],
+    "description": "Set error code to 107 (Could not read array data)"
+  },
+  "tox:set_invalid_format": {
+    "prefix": "tox:set_invalid_format",
+    "body": [
+      "! Set error code to 200 (Invalid format)",
+      "call set_err_once(ierr, ERR_INVALID_FORMAT)"
+    ],
+    "description": "Set error code to 200 (Invalid format)"
+  },
+  "tox:set_invalid_input": {
+    "prefix": "tox:set_invalid_input",
+    "body": [
+      "! Set error code to 201 (Invalid input)",
+      "call set_err_once(ierr, ERR_INVALID_INPUT)"
+    ],
+    "description": "Set error code to 201 (Invalid input)"
+  },
+  "tox:set_empty_input": {
+    "prefix": "tox:set_empty_input",
+    "body": [
+      "! Set error code to 202 (Empty input)",
+      "call set_err_once(ierr, ERR_EMPTY_INPUT)"
+    ],
+    "description": "Set error code to 202 (Empty input)"
+  },
+  "tox:set_dim_mismatch": {
+    "prefix": "tox:set_dim_mismatch",
+    "body": [
+      "! Set error code to 203 (Dimension mismatch)",
+      "call set_err_once(ierr, ERR_DIM_MISMATCH)"
+    ],
+    "description": "Set error code to 203 (Dimension mismatch)"
+  },
+  "tox:set_nan_inf_found": {
+    "prefix": "tox:set_nan_inf_found",
+    "body": [
+      "! Set error code to 204 (NaN or Inf found)",
+      "call set_err_once(ierr, ERR_NAN_INF)"
+    ],
+    "description": "Set error code to 204 (NaN or Inf found)"
+  },
+  "tox:set_unsupported_type": {
+    "prefix": "tox:set_unsupported_type",
+    "body": [
+      "! Set error code to 205 (Unsupported data type)",
+      "call set_err_once(ierr, ERR_UNSUPPORTED_TYPE)"
+    ],
+    "description": "Set error code to 205 (Unsupported data type)"
+  },
+  "tox:set_alloc_fail": {
+    "prefix": "tox:set_alloc_fail",
+    "body": [
+      "! Set error code to 301 (Allocation failure)",
+      "call set_err_once(ierr, ERR_ALLOC_FAIL)"
+    ],
+    "description": "Set error code to 301 (Allocation failure)"
+  },
+  "tox:set_pointer_null": {
+    "prefix": "tox:set_pointer_null",
+    "body": [
+      "! Set error code to 302 (Null pointer reference)",
+      "call set_err_once(ierr, ERR_POINTER_NULL)"
+    ],
+    "description": "Set error code to 302 (Null pointer reference)"
+  },
+  "tox:set_unit_not_connected": {
+    "prefix": "tox:set_unit_not_connected",
+    "body": [
+      "! Set error code to 5002 (Unit not connected)",
+      "call set_err_once(ierr, ERR_UNIT_NOT_CONNECTED)"
+    ],
+    "description": "Set error code to 5002 (Unit not connected)"
+  },
+  "tox:set_internal_error": {
+    "prefix": "tox:set_internal_error",
+    "body": [
+      "! Set error code to 9001 (Internal error)",
+      "call set_err_once(ierr, ERR_INTERNAL)"
+    ],
+    "description": "Set error code to 9001 (Internal error)"
+  },
+  "tox:set_unknown_error": {
+    "prefix": "tox:set_unknown_error",
+    "body": [
+      "! Set error code to 9999 (Unknown error)",
+      "call set_err_once(ierr, ERR_UNKNOWN)"
+    ],
+    "description": "Set error code to 9999 (Unknown error)"
+  },
+  "tox:check_err_code_r": {
+    "prefix": "tox:R_check_err_code",
+    "body": [
+      "check_err_code <- function(ierr) {",
+      "  if (ierr == 0) return(invisible(NULL))",
+      "  msg <- switch(as.character(ierr),",
+      "    # I/O errors",
+      "    '101' = \"Could not open file.\",",
+      "    '102' = \"Could not read magic number.\",",
+      "    '103' = \"Could not read type code.\",",
+      "    '104' = \"Could not read number of dimensions.\",",
+      "    '105' = \"Could not read array dimensions\",",
+      "    '106' = \"Could not read character length.\",",
+      "    '107' = \"Could not read array data.\",",
+      "    # ADD MORE HERE",
+      "    ",
+      "    # FORMAT ERRORS",
+      "    '200' = \"Invalid format detected.\",",
+      "    '201' = \"Invalid input provided.\",",
+      "    '202' = \"Empty input arrays provided.\",",
+      "    '203' = \"Dimension mismatch detected.\",",
+      "    '204' = \"NaN or Inf found in input data.\",",
+      "    '205' = \"Unsupported data type encountered.\",",
+      "",
+      "    # MEMORY ERRORS",
+      "    '301' = \"Memory allocation failed.\",",
+      "    '302' = \"Null pointer reference encountered.\",",
+      "",
+      "    # FORTRAN RUNTIME ERRORS",
+      "    '5002' = \"Fortran runtime error: unit not open / not connected.\",",
+      "",
+      "    # Internal errors",
+      "    '9001' = \"Internal error: unexpected state.\",",
+      "    '9999' = \"Unknown error.\",",
+      "    paste(\"Unmapped error code:\", ierr)",
+      "  )",
+      "  stop(msg)",
+      "}"
+    ],
+    "description": "R function to check and stop with tox error codes"
+  },
+  "tox:check_err_code_python": {
+    "prefix": "tox:check_err_code_python",
+    "body": [
+      "def check_err_code(ierr: int) -> None:",
+      "    if ierr == 0:",
+      "        return",
+      "    msg = {",
+      "        # I/O errors",
+      "        101: \"Could not open file.\",",
+      "        102: \"Could not read magic number.\",",
+      "        103: \"Could not read type code.\",",
+      "        104: \"Could not read number of dimensions.\",",
+      "        105: \"Could not read array dimensions.\",",
+      "        106: \"Could not read character length.\",",
+      "        107: \"Could not read array data.\",",
+      "",
+      "        # FORMAT ERRORS",
+      "        200: \"Invalid format detected.\",",
+      "        201: \"Invalid input provided.\",",
+      "        202: \"Empty input arrays provided.\",",
+      "        203: \"Dimension mismatch detected.\",",
+      "        204: \"NaN or Inf found in input data.\",",
+      "        205: \"Unsupported data type encountered.\",",
+      "",
+      "        # MEMORY ERRORS",
+      "        301: \"Memory allocation failed.\",",
+      "        302: \"Null pointer reference encountered.\",",
+      "",
+      "        # FORTRAN RUNTIME ERRORS",
+      "        5002: \"Fortran runtime error: unit not open / not connected.\",",
+      "",
+      "        # Internal errors",
+      "        9001: \"Internal error: unexpected state.\",",
+      "        9999: \"Unknown error.\",",
+      "    }.get(ierr, f\"Unmapped error code: {ierr}\")",
+      "    raise RuntimeError(msg)"
+    ],
+    "description": "Python function to check and raise error messages for tox error codes"
   }
 }
-
-
