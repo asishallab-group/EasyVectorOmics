@@ -1,13 +1,12 @@
 !> Module for tools related to relative axis planes (RAPs), so planes in the higher dimensional gene expression space
 module relative_axis_plane_tools
    use, intrinsic :: iso_fortran_env, only: real64, int32
+   implicit none
 
 contains
 
    !> Project selected vectors (e.g. expression vectors) onto the RAP constructed from a selected set of axes.
    pure subroutine omics_vector_RAP_projection(vecs, n_axes, n_vecs, vecs_selection_mask, n_selected_vecs, axes_selection_mask, n_selected_axes, projections)
-      implicit none
-
       real(real64), dimension(n_axes, n_vecs), intent(in) :: vecs
          !! matrix with expression vectors
       integer(int32), intent(in) :: n_axes
@@ -46,10 +45,49 @@ contains
       call project_selected_vecs_onto_rap(projections, n_selected_axes, n_selected_vecs)
    end subroutine omics_vector_RAP_projection
 
+   !> Project selected vector fields (e.g. shift vectors) onto the RAP constructed from a selected set of axes.
+   pure subroutine omics_field_RAP_projection(vecs, n_axes, n_vecs, vecs_selection_mask, n_selected_vecs, axes_selection_mask, n_selected_axes, projections)
+      real(real64), dimension(2 * n_axes, n_vecs), intent(in) :: vecs
+         !! matrix with vector fields, first n rows mean vector origin, last n rows vector targets
+      integer(int32), intent(in) :: n_axes
+         !! number of axes
+      integer(int32), intent(in) :: n_vecs
+         !! number of vectors per axis
+      logical, dimension(n_vecs), intent(in) :: vecs_selection_mask
+         !! `.true.` for vectors where projection is to be computed
+      integer(int32), intent(in) :: n_selected_vecs
+         !! count of `.true.` values in `vecs_selection_mask`
+      logical, dimension(n_axes), intent(in) :: axes_selection_mask
+         !! `.true.` for axes to be included in RAP
+      integer(int32), intent(in) :: n_selected_axes
+         !! count of `.true.` values in `axes_selection_mask`
+      real(real64), dimension(n_selected_axes, n_selected_vecs), intent(out) :: projections
+         !! projected vectors
+
+      ! fill projections matrix with selected vectors
+      integer(int32) :: i_vec, i_axis, i_vec_proj, i_axis_proj
+      i_vec_proj = 1
+      do i_vec = 1, n_vecs
+         if (vecs_selection_mask(i_vec)) then
+            i_axis_proj = 1
+            do i_axis = 1, n_axes
+               if (axes_selection_mask(i_axis)) then
+                  ! compute shift vector as difference between origin and target
+                  projections(i_axis_proj, i_vec_proj) = vecs(i_axis, i_vec) - vecs(i_axis + n_axes, i_vec)
+
+                  i_axis_proj = i_axis_proj + 1
+               end if
+            end do
+
+            i_vec_proj = i_vec_proj + 1
+         end if
+      end do
+
+      call project_selected_vecs_onto_rap(projections, n_selected_axes, n_selected_vecs)
+   end subroutine omics_field_RAP_projection
+
    !> Projects selected vectors onto its RAP
    pure subroutine project_selected_vecs_onto_rap(selected_vecs, n_selected_axes, n_selected_vecs)
-      implicit none
-
       real(real64), dimension(n_selected_axes, n_selected_vecs), intent(inout) :: selected_vecs
          !! matrix with vectors for selected axes
       integer(int32), intent(in) :: n_selected_axes
@@ -81,8 +119,6 @@ contains
    !| Calculates the signed rotation angle between two normalized vectors in RAP space.
    !| For 2D/3D: automatic directionality calculation. For >3D: uses selected axes for directionality.
    pure subroutine clock_hand_angle_between_vectors(v1, v2, n_dims, signed_angle, selected_axes_for_signed)
-      implicit none
-
       real(real64), dimension(n_dims), intent(in) :: v1
          !! First normalized vector in RAP space
       real(real64), dimension(n_dims), intent(in) :: v2
@@ -135,8 +171,6 @@ contains
                                                       vecs_selection_mask, &
                                                       n_selected_vecs, selected_axes_for_signed, &
                                                       signed_angles)
-      implicit none
-
       real(real64), dimension(n_dims, n_vecs), intent(in) :: origins
          !! First set of RAP-projected, normalized vectors (e.g. expression centroids)
       real(real64), dimension(n_dims, n_vecs), intent(in) :: targets
@@ -221,7 +255,7 @@ contains
 end module relative_axis_plane_tools
 
 subroutine relative_axes_changes_from_shift_vector_r(vec, n_axes, contributions)
-   use relative_axis_plane_tools
+   use relative_axis_plane_tools, only: relative_axes_changes_from_shift_vector
    use, intrinsic :: iso_fortran_env, only: real64, int32
    implicit none
 
@@ -236,8 +270,8 @@ subroutine relative_axes_changes_from_shift_vector_r(vec, n_axes, contributions)
 end subroutine relative_axes_changes_from_shift_vector_r
 
 subroutine relative_axes_changes_from_shift_vector_c(vec, n_axes, contributions) bind(C, name="relative_axes_changes_from_shift_vector_c")
-   use iso_c_binding
-   use relative_axis_plane_tools
+   use iso_c_binding, only: c_double, c_int
+   use relative_axis_plane_tools, only: relative_axes_changes_from_shift_vector
    implicit none
 
    real(c_double), dimension(n_axes), intent(in) :: vec
@@ -251,7 +285,7 @@ subroutine relative_axes_changes_from_shift_vector_c(vec, n_axes, contributions)
 end subroutine relative_axes_changes_from_shift_vector_c
 
 subroutine relative_axes_expression_from_expression_vector_r(vec, n_axes, contributions)
-   use relative_axis_plane_tools
+   use relative_axis_plane_tools, only: relative_axes_expression_from_expression_vector
    use, intrinsic :: iso_fortran_env, only: real64, int32
    implicit none
 
@@ -266,8 +300,8 @@ subroutine relative_axes_expression_from_expression_vector_r(vec, n_axes, contri
 end subroutine relative_axes_expression_from_expression_vector_r
 
 subroutine relative_axes_expression_from_expression_vector_c(vec, n_axes, contributions) bind(C, name="relative_axes_expression_from_expression_vector_c")
-   use iso_c_binding
-   use relative_axis_plane_tools
+   use iso_c_binding, only: c_double, c_int
+   use relative_axis_plane_tools, only: relative_axes_expression_from_expression_vector
    implicit none
 
    real(c_double), dimension(n_axes), intent(in) :: vec
@@ -281,7 +315,7 @@ subroutine relative_axes_expression_from_expression_vector_c(vec, n_axes, contri
 end subroutine relative_axes_expression_from_expression_vector_c
 
 subroutine omics_vector_RAP_projection_r(vecs, n_axes, n_vecs, vecs_selection_mask, n_selected_vecs, axes_selection_mask, n_selected_axes, projections)
-   use relative_axis_plane_tools
+   use relative_axis_plane_tools, only: omics_vector_RAP_projection
    use, intrinsic :: iso_fortran_env, only: real64, int32
    implicit none
 
@@ -306,8 +340,8 @@ subroutine omics_vector_RAP_projection_r(vecs, n_axes, n_vecs, vecs_selection_ma
 end subroutine omics_vector_RAP_projection_r
 
 subroutine omics_vector_RAP_projection_c(vecs, n_axes, n_vecs, vecs_selection_mask, n_selected_vecs, axes_selection_mask, n_selected_axes, projections) bind(C, name="omics_vector_RAP_projection_c")
-   use iso_c_binding
-   use relative_axis_plane_tools
+   use iso_c_binding, only: c_double, c_int
+   use relative_axis_plane_tools, only: omics_vector_RAP_projection
    implicit none
 
    real(c_double), dimension(n_axes, n_vecs), intent(in) :: vecs
@@ -330,8 +364,58 @@ subroutine omics_vector_RAP_projection_c(vecs, n_axes, n_vecs, vecs_selection_ma
    call omics_vector_RAP_projection(vecs, n_axes, n_vecs, vecs_selection_mask /= 0, n_selected_vecs, axes_selection_mask /= 0, n_selected_axes, projections)
 end subroutine omics_vector_RAP_projection_c
 
+subroutine omics_field_RAP_projection_r(vecs, n_axes, n_vecs, vecs_selection_mask, n_selected_vecs, axes_selection_mask, n_selected_axes, projections)
+   use relative_axis_plane_tools, only: omics_field_RAP_projection
+   use, intrinsic :: iso_fortran_env, only: real64, int32
+   implicit none
+
+   real(real64), dimension(n_axes, n_vecs), intent(in) :: vecs
+      !! matrix with vector fields, first n rows mean vector origin, last n rows vector targets
+   integer(int32), intent(in) :: n_axes
+      !! number of axes
+   integer(int32), intent(in) :: n_vecs
+      !! number of vectors per axis
+   logical, dimension(n_vecs), intent(in) :: vecs_selection_mask
+      !! `.true.` for vectors where projection is to be computed
+   integer(int32), intent(in) :: n_selected_vecs
+      !! count of `.true.` values in `vecs_selection_mask`
+   logical, dimension(n_axes), intent(in) :: axes_selection_mask
+      !! `.true.` for axes to be included in RAP
+   integer(int32), intent(in) :: n_selected_axes
+      !! count of `.true.` values in `axes_selection_mask`
+   real(real64), dimension(n_selected_axes, n_selected_vecs), intent(out) :: projections
+      !! projected vectors
+
+   call omics_field_RAP_projection(vecs, n_axes, n_vecs, vecs_selection_mask, n_selected_vecs, axes_selection_mask, n_selected_axes, projections)
+end subroutine omics_field_RAP_projection_r
+
+subroutine omics_field_RAP_projection_c(vecs, n_axes, n_vecs, vecs_selection_mask, n_selected_vecs, axes_selection_mask, n_selected_axes, projections) bind(C, name="omics_field_RAP_projection_c")
+   use iso_c_binding, only: c_double, c_int
+   use relative_axis_plane_tools, only: omics_field_RAP_projection
+   implicit none
+
+   real(c_double), dimension(2 * n_axes, n_vecs), intent(in) :: vecs
+      !! matrix with vector fields, first n rows mean vector origin, last n rows vector targets
+   integer(c_int), intent(in), value :: n_axes
+      !! number of axes
+   integer(c_int), intent(in), value :: n_vecs
+      !! number of vectors per axis
+   integer(c_int), dimension(n_vecs), intent(in) :: vecs_selection_mask
+      !! `.true.` for vectors where projection is to be computed
+   integer(c_int), intent(in), value :: n_selected_vecs
+      !! count of `.true.` values in `vecs_selection_mask`
+   integer(c_int), dimension(n_axes), intent(in) :: axes_selection_mask
+      !! `.true.` for axes to be included in RAP
+   integer(c_int), intent(in), value :: n_selected_axes
+      !! count of `.true.` values in `axes_selection_mask`
+   real(c_double), dimension(n_selected_axes, n_selected_vecs), intent(out) :: projections
+      !! projected vectors
+
+   call omics_field_RAP_projection(vecs, n_axes, n_vecs, vecs_selection_mask /= 0, n_selected_vecs, axes_selection_mask /= 0, n_selected_axes, projections)
+end subroutine omics_field_RAP_projection_c
+
 subroutine clock_hand_angle_between_vectors_r(v1, v2, n_dims, signed_angle, selected_axes_for_signed)
-   use relative_axis_plane_tools
+   use relative_axis_plane_tools, only: clock_hand_angle_between_vectors
    use, intrinsic :: iso_fortran_env, only: real64, int32
    implicit none
 
@@ -350,8 +434,8 @@ subroutine clock_hand_angle_between_vectors_r(v1, v2, n_dims, signed_angle, sele
 end subroutine clock_hand_angle_between_vectors_r
 
 subroutine clock_hand_angle_between_vectors_c(v1, v2, n_dims, signed_angle, selected_axes_for_signed) bind(C, name="clock_hand_angle_between_vectors_c")
-   use iso_c_binding
-   use relative_axis_plane_tools
+   use iso_c_binding, only: c_double, c_int
+   use relative_axis_plane_tools, only: clock_hand_angle_between_vectors
    implicit none
 
    real(c_double), dimension(n_dims), intent(in) :: v1
@@ -369,7 +453,7 @@ subroutine clock_hand_angle_between_vectors_c(v1, v2, n_dims, signed_angle, sele
 end subroutine clock_hand_angle_between_vectors_c
 
 subroutine clock_hand_angles_for_shift_vectors_r(origins, targets, n_dims, n_vecs, vecs_selection_mask, n_selected_vecs, selected_axes_for_signed, signed_angles)
-   use relative_axis_plane_tools
+   use relative_axis_plane_tools, only: clock_hand_angles_for_shift_vectors
    use, intrinsic :: iso_fortran_env, only: real64, int32
    implicit none
 
@@ -394,8 +478,8 @@ subroutine clock_hand_angles_for_shift_vectors_r(origins, targets, n_dims, n_vec
 end subroutine clock_hand_angles_for_shift_vectors_r
 
 subroutine clock_hand_angles_for_shift_vectors_c(origins, targets, n_dims, n_vecs, vecs_selection_mask, n_selected_vecs, selected_axes_for_signed, signed_angles) bind(C, name="clock_hand_angles_for_shift_vectors_c")
-   use iso_c_binding
-   use relative_axis_plane_tools
+   use iso_c_binding, only: c_double, c_int
+   use relative_axis_plane_tools, only: clock_hand_angles_for_shift_vectors
    implicit none
 
    real(c_double), dimension(n_dims, n_vecs), intent(in) :: origins
