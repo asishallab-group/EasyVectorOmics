@@ -350,6 +350,69 @@
 		"    return dist_to_centroid"
 		],
 		"description": "Setup distance_to_centroid_c function binding"
+	},
+
+	"Python set up call function for omics_vector_RAP_projection": {
+		"prefix": "tox:py_omics_vector_RAP_projection",
+		"body": [
+			"def setup_omics_vector_RAP_projection():",
+			"    \"\"\"Setup distance to centroid function\"\"\"",
+	    "		 omics_vector_RAP_projection = lib.omics_vector_RAP_projection_c",
+			"    ",
+	    "    omics_vector_RAP_projection.argtypes = [",
+	    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"F_CONTIGUOUS\"),",
+	    "        ctypes.c_int,",
+	    "        ctypes.c_int,",
+	    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+	    "        ctypes.c_int,",
+	    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+	    "        ctypes.c_int,",
+	    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"F_CONTIGUOUS\")",
+	    "    ]",
+			"    ",
+	    "    omics_vector_RAP_projection.restype = None",
+			"    ",
+			"    # create function to create the input arguments",
+			"    # this enables reusability of inputs and access to the in-place changes of the arguments",
+	    "    def initArgs(vecs, vecs_selection_mask, axes_selection_mask):",
+	    "        return (",
+	    "            np.asfortranarray(vecs, dtype=np.float64),",
+	    "            np.ascontiguousarray(vecs_selection_mask, dtype=np.int32),",
+	    "            np.ascontiguousarray(axes_selection_mask, dtype=np.int32),",
+	    "            np.empty((sum(axes_selection_mask), sum(vecs_selection_mask)), order=\"F\", dtype=np.float64)",
+	    "        )",
+			"    ",
+	    "    return omics_vector_RAP_projection, initArgs"
+	  ],
+	  "description": "Setup omics_vector_RAP_projection function binding"
+	},
+
+	"R set up call function for omics_vector_RAP_projection": {
+		"prefix": "tox:r_omics_vector_RAP_projection",
+		"body": [
+			"omics_vector_RAP_projection <- function(vecs, vecs_selection_mask, axes_selection_mask) {"
+			"  n_selected_vecs <- sum(vecs_selection_mask == 1)"
+			"  n_selected_axes <- sum(axes_selection_mask == 1)"
+			"  res <- .Fortran(\"omics_vector_RAP_projection_r\","
+			"                  vecs = as.double(vecs),"
+			"                  n_axes = as.integer(nrow(vecs)),"
+			"                  n_vecs = as.integer(ncol(vecs)),"
+			"                  vecs_selection_mask = as.integer(vecs_selection_mask),"
+			"                  n_selected_vecs = n_selected_vecs,"
+			"                  axes_selection_mask = as.integer(axes_selection_mask),"
+			"                  n_selected_axes = n_selected_axes,"
+			"                  projections = matrix(as.double(1), nrow = n_selected_axes, ncol = n_selected_vecs))"
+			"  return(res$projections)"
+			"}"
+	  ],
+	  "description": "Setup omics_vector_RAP_projection function binding"
+	},
+
+	"Fortran call to omics_vector_RAP_projection": {
+		"prefix": "tox:omics_vector_RAP_projection",
+		"body": [
+			"call omics_vector_RAP_projection({1:vecs}, {2:n_axes}, {3:n_vecs}, {4:vecs_selection_mask}, {5:n_selected_vecs}, {6:axes_selection_mask}, {7:n_selected_axes}, {8:projections})"
+		]
 	}
 }
 
