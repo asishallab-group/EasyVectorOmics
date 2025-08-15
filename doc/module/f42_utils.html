@@ -85,7 +85,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="52.5% of total for modules and submodules.">170 statements</a>
+                 title="38.3% of total for modules and submodules.">252 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -155,6 +155,8 @@
             <a class="list-group-item" href="../module/f42_utils.html#proc-quicksort_int">quicksort_int</a>
             <a class="list-group-item" href="../module/f42_utils.html#proc-quicksort_char">quicksort_char</a>
             <a class="list-group-item" href="../module/f42_utils.html#proc-swap_int">swap_int</a>
+            <a class="list-group-item" href="../module/f42_utils.html#proc-which">which</a>
+            <a class="list-group-item" href="../module/f42_utils.html#proc-loess_smooth_2d">loess_smooth_2d</a>
         </div>
       </div>
     </div>
@@ -173,8 +175,8 @@
     </div>
 
     <div class="col-md-9" id='text'>
-      <p>@brief Utility module for data analysis.
-@details This module provides general-purpose utility functions for data analysis, to be used as needed.</p>
+      <p>Utility module for data analysis.
+This module provides general-purpose utility functions for data analysis, to be used as needed.</p>
 <br>          <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
@@ -202,9 +204,6 @@
       <h3>public        interface <a href='../interface/sort_array.html'>sort_array</a> 
       </h3>
     </div>
-      <div class="card-body">
-        <p>Generic interface for internal Fortran use only</p>
-      </div>
     <ul class="list-group">
           <li class="list-group-item">
                 <h3>
@@ -212,13 +211,8 @@
 
     </h3>
     
-  <p>Sort a real(real64) array indirectly using quicksort.
- Creates a sorted version of the array by reordering the <code>perm</code> vector.
-The original data in <code>array</code> remains unchanged.</p>
-<p>@param array        Real input array to sort<br>
-@param perm         Permutation vector that will be sorted<br>
-@param stack_left   Manual stack of left indices for quicksort recursion<br>
-@param stack_right  Manual stack of right indices for quicksort recursion<br></p>
+  <p>Sort a real array indirectly using quicksort.
+Creates a sorted version of the array by reordering the <code>perm</code> vector. The original data in <code>array</code> remains unchanged.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -243,13 +237,13 @@ The original data in <code>array</code> remains unchanged.</p>
             <td>::</td>
             <td><strong>array</strong>(:)</td>
             <td>
-
+<p>Real input array to sort</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-perm"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -258,13 +252,13 @@ The original data in <code>array</code> remains unchanged.</p>
             <td>::</td>
             <td><strong>perm</strong>(:)</td>
             <td>
-
+<p>Permutation vector that will be sorted</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_left"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -273,13 +267,13 @@ The original data in <code>array</code> remains unchanged.</p>
             <td>::</td>
             <td><strong>stack_left</strong>(:)</td>
             <td>
-
+<p>Manual stack of left indices for quicksort recursion</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_right"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -288,7 +282,7 @@ The original data in <code>array</code> remains unchanged.</p>
             <td>::</td>
             <td><strong>stack_right</strong>(:)</td>
             <td>
-
+<p>Manual stack of right indices for quicksort recursion</p>
             </td>
         </tr>
     </tbody>
@@ -303,7 +297,7 @@ The original data in <code>array</code> remains unchanged.</p>
     </h3>
     
   <p>Sort an integer array indirectly using quicksort.
- Similar to <code>sort_real</code>, but for integer input.</p>
+Similar to <code>sort_real</code>, but for integer input.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -319,7 +313,7 @@ The original data in <code>array</code> remains unchanged.</p>
         <tr>
             <td>
               <span class="anchor" id="variable-array~2"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -328,13 +322,13 @@ The original data in <code>array</code> remains unchanged.</p>
             <td>::</td>
             <td><strong>array</strong>(:)</td>
             <td>
-
+<p>Integer input array to sort</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-perm~2"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -343,13 +337,13 @@ The original data in <code>array</code> remains unchanged.</p>
             <td>::</td>
             <td><strong>perm</strong>(:)</td>
             <td>
-
+<p>Permutation vector that will be sorted</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_left~2"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -358,13 +352,13 @@ The original data in <code>array</code> remains unchanged.</p>
             <td>::</td>
             <td><strong>stack_left</strong>(:)</td>
             <td>
-
+<p>Manual stack of left indices for quicksort recursion</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_right~2"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -373,7 +367,7 @@ The original data in <code>array</code> remains unchanged.</p>
             <td>::</td>
             <td><strong>stack_right</strong>(:)</td>
             <td>
-
+<p>Manual stack of right indices for quicksort recursion</p>
             </td>
         </tr>
     </tbody>
@@ -388,7 +382,7 @@ The original data in <code>array</code> remains unchanged.</p>
     </h3>
     
   <p>Sort a character array indirectly using quicksort.
- Uses lexicographic ordering and permutation vector sorting.</p>
+Uses lexicographic ordering and permutation vector sorting.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -413,13 +407,13 @@ The original data in <code>array</code> remains unchanged.</p>
             <td>::</td>
             <td><strong>array</strong>(:)</td>
             <td>
-
+<p>Character input array to sort</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-perm~3"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -428,13 +422,13 @@ The original data in <code>array</code> remains unchanged.</p>
             <td>::</td>
             <td><strong>perm</strong>(:)</td>
             <td>
-
+<p>Permutation vector that will be sorted</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_left~3"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -443,13 +437,13 @@ The original data in <code>array</code> remains unchanged.</p>
             <td>::</td>
             <td><strong>stack_left</strong>(:)</td>
             <td>
-
+<p>Manual stack of left indices for quicksort recursion</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_right~3"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -458,7 +452,7 @@ The original data in <code>array</code> remains unchanged.</p>
             <td>::</td>
             <td><strong>stack_right</strong>(:)</td>
             <td>
-
+<p>Manual stack of right indices for quicksort recursion</p>
             </td>
         </tr>
     </tbody>
@@ -482,9 +476,8 @@ The original data in <code>array</code> remains unchanged.</p>
 </h3></div>
     <div class="card-body">
           
-  <p>Sort a real(real64) array indirectly using quicksort.
- Creates a sorted version of the array by reordering the <code>perm</code> vector.
-The original data in <code>array</code> remains unchanged.</p><a href="../proc/sort_real.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+  <p>Sort a real array indirectly using quicksort.
+Creates a sorted version of the array by reordering the <code>perm</code> vector. The original data in <code>array</code> remains unchanged.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -509,13 +502,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>array</strong>(:)</td>
             <td>
-
+<p>Real input array to sort</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-perm"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -524,13 +517,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>perm</strong>(:)</td>
             <td>
-
+<p>Permutation vector that will be sorted</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_left"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -539,13 +532,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>stack_left</strong>(:)</td>
             <td>
-
+<p>Manual stack of left indices for quicksort recursion</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_right"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -554,7 +547,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>stack_right</strong>(:)</td>
             <td>
-
+<p>Manual stack of right indices for quicksort recursion</p>
             </td>
         </tr>
     </tbody>
@@ -570,7 +563,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
     <div class="card-body">
           
   <p>Sort an integer array indirectly using quicksort.
- Similar to <code>sort_real</code>, but for integer input.</p>
+Similar to <code>sort_real</code>, but for integer input.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -586,7 +579,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
         <tr>
             <td>
               <span class="anchor" id="variable-array~2"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -595,13 +588,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>array</strong>(:)</td>
             <td>
-
+<p>Integer input array to sort</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-perm~2"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -610,13 +603,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>perm</strong>(:)</td>
             <td>
-
+<p>Permutation vector that will be sorted</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_left~2"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -625,13 +618,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>stack_left</strong>(:)</td>
             <td>
-
+<p>Manual stack of left indices for quicksort recursion</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_right~2"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -640,7 +633,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>stack_right</strong>(:)</td>
             <td>
-
+<p>Manual stack of right indices for quicksort recursion</p>
             </td>
         </tr>
     </tbody>
@@ -656,7 +649,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
     <div class="card-body">
           
   <p>Sort a character array indirectly using quicksort.
- Uses lexicographic ordering and permutation vector sorting.</p>
+Uses lexicographic ordering and permutation vector sorting.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -681,13 +674,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>array</strong>(:)</td>
             <td>
-
+<p>Character input array to sort</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-perm~3"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -696,13 +689,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>perm</strong>(:)</td>
             <td>
-
+<p>Permutation vector that will be sorted</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_left~3"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -711,13 +704,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>stack_left</strong>(:)</td>
             <td>
-
+<p>Manual stack of left indices for quicksort recursion</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_right~3"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -726,7 +719,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>stack_right</strong>(:)</td>
             <td>
-
+<p>Manual stack of right indices for quicksort recursion</p>
             </td>
         </tr>
     </tbody>
@@ -742,7 +735,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
     <div class="card-body">
           
   <p>Internal quicksort implementation for real arrays.
- Sorts indirectly using the permutation vector <code>perm</code>. Manual stack replaces recursion.</p>
+Sorts indirectly using the permutation vector <code>perm</code>. Manual stack replaces recursion.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -767,13 +760,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>array</strong>(:)</td>
             <td>
-
+<p>Real input array to sort</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-perm~4"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -782,13 +775,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>perm</strong>(:)</td>
             <td>
-
+<p>Permutation vector that will be sorted</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-n"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -797,13 +790,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>n</strong></td>
             <td>
-
+<p>Size of the array</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_left~4"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -812,13 +805,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>stack_left</strong>(:)</td>
             <td>
-
+<p>Manual stack of left indices for quicksort recursion</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_right~4"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -827,7 +820,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>stack_right</strong>(:)</td>
             <td>
-
+<p>Manual stack of right indices for quicksort recursion</p>
             </td>
         </tr>
     </tbody>
@@ -843,7 +836,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
     <div class="card-body">
           
   <p>Internal quicksort implementation for integer arrays.
- Indirectly sorts <code>array</code> using <code>perm</code>, same algorithm as <code>quicksort_real</code>.</p>
+Indirectly sorts <code>array</code> using <code>perm</code>, same algorithm as <code>quicksort_real</code>.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -859,7 +852,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
         <tr>
             <td>
               <span class="anchor" id="variable-array~5"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -868,13 +861,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>array</strong>(:)</td>
             <td>
-
+<p>Integer input array to sort</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-perm~5"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -883,13 +876,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>perm</strong>(:)</td>
             <td>
-
+<p>Permutation vector that will be sorted</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-n~2"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -898,13 +891,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>n</strong></td>
             <td>
-
+<p>Size of the array</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_left~5"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -913,13 +906,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>stack_left</strong>(:)</td>
             <td>
-
+<p>Manual stack of left indices for quicksort recursion</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_right~5"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -928,7 +921,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>stack_right</strong>(:)</td>
             <td>
-
+<p>Manual stack of right indices for quicksort recursion</p>
             </td>
         </tr>
     </tbody>
@@ -944,7 +937,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
     <div class="card-body">
           
   <p>Internal quicksort implementation for character arrays.
- Lexicographic quicksort using string comparison, indirect via <code>perm</code>.</p>
+Lexicographic quicksort using string comparison, indirect via <code>perm</code>.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -969,13 +962,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>array</strong>(:)</td>
             <td>
-
+<p>Character input array to sort</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-perm~6"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -984,13 +977,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>perm</strong>(:)</td>
             <td>
-
+<p>Permutation vector that will be sorted</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-n~3"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -999,13 +992,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>n</strong></td>
             <td>
-
+<p>Size of the array</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_left~6"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -1014,13 +1007,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>stack_left</strong>(:)</td>
             <td>
-
+<p>Manual stack of left indices for quicksort recursion</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_right~6"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -1029,7 +1022,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>stack_right</strong>(:)</td>
             <td>
-
+<p>Manual stack of right indices for quicksort recursion</p>
             </td>
         </tr>
     </tbody>
@@ -1044,9 +1037,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
 </h3></div>
     <div class="card-body">
           
-  <p>Swap two integer values in-place.
-@param a First integer to swap<br>
-@param b Second integer to swap<br></p>
+  <p>Swap two integer values in-place.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1062,7 +1053,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
         <tr>
             <td>
               <span class="anchor" id="variable-a"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -1071,13 +1062,13 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>a</strong></td>
             <td>
-
+<p>First integer to swap</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-b"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -1086,7 +1077,284 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <td>::</td>
             <td><strong>b</strong></td>
             <td>
+<p>Second integer to swap</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
 
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-which"></span> <h3>public pure subroutine <a href='../proc/which.html'>which</a>(mask, n, idx_out, m_max, m_out)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Finds the indices of the true values in a logical mask.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mask"></span>
+              logical,
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mask</strong>(:)</td>
+            <td>
+<p>Logical array of size n.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n~4"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n</strong></td>
+            <td>
+<p>Size of the mask.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-idx_out"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>idx_out</strong>(:)</td>
+            <td>
+<p>Integer array to store the indices of true values.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-m_max"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>m_max</strong></td>
+            <td>
+<p>Maximum size of idx_out.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-m_out"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>m_out</strong></td>
+            <td>
+<p>Actual size of idx_out (number of true values found).</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-loess_smooth_2d"></span> <h3>public pure subroutine <a href='../proc/loess_smooth_2d.html'>loess_smooth_2d</a>(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, kernel_sigma, kernel_cutoff, y_out)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Performs LOESS smoothing on a set of data points.
+Smooths y_ref at x_query using reference points x_ref, y_ref, and kernel parameters.
+The user must pre-filter data and provide only valid indices in indices_used.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_total"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_total</strong></td>
+            <td>
+<p>Total number of reference points.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_target"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_target</strong></td>
+            <td>
+<p>Number of target points to smooth.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-x_ref"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>x_ref</strong>(n_total)</td>
+            <td>
+<p>Reference x-coordinates.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-y_ref"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>y_ref</strong>(n_total)</td>
+            <td>
+<p>Reference y-coordinates (length n_total).</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-indices_used"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>indices_used</strong>(n_used)</td>
+            <td>
+<p>Indices of reference points used for smoothing (only valid indices).</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_used"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_used</strong></td>
+            <td>
+<p>Number of indices actually used for smoothing.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-x_query"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>x_query</strong>(n_target)</td>
+            <td>
+<p>Target x-coordinates to smooth.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kernel_sigma"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>kernel_sigma</strong></td>
+            <td>
+<p>Bandwidth parameter for the kernel.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-kernel_cutoff"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>kernel_cutoff</strong></td>
+            <td>
+<p>Cutoff for the kernel.</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-y_out"></span>
+              real(kind=real64),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>y_out</strong>(n_target)</td>
+            <td>
+<p>Output smoothed values (length n_target).</p>
             </td>
         </tr>
     </tbody>
@@ -1119,7 +1387,7 @@ The original data in <code>array</code> remains unchanged.</p><a href="../proc/s
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
-            </p>
+ on "2025-08-13 11:02 +0000"             </p>
           </div>
         </div>
         <br>

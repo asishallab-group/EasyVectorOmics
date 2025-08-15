@@ -85,7 +85,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title="35.5% of total for modules and submodules.">115 statements</a>
+                 title="17.9% of total for modules and submodules.">118 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -192,7 +192,7 @@
     <div class="card-body">
           
   <p>Normalizes each gene's expression vector using <code>sqrt(mean(x^2))</code>
-across tissues (not classical standard deviation).</p><a href="../proc/normalize_by_std_dev.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+across tissues (not classical standard deviation).</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -207,8 +207,8 @@ across tissues (not classical standard deviation).</p><a href="../proc/normalize
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_genes"></span>
-              integer,
+              <span class="anchor" id="variable-n_genes~16"></span>
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -217,13 +217,13 @@ across tissues (not classical standard deviation).</p><a href="../proc/normalize
             <td>::</td>
             <td><strong>n_genes</strong></td>
             <td>
-
+<p>Number of genes (rows)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-n_tissues"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -232,7 +232,7 @@ across tissues (not classical standard deviation).</p><a href="../proc/normalize
             <td>::</td>
             <td><strong>n_tissues</strong></td>
             <td>
-
+<p>Number of tissues (columns)</p>
             </td>
         </tr>
         <tr>
@@ -247,7 +247,7 @@ across tissues (not classical standard deviation).</p><a href="../proc/normalize
             <td>::</td>
             <td><strong>input_matrix</strong>(n_genes*n_tissues)</td>
             <td>
-
+<p>Flattened input matrix of gene expression values (column-major)</p>
             </td>
         </tr>
         <tr>
@@ -262,7 +262,7 @@ across tissues (not classical standard deviation).</p><a href="../proc/normalize
             <td>::</td>
             <td><strong>output_matrix</strong>(n_genes*n_tissues)</td>
             <td>
-
+<p>Output normalized matrix (same shape as input)</p>
             </td>
         </tr>
     </tbody>
@@ -278,7 +278,7 @@ across tissues (not classical standard deviation).</p><a href="../proc/normalize
     <div class="card-body">
           
   <p>Quantile normalization of a gene expression matrix (F42-compliant).
-Computes average expression per rank across tissues.</p><a href="../proc/quantile_normalization.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+Computes average expression per rank across tissues.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -293,8 +293,8 @@ Computes average expression per rank across tissues.</p><a href="../proc/quantil
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_genes~2"></span>
-              integer,
+              <span class="anchor" id="variable-n_genes~17"></span>
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -303,13 +303,13 @@ Computes average expression per rank across tissues.</p><a href="../proc/quantil
             <td>::</td>
             <td><strong>n_genes</strong></td>
             <td>
-
+<p>Number of genes (rows)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-n_tissues~2"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -318,7 +318,7 @@ Computes average expression per rank across tissues.</p><a href="../proc/quantil
             <td>::</td>
             <td><strong>n_tissues</strong></td>
             <td>
-
+<p>Number of tissues (columns)</p>
             </td>
         </tr>
         <tr>
@@ -333,7 +333,7 @@ Computes average expression per rank across tissues.</p><a href="../proc/quantil
             <td>::</td>
             <td><strong>input_matrix</strong>(n_genes*n_tissues)</td>
             <td>
-
+<p>Flattened input matrix (column-major)</p>
             </td>
         </tr>
         <tr>
@@ -348,7 +348,7 @@ Computes average expression per rank across tissues.</p><a href="../proc/quantil
             <td>::</td>
             <td><strong>output_matrix</strong>(n_genes*n_tissues)</td>
             <td>
-
+<p>Output normalized matrix (same shape as input)</p>
             </td>
         </tr>
         <tr>
@@ -363,7 +363,7 @@ Computes average expression per rank across tissues.</p><a href="../proc/quantil
             <td>::</td>
             <td><strong>temp_col</strong>(n_genes)</td>
             <td>
-
+<p>Temporary vector for column sorting (size n_genes)</p>
             </td>
         </tr>
         <tr>
@@ -378,13 +378,13 @@ Computes average expression per rank across tissues.</p><a href="../proc/quantil
             <td>::</td>
             <td><strong>rank_means</strong>(n_genes)</td>
             <td>
-
+<p>Preallocated vector to store rank means (size n_genes)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-perm~13"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -393,13 +393,13 @@ Computes average expression per rank across tissues.</p><a href="../proc/quantil
             <td>::</td>
             <td><strong>perm</strong>(n_genes)</td>
             <td>
-
+<p>Permutation vector (size n_genes)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_left~13"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -408,13 +408,13 @@ Computes average expression per rank across tissues.</p><a href="../proc/quantil
             <td>::</td>
             <td><strong>stack_left</strong>(max_stack)</td>
             <td>
-
+<p>Manual quicksort stack (≥ log2(n_genes) + 10)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_right~13"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -423,13 +423,13 @@ Computes average expression per rank across tissues.</p><a href="../proc/quantil
             <td>::</td>
             <td><strong>stack_right</strong>(max_stack)</td>
             <td>
-
+<p>Manual quicksort stack (same size as stack_left)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-max_stack"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -438,7 +438,7 @@ Computes average expression per rank across tissues.</p><a href="../proc/quantil
             <td>::</td>
             <td><strong>max_stack</strong></td>
             <td>
-
+<p>Stack size passed from R</p>
             </td>
         </tr>
     </tbody>
@@ -457,7 +457,7 @@ Computes average expression per rank across tissues.</p><a href="../proc/quantil
 This subroutine performs element-wise <code>log2(x + 1)</code> transformation on a
 matrix flattened in column-major order. The <code>log2</code> is computed via:
 <code>log(x + 1) / log(2)</code>, which is numerically equivalent and avoids the
-non-portable <code>log2</code> intrinsic for compatibility with WebAssembly (WASM).</p><a href="../proc/log2_transformation.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+non-portable <code>log2</code> intrinsic for compatibility with WebAssembly (WASM).</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -472,8 +472,8 @@ non-portable <code>log2</code> intrinsic for compatibility with WebAssembly (WAS
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_genes~3"></span>
-              integer,
+              <span class="anchor" id="variable-n_genes~18"></span>
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -482,13 +482,13 @@ non-portable <code>log2</code> intrinsic for compatibility with WebAssembly (WAS
             <td>::</td>
             <td><strong>n_genes</strong></td>
             <td>
-
+<p>Number of genes (rows)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-n_tissues~3"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -497,7 +497,7 @@ non-portable <code>log2</code> intrinsic for compatibility with WebAssembly (WAS
             <td>::</td>
             <td><strong>n_tissues</strong></td>
             <td>
-
+<p>Number of tissues (columns)</p>
             </td>
         </tr>
         <tr>
@@ -512,7 +512,7 @@ non-portable <code>log2</code> intrinsic for compatibility with WebAssembly (WAS
             <td>::</td>
             <td><strong>input_matrix</strong>(n_genes*n_tissues)</td>
             <td>
-
+<p>Flattened input matrix (size: n_genes * n_tissues)</p>
             </td>
         </tr>
         <tr>
@@ -527,7 +527,7 @@ non-portable <code>log2</code> intrinsic for compatibility with WebAssembly (WAS
             <td>::</td>
             <td><strong>output_matrix</strong>(n_genes*n_tissues)</td>
             <td>
-
+<p>Output matrix (same size as input)</p>
             </td>
         </tr>
     </tbody>
@@ -544,7 +544,7 @@ non-portable <code>log2</code> intrinsic for compatibility with WebAssembly (WAS
           
   <p>Calculate tissue averages by averaging replicates within each group.
 For each group of tissue replicates, this subroutine computes the average
-expression per gene. The input matrix is column-major, flattened as a 1D array.</p><a href="../proc/calc_tiss_avg.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+expression per gene. The input matrix is column-major, flattened as a 1D array.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -560,7 +560,7 @@ expression per gene. The input matrix is column-major, flattened as a 1D array.<
         <tr>
             <td>
               <span class="anchor" id="variable-n_gene"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -569,13 +569,13 @@ expression per gene. The input matrix is column-major, flattened as a 1D array.<
             <td>::</td>
             <td><strong>n_gene</strong></td>
             <td>
-
+<p>Number of genes (rows)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-n_grps"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -584,13 +584,13 @@ expression per gene. The input matrix is column-major, flattened as a 1D array.<
             <td>::</td>
             <td><strong>n_grps</strong></td>
             <td>
-
+<p>Number of tissue groups</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-group_s"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -599,13 +599,13 @@ expression per gene. The input matrix is column-major, flattened as a 1D array.<
             <td>::</td>
             <td><strong>group_s</strong>(n_grps)</td>
             <td>
-
+<p>Start column index for each group (length: n_grps)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-group_c"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -614,7 +614,7 @@ expression per gene. The input matrix is column-major, flattened as a 1D array.<
             <td>::</td>
             <td><strong>group_c</strong>(n_grps)</td>
             <td>
-
+<p>Number of columns per group (length: n_grps)</p>
             </td>
         </tr>
         <tr>
@@ -629,7 +629,7 @@ expression per gene. The input matrix is column-major, flattened as a 1D array.<
             <td>::</td>
             <td><strong>input_matrix</strong>(n_gene*sum(group_c))</td>
             <td>
-
+<p>Flattened input matrix (length: n_gene * n_col)</p>
             </td>
         </tr>
         <tr>
@@ -644,7 +644,7 @@ expression per gene. The input matrix is column-major, flattened as a 1D array.<
             <td>::</td>
             <td><strong>output_matrix</strong>(n_gene*n_grps)</td>
             <td>
-
+<p>Flattened output matrix (length: n_gene * n_grps)</p>
             </td>
         </tr>
     </tbody>
@@ -677,8 +677,8 @@ value in the condition column, for all genes.</p><a href="../proc/calc_fchange.h
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_genes~4"></span>
-              integer,
+              <span class="anchor" id="variable-n_genes~19"></span>
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -687,13 +687,13 @@ value in the condition column, for all genes.</p><a href="../proc/calc_fchange.h
             <td>::</td>
             <td><strong>n_genes</strong></td>
             <td>
-
+<p>Number of genes (rows)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-n_cols"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -702,13 +702,13 @@ value in the condition column, for all genes.</p><a href="../proc/calc_fchange.h
             <td>::</td>
             <td><strong>n_cols</strong></td>
             <td>
-
+<p>Number of columns in the input matrix</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-n_pairs"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -717,13 +717,13 @@ value in the condition column, for all genes.</p><a href="../proc/calc_fchange.h
             <td>::</td>
             <td><strong>n_pairs</strong></td>
             <td>
-
+<p>Number of control-condition pairs</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-control_cols"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -732,13 +732,13 @@ value in the condition column, for all genes.</p><a href="../proc/calc_fchange.h
             <td>::</td>
             <td><strong>control_cols</strong>(n_pairs)</td>
             <td>
-
+<p>Control column indices (length n_pairs)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-cond_cols"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -747,7 +747,7 @@ value in the condition column, for all genes.</p><a href="../proc/calc_fchange.h
             <td>::</td>
             <td><strong>cond_cols</strong>(n_pairs)</td>
             <td>
-
+<p>Condition column indices (length n_pairs)</p>
             </td>
         </tr>
         <tr>
@@ -762,7 +762,7 @@ value in the condition column, for all genes.</p><a href="../proc/calc_fchange.h
             <td>::</td>
             <td><strong>i_matrix</strong>(n_genes*n_cols)</td>
             <td>
-
+<p>Input matrix, flattened (length: n_genes × n_cols)</p>
             </td>
         </tr>
         <tr>
@@ -777,7 +777,7 @@ value in the condition column, for all genes.</p><a href="../proc/calc_fchange.h
             <td>::</td>
             <td><strong>o_matrix</strong>(n_genes*n_pairs)</td>
             <td>
-
+<p>Output matrix for fold changes (length: n_genes × n_pairs)</p>
             </td>
         </tr>
     </tbody>
@@ -810,7 +810,7 @@ value in the condition column, for all genes.</p><a href="../proc/calc_fchange.h
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
-            </p>
+ on "2025-08-13 11:02 +0000"             </p>
           </div>
         </div>
         <br>

@@ -85,7 +85,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 3.3% of total for procedures.">17 statements</a>
+                 title=" 1.8% of total for procedures.">18 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -150,16 +150,8 @@
 </h2>
     
 
-    <p>Compute distance from each gene to its corresponding family centroid.</p>
-<p>For each gene, extracts its expression vector and the centroid of its
-assigned family, then computes the Euclidean distance between them.</p>
-<p>@param n_genes     Total number of genes
-@param n_families  Total number of gene families
-@param genes       Gene expression matrix (d × n_genes) - column-major optimized
-@param centroids   Family centroid matrix (d × n_families) - column-major optimized
-@param gene_to_fam Gene-to-family mapping (1-based indexing)
-@param distances   Output distances array
-@param d           Expression vector dimension</p>
+    <p>Compute distance from each gene to its corresponding family centroid.
+For each gene, extracts its expression vector and the centroid of its assigned family, then computes the Euclidean distance between them.</p>
 
 
     <h3>Arguments</h3>
@@ -175,8 +167,8 @@ assigned family, then computes the Euclidean distance between them.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_genes~13"></span>
-              integer,
+              <span class="anchor" id="variable-n_genes~28"></span>
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -185,13 +177,13 @@ assigned family, then computes the Euclidean distance between them.</p>
             <td>::</td>
             <td><strong>n_genes</strong></td>
             <td>
-                
+                <p>Total number of genes</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_families"></span>
-              integer,
+              <span class="anchor" id="variable-n_families~12"></span>
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -200,7 +192,7 @@ assigned family, then computes the Euclidean distance between them.</p>
             <td>::</td>
             <td><strong>n_families</strong></td>
             <td>
-                
+                <p>Total number of gene families</p>
             </td>
         </tr>
         <tr>
@@ -215,7 +207,7 @@ assigned family, then computes the Euclidean distance between them.</p>
             <td>::</td>
             <td><strong>genes</strong>(d,n_genes)</td>
             <td>
-                
+                <p>Gene expression matrix (d × n_genes), column-major</p>
             </td>
         </tr>
         <tr>
@@ -230,13 +222,13 @@ assigned family, then computes the Euclidean distance between them.</p>
             <td>::</td>
             <td><strong>centroids</strong>(d,n_families)</td>
             <td>
-                
+                <p>Family centroid matrix (d × n_families), column-major</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-gene_to_fam"></span>
-              integer,
+              <span class="anchor" id="variable-gene_to_fam~13"></span>
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -245,12 +237,12 @@ assigned family, then computes the Euclidean distance between them.</p>
             <td>::</td>
             <td><strong>gene_to_fam</strong>(n_genes)</td>
             <td>
-                
+                <p>Gene-to-family mapping (1-based indexing)</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-distances"></span>
+              <span class="anchor" id="variable-distances~13"></span>
               real(kind=real64),
             </td>
 <td>intent(out)</td>
@@ -260,13 +252,13 @@ assigned family, then computes the Euclidean distance between them.</p>
             <td>::</td>
             <td><strong>distances</strong>(n_genes)</td>
             <td>
-                
+                <p>Output distances array</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-d~2"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -275,7 +267,7 @@ assigned family, then computes the Euclidean distance between them.</p>
             <td>::</td>
             <td><strong>d</strong></td>
             <td>
-                
+                <p>Expression vector dimension</p>
             </td>
         </tr>
     </tbody>
@@ -312,7 +304,7 @@ assigned family, then computes the Euclidean distance between them.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
-            </p>
+ on "2025-08-13 11:02 +0000"             </p>
           </div>
         </div>
         <br>

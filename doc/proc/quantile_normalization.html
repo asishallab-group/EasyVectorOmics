@@ -85,7 +85,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 7.6% of total for procedures.">39 statements</a>
+                 title=" 3.9% of total for procedures.">39 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -164,16 +164,6 @@
 
     <p>Quantile normalization of a gene expression matrix (F42-compliant).
 Computes average expression per rank across tissues.</p>
-<p>@param n_genes       Number of genes (rows) <br>
-@param n_tissues     Number of tissues (columns)<br>
-@param input_matrix  Flattened input matrix (column-major)<br>
-@param output_matrix Flattened normalized output matrix<br>
-@param temp_col      Temporary vector for column sorting (size n_genes)<br>
-@param rank_means    Preallocated vector to store rank means (size n_genes)<br>
-@param perm          Permutation vector (size n_genes)<br>
-@param stack_left    Manual quicksort stack (≥ log2(n_genes) + 10)<br>
-@param stack_right   Manual quicksort stack (same size as stack_left)<br>
-@param max_stack     Stack size passed from R<br></p>
 
 
     <h3>Arguments</h3>
@@ -189,8 +179,8 @@ Computes average expression per rank across tissues.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_genes~2"></span>
-              integer,
+              <span class="anchor" id="variable-n_genes~17"></span>
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -199,13 +189,13 @@ Computes average expression per rank across tissues.</p>
             <td>::</td>
             <td><strong>n_genes</strong></td>
             <td>
-                
+                <p>Number of genes (rows)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-n_tissues~2"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -214,7 +204,7 @@ Computes average expression per rank across tissues.</p>
             <td>::</td>
             <td><strong>n_tissues</strong></td>
             <td>
-                
+                <p>Number of tissues (columns)</p>
             </td>
         </tr>
         <tr>
@@ -229,7 +219,7 @@ Computes average expression per rank across tissues.</p>
             <td>::</td>
             <td><strong>input_matrix</strong>(n_genes*n_tissues)</td>
             <td>
-                
+                <p>Flattened input matrix (column-major)</p>
             </td>
         </tr>
         <tr>
@@ -244,7 +234,7 @@ Computes average expression per rank across tissues.</p>
             <td>::</td>
             <td><strong>output_matrix</strong>(n_genes*n_tissues)</td>
             <td>
-                
+                <p>Output normalized matrix (same shape as input)</p>
             </td>
         </tr>
         <tr>
@@ -259,7 +249,7 @@ Computes average expression per rank across tissues.</p>
             <td>::</td>
             <td><strong>temp_col</strong>(n_genes)</td>
             <td>
-                
+                <p>Temporary vector for column sorting (size n_genes)</p>
             </td>
         </tr>
         <tr>
@@ -274,13 +264,13 @@ Computes average expression per rank across tissues.</p>
             <td>::</td>
             <td><strong>rank_means</strong>(n_genes)</td>
             <td>
-                
+                <p>Preallocated vector to store rank means (size n_genes)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-perm~13"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -289,13 +279,13 @@ Computes average expression per rank across tissues.</p>
             <td>::</td>
             <td><strong>perm</strong>(n_genes)</td>
             <td>
-                
+                <p>Permutation vector (size n_genes)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_left~13"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -304,13 +294,13 @@ Computes average expression per rank across tissues.</p>
             <td>::</td>
             <td><strong>stack_left</strong>(max_stack)</td>
             <td>
-                
+                <p>Manual quicksort stack (≥ log2(n_genes) + 10)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-stack_right~13"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(inout)</td>
               <td></td>            <td>
@@ -319,13 +309,13 @@ Computes average expression per rank across tissues.</p>
             <td>::</td>
             <td><strong>stack_right</strong>(max_stack)</td>
             <td>
-                
+                <p>Manual quicksort stack (same size as stack_left)</p>
             </td>
         </tr>
         <tr>
             <td>
               <span class="anchor" id="variable-max_stack"></span>
-              integer,
+              integer(kind=int32),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
@@ -334,7 +324,7 @@ Computes average expression per rank across tissues.</p>
             <td>::</td>
             <td><strong>max_stack</strong></td>
             <td>
-                
+                <p>Stack size passed from R</p>
             </td>
         </tr>
     </tbody>
@@ -371,7 +361,7 @@ Computes average expression per rank across tissues.</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
-            </p>
+ on "2025-08-13 11:02 +0000"             </p>
           </div>
         </div>
         <br>

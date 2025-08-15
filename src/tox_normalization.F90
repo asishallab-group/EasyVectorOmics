@@ -1,25 +1,24 @@
 !> Module with normalization routines for tensor omics.
 module tox_normalization
-  use, intrinsic :: iso_fortran_env, only: real64
+  use, intrinsic :: iso_fortran_env, only: real64, int32
 contains
 
   !> Normalizes each gene's expression vector using `sqrt(mean(x^2))`
-  !> across tissues (not classical standard deviation).
-  !>
-  !> @param n_genes Number of genes (rows).<br>
-  !> @param n_tissues Number of tissues (columns).<br>
-  !> @param input_matrix Flattened matrix of gene expression values (column-major).<br>
-  !> @param output_matrix Output normalized matrix (same shape as input).<br>
+  !| across tissues (not classical standard deviation).
   pure subroutine normalize_by_std_dev(n_genes, n_tissues, input_matrix, output_matrix)
       implicit none
 
-      ! Arguments
-      integer, intent(in) :: n_genes, n_tissues
+      !| Number of genes (rows)
+      integer(int32), intent(in) :: n_genes
+      !| Number of tissues (columns)
+      integer(int32), intent(in) :: n_tissues
+      !| Flattened input matrix of gene expression values (column-major)
       real(real64), intent(in) :: input_matrix(n_genes * n_tissues)
+      !| Output normalized matrix (same shape as input)
       real(real64), intent(out) :: output_matrix(n_genes * n_tissues)
 
       ! Local variables
-      integer :: i, j
+      integer(int32) :: i, j
       real(real64) :: std_dev, temp_sum
 
       ! Loop over each gene
@@ -41,37 +40,37 @@ contains
   end subroutine normalize_by_std_dev
 
   !> Quantile normalization of a gene expression matrix (F42-compliant).
-  !> Computes average expression per rank across tissues.
-  !>
-  !> @param n_genes       Number of genes (rows) <br>
-  !> @param n_tissues     Number of tissues (columns)<br>
-  !> @param input_matrix  Flattened input matrix (column-major)<br>
-  !> @param output_matrix Flattened normalized output matrix<br>
-  !> @param temp_col      Temporary vector for column sorting (size n_genes)<br>
-  !> @param rank_means    Preallocated vector to store rank means (size n_genes)<br>
-  !> @param perm          Permutation vector (size n_genes)<br>
-  !> @param stack_left    Manual quicksort stack (≥ log2(n_genes) + 10)<br>
-  !> @param stack_right   Manual quicksort stack (same size as stack_left)<br>
-  !> @param max_stack     Stack size passed from R<br>
+  !| Computes average expression per rank across tissues.
+
   pure subroutine quantile_normalization(n_genes, n_tissues, input_matrix, output_matrix, &
                                       temp_col, rank_means, perm, stack_left, stack_right, max_stack)
     use f42_utils, only: sort_array
 
     implicit none
 
-    integer, intent(in) :: n_genes         
-    integer, intent(in) :: n_tissues       
-    real(real64), intent(in) :: input_matrix(n_genes * n_tissues)  
-    real(real64), intent(out) :: output_matrix(n_genes * n_tissues)  
-    real(real64), intent(inout) :: temp_col(n_genes)      
-    real(real64), intent(inout) :: rank_means(n_genes)    
-    integer, intent(inout) :: perm(n_genes)         
-    integer, intent(inout) :: stack_left(max_stack)     ! Add intent(inout)
-    integer, intent(inout) :: stack_right(max_stack)    ! Add intent(inout)
-    integer, intent(in) :: max_stack              
+    !| Number of genes (rows)
+    integer(int32), intent(in) :: n_genes
+    !| Number of tissues (columns)
+    integer(int32), intent(in) :: n_tissues
+    !| Flattened input matrix (column-major)
+    real(real64), intent(in) :: input_matrix(n_genes * n_tissues)
+    !| Output normalized matrix (same shape as input)
+    real(real64), intent(out) :: output_matrix(n_genes * n_tissues)
+    !| Temporary vector for column sorting (size n_genes)
+    real(real64), intent(inout) :: temp_col(n_genes)
+    !| Preallocated vector to store rank means (size n_genes)
+    real(real64), intent(inout) :: rank_means(n_genes)
+    !| Permutation vector (size n_genes)
+    integer(int32), intent(inout) :: perm(n_genes)
+    !| Manual quicksort stack (≥ log2(n_genes) + 10)
+    integer(int32), intent(inout) :: stack_left(max_stack)
+    !| Manual quicksort stack (same size as stack_left)
+    integer(int32), intent(inout) :: stack_right(max_stack)
+    !| Stack size passed from R
+    integer(int32), intent(in) :: max_stack
 
       ! Locals
-      integer :: i, j
+      integer(int32) :: i, j
 
       ! Initialize rank means
       rank_means = 0.0d0
@@ -117,25 +116,25 @@ contains
   end subroutine quantile_normalization
 
   !> Apply `log2(x + 1)` transformation to each element of the input matrix.
-  !> This subroutine performs element-wise `log2(x + 1)` transformation on a
-  !> matrix flattened in column-major order. The `log2` is computed via:
-  !> `log(x + 1) / log(2)`, which is numerically equivalent and avoids the
-  !> non-portable `log2` intrinsic for compatibility with WebAssembly (WASM).
-  !>
-  !> @param[in]  n_genes       Number of genes (rows)<br>
-  !> @param[in]  n_tissues     Number of tissues (columns)<br>
-  !> @param[in]  input_matrix  Flattened input matrix (size: n_genes * n_tissues)<br>
-  !> @param[out] output_matrix Flattened output matrix (same size)<br>
+  !| This subroutine performs element-wise `log2(x + 1)` transformation on a
+  !| matrix flattened in column-major order. The `log2` is computed via:
+  !| `log(x + 1) / log(2)`, which is numerically equivalent and avoids the
+  !| non-portable `log2` intrinsic for compatibility with WebAssembly (WASM).
+
   pure subroutine log2_transformation(n_genes, n_tissues, input_matrix, output_matrix)
       implicit none
 
-      ! Arguments
-      integer, intent(in) :: n_genes, n_tissues
+      !| Number of genes (rows)
+      integer(int32), intent(in) :: n_genes
+      !| Number of tissues (columns)
+      integer(int32), intent(in) :: n_tissues
+      !| Flattened input matrix (size: n_genes * n_tissues)
       real(real64), intent(in) :: input_matrix(n_genes * n_tissues)
+      !| Output matrix (same size as input)
       real(real64), intent(out) :: output_matrix(n_genes * n_tissues)
 
       ! Locals
-      integer :: i
+      integer(int32) :: i
       real(real64), parameter :: LOG2 = log(2.0d0)
 
       ! Loop through all elements in the flattened input matrix
@@ -147,29 +146,29 @@ contains
 
 
   !> Calculate tissue averages by averaging replicates within each group.
-  !> For each group of tissue replicates, this subroutine computes the average
-  !> expression per gene. The input matrix is column-major, flattened as a 1D array.
-  !>
-  !> @param[in]  n_gene        Number of genes (rows)<br>
-  !> @param[in]  n_grps        Number of tissue groups<br>
-  !> @param[in]  group_s       Start column index for each group (length: n_grps)<br>
-  !> @param[in]  group_c       Number of columns per group (length: n_grps)<br>
-  !> @param[in]  input_matrix  Flattened input matrix (length: n_gene * n_col)<br>
-  !> @param[out] output_matrix Flattened output matrix (length: n_gene * n_grps)<br>
+  !| For each group of tissue replicates, this subroutine computes the average
+  !| expression per gene. The input matrix is column-major, flattened as a 1D array.
+
   pure subroutine calc_tiss_avg(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix)
       implicit none
 
-      ! === Arguments ===
-      integer, intent(in) :: n_gene, n_grps
-      integer, intent(in) :: group_s(n_grps)
-      integer, intent(in) :: group_c(n_grps)
+      !| Number of genes (rows)
+      integer(int32), intent(in) :: n_gene
+      !| Number of tissue groups
+      integer(int32), intent(in) :: n_grps
+      !| Start column index for each group (length: n_grps)
+      integer(int32), intent(in) :: group_s(n_grps)
+      !| Number of columns per group (length: n_grps)
+      integer(int32), intent(in) :: group_c(n_grps)
+      !| Flattened input matrix (length: n_gene * n_col)
       real(real64), intent(in) :: input_matrix(n_gene * sum(group_c))
+      !| Flattened output matrix (length: n_gene * n_grps)
       real(real64), intent(out) :: output_matrix(n_gene * n_grps)
 
       ! === Local variables ===
-      integer :: i, j, g, col
+      integer(int32) :: i, j, g, col
       real(real64) :: sum_val
-      integer :: start_idx, count_cols
+      integer(int32) :: start_idx, count_cols
 
       ! === Loop over each group ===
       do g = 1, n_grps
@@ -191,34 +190,35 @@ contains
 
 
   !> Calculate `log2 fold changes` between condition and control columns.
-  !> For each control-condition pair, this subroutine computes the `log2 fold change`
-  !> by subtracting the expression value in the control column from the corresponding
-  !> value in the condition column, for all genes.
-  !>
-  !> The input matrix must be column-major and flattened as a 1D array.
-  !>
-  !> @param n_genes        Number of genes (rows)<br>
-  !> @param n_pairs        Number of condition-control column pairs<br>
-  !> @param control_cols   Indices (1-based) of control columns (length n_pairs)<br>
-  !> @param cond_cols      Indices (1-based) of condition columns (length n_pairs)<br>
-  !> @param i_matrix       Input expression matrix, flattened (length: n_genes × N)<br>
-  !> @param o_matrix       Output matrix for fold changes (length: n_genes × n_pairs)<br>
+  !| For each control-condition pair, this subroutine computes the `log2 fold change`
+  !| by subtracting the expression value in the control column from the corresponding
+  !| value in the condition column, for all genes.
+  !|
+  !| The input matrix must be column-major and flattened as a 1D array.
+
   pure subroutine calc_fchange(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
 
       implicit none
 
       ! === Arguments ===
-      integer, intent(in) :: n_genes       !< Number of genes (rows)
-      integer, intent(in) :: n_cols        !< Number of columns in the input matrix
-      integer, intent(in) :: n_pairs       !< Number of control-condition pairs
-      integer, intent(in) :: control_cols(n_pairs) !< Control column indices
-      integer, intent(in) :: cond_cols(n_pairs)    !< Condition column indices
-      real(real64), intent(in) :: i_matrix(n_genes * n_cols)     !< Input matrix (flattened)
-      real(real64), intent(out) :: o_matrix(n_genes * n_pairs)   !< Output matrix (flattened)
+      !| Number of genes (rows)
+      integer(int32), intent(in) :: n_genes
+      !| Number of columns in the input matrix
+      integer(int32), intent(in) :: n_cols
+      !| Number of control-condition pairs
+      integer(int32), intent(in) :: n_pairs
+      !| Control column indices (length n_pairs)
+      integer(int32), intent(in) :: control_cols(n_pairs)
+      !| Condition column indices (length n_pairs)
+      integer(int32), intent(in) :: cond_cols(n_pairs)
+      !| Input matrix, flattened (length: n_genes × n_cols)
+      real(real64), intent(in) :: i_matrix(n_genes * n_cols)
+      !| Output matrix for fold changes (length: n_genes × n_pairs)
+      real(real64), intent(out) :: o_matrix(n_genes * n_pairs)
 
       ! === Locals ===
-      integer :: i, p
-      integer :: control_col, cond_col
+      integer(int32) :: i, p
+      integer(int32) :: control_col, cond_col
 
       ! === Loop over each pair ===
       do p = 1, n_pairs
@@ -238,21 +238,33 @@ contains
 end module tox_normalization
 
 
-!> Wrapper for R and Fortran usage (R .Fortran)
+!> R/Fortran wrapper for normalization by standard deviation.
+!| Provides an interface for R (.Fortran) and Fortran code to call the normalization routine.
 subroutine normalize_by_std_dev_r(n_genes, n_tissues, input_matrix, output_matrix)
   use tox_normalization
-  integer, intent(in) :: n_genes, n_tissues
+  !| Number of genes (rows)
+  integer(int32), intent(in) :: n_genes
+  !| Number of tissues (columns)
+  integer(int32), intent(in) :: n_tissues
+  !| Input matrix (n_genes x n_tissues)
   real(real64), intent(in)  :: input_matrix(n_genes, n_tissues)
+  !| Output normalized matrix (same shape as input)
   real(real64), intent(out) :: output_matrix(n_genes, n_tissues)
   call normalize_by_std_dev(n_genes, n_tissues, input_matrix, output_matrix)
 end subroutine normalize_by_std_dev_r
 
-!> C/Python interface (bind(C)), expects flat arrays.
+!> C/Python wrapper for normalization by standard deviation.
+!| Provides a C/Python-compatible interface to the normalization routine.
 subroutine normalize_by_std_dev_c(n_genes, n_tissues, input_matrix, output_matrix) bind(C, name="normalize_by_std_dev_c")
   use iso_c_binding
   use tox_normalization
-  integer(c_int), value :: n_genes, n_tissues
+  !| Number of genes (rows)
+  integer(c_int), value :: n_genes
+  !| Number of tissues (columns)
+  integer(c_int), value :: n_tissues
+  !| Input matrix (flattened, n_genes * n_tissues)
   real(c_double), intent(in), target :: input_matrix(n_genes * n_tissues)
+  !| Output normalized matrix (flattened, same shape as input)
   real(c_double), intent(out), target :: output_matrix(n_genes * n_tissues)
   real(c_double), pointer :: inmat(:,:), outmat(:,:)
   call c_f_pointer(c_loc(input_matrix(1)), inmat, [n_genes, n_tissues])
@@ -261,107 +273,188 @@ subroutine normalize_by_std_dev_c(n_genes, n_tissues, input_matrix, output_matri
 end subroutine normalize_by_std_dev_c
 
 
+!> R/Fortran wrapper for quantile normalization.
+!| Provides an interface for R (.Fortran) and Fortran code to call the quantile normalization routine.
 subroutine quantile_normalization_r(n_genes, n_tissues, input_matrix, output_matrix, &
                                         temp_col, rank_means, perm, stack_left, stack_right, max_stack)
   use tox_normalization
-  integer, intent(in) :: n_genes, n_tissues, max_stack
+  !| Number of genes (rows)
+  integer(int32), intent(in) :: n_genes
+  !| Number of tissues (columns)
+  integer(int32), intent(in) :: n_tissues
+  !| Stack size for sorting
+  integer(int32), intent(in) :: max_stack
+  !| Input matrix (n_genes x n_tissues)
   real(real64), intent(in)  :: input_matrix(n_genes, n_tissues)
+  !| Output normalized matrix (same shape as input)
   real(real64), intent(out) :: output_matrix(n_genes, n_tissues)
+  !| Temporary vector for column sorting (size n_genes)
   real(real64), intent(inout) :: temp_col(n_genes)
+  !| Preallocated vector to store rank means (size n_genes)
   real(real64), intent(inout) :: rank_means(n_genes)
-  integer, intent(inout) :: perm(n_genes)
-  integer, intent(inout) :: stack_left(max_stack)
-  integer, intent(inout) :: stack_right(max_stack)
+  !| Permutation vector (size n_genes)
+  integer(int32), intent(inout) :: perm(n_genes)
+  !| Manual quicksort stack (size max_stack)
+  integer(int32), intent(inout) :: stack_left(max_stack)
+  !| Manual quicksort stack (size max_stack)
+  integer(int32), intent(inout) :: stack_right(max_stack)
 
   call quantile_normalization(n_genes, n_tissues, input_matrix, output_matrix, &
                             temp_col, rank_means, perm, stack_left, stack_right, max_stack)
 end subroutine quantile_normalization_r
 
+!> C/Python wrapper for quantile normalization.
+!| Provides a C/Python-compatible interface to the quantile normalization routine.
 subroutine quantile_normalization_c(n_genes, n_tissues, input_matrix, output_matrix, &
                                     temp_col, rank_means, perm, stack_left, stack_right, max_stack) &
                                     bind(C, name="quantile_normalization_c")
   use iso_c_binding
   use tox_normalization
+  !| Number of genes (rows)
   integer(c_int), intent(in), value :: n_genes
+  !| Number of tissues (columns)
   integer(c_int), intent(in), value :: n_tissues
+  !| Stack size for sorting
   integer(c_int), intent(in), value :: max_stack
+  !| Input matrix (n_genes x n_tissues)
   real(c_double), intent(in), target :: input_matrix(n_genes, n_tissues)
+  !| Output normalized matrix (same shape as input)
   real(c_double), intent(out), target :: output_matrix(n_genes, n_tissues)
+  !| Temporary vector for column sorting (size n_genes)
   real(c_double), intent(inout), target :: temp_col(n_genes)
+  !| Preallocated vector to store rank means (size n_genes)
   real(c_double), intent(inout), target :: rank_means(n_genes)
+  !| Permutation vector (size n_genes)
   integer(c_int), intent(inout), target :: perm(n_genes)
+  !| Manual quicksort stack (size max_stack)
   integer(c_int), intent(inout), target :: stack_left(max_stack)
+  !| Manual quicksort stack (size max_stack)
   integer(c_int), intent(inout), target :: stack_right(max_stack)
 
   call quantile_normalization(n_genes, n_tissues, input_matrix, output_matrix, &
                             temp_col, rank_means, perm, stack_left, stack_right, max_stack)
 end subroutine quantile_normalization_c
 
+!> R/Fortran wrapper for log2 transformation.
+!| Provides an interface for R (.Fortran) and Fortran code to call the log2 transformation routine.
+!| Applies log2(x+1) to each element of the input matrix. Arguments match R's .Fortran calling convention and expect flat arrays.
 subroutine log2_transformation_r(n_genes, n_tissues, input_matrix, output_matrix)
   use tox_normalization
-  integer, intent(in) :: n_genes, n_tissues
+  !| Number of genes (rows)
+  integer(int32), intent(in) :: n_genes
+  !| Number of tissues (columns)
+  integer(int32), intent(in) :: n_tissues
+  !| Input matrix (flattened, n_genes * n_tissues)
   real(real64), intent(in) :: input_matrix(n_genes * n_tissues)
+  !| Output matrix (flattened, same shape as input)
   real(real64), intent(out) :: output_matrix(n_genes * n_tissues)
   call log2_transformation(n_genes, n_tissues, input_matrix, output_matrix)
 end subroutine log2_transformation_r
 
+!> C/Python wrapper for log2 transformation.
+!| Provides a C/Python-compatible interface to the log2 transformation routine.
+!| Expects flat arrays, matching C calling conventions. Suitable for use with ctypes.
+!| Applies log2(x+1) to each element of the input matrix.
 subroutine log2_transformation_c(n_genes, n_tissues, input_matrix, output_matrix) bind(C, name="log2_transformation_c")
   use iso_c_binding
   use tox_normalization
+  !| Number of genes (rows)
   integer(c_int), intent(in), value :: n_genes
+  !| Number of tissues (columns)
   integer(c_int), intent(in), value :: n_tissues
+  !| Input matrix (flattened, n_genes * n_tissues)
   real(c_double), intent(in), target :: input_matrix(n_genes * n_tissues)
+  !| Output matrix (flattened, same shape as input)
   real(c_double), intent(out), target :: output_matrix(n_genes * n_tissues)
 
   call log2_transformation(n_genes, n_tissues, input_matrix, output_matrix)
 end subroutine log2_transformation_c
 
+!> R/Fortran wrapper for tissue average calculation.
+!| Provides an interface for R (.Fortran) and Fortran code to call the tissue average calculation routine.
+!| Computes average expression per gene for each group of tissue replicates. Arguments match R's .Fortran calling convention.
 subroutine calc_tiss_avg_r(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix)
   use tox_normalization
-  integer, intent(in) :: n_gene, n_grps
-  integer, intent(in) :: group_s(n_grps)
-  integer, intent(in) :: group_c(n_grps)
+  !| Number of genes (rows)
+  integer(int32), intent(in) :: n_gene
+  !| Number of tissue groups
+  integer(int32), intent(in) :: n_grps
+  !| Start column index for each group (length: n_grps)
+  integer(int32), intent(in) :: group_s(n_grps)
+  !| Number of columns per group (length: n_grps)
+  integer(int32), intent(in) :: group_c(n_grps)
+  !| Input matrix (flattened, n_gene * sum(group_c))
   real(real64), intent(in) :: input_matrix(n_gene * sum(group_c))
+  !| Output matrix (flattened, n_gene * n_grps)
   real(real64), intent(out) :: output_matrix(n_gene * n_grps)
   call calc_tiss_avg(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix)
 end subroutine calc_tiss_avg_r
 
+!> C/Python wrapper for tissue average calculation.
+!| Provides a C/Python-compatible interface to the tissue average calculation routine.
+!| Suitable for use with ctypes. Computes average expression per gene for each group of tissue replicates.
 subroutine calc_tiss_avg_c(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix) bind(C, name="calc_tiss_avg_c")
   use iso_c_binding
   use tox_normalization
+  !| Number of genes (rows)
   integer(c_int), intent(in), value :: n_gene
+  !| Number of tissue groups
   integer(c_int), intent(in), value :: n_grps
+  !| Start column index for each group (length: n_grps)
   integer(c_int), intent(in), target :: group_s(n_grps)
+  !| Number of columns per group (length: n_grps)
   integer(c_int), intent(in), target :: group_c(n_grps)
+  !| Input matrix (flattened, n_gene * sum(group_c))
   real(c_double), intent(in), target :: input_matrix(n_gene * sum(group_c))
+  !| Output matrix (flattened, n_gene * n_grps)
   real(c_double), intent(out) :: output_matrix(n_gene * n_grps)
 
   call calc_tiss_avg(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix)
 end subroutine calc_tiss_avg_c
 
+!> R/Fortran wrapper for fold change calculation.
+!| Provides an interface for R (.Fortran) and Fortran code to call the fold change calculation routine.
+!| Computes log2 fold changes between condition and control columns for all genes. Arguments match R's .Fortran calling convention.
 subroutine calc_fchange_r(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
   use tox_normalization
-  integer, intent(in) :: n_genes       !< Number of genes (rows)
-  integer, intent(in) :: n_cols        !< Number of columns in the input matrix
-  integer, intent(in) :: n_pairs       !< Number of control-condition pairs
-  integer, intent(in) :: control_cols(n_pairs) !< Control column indices
-  integer, intent(in) :: cond_cols(n_pairs)    !< Condition column indices
-  real(real64), intent(in) :: i_matrix(n_genes * n_cols)     !< Input matrix (flattened)
-  real(real64), intent(out) :: o_matrix(n_genes * n_pairs)   !< Output matrix (flattened)
+  !| Number of genes (rows)
+  integer(int32), intent(in) :: n_genes
+  !| Number of columns in the input matrix
+  integer(int32), intent(in) :: n_cols
+  !| Number of control-condition pairs
+  integer(int32), intent(in) :: n_pairs
+  !| Control column indices (length n_pairs)
+  integer(int32), intent(in) :: control_cols(n_pairs)
+  !| Condition column indices (length n_pairs)
+  integer(int32), intent(in) :: cond_cols(n_pairs)
+  !| Input matrix (flattened, n_genes * n_cols)
+  real(real64), intent(in) :: i_matrix(n_genes * n_cols)
+  !| Output matrix for fold changes (flattened, n_genes * n_pairs)
+  real(real64), intent(out) :: o_matrix(n_genes * n_pairs)
 
   call calc_fchange(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
 end subroutine calc_fchange_r
 
+!> C/Python wrapper for fold change calculation.
+!| Provides a C/Python-compatible interface to the fold change calculation routine.
+!| Suitable for use with ctypes. Computes log2 fold changes between condition and control columns for all genes.
 subroutine calc_fchange_c(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix) bind(C, name="calc_fchange_c")
   use iso_c_binding
   use tox_normalization
+  !| Number of genes (rows)
   integer(c_int), intent(in), value :: n_genes
+  !| Number of columns in the input matrix
   integer(c_int), intent(in), value :: n_cols
+  !| Number of control-condition pairs
   integer(c_int), intent(in), value :: n_pairs
+  !| Control column indices (length n_pairs)
   integer(c_int), intent(in), target :: control_cols(n_pairs)
+  !| Condition column indices (length n_pairs)
   integer(c_int), intent(in), target :: cond_cols(n_pairs)
+  !| Input matrix (flattened, n_genes * n_cols)
   real(c_double), intent(in), target :: i_matrix(n_genes * n_cols)
-  real(c_double), intent(out) :: o_matrix(n_genes * n_pairs) 
+  !| Output matrix for fold changes (flattened, n_genes * n_pairs)
+  real(c_double), intent(out) :: o_matrix(n_genes * n_pairs)
 
   call calc_fchange(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
 end subroutine calc_fchange_c

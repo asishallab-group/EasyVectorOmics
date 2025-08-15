@@ -1,79 +1,57 @@
 !> Module with Euclidean distance computation routines for tensor omics.
 module tox_euclidean_distance
-  use, intrinsic :: iso_fortran_env, only: real64
+  use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
 
 contains
 
   !> Compute the Euclidean distance between two vectors.
-  !> 
-  !> Calculates the L2 norm: result = sqrt(sum((vec1_i - vec2_i)^2))
-  !>
-  !> @param vec1   First expression vector<br>
-  !> @param vec2   Second expression vector<br>
-  !> @param d      Dimension of both vectors<br>
-  !> @param result Output scalar distance<br>
+  !| Calculates the L2 norm: result = sqrt(sum((vec1_i - vec2_i)^2))
   pure subroutine euclidean_distance(vec1, vec2, d, result)
-    implicit none
-    
-    integer, intent(in) :: d
-    real(real64), intent(in) :: vec1(d), vec2(d)
+    !| Dimension of both vectors
+    integer(int32), intent(in) :: d
+    !| First expression vector
+    real(real64), intent(in) :: vec1(d)
+    !| Second expression vector
+    real(real64), intent(in) :: vec2(d)
+    !| Output scalar distance
     real(real64), intent(out) :: result
-    
-    integer :: i
+    integer(int32) :: i
     real(real64) :: sum_squared_diff
-    
     sum_squared_diff = 0.0_real64
-    
     do i = 1, d
       sum_squared_diff = sum_squared_diff + (vec1(i) - vec2(i))**2
     end do
-    
     result = sqrt(sum_squared_diff)
-    
   end subroutine euclidean_distance
 
   !> Compute distance from each gene to its corresponding family centroid.
-  !>
-  !> For each gene, extracts its expression vector and the centroid of its
-  !> assigned family, then computes the Euclidean distance between them.
-  !>
-  !> @param n_genes     Total number of genes
-  !> @param n_families  Total number of gene families  
-  !> @param genes       Gene expression matrix (d × n_genes) - column-major optimized
-  !> @param centroids   Family centroid matrix (d × n_families) - column-major optimized
-  !> @param gene_to_fam Gene-to-family mapping (1-based indexing)
-  !> @param distances   Output distances array
-  !> @param d           Expression vector dimension
+  !| For each gene, extracts its expression vector and the centroid of its assigned family, then computes the Euclidean distance between them.
   pure subroutine distance_to_centroid(n_genes, n_families, genes, centroids, &
                                        gene_to_fam, distances, d)
-      implicit none
-
-      ! Arguments
-      integer, intent(in) :: n_genes, n_families, d
-      real(real64), intent(in) :: genes(d, n_genes)
-      real(real64), intent(in) :: centroids(d, n_families)
-      integer, intent(in) :: gene_to_fam(n_genes)
-      real(real64), intent(out) :: distances(n_genes)
-
-      ! Local variables
-      integer :: i, family_idx
-
-      ! Iterate over all genes
-      do i = 1, n_genes
-          ! Get family index for current gene
-          family_idx = gene_to_fam(i)
-
-          ! Validate family index (1-based indexing)
-          if (family_idx < 1 .or. family_idx > n_families) then
-              distances(i) = -1.0_real64  ! Error indicator
-              cycle
-          end if
-
-          ! Compute Euclidean distance using column-major 
-          call euclidean_distance(genes(:, i), centroids(:, family_idx), d, distances(i))
-      end do
-    
+    !| Total number of genes
+    integer(int32), intent(in) :: n_genes
+    !| Total number of gene families
+    integer(int32), intent(in) :: n_families
+    !| Expression vector dimension
+    integer(int32), intent(in) :: d
+    !| Gene expression matrix (d × n_genes), column-major
+    real(real64), intent(in) :: genes(d, n_genes)
+    !| Family centroid matrix (d × n_families), column-major
+    real(real64), intent(in) :: centroids(d, n_families)
+    !| Gene-to-family mapping (1-based indexing)
+    integer(int32), intent(in) :: gene_to_fam(n_genes)
+    !| Output distances array
+    real(real64), intent(out) :: distances(n_genes)
+    integer(int32) :: i, family_idx
+    do i = 1, n_genes
+      family_idx = gene_to_fam(i)
+      if (family_idx < 1 .or. family_idx > n_families) then
+        distances(i) = -1.0_real64  ! Error indicator
+        cycle
+      end if
+      call euclidean_distance(genes(:, i), centroids(:, family_idx), d, distances(i))
+    end do
   end subroutine distance_to_centroid
 
 
@@ -82,49 +60,80 @@ contains
 end module tox_euclidean_distance
 
 
+!> R wrapper for euclidean_distance.
+!| Calls euclidean_distance with standard Fortran types for R interface.
 subroutine euclidean_distance_r(vec1, vec2, d, result)
   use tox_euclidean_distance
-    integer, intent(in) :: d
-    real(real64), intent(in) :: vec1(d), vec2(d)
-    real(real64), intent(out) :: result
+  !| Dimension of both vectors
+  integer(int32), intent(in) :: d
+  !| First expression vector
+  real(real64), intent(in) :: vec1(d)
+  !| Second expression vector
+  real(real64), intent(in) :: vec2(d)
+  !| Output scalar distance
+  real(real64), intent(out) :: result
   call euclidean_distance(vec1, vec2, d, result)
 end subroutine euclidean_distance_r
 
+!> C wrapper for euclidean_distance.
+!| Exposes euclidean_distance to C via iso_c_binding types.
 subroutine euclidean_distance_c(vec1, vec2, d, result) bind(C, name="euclidean_distance_c")
   use iso_c_binding
   use tox_euclidean_distance
+  !| First expression vector
   real(c_double), intent(in), target :: vec1(*)
+  !| Second expression vector
   real(c_double), intent(in), target :: vec2(*)
+  !| Dimension of both vectors
   integer(c_int), intent(in), value :: d
+  !| Output scalar distance
   real(c_double), intent(out) :: result
-
   call euclidean_distance(vec1, vec2, d, result)
 end subroutine euclidean_distance_c
 
+!> R wrapper for distance_to_centroid.
+!| Calls distance_to_centroid with standard Fortran types for R interface.
 subroutine distance_to_centroid_r(n_genes, n_families, genes, centroids, &
                                   gene_to_fam, distances, d)
   use tox_euclidean_distance
-  integer, intent(in) :: n_genes, n_families, d
+  !| Total number of genes
+  integer(int32), intent(in) :: n_genes
+  !| Total number of gene families
+  integer(int32), intent(in) :: n_families
+  !| Expression vector dimension
+  integer(int32), intent(in) :: d
+  !| Gene expression matrix (d × n_genes), column-major
   real(real64), intent(in) :: genes(d, n_genes)
+  !| Family centroid matrix (d × n_families), column-major
   real(real64), intent(in) :: centroids(d, n_families)
-  integer, intent(in) :: gene_to_fam(n_genes)
+  !| Gene-to-family mapping (1-based indexing)
+  integer(int32), intent(in) :: gene_to_fam(n_genes)
+  !| Output distances array
   real(real64), intent(out) :: distances(n_genes)
   call distance_to_centroid(n_genes, n_families, genes, centroids, &
                                   gene_to_fam, distances, d)
 end subroutine distance_to_centroid_r
 
+!> C wrapper for distance_to_centroid.
+!| Exposes distance_to_centroid to C via iso_c_binding types.
 subroutine distance_to_centroid_c(n_genes, n_families, genes, centroids, & 
                                   gene_to_fam, distances, d) bind(C, name="distance_to_centroid_c")
   use iso_c_binding
   use tox_euclidean_distance
+  !| Total number of genes
   integer(c_int), intent(in), value :: n_genes
+  !| Total number of gene families
   integer(c_int), intent(in), value :: n_families
+  !| Gene expression matrix (d × n_genes), column-major
   real(c_double), intent(in), target :: genes(*)
+  !| Family centroid matrix (d × n_families), column-major
   real(c_double), intent(in), target :: centroids(*)
+  !| Gene-to-family mapping (1-based indexing)
   integer(c_int), intent(in), target :: gene_to_fam(*)
+  !| Output distances array
   real(c_double), intent(out), target :: distances(*)
+  !| Expression vector dimension
   integer(c_int), intent(in), value :: d
-
   call distance_to_centroid(n_genes, n_families, genes, centroids, &
                             gene_to_fam, distances, d)
 end subroutine distance_to_centroid_c

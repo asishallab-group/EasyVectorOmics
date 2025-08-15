@@ -1,5 +1,5 @@
 ! filepath: test/mod_test_sorting.f90
-!> @brief Unit test suite for f42_utils module.
+!> Unit test suite for f42_utils module.
 module mod_test_sorting
   use f42_utils
   use asserts
@@ -21,7 +21,7 @@ module mod_test_sorting
 
 contains
 
-  !> @brief Get array of all available tests.
+  !> Get array of all available tests.
   function get_all_tests() result(all_tests)
     type(test_case) :: all_tests(9)
     
@@ -36,7 +36,7 @@ contains
     all_tests(9) = test_case("test_sort_large_random", test_sort_large_random)
   end function get_all_tests
 
-  !> @brief Run all sorting tests.
+  !> Run all sorting tests.
   subroutine run_all_tests_sorting()
     type(test_case) :: all_tests(9)
     integer :: i
@@ -50,7 +50,7 @@ contains
     print *, "All sorting tests passed successfully."
   end subroutine run_all_tests_sorting
 
-  !> @brief Run specific sorting tests by name.
+  !> Run specific sorting tests by name.
   subroutine run_named_tests_sorting(test_names)
     character(len=*), intent(in) :: test_names(:)
     type(test_case) :: all_tests(9)
@@ -75,7 +75,7 @@ contains
     end do
   end subroutine run_named_tests_sorting
 
-  !> @brief Test sorting of a real array using permutation vector.
+  !> Test sorting of a real array using permutation vector.
   subroutine test_sort_real()
     real(real64), dimension(5) :: data = [3.0d0, 1.0d0, 5.0d0, 2.0d0, 4.0d0]
     integer, dimension(5) :: perm, expected = [2, 4, 1, 5, 3]
@@ -87,7 +87,7 @@ contains
     call assert_equal_array_int(perm, expected, 5, "test_sort_real: permutation mismatch")
   end subroutine test_sort_real
 
-  !> @brief Test sorting of an integer array using permutation vector.
+  !> Test sorting of an integer array using permutation vector.
   subroutine test_sort_integer()
     integer, dimension(4) :: data = [10, 3, 7, 1]
     integer, dimension(4) :: perm, expected = [4, 2, 3, 1]
@@ -100,7 +100,7 @@ contains
     call assert_equal_array_int(perm, expected, 4, "test_sort_integer: permutation mismatch")
   end subroutine test_sort_integer
 
-  !> @brief Test sorting of a character array using permutation vector.
+  !> Test sorting of a character array using permutation vector.
   subroutine test_sort_character()
     character(len=6), dimension(3) :: data = ['delta ', 'alpha ', 'beta  ']
     integer, dimension(3) :: perm, expected = [2, 3, 1]
@@ -113,7 +113,7 @@ contains
     call assert_equal_array_int(perm, expected, 3, "test_sort_character: permutation mismatch")
   end subroutine test_sort_character
 
-  !> @brief Test that sorted values are in ascending order for integers.
+  !> Test that sorted values are in ascending order for integers.
   subroutine test_sort_integer_ascending()
     integer, dimension(5) :: data = [5, 2, 9, 1, 6]
     integer, dimension(5) :: perm, expected_sorted = [1, 2, 5, 6, 9]
@@ -126,7 +126,7 @@ contains
     call assert_equal_array_int(data(perm), expected_sorted, 5, "test_sort_integer_ascending: sorted values mismatch")
   end subroutine test_sort_integer_ascending
 
-  !> @brief Test that sorted values are in ascending order for reals.
+  !> Test that sorted values are in ascending order for reals.
   subroutine test_sort_real_descending()
     real(real64), dimension(5) :: data = [3.5d0, 2.2d0, 8.8d0, 1.1d0, 7.7d0]
     real(real64), dimension(5) :: expected_sorted = [1.1d0, 2.2d0, 3.5d0, 7.7d0, 8.8d0]
@@ -141,7 +141,7 @@ contains
                             "test_sort_real_descending: sorted values mismatch")
   end subroutine test_sort_real_descending
 
-  !> @brief Test sorting of character array with lexicographic ordering.
+  !> Test sorting of character array with lexicographic ordering.
   subroutine test_sort_char_random()
     character(len=8), dimension(5) :: data = ['dog     ', 'apple   ', 'zebra   ', 'cat     ', 'bird    ']
     character(len=8), dimension(5) :: expected = ['apple   ', 'bird    ', 'cat     ', 'dog     ', 'zebra   ']
@@ -155,7 +155,7 @@ contains
     call assert_true(all(data(perm) == expected), "test_sort_char_random: sorted values mismatch")
   end subroutine test_sort_char_random
 
-  !> @brief Test sorting stability with already sorted array.
+  !> Test sorting stability with already sorted array.
   subroutine test_sort_sorted_stability()
     integer, dimension(5) :: data = [1, 2, 3, 4, 5]
     integer, dimension(5) :: expected = [1, 2, 3, 4, 5]
@@ -169,7 +169,7 @@ contains
     call assert_equal_array_int(data(perm), expected, 5, "test_sort_sorted_stability: sorted values mismatch")
   end subroutine test_sort_sorted_stability
 
-  !> @brief Test sorting with empty array (edge case).
+  !> Test sorting with empty array (edge case).
   subroutine test_sort_empty_array()
     integer, dimension(0) :: data
     integer, dimension(0) :: perm
@@ -181,7 +181,7 @@ contains
     call assert_true(.true., "test_sort_empty_array: empty array handling")
   end subroutine test_sort_empty_array
 
-  !> @brief Test sorting with large random array for performance and correctness.
+  !> Test sorting with large random array for performance and correctness.
   subroutine test_sort_large_random()
     real(real64), allocatable :: rdata(:)
     integer, allocatable :: data(:), perm(:), sorted(:)

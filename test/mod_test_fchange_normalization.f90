@@ -1,8 +1,8 @@
 ! filepath: test/mod_test_calc_fchange.f90
-!> @brief Unit test suite for calc_fchange routine.
+!> Unit test suite for calc_fchange routine.
 module mod_test_calc_fchange
   use asserts
-  use, intrinsic :: iso_fortran_env, only: real64
+  use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
   public
 
@@ -20,7 +20,7 @@ module mod_test_calc_fchange
 
 contains
 
-  !> @brief Get array of all available tests.
+  !> Get array of all available tests.
   function get_all_tests() result(all_tests)
     type(test_case) :: all_tests(10)
     
@@ -36,10 +36,10 @@ contains
     all_tests(10) = test_case("test_calc_fchange_mixed_values", test_calc_fchange_mixed_values)
   end function get_all_tests
 
-  !> @brief Run all calc_fchange tests.
+  !> Run all calc_fchange tests.
   subroutine run_all_tests_calc_fchange()
     type(test_case) :: all_tests(10)
-    integer :: i
+    integer(int32) :: i
     
     all_tests = get_all_tests()
     
@@ -50,11 +50,11 @@ contains
     print *, "All calc_fchange tests passed successfully."
   end subroutine run_all_tests_calc_fchange
 
-  !> @brief Run specific calc_fchange tests by name.
+  !> Run specific calc_fchange tests by name.
   subroutine run_named_tests_calc_fchange(test_names)
     character(len=*), intent(in) :: test_names(:)
     type(test_case) :: all_tests(10)
-    integer :: i, j
+    integer(int32) :: i, j
     logical :: found
     
     all_tests = get_all_tests()
@@ -75,10 +75,10 @@ contains
     end do
   end subroutine run_named_tests_calc_fchange
 
-  !> @brief Test basic fold change calculation (from R test).
+  !> Test basic fold change calculation (from R test).
   subroutine test_calc_fchange_basic_calculation()
-    integer :: n_genes, n_cols, n_pairs
-    integer, dimension(1) :: control_cols, cond_cols
+    integer(int32) :: n_genes, n_cols, n_pairs
+    integer(int32), dimension(1) :: control_cols, cond_cols
     real(real64), dimension(4) :: i_matrix  ! 2 genes × 2 samples
     real(real64), dimension(2) :: o_matrix  ! 2 genes × 1 pair
     real(real64), dimension(2) :: expected_matrix
@@ -101,10 +101,10 @@ contains
     call assert_no_nan_real(o_matrix, 2, "test_calc_fchange_basic_calculation: NaN in result")
   end subroutine test_calc_fchange_basic_calculation
 
-  !> @brief Test result correctness with specific expected values (from R test).
+  !> Test result correctness with specific expected values (from R test).
   subroutine test_calc_fchange_result_correctness()
-    integer :: n_genes, n_cols, n_pairs
-    integer, dimension(1) :: control_cols, cond_cols
+    integer(int32) :: n_genes, n_cols, n_pairs
+    integer(int32), dimension(1) :: control_cols, cond_cols
     real(real64), dimension(4) :: i_matrix
     real(real64), dimension(2) :: o_matrix
     
@@ -123,10 +123,10 @@ contains
                       "test_calc_fchange_result_correctness: geneB fold change incorrect")
   end subroutine test_calc_fchange_result_correctness
 
-  !> @brief Test that output dimensions are correct.
+  !> Test that output dimensions are correct.
   subroutine test_calc_fchange_preserves_dimensions()
-    integer :: n_genes, n_cols, n_pairs
-    integer, dimension(2) :: control_cols, cond_cols
+    integer(int32) :: n_genes, n_cols, n_pairs
+    integer(int32), dimension(2) :: control_cols, cond_cols
     real(real64), dimension(12) :: i_matrix  ! 3 genes × 4 samples
     real(real64), dimension(6) :: o_matrix   ! 3 genes × 2 pairs
     
@@ -146,10 +146,10 @@ contains
                        "test_calc_fchange_preserves_dimensions: NaN in result")
   end subroutine test_calc_fchange_preserves_dimensions
 
-  !> @brief Test with single gene, single pair.
+  !> Test with single gene, single pair.
   subroutine test_calc_fchange_single_pair()
-    integer :: n_genes, n_cols, n_pairs
-    integer, dimension(1) :: control_cols, cond_cols
+    integer(int32) :: n_genes, n_cols, n_pairs
+    integer(int32), dimension(1) :: control_cols, cond_cols
     real(real64), dimension(2) :: i_matrix  ! 1 gene × 2 samples
     real(real64), dimension(1) :: o_matrix  ! 1 gene × 1 pair
     
@@ -165,10 +165,10 @@ contains
                       "test_calc_fchange_single_pair: single pair calculation incorrect")
   end subroutine test_calc_fchange_single_pair
 
-  !> @brief Test with multiple condition-control pairs.
+  !> Test with multiple condition-control pairs.
   subroutine test_calc_fchange_multiple_pairs()
-    integer :: n_genes, n_cols, n_pairs
-    integer, dimension(3) :: control_cols, cond_cols
+    integer(int32) :: n_genes, n_cols, n_pairs
+    integer(int32), dimension(3) :: control_cols, cond_cols
     real(real64), dimension(12) :: i_matrix  ! 2 genes × 6 samples
     real(real64), dimension(6) :: o_matrix   ! 2 genes × 3 pairs
     
@@ -191,10 +191,10 @@ contains
                       "test_calc_fchange_multiple_pairs: first pair gene2 incorrect")
   end subroutine test_calc_fchange_multiple_pairs
 
-  !> @brief Test with negative expression values.
+  !> Test with negative expression values.
   subroutine test_calc_fchange_negative_values()
-    integer :: n_genes, n_cols, n_pairs
-    integer, dimension(2) :: control_cols, cond_cols
+    integer(int32) :: n_genes, n_cols, n_pairs
+    integer(int32), dimension(2) :: control_cols, cond_cols
     real(real64), dimension(8) :: i_matrix  ! 2 genes × 4 samples
     real(real64), dimension(4) :: o_matrix  ! 2 genes × 2 pairs
     
@@ -215,10 +215,10 @@ contains
                       "test_calc_fchange_negative_values: negative control handling incorrect")
   end subroutine test_calc_fchange_negative_values
 
-  !> @brief Test with zero expression values.
+  !> Test with zero expression values.
   subroutine test_calc_fchange_zero_values()
-    integer :: n_genes, n_cols, n_pairs
-    integer, dimension(1) :: control_cols, cond_cols
+    integer(int32) :: n_genes, n_cols, n_pairs
+    integer(int32), dimension(1) :: control_cols, cond_cols
     real(real64), dimension(4) :: i_matrix  ! 2 genes × 2 samples
     real(real64), dimension(2) :: o_matrix  ! 2 genes × 1 pair
     
@@ -236,10 +236,10 @@ contains
                       "test_calc_fchange_zero_values: zero control handling incorrect")
   end subroutine test_calc_fchange_zero_values
 
-  !> @brief Test with large expression values for numerical stability.
+  !> Test with large expression values for numerical stability.
   subroutine test_calc_fchange_large_values()
-    integer :: n_genes, n_cols, n_pairs
-    integer, dimension(1) :: control_cols, cond_cols
+    integer(int32) :: n_genes, n_cols, n_pairs
+    integer(int32), dimension(1) :: control_cols, cond_cols
     real(real64), dimension(4) :: i_matrix  ! 2 genes × 2 samples
     real(real64), dimension(2) :: o_matrix  ! 2 genes × 1 pair
     
@@ -259,10 +259,10 @@ contains
                          "test_calc_fchange_large_values: large value calculation incorrect")
   end subroutine test_calc_fchange_large_values
 
-  !> @brief Test with identical control and condition values (zero fold change).
+  !> Test with identical control and condition values (zero fold change).
   subroutine test_calc_fchange_identical_values()
-    integer :: n_genes, n_cols, n_pairs
-    integer, dimension(2) :: control_cols, cond_cols
+    integer(int32) :: n_genes, n_cols, n_pairs
+    integer(int32), dimension(2) :: control_cols, cond_cols
     real(real64), dimension(8) :: i_matrix  ! 2 genes × 4 samples
     real(real64), dimension(4) :: o_matrix  ! 2 genes × 2 pairs
     
@@ -285,10 +285,10 @@ contains
                       "test_calc_fchange_identical_values: identical values should give zero fold change")
   end subroutine test_calc_fchange_identical_values
 
-  !> @brief Test with mixed positive, negative, and zero values.
+  !> Test with mixed positive, negative, and zero values.
   subroutine test_calc_fchange_mixed_values()
-    integer :: n_genes, n_cols, n_pairs
-    integer, dimension(3) :: control_cols, cond_cols
+    integer(int32) :: n_genes, n_cols, n_pairs
+    integer(int32), dimension(3) :: control_cols, cond_cols
     real(real64), dimension(18) :: i_matrix  ! 3 genes × 6 samples
     real(real64), dimension(9) :: o_matrix   ! 3 genes × 3 pairs
     
