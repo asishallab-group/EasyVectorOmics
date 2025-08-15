@@ -200,22 +200,21 @@ contains
    end subroutine test_omics_field_RAP_projection_non_square_vecs
 
    subroutine test_omics_field_RAP_projection_concrete_example()
-      real(real64), dimension(4,1) :: vecs
-      logical :: axes_mask(2), vecs_mask(1)
-      real(real64), dimension(2,1) :: projections
-      real(real64), dimension(2) :: expected_projection_vec
+      real(real64), dimension(6,1) :: vecs
+      logical :: axes_mask(3), vecs_mask(1)
+      real(real64), dimension(3,1) :: projections
+      real(real64), dimension(3) :: expected_projection_vec
 
       ! Define two 4D vectors
-      vecs(:,1) = [1.0, 2.0, 3.0, 6.0]
+      vecs(:,1) = [1.0, -3.0, 1.1, 3.0, 6.0, 2.2]
 
       ! fill projection vec
-      expected_projection_vec(1) = vecs(1,1) - vecs(2,1)
-      expected_projection_vec(2) = vecs(3,1) - vecs(4,1)
+      expected_projection_vec = vecs(1:3,1) - vecs(4:6,1)
       ! project onto RAP
-      expected_projection_vec = expected_projection_vec - sum(expected_projection_vec) / 2
+      expected_projection_vec = expected_projection_vec - sum(expected_projection_vec) / 3
 
       ! Select all axes and both vectors
-      axes_mask = [.true., .true.]
+      axes_mask = [.true., .true., .true.]
       vecs_mask = [.true.]
 
       call call_omics_field_RAP_projection("Non-square vecs (4D x 2)", vecs, axes_mask, vecs_mask, projections)
@@ -223,7 +222,7 @@ contains
       call assert_equal_array_real(&
          projections(:, 1),&
          expected_projection_vec,&
-         2,&
+         3,&
          1d-12,&
          "test_omics_field_RAP_projection_constant_vector: Calculated projection doesn't match expected"&
       )
