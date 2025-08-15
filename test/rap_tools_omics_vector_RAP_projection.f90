@@ -35,12 +35,14 @@ contains
       all_tests(9) = test_case("test_omics_vector_RAP_projection_non_square_vecs", test_omics_vector_RAP_projection_non_square_vecs)
    end function get_all_tests
 
-   subroutine call_omics_vector_RAP_projection(test_name, vecs, axes_mask, vecs_mask)
+   !> Wrapper function for the actual call of `call_omics_vector_RAP_projection`
+   subroutine call_omics_vector_RAP_projection(test_name, vecs, axes_mask, vecs_mask, result_projections)
       implicit none
 
       character(len=*), intent(in) :: test_name
       real(real64), dimension(:,:), intent(in) :: vecs
       logical, dimension(:), intent(in) :: axes_mask, vecs_mask
+      real(real64), dimension(:,:), intent(out), optional :: result_projections
 
       integer(int32) :: n_axes, n_vecs, n_selected_axes, n_selected_vecs
       real(real64), allocatable :: projections(:,:)
@@ -65,9 +67,12 @@ contains
          )
       end do
 
-      deallocate(projections)
+      if (present(result_projections)) then
+         result_projections = projections
+      end if
    end subroutine call_omics_vector_RAP_projection
 
+   !> Test all axes and vectors are selected
    subroutine test_omics_vector_RAP_projection_all_selected()
       implicit none
 
@@ -80,6 +85,7 @@ contains
       call call_omics_vector_RAP_projection("All selected", vecs, axes_mask, vecs_mask)
    end subroutine test_omics_vector_RAP_projection_all_selected
 
+   !> Test one axis and all vectors are selected
    subroutine test_omics_vector_RAP_projection_one_axis_selected()
       implicit none
 
@@ -92,6 +98,7 @@ contains
       call call_omics_vector_RAP_projection("One axis selected", vecs, axes_mask, vecs_mask)
    end subroutine test_omics_vector_RAP_projection_one_axis_selected
 
+   !> Test all axes and one vector are selected
    subroutine test_omics_vector_RAP_projection_one_vector_selected()
       implicit none
 
@@ -104,17 +111,27 @@ contains
       call call_omics_vector_RAP_projection("One vector selected", vecs, axes_mask, vecs_mask)
    end subroutine test_omics_vector_RAP_projection_one_vector_selected
 
+   !> Test constant vector
    subroutine test_omics_vector_RAP_projection_constant_vector()
       implicit none
 
       real(real64), dimension(3,3) :: vecs
+      real(real64), dimension(3,3) :: projections
       logical :: axes_mask(3), vecs_mask(3)
 
       vecs = 0.0_real64
       vecs(:,1) = [5.0, 5.0, 5.0]
       axes_mask = [.true., .true., .true.]
-      vecs_mask = [.true., .false., .false.]
-      call call_omics_vector_RAP_projection("Constant vector", vecs, axes_mask, vecs_mask)
+      vecs_mask = [.true., .true., .true.]
+
+      call call_omics_vector_RAP_projection("Constant vector", vecs, axes_mask, vecs_mask, projections)
+      call assert_equal_array_real(&
+         projections(:, 1),&
+         [0.0_real64, 0.0_real64, 0.0_real64],&
+         3,&
+         1d-12,&
+         "test_omics_vector_RAP_projection_constant_vector: Expected zero vector"&
+      )
    end subroutine test_omics_vector_RAP_projection_constant_vector
 
    subroutine test_omics_vector_RAP_projection_orthogonal_vector()
@@ -126,7 +143,7 @@ contains
       vecs = 0.0_real64
       vecs(:,1) = [1.0, 0.0, -1.0]
       axes_mask = [.true., .true., .true.]
-      vecs_mask = [.true., .false., .false.]
+      vecs_mask = [.true., .true., .true.]
       call call_omics_vector_RAP_projection("Orthogonal vector", vecs, axes_mask, vecs_mask)
    end subroutine test_omics_vector_RAP_projection_orthogonal_vector
 

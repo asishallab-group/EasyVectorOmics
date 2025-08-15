@@ -2,7 +2,7 @@
   "R wrapper legend": {
     "prefix": "tox:legend_r",
     "body": [
-    "!> IMPORTANT - When using these R wrapper functions, copies of the arrays will be created.",
+    "!> @warning **IMPORTANT** - When using these R wrapper functions, copies of the arrays will be created.",
     "!| No direct modification of the original R objects occurs."
     ],
     "description": "Standard legend for R wrappers about array copy behavior"
@@ -10,47 +10,47 @@
   "C wrapper legend": {
     "prefix": "tox:legend_c",
     "body": [
-    "!> IMPORTANT - When using these C wrapper functions, no copies of the arrays will be created.",
+    "!> @warning **IMPORTANT** - When using these C wrapper functions, no copies of the arrays will be created.",
     "!| The Fortran routine will operate directly on the memory provided by the caller."
     ],
     "description": "Standard legend for C wrappers about direct memory access"
   },
   "Call to normalize_by_std_dev": {
-      "prefix": "tox:norm_by_std_dev",
-      "body": [
-        "! Normalize expression values using sqrt(mean(x^2)) across tissues",
-        "call normalize_by_std_dev_r(n_genes, n_tissues, input_matrix, output_matrix)"
-      ],
-      "description": "Invoke normalization by standard deviation"
-    },
-    
-    "Call to quantile_normalization": {
-      "prefix": "tox:norm_quantile",
-      "body": [
-        "! Quantile normalization - makes distributions identical across tissues",
-        "call quantile_normalization_r(n_genes, n_tissues, input_matrix, output_matrix, &",
-        "                           temp_col, rank_means, perm, stack_left, stack_right, max_stack)"
-      ],
-      "description": "Invoke quantile normalization with rank averaging"
-    },
-    
-    "Call to log2_transformation": {
-      "prefix": "tox:norm_log2_trans",
-      "body": [
-        "! Apply log2(x + 1) transformation to stabilize variance",
-        "call log2_transformation_r(n_genes, n_tissues, input_matrix, output_matrix)"
-      ],
-      "description": "Apply log2(x + 1) transformation to expression data"
-    },
-    
-    "Call to calc_tiss_avg": {
-      "prefix": "tox:norm_tiss_avg",
-      "body": [
-        "! Calculate tissue averages by grouping replicates",
-        "call calc_tiss_avg_r(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix)"
-      ],
-      "description": "Calculate average expression per tissue group from replicates"
-    },
+    "prefix": "tox:norm_by_std_dev",
+    "body": [
+      "! Normalize expression values using sqrt(mean(x^2)) across tissues",
+      "call normalize_by_std_dev_r(n_genes, n_tissues, input_matrix, output_matrix)"
+    ],
+    "description": "Invoke normalization by standard deviation"
+  },
+  
+  "Call to quantile_normalization": {
+    "prefix": "tox:norm_quantile",
+    "body": [
+      "! Quantile normalization - makes distributions identical across tissues",
+      "call quantile_normalization_r(n_genes, n_tissues, input_matrix, output_matrix, &",
+      "                           temp_col, rank_means, perm, stack_left, stack_right, max_stack)"
+    ],
+    "description": "Invoke quantile normalization with rank averaging"
+  },
+  
+  "Call to log2_transformation": {
+    "prefix": "tox:norm_log2_trans",
+    "body": [
+      "! Apply log2(x + 1) transformation to stabilize variance",
+      "call log2_transformation_r(n_genes, n_tissues, input_matrix, output_matrix)"
+    ],
+    "description": "Apply log2(x + 1) transformation to expression data"
+  },
+  
+  "Call to calc_tiss_avg": {
+    "prefix": "tox:norm_tiss_avg",
+    "body": [
+      "! Calculate tissue averages by grouping replicates",
+      "call calc_tiss_avg_r(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix)"
+    ],
+    "description": "Calculate average expression per tissue group from replicates"
+  },
   
   "Call to calc_fchange": {
     "prefix": "tox:norm_fchange",
@@ -775,7 +775,89 @@
       "    lib.relative_axes_expression_from_expression_vector_c(vec, n_dims, contrib)"
     ],
     "description": "Setup relative_axes_expression_from_expression_vector function binding for Python/ctypes"
-  }
+  },
+	"C call to distance_to_centroid": {
+		"prefix": "tox:C_distance_to_centroid",
+		"body": [
+		"def setup_distance_to_centroid():",
+		"    \"\"\"Setup distance to centroid function\"\"\"",
+		"    dist_to_centroid = lib.distance_to_centroid_c",
+		"    dist_to_centroid.argtypes = [",
+		"        ctypes.c_int, ctypes.c_int,",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+		"        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),",
+		"        ctypes.c_int",
+		"    ]",
+		"    dist_to_centroid.restype = None",
+		"    return dist_to_centroid"
+		],
+		"description": "Setup distance_to_centroid_c function binding"
+	},
+
+	"Python set up call function for omics_vector_RAP_projection": {
+		"prefix": "tox:py_omics_vector_RAP_projection",
+		"body": [
+			"def setup_omics_vector_RAP_projection():",
+			"    \"\"\"Setup distance to centroid function\"\"\"",
+	    "		 omics_vector_RAP_projection = lib.omics_vector_RAP_projection_c",
+			"    ",
+	    "    omics_vector_RAP_projection.argtypes = [",
+	    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"F_CONTIGUOUS\"),",
+	    "        ctypes.c_int,",
+	    "        ctypes.c_int,",
+	    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+	    "        ctypes.c_int,",
+	    "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
+	    "        ctypes.c_int,",
+	    "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"F_CONTIGUOUS\")",
+	    "    ]",
+			"    ",
+	    "    omics_vector_RAP_projection.restype = None",
+			"    ",
+			"    # create function to create the input arguments",
+			"    # this enables reusability of inputs and access to the in-place changes of the arguments",
+	    "    def initArgs(vecs, vecs_selection_mask, axes_selection_mask):",
+	    "        return (",
+	    "            np.asfortranarray(vecs, dtype=np.float64),",
+	    "            np.ascontiguousarray(vecs_selection_mask, dtype=np.int32),",
+	    "            np.ascontiguousarray(axes_selection_mask, dtype=np.int32),",
+	    "            np.empty((sum(axes_selection_mask), sum(vecs_selection_mask)), order=\"F\", dtype=np.float64)",
+	    "        )",
+			"    ",
+	    "    return omics_vector_RAP_projection, initArgs"
+	  ],
+	  "description": "Setup omics_vector_RAP_projection function binding"
+	},
+
+	"R set up call function for omics_vector_RAP_projection": {
+		"prefix": "tox:r_omics_vector_RAP_projection",
+		"body": [
+			"omics_vector_RAP_projection <- function(vecs, vecs_selection_mask, axes_selection_mask) {"
+			"  n_selected_vecs <- sum(vecs_selection_mask == 1)"
+			"  n_selected_axes <- sum(axes_selection_mask == 1)"
+			"  res <- .Fortran(\"omics_vector_RAP_projection_r\","
+			"                  vecs = as.double(vecs),"
+			"                  n_axes = as.integer(nrow(vecs)),"
+			"                  n_vecs = as.integer(ncol(vecs)),"
+			"                  vecs_selection_mask = as.integer(vecs_selection_mask),"
+			"                  n_selected_vecs = n_selected_vecs,"
+			"                  axes_selection_mask = as.integer(axes_selection_mask),"
+			"                  n_selected_axes = n_selected_axes,"
+			"                  projections = matrix(as.double(1), nrow = n_selected_axes, ncol = n_selected_vecs))"
+			"  return(res$projections)"
+			"}"
+	  ],
+	  "description": "Setup omics_vector_RAP_projection function binding"
+	},
+
+	"Fortran call to omics_vector_RAP_projection": {
+		"prefix": "tox:omics_vector_RAP_projection",
+		"body": [
+			"call omics_vector_RAP_projection({1:vecs}, {2:n_axes}, {3:n_vecs}, {4:vecs_selection_mask}, {5:n_selected_vecs}, {6:axes_selection_mask}, {7:n_selected_axes}, {8:projections})"
+		]
+	}
 }
 
 
