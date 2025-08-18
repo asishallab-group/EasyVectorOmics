@@ -8,17 +8,7 @@ if (file.exists(.lib_path)) {
 }
 
 #' Compute expression centroids for groups of genes.
-#'
-#' @param vectors A numeric matrix (d x n_genes) of gene expression vectors.
-#' @param gene_to_family_map An integer vector of length n_genes, mapping each gene to a family ID.
-#' @param num_families The total number of unique families.
-#' @param ortholog_set A logical vector of length n_genes, indicating ortholog membership.
-#' @param mode A character string, either 'all' (default) or 'ortho'.
-#'
-#' @return A numeric matrix (d x num_families) containing the computed centroids.
-#' @export
-#'
-#' @examples
+#' example
 #' # d <- 2; n_genes <- 5; n_families <- 2
 #' # vecs <- matrix(c(1,1, 3,3, 10,10, 20,20, 5,5), nrow=d, byrow=FALSE)
 #' # g2f <- c(1L, 1L, 2L, 2L, 1L)

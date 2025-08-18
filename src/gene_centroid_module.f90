@@ -6,10 +6,6 @@
 !  2. 'ortho': Computes the centroid using only a pre-defined subset of
 !             orthologs within each family.
 !
-! The implementation adheres to F42 conventions: it is stateless, avoids
-! memory allocations within loops, and is designed for high performance
-! through OpenMP and SIMD parallelism.
-!
 ! @note Fortran is column-major, so all vector data is stored with genes
 !       as columns. `vectors(dimension, num_genes)`.
 module gene_centroid_module
@@ -21,17 +17,16 @@ module gene_centroid_module
 
 contains
 
-    ! Computes the element-wise mean for a given set of vectors.
-    ! This is the performance-critical kernel. It sums vectors specified by
+    ! Computes the element-wise mean for a given set of vectors. It sums vectors specified by
     ! a logical mask and writes the resulting mean vector.
-    ! The loops are structured to be SIMD-friendly over the dimension axis.
-    pure subroutine mean_vector(vectors, selection_mask, centroid_col)
+    pure subroutine mean_vector(vectors, d, n, selection_mask, centroid_col)
         ! Input matrix of vectors (genes as columns).
-        real(real64), intent(in) :: vectors(:,:)
+        integer(int32), intent(in) :: d, n
+        real(real64), intent(in) :: vectors(d, n)
         ! Logical mask indicating which genes to average.
-        logical, intent(in) :: selection_mask(:)
+        logical, intent(in) :: selection_mask(n)
         ! Output centroid vector (a single column).
-        real(real64), intent(out) :: centroid_col(:)
+        real(real64), intent(out) :: centroid_col(d)
 
         integer(int32) :: i, j, num_selected_genes
         real(real64) :: inv_n_genes
@@ -43,9 +38,9 @@ contains
         if (num_selected_genes == 0) return
 
         ! Loop over each dimension of the vectors.
-        do j = 1, size(centroid_col)
+        do j = 1, d
             !$OMP SIMD REDUCTION(+:centroid_col(j))
-            do i = 1, size(selection_mask)
+            do i = 1, n
                 if (selection_mask(i)) then
                     centroid_col(j) = centroid_col(j) + vectors(j, i)
                 end if
@@ -55,7 +50,7 @@ contains
 
         ! Normalize in-place to get the mean, avoiding a temporary array.
         inv_n_genes = 1.0_real64 / real(num_selected_genes, real64)
-        do j = 1, size(centroid_col)
+        do j = 1, d
             centroid_col(j) = centroid_col(j) * inv_n_genes
         end do
     end subroutine mean_vector
@@ -64,18 +59,15 @@ contains
     ! This is the main entry point. It orchestrates the process of
     ! identifying genes for each family and calling the mean_vector kernel.
     ! The loop over families is parallelized using OpenMP.
-    subroutine group_centroid(vectors, num_genes, gene_to_family_map, num_families, &
+    subroutine group_centroid(vectors, d, num_genes, gene_to_family_map, num_families, &
                               centroid_matrix, use_all_mode, ortholog_set)
         ! Matrix of all gene vectors (genes as columns).
-        real(real64), intent(in) :: vectors(:,:)
-        ! Total number of genes.
-        integer(int32), intent(in) :: num_genes
+        integer(int32), intent(in) :: d, num_genes, num_families
+        real(real64), intent(in) :: vectors(d, num_genes)
         ! Map from gene index to family index.
         integer(int32), intent(in) :: gene_to_family_map(num_genes)
-        ! Total number of families.
-        integer(int32), intent(in) :: num_families
         ! Output matrix for centroids (centroids as columns).
-        real(real64), intent(out) :: centroid_matrix(:,:)
+        real(real64), intent(out) :: centroid_matrix(d, num_families)
         ! Logical flag to select mode: .true. for 'all', .false. for 'ortho'.
         logical, intent(in) :: use_all_mode
         ! Array indicating ortholog set membership.
@@ -96,7 +88,7 @@ contains
 
             ! Compute the centroid for the selected genes.
             ! Pass a single column of the output matrix.
-            call mean_vector(vectors, selection_mask, centroid_matrix(:, j))
+            call mean_vector(vectors, d, num_genes, selection_mask, centroid_matrix(:, j))
         end do
         !$OMP END PARALLEL DO
     end subroutine group_centroid
@@ -133,13 +125,11 @@ subroutine group_centroid_c(vectors, d, n, gene_to_family_map, num_families, &
     ortholog_set_fortran = ortholog_set
 
     ! Call the core Fortran implementation with the kind-matched logicals.
-    call group_centroid(vectors, n, gene_to_family_map, num_families, &
+    call group_centroid(vectors, d, n, gene_to_family_map, num_families, &
                         centroid_matrix, use_all_mode_fortran, ortholog_set_fortran)
 end subroutine group_centroid_c
 
 ! R interface for computing group centroids.
-! This is a legacy-style wrapper for calling from R using the .Fortran() interface.
-! It does not use `bind(C)` and relies on traditional Fortran ABI conventions.
 subroutine group_centroid_r(vectors, d, n, gene_to_family_map, num_families, &
                             centroid_matrix, use_all_mode, ortholog_set)
     use, intrinsic :: iso_fortran_env, only: int32, real64
@@ -155,6 +145,6 @@ subroutine group_centroid_r(vectors, d, n, gene_to_family_map, num_families, &
     real(real64), intent(out) :: centroid_matrix(d, num_families)
 
     ! Call the core Fortran implementation.
-    call group_centroid(vectors, n, gene_to_family_map, num_families, &
+    call group_centroid(vectors, d, n, gene_to_family_map, num_families, &
                         centroid_matrix, use_all_mode, ortholog_set)
 end subroutine group_centroid_r
