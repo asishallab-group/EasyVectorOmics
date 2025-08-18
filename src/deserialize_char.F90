@@ -72,7 +72,7 @@ contains
       !! Flat character array
     integer(int32), allocatable :: dims(:)
       !! Output dimensions of the array
-    integer :: clen
+    integer(int32) :: clen
       !! Maximum length of character string
     integer(int32), intent(out) :: ierr
       !! Error code

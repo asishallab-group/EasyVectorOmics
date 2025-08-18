@@ -200,7 +200,7 @@ subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_ascii, fn_len, i
   !! filename
   integer(int32), allocatable :: dims(:)
   !! dimensions
-  integer :: unit, type_code, ndims, clen
+  integer(int32) :: unit, type_code, ndims, clen
 
   call set_ok(ierr)
   call set_ok(ioerror)
@@ -252,7 +252,7 @@ subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(
     !! filename
     integer(int32), allocatable   :: dims(:)
     !! dimensions
-    integer                       :: unit
+    integer(int32)                :: unit
     integer(int32)                :: type_code, ndims, clen
 
     ierr = 0

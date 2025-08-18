@@ -74,7 +74,7 @@ contains
       !! array to save
     character(len=*), intent(in) :: filename
       !! filename
-    integer :: unit
+    integer(int32) :: unit
     integer(int32) :: dims(3)
     integer(int32), intent(out) :: ierr
     !! error code
@@ -101,7 +101,7 @@ contains
       !! array to save
     character(len=*), intent(in) :: filename
       !! filename
-    integer :: unit
+    integer(int32) :: unit
     integer(int32) :: dims(4)
     integer(int32), INTENT(OUT) :: ierr
     !! error code
@@ -128,7 +128,7 @@ contains
       !! array to save
     character(len=*), intent(in) :: filename
       !! filename
-    integer :: unit
+    integer(int32) :: unit
     integer(int32) :: dims(5)
     integer(int32), intent(out) :: ierr
     !! error code
@@ -207,7 +207,7 @@ subroutine serialize_real_flat_r(arr, array_size, dims, ndim, filename_ascii, fn
   integer(int32), intent(out) :: ierr
     !! Error code
 
-  integer :: i, total_len
+  integer(int32) :: i, total_len
 
   call set_ok(ierr)
 
@@ -245,7 +245,7 @@ subroutine serialize_real_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bi
   ! Local
   character(len=:), allocatable :: filename
   real(c_double), pointer :: arr_f(:)
-  integer :: i
+  integer(int32) :: i
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 

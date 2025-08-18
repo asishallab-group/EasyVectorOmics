@@ -206,7 +206,7 @@ subroutine serialize_int_flat_r(arr, array_size, dims, ndim, filename_ascii, fn_
   !! Error code
 
   character(len=:), allocatable :: filename
-  integer :: i, total_len
+  integer(int32) :: i, total_len
 
   call set_ok(ierr)
 
@@ -245,7 +245,7 @@ subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bin
   ! Local
   character(len=:), allocatable :: filename
   integer(c_int), pointer :: arr_f(:)
-  integer :: i
+  integer(int32) :: i
 
   call set_ok(ierr)
 

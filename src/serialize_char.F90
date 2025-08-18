@@ -123,7 +123,7 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer :: unit, clen, i, j, k, l, str_len
+    integer(int32) :: unit, clen, i, j, k, l, str_len
     integer(int32) :: dims(4)
     integer(int32), intent(out) :: ierr
     !! error code
@@ -263,7 +263,7 @@ subroutine serialize_char_flat_r(ascii_arr, array_size, dims, ndim, clen, filena
 
   character(len=:), allocatable :: filename
   character(len=clen), allocatable :: flat(:)
-  integer :: i, j, total
+  integer(int32) :: i, j, total
 
   total = product(dims)
   allocate(flat(total))
@@ -314,7 +314,7 @@ subroutine serialize_char_flat_C(ascii_ptr, dims, ndim, clen, filename_ascii, fn
   integer(c_int), pointer :: ascii_arr(:)
   character(len=:), allocatable :: filename
   character(len=clen), allocatable :: flat(:)
-  integer :: i, j, total
+  integer(int32) :: i, j, total
 
   total = product(dims)
   call c_f_pointer(ascii_ptr, ascii_arr, [clen * total])
