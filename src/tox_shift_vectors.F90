@@ -1,12 +1,16 @@
 !> Module for computing the shift vector field for all genes.
 module tox_shift_vectors
    use, intrinsic :: iso_fortran_env, only: real64, int32
+   use tox_errors, only: ERR_INVALID_INPUT, set_ok, set_err_once
 contains
 
    !> Compute the shift vector field for all genes.
    !| Computes the shift vectors by substracting the corresponding family centroid from the expression vector.
    pure subroutine compute_shift_vector_field(d, n_genes, n_families, expression_vectors, family_centroids, gene_to_family, family_ids, shift_vectors, ierr)
       implicit none
+
+      !//TODO Check for correct lengths of the family mapping arrays?  gene_to_family =legnth= expr_vecotrs and family_ids =length= family_centroids
+      !//TODO and also check for correctness of d, n_genes and n_families?
 
       !| Expression vector dimension
       integer(int32), intent(in) :: d
@@ -24,12 +28,15 @@ contains
       integer(int32), intent(in) :: family_ids(n_families)
       !| Output, real matrix array, size = 2d x n_genes, stores the centroid of the gene's family in rows 1..d and the shift vectors in rows d+1...2d
       real(real64), intent(out) :: shift_vectors(2*d, n_genes)
-      !| TODO  Error code: 0 - success, non-zero = error
+      !| Error code: 0 - success, non-zero = error
       integer(int32), intent(out) :: ierr
 
-      !|Local variables
+      !| Local variables
       integer(int32) :: current_gene, current_family_id, current_centroid, i
       real(real64) :: current_family_centroid(d)
+
+      ! Initialize error code
+      call set_ok(ierr)
 
       !| For each gene do
       do current_gene = 1, n_genes
@@ -43,45 +50,14 @@ contains
             end if
          end do
 
+         if (current_centroid == -1) then
+            call set_err_once(ierr, ERR_INVALID_INPUT)
+            return
+         end if
          current_family_centroid = family_centroids(:, current_centroid)
          shift_vectors(1:d, current_gene) = current_family_centroid
          shift_vectors(d + 1:2*d, current_gene) = expression_vectors(:, current_gene) - current_family_centroid
-      end do
 
+      end do
    end subroutine
 end module
-
-!quick testing program
-program main
-   use tox_shift_vectors
-   use, intrinsic :: iso_fortran_env, only: real64, int32
-
-   integer(int32) :: d, n_genes, n_families, ierr
-   real(real64), allocatable :: expression_vectors(:, :)
-   real(real64), allocatable :: family_centroids(:, :)
-   integer(int32), allocatable :: gene_to_family(:)
-   integer(int32), allocatable :: family_ids(:)
-   real(real64), allocatable :: shift_vectors(:, :)
-
-   ! Example sizes
-   d = 2
-   n_genes = 3
-   n_families = 2
-
-   allocate (expression_vectors(d, n_genes))
-   allocate (family_centroids(d, n_families))
-   allocate (gene_to_family(n_genes))
-   allocate (family_ids(n_families))
-   allocate (shift_vectors(2*d, n_genes))
-
-   ! Fill with dummy data
-   expression_vectors = reshape([1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64, 5.0_real64, 6.0_real64], [d, n_genes])
-   family_centroids = reshape([10.0_real64, 20.0_real64, 30.0_real64, 40.0_real64], [d, n_families])
-   gene_to_family = [1_int32, 2_int32, 1_int32]
-   family_ids = [1_int32, 2_int32]
-   shift_vectors = 0.0_real64
-   call compute_shift_vector_field(d, n_genes, n_families, expression_vectors, family_centroids, gene_to_family, family_ids, shift_vectors, ierr)
-   print *, shift_vectors
-
-end program main
-
