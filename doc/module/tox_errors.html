@@ -85,7 +85,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 5.8% of total for modules and submodules.">38 statements</a>
+                 title=" 6.8% of total for modules and submodules.">45 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -134,12 +134,19 @@
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_read_dims">ERR_READ_DIMS</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_read_charlen">ERR_READ_CHARLEN</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_read_data">ERR_READ_DATA</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_write_magic">ERR_WRITE_MAGIC</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_write_type">ERR_WRITE_TYPE</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_write_ndims">ERR_WRITE_NDIMS</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_write_dims">ERR_WRITE_DIMS</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_write_charlen">ERR_WRITE_CHARLEN</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_write_data">ERR_WRITE_DATA</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_invalid_format">ERR_INVALID_FORMAT</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_invalid_input">ERR_INVALID_INPUT</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_empty_input">ERR_EMPTY_INPUT</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_dim_mismatch">ERR_DIM_MISMATCH</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_nan_inf">ERR_NAN_INF</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_unsupported_type">ERR_UNSUPPORTED_TYPE</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_size_mismatch">ERR_SIZE_MISMATCH</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_alloc_fail">ERR_ALLOC_FAIL</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_pointer_null">ERR_POINTER_NULL</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_unit_not_connected">ERR_UNIT_NOT_CONNECTED</a>
@@ -365,6 +372,108 @@ parameter
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-err_write_magic"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_WRITE_MAGIC</strong></td>
+<td> =</td>
+                <td>112</td>
+            <td>
+                <p>could not write magic number</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err_write_type"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_WRITE_TYPE</strong></td>
+<td> =</td>
+                <td>113</td>
+            <td>
+                <p>could not write array type code</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err_write_ndims"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_WRITE_NDIMS</strong></td>
+<td> =</td>
+                <td>114</td>
+            <td>
+                <p>could not write number of dimensions</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err_write_dims"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_WRITE_DIMS</strong></td>
+<td> =</td>
+                <td>115</td>
+            <td>
+                <p>could not write array dimensions</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err_write_charlen"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_WRITE_CHARLEN</strong></td>
+<td> =</td>
+                <td>116</td>
+            <td>
+                <p>could not write character length</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err_write_data"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_WRITE_DATA</strong></td>
+<td> =</td>
+                <td>117</td>
+            <td>
+                <p>could not write array data</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-err_invalid_format"></span>
               integer(kind=int32),
             </td>
@@ -463,6 +572,23 @@ parameter
                 <td>205</td>
             <td>
                 <p>unsupported data type encountered</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err_size_mismatch"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_SIZE_MISMATCH</strong></td>
+<td> =</td>
+                <td>206</td>
+            <td>
+                <p>Array size mismatch</p>
             </td>
         </tr>
         <tr>
@@ -730,7 +856,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-08-13 11:02 +0000"             </p>
+ on "2025-08-18 08:39 +0000"             </p>
           </div>
         </div>
         <br>
