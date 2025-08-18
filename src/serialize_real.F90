@@ -67,8 +67,6 @@ contains
 
   !> Serialize a 3D real(real64) array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, and the array data.
-  !! @param arr The input real array to serialize.
-  !! @param filename The output filename.
   subroutine serialize_real_3d(arr, filename, ierr)
     real(real64), intent(in) :: arr(:,:,:)
       !! array to save
