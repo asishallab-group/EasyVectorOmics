@@ -1,6 +1,7 @@
 import ctypes
 import numpy as np
 import os
+from error_handling import check_err_code
 
 # load fortran library
 lib_path = os.path.join(os.path.dirname(__file__), "../build/libtensor-omics.so")
@@ -31,7 +32,7 @@ def _string_array_to_ascii_matrix(strings: np.ndarray) -> tuple[np.ndarray, int]
     return mat, clen
 
 # Helper function to read dimensions of integer/real array
-def get_array_metadata(filename, max_dims=5, with_clen=False):
+def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
     """
     Reads dimensions (and optionally character length) of an array file.
     with_clen=True -> returns (dims, clen)
@@ -65,8 +66,7 @@ def get_array_metadata(filename, max_dims=5, with_clen=False):
         ctypes.byref(clen)
     )
 
-    if ierr.value != 0:
-        raise RuntimeError(f"Fortran error code: {ierr.value}")
+    check_err_code(ierr)
 
     if with_clen:
         return dims_out[:ndims.value], clen.value
@@ -74,7 +74,7 @@ def get_array_metadata(filename, max_dims=5, with_clen=False):
         return dims_out[:ndims.value]
 
 # serilization of an n-dimensional integer array
-def serialize_int_nd(arr: np.ndarray, filename: str):
+def tox_serialize_int_nd(arr: np.ndarray, filename: str):
     """
     Serializes an n-dimensional integer32 array to a binary file
     """
@@ -115,13 +115,15 @@ def serialize_int_nd(arr: np.ndarray, filename: str):
         ctypes.byref(ierr)
     )
 
+    check_err_code(ierr)
+
 # Deserialize an n dimensional integer array
-def deserialize_int_nd(filename):
+def tox_deserialize_int_nd(filename):
     """
     Deserializes an n-dimensional int32-Array.
     """
     # read size of the array
-    dims = get_array_metadata(filename)
+    dims = tox_get_array_metadata(filename)
     print(f"Deserializing array with dimensions: {dims}")
     # create array with the proper size
     total_size = np.prod(dims)
@@ -139,9 +141,10 @@ def deserialize_int_nd(filename):
     arrays_lib.deserialize_int_C.restype = None
 
     arrays_lib.deserialize_int_C(arr, total_size, ascii_arr, fn_len, ctypes.byref(ierr))
+    check_err_code(ierr)
     return arr.reshape(dims, order='F')  # Reshape to original dimensions
 
-def serialize_real_nd(arr: np.ndarray, filename: str):
+def tox_serialize_real_nd(arr: np.ndarray, filename: str):
     """
     Serializes an n-dimensional real64 array to a binary file
     """
@@ -182,14 +185,14 @@ def serialize_real_nd(arr: np.ndarray, filename: str):
         fn_len,
         ctypes.byref(ierr)
     )
+    check_err_code(ierr)
 
-
-def deserialize_real_nd(filename):
+def tox_deserialize_real_nd(filename):
     """
     Deserializes an n-dimensional array of type real64
     """
     #read dimensions
-    dims = get_array_metadata(filename)
+    dims = tox_get_array_metadata(filename)
     print(f"Deserializing array with dimensions: {dims}")
     # create array with correct size
     total_size = np.prod(dims)
@@ -206,10 +209,11 @@ def deserialize_real_nd(filename):
     ]
     arrays_lib.deserialize_real_C.restype = None
 
-    arrays_lib.deserialize_real_C(arr, total_size, ascii_arr, fn_len, ierr)
+    arrays_lib.deserialize_real_C(arr, total_size, ascii_arr, fn_len, ctypes.byref(ierr))
+    check_err_code(ierr)
     return arr.reshape(dims, order='F')  # Reshape
 
-def serialize_char_nd(arr: np.ndarray, filename: str):
+def tox_serialize_char_nd(arr: np.ndarray, filename: str):
     """
     Serializes an n-dimensional character array to a binary file
     """
@@ -245,9 +249,10 @@ def serialize_char_nd(arr: np.ndarray, filename: str):
         fn_len,
         ctypes.byref(ierr)
     )
+    check_err_code(ierr)
 
 
-def deserialize_char_nd(filename: str, ndim_max=5):
+def tox_deserialize_char_nd(filename: str, ndim_max=5):
     """
     Deserializes an n-dimensional character array from a file
     """
@@ -255,7 +260,7 @@ def deserialize_char_nd(filename: str, ndim_max=5):
     filename_ascii, fn_len = _filename_to_ascii_array(filename)
 
     # Get metadata
-    dims, clen = get_array_metadata(filename, max_dims=ndim_max, with_clen=True)
+    dims, clen = tox_get_array_metadata(filename, max_dims=ndim_max, with_clen=True)
     ierr = ctypes.c_int()
 
     print(f"Deserializing char array with dimensions: {dims}, clen: {clen}")
@@ -282,8 +287,8 @@ def deserialize_char_nd(filename: str, ndim_max=5):
         fn_len,
         ctypes.byref(ierr)
     )
+    check_err_code(ierr)
 
-    ndim = len(dims)
     shape = tuple(dims)
     total_array_size = np.prod(shape)
 
@@ -298,96 +303,3 @@ def deserialize_char_nd(filename: str, ndim_max=5):
     chars = chars.reshape(shape, order='F')
 
     return chars
-
-# Tests for integer
-def int_test():
-    array = np.array([1, 2, 3, 4, 5], dtype=np.int32, order='F')
-    filename = "test_int_1d.bin"
-    serialize_int_nd(array, filename)
-    print(f"Serialized array to {filename}")
-    res = deserialize_int_nd(filename)
-    assert np.array_equal(res, array), "Deserialized array does not match original"
-    print(res)
-
-    array_2d = np.array([[1, 2, 3], [4, 5, 6]], dtype=np.int32, order='F')
-    filename_2d = "test_int_2d.bin"
-    serialize_int_nd(array_2d, filename_2d)
-    print(f"Serialized 2D array to {filename_2d}")
-    res_2d = deserialize_int_nd(filename_2d)
-    print(res_2d)
-    assert np.array_equal(res_2d, array_2d), "Deserialized 2D array does not match original"
-
-    array_3d = np.array([[[1, 2], [3, 4]], [[5, 6], [7, 8]]], dtype=np.int32, order='F')
-    filename_3d = "test_int_3d.bin"
-    serialize_int_nd(array_3d, filename_3d)
-    print(f"Serialized 3D array to {filename_3d}")
-    res_3d = deserialize_int_nd(filename_3d)
-    print(res_3d)
-    assert np.array_equal(res_3d, array_3d), "Deserialized 3D array does not match original"
-    
-# Tests for real
-def real_test():
-    array = np.array([1.5, 2.3, 3.2, 4.0, 5.0], dtype=np.float64, order='F')
-    filename = "test_real_1d.bin"
-    serialize_real_nd(array, filename)
-    print(f"Serialized array to {filename}")
-    res = deserialize_real_nd(filename)
-    assert np.array_equal(res, array), "Deserialized array does not match original"
-    print(res)
-
-    array_2d = np.array([[1.0, 2.0, 3.0], [4.0, 5.7, 6.0]], dtype=np.float64, order='F')
-    filename_2d = "test_real_2d.bin"
-    serialize_real_nd(array_2d, filename_2d)
-    print(f"Serialized 2D array to {filename_2d}")
-    res_2d = deserialize_real_nd(filename_2d)
-    print(res_2d)
-    assert np.array_equal(res_2d, array_2d), "Deserialized 2D array does not match original"
-
-    array_3d = np.array([[[1.0, 2.0], [3.3, 4.0]], [[5.0, 6.8], [7.0, 8.0]]], dtype=np.float64, order='F')
-    filename_3d = "test_real_3d.bin"
-    serialize_real_nd(array_3d, filename_3d)
-    print(f"Serialized 3D array to {filename_3d}")
-    res_3d = deserialize_real_nd(filename_3d)
-    print(res_3d)
-    assert np.array_equal(res_3d, array_3d), "Deserialized 3D array does not match original"
-
-    empty_array = np.array([], dtype=np.float64, order='F')
-    empty_filename = "test_real_empty.bin"
-    serialize_real_nd(empty_array, empty_filename)
-    print(f"Serialized empty array to {empty_filename}")
-    res_empty = deserialize_real_nd(empty_filename)
-    assert res_empty.size == 0, "Deserialized empty array should be empty"
-
-# Tests for chars
-def char_test():
-    array = np.array(["hello", "world"], dtype='U5', order='F')
-    filename = "test_char_1d.bin"
-    serialize_char_nd(array, filename)
-    print(f"Serialized array to {filename}")
-    res = deserialize_char_nd(filename)
-    print(res)
-    assert np.array_equal(res, array), "Deserialized array does not match original"
-    
-
-    array_2d = np.array([["foo", "bar"], ["baz", "qux"]], dtype='U5', order='F')
-    filename_2d = "test_char_2d.bin"
-    serialize_char_nd(array_2d, filename_2d)
-    print(f"Serialized 2D array to {filename_2d}")
-    res_2d = deserialize_char_nd(filename_2d)
-    print(res_2d)
-    assert np.array_equal(res_2d, array_2d), "Deserialized 2D array does not match original"
-
-    array_3d = np.array([[["abb", "bbbbbbb"], ["cfs", "d"]], [["e", ""], ["g", "h"]]], dtype='U5', order='F')
-    filename_3d = "test_char_3d.bin"
-    serialize_char_nd(array_3d, filename_3d)
-    print(f"Serialized 3D array to {filename_3d}")
-    res_3d = deserialize_char_nd(filename_3d)
-    print(res_3d)
-    assert np.array_equal(res_3d, array_3d), "Deserialized 3D array does not match original"
-
-print("============ INT TEST ============")
-int_test()
-print("============ REAL TEST ============")
-real_test()
-print("============ CHAR TEST ============")
-char_test()

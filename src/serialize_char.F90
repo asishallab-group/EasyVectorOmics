@@ -48,8 +48,6 @@ contains
 
   !> Serialize a 2D character array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, character length, and the array data.
-  !! @param arr The input character array to serialize.
-  !! @param filename The output filename.
   subroutine serialize_char_2d(arr, filename, ierr)
     character(len=*), intent(in) :: arr(:,:)
     !! array to save
