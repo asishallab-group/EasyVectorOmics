@@ -11,6 +11,7 @@ module array_utils
 
    contains
 
+  !> Opens unit and writes fileheader with all metadata to the given filename
   subroutine write_file_header(filename, unit, type_code, ndim, dims, ierr, clen)
     use iso_fortran_env, only: int32
     implicit none
@@ -77,6 +78,7 @@ module array_utils
     end if
   end subroutine write_file_header
 
+  !> Opens unit and reads file header with all metadata from given file
   subroutine read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     character(len=*), intent(in) :: filename
     !! filename to read from
@@ -198,23 +200,23 @@ module array_utils
   end subroutine
 
   !> subroutine to convert an ASCII array to a string
-subroutine ascii_to_string(ascii_array, clen, str)
-  implicit none
+  subroutine ascii_to_string(ascii_array, clen, str)
+    implicit none
 
-  integer(int32), intent(in) :: ascii_array(clen)
-    !! Array of ASCII characters
-  integer(int32), intent(in) :: clen
-    !! Length of the ASCII array
-  character(len=:), allocatable, INTENT(INOUT) :: str
-  !! Output string
-  integer(int32) :: i
-  !! loop variable
+    integer(int32), intent(in) :: ascii_array(clen)
+      !! Array of ASCII characters
+    integer(int32), intent(in) :: clen
+      !! Length of the ASCII array
+    character(len=:), allocatable, INTENT(INOUT) :: str
+    !! Output string
+    integer(int32) :: i
+    !! loop variable
 
-  allocate(character(len=clen) :: str)
-  do i = 1, clen
-    str(i:i) = char(ascii_array(i))
-  end do
-end subroutine ascii_to_string
+    allocate(character(len=clen) :: str)
+    do i = 1, clen
+      str(i:i) = char(ascii_array(i))
+    end do
+  end subroutine ascii_to_string
 
 end module array_utils
 
