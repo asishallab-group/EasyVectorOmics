@@ -1,12 +1,13 @@
 !> Module for computing the shift vector field for all genes.
 module tox_shift_vectors
    use, intrinsic :: iso_fortran_env, only: real64, int32
-   use tox_errors, only: ERR_INVALID_INPUT, set_ok, set_err_once
+   use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, set_ok, set_err_once
 contains
 
    !> Compute the shift vector field for all genes.
    !| Computes the shift vectors by substracting the corresponding family centroid from the expression vector.
-   pure subroutine compute_shift_vector_field(d, n_genes, n_families, expression_vectors, family_centroids, gene_to_family, family_ids, shift_vectors, ierr)
+   !//TODO ADD PURE   
+   subroutine compute_shift_vector_field(d, n_genes, n_families, expression_vectors, family_centroids, gene_to_family, family_ids, shift_vectors, ierr)
       implicit none
 
       !//TODO Check for correct lengths of the family mapping arrays?  gene_to_family =legnth= expr_vecotrs and family_ids =length= family_centroids
@@ -35,8 +36,14 @@ contains
       integer(int32) :: current_gene, current_family_id, current_centroid, i
       real(real64) :: current_family_centroid(d)
 
-      ! Initialize error code
+      !| Initialize error code
       call set_ok(ierr)
+
+      !| Check for correct 0 dimension
+      if (d == 0 .or. n_genes == 0 .or. n_families == 0) then
+         call set_err_once(ierr, ERR_EMPTY_INPUT)
+         return
+      end if
 
       !| For each gene do
       do current_gene = 1, n_genes

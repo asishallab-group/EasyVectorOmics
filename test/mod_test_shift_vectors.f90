@@ -68,9 +68,9 @@ contains
       end do
    end subroutine run_named_tests_shift_vectors
 
-   !> Test correct mapping between families and genes. //TODO change to simple test without douplicates on families
+   !> Test correct mapping between families and genes.
    subroutine test_correct_family_mapping()
-      real(real64) :: expression_vectors(3, 5), family_centroids(3, 3), shift_vectors(6, 5)
+      real(real64) :: expression_vectors(3, 5), family_centroids(3, 3), shift_vectors(6, 5), expected_shift_vectors(6, 5)
       integer(int32) :: gene_to_family(5), family_ids(3), ierr, i
       expression_vectors = reshape([(real(i, real64), i=1, 15)], [3, 5])
       family_centroids = reshape([(real(i, real64), i=5, -3, -1)], [3, 3])
@@ -79,45 +79,16 @@ contains
 
      call compute_shift_vector_field(3, 5, 3, expression_vectors, family_centroids, gene_to_family, family_ids, shift_vectors, ierr)
 
+      expected_shift_vectors = reshape([2.0_real64, 1.0_real64, 0.0_real64, -1.0_real64, 1.0_real64, 3.0_real64, &
+                                        5.0_real64, 4.0_real64, 3.0_real64, -1.0_real64, 1.0_real64, 3.0_real64, &
+                                        -1.0_real64, -2.0_real64, -3.0_real64, 8.0_real64, 10.0_real64, 12.0_real64, &
+                                        2.0_real64, 1.0_real64, 0.0_real64, 8.0_real64, 10.0_real64, 12.0_real64, &
+                                        -1.0_real64, -2.0_real64, -3.0_real64, 14.0_real64, 16.0_real64, 18.0_real64], [6, 5])
+
       ! Check array size stays correct
       call assert_true(size(shift_vectors, 1) == 6 .and. size(shift_vectors, 2) == 5, "Shift_vectors shape is incorrect")
 
-      !//TODO change to assert real array
-      ! Check values in shift_vectors
-      call assert_equal_real(shift_vectors(1, 1), 2.0_real64, 1e-12_real64, "Shift_vectors(1, 1) should be 2")
-      call assert_equal_real(shift_vectors(2, 1), 1.0_real64, 1e-12_real64, "Shift_vectors(2, 1) should be 1")
-      call assert_equal_real(shift_vectors(3, 1), 0.0_real64, 1e-12_real64, "Shift_vectors(3, 1) should be 0")
-      call assert_equal_real(shift_vectors(4, 1), -1.0_real64, 1e-12_real64, "Shift_vectors(4, 1) should be -1")
-      call assert_equal_real(shift_vectors(5, 1), 1.0_real64, 1e-12_real64, "Shift_vectors(5, 1) should be 1")
-      call assert_equal_real(shift_vectors(6, 1), 3.0_real64, 1e-12_real64, "Shift_vectors(6, 1) should be 3")
-
-      call assert_equal_real(shift_vectors(1, 2), 5.0_real64, 1e-12_real64, "Shift_vectors(1, 2) should be 5")
-      call assert_equal_real(shift_vectors(2, 2), 4.0_real64, 1e-12_real64, "Shift_vectors(2, 2) should be 4")
-      call assert_equal_real(shift_vectors(3, 2), 3.0_real64, 1e-12_real64, "Shift_vectors(3, 2) should be 3")
-      call assert_equal_real(shift_vectors(4, 2), -1.0_real64, 1e-12_real64, "Shift_vectors(4, 2) should be -1")
-      call assert_equal_real(shift_vectors(5, 2), 1.0_real64, 1e-12_real64, "Shift_vectors(5, 2) should be 1")
-      call assert_equal_real(shift_vectors(6, 2), 3.0_real64, 1e-12_real64, "Shift_vectors(6, 2) should be 3")
-
-      call assert_equal_real(shift_vectors(1, 3), -1.0_real64, 1e-12_real64, "Shift_vectors(1, 3) should be -1")
-      call assert_equal_real(shift_vectors(2, 3), -2.0_real64, 1e-12_real64, "Shift_vectors(2, 3) should be -2")
-      call assert_equal_real(shift_vectors(3, 3), -3.0_real64, 1e-12_real64, "Shift_vectors(3, 3) should be -3")
-      call assert_equal_real(shift_vectors(4, 3), 8.0_real64, 1e-12_real64, "Shift_vectors(4, 3) should be 8")
-      call assert_equal_real(shift_vectors(5, 3), 10.0_real64, 1e-12_real64, "Shift_vectors(5, 3) should be 10")
-      call assert_equal_real(shift_vectors(6, 3), 12.0_real64, 1e-12_real64, "Shift_vectors(6, 3) should be 12")
-
-      call assert_equal_real(shift_vectors(1, 4), 2.0_real64, 1e-12_real64, "Shift_vectors(1, 4) should be 2")
-      call assert_equal_real(shift_vectors(2, 4), 1.0_real64, 1e-12_real64, "Shift_vectors(2, 4) should be 1")
-      call assert_equal_real(shift_vectors(3, 4), 0.0_real64, 1e-12_real64, "Shift_vectors(3, 4) should be 0")
-      call assert_equal_real(shift_vectors(4, 4), 8.0_real64, 1e-12_real64, "Shift_vectors(4, 4) should be 8")
-      call assert_equal_real(shift_vectors(5, 4), 10.0_real64, 1e-12_real64, "Shift_vectors(5, 4) should be 10")
-      call assert_equal_real(shift_vectors(6, 4), 12.0_real64, 1e-12_real64, "Shift_vectors(6, 4) should be 12")
-
-      call assert_equal_real(shift_vectors(1, 5), -1.0_real64, 1e-12_real64, "Shift_vectors(1, 5) should be -1")
-      call assert_equal_real(shift_vectors(2, 5), -2.0_real64, 1e-12_real64, "Shift_vectors(2, 5) should be -2")
-      call assert_equal_real(shift_vectors(3, 5), -3.0_real64, 1e-12_real64, "Shift_vectors(3, 5) should be -3")
-      call assert_equal_real(shift_vectors(4, 5), 14.0_real64, 1e-12_real64, "Shift_vectors(4, 5) should be 14")
-      call assert_equal_real(shift_vectors(5, 5), 16.0_real64, 1e-12_real64, "Shift_vectors(5, 5) should be 16")
-      call assert_equal_real(shift_vectors(6, 5), 18.0_real64, 1e-12_real64, "Shift_vectors(6, 5) should be 18")
+      call assert_equal_array_real(shift_vectors, expected_shift_vectors, 30, 1e-12_real64, "Shift_vectors values are incorrect")
    end subroutine test_correct_family_mapping
 
    !> Test for invalid family id mapping raising error
@@ -151,8 +122,9 @@ contains
       ! Call the function with zero distance values
      call compute_shift_vector_field(3, 2, 2, expression_vectors, family_centroids, gene_to_family, family_ids, shift_vectors, ierr)
 
-      ! Check for exprected 0 values in shift_vectors
-      expected_shift_vectors = reshape([1.0_real64,2.0_real64,3.0_real64,0.0_real64,0.0_real64,0.0_real64,4.0_real64,5.0_real64,6.0_real64,0.0_real64,0.0_real64,0.0_real64], [6,2])
+      ! Check for expected 0 values in shift_vectors
+      expected_shift_vectors = reshape([1.0_real64, 2.0_real64, 3.0_real64, 0.0_real64, 0.0_real64, 0.0_real64, &
+                                        4.0_real64, 5.0_real64, 6.0_real64, 0.0_real64, 0.0_real64, 0.0_real64], [6, 2])
       call assert_equal_array_real(shift_vectors, expected_shift_vectors, 6, 1e-12_real64, "Shift vectors should be zero distance from centroids")
    end subroutine
 
@@ -167,7 +139,8 @@ contains
       gene_to_family = [1, 2, 1, 2]
       family_ids = [1, 2]
 
-      expected_shift_vectors = reshape([10.0_real64, 20.0_real64, -9.0_real64, -18.0_real64, 30.0_real64, 40.0_real64, -27.0_real64, -36.0_real64, 50.0_real64, 60.0_real64, -5.0_real64, -14.0_real64, 70.0_real64, 80.0_real64, -23.0_real64, -23.0_real64], [4, 4])
+      expected_shift_vectors = reshape([10.0_real64, 20.0_real64, -9.0_real64, -18.0_real64, 30.0_real64, 40.0_real64, -27.0_real64, -36.0_real64, &
+                 50.0_real64, 60.0_real64, -5.0_real64, -14.0_real64, 70.0_real64, 80.0_real64, -23.0_real64, -23.0_real64], [4, 4])
 
       ! Call the function with multiple genes per family
      call compute_shift_vector_field(2, 4, 2, expression_vectors, family_centroids, gene_to_family, family_ids, shift_vectors, ierr)
@@ -198,13 +171,14 @@ contains
 
    !> Test for dimension edge cases (0 genes with dimension 1 and 1 family)
    subroutine test_dimension_edge_cases()
-      real(real64) :: expression_vectors(1, 0), family_centroids(1, 1), shift_vectors(2, 0)
+      real(real64) :: expression_vectors(0, 0), family_centroids(0, 1), shift_vectors(0, 0)
       integer(int32) :: gene_to_family(0), family_ids(1), ierr
 
       ! Call the function with edge case arrays
      call compute_shift_vector_field(1, 0, 1, expression_vectors, family_centroids, gene_to_family, family_ids, shift_vectors, ierr)
 
-      !//TODO Should this raise a empty input error?
+      ! Check for expected error code 202 (ERR_EMPTY_INPUT)
+      call assert_equal_int(ierr, 202, "Expected error code 202 for empty input")
 
       ! Check for expected 0 length of shift_vectors array
       call assert_equal_int(size(shift_vectors), 0, "Shift vectors array length should be 0")
