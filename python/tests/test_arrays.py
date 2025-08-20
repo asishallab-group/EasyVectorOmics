@@ -43,7 +43,7 @@ def real_test():
     assert np.array_equal(res, array), "Deserialized array does not match original"
     print(res)
 
-    array_2d = np.array([[1.0, 2.0, 3.0], [4.0, 5.7, 6.0]], dtype=np.float64, order='F')
+    array_2d = np.asfortranarray([[1.0, 2.0, 3.0], [4.0, 5.7, 6.0]], dtype=np.float64)
     filename_2d = "test_real_2d.bin"
     tox_serialize_real_nd(array_2d, filename_2d)
     print(f"Serialized 2D array to {filename_2d}")
@@ -68,7 +68,7 @@ def real_test():
 
 # Tests for chars
 def char_test():
-    array = np.array(["hello", "world"], dtype='U5', order='F')
+    array = np.asfortranarray(["hello", "world"], dtype='U5')
     filename = "test_char_1d.bin"
     tox_serialize_char_nd(array, filename)
     print(f"Serialized array to {filename}")
@@ -77,7 +77,7 @@ def char_test():
     assert np.array_equal(res, array), "Deserialized array does not match original"
     
 
-    array_2d = np.array([["foo", "bar"], ["baz", "qux"]], dtype='U5', order='F')
+    array_2d = np.asfortranarray([["foo", "bar"], ["baz", "qux"]], dtype='U5')
     filename_2d = "test_char_2d.bin"
     tox_serialize_char_nd(array_2d, filename_2d)
     print(f"Serialized 2D array to {filename_2d}")

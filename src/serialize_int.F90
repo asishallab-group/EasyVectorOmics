@@ -226,6 +226,7 @@ subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bin
   use array_utils, only: ascii_to_string
   use serialize_int, only: serialize_int_nd
   use tox_errors, only : set_ok
+  use iso_fortran_env, only : int32
   implicit none
 
   ! input

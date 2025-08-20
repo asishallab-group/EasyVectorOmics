@@ -4,17 +4,36 @@ module array_utils
     use tox_errors
     implicit none
 
-    PUBLIC :: get_array_metadata, ascii_to_string, read_file_header, write_file_header
+    PUBLIC :: get_array_metadata, ascii_to_string, read_file_header, write_file_header, string_to_ascii_arr
 
     integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
     !! Magic number for array files
 
    contains
 
+  !> Check I/O error and set ierr accordingly
+  subroutine check_okay_ioerror(ioerror, ierr, msg, unit)
+    
+    integer(int32), intent(in) :: ioerror
+    !! IO error set by fortran
+    integer(int32), intent(out) :: ierr
+    !! Error code
+    integer(int32), intent(in) :: msg
+    !! Error code readable version used for setting
+    integer(int32), intent(in) :: unit
+    !! pass unit allowing it to be closed 
+
+    if (.not. is_ok(ioerror)) then
+      call set_err_once(ierr, msg)
+      close(unit)
+      return
+    end if
+    
+  end subroutine
+
+
   !> Opens unit and writes fileheader with all metadata to the given filename
   subroutine write_file_header(filename, unit, type_code, ndim, dims, ierr, clen)
-    use iso_fortran_env, only: int32
-    implicit none
     character(len=*), intent(in) :: filename
     !! filename to write to
     integer(int32), intent(in) :: type_code
@@ -36,45 +55,30 @@ module array_utils
     call set_ok(ioerror)
 
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='replace', iostat=ioerror)
-    if (.not. is_ok(ioerror)) then
-      call set_err_once(ierr, ERR_FILE_OPEN)
-      close(unit)
-      return
-    end if
+
+    call check_okay_ioerror(ioerror, ierr, ERR_FILE_OPEN, unit)
+    if (.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) ARRAY_FILE_MAGIC
-    if (.not. is_ok(ioerror)) then
-      call set_err_once(ierr, ERR_WRITE_MAGIC)
-      close(unit)
-      return
-    end if
+    call check_okay_ioerror(ioerror, ierr, ERR_WRITE_MAGIC, unit)
+    if (.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) type_code
-    if (.not. is_ok(ioerror)) then
-      call set_err_once(ierr, ERR_WRITE_TYPE)
-      close(unit)
-      return
-    end if
+    call check_okay_ioerror(ioerror, ierr, ERR_WRITE_TYPE, unit)
+    if (.not. is_ok(ierr)) return
 
-    write(unit, iostat=ierr) ndim
-    if (.not. is_ok(ioerror)) then
-      call set_err_once(ierr, ERR_WRITE_NDIMS)
-      return
-    end if
+    write(unit, iostat=ioerror) ndim
+    call check_okay_ioerror(ioerror, ierr, ERR_WRITE_NDIMS, unit)
+    if (.not. is_ok(ierr)) return
 
-    write(unit, iostat=ierr) dims
-    if (.not. is_ok(ioerror)) then
-      call set_err_once(ierr, ERR_WRITE_DIMS)
-      close(unit)
-      return
-    end if
+    write(unit, iostat=ioerror) dims
+    call check_okay_ioerror(ioerror, ierr, ERR_WRITE_DIMS, unit)
+    if (.not. is_ok(ierr)) return
 
     if (type_code == 3 .and. present(clen)) then
-      write(unit, iostat=ierr) clen
-      if (.not. is_ok(ioerror)) then
-        call set_err_once(ierr, ERR_WRITE_CHARLEN)
-        return
-      end if
+      write(unit, iostat=ioerror) clen
+      call check_okay_ioerror(ioerror, ierr, ERR_WRITE_CHARLEN, unit)
+      if (.not. is_ok(ierr)) return
     end if
   end subroutine write_file_header
 
@@ -100,23 +104,17 @@ module array_utils
     integer(int32) :: magic
     !! magic number to verify file format
 
-    clen = 0
 
     call set_ok(ioerror)
     call set_ok(ierr)
 
     open(newunit=unit, file=filename, form='unformatted', access='stream', status='old', iostat=ioerror)
-    if (.not. is_ok(ioerror)) then
-      call set_err_once(ierr, ERR_FILE_OPEN)
-      return
-    end if
+    call check_okay_ioerror(ioerror, ierr, ERR_FILE_OPEN, unit)
+    if (.not. is_ok(ierr)) return
 
     read(unit, iostat=ioerror) magic
-    if (.not. is_ok(ioerror)) then
-      call set_err_once(ierr, ERR_READ_MAGIC)
-      close(unit)
-      return
-    end if
+    call check_okay_ioerror(ioerror, ierr, ERR_READ_MAGIC, unit)
+    if (.not. is_ok(ierr)) return
 
     if (magic /= ARRAY_FILE_MAGIC) then
       call set_err_once(ierr, ERR_INVALID_FORMAT)
@@ -125,34 +123,22 @@ module array_utils
     end if
 
     read(unit, iostat=ioerror) type_code
-    if (.not. is_ok(ioerror)) then
-      call set_err_once(ierr, ERR_READ_TYPE)
-      close(unit)
-      return
-    end if
+    call check_okay_ioerror(ioerror, ierr, ERR_READ_TYPE, unit)
+    if (.not. is_ok(ierr)) return
 
     read(unit, iostat=ioerror) ndims
-    if (.not. is_ok(ioerror)) then
-      call set_err_once(ierr, ERR_READ_NDIMS)
-      close(unit)
-      return
-    end if
+    call check_okay_ioerror(ioerror, ierr, ERR_READ_NDIMS, unit)
+    if (.not. is_ok(ierr)) return
 
     allocate(dims(ndims))
     read(unit, iostat=ioerror) dims
-    if (.not. is_ok(ioerror)) then
-      call set_err_once(ierr, ERR_READ_DIMS)
-      close(unit)
-      return
-    end if
+    call check_okay_ioerror(ioerror, ierr, ERR_READ_DIMS, unit)
+    if (.not. is_ok(ierr)) return
 
     if(type_code==3) then
       read(unit, iostat=ioerror) clen
-      if (.not. is_ok(ioerror)) then
-        call set_err_once(ierr, ERR_READ_CHARLEN)
-        close(unit)
-        return
-      end if
+      call check_okay_ioerror(ioerror, ierr, ERR_READ_CHARLEN, unit)
+      if (.not. is_ok(ierr)) return
     else
       clen = 0 ! Not applicable for non-character types
     end if
@@ -190,10 +176,8 @@ module array_utils
 
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     close(unit)
-    if (.not. is_ok(ierr)) then
-      return
-    end if
-
+    if (.not. is_ok(ierr)) return
+      
     do i = 1, ndims
       dims_out(i) = dims(i)
     end do
@@ -217,6 +201,27 @@ module array_utils
       str(i:i) = char(ascii_array(i))
     end do
   end subroutine ascii_to_string
+
+  subroutine string_to_ascii_arr(flat, array_size, ascii_arr, clen)
+    use iso_fortran_env, only: int32
+    implicit none
+    integer(int32), intent(out) :: ascii_arr(array_size*clen)
+    character(len=*), intent(in) :: flat(array_size)
+    integer(int32), intent(in) :: array_size
+    integer(int32), intent(in) :: clen
+    integer(int32) :: i, j
+
+    do i = 1, array_size
+      do j = 1, clen
+        if (j <= len_trim(flat(i))) then
+          ascii_arr((i - 1) * clen + j) = iachar(flat(i)(j:j))
+        else
+          ascii_arr((i - 1) * clen + j) = 0
+        end if
+      end do
+    end do
+  end subroutine string_to_ascii_arr
+
 
 end module array_utils
 

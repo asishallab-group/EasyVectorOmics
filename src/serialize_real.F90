@@ -225,6 +225,7 @@ subroutine serialize_real_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bi
   use array_utils, only: ascii_to_string
   use serialize_real, only: serialize_real_nd
   use tox_errors, only : set_ok
+  use iso_fortran_env, only : int32
   implicit none
 
   ! Input parameters

@@ -66,7 +66,7 @@ def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
         ctypes.byref(clen)
     )
 
-    check_err_code(ierr)
+    check_err_code(ierr.value)
 
     if with_clen:
         return dims_out[:ndims.value], clen.value
@@ -115,7 +115,7 @@ def tox_serialize_int_nd(arr: np.ndarray, filename: str):
         ctypes.byref(ierr)
     )
 
-    check_err_code(ierr)
+    check_err_code(ierr.value)
 
 # Deserialize an n dimensional integer array
 def tox_deserialize_int_nd(filename):
@@ -141,7 +141,7 @@ def tox_deserialize_int_nd(filename):
     arrays_lib.deserialize_int_C.restype = None
 
     arrays_lib.deserialize_int_C(arr, total_size, ascii_arr, fn_len, ctypes.byref(ierr))
-    check_err_code(ierr)
+    check_err_code(ierr.value)
     return arr.reshape(dims, order='F')  # Reshape to original dimensions
 
 def tox_serialize_real_nd(arr: np.ndarray, filename: str):
@@ -185,7 +185,7 @@ def tox_serialize_real_nd(arr: np.ndarray, filename: str):
         fn_len,
         ctypes.byref(ierr)
     )
-    check_err_code(ierr)
+    check_err_code(ierr.value)
 
 def tox_deserialize_real_nd(filename):
     """
@@ -210,7 +210,7 @@ def tox_deserialize_real_nd(filename):
     arrays_lib.deserialize_real_C.restype = None
 
     arrays_lib.deserialize_real_C(arr, total_size, ascii_arr, fn_len, ctypes.byref(ierr))
-    check_err_code(ierr)
+    check_err_code(ierr.value)
     return arr.reshape(dims, order='F')  # Reshape
 
 def tox_serialize_char_nd(arr: np.ndarray, filename: str):
@@ -249,32 +249,33 @@ def tox_serialize_char_nd(arr: np.ndarray, filename: str):
         fn_len,
         ctypes.byref(ierr)
     )
-    check_err_code(ierr)
+    check_err_code(ierr.value)
 
 
 def tox_deserialize_char_nd(filename: str, ndim_max=5):
     """
     Deserializes an n-dimensional character array from a file
     """
-    #convert filename to ASCII array
+    # convert filename to ASCII array
     filename_ascii, fn_len = _filename_to_ascii_array(filename)
 
-    # Get metadata
+    # Get metadata (dimensions + string length)
     dims, clen = tox_get_array_metadata(filename, max_dims=ndim_max, with_clen=True)
     ierr = ctypes.c_int()
 
     print(f"Deserializing char array with dimensions: {dims}, clen: {clen}")
-    total_array_size = np.prod(dims)
-    # SCII array of size clen x total
-    ascii_arr = np.asfortranarray(np.zeros((clen, total_array_size), dtype=np.int32))
+    total = int(np.prod(dims))  # Anzahl Elemente
 
-    # declare arguments
+    # allocate flat ASCII array (1D buffer from Fortran)
+    ascii_arr = np.zeros(total * clen, dtype=np.int32)
+
+    # declare arguments for the flat Fortran routine
     arrays_lib.deserialize_char_flat_C.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags="F_CONTIGUOUS"), # ascii_arr
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # ascii_arr
         ctypes.c_int,           # clen
         ctypes.c_int,           # total
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
-        ctypes.c_int,            # fn_len
+        ctypes.c_int,           # fn_len
         ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
     arrays_lib.deserialize_char_flat_C.restype = None
@@ -282,24 +283,27 @@ def tox_deserialize_char_nd(filename: str, ndim_max=5):
     arrays_lib.deserialize_char_flat_C(
         ascii_arr,
         clen,
-        total_array_size,
+        total,
         filename_ascii,
         fn_len,
         ctypes.byref(ierr)
     )
-    check_err_code(ierr)
+    check_err_code(ierr.value)
 
-    shape = tuple(dims)
-    total_array_size = np.prod(shape)
+    # Leerer Fall
+    if total == 0:
+        return np.empty(tuple(dims), dtype=f'U{clen}')
 
-    ascii_arr_2d = ascii_arr.reshape((clen, total_array_size), order='F')
+    # 1) Pro Element ein Block von 'clen' Codes (C-Order, weil Blöcke hintereinander)
+    codes_2d = ascii_arr.reshape((total, clen), order='C')
 
-    # ASCII → String-Array
-    chars = np.array([
-    ''.join(chr(c) for c in ascii_arr_2d[:clen, i] if c > 0)
-        for i in range(total_array_size)
-    ], dtype=f'U{clen}')
+    # 2) ASCII -> Strings pro Element
+    # (Nullen sind Padding -> filtern)
+    strings_1d = np.array(
+        [''.join(chr(c) for c in row if c > 0) for row in codes_2d],
+        dtype=f'U{clen}'
+    )
 
-    chars = chars.reshape(shape, order='F')
-
-    return chars
+    # 3) Elemente in Fortran-Reihenfolge in Ziel-Shape bringen
+    result = strings_1d.reshape(tuple(dims), order='F')
+    return result
