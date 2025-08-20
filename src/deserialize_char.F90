@@ -29,6 +29,7 @@ contains
     character(len=:), allocatable :: temp_str
 
     call set_ok(ierr)
+    call set_ok(ioerror)
     ! open file and read header
     call read_file_header(filename, unit, type_code, ndim, dims, clen, ierr)
     if (.not. is_ok(ierr)) then
@@ -46,7 +47,7 @@ contains
       if (str_len > 0) then
         allocate(character(len=str_len) :: temp_str)
         read(unit, iostat=ioerror) temp_str
-        if (ierr /= 0) then
+        if (.not. is_ok(ioerror)) then
           call set_err_once(ierr, ERR_READ_DATA)
           close(unit)
           return
