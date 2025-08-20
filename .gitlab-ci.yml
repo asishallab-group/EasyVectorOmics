@@ -45,8 +45,11 @@ before_script:
 run-tests:
   stage: run-tests
   rules:
+    - if: '$CI_COMMIT_BRANCH == "add-ifx-to-CI-job"'
+      when: always
+
     # trigger when pushing to main directly, but only if src/ or test/ changed
-    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "add-ifx-to-CI-job"'
+    - if: '$CI_COMMIT_BRANCH == "main"'
       changes:
         - src/**
         - test/**
