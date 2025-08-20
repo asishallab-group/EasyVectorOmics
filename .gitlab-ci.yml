@@ -20,10 +20,6 @@ before_script:
   - pip install --upgrade pip
   - pip install ford
 
-  # install ifx
-  # - pip install intel-fortran-rt
-  # - source /opt/intel/oneapi/setvars.sh
-
   # set up git
   - git config --global user.email "ci-bot@yourdomain.com"
   - git config --global user.name "CI Bot"
@@ -45,9 +41,6 @@ before_script:
 run-tests:
   stage: run-tests
   rules:
-    - if: '$CI_COMMIT_BRANCH == "add-ifx-to-CI-job"'
-      when: always
-
     # trigger when pushing to main directly, but only if src/ or test/ changed
     - if: '$CI_COMMIT_BRANCH == "main"'
       changes:
@@ -72,9 +65,13 @@ run-tests:
     - curl https://registrationcenter-download.intel.com/akdlm/IRC_NAS/466b0d65-e502-4172-9e06-24c565029b96/intel-fortran-compiler-2025.2.1.9_offline.sh -o install_ifx.sh
     - bash install_ifx.sh -a -s --eula accept
     - source /opt/intel/oneapi/setvars.sh
+
+    # run tests using ifx
     - echo Run tests with ifx
     - FC=ifx bash test_runner.sh
     - echo Run tests with gfortran
+
+    # run tests using gfortran
     - bash test_runner.sh
 
 
