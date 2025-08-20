@@ -20,6 +20,10 @@ before_script:
   - pip install --upgrade pip
   - pip install ford
 
+  # install ifx
+  - pip install intel-fortran-rt
+  - source /opt/intel/oneapi/setvars.sh
+
   # set up git
   - git config --global user.email "ci-bot@yourdomain.com"
   - git config --global user.name "CI Bot"
@@ -42,7 +46,7 @@ run-tests:
   stage: run-tests
   rules:
     # trigger when pushing to main directly, but only if src/ or test/ changed
-    - if: '$CI_COMMIT_BRANCH == "main"'
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == "add-ifx-to-CI-job"'
       changes:
         - src/**
         - test/**
@@ -61,6 +65,9 @@ run-tests:
     - when: never
 
   script:
+    - echo Run tests with ifx
+    - FC=ifx bash test_runner.sh
+    - echo Run tests with gfortran
     - bash test_runner.sh
 
 
