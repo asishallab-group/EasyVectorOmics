@@ -15,7 +15,7 @@ contains
   subroutine deserialize_int_flat(flat, dims, filename, ierr)
     integer(int32), pointer, intent(out) :: flat(:)
     !! Output flat array
-    integer(int32), allocatable, intent(out), target :: dims(:)
+    integer(int32), allocatable, intent(out) :: dims(:)
     !! Output dimensions array
     character(len=*), intent(in) :: filename
     !! Name of the file to read
