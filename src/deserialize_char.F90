@@ -312,7 +312,7 @@ subroutine deserialize_char_flat_r(ascii_arr, arr_size, filename_ascii, fn_len, 
   ! Deserialize flat character array
   call deserialize_char_flat(flat, dims, clen, filename, ierr)
   if(.not. is_ok(ierr)) then
-    DEALLOCATE(flat)
+    if(ALLOCATED(flat)) DEALLOCATE(flat)
     return
   end if
   total_array_size = product(dims)
@@ -359,7 +359,7 @@ subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, &
   ! Deserialize
   call deserialize_char_flat(flat, dims, actual_clen, filename, ierr)
   if (.not. is_ok(ierr)) then
-    deallocate(flat)
+    if (allocated(flat)) deallocate(flat)
     return
   end if
 
