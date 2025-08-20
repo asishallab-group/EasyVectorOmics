@@ -246,7 +246,6 @@ subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bin
   ! Local
   character(len=:), allocatable :: filename
   integer(c_int), pointer :: arr_f(:)
-  integer(int32) :: i
 
   call set_ok(ierr)
 

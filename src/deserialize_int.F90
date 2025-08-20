@@ -46,8 +46,8 @@ contains
   end subroutine deserialize_int_flat
 
   !> Deserialize a 1D integer array from a file
-  !> @note The array must be allocated before calling this subroutine, this is just for consistency since 
-  !> a 1D array can not be deserialized to 1D
+  !> @note The array is allocated by the deserialize flat routine, this is just for consistency 
+  !> since a 1D array can not be deserialized to 1D
   subroutine deserialize_int_1d(arr, filename, ierr)
     integer(int32), pointer, intent(out) :: arr(:)
     !! Output array

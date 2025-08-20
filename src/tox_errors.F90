@@ -100,22 +100,4 @@ contains
     ok = (ierr == ERR_OK)
   end function is_ok
 
-  subroutine test_errors()
-    implicit none
-    integer(int32) :: ierr
-
-    ! Test setting and checking error codes
-    call set_ok(ierr)
-    if (.not. is_ok(ierr)) print *, "Error should be OK"
-
-    call set_err_once(ierr, ERR_FILE_OPEN)
-    if (is_ok(ierr)) print *, "Error should not be OK after setting ERR_FILE_OPEN"
-
-    call set_err_once(ierr, ERR_READ_MAGIC)
-    if (ierr /= ERR_FILE_OPEN) print *, "Error should still be ERR_FILE_OPEN"
-
-    call set_ok(ierr)
-    if (.not. is_ok(ierr)) print *, "Error should be reset to OK"
-  end subroutine test_errors
-
 end module tox_errors
