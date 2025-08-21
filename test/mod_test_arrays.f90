@@ -3,7 +3,6 @@ module mod_test_arrays
     use int_deserialize_mod
     use real_deserialize_mod
     use char_deserialize_mod
-    use serialize_mod
     use serialize_char
     use serialize_int
     use serialize_real
