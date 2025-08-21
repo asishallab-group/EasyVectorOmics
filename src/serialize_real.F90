@@ -20,7 +20,7 @@ contains
       !! output filename
     integer(int32), intent(out) :: ierr
     !! error code
-    
+
     integer(int32) :: unit
     integer(int32) :: dims(1)
     integer(int32) :: ioerror
@@ -194,18 +194,19 @@ subroutine serialize_real_flat_r(arr, array_size, dims, ndim, filename_ascii, fn
   use serialize_real, only: serialize_real_nd
   use tox_errors, only : set_ok
   implicit none
-  real(real64), intent(in) :: arr(array_size) 
-    !! Flat real array to serialize
-  integer(int32), intent(in) :: dims(ndim)
-    !! Dimensions of the array
+
   integer(int32), intent(in) :: ndim
     !! Number of dimensions
   integer(int32), intent(in) :: array_size
     !! Size of the flat array
-  integer(int32), intent(in) :: filename_ascii(fn_len)
-    !! Array of ASCII characters representing the filename
+  real(real64), intent(in) :: arr(array_size) 
+    !! Flat real array to serialize
+  integer(int32), intent(in) :: dims(ndim)
+    !! Dimensions of the array
   integer(int32), intent(in) :: fn_len
     !! length of the filename array
+  integer(int32), intent(in) :: filename_ascii(fn_len)
+    !! Array of ASCII characters representing the filename
   character(len=:), allocatable :: filename
   integer(int32), intent(out) :: ierr
     !! Error code
@@ -236,14 +237,14 @@ subroutine serialize_real_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bi
   ! Input parameters
   type(c_ptr), value :: arr
     !! Pointer to the flat real array
-  integer(c_int), intent(in) :: dims(ndim)
-    !! Dimensions of the array
   integer(c_int), value :: ndim
     !! Number of dimensions
-  integer(c_int), intent(in) :: filename_ascii(fn_len)
-    !! Array of ASCII characters representing the filename
+  integer(c_int), intent(in) :: dims(ndim)
+    !! Dimensions of the array
   integer(c_int), value :: fn_len
     !! Length of the filename array
+  integer(c_int), intent(in) :: filename_ascii(fn_len)
+    !! Array of ASCII characters representing the filename
   integer(c_int), intent(out) :: ierr
 
   ! Local

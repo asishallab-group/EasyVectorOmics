@@ -193,18 +193,18 @@ subroutine serialize_int_flat_r(arr, array_size, dims, ndim, filename_ascii, fn_
   use tox_errors, only : set_ok
   implicit none
 
-  integer(int32), intent(in) :: arr(array_size)
-  !! Flat integer array to serialize
-  integer(int32), intent(in) :: dims(ndim)
-  !! Dimensions of the array
   integer(int32), intent(in) :: ndim 
   !! Number of dimensions
   integer(int32), intent(in) :: array_size
   !! Size of the flat array
-  integer(int32), intent(in) :: filename_ascii(fn_len)
-  !! Array of ASCII characters representing the filename
+  integer(int32), intent(in) :: arr(array_size)
+  !! Flat integer array to serialize
+  integer(int32), intent(in) :: dims(ndim)
+  !! Dimensions of the array
   integer(int32), intent(in) :: fn_len
   !! Length of the filename array
+  integer(int32), intent(in) :: filename_ascii(fn_len)
+  !! Array of ASCII characters representing the filename
   integer(int32), intent(out) :: ierr
   !! Error code
 
@@ -235,14 +235,14 @@ subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bin
   ! input
   type(c_ptr), value :: arr
     !! Pointer to the flat integer array
-  integer(c_int), intent(in) :: dims(ndim)
-    !! Dimensions of the array
   integer(c_int), value :: ndim
     !! Number of dimensions
-  integer(c_int), intent(in) :: filename_ascii(fn_len)
-    !! Array of ASCII characters representing the filename
+  integer(c_int), intent(in) :: dims(ndim)
+    !! Dimensions of the array
   integer(c_int), value :: fn_len
     !! Length of the filename array
+  integer(c_int), intent(in) :: filename_ascii(fn_len)
+    !! Array of ASCII characters representing the filename
   integer(c_int), intent(out) :: ierr
     !! Error code
 

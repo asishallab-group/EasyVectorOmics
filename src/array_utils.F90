@@ -247,11 +247,11 @@ subroutine get_array_metadata_r(filename_ascii, fn_len, dims_out, ndims, ierr, c
   implicit none
 
   ! Input
-  integer(int32), intent(in) :: filename_ascii(fn_len)
-    !! Array of ASCII characters representing the filename
   integer(int32), intent(in) :: fn_len
     !! Length of the filename array
-
+  integer(int32), intent(in) :: filename_ascii(fn_len)
+    !! Array of ASCII characters representing the filename
+  
   ! Output
   integer(int32), intent(out) :: dims_out(*)  ! R provides storage
     !! Output array for dimensions
@@ -278,11 +278,11 @@ subroutine get_array_metadata_C(filename_ascii, fn_len, dims_out, ndims, ierr, c
   implicit none
 
   ! Input
-  integer(c_int), intent(in) :: filename_ascii(fn_len)
-    !! Array of ASCII characters representing the filename
   integer(c_int), value :: fn_len
     !! Length of the filename array
-
+  integer(c_int), intent(in) :: filename_ascii(fn_len)
+    !! Array of ASCII characters representing the filename
+  
   ! Output
   integer(c_int), intent(out) :: dims_out(*)
     !! Output array for dimensions

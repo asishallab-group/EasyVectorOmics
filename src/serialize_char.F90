@@ -242,19 +242,20 @@ subroutine serialize_char_flat_r(ascii_arr, array_size, dims, ndim, clen, filena
   use tox_errors
   implicit none
 
-  ! change to fixed size
+  integer(int32), intent(in) :: ndim
+  !! Number of dimensions
+  integer(int32), intent(in) :: array_size
+  !! size of the input array
+  integer(int32), intent(in) :: clen
+  !! character length
   integer(int32), intent(in) :: ascii_arr(clen, array_size)
   !! Flat character array in ASCII format
   integer(int32), intent(in) :: dims(ndim)
   !! Dimensions of the array
-  integer(int32), intent(in) :: ndim, array_size
-  !! Number of dimensions
-  integer(int32), intent(in) :: clen
-  !! character length
-  integer(int32), intent(in) :: filename_ascii(fn_len)
-  !! filename in ascii
   integer(int32), intent(in) :: fn_len
   !! length of the filename
+  integer(int32), intent(in) :: filename_ascii(fn_len)
+  !! filename in ascii
   integer(int32), intent(out) :: ierr
   !! error code
   integer(int32) :: ioerror
@@ -302,16 +303,18 @@ subroutine serialize_char_flat_C(ascii_ptr, dims, ndim, clen, filename_ascii, fn
   implicit none
 
   type(c_ptr), value :: ascii_ptr
+  !! pointer to ascii array
+  integer(c_int), value :: ndim
+  !! Number of dimensions  
   integer(c_int), intent(in) :: dims(ndim)
   !! Dimensions of the array
-  integer(c_int), value :: ndim
-  !! Number of dimensions
+  
   integer(c_int), value :: clen
   !! Character length
-  integer(c_int), intent(in) :: filename_ascii(fn_len)
-  !! Array of ASCII characters representing the filename
   integer(c_int), value :: fn_len
   !! Length of the filename array
+  integer(c_int), intent(in) :: filename_ascii(fn_len)
+  !! Array of ASCII characters representing the filename
   integer(c_int), intent(out) :: ierr
   !! error code
 

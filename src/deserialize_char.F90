@@ -99,7 +99,7 @@ contains
     !! Name of the file to read
     integer(int32), intent(out) :: ierr
     !! Error code
-    
+
     character(len=:), pointer :: flat(:)
     !! Flat character array
     integer(int32), allocatable :: dims(:)
@@ -304,14 +304,14 @@ subroutine deserialize_char_flat_r(ascii_arr, arr_size, filename_ascii, fn_len, 
   implicit none
 
   ! Arrays are allocated by R
-  integer(int32), intent(out) :: ascii_arr(arr_size)
-  !! Output array of ASCII characters, preallocated by R
-  integer(int32), intent(in) :: filename_ascii(fn_len)
-  !! Array of ASCII characters representing the filename
   integer(int32), intent(in) :: fn_len
   !! Length of the filename array
   integer(int32), intent(in) :: arr_size
   !! Size of the ASCII array
+  integer(int32), intent(out) :: ascii_arr(arr_size)
+  !! Output array of ASCII characters, preallocated by R
+  integer(int32), intent(in) :: filename_ascii(fn_len)
+  !! Array of ASCII characters representing the filename
   integer(int32), intent(out) :: ierr
   !! Error code
 
@@ -358,16 +358,16 @@ subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, &
   implicit none
 
   ! Arguments
-  integer(c_int), intent(out) :: ascii_arr(clen*total_array_size)
-  !! Output array of ASCII characters, preallocated by C/Python (flat)
   integer(c_int), value       :: clen
   !! Length of each character string
   integer(c_int), value       :: total_array_size
   !! Total size of the ASCII array
-  integer(c_int), intent(in)  :: filename_ascii(fn_len)
-  !! Array of ASCII characters representing the filename
+  integer(c_int), intent(out) :: ascii_arr(clen*total_array_size)
+  !! Output array of ASCII characters, preallocated by C/Python (flat)
   integer(c_int), value       :: fn_len
   !! Length of the filename array
+  integer(c_int), intent(in)  :: filename_ascii(fn_len)
+  !! Array of ASCII characters representing the filename
   integer(c_int), intent(out) :: ierr
   !! error code
 

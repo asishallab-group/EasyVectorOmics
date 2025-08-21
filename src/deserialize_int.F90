@@ -206,14 +206,14 @@ subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
   use tox_errors
   implicit none
 
-  integer(int32), intent(out) :: flat_arr(arr_size)
-  !! array passed by R
   integer(int32), intent(in)  :: arr_size
   !! size of the array
-  integer(int32), intent(in)  :: filename_ascii(fn_len)
-  !! filename to read from
+  integer(int32), intent(out) :: flat_arr(arr_size)
+  !! array passed by R
   integer(int32), intent(in)  :: fn_len
   !! length of the filename
+  integer(int32), intent(in)  :: filename_ascii(fn_len)
+  !! filename to read from
   integer(int32), intent(out) :: ierr
   !! error code
   
@@ -257,14 +257,14 @@ subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C
     implicit none
 
     ! Inputs / Outputs
-    integer(c_int), intent(out)   :: arr(arr_size)      ! Preallocated buffer from C/Python
-    !! preallocated array
     integer(c_int), value         :: arr_size           ! Buffer length
     !! Size of the array
-    integer(c_int), intent(in)    :: filename_ascii(fn_len)
-    !! Filename in ascii
+    integer(c_int), intent(out)   :: arr(arr_size)      ! Preallocated buffer from C/Python
+    !! preallocated array
     integer(c_int), value         :: fn_len
     !! length of the filename
+    integer(c_int), intent(in)    :: filename_ascii(fn_len)
+    !! Filename in ascii
     integer(c_int), intent(out)   :: ierr
     !! Error code
 

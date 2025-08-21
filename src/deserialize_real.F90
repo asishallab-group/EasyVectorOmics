@@ -261,16 +261,17 @@ subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(
     implicit none
 
     ! Inputs / Outputs
-    real(c_double), intent(out)   :: arr(arr_size)
-    !! output array
     integer(c_int), value         :: arr_size  
     !! size of the output array
-    integer(c_int), intent(in)    :: filename_ascii(fn_len)
-    !! Filename in ascii
+    real(c_double), intent(out)   :: arr(arr_size)
+    !! output array
     integer(c_int), value         :: fn_len
     !! length of the filename
+    integer(c_int), intent(in)    :: filename_ascii(fn_len)
+    !! Filename in ascii
     integer(c_int), intent(out)   :: ierr
     !! error code
+    
     integer(int32) :: ioerror
     !! internal fortran error
 
