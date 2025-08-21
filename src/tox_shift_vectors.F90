@@ -7,7 +7,7 @@ contains
   !> Compute the shift vector field for all genes.
   !| Computes the shift vectors by substracting the corresponding family centroid from the expression vector.
   pure subroutine compute_shift_vector_field(d, n_genes, n_families, expression_vectors, family_centroids, &
-                                               gene_to_centroid, shift_vectors, ierr)
+                                             gene_to_centroid, shift_vectors, ierr)
     implicit none
 
     !| Expression vector dimension
@@ -41,6 +41,11 @@ contains
 
     !| For each gene do
     do current_gene = 1, n_genes
+      !| Check if gene_to_centroid mapping is in valid range (length of family_centroids array)
+      if (gene_to_centroid(current_gene) < 1 .or. gene_to_centroid(current_gene) > n_families) then
+        call set_err_once(ierr, ERR_INVALID_INPUT)
+        return
+      end if
       !| Get current centroid index from current_gene
       current_centroid = gene_to_centroid(current_gene)
       !| Copy family centroid to first half of the shift_vector
