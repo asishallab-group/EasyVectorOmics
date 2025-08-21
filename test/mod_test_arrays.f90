@@ -494,7 +494,7 @@ contains
     character(len=:), pointer :: protein_data(:,:,:,:,:) => null()
     character(len=:), pointer :: protein_data_loaded(:,:,:,:,:) => null()
     integer(int32) :: ierr
-    character(len=*), parameter :: test_file = "test_proteins.bin"
+    character(len=*), parameter :: test_file = "test_proteins_arr.bin"
     allocate(character(len=12) :: protein_data(2,1,2,1,2))  ! max 12 Symbols
     
     call set_ok(ierr)
