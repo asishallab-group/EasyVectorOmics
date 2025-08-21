@@ -31,10 +31,14 @@ module array_utils
     
   end subroutine
 
+  !> check if array dimensions match the expected dimensions
   subroutine check_okay_dims(dims, expected, ierr)
     integer(int32), intent(in) :: dims(:)
+    !! array of actual dimensions
     integer(int32), intent(in) :: expected
+    !! expected number of dimensions
     integer(int32), intent(out) :: ierr
+    !! error code
 
     if (size(dims) /= expected) then
       call set_err_once(ierr, ERR_DIM_MISMATCH)
