@@ -4,7 +4,7 @@ module array_utils
     use tox_errors
     implicit none
 
-    PUBLIC :: get_array_metadata, ascii_to_string, read_file_header, write_file_header, string_to_ascii_arr
+    PUBLIC :: get_array_metadata, ascii_to_string, read_file_header, write_file_header, string_to_ascii_arr, check_okay_dims
 
     integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
     !! Magic number for array files
@@ -29,6 +29,18 @@ module array_utils
       return
     end if
     
+  end subroutine
+
+  subroutine check_okay_dims(dims, expected, ierr)
+    integer(int32), intent(in) :: dims(:)
+    integer(int32), intent(in) :: expected
+    integer(int32), intent(out) :: ierr
+
+    if (size(dims) /= expected) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      RETURN
+    end if
+
   end subroutine
 
 
@@ -202,13 +214,17 @@ module array_utils
     end do
   end subroutine ascii_to_string
 
+  !> converts a string array to an ascii array
   subroutine string_to_ascii_arr(flat, array_size, ascii_arr, clen)
-    use iso_fortran_env, only: int32
     implicit none
     integer(int32), intent(out) :: ascii_arr(array_size*clen)
+    !! ascii output array
     character(len=*), intent(in) :: flat(array_size)
+    !! input array with characters
     integer(int32), intent(in) :: array_size
+    !! size of the input array
     integer(int32), intent(in) :: clen
+    !! length of the longest string
     integer(int32) :: i, j
 
     do i = 1, array_size
@@ -221,8 +237,6 @@ module array_utils
       end do
     end do
   end subroutine string_to_ascii_arr
-
-
 end module array_utils
 
 !> Subroutine to get the dimensions of an array file
@@ -236,7 +250,6 @@ subroutine get_array_metadata_r(filename_ascii, fn_len, dims_out, ndims, ierr, c
     !! Array of ASCII characters representing the filename
   integer(int32), intent(in) :: fn_len
     !! Length of the filename array
-  character(len=:), allocatable :: filename
 
   ! Output
   integer(int32), intent(out) :: dims_out(*)  ! R provides storage
@@ -248,6 +261,7 @@ subroutine get_array_metadata_r(filename_ascii, fn_len, dims_out, ndims, ierr, c
 
   integer(int32), intent(out) :: ierr
   !! Error code
+  character(len=:), allocatable :: filename
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 
@@ -273,16 +287,15 @@ subroutine get_array_metadata_C(filename_ascii, fn_len, dims_out, ndims, ierr, c
     !! Output array for dimensions
   integer(c_int), intent(out) :: ndims
     !! Output variable for the number of dimensions
-
-  ! Local variables
-  character(len=:), allocatable :: filename
-   !! Filename as a string
   integer(c_int), intent(out) :: ierr
     !! Error code
   integer(c_int), intent(out) :: clen
     !! Character length (only for character arrays)
+
+  ! Local variables
+  character(len=:), allocatable :: filename
+   !! Filename as a string
   
-  clen = 0  ! Default value for non-character arrays
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 

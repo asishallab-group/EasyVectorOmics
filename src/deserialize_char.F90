@@ -1,7 +1,7 @@
 !> Module for deserializing character arrays from files
 module char_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
-  use array_utils, only : ascii_to_string, read_file_header
+  use array_utils, only : ascii_to_string, read_file_header, check_okay_ioerror
   use tox_errors
   implicit none
 
@@ -22,6 +22,8 @@ contains
       !! Name of the file to read
     integer(int32), intent(out) :: ierr
       !! Error code
+
+
     integer(int32) :: ioerror
       !! Internal I/O error code
 
@@ -32,26 +34,24 @@ contains
     call set_ok(ioerror)
     ! open file and read header
     call read_file_header(filename, unit, type_code, ndim, dims, clen, ierr)
-    if (.not. is_ok(ierr)) then
-      return
-    end if
+    if (.not. is_ok(ierr)) return
+
     !allocate proper length for flat array
     allocate(character(len=clen) :: flat(product(dims)))
     do i = 1, product(dims)
       read(unit, iostat=ioerror) str_len
-      if (.not. is_ok(ioerror)) then
-        call set_err_once(ierr, ERR_READ_CHARLEN)
-        close(unit)
-        return
-      end if
+      call check_okay_ioerror(ioerror, ierr, ERR_READ_CHARLEN, unit)
+      if(.not. is_ok(ierr)) return
+
       if (str_len > 0) then
-        allocate(character(len=str_len) :: temp_str)
-        read(unit, iostat=ioerror) temp_str
-        if (.not. is_ok(ioerror)) then
-          call set_err_once(ierr, ERR_READ_DATA)
-          close(unit)
-          return
+        allocate(character(len=str_len) :: temp_str, stat=ioerror)
+        if(.not. is_ok(ioerror)) then
+          call set_err_once(ierr, ERR_ALLOC_FAIL)
+          RETURN
         end if
+        read(unit, iostat=ioerror) temp_str
+        call check_okay_ioerror(ioerror, ierr, ERR_READ_DATA, unit)
+        if(.not. is_ok(ierr)) return
         flat(i) = temp_str
         deallocate(temp_str)
       else
@@ -68,6 +68,8 @@ contains
       !! Output character array
     character(len=*), intent(in) :: filename
       !! Name of the file to read
+    integer(int32), intent(out) :: ierr
+      !! Error code
 
     character(len=:), pointer :: flat(:)
       !! Flat character array
@@ -75,8 +77,7 @@ contains
       !! Output dimensions of the array
     integer(int32) :: clen
       !! Maximum length of character string
-    integer(int32), intent(out) :: ierr
-      !! Error code
+    
     call set_ok(ierr)
 
     if (associated(arr)) nullify(arr)
@@ -96,19 +97,21 @@ contains
     !! Output character array
     character(len=*), intent(in) :: filename
     !! Name of the file to read
-
+    integer(int32), intent(out) :: ierr
+    !! Error code
+    
     character(len=:), pointer :: flat(:)
     !! Flat character array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions of the array
     integer(int32) :: clen
     !! Maximum length of character string
-    integer(int32) :: i, j, idx
+    integer(int32) :: i, j, idx, ioerror
     !! Loop indices
-    integer(int32), intent(out) :: ierr
-    !! Error code
+    
 
     call set_ok(ierr)
+    call set_ok(ioerror)
 
     if (associated(arr)) nullify(arr)
 
@@ -120,7 +123,11 @@ contains
       return
     end if
 
-    allocate(character(len=clen) :: arr(dims(1), dims(2)))
+    allocate(character(len=clen) :: arr(dims(1), dims(2)), stat=ioerror)
+    if(.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_ALLOC_FAIL)
+      RETURN
+    end if
     ! Reshape flat array to 2D, c_f_pointer is not used here since it is note very stable for character arrays
     idx = 1
     do j = 1, dims(2)
@@ -139,6 +146,8 @@ contains
     !! Output character array
     character(len=*), intent(in) :: filename
     !! Name of the file to read
+    integer(int32), intent(out) :: ierr
+    !! Error code
 
     character(len=:), pointer :: flat(:)
     !! Flat character array
@@ -146,12 +155,12 @@ contains
     !! Output dimensions of the array
     integer(int32) :: clen
     !! Maximum length of character string
-    integer(int32) :: i, j, k, idx
+    integer(int32) :: i, j, k, idx, ioerror
     !! Loop indices
-    integer(int32), intent(out) :: ierr
-    !! Error code
+    
 
     call set_ok(ierr)
+    call set_ok(ioerror)
     !Read file
     call deserialize_char_flat(flat, dims, clen, filename, ierr)
     if (size(dims) /= 3) then
@@ -160,7 +169,11 @@ contains
       return
     end if
     !Allocate 3D array
-    allocate(character(len=clen) :: arr(dims(1), dims(2), dims(3)))
+    allocate(character(len=clen) :: arr(dims(1), dims(2), dims(3)), stat=ioerror)
+    if(.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_ALLOC_FAIL)
+      RETURN
+    end if
     !Reshape flat array to 3D
     idx = 1
     do k = 1, dims(3)
@@ -181,6 +194,8 @@ contains
     !! Output character array
     character(len=*), intent(in) :: filename
     !! Name of the file to read
+    integer(int32), intent(out) :: ierr
+    !! Error code
 
     character(len=:), pointer :: flat(:)
     !! Flat character array
@@ -188,12 +203,11 @@ contains
     !! Output dimensions of the array
     integer(int32) :: clen
     !! Maximum length of character string
-    integer(int32) :: i, j, k, l, idx
+    integer(int32) :: i, j, k, l, idx, ioerror
     !! Loop indices
-    integer(int32), intent(out) :: ierr
-    !! Error code
-
+    
     call set_ok(ierr)
+    call set_ok(ioerror)
 
     !Read file
     call deserialize_char_flat(flat, dims, clen, filename, ierr)
@@ -203,7 +217,11 @@ contains
       return
     end if
     !Allocate 4D array
-    allocate(character(len=clen) :: arr(dims(1), dims(2), dims(3), dims(4)))
+    allocate(character(len=clen) :: arr(dims(1), dims(2), dims(3), dims(4)), stat=ioerror)
+    if(.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_ALLOC_FAIL)
+      RETURN
+    end if
     !Reshape flat array to 4D
     idx = 1
     do l = 1, dims(4)
@@ -226,6 +244,8 @@ contains
       !! Output character array
       character(len=*), intent(in) :: filename
       !! Name of the file to read
+      integer(int32), intent(out) :: ierr
+      !! Error code
 
       character(len=:), pointer :: flat(:)
       !! Flat character array
@@ -233,23 +253,26 @@ contains
       !! Output dimensions of the array
       integer(int32) :: clen 
       !! Maximum length of character string
-      integer(int32) :: i, j, k, l, m, idx
+      integer(int32) :: i, j, k, l, m, idx, ioerror
       !! Loop indices
-      integer(int32), intent(out) :: ierr
-      !! Error code
-
+      
       call set_ok(ierr)
+      call set_ok(ioerror)
       !Avoid memory leaks
       if (associated(arr)) nullify(arr)
       !Read file
       call deserialize_char_flat(flat, dims, clen, filename, ierr)
       if (size(dims) /= 5) then
-          call set_err_once(ierr, ERR_DIM_MISMATCH)
-          if (associated(flat)) nullify(flat)
-          return
+        call set_err_once(ierr, ERR_DIM_MISMATCH)
+        if (associated(flat)) nullify(flat)
+        return
       end if
       !Allocate 5D array
-      allocate(character(len=clen) :: arr(dims(1), dims(2), dims(3), dims(4), dims(5)))
+      allocate(character(len=clen) :: arr(dims(1), dims(2), dims(3), dims(4), dims(5)), stat=ioerror)
+      if(.not. is_ok(ioerror)) then
+        call set_err_once(ierr, ERR_ALLOC_FAIL)
+        RETURN
+      end if
       !RESHAPE
       idx = 1
       do m = 1, dims(5)
@@ -312,7 +335,7 @@ subroutine deserialize_char_flat_r(ascii_arr, arr_size, filename_ascii, fn_len, 
   ! Deserialize flat character array
   call deserialize_char_flat(flat, dims, clen, filename, ierr)
   if(.not. is_ok(ierr)) then
-    if(ALLOCATED(flat)) DEALLOCATE(flat)
+    if(associated(flat)) DEALLOCATE(flat)
     return
   end if
   total_array_size = product(dims)
@@ -359,7 +382,7 @@ subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, &
   ! Deserialize
   call deserialize_char_flat(flat, dims, actual_clen, filename, ierr)
   if (.not. is_ok(ierr)) then
-    if (allocated(flat)) deallocate(flat)
+    if (associated(flat)) deallocate(flat)
     return
   end if
 

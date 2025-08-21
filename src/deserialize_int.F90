@@ -2,7 +2,7 @@
 module int_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only : c_loc, c_f_pointer
-  use array_utils, only: ascii_to_string, read_file_header
+  use array_utils, only: ascii_to_string, read_file_header, check_okay_dims
   use tox_errors
   implicit none
 
@@ -32,17 +32,22 @@ contains
     call set_ok(ioerror)
     ! Read file
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
-    if (.not. is_ok(ierr)) then
-      return
+    if (.not. is_ok(ierr)) return
+
+    allocate(flat(product(dims)), stat=ioerror)
+    if(.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_ALLOC_FAIL)
+      RETURN
     end if
-    allocate(flat(product(dims)))
+
     read(unit, iostat=ioerror) flat
     close(unit)
     if (.not. is_ok(ioerror)) then
       call set_err_once(ierr, ERR_READ_DATA)
-      deallocate(flat)
+      if(associated(flat)) deallocate(flat)
       return
     end if
+    
   end subroutine deserialize_int_flat
 
   !> Deserialize a 1D integer array from a file
@@ -53,16 +58,23 @@ contains
     !! Output array
     character(len=*), intent(in) :: filename
     !! Name of the file to read
+    integer(int32), intent(out) :: ierr
+    !! Error code
+
     integer(int32), pointer :: flat(:)
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions array
-    integer(int32), intent(out) :: ierr
-    !! Error code
+    
     call set_ok(ierr)
     call deserialize_int_flat(flat, dims, filename, ierr)
-    if (size(dims) /= 1) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
+    if(.not. is_ok(ierr)) then
+      if(associated(flat)) deallocate(flat)
+      RETURN
+    end if
+    call check_okay_dims(dims, 1, ierr)
+    if(.not. is_ok(ierr)) then
+      if(associated(flat)) deallocate(flat)
       RETURN
     end if
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1)])
@@ -75,16 +87,23 @@ contains
     !! Output array
     character(len=*), intent(in) :: filename
     !! Name of the file to read
+    integer(int32), intent(out) :: ierr
+    !! Error code
+
     integer(int32), pointer :: flat(:)
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions array
-    integer(int32), intent(out) :: ierr
-    !! Error code
+    
     call set_ok(ierr)
     call deserialize_int_flat(flat, dims, filename, ierr)
-    if (size(dims) /= 2) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
+    if(.not. is_ok(ierr)) then
+      if(associated(flat)) deallocate(flat)
+      RETURN
+    end if
+    call check_okay_dims(dims, 2, ierr)
+    if(.not. is_ok(ierr)) then
+      if(associated(flat)) deallocate(flat)
       RETURN
     end if
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2)])
@@ -97,16 +116,23 @@ contains
     !! Output array
     character(len=*), intent(in) :: filename
     !! Name of the file to read
+    integer(int32), intent(out) :: ierr
+    !! Error code
+
     integer(int32), pointer :: flat(:)
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions array
-    integer(int32), intent(out) :: ierr
-    !! Error code
+    
     call set_ok(ierr)
     call deserialize_int_flat(flat, dims, filename, ierr)
-    if (size(dims) /= 3) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
+    if(.not. is_ok(ierr)) then
+      if(associated(flat)) deallocate(flat)
+      RETURN
+    end if
+    call check_okay_dims(dims, 3, ierr)
+    if(.not. is_ok(ierr)) then
+      if(associated(flat)) deallocate(flat)
       RETURN
     end if
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3)])
@@ -119,17 +145,23 @@ contains
     !! Output array
     character(len=*), intent(in) :: filename
     !! Name of the file to read
+    integer(int32), intent(out) :: ierr
+    !! Error code
+
     integer(int32), pointer :: flat(:)
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions array
-    integer(int32), intent(out) :: ierr
-    !! Error code
-
+    
     call set_ok(ierr)
     call deserialize_int_flat(flat, dims, filename, ierr)
-    if (size(dims) /= 4) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
+    if(.not. is_ok(ierr)) then
+      if(associated(flat)) deallocate(flat)
+      RETURN
+    end if
+    call check_okay_dims(dims, 4, ierr)
+    if(.not. is_ok(ierr)) then
+      if(associated(flat)) deallocate(flat)
       RETURN
     end if
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3), dims(4)])
@@ -142,16 +174,23 @@ contains
     !! Output array
     character(len=*), intent(in) :: filename
     !! Name of the file to read
+    integer(int32), intent(out) :: ierr
+    !! Error code
+
     integer(int32), pointer :: flat(:)
     !! Output flat array
     integer(int32), allocatable :: dims(:)
     !! Output dimensions array
-    integer(int32), intent(out) :: ierr
-    !! Error code
+    
     call set_ok(ierr)
     call deserialize_int_flat(flat, dims, filename, ierr)
-    if (size(dims) /= 5) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
+    if(.not. is_ok(ierr)) then
+      if(associated(flat)) deallocate(flat)
+      RETURN
+    end if
+    call check_okay_dims(dims, 5, ierr)
+    if(.not. is_ok(ierr)) then
+      if(associated(flat)) deallocate(flat)
       RETURN
     end if
     call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3), dims(4), dims(5)])
@@ -169,16 +208,16 @@ subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
 
   integer(int32), intent(out) :: flat_arr(arr_size)
   !! array passed by R
-  integer(int32), intent(out) :: ierr
-  !! error code
+  integer(int32), intent(in)  :: arr_size
+  !! size of the array
   integer(int32), intent(in)  :: filename_ascii(fn_len)
   !! filename to read from
   integer(int32), intent(in)  :: fn_len
   !! length of the filename
-  integer(int32), intent(in)  :: arr_size
-  !! size of the array
+  integer(int32), intent(out) :: ierr
+  !! error code
+  
   integer(int32) :: ioerror
-
   character(len=:), allocatable :: filename
   !! filename in characters
   integer(int32), allocatable   :: dims(:)
@@ -219,10 +258,15 @@ subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C
 
     ! Inputs / Outputs
     integer(c_int), intent(out)   :: arr(arr_size)      ! Preallocated buffer from C/Python
+    !! preallocated array
     integer(c_int), value         :: arr_size           ! Buffer length
+    !! Size of the array
     integer(c_int), intent(in)    :: filename_ascii(fn_len)
+    !! Filename in ascii
     integer(c_int), value         :: fn_len
+    !! length of the filename
     integer(c_int), intent(out)   :: ierr
+    !! Error code
 
     ! Locals
     character(len=:), allocatable :: filename
@@ -238,9 +282,7 @@ subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C
     call ascii_to_string(filename_ascii, fn_len, filename)
 
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
-    if (.not. is_ok(ierr)) then
-        return
-    end if
+    if (.not. is_ok(ierr)) return
 
     ! Safety check: ensure provided buffer matches size in file
     if (product(dims) /= arr_size) then

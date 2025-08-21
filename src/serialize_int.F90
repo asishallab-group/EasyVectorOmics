@@ -100,11 +100,12 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer(int32) :: unit
     integer(int32), intent(out) :: ierr
     !! error code
+
     integer(int32) :: ioerror
     integer(int32) :: dims(4)
+    integer(int32) :: unit
     dims = shape(arr)
 
     call set_ok(ierr)
@@ -127,11 +128,13 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
+    integer(int32), intent(out) :: ierr
+    !! error code
+
     integer(int32) :: unit
     integer(int32) :: ioerror
     integer(int32) :: dims(5)
-    integer(int32), intent(out) :: ierr
-    !! error code
+    
     dims = shape(arr)
 
     call set_ok(ierr)

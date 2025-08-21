@@ -239,7 +239,7 @@ subroutine serialize_char_flat_r(ascii_arr, array_size, dims, ndim, clen, filena
   use iso_fortran_env, only: int32
   use serialize_char, only: serialize_char_nd
   use array_utils, only: ascii_to_string
-  use tox_errors, only : set_ok
+  use tox_errors
   implicit none
 
   ! change to fixed size
@@ -263,10 +263,16 @@ subroutine serialize_char_flat_r(ascii_arr, array_size, dims, ndim, clen, filena
   character(len=clen), allocatable :: flat(:)
   integer(int32) :: i, j, total
 
-  total = product(dims)
-  allocate(flat(total))
-
+  call set_ok(ioerror)
   call set_ok(ierr)
+
+  total = product(dims)
+  allocate(flat(total), stat=ioerror)
+
+  if(.not. is_ok(ioerror)) then
+    call set_err_once(ierr, ERR_ALLOC_FAIL)
+    RETURN
+  end if  
 
   ! ASCII to character conversion
   do i = 1, total
@@ -292,7 +298,7 @@ subroutine serialize_char_flat_C(ascii_ptr, dims, ndim, clen, filename_ascii, fn
   use iso_fortran_env, only: int32
   use serialize_char, only: serialize_char_nd
   use array_utils, only: ascii_to_string
-  use tox_errors, only : set_ok
+  use tox_errors
   implicit none
 
   type(c_ptr), value :: ascii_ptr
@@ -312,13 +318,19 @@ subroutine serialize_char_flat_C(ascii_ptr, dims, ndim, clen, filename_ascii, fn
   integer(c_int), pointer :: ascii_arr(:)
   character(len=:), allocatable :: filename
   character(len=clen), allocatable :: flat(:)
-  integer(int32) :: i, j, total
+  integer(int32) :: i, j, total, ioerror
+
+  call set_ok(ierr)
+  call set_ok(ioerror)
 
   total = product(dims)
   call c_f_pointer(ascii_ptr, ascii_arr, [clen * total])
-  allocate(flat(total))
+  allocate(flat(total), stat=ioerror)
 
-  call set_ok(ierr)
+  if(.not. is_ok(ioerror)) then
+    call set_err_once(ierr, ERR_ALLOC_FAIL)
+    RETURN
+  end if
 
   ! ASCII to Fortran character(len=clen)
   do i = 1, total

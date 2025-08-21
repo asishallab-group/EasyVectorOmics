@@ -18,10 +18,11 @@ contains
       !! array to save
     character(len=*), intent(in) :: filename
       !! output filename
-    integer(int32) :: unit
-    integer(int32) :: dims(1)
     integer(int32), intent(out) :: ierr
     !! error code
+    
+    integer(int32) :: unit
+    integer(int32) :: dims(1)
     integer(int32) :: ioerror
     dims = shape(arr)
 
@@ -45,10 +46,11 @@ contains
       !! array to save
     character(len=*), intent(in) :: filename
       !! filename
-    integer(int32) :: unit
-    integer(int32) :: dims(2)
     integer(int32), intent(out) :: ierr
     !! error code
+
+    integer(int32) :: unit
+    integer(int32) :: dims(2)
     integer(int32) :: ioerror
 
     call set_ok(ierr)
@@ -72,11 +74,12 @@ contains
       !! array to save
     character(len=*), intent(in) :: filename
       !! filename
-    integer(int32) :: unit
-    integer(int32) :: dims(3)
     integer(int32), intent(out) :: ierr
     !! error code
+
     integer(int32) :: ioerror
+    integer(int32) :: unit
+    integer(int32) :: dims(3)
 
     call set_ok(ierr)
     call set_ok(ioerror)
@@ -99,12 +102,13 @@ contains
       !! array to save
     character(len=*), intent(in) :: filename
       !! filename
-    integer(int32) :: unit
-    integer(int32) :: dims(4)
     integer(int32), INTENT(OUT) :: ierr
     !! error code
+
     integer(int32) :: ioerror
-    
+    integer(int32) :: unit
+    integer(int32) :: dims(4)
+
     call set_ok(ierr)
     call set_ok(ioerror)
     dims = shape(arr)
@@ -126,11 +130,12 @@ contains
       !! array to save
     character(len=*), intent(in) :: filename
       !! filename
-    integer(int32) :: unit
-    integer(int32) :: dims(5)
     integer(int32), intent(out) :: ierr
     !! error code
+
     integer(int32) :: ioerror
+    integer(int32) :: unit
+    integer(int32) :: dims(5)
     
     call set_ok(ierr)
     call set_ok(ioerror)
@@ -156,10 +161,10 @@ contains
       !! Number of dimensions
     character(len=*), intent(in) :: filename
       !! filename
-    integer(int32) :: unit
     integer(int32), INTENT(OUT) :: ierr
       !! error code
-    integer(int32) :: ioerror
+
+    integer(int32) :: ioerror, unit
 
     call set_ok(ierr)
     call set_ok(ioerror)
