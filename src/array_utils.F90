@@ -198,12 +198,12 @@ module array_utils
   !> subroutine to convert an ASCII array to a string
   subroutine ascii_to_string(ascii_array, clen, str)
     implicit none
-
-    integer(int32), intent(in) :: ascii_array(clen)
-      !! Array of ASCII characters
     integer(int32), intent(in) :: clen
       !! Length of the ASCII array
-    character(len=:), allocatable, INTENT(INOUT) :: str
+    integer(int32), intent(in) :: ascii_array(clen)
+      !! Array of ASCII characters
+    
+    character(len=:), allocatable, INTENT(OUT) :: str
     !! Output string
     integer(int32) :: i
     !! loop variable
@@ -217,14 +217,15 @@ module array_utils
   !> converts a string array to an ascii array
   subroutine string_to_ascii_arr(flat, array_size, ascii_arr, clen)
     implicit none
-    integer(int32), intent(out) :: ascii_arr(array_size*clen)
-    !! ascii output array
-    character(len=*), intent(in) :: flat(array_size)
-    !! input array with characters
     integer(int32), intent(in) :: array_size
     !! size of the input array
     integer(int32), intent(in) :: clen
     !! length of the longest string
+    integer(int32), intent(out) :: ascii_arr(array_size*clen)
+    !! ascii output array
+    character(len=*), intent(in) :: flat(array_size)
+    !! input array with characters
+    
     integer(int32) :: i, j
 
     do i = 1, array_size
