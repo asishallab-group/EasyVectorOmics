@@ -209,14 +209,14 @@ subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_ascii, fn_len, i
   use tox_errors
   implicit none
 
-  real(real64), intent(out) :: flat_arr(arr_size)
-  !! array provided by R
-  integer(int32), intent(in) :: filename_ascii(fn_len)
-  !! filename in ascii
   integer(int32), intent(in) :: fn_len
   !! length of the filename
   integer(int32), intent(in) :: arr_size
   !! size of the array
+  real(real64), intent(out) :: flat_arr(arr_size)
+  !! array provided by R
+  integer(int32), intent(in) :: filename_ascii(fn_len)
+  !! filename in ascii
   integer(int32), intent(out) :: ierr
   !! error code
   integer(int32) :: ioerror
@@ -271,7 +271,7 @@ subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(
     !! Filename in ascii
     integer(c_int), intent(out)   :: ierr
     !! error code
-    
+
     integer(int32) :: ioerror
     !! internal fortran error
 
