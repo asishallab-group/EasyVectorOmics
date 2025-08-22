@@ -1199,3 +1199,71 @@ tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
   
   return(result$distances)
 }
+
+# ===================================================================
+# SHIFT VECTOR FIELD FUNCTIONS
+# ===================================================================
+#' Calculate Shift Vector Field 
+
+#' Computes the shift vector field for each gene expression vector based on its family centroid.
+#' The shift vector is defined as the difference between the gene expression vector and its corresponding family centroid,
+#' starting at the expression vector and pointing to its family centroid.
+#' This function automatically checks for errors and throws informative exceptions.
+#'
+#' @param expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors)
+#' @param family_centroids: Matrix where each column is a family centroid vector (n_axes x n_families)
+#' @param gene_to_centroid: Array mapping each gene to its corresponding family centroid ID in family_centroids (length n_vectors)
+#'
+#' @return List containing:
+#'   \item{shift_vectors}{The computed shift vectors for each gene expression vector}
+#'
+
+tox_compute_shift_vector_field <- function(expression_vectors, family_centroids, gene_to_centroid) {
+  # Input validation
+  if (!is.matrix(expression_vectors)) {
+    stop("expression_vectors must be a matrix")
+  }
+
+  if (!is.matrix(family_centroids)) {
+    stop("family_centroids must be a matrix")
+  }
+  
+  # Dimensions and counts
+  n_axes_genes <- nrow(expression_vectors)
+  n_vectors <- ncol(expression_vectors)
+  n_axes_centroids <- nrow(family_centroids)
+  n_families <- ncol(family_centroids)
+  
+  # Validate length of gene_to_centroid
+  if (n_vectors != length(gene_to_centroid)) {
+    stop("number of expression_vectors must be equal to length of gene_to_centroid")
+  }
+
+  # Validate dimensions
+  if (n_axes_genes != n_axes_centroids) {
+    stop("family_centroids must have the same number of axes as expression_vectors")
+  }
+  
+  # Prepare output arrays
+  shift_vectors <- matrix(0.0, nrow = 2 *n_axes_genes, ncol = n_vectors)
+  ierr <- as.integer(0)
+  
+  # Call Fortran wrapper
+  result <- .Fortran("compute_shift_vector_field_r",
+                     n_axes_genes = as.integer(n_axes_genes),
+                     n_vectors = as.integer(n_vectors),
+                     n_families = as.integer(n_families),
+                     expression_vectors = as.double(expression_vectors),
+                     family_centroids = as.double(family_centroids),
+                     gene_to_centroid = as.integer(gene_to_centroid),
+                     shift_vectors = as.double(shift_vectors),
+                     ierr = ierr)
+  
+  # Check for errors and throw informative messages
+  tox_errors(result$ierr)
+  
+  # Return structured result (no ierr since we checked for errors)
+  return(list(
+    shift_vectors = result$shift_vectors
+  ))
+}
