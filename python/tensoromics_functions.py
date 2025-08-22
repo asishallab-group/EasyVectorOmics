@@ -970,7 +970,7 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
     Args:
         expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors)
         family_centroids: Matrix where each column is a family centroid vector (n_axes x n_families)
-        gene_to_centroid: Array mapping each gene to its corresponding family centroid ID in family_centroids (length n_vectors)
+        gene_to_centroid: Array mapping each gene to its corresponding family centroid ID in family_centroids with length n_vectors (1 based for fortran)
 
     Returns:
         dict: Dictionary containing:
@@ -992,9 +992,9 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
         raise ValueError("family_centroids must be a 2D array")
     
     # Convert inputs to numpy arrays
-    expression_vectors = np.asfortranarray(expression_vectors, dtype=np.float64)
-    family_centroids = np.asfortranarray(family_centroids, dtype=np.float64)
-    gene_to_centroid = np.ascontiguousarray(gene_to_centroid, dtype=np.int32)
+    expression_vectors = np.asarray(expression_vectors, dtype=np.float64)
+    family_centroids = np.asarray(family_centroids, dtype=np.float64)
+    gene_to_centroid = np.asarray(gene_to_centroid, dtype=np.int32)
     
     # Get dimensions
     n_axes_genes, n_vectors = expression_vectors.shape
@@ -1007,6 +1007,15 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
     # Validate dimensions
     if n_axes_genes != n_axes_centroids:
         raise ValueError("family_centroids must have the same number of axes as expression_vectors")
+
+    # Validate correct mapping between genes and centroids
+    if not np.all((gene_to_centroid > 0) & (gene_to_centroid <= n_families)):
+        raise ValueError("gene_to_centroid contains invalid family IDs")
+
+    # Ensure arrays have correct dtype and memory layout
+    expr_v = np.asfortranarray(expression_vectors, dtype=np.float64)
+    family_c = np.asfortranarray(family_centroids, dtype=np.float64)
+    gene_c = np.ascontiguousarray(gene_to_centroid.astype(np.int32))
     
     # Prepare output arrays
     shift_vectors = np.empty((2*n_axes_genes, n_vectors), dtype=np.float64, order='F')
@@ -1031,9 +1040,9 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
         n_axes_genes,
         n_vectors,
         n_families,
-        expression_vectors,
-        family_centroids,
-        gene_to_centroid,
+        expr_v,
+        family_c,
+        gene_c,
         shift_vectors,
         ctypes.byref(ierr)
     )

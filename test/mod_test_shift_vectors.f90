@@ -121,7 +121,8 @@ contains
     !| Check for expected 0 values in shift_vectors
     expected_shift_vectors = reshape([1.0_real64, 2.0_real64, 3.0_real64, 0.0_real64, 0.0_real64, 0.0_real64, &
                                       4.0_real64, 5.0_real64, 6.0_real64, 0.0_real64, 0.0_real64, 0.0_real64], [6, 2])
-      call assert_equal_array_real(shift_vectors, expected_shift_vectors, 6, 1e-12_real64, "Shift vectors should be zero distance from centroids")
+    call assert_equal_array_real(shift_vectors, expected_shift_vectors, 6, 1e-12_real64,
+    "Shift vectors should be zero distance from centroids")
   end subroutine
 
   !> Test for multiple genes per family centroid
@@ -134,13 +135,16 @@ contains
     family_centroids = reshape([10.0_real64, 20.0_real64, 30.0_real64, 40.0_real64], [2, 2])
     gene_to_centroid = [1, 2, 1, 2]
 
-      expected_shift_vectors = reshape([10.0_real64, 20.0_real64, -9.0_real64, -18.0_real64, 30.0_real64, 40.0_real64, -27.0_real64, -36.0_real64, &
-                 50.0_real64, 60.0_real64, -5.0_real64, -14.0_real64, 70.0_real64, 80.0_real64, -23.0_real64, -23.0_real64], [4, 4])
+    expected_shift_vectors = reshape([10.0_real64, 20.0_real64, -9.0_real64, -18.0_real64, &
+                                      30.0_real64, 40.0_real64, -27.0_real64, -36.0_real64, &
+                                      50.0_real64, 60.0_real64, -5.0_real64, -14.0_real64, &
+                                      70.0_real64, 80.0_real64, -23.0_real64, -23.0_real64], [4, 4])
 
     ! Call the function with multiple genes per family
     call compute_shift_vector_field(2, 4, 2, expression_vectors, family_centroids, gene_to_centroid, shift_vectors, ierr)
 
-  call assert_equal_array_real(shift_vectors, expected_shift_vectors, 4, 1e-12_real64, "Shift vectors should match expected values")
+    call assert_equal_array_real(shift_vectors, expected_shift_vectors, 4, 1e-12_real64,
+    "Shift vectors should match expected values")
 
   end subroutine test_multiple_genes_per_family
 
@@ -154,12 +158,16 @@ contains
     family_centroids = reshape([(real(i, real64), i=10, 80, 10)], [2, 4])
     gene_to_centroid = [1, 2, 3, 4]
 
-      expected_shift_vectors = reshape([10.0_real64, 20.0_real64, -9.0_real64, -18.0_real64, 30.0_real64, 40.0_real64, -27.0_real64, -36.0_real64, 50.0_real64, 60.0_real64, -45.0_real64, -54.0_real64, 70.0_real64, 80.0_real64, -63.0_real64, -72.0_real64], [4, 4])
+    expected_shift_vectors = reshape([10.0_real64, 20.0_real64, -9.0_real64, -18.0_real64, &
+                                      30.0_real64, 40.0_real64, -27.0_real64, -36.0_real64, &
+                                      50.0_real64, 60.0_real64, -45.0_real64, -54.0_real64, &
+                                      70.0_real64, 80.0_real64, -63.0_real64, -72.0_real64], [4, 4])
 
     !| Call the function with single genes per family centroid
     call compute_shift_vector_field(2, 4, 4, expression_vectors, family_centroids, gene_to_centroid, shift_vectors, ierr)
 
-  call assert_equal_array_real(shift_vectors, expected_shift_vectors, 4, 1e-12_real64, "Shift vectors should match expected values")
+    call assert_equal_array_real(shift_vectors, expected_shift_vectors, 4, 1e-12_real64,
+    "Shift vectors should match expected values")
 
   end subroutine test_single_gene_per_family
 
