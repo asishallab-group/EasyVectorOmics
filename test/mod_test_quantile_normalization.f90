@@ -3,7 +3,7 @@
 module mod_test_quantile_normalization
   use asserts
   use, intrinsic :: iso_fortran_env, only: real64, int32
-  use, intrinsic :: ieee_arithmetic
+  use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
   implicit none
   public
 

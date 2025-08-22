@@ -3,7 +3,7 @@
 !! expected behavior in tests of any kind (numeric, string, array, etc).
 module asserts
   use, intrinsic :: iso_fortran_env, only: error_unit, real64
-  use, intrinsic :: ieee_arithmetic
+  use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
   implicit none
   private
   public :: assert_true, assert_false, assert_equal_int, assert_not_equal_int
