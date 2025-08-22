@@ -3,6 +3,7 @@
 module mod_test_quantile_normalization
   use asserts
   use, intrinsic :: iso_fortran_env, only: real64, int32
+  use, intrinsic :: ieee_arithmetic
   implicit none
   public
 
@@ -333,7 +334,7 @@ contains
     integer(int32) :: i, j
     do i = 1, size(arr,1)
       do j = 1, size(arr,2)
-        mask(i,j) = arr(i,j) /= arr(i,j)
+        mask(i,j) = ieee_is_nan(arr(i,j))
       end do
     end do
   end function isnan_mat
