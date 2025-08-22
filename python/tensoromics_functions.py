@@ -977,6 +977,7 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
             - shift_vectors: The computed shift vectors for each gene expression vector
 
     """
+    
     # Input validation
     if not isinstance(expression_vectors, np.ndarray):
         raise ValueError("expression_vectors must be a numpy array")
@@ -998,7 +999,7 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
     # Get dimensions
     n_axes_genes, n_vectors = expression_vectors.shape
     n_axes_centroids, n_families = family_centroids.shape
-
+    
     # Validate length of gene_to_centroid
     if len(gene_to_centroid) != n_vectors:
         raise ValueError("gene_to_centroid length must match number of columns in expression_vectors")
@@ -1006,22 +1007,22 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
     # Validate dimensions
     if n_axes_genes != n_axes_centroids:
         raise ValueError("family_centroids must have the same number of axes as expression_vectors")
-  
+    
     # Prepare output arrays
     shift_vectors = np.empty((2*n_axes_genes, n_vectors), dtype=np.float64, order='F')
     ierr = ctypes.c_int(0)
-    
+
     # Setup C/Fortran wrapper with proper type annotations
     sv = lib.compute_shift_vector_field_c
     sv.argtypes = [
-        ctypes.c_int,  # n_axes
+        ctypes.c_int,  # n_axes_genes
         ctypes.c_int,  # n_vectors
         ctypes.c_int,  # n_families
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # expression_vectors (Fortran order)
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # family_centroids (Fortran order)
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # gene_to_centroid
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # shift_vectors
-        ctypes.POINTER(ctypes.c_int),  # ierr
+        ctypes.POINTER(ctypes.c_int)  # ierr
     ]
     sv.restype = None
     
@@ -1045,5 +1046,5 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
     
     # Return structured result (no ierr since we checked for errors)
     return {
-        'shift_vectors': shift_vectors
+        "shift_vectors": shift_vectors
     }

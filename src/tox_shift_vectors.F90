@@ -54,12 +54,15 @@ contains
       shift_vectors(d + 1:2*d, current_gene) = expression_vectors(:, current_gene) - family_centroids(:, current_centroid)
     end do
   end subroutine
+end module
 
   !> R wrapper for compute_shift_vector_field
   !| Calls compute_shift_vector_field with standard Fortran types for R interface.
   !| When using these R wrapper functions, copies of the arrays will be created. No direct modification of the original R objects occurs..
   pure subroutine compute_shift_vector_field_r(d, n_genes, n_families, expression_vectors, family_centroids, &
                                                gene_to_centroid, shift_vectors, ierr)
+    use tox_shift_vectors
+
     !| Expression vector dimension
     integer(int32), intent(in) :: d
     !| Total number of genes
@@ -86,6 +89,7 @@ contains
   pure subroutine compute_shift_vector_field_c(d, n_genes, n_families, expression_vectors, family_centroids, gene_to_centroid, &
                                                shift_vectors, ierr) bind(C, name="compute_shift_vector_field_c")
     use iso_c_binding
+    use tox_shift_vectors
     !| Expression vector dimension
     integer(c_int), intent(in) :: d
     !| Total number of genes
@@ -104,6 +108,5 @@ contains
     integer(c_int), intent(out) :: ierr
 
     call compute_shift_vector_field(d, n_genes, n_families, expression_vectors, family_centroids, &
-                                    gene_to_centroid, shift_vectors, ierr)
+                                   gene_to_centroid, shift_vectors, ierr)
   end subroutine compute_shift_vector_field_c
-end module
