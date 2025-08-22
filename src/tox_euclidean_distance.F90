@@ -124,6 +124,8 @@ subroutine distance_to_centroid_c(n_genes, n_families, genes, centroids, &
   integer(c_int), intent(in), value :: n_genes
   !| Total number of gene families
   integer(c_int), intent(in), value :: n_families
+  !| Expression vector dimension
+  integer(c_int), intent(in), value :: d
   !| Gene expression matrix (d × n_genes), column-major
   real(c_double), intent(in), target :: genes(d, n_genes)
   !| Family centroid matrix (d × n_families), column-major
@@ -132,8 +134,7 @@ subroutine distance_to_centroid_c(n_genes, n_families, genes, centroids, &
   integer(c_int), intent(in), target :: gene_to_fam(n_genes)
   !| Output distances array
   real(c_double), intent(out), target :: distances(n_genes)
-  !| Expression vector dimension
-  integer(c_int), intent(in), value :: d
+  
   call distance_to_centroid(n_genes, n_families, genes, centroids, &
                             gene_to_fam, distances, d)
 end subroutine distance_to_centroid_c
