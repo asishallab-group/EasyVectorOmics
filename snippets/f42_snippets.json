@@ -125,5 +125,117 @@
 
     ],
     "description": "Call loess_smooth_2d_c from Python using ctypes"
+  },
+
+  "Convert c_double to real64": {
+    "prefix": "f42:c_double_as_real64",
+    "body":  [
+      "! Convert to fortran type",
+      "call c_double_as_real64(${1:c_val}, ${2:f_val})"
+    ]
+  },
+
+  "Convert real64 to c_double": {
+    "prefix": "f42:real64_as_c_double",
+    "body":  [
+      "! Convert to fortran type",
+      "call real64_as_c_double(${1:f_val}, ${2:c_val})"
+    ]
+  },
+
+  "Convert c_complex to complex": {
+    "prefix": "f42:c_complex_as_complex",
+    "body":  [
+      "! Convert to fortran type",
+      "call c_complex_as_complex(${1:c_val}, ${2:f_val})"
+    ]
+  },
+
+  "Convert complex to c_complex": {
+    "prefix": "f42:complex_as_c_complex",
+    "body":  [
+      "! Convert to fortran type",
+      "call complex_as_c_complex(${1:f_val}, ${2:c_val})"
+    ]
+  },
+
+  "Convert c_int to int32": {
+    "prefix": "f42:c_int_as_int32",
+    "body":  [
+      "! Convert to fortran type",
+      "call c_int_as_int32(${1:c_val}, ${2:f_val})"
+    ]
+  },
+
+  "Convert int32 to c_int": {
+    "prefix": "f42:int32_as_c_int",
+    "body":  [
+      "! Convert to fortran type",
+      "call int32_as_c_int(${1:f_val}, ${2:c_val})"
+    ]
+  },
+
+  "Convert c_int to logical": {
+    "prefix": "f42:c_int_as_logical",
+    "body":  [
+      "! Convert to fortran type",
+      "call c_int_as_logical(${1:c_val}, ${2:f_val})"
+    ]
+  },
+
+  "Convert logical to c_int": {
+    "prefix": "f42:logical_as_c_int",
+    "body":  [
+      "! Convert to fortran type",
+      "call logical_as_c_int(${1:f_val}, ${2:c_val})"
+    ]
+  },
+
+  "Convert c_char to char": {
+    "prefix": "f42:c_char_as_char",
+    "body":  [
+      "! Convert to fortran type",
+      "call c_char_as_char(${1:c_val}, ${2:f_val})"
+    ]
+  },
+
+  "Convert char to c_char": {
+    "prefix": "f42:char_as_c_char",
+    "body":  [
+      "! Convert to fortran type",
+      "call char_as_c_char(${1:f_val}, ${2:c_val})"
+    ]
+  },
+
+  "Convert c_char_1d to string": {
+    "prefix": "f42:c_char_1d_as_string",
+    "body":  [
+      "! Convert to fortran type",
+      "call c_char_1d_as_string(${1:c_char_array}, ${2:str_out})"
+    ]
+  },
+
+  "Convert string to c_char_1d": {
+    "prefix": "f42:string_as_c_char_1d",
+    "body":  [
+      "! Convert to fortran type",
+      "call string_as_c_char_1d(${1:str}, ${2:c_char_array})"
+    ]
+  },
+
+  "Convert c_char_2d to string": {
+    "prefix": "f42:c_char_2d_as_string",
+    "body":  [
+      "! Convert to fortran type",
+      "call c_char_2d_as_string(${1:c_char_array}, ${2:str_out})"
+    ]
+  },
+
+  "Convert string to c_char_2d": {
+    "prefix": "f42:string_as_c_char_2d",
+    "body":  [
+      "! Convert to fortran type",
+      "call string_as_c_char_2d(${1:strings}, ${2:c_char_array})"
+    ]
   }
 }
