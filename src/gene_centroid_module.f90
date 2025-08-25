@@ -55,14 +55,15 @@ contains
     subroutine group_centroid(vectors, d, num_genes, gene_to_family_map, num_families, &
                               centroid_matrix, use_all_mode, ortholog_set, selected_indices)
         implicit none
-        !| The input matrix of all gene expression vectors (d x num_genes).
-        real(real64), intent(in) :: vectors(d, num_genes)
+        ! CORRECTED DECLARATION ORDER: Declare scalar dimensions first.
         !| Dimensionality of the expression vectors.
         integer(int32), intent(in) :: d
         !| Total number of genes in the 'vectors' matrix.
         integer(int32), intent(in) :: num_genes
         !| Total number of gene families to compute centroids for.
         integer(int32), intent(in) :: num_families
+        !| The input matrix of all gene expression vectors (d x num_genes).
+        real(real64), intent(in) :: vectors(d, num_genes)
         !| An array mapping each gene (by index) to a family ID.
         integer(int32), intent(in) :: gene_to_family_map(num_genes)
         !| The output matrix (d x num_families) to store the computed centroids.
@@ -76,11 +77,10 @@ contains
 
         ! Local variables
         integer(int32) :: i, j, num_selected
-        ! NOTE: selected_indices should be private to each thread to avoid race conditions.
-        ! A better approach for larger scale would be to use a different parallelization strategy,
-        ! but for now, making it private is the most direct fix.
         integer(int32) :: local_selected_indices(num_genes)
 
+        ! FIX: Initialize intent(out) argument to satisfy compiler warnings.
+        selected_indices = 0
 
         !$OMP PARALLEL DO PRIVATE(j, i, num_selected, local_selected_indices)
         do j = 1, num_families
