@@ -970,7 +970,7 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
     Args:
         expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors)
         family_centroids: Matrix where each column is a family centroid vector (n_axes x n_families)
-        gene_to_centroid: Array mapping each gene to its corresponding family centroid ID in family_centroids with length n_vectors (1 based for fortran)
+        gene_to_centroid: Array mapping each gene to its corresponding family centroid index in family_centroids with length n_vectors (1 based for fortran)
 
     Returns:
         dict: Dictionary containing:

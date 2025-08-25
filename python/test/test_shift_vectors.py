@@ -43,14 +43,14 @@ def test_correct_family_mapping():
 # 2. Test for invalid family id mapping raising error
 def test_invalid_family_mapping():
     expression_vectors = np.array([
-        [1, 4],
-        [2, 5],
-        [3, 6]
+        [1.0, 4.0],
+        [2.0, 5.0],
+        [3.0, 6.0]
     ], dtype=np.float64)
     family_centroids = np.array([
-        [5, 4],
-        [4, 3],
-        [3, 2]
+        [5.0, 4.0],
+        [4.0, 3.0],
+        [3.0, 2.0]
     ], dtype=np.float64)
     # gene_to_centroid contains invalid mapping (3)
     gene_to_centroid = np.array([1, 3], dtype=np.int32)
