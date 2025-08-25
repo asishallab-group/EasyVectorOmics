@@ -1,3 +1,4 @@
+
 !> @brief Main program to run the entire test suite.
 PROGRAM run_tests
     USE, INTRINSIC :: iso_fortran_env, ONLY: INT32
@@ -80,6 +81,8 @@ CONTAINS
     END SUBROUTINE add_suite
 
     SUBROUTINE initialize_suites()
+        ! The USE statement at the top of the program makes the procedures available,
+        ! so the EXTERNAL statement is not needed and has been removed.
         CALL add_suite("gene_centroids", run_all_tests_gene_centroids, run_named_tests_gene_centroids) 
     END SUBROUTINE initialize_suites
 

@@ -7,14 +7,7 @@ if (file.exists(.lib_path)) {
   warning(paste("Shared library not found at:", .lib_path, "\nRun './build.sh' from the project root."))
 }
 
-#' Compute expression centroids for groups of genes.
-#' example
-#' # d <- 2; n_genes <- 5; n_families <- 2
-#' # vecs <- matrix(c(1,1, 3,3, 10,10, 20,20, 5,5), nrow=d, byrow=FALSE)
-#' # g2f <- c(1L, 1L, 2L, 2L, 1L)
-#' # oset <- c(TRUE, FALSE, TRUE, TRUE, TRUE)
-#' # tox_group_centroid(vecs, g2f, n_families, oset, mode='all')
-#' # tox_group_centroid(vecs, g2f, n_families, oset, mode='ortho')
+
 tox_group_centroid <- function(vectors, gene_to_family_map, num_families, ortholog_set, mode = 'all') {
   
   # 1) Validate inputs
@@ -37,6 +30,7 @@ tox_group_centroid <- function(vectors, gene_to_family_map, num_families, orthol
   # 2) Prepare inputs/outputs for Fortran
   use_all_mode <- (mode == 'all')
   centroid_matrix_out <- matrix(0.0, nrow = d, ncol = num_families)
+  selected_indices_ws <- integer(n_genes) # Workspace buffer
 
   # 3) Call Fortran
   result <- .Fortran("group_centroid_r",
@@ -47,7 +41,9 @@ tox_group_centroid <- function(vectors, gene_to_family_map, num_families, orthol
                      num_families = as.integer(num_families),
                      centroid_matrix = centroid_matrix_out,
                      use_all_mode = as.logical(use_all_mode),
-                     ortholog_set = as.logical(ortholog_set))
+                     ortholog_set = as.logical(ortholog_set),
+                     selected_indices = selected_indices_ws,
+                     selected_indices_len = as.integer(n_genes))
   
   # 4) Return the populated output matrix
   return(result$centroid_matrix)

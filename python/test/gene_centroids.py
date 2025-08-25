@@ -19,15 +19,14 @@ def test_centroid_logic():
     ], dtype=np.float64, order='F')
     
     gene_to_family = np.array([1, 1, 2, 2, 1], dtype=np.int32)
-    # This is now a boolean array as the user-facing API expects
-    # CORRECTED: The last element should be False to match the expected calculation.
-    ortholog_set = np.array([True, False, True, True, False], dtype=np.bool_)
+    # CORRECTED: The ortholog set must be True for genes 1 and 5 (indices 0 and 4)
+    # to produce the expected centroid for family 1.
+    ortholog_set = np.array([True, False, True, True, True], dtype=np.bool_)
     
     # --- Test "all" mode ---
     print("\n[tox_group_centroid] Case 1: 'all' mode")
     centroids_all = tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='all')
     
-    # Expected: Fam1=[(1,1)+(3,3)+(5,5)]/3 = [3,3], Fam2=[(10,10)+(20,20)]/2 = [15,15]
     expected_all = np.array([[3.0, 15.0], [3.0, 15.0]], order='F')
     
     np.testing.assert_allclose(centroids_all, expected_all)
@@ -36,20 +35,9 @@ def test_centroid_logic():
 
     # --- Test "ortho" mode ---
     print("\n[tox_group_centroid] Case 2: 'ortho' mode")
-    # Add print statements to debug the inputs right before the call
-    print("Debug Info for 'ortho' mode:")
-    print(f"  Vectors shape: {vectors.shape}")
-    print(f"  Gene to Family: {gene_to_family}")
-    print(f"  Ortholog Set: {ortholog_set}")
-    
     centroids_ortho = tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='ortho')
     
-    # Expected: Fam1 (orthos are genes 1, 5 -> indices 0, 4): mean([1,5],[1,5]) = [3,3]
-    #           Fam2 (orthos are genes 3, 4 -> indices 2, 3): mean([10,20],[10,20]) = [15,15]
     expected_ortho = np.array([[3.0, 15.0], [3.0, 15.0]], order='F')
-
-    print(f"  Actual Centroids:\n{centroids_ortho}")
-    print(f"  Expected Centroids:\n{expected_ortho}")
 
     np.testing.assert_allclose(centroids_ortho, expected_ortho)
     assert not centroids_ortho.flags.writeable
