@@ -84,7 +84,7 @@ CONTAINS
     SUBROUTINE test_basic_all_mode()
         INTEGER, PARAMETER :: d=2, n_genes=5, n_families=2
         REAL(REAL64) :: vectors(d, n_genes), centroids(d, n_families)
-        INTEGER(INT32) :: gene_to_family(n_genes)
+        INTEGER(INT32) :: gene_to_family(n_genes), selected_indices(n_genes)
         LOGICAL :: ortholog_set(n_genes)
         REAL(REAL64) :: expected(d, n_families)
 
@@ -93,7 +93,8 @@ CONTAINS
         ortholog_set = .false.
         expected = reshape([3.0, 3.0, 15.0, 15.0], [d, n_families])
         
-        CALL group_centroid(vectors, d, n_genes, gene_to_family, n_families, centroids, .true., ortholog_set)
+        CALL group_centroid(vectors, d, n_genes, gene_to_family, n_families, &
+                            centroids, .true., ortholog_set, selected_indices)
         CALL assert_allclose_array_real(centroids, expected, d*n_families, 0.0_REAL64, 1e-9_REAL64, "test_basic_all_mode")
     END SUBROUTINE test_basic_all_mode
 
@@ -101,7 +102,7 @@ CONTAINS
     SUBROUTINE test_basic_ortho_mode()
         INTEGER, PARAMETER :: d=2, n_genes=5, n_families=2
         REAL(REAL64) :: vectors(d, n_genes), centroids(d, n_families)
-        INTEGER(INT32) :: gene_to_family(n_genes)
+        INTEGER(INT32) :: gene_to_family(n_genes), selected_indices(n_genes)
         LOGICAL :: ortholog_set(n_genes)
         REAL(REAL64) :: expected(d, n_families)
 
@@ -110,7 +111,8 @@ CONTAINS
         ortholog_set = [.true., .false., .true., .true., .true.]
         expected = reshape([3.0, 3.0, 15.0, 15.0], [d, n_families])
 
-        CALL group_centroid(vectors, d, n_genes, gene_to_family, n_families, centroids, .false., ortholog_set)
+        CALL group_centroid(vectors, d, n_genes, gene_to_family, n_families, &
+                            centroids, .false., ortholog_set, selected_indices)
         CALL assert_allclose_array_real(centroids, expected, d*n_families, 0.0_REAL64, 1e-9_REAL64, "test_basic_ortho_mode")
     END SUBROUTINE test_basic_ortho_mode
 
@@ -118,7 +120,7 @@ CONTAINS
     SUBROUTINE test_empty_family()
         INTEGER, PARAMETER :: d=3, n_genes=4, n_families=2
         REAL(REAL64) :: vectors(d, n_genes), centroids(d, n_families)
-        INTEGER(INT32) :: gene_to_family(n_genes)
+        INTEGER(INT32) :: gene_to_family(n_genes), selected_indices(n_genes)
         LOGICAL :: ortholog_set(n_genes)
         REAL(REAL64) :: expected(d, n_families)
 
@@ -128,7 +130,8 @@ CONTAINS
         expected = 0.0
         expected(:, 1) = 1.0 ! Centroid of family 1 is just the vector itself
         
-        CALL group_centroid(vectors, d, n_genes, gene_to_family, n_families, centroids, .true., ortholog_set)
+        CALL group_centroid(vectors, d, n_genes, gene_to_family, n_families, &
+                            centroids, .true., ortholog_set, selected_indices)
         CALL assert_allclose_array_real(centroids, expected, d*n_families, 0.0_REAL64, 1e-9_REAL64, "test_empty_family")
     END SUBROUTINE test_empty_family
 
@@ -136,7 +139,7 @@ CONTAINS
     SUBROUTINE test_no_matching_orthologs()
         INTEGER, PARAMETER :: d=2, n_genes=3, n_families=1
         REAL(REAL64) :: vectors(d, n_genes), centroids(d, n_families)
-        INTEGER(INT32) :: gene_to_family(n_genes)
+        INTEGER(INT32) :: gene_to_family(n_genes), selected_indices(n_genes)
         LOGICAL :: ortholog_set(n_genes)
         REAL(REAL64) :: expected(d, n_families)
 
@@ -145,7 +148,8 @@ CONTAINS
         ortholog_set = .false. ! No genes are orthologs
         expected = 0.0 ! Expect a zero vector
         
-        CALL group_centroid(vectors, d, n_genes, gene_to_family, n_families, centroids, .false., ortholog_set)
+        CALL group_centroid(vectors, d, n_genes, gene_to_family, n_families, &
+                            centroids, .false., ortholog_set, selected_indices)
         CALL assert_allclose_array_real(centroids, expected, d*n_families, 0.0_REAL64, 1e-9_REAL64, "test_no_matching_orthologs")
     END SUBROUTINE test_no_matching_orthologs
 
@@ -153,14 +157,15 @@ CONTAINS
     SUBROUTINE test_single_gene_family()
         INTEGER, PARAMETER :: d=3, n_genes=1, n_families=1
         REAL(REAL64) :: vectors(d, n_genes), centroids(d, n_families)
-        INTEGER(INT32) :: gene_to_family(n_genes)
+        INTEGER(INT32) :: gene_to_family(n_genes), selected_indices(n_genes)
         LOGICAL :: ortholog_set(n_genes)
         
         vectors(:,1) = [12.3, -4.5, 6.7]
         gene_to_family = [1]
         ortholog_set = .true.
         
-        CALL group_centroid(vectors, d, n_genes, gene_to_family, n_families, centroids, .true., ortholog_set)
+        CALL group_centroid(vectors, d, n_genes, gene_to_family, n_families, &
+                            centroids, .true., ortholog_set, selected_indices)
         CALL assert_allclose_array_real(centroids, vectors, d*n_families, 0.0_REAL64, 1e-9_REAL64, "test_single_gene_family")
     END SUBROUTINE test_single_gene_family
 
@@ -168,7 +173,7 @@ CONTAINS
     SUBROUTINE test_extreme_values()
         INTEGER, PARAMETER :: d=2, n_genes=4, n_families=1
         REAL(REAL64) :: vectors(d, n_genes), centroids(d, n_families)
-        INTEGER(INT32) :: gene_to_family(n_genes)
+        INTEGER(INT32) :: gene_to_family(n_genes), selected_indices(n_genes)
         LOGICAL :: ortholog_set(n_genes)
         REAL(REAL64) :: expected(d, n_families)
 
@@ -178,9 +183,10 @@ CONTAINS
         vectors(:,4) = [0.0, -5.0]
         gene_to_family = [1, 1, 1, 1]
         ortholog_set = .true.
-        expected(:,1) = [0.0, 0.0] ! (1e12 - 1e12 + 0 + 0)/4 = 0, (-1e-12 + 1e-12 + 5 - 5)/4 = 0
+        expected(:,1) = [0.0, 0.0]
 
-        CALL group_centroid(vectors, d, n_genes, gene_to_family, n_families, centroids, .true., ortholog_set)
+        CALL group_centroid(vectors, d, n_genes, gene_to_family, n_families, &
+                            centroids, .true., ortholog_set, selected_indices)
         CALL assert_allclose_array_real(centroids, expected, d*n_families, 0.0_REAL64, 1e-9_REAL64, "test_extreme_values")
     END SUBROUTINE test_extreme_values
 
@@ -188,7 +194,7 @@ CONTAINS
     SUBROUTINE test_higher_dimensions()
         INTEGER, PARAMETER :: d=10, n_genes=100, n_families=5
         REAL(REAL64) :: vectors(d, n_genes), centroids(d, n_families)
-        INTEGER(INT32) :: gene_to_family(n_genes)
+        INTEGER(INT32) :: gene_to_family(n_genes), selected_indices(n_genes)
         LOGICAL :: ortholog_set(n_genes)
         INTEGER :: i
         REAL(REAL64) :: expected(d, n_families)
@@ -199,11 +205,11 @@ CONTAINS
         END DO
         ortholog_set = .true.
         
-        ! Calculate expected manually for family 1 (genes 1, 6, 11, ...)
         expected = 0.0
         expected(:,1) = sum(vectors(:, 1:n_genes:n_families), dim=2) / real(count(gene_to_family == 1), REAL64)
 
-        CALL group_centroid(vectors, d, n_genes, gene_to_family, n_families, centroids, .true., ortholog_set)
+        CALL group_centroid(vectors, d, n_genes, gene_to_family, n_families, &
+                            centroids, .true., ortholog_set, selected_indices)
         CALL assert_allclose_array_real(centroids(:,1), expected(:,1), d, 0.0_REAL64, 1e-9_REAL64, "test_higher_dimensions")
     END SUBROUTINE test_higher_dimensions
 
@@ -211,11 +217,11 @@ CONTAINS
     SUBROUTINE test_gene_order_invariance()
         INTEGER, PARAMETER :: d=2, n_genes=5, n_families=2
         REAL(REAL64) :: vectors1(d, n_genes), centroids1(d, n_families)
-        INTEGER(INT32) :: gene_to_family1(n_genes)
+        INTEGER(INT32) :: gene_to_family1(n_genes), selected_indices1(n_genes)
         LOGICAL :: ortholog_set1(n_genes)
 
         REAL(REAL64) :: vectors2(d, n_genes), centroids2(d, n_families)
-        INTEGER(INT32) :: gene_to_family2(n_genes)
+        INTEGER(INT32) :: gene_to_family2(n_genes), selected_indices2(n_genes)
         LOGICAL :: ortholog_set2(n_genes)
         
         ! Setup 1: Original order
@@ -228,10 +234,13 @@ CONTAINS
         gene_to_family2 = [1, 2, 1, 1, 2]
         ortholog_set2 = [.true., .true., .true., .false., .true.]
 
-        CALL group_centroid(vectors1, d, n_genes, gene_to_family1, n_families, centroids1, .false., ortholog_set1)
-        CALL group_centroid(vectors2, d, n_genes, gene_to_family2, n_families, centroids2, .false., ortholog_set2)
+        CALL group_centroid(vectors1, d, n_genes, gene_to_family1, n_families, &
+                            centroids1, .false., ortholog_set1, selected_indices1)
+        CALL group_centroid(vectors2, d, n_genes, gene_to_family2, n_families, &
+                            centroids2, .false., ortholog_set2, selected_indices2)
 
-        CALL assert_allclose_array_real(centroids1, centroids2, d*n_families, 0.0_REAL64, 1e-9_REAL64, "test_gene_order_invariance")
+        CALL assert_allclose_array_real(centroids1, centroids2, d*n_families, &
+                                        0.0_REAL64, 1e-9_REAL64, "test_gene_order_invariance")
     END SUBROUTINE test_gene_order_invariance
 
 END MODULE mod_test_gene_centroids
