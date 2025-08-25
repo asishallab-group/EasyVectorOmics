@@ -43,9 +43,9 @@ def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
     dims_out = np.zeros(max_dims, dtype=np.int32)
     ndims = ctypes.c_int()
     ierr = ctypes.c_int()
-    clen = ctypes.c_int()  # immer vorhanden
+    clen = ctypes.c_int()  # always pass
 
-    # Gemeinsamer Prototyp
+    # shared function
     arrays_lib.get_array_metadata_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"), # filename_ascii
         ctypes.c_int,                                                         # fn_len
@@ -56,7 +56,7 @@ def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
     ]
     arrays_lib.get_array_metadata_C.restype = None
 
-    # Aufruf
+    # call
     arrays_lib.get_array_metadata_C(
         filename_ascii,
         fn_len,
@@ -290,20 +290,19 @@ def tox_deserialize_char_nd(filename: str, ndim_max=5):
     )
     check_err_code(ierr.value)
 
-    # Leerer Fall
+    # empty array
     if total == 0:
         return np.empty(tuple(dims), dtype=f'U{clen}')
 
-    # 1) Pro Element ein Block von 'clen' Codes (C-Order, weil Blöcke hintereinander)
+    # 1) per elemnt one block of "clen" codes
     codes_2d = ascii_arr.reshape((total, clen), order='C')
 
-    # 2) ASCII -> Strings pro Element
-    # (Nullen sind Padding -> filtern)
+    # 2) ASCII -> Strings per Element
     strings_1d = np.array(
         [''.join(chr(c) for c in row if c > 0) for row in codes_2d],
         dtype=f'U{clen}'
     )
 
-    # 3) Elemente in Fortran-Reihenfolge in Ziel-Shape bringen
+    # 3) reshape to target
     result = strings_1d.reshape(tuple(dims), order='F')
     return result
