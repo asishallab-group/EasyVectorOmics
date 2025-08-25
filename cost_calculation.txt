@@ -1,7 +1,0 @@
-PhD	280
-HiWi	22
-Heigwer	65
-Troidl	15 + 35
-Dusel	15 + 40
-Reisekosten 9
-Server, Fesplatten, Laptop (PhD)	45
