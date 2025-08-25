@@ -256,7 +256,7 @@ end subroutine normalize_by_std_dev_r
 !> C/Python wrapper for normalization by standard deviation.
 !| Provides a C/Python-compatible interface to the normalization routine.
 subroutine normalize_by_std_dev_c(n_genes, n_tissues, input_matrix, output_matrix) bind(C, name="normalize_by_std_dev_c")
-  use iso_c_binding, only : c_int, c_double
+  use iso_c_binding, only : c_int, c_double, c_f_pointer, c_loc
   use tox_normalization
   !| Number of genes (rows)
   integer(c_int), value :: n_genes
