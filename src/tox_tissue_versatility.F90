@@ -129,7 +129,7 @@ end subroutine compute_tissue_versatility_r
 pure subroutine compute_tissue_versatility_c(n_axes, n_vectors, expression_vectors, exp_vecs_selection_index, &
                                              n_selected_vectors, axes_selection, n_selected_axes, &
                                              tissue_versatilities, tissue_angles_deg, ierr) bind(C, name="compute_tissue_versatility_c")
-  use iso_c_binding
+  use iso_c_binding, only : c_int, c_double
   use avmod
   !| Number of axes (tissues/dimensions)
   integer(c_int), intent(in), value :: n_axes

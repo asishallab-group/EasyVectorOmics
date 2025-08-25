@@ -500,7 +500,7 @@ end subroutine which_c
 !| Direct wrapper - user must pre-filter indices in C before calling.
 subroutine loess_smooth_2d_c(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
     kernel_sigma, kernel_cutoff, y_out, ierr) bind(C, name="loess_smooth_2d_c")
-  use iso_c_binding
+  use iso_c_binding, only : c_int, c_double
   use, intrinsic :: iso_fortran_env, only: int32
   use f42_utils, only: loess_smooth_2d
   implicit none

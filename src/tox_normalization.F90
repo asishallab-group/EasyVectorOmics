@@ -256,7 +256,7 @@ end subroutine normalize_by_std_dev_r
 !> C/Python wrapper for normalization by standard deviation.
 !| Provides a C/Python-compatible interface to the normalization routine.
 subroutine normalize_by_std_dev_c(n_genes, n_tissues, input_matrix, output_matrix) bind(C, name="normalize_by_std_dev_c")
-  use iso_c_binding
+  use iso_c_binding, only : c_int, c_double
   use tox_normalization
   !| Number of genes (rows)
   integer(c_int), value :: n_genes
@@ -308,7 +308,7 @@ end subroutine quantile_normalization_r
 subroutine quantile_normalization_c(n_genes, n_tissues, input_matrix, output_matrix, &
                                     temp_col, rank_means, perm, stack_left, stack_right, max_stack) &
                                     bind(C, name="quantile_normalization_c")
-  use iso_c_binding
+  use iso_c_binding, only : c_int, c_double
   use tox_normalization
   !| Number of genes (rows)
   integer(c_int), intent(in), value :: n_genes
@@ -356,7 +356,7 @@ end subroutine log2_transformation_r
 !| Expects flat arrays, matching C calling conventions. Suitable for use with ctypes.
 !| Applies log2(x+1) to each element of the input matrix.
 subroutine log2_transformation_c(n_genes, n_tissues, input_matrix, output_matrix) bind(C, name="log2_transformation_c")
-  use iso_c_binding
+  use iso_c_binding, only : c_int, c_double
   use tox_normalization
   !| Number of genes (rows)
   integer(c_int), intent(in), value :: n_genes
@@ -394,7 +394,7 @@ end subroutine calc_tiss_avg_r
 !| Provides a C/Python-compatible interface to the tissue average calculation routine.
 !| Suitable for use with ctypes. Computes average expression per gene for each group of tissue replicates.
 subroutine calc_tiss_avg_c(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix) bind(C, name="calc_tiss_avg_c")
-  use iso_c_binding
+  use iso_c_binding, only : c_int, c_double
   use tox_normalization
   !| Number of genes (rows)
   integer(c_int), intent(in), value :: n_gene
@@ -439,7 +439,7 @@ end subroutine calc_fchange_r
 !| Provides a C/Python-compatible interface to the fold change calculation routine.
 !| Suitable for use with ctypes. Computes log2 fold changes between condition and control columns for all genes.
 subroutine calc_fchange_c(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix) bind(C, name="calc_fchange_c")
-  use iso_c_binding
+  use iso_c_binding, only : c_int, c_double
   use tox_normalization
   !| Number of genes (rows)
   integer(c_int), intent(in), value :: n_genes

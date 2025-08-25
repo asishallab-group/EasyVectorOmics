@@ -511,7 +511,7 @@ end subroutine detect_outliers_r
   subroutine compute_family_scaling_expert_c(n_genes, n_families, distances, gene_to_fam, dscale, &
     loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, &
     family_distances, ierr) bind(C, name="compute_family_scaling_expert_c")
-  use iso_c_binding
+  use iso_c_binding, only : c_int, c_double
   use tox_get_outliers
   !| Total number of genes
   integer(c_int), intent(in), value :: n_genes, n_families
@@ -546,7 +546,7 @@ end subroutine compute_family_scaling_expert_c
 !| This is the recommended version for most users as it handles memory allocation automatically.
 subroutine compute_family_scaling_c(n_genes, n_families, distances, gene_to_fam, dscale, &
   loess_x, loess_y, indices_used, ierr) bind(C, name="compute_family_scaling_c")
-use iso_c_binding
+use iso_c_binding, only : c_int, c_double
 use tox_get_outliers
 !| Total number of genes
 integer(c_int), intent(in), value :: n_genes, n_families
@@ -572,7 +572,7 @@ end subroutine compute_family_scaling_c
 !| Calls compute_rdi with C-compatible types for external interface.
 !| Outputs both unsorted and sorted RDI, permutation, and sorting workspace arrays for downstream use.
 subroutine compute_rdi_c(n_genes, n_families, distances, gene_to_fam, dscale, rdi, sorted_rdi, perm, stack_left, stack_right) bind(C, name="compute_rdi_c")
-  use iso_c_binding
+  use iso_c_binding, only : c_int, c_double
   use tox_get_outliers
   !| Total number of genes
   integer(c_int), intent(in), value :: n_genes, n_families
@@ -599,7 +599,7 @@ end subroutine compute_rdi_c
 !| Calls identify_outliers with C-compatible types for external interface.
 subroutine identify_outliers_c(n_genes, rdi, sorted_rdi, is_outlier_int, threshold, percentile) &
                               bind(C, name="identify_outliers_c")
-  use iso_c_binding
+  use iso_c_binding, only : c_int, c_double
   use tox_get_outliers
   !| Total number of genes
   integer(c_int), intent(in), value :: n_genes
@@ -639,7 +639,7 @@ subroutine detect_outliers_c(n_genes, n_families, distances, gene_to_fam, &
                           work_array, perm, stack_left, stack_right, &
                           is_outlier_int, loess_x, loess_y, loess_n, ierr, &
                           percentile) bind(C, name="detect_outliers_c")
-  use iso_c_binding
+  use iso_c_binding, only : c_int, c_double
   use tox_get_outliers
   !| Total number of genes
   integer(c_int), intent(in), value :: n_genes, n_families

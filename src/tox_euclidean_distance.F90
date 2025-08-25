@@ -78,7 +78,7 @@ end subroutine euclidean_distance_r
 !> C wrapper for euclidean_distance.
 !| Exposes euclidean_distance to C via iso_c_binding types.
 subroutine euclidean_distance_c(vec1, vec2, d, result) bind(C, name="euclidean_distance_c")
-  use iso_c_binding
+  use iso_c_binding, only : c_int, c_double
   use tox_euclidean_distance
   !| Dimension of both vectors
   integer(c_int), intent(in), value :: d
@@ -118,7 +118,7 @@ end subroutine distance_to_centroid_r
 !| Exposes distance_to_centroid to C via iso_c_binding types.
 subroutine distance_to_centroid_c(n_genes, n_families, genes, centroids, & 
                                   gene_to_fam, distances, d) bind(C, name="distance_to_centroid_c")
-  use iso_c_binding
+  use iso_c_binding, only : c_int, c_double
   use tox_euclidean_distance
   !| Total number of genes
   integer(c_int), intent(in), value :: n_genes
