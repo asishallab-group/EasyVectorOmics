@@ -1,4 +1,47 @@
-dyn.load("Trees/build/libtrees.so") # Load the shared library
+dyn.load("build/libtensor-omics.so") # Load the shared library
+
+check_err_code <- function(ierr) {
+  if (ierr == 0) return(invisible(NULL))
+  msg <- switch(as.character(ierr),
+    # I/O errors
+    '101' = "Could not open file.",
+    '102' = "Could not read magic number.",
+    '103' = "Could not read type code.",
+    '104' = "Could not read number of dimensions.",
+    '105' = "Could not read array dimensions",
+    '106' = "Could not read character length.",
+    '107' = "Could not read array data.",
+    '112' = "Could not write magic number",
+    '113' = "Could not write type code",
+    '114' = "Could not write number of dimensions",
+    '115' = "Could not write dimensions",
+    '116' = "Could not write character length",
+    '117' = "Could not write array data",
+    # ADD MORE HERE
+    
+    # FORMAT ERRORS
+    '200' = "Invalid format detected.",
+    '201' = "Invalid input provided.",
+    '202' = "Empty input arrays provided.",
+    '203' = "Dimension mismatch detected.",
+    '204' = "NaN or Inf found in input data.",
+    '205' = "Unsupported data type encountered.",
+    '206' = "Array size mismatch detected",
+
+    # MEMORY ERRORS
+    '301' = "Memory allocation failed.",
+    '302' = "Null pointer reference encountered.",
+
+    # FORTRAN RUNTIME ERRORS
+    '5002' = "Fortran runtime error: unit not open / not connected.",
+
+    # Internal errors
+    '9001' = "Internal error: unexpected state.",
+    '9999' = "Unknown error.",
+    paste("Unmapped error code:", ierr)
+  )
+  stop(msg)
+}
 
 #' Build BST index (1D)
 build_bst_index <- function(x) {
@@ -10,13 +53,17 @@ build_bst_index <- function(x) {
   ix <- integer(n)
   stack_left <- integer(n)
   stack_right <- integer(n)
+  ierr <- integer(1)
 
   res <- .Fortran("build_bst_index_r",
                   x = as.double(x),
                   n = n,
                   ix = ix,
                   stack_left = stack_left,
-                  stack_right = stack_right)
+                  stack_right = stack_right,
+                  ierr = ierr)
+
+  check_err_code(res$ierr)
 
   res$ix
 }
@@ -30,6 +77,7 @@ bst_range_query <- function(x, ix, lo, hi) {
   n <- as.integer(length(x))
   out_ix <- integer(n)
   out_n <- integer(1)
+  ierr <- integer(1)
   
   res <- .Fortran("bst_range_query_r",
                   x = as.double(x), 
@@ -38,8 +86,9 @@ bst_range_query <- function(x, ix, lo, hi) {
                   lo = as.double(lo), 
                   hi = as.double(hi), 
                   out_ix = out_ix, 
-                  out_n = out_n)
-  
+                  out_n = out_n,
+                  ierr = ierr)
+  check_err_code(res$ierr)
   list(indices = res$out_ix[1:res$out_n], count = res$out_n)
 }
 
@@ -74,6 +123,7 @@ build_kd_index <- function(X, dim_order = NULL) {
   perm <- integer(n)
   stack_left <- integer(n)
   stack_right <- integer(n)
+  ierr <- integer(1)
   
   res <- .Fortran("build_kd_index_r",
                   X = as.double(X), 
@@ -85,8 +135,9 @@ build_kd_index <- function(X, dim_order = NULL) {
                   subarray = subarray, 
                   perm = perm, 
                   stack_left = stack_left, 
-                  stack_right = stack_right)
-  
+                  stack_right = stack_right,
+                  ierr = ierr)
+  check_err_code(res$ierr)
   res$kd_ix
 }
 
@@ -113,6 +164,7 @@ build_spherical_kd <- function(V, dim_order = NULL) {
   perm <- integer(n)
   stack_left <- integer(n)
   stack_right <- integer(n)
+  ierr <- integer(1)
   
   res <- .Fortran("build_spherical_kd_r",
                   V = as.double(V), 
@@ -124,8 +176,9 @@ build_spherical_kd <- function(V, dim_order = NULL) {
                   subarray = subarray, 
                   perm = perm, 
                   stack_left = stack_left, 
-                  stack_right = stack_right)
-  
+                  stack_right = stack_right,
+                  ierr = ierr)
+  check_err_code(res$ierr)
   res$sphere_ix
 }
 

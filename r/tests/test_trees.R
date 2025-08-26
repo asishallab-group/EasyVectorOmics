@@ -68,3 +68,4 @@ cleanup_tree_memory <- function() {
 if (sys.nframe() == 0) {
   test_tree_functions()
 }
+test_tree_functions()

@@ -1,8 +1,9 @@
 import ctypes
 import numpy as np
+from error_handling import check_err_code
 
 # Load compiled libraries
-lib = ctypes.CDLL('Trees/build/libtrees.so')  # For KD-Tree functions
+lib = ctypes.CDLL('build/libtensor-omics.so')  # For KD-Tree functions
 
 # Configure BST argument types
 lib.build_bst_index_C.argtypes = [
@@ -10,7 +11,8 @@ lib.build_bst_index_C.argtypes = [
     ctypes.c_int32,                                                  # num_values
     np.ctypeslib.ndpointer(dtype=np.int32),                          # sorted_indices (out)
     np.ctypeslib.ndpointer(dtype=np.int32),                          # stack_left
-    np.ctypeslib.ndpointer(dtype=np.int32)                           # stack_right
+    np.ctypeslib.ndpointer(dtype=np.int32),                          # stack_right
+    ctypes.POINTER(ctypes.c_int)                                     # ierr   
 ]
 
 lib.bst_range_query_C.argtypes = [
@@ -20,7 +22,8 @@ lib.bst_range_query_C.argtypes = [
     ctypes.c_double,                           # low
     ctypes.c_double,                           # high
     np.ctypeslib.ndpointer(dtype=np.int32),    # out_indices (out)
-    ctypes.POINTER(ctypes.c_int32)             # number_matches (out)
+    ctypes.POINTER(ctypes.c_int32),            # number_matches (out)
+    ctypes.POINTER(ctypes.c_int)
 ]
 
 # Configure KD-Tree argument types
@@ -34,7 +37,8 @@ lib.build_kd_index_C.argtypes = [
     np.ctypeslib.ndpointer(dtype=np.float64),                        # subarray
     np.ctypeslib.ndpointer(dtype=np.int32),                          # perm
     np.ctypeslib.ndpointer(dtype=np.int32),                          # stack_left
-    np.ctypeslib.ndpointer(dtype=np.int32)                           # stack_right
+    np.ctypeslib.ndpointer(dtype=np.int32),                          # stack_right
+    ctypes.POINTER(ctypes.c_int)
 ]
 
 # --- BST Functions ---
@@ -52,9 +56,11 @@ def build_bst_index(values):
     indices = np.empty(n, dtype=np.int32)
     stack_left = np.empty(n, dtype=np.int32)
     stack_right = np.empty(n, dtype=np.int32)
+    ierr = ctypes.c_int()
     
     # Build BST index
-    lib.build_bst_index_C(values, n, indices, stack_left, stack_right)
+    lib.build_bst_index_C(values, n, indices, stack_left, stack_right, ctypes.byref(ierr))
+    check_err_code(ierr.value)
     
     # Convert from Fortran 1-based to Python 0-based indexing
     return indices - 1
@@ -75,13 +81,15 @@ def bst_range_query(values, indices, lower_bound, upper_bound):
     n = len(values)
     output_indices = np.empty(n, dtype=np.int32)
     match_count = ctypes.c_int32(0)
+    ierr = ctypes.c_int()
     
     # Convert indices back to 1-based for Fortran
     indices_1based = indices + 1
     
     # Perform range query
     lib.bst_range_query_C(values, indices_1based, n, lower_bound, upper_bound, 
-                         output_indices, ctypes.byref(match_count))
+                         output_indices, ctypes.byref(match_count), ctypes.byref(ierr))
+    check_err_code(ierr.value)
     
     # Convert from Fortran 1-based to Python 0-based indexing
     matching_indices = output_indices[:match_count.value] - 1
@@ -117,10 +125,12 @@ def build_kd_index(points, dimension_order=None):
     permutation = np.empty(n, dtype=np.int32)
     stack_left = np.empty(n, dtype=np.int32)
     stack_right = np.empty(n, dtype=np.int32)
+    ierr = ctypes.c_int()
     
     # Build KD-Tree index
     lib.build_kd_index_C(points, d, n, kd_indices, dimension_order, workspace, 
-                        value_buffer, permutation, stack_left, stack_right)
+                        value_buffer, permutation, stack_left, stack_right, ctypes.byref(ierr))
+    check_err_code(ierr.value)
     
     # Convert from Fortran 1-based to Python 0-based indexing
     return kd_indices - 1

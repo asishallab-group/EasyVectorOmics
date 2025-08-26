@@ -142,16 +142,18 @@ end module binary_search_tree
 !> \brief Wrapper for getting range query usable by R
 subroutine bst_range_query_r(values, sorted_indices, num_values, lower_bound, upper_bound, &
                             output_indices, num_matches, ierr)
+
   use binary_search_tree, only: bst_range_query
   use iso_fortran_env, only: int32, real64
   use tox_errors, only: ERR_OK
+
   implicit none
+  integer(int32), intent(in) :: num_values           
+  !! Number of elements
   real(real64), intent(in) :: values(num_values)      
   !! Input real array
   integer(int32), intent(in) :: sorted_indices(num_values)  
   !! Permutation index array
-  integer(int32), intent(in) :: num_values           
-  !! Number of elements
   real(real64), intent(in) :: lower_bound            
   !! Lower bound of range
   real(real64), intent(in) :: upper_bound            
@@ -233,11 +235,11 @@ subroutine build_bst_index_C(values, num_values, sorted_indices, left_stack, rig
   use binary_search_tree
   use tox_errors, only: ERR_OK
   implicit none
-  real(c_double), intent(in), target :: values(*)    
-  !! Input real array (C-style)
   integer(c_int), value :: num_values               
   !! Number of elements
-  integer(c_int), intent(out), target :: sorted_indices(*)  
+  real(c_double), intent(in), target :: values(num_values)    
+  !! Input real array (C-style)
+  integer(c_int), intent(out), target :: sorted_indices(num_values)  
   !! Output permutation index (C-style)
   integer(c_int), intent(inout), target :: left_stack(*)    
   !! Manual stack for left indices

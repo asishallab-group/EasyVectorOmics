@@ -12,6 +12,7 @@ def test_bst():
     
     # Build BST index using the wrapper function
     ix = build_bst_index(x)
+
     print(f"BST indices (Python 0-based): {ix}")
     print(f"Sorted values: {x[ix]}")
 

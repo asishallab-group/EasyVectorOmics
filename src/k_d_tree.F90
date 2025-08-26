@@ -11,7 +11,6 @@ contains
     !> \brief Build a k-d tree index using a stack-based, non-recursive approach.
     subroutine build_kd_index(points, num_dimensions, num_points, kd_indices, dimension_order, &
                             workspace, value_buffer, permutation, left_stack, right_stack, ierr)
-        implicit none
         integer(int32), intent(in) :: num_dimensions      
         !! Number of dimensions
         integer(int32), intent(in) :: num_points          
@@ -119,7 +118,6 @@ contains
                                         dim, mid_idx, workspace, value_buffer, permutation, &
                                         left_stack, right_stack, ierr)
         use f42_utils, only: sort_array
-        implicit none
         integer(int32), intent(in) :: num_dimensions      
         !! Number of dimensions
         integer(int32), intent(in) :: left_idx            
@@ -195,12 +193,13 @@ contains
     subroutine build_spherical_kd(vectors, num_dimensions, num_vectors, sphere_indices, &
                                 dimension_order, workspace, value_buffer, permutation, &
                                 left_stack, right_stack, ierr)
-        real(real64), intent(in) :: vectors(num_dimensions, num_vectors)  
-        !! Input unit vectors
+
         integer(int32), intent(in) :: num_dimensions      
         !! Number of dimensions
         integer(int32), intent(in) :: num_vectors         
         !! Number of vectors
+        real(real64), intent(in) :: vectors(num_dimensions, num_vectors)  
+        !! Input unit vectors
         integer(int32), intent(out) :: sphere_indices(num_vectors)  
         !! Output index array
         integer(int32), intent(inout) :: dimension_order(num_dimensions)  
@@ -294,7 +293,7 @@ end module kd_tree
 !> \brief R interface for building KD index
 subroutine build_kd_index_r(points, num_dimensions, num_points, kd_indices, dimension_order, &
                           workspace, value_buffer, permutation, left_stack, right_stack, ierr)
-    use kd_tree
+    use kd_tree, only: build_kd_index
     use iso_fortran_env, only: int32, real64
     implicit none
     integer(int32), intent(in) :: num_dimensions      
@@ -328,7 +327,7 @@ end subroutine build_kd_index_r
 subroutine build_spherical_kd_r(vectors, num_dimensions, num_vectors, sphere_indices, &
                               dimension_order, workspace, value_buffer, permutation, &
                               left_stack, right_stack, ierr)
-    use kd_tree
+    use kd_tree, only: build_spherical_kd
     use iso_fortran_env, only: int32, real64
     implicit none
     integer(int32), intent(in) :: num_dimensions      
@@ -369,11 +368,11 @@ subroutine build_kd_index_C(points_flat, num_dimensions, num_points, kd_indices,
     !! Number of dimensions
     integer(c_int), value :: num_points              
     !! Number of points
-    real(c_double), intent(in), target :: points_flat(*)  
+    real(c_double), intent(in), target :: points_flat(num_points)  
     !! Flattened points array
-    integer(c_int), intent(in), target :: dimension_order(*)  
+    integer(c_int), intent(in), target :: dimension_order(num_dimensions)  
     !! Dimension order
-    integer(c_int), intent(out), target :: kd_indices(*)      
+    integer(c_int), intent(out), target :: kd_indices(num_points)      
     !! Output indices
     integer(c_int), intent(inout), target :: workspace(*)     
     !! Workspace
