@@ -13,10 +13,10 @@ contains
   
   !> \brief Build the BST index by sorting indices using values in x.
   subroutine build_bst_index(values, num_values, sorted_indices, left_stack, right_stack, ierr)
-    real(real64), intent(in) :: values(num_values)      
-    !! Input real array to be indexed
     integer(int32), intent(in) :: num_values           
     !! Number of elements in values array
+    real(real64), intent(in) :: values(num_values)      
+    !! Input real array to be indexed
     integer(int32), intent(out) :: sorted_indices(num_values)  
     !! Output permutation index
     integer(int32), intent(inout) :: left_stack(num_values)    
@@ -83,12 +83,13 @@ contains
   !> \brief Perform a 1D range query over the sorted index.
   subroutine bst_range_query(values, sorted_indices, num_values, lower_bound, upper_bound, &
                             output_indices, num_matches, ierr)
+
+    integer(int32), intent(in) :: num_values           
+    !! Number of elements                        
     real(real64), intent(in) :: values(num_values)      
     !! Input real array
     integer(int32), intent(in) :: sorted_indices(num_values)  
-    !! Permutation index array (sorted)
-    integer(int32), intent(in) :: num_values           
-    !! Number of elements
+    !! Permutation index array (sorted) 
     real(real64), intent(in) :: lower_bound            
     !! Lower bound of range (inclusive)
     real(real64), intent(in) :: upper_bound            
