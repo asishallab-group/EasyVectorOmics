@@ -293,8 +293,8 @@ contains
 
   !> Helper: Generate random unit vectors.
   subroutine random_unit_vectors(V, d, n)
-    real(real64), intent(out) :: V(d,n)
     integer(int32), intent(in) :: d, n
+    real(real64), intent(out) :: V(d,n)
     integer(int32) :: i
     real(real64) :: norm
     call random_seed()
@@ -308,8 +308,8 @@ contains
 
   !> Helper: Generate random matrix.
   subroutine random_matrix(X, d, n)
-    real(real64), intent(out) :: X(d,n)
     integer(int32), intent(in) :: d, n
+    real(real64), intent(out) :: X(d,n)
     integer(int32) :: j
     call random_seed()
     do j = 1, n
