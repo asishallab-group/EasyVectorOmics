@@ -83,7 +83,7 @@ contains
                                       -1.0_real64, -2.0_real64, -3.0_real64, 11.0_real64, 13.0_real64, 15.0_real64, &
                                       5.0_real64, 4.0_real64, 3.0_real64, 8.0_real64, 10.0_real64, 12.0_real64], [6, 5])
 
-    !| Check array size stays correct
+    ! Check array size stays correct
     call assert_true(size(shift_vectors, 1) == 6 .and. size(shift_vectors, 2) == 5, "Shift_vectors shape is incorrect")
 
     call assert_equal_array_real(shift_vectors, expected_shift_vectors, 30, 1e-12_real64, "Shift_vectors values are incorrect")
@@ -95,13 +95,13 @@ contains
     integer(int32) :: gene_to_centroid(2), ierr, i
     expression_vectors = reshape([(real(i, real64), i=1, 6)], [3, 2])
     family_centroids = reshape([(real(i, real64), i=5, -3, -1)], [3, 3])
-    !| Invalid gene_to_centroid id (4) should raise an error, as there are only 3 family_centroids.
+    ! Invalid gene_to_centroid id (4) should raise an error, as there are only 3 family_centroids.
     gene_to_centroid = [3, 4]
 
-    !| Call the function with invalid mapping
+    ! Call the function with invalid mapping
     call compute_shift_vector_field(3, 2, 3, expression_vectors, family_centroids, gene_to_centroid, shift_vectors, ierr)
 
-    !| Check for expected ERR_INVALID_INPUT error
+    ! Check for expected ERR_INVALID_INPUT error
     call assert_equal_int(ierr, ERR_INVALID_INPUT, "Invalid centroid id mapping should return ERR_INVALID_INPUT")
   end subroutine test_invalid_family_mapping
 
@@ -110,15 +110,15 @@ contains
     real(real64) :: expression_vectors(3, 2), family_centroids(3, 2), shift_vectors(6, 2), expected_shift_vectors(6, 2)
     integer(int32) :: gene_to_centroid(2), ierr
 
-    !| Expression vectors and family_centroids have the same values and get mapped 1 to 1 and 2 to 2
+    ! Expression vectors and family_centroids have the same values and get mapped 1 to 1 and 2 to 2
     expression_vectors = reshape([1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64, 5.0_real64, 6.0_real64], [3, 2])
     family_centroids = reshape([1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64, 5.0_real64, 6.0_real64], [3, 2])
     gene_to_centroid = [1, 2]
 
-    !| Call the function with zero distance values
+    ! Call the function with zero distance values
     call compute_shift_vector_field(3, 2, 2, expression_vectors, family_centroids, gene_to_centroid, shift_vectors, ierr)
 
-    !| Check for expected 0 values in shift_vectors
+    ! Check for expected 0 values in shift_vectors
     expected_shift_vectors = reshape([1.0_real64, 2.0_real64, 3.0_real64, 0.0_real64, 0.0_real64, 0.0_real64, &
                                       4.0_real64, 5.0_real64, 6.0_real64, 0.0_real64, 0.0_real64, 0.0_real64], [6, 2])
     call assert_equal_array_real(shift_vectors, expected_shift_vectors, 6, 1e-12_real64, &
@@ -153,7 +153,7 @@ contains
     real(real64) :: expression_vectors(2, 4), family_centroids(2, 4), shift_vectors(4, 4), expected_shift_vectors(4, 4)
     integer(int32) :: gene_to_centroid(4), ierr, i
 
-    !| Each expression vector belongs to one single family
+    ! Each expression vector belongs to one single family
     expression_vectors = reshape([(real(i, real64), i=1, 8)], [2, 4])
     family_centroids = reshape([(real(i, real64), i=10, 80, 10)], [2, 4])
     gene_to_centroid = [1, 2, 3, 4]
@@ -163,7 +163,7 @@ contains
                                       50.0_real64, 60.0_real64, -45.0_real64, -54.0_real64, &
                                       70.0_real64, 80.0_real64, -63.0_real64, -72.0_real64], [4, 4])
 
-    !| Call the function with single genes per family centroid
+    ! Call the function with single genes per family centroid
     call compute_shift_vector_field(2, 4, 4, expression_vectors, family_centroids, gene_to_centroid, shift_vectors, ierr)
 
     call assert_equal_array_real(shift_vectors, expected_shift_vectors, 4, 1e-12_real64, &
@@ -180,7 +180,7 @@ contains
     call compute_shift_vector_field(1, 0, 1, expression_vectors, family_centroids, gene_to_centroid, shift_vectors, ierr)
 
     ! Check for expected error code 202 (ERR_EMPTY_INPUT)
-    call assert_equal_int(ierr, 202, "Expected error code 202 for empty input")
+    call assert_equal_int(ierr, ERR_EMPTY_INPUT, "Expected error code 202 for empty input")
 
     ! Check for expected 0 length of shift_vectors array
     call assert_equal_int(size(shift_vectors), 0, "Shift vectors array length should be 0")
