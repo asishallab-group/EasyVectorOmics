@@ -28,7 +28,7 @@ contains
     integer(int32), intent(out) :: ierr
 
     !| Local variables
-    integer(int32) :: current_gene, current_centroid
+    integer(int32) :: current_gene, current_centroid, i
 
     ! Initialize error code
     call set_ok(ierr)
@@ -51,7 +51,9 @@ contains
       ! Copy family centroid to first half of the `shift_vectors`
       shift_vectors(1:d, current_gene) = family_centroids(:, current_centroid)
       ! Substract family centroid from `expression_vector` and write it to second half of the `shift_vectors`
-      shift_vectors(d + 1:2*d, current_gene) = expression_vectors(:, current_gene) - family_centroids(:, current_centroid)
+      do i = 1, d
+        shift_vectors(d + i, current_gene) = expression_vectors(i, current_gene) - family_centroids(i, current_centroid)
+      end do
     end do
   end subroutine
 end module
