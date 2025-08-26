@@ -9,6 +9,12 @@ check_err_code <- function(ierr) {
     '105' = "Could not read array dimensions",
     '106' = "Could not read character length.",
     '107' = "Could not read array data.",
+    '112' = "Could not write magic number",
+    '113' = "Could not write type code",
+    '114' = "Could not write number of dimensions",
+    '115' = "Could not write dimensions",
+    '116' = "Could not write character length",
+    '117' = "Could not write array data",
     # ADD MORE HERE
     
     # FORMAT ERRORS
@@ -18,6 +24,7 @@ check_err_code <- function(ierr) {
     '203' = "Dimension mismatch detected.",
     '204' = "NaN or Inf found in input data.",
     '205' = "Unsupported data type encountered.",
+    '206' = "Array size mismatch detected",
 
     # MEMORY ERRORS
     '301' = "Memory allocation failed.",

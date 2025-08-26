@@ -3,6 +3,7 @@
 !! expected behavior in tests of any kind (numeric, string, array, etc).
 module asserts
   use, intrinsic :: iso_fortran_env, only: error_unit, real64
+  use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
   implicit none
   private
   public :: assert_true, assert_false, assert_equal_int, assert_not_equal_int
@@ -102,8 +103,9 @@ contains
     integer, intent(in) :: n
     character(*), intent(in) :: msg
     integer :: i
+    
     do i = 1, n
-      if (a(i) /= a(i)) then
+      if (ieee_is_nan(a(i))) then
         write(error_unit,*) "ASSERTION FAILED: NaN detected - ", trim(msg)
         stop 1
       end if
