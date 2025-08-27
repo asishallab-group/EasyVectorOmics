@@ -13,12 +13,14 @@ module gene_centroid_module
 contains
 
     !> Computes the element-wise mean for a given set of vectors.
-    subroutine mean_vector(vectors, d, gene_indices, num_selected_genes, centroid_col)
+    pure subroutine mean_vector(vectors, d, total_num_genes, gene_indices, num_selected_genes, centroid_col)
         implicit none
         !| Dimensionality of the vectors (e.g., number of tissues).
         integer(int32), intent(in) :: d
-        !| The input matrix of all gene vectors (d x num_genes).
-        real(real64), intent(in) :: vectors(d, *)
+        !| Total number of genes in the input matrix.
+        integer(int32), intent(in) :: total_num_genes
+        !| The input matrix of all gene vectors (d x total_num_genes).
+        real(real64), intent(in) :: vectors(d, total_num_genes)
         !| The number of genes in the current family to be averaged.
         integer(int32), intent(in) :: num_selected_genes
         !| An array containing the column indices of the selected genes in 'vectors'.
@@ -29,33 +31,28 @@ contains
         ! Local variables
         integer(int32) :: i, j, gene_idx
         real(real64) :: inv_n_genes
-        real(real64) :: sum_val ! Temporary scalar for reduction
+        real(real64) :: sum_val
 
         centroid_col = 0.0_real64
         if (num_selected_genes == 0) return
 
         do j = 1, d
             sum_val = 0.0_real64
-            !$OMP SIMD REDUCTION(+:sum_val)
             do i = 1, num_selected_genes
                 gene_idx = gene_indices(i)
                 sum_val = sum_val + vectors(j, gene_idx)
             end do
-            !$OMP END SIMD
             centroid_col(j) = sum_val
         end do
 
         inv_n_genes = 1.0_real64 / real(num_selected_genes, real64)
-        do j = 1, d
-            centroid_col(j) = centroid_col(j) * inv_n_genes
-        end do
+        centroid_col = centroid_col * inv_n_genes
     end subroutine mean_vector
 
     !> Iterates over families, filters gene indices, and computes centroids.
-    subroutine group_centroid(vectors, d, num_genes, gene_to_family_map, num_families, &
+    pure subroutine group_centroid(vectors, d, num_genes, gene_to_family_map, num_families, &
                               centroid_matrix, use_all_mode, ortholog_set, selected_indices)
         implicit none
-        ! CORRECTED DECLARATION ORDER: Declare scalar dimensions first.
         !| Dimensionality of the expression vectors.
         integer(int32), intent(in) :: d
         !| Total number of genes in the 'vectors' matrix.
@@ -79,10 +76,8 @@ contains
         integer(int32) :: i, j, num_selected
         integer(int32) :: local_selected_indices(num_genes)
 
-        ! FIX: Initialize intent(out) argument to satisfy compiler warnings.
         selected_indices = 0
 
-        !$OMP PARALLEL DO PRIVATE(j, i, num_selected, local_selected_indices)
         do j = 1, num_families
             num_selected = 0
             do i = 1, num_genes
@@ -91,13 +86,12 @@ contains
                     local_selected_indices(num_selected) = i
                 end if
             end do
-            call mean_vector(vectors, d, local_selected_indices, num_selected, centroid_matrix(:, j))
+            call mean_vector(vectors, d, num_genes, local_selected_indices, num_selected, centroid_matrix(:, j))
         end do
-        !$OMP END PARALLEL DO
     end subroutine group_centroid
 
     !> C interface for group_centroid.
-    subroutine group_centroid_c(vectors, d, n, gene_to_family_map, num_families, &
+    pure subroutine group_centroid_c(vectors, d, n, gene_to_family_map, num_families, &
                                 centroid_matrix, use_all_mode, ortholog_set, &
                                 selected_indices, selected_indices_len) &
                                 bind(c, name='group_centroid_c')
@@ -143,9 +137,9 @@ end module gene_centroid_module
 ! R Wrapper Subroutine (defined outside the module)
 ! =============================================================================
 !> R interface wrapper for group_centroid.
-subroutine group_centroid_r(vectors, d, n, gene_to_family_map, num_families, &
-                            centroid_matrix, use_all_mode, ortholog_set, &
-                            selected_indices, selected_indices_len)
+pure subroutine group_centroid_r(vectors, d, n, gene_to_family_map, num_families, &
+                              centroid_matrix, use_all_mode, ortholog_set, &
+                              selected_indices, selected_indices_len)
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use gene_centroid_module, only: group_centroid
     implicit none
