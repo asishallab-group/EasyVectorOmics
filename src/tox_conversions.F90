@@ -1,6 +1,7 @@
 module tox_conversions
     use iso_fortran_env, only: int32, real64
     use iso_c_binding, only: c_int, c_double, c_null_char, c_double_complex, c_char
+    use tox_errors, only: ERR_ALLOC_FAIL, is_ok, set_ok, set_err_once
     implicit none
 
 contains
@@ -110,13 +111,17 @@ contains
     end subroutine char_as_c_char
 
     !> Converts a 1D c_char array to string
-    pure subroutine c_char_1d_as_string(c_char_array, str_out)
+    pure subroutine c_char_1d_as_string(c_char_array, str_out, ierr)
         character(kind=c_char, len=1), dimension(:), intent(in) :: c_char_array
          !! c int array, representing characters
         character(len=:), allocatable, intent(out) :: str_out
          !! Fortran string, length determined by occuring null char in `c_char_array`
+        integer(int32), intent(out) :: ierr
+         !! Error code
 
         integer(int32) :: i, str_len, array_len
+
+        call set_ok(ierr)
 
         array_len = size(c_char_array, 1)
 
@@ -130,7 +135,12 @@ contains
         end do
 
         ! create string
-        allocate (character(len=str_len) :: str_out)
+        allocate(character(len=str_len) :: str_out, stat=ierr)
+        if (.not. is_ok(ierr)) then
+           call set_err_once(ierr, ERR_ALLOC_FAIL)
+           return
+        end if
+
         do i = 1, str_len
             call c_char_as_char(c_char_array(i), str_out(i:i))
         end do
@@ -158,22 +168,32 @@ contains
     end subroutine string_as_c_char_1d
 
     !> Converts a 2D c_char array to 1D string array
-    pure subroutine c_char_2d_as_string(c_char_array, str_out)
+    pure subroutine c_char_2d_as_string(c_char_array, str_out, ierr)
         character(kind=c_char, len=1), dimension(:, :), intent(in) :: c_char_array
          !! c int array, columns as ascii arrays
         character(len=:), dimension(:), allocatable, intent(out) :: str_out
          !! Fortran array of resulting strings
+        integer(int32), intent(out) :: ierr
+         !! Error code
 
         integer(int32) :: i_str, n_rows, n_strings
         character(len=:), allocatable :: string
 
+        call set_ok(ierr)
+
         n_rows = size(c_char_array, 1)
         n_strings = size(c_char_array, 2)
 
-        allocate(character(len=n_rows) :: str_out(n_strings))
+        allocate(character(len=n_rows) :: str_out(n_strings), stat=ierr)
+        if (.not. is_ok(ierr)) then
+           call set_err_once(ierr, ERR_ALLOC_FAIL)
+           return
+        end if
+
         ! create strings
         do i_str = 1, n_strings
-            call c_char_1d_as_string(c_char_array(:, i_str), string)
+            call c_char_1d_as_string(c_char_array(:, i_str), string, ierr)
+            if (.not. is_ok(ierr)) return
             str_out(i_str) = string
         end do
     end subroutine c_char_2d_as_string

@@ -4,6 +4,7 @@ module mod_test_tox_conversions
     use, intrinsic :: iso_fortran_env, only: real64, int32
     use iso_c_binding
     use tox_conversions
+    use tox_errors
     implicit none
 
     ! Abstract interface for all test procedures
@@ -141,27 +142,35 @@ contains
     subroutine test_tox_conversions_c_char_1d_as_string
         character(c_char) :: c_char_array(5)
         character(len=:), allocatable :: f_char
+        integer(int32) :: ierr
 
+        ierr = ERR_OK
         c_char_array = ["H", "e", "l", "l", "o"]
-        call c_char_1d_as_string(c_char_array, f_char)
+        call c_char_1d_as_string(c_char_array, f_char, ierr)
         call assert_true(f_char == "Hello", "test_tox_conversions_c_char_1d_as_string: value mismatch")
+        call assert_equal_int(ierr, ERR_OK, "test_tox_conversions_c_char_1d_as_string: Unexpected Error Code")
 
         ! test empty string
         c_char_array = [c_null_char, "e", "l", "l", "o"]
-        call c_char_1d_as_string(c_char_array, f_char)
+        call c_char_1d_as_string(c_char_array, f_char, ierr)
         call assert_true(f_char == "", "test_tox_conversions_c_char_1d_as_string: value mismatch")
+        call assert_equal_int(ierr, ERR_OK, "test_tox_conversions_c_char_1d_as_string: Unexpected Error Code")
     end subroutine test_tox_conversions_c_char_1d_as_string
 
     subroutine test_tox_conversions_c_char_2d_as_string
         character(c_char) :: c_char_array(5, 2)
         character(len=:), allocatable :: f_char(:)
+        integer(int32) :: ierr
+
+        ierr = ERR_OK
 
         c_char_array(:, 1) = ["H", "e", "l", "l", "o"]
         c_char_array(:, 2) = [c_null_char, "e", "l", "l", "o"]
 
-        call c_char_2d_as_string(c_char_array, f_char)
+        call c_char_2d_as_string(c_char_array, f_char, ierr)
         call assert_equal_int(size(f_char, 1), 2, "test_tox_conversions_c_char_2d_as_string: Did not get two strings")
         call assert_true(f_char(1) == "Hello" .and. f_char(2) == "", "test_tox_conversions_c_char_2d_as_string: value mismatch")
+        call assert_equal_int(ierr, ERR_OK, "test_tox_conversions_c_char_1d_as_string: Unexpected Error Code")
     end subroutine test_tox_conversions_c_char_2d_as_string
 
     subroutine test_tox_conversions_real64_as_c_double
