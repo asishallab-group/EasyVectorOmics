@@ -8,7 +8,7 @@ import platform
 # ---------------------------------------------------------------------
 
 def _load_fortran_library():
-    """Dynamically loads the shared Fortran library."""
+    """Loads the shared Fortran library."""
     lib_name = "libtensor-omics.so"
     project_root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     lib_path = os.path.join(project_root, "build", lib_name)
@@ -24,7 +24,33 @@ def _load_fortran_library():
         
     return ctypes.CDLL(lib_path)
 
+# ---------------------------------------------------------------------
+# Wrapper function setup
+# ---------------------------------------------------------------------
+
+def _setup_function_signatures(lib):
+    """
+    Sets up the argument and return types for the Fortran C-interface functions.
+    """
+    func = lib.group_centroid_c
+    func.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # vectors
+        ctypes.c_int,                                                  # d
+        ctypes.c_int,                                                  # n
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),  # gene_to_family_map
+        ctypes.c_int,                                                  # num_families
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # centroid_matrix (out)
+        ctypes.c_int,                                                  # use_all_mode (as int)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # ortholog_set (as int array)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),  # selected_indices
+        ctypes.c_int                                                   # selected_indices_len
+    ]
+    func.restype = None
+    return func
+
+# --- Module-level setup execution ---
 lib = _load_fortran_library()
+_group_centroid_c = _setup_function_signatures(lib)
 
 # ---------------------------------------------------------------------
 # Utilities
@@ -35,25 +61,6 @@ def _readonly(*arrays: np.ndarray) -> None:
     for a in arrays:
         if isinstance(a, np.ndarray):
             a.flags.writeable = False
-
-# ---------------------------------------------------------------------
-# Wrapper function setup
-# ---------------------------------------------------------------------
-
-_group_centroid_c = lib.group_centroid_c
-_group_centroid_c.argtypes = [
-    np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # vectors
-    ctypes.c_int,                                                  # d
-    ctypes.c_int,                                                  # n
-    np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),  # gene_to_family_map
-    ctypes.c_int,                                                  # num_families
-    np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # centroid_matrix (out)
-    ctypes.c_int,                                                  # use_all_mode (as int)
-    np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # ortholog_set (as int array)
-    np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),  # selected_indices
-    ctypes.c_int                                                   # selected_indices_len
-]
-_group_centroid_c.restype = None
 
 # ---------------------------------------------------------------------
 # User-facing API function

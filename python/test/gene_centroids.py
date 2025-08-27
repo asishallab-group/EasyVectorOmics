@@ -2,7 +2,6 @@ import numpy as np
 import os
 import sys
 
-# Add the parent directory to the path to find the tensoromics_functions module
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..')))
 
 from tensoromics_functions import tox_group_centroid
@@ -11,23 +10,23 @@ def test_centroid_logic():
     """Test the user-facing tox_group_centroid function."""
     print("=== Testing tox_group_centroid via user-facing API ===")
     
-    # Arrange: Test data
+    # Test data 
     d, n_genes, n_families = 2, 5, 2
     vectors = np.array([
-        [1.0, 3.0, 10.0, 20.0, 5.0],  # Dimension 1
-        [1.0, 3.0, 10.0, 20.0, 5.0]   # Dimension 2
+        [1.0, 9.0, 10.0, 20.0, 5.0],  # Dimension 1
+        [1.0, 9.0, 10.0, 20.0, 5.0]   # Dimension 2
     ], dtype=np.float64, order='F')
     
     gene_to_family = np.array([1, 1, 2, 2, 1], dtype=np.int32)
-    # CORRECTED: The ortholog set must be True for genes 1 and 5 (indices 0 and 4)
-    # to produce the expected centroid for family 1.
+    # Gene at index 1 is the only non-ortholog in Family 1
     ortholog_set = np.array([True, False, True, True, True], dtype=np.bool_)
     
     # --- Test "all" mode ---
     print("\n[tox_group_centroid] Case 1: 'all' mode")
     centroids_all = tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='all')
     
-    expected_all = np.array([[3.0, 15.0], [3.0, 15.0]], order='F')
+    # Expected: (1+9+5)/3=5 for Fam1, (10+20)/2=15 for Fam2
+    expected_all = np.array([[5.0, 15.0], [5.0, 15.0]], order='F')
     
     np.testing.assert_allclose(centroids_all, expected_all)
     assert not centroids_all.flags.writeable
@@ -37,6 +36,7 @@ def test_centroid_logic():
     print("\n[tox_group_centroid] Case 2: 'ortho' mode")
     centroids_ortho = tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='ortho')
     
+    # Expected: (1+5)/2=3 for Fam1, (10+20)/2=15 for Fam2
     expected_ortho = np.array([[3.0, 15.0], [3.0, 15.0]], order='F')
 
     np.testing.assert_allclose(centroids_ortho, expected_ortho)
