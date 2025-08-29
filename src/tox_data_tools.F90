@@ -8,6 +8,7 @@ module tox_data_tools
     implicit none
     private
 
+    public :: read_gene_ids_from_file
     public :: read_tabular_files
     public :: read_family_file
     public :: get_gene_index
@@ -23,34 +24,32 @@ module tox_data_tools
 contains
 
 ! Read tabular files (CSV/TSV)
+! Read tabular files (CSV/TSV)
 subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
-                             n_header_rows, gene_col, value_cols, ierr)
+                             n_header_rows, gene_col, value_cols, start_row, ierr)
+
     character(len=*), intent(in) :: file_list(:)
     character(len=*), intent(inout) :: gene_ids(:)
-    real(real64), intent(out) :: expression_vectors(:,:)
+    real(real64), intent(inout) :: expression_vectors(:,:)
     integer(int32), intent(in) :: n_header_rows, gene_col
-    integer(int32), intent(in) :: value_cols(:)  ! Array of column indices
+    integer(int32), intent(in) :: value_cols(:) ! Array of column indices [cite: 19, 20]
+    integer(int32), intent(in) :: start_row ! New parameter to specify the start row
     integer(int32), intent(out) :: ierr
 
     integer :: i, j, k, unit, ios, idx, row_count, n_genes, expected_idx, n_value_cols
-    integer :: sample_offset, current_sample
-    character(len=1024) :: line
+    integer :: current_sample
+    character(len=2048) :: line
     character(len=:), allocatable :: fields(:)
     real(real64) :: value
     character(len=len(gene_ids)) :: gene
-    logical :: fill_gene_ids, order_mismatch
+    logical :: order_mismatch
 
     ierr = 0
-    expression_vectors = 0.0_real64
     n_genes = size(gene_ids)
     n_value_cols = size(value_cols)
     
-    ! Check if we need to fill gene_ids (only for first file)
-    fill_gene_ids = all(gene_ids == "")
+    current_sample = start_row - 1
     
-    ! Initialize sample offset
-    sample_offset = 0
-
     do i = 1, size(file_list)
         open(newunit=unit, file=trim(file_list(i)), status='old', action='read', iostat=ios)
         if (ios /= 0) then
@@ -58,7 +57,7 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
             return
         end if
 
-        ! Skip header rows
+        ! Skip header rows [cite: 23, 42]
         do j = 1, n_header_rows
             read(unit, '(A)', iostat=ios) line
             if (ios /= 0) exit
@@ -66,149 +65,241 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
 
         row_count = 0
         order_mismatch = .false.
-        
         do
             read(unit, '(A)', iostat=ios) line
             if (ios /= 0) exit
             row_count = row_count + 1
             
             if (row_count > n_genes) then
-                ierr = 2  ! More genes than allocated space
+                ierr = 2 ! More genes than allocated space [cite: 24, 25]
                 exit
             end if
 
-            call split_string(line, fields)
+            call split_string(line, fields, char(9))
             if (size(fields) < max(gene_col, maxval(value_cols))) cycle
 
             gene = trim(adjustl(fields(gene_col)))
 
-            if (fill_gene_ids .and. i == 1) then
-                ! Fill gene_ids from first file
-                gene_ids(row_count) = gene
-                
-                ! Read all value columns for this gene
-                do k = 1, n_value_cols
-                    read(fields(value_cols(k)), *, iostat=ios) value
-                    if (ios == 0) then
-                        expression_vectors(sample_offset + k, row_count) = value
-                    end if
-                end do
+            ! Fast path: check if gene matches expected position [cite: 30, 31]
+            expected_idx = row_count
+            if (expected_idx <= n_genes .and. trim(adjustl(gene_ids(expected_idx))) == trim(adjustl(gene))) then
+                idx = expected_idx
             else
-                ! Hybrid approach: first check if gene matches expected position
-                expected_idx = row_count
-                
-                if (expected_idx <= n_genes .and. trim(adjustl(gene_ids(expected_idx))) == trim(adjustl(gene))) then
-                    ! Fast path: gene is in expected position
-                    idx = expected_idx
-                else
-                    ! Slow path: search through all genes
-                    idx = get_gene_index(gene_ids, gene)
-                    if (idx == 0) then
-                        ! Gene not found - this shouldn't happen if files have same genes
-                        write(*,*) 'Warning: Gene ', trim(gene), ' not found in master gene list'
-                        order_mismatch = .true.
-                        cycle
-                    end if
+                ! Slow path: search through all genes [cite: 32]
+                idx = get_gene_index(gene_ids, gene)
+                if (idx == 0) then
+                    write(*,*) 'Warning: Gene ', trim(gene), ' not found in master gene list'
+                    order_mismatch = .true.
+                    cycle
                 end if
-                
-                ! Read all value columns for this gene
-                do k = 1, n_value_cols
-                    read(fields(value_cols(k)), *, iostat=ios) value
-                    if (ios == 0) then
-                        expression_vectors(sample_offset + k, idx) = value
-                    end if
-                end do
             end if
+            
+            ! Read all value columns for this gene [cite: 35]
+            do k = 1, n_value_cols
+                read(fields(value_cols(k)), *, iostat=ios) value
+                if (ios == 0) then
+                    expression_vectors(current_sample + k, idx) = value
+                end if
+            end do
         end do
         close(unit)
         
-        ! Update sample offset for next file
-        sample_offset = sample_offset + n_value_cols
+        ! Update sample offset for next file [cite: 37]
+        current_sample = current_sample + n_value_cols
         
-        ! Report if order mismatch was detected
+        ! Report if order mismatch was detected [cite: 38]
         if (order_mismatch) then
             write(*,*) 'Note: Gene order mismatch detected in file: ', trim(file_list(i))
         end if
-        
-        ! After first file, we no longer need to fill gene_ids
-        if (i == 1) fill_gene_ids = .false.
     end do
 end subroutine read_tabular_files
 
-! Read family file (OrthoFinder format)
-subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
+subroutine read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, ierr)
     character(len=*), intent(in) :: filename
-    character(len=*), intent(in) :: gene_ids(:)
-    character(len=*), intent(inout) :: family_ids(:)
-    integer(int32), intent(out) :: gene_to_fam(:)
+    character(len=*), intent(out) :: gene_ids(:)
+    integer(int32), intent(in) :: n_header_rows, gene_col
     integer(int32), intent(out) :: ierr
 
-    integer :: unit, ios, i, j, fam_idx, gene_idx, n_families
-    character(len=1024) :: line
-    character(len=:), allocatable :: fields(:), genes(:)
-    character(len=len(family_ids)) :: current_family
-    logical :: fill_family_ids
+    integer :: unit, ios, j, row_count
+    character(len=2048) :: line
+    character(len=:), allocatable :: fields(:)
 
     ierr = 0
-    gene_to_fam = 0
-    n_families = size(family_ids)
-    
-    ! Check if we need to fill family_ids
-    fill_family_ids = all(family_ids == "")
+    row_count = 0
 
-    open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
+    open(newunit=unit, file=trim(filename), status='old', action='read', iostat=ios)
     if (ios /= 0) then
         ierr = 1
         return
     end if
 
+    ! Skip header rows
+    do j = 1, n_header_rows
+        read(unit, '(A)', iostat=ios) line
+        if (ios /= 0) exit
+    end do
+
+    ! Read data rows
+    do
+        read(unit, '(A)', iostat=ios) line
+        if (ios /= 0) exit
+        
+        row_count = row_count + 1
+        if (row_count > size(gene_ids)) then
+            ierr = 2  ! More genes than allocated space
+            exit
+        end if
+
+        call split_string(line, fields, char(9))
+        if (size(fields) < gene_col) cycle
+
+        gene_ids(row_count) = trim(adjustl(fields(gene_col)))
+    end do
+
+    close(unit)
+end subroutine read_gene_ids_from_file
+
+subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
+    use hashmap_module
+    character(len=*), intent(in) :: filename
+    character(len=*), intent(in) :: gene_ids(:)  ! Bereits vorhandene Gene-IDs
+    character(len=*), intent(out) :: family_ids(:)
+    integer(int32), intent(out) :: gene_to_fam(:)
+    integer(int32), intent(out) :: ierr
+
+    integer(int32) :: unit, ios, i, j, fam_idx, gene_idx, n_families, n_genes
+    character(len=1024) :: line
+    character(len=:), allocatable :: fields(:), genes(:)
+    character(len=len(family_ids)) :: current_family
+    type(hashmap_type) :: gene_map
+    logical :: fill_family_ids
+
+    ierr = 0
+    gene_to_fam = 0
+    n_families = size(family_ids)
+    n_genes = size(gene_ids)
+    
+    fill_family_ids = all(family_ids == "")
+
+    ! Hashmap für schnelle Gen-Suche erstellen
+    call hashmap_create(gene_map, n_genes)
+    
+    ! Hashmap mit allen Gen-IDs füllen
+    write(*,*) 'Building gene hashmap with ', n_genes, ' genes...'
+    do i = 1, n_genes
+        call hashmap_put(gene_map, gene_ids(i), i)
+        if (mod(i, 10000) == 0) then
+            write(*,*) '  Processed ', i, ' genes...'
+        end if
+    end do
+    write(*,*) 'Hashmap complete.'
+
+    open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
+    if (ios /= 0) then
+        ierr = 1
+        call hashmap_destroy(gene_map)
+        return
+    end if
+
+    ! Header-Zeile überspringen
+    read(unit, '(A)', iostat=ios) line
+    if (ios /= 0) then
+        ierr = 4
+        close(unit)
+        call hashmap_destroy(gene_map)
+        return
+    end if
+
+    write(*,*) 'Reading family file with hashmap...'
+    
     fam_idx = 0
     do
         read(unit, '(A)', iostat=ios) line
         if (ios /= 0) exit
 
+        fam_idx = fam_idx + 1
+        if (mod(fam_idx, 1000) == 0) then
+            write(*,*) 'Processed ', fam_idx, ' families...'
+        end if
+
         call split_string(line, fields, char(9))
         if (size(fields) < 2) cycle
 
-        fam_idx = fam_idx + 1
         if (fill_family_ids .and. fam_idx > n_families) then
-            ierr = 2  ! More families than allocated space
+            ierr = 2
             exit
         end if
 
         current_family = trim(adjustl(fields(1)))
         if (fill_family_ids) then
             family_ids(fam_idx) = current_family
-        else
-            ! Check if family exists in pre-filled family_ids
-            if (get_family_index(family_ids, current_family) == 0) then
-                ierr = 3  ! Family not found in pre-filled list
-                exit
-            end if
         end if
 
-        ! Process all gene columns
+        ! Process all gene columns mit Hashmap-Lookup
         do i = 2, size(fields)
             call split_string(fields(i), genes, ',')
             do j = 1, size(genes)
-                if (trim(genes(j)) == "") cycle
+                if (len_trim(genes(j)) == 0) cycle
                 
-                ! Find gene index in the gene_ids array
-                gene_idx = get_gene_index(gene_ids, trim(adjustl(genes(j))))
+                ! Hashmap-Lookup
+                gene_idx = hashmap_get(gene_map, trim(adjustl(genes(j))))
                 if (gene_idx > 0) then
-                    if (fill_family_ids) then
-                        gene_to_fam(gene_idx) = fam_idx
-                    else
-                        gene_to_fam(gene_idx) = get_family_index(family_ids, current_family)
-                    end if
+                    gene_to_fam(gene_idx) = fam_idx
+                else
+                    write(*,*) 'Gene not found in hashmap: ', trim(adjustl(genes(j)))
                 end if
             end do
         end do
     end do
     close(unit)
+    
+    call hashmap_destroy(gene_map)
+    write(*,*) 'Finished processing ', fam_idx, ' families'
 end subroutine read_family_file
 
-! Helper function to find gene index
+subroutine count_family_file_stats(filename, n_families, n_genes, ierr)
+    character(len=*), intent(in) :: filename
+    integer(int32), intent(out) :: n_families, n_genes, ierr
+    
+    integer(int32) :: unit, ios, i
+    character(len=1024) :: line
+    character(len=:), allocatable :: fields(:), genes(:)
+    
+    ierr = 0
+    n_families = 0
+    n_genes = 0
+    
+    open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
+    if (ios /= 0) then
+        ierr = 1
+        return
+    end if
+
+    ! Header-Zeile überspringen
+    read(unit, '(A)', iostat=ios) line
+    if (ios /= 0) then
+        ierr = 4
+        close(unit)
+        return
+    end if
+
+    do
+        read(unit, '(A)', iostat=ios) line
+        if (ios /= 0) exit
+
+        n_families = n_families + 1
+        call split_string(line, fields, char(9))
+        
+        if (size(fields) >= 2) then
+            do i = 2, size(fields)
+                call split_string(fields(i), genes, ',')
+                n_genes = n_genes + size(genes)
+            end do
+        end if
+    end do
+    close(unit)
+end subroutine count_family_file_stats
+
 ! Helper function to find gene index with early exit optimization
 integer function get_gene_index(gene_ids, gene) result(idx)
     character(len=*), intent(in) :: gene_ids(:)
