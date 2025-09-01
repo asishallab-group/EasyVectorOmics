@@ -1268,17 +1268,35 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
   ))
 }
 
-tox_group_centroid <- function(vectors, gene_to_family_map, num_families, ortholog_set, mode = 'all') {
+# ===================================================================
+# GENE CENTROIDS FUNCTIONS
+# ===================================================================
+#' Calculate Gene Centroids
+
+#' Computes the centroids for each gene family based on the expression vectors of its member genes.
+#' This function automatically checks for errors and throws informative exceptions.
+#'
+#' @param expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors)
+#' @param gene_to_family: Array mapping each gene to its corresponding family ID (length n_vectors)
+#' @param n_families: Total number of gene families
+#' @param ortholog_set: Logical array indicating if a gene is part of a specific subset (e.g., orthologs)
+#' @param mode: Character string indicating the mode of operation ('all' or 'ortho')
+#'
+#' @return List containing:
+#'   \item{centroid_matrix}{The computed centroids for each gene family}
+#'
+
+tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, ortholog_set, mode = 'all') {
   
   # 1) Validate inputs
-  if (!is.matrix(vectors) || !is.numeric(vectors)) {
-    stop("`vectors` must be a numeric matrix.")
+  if (!is.matrix(expression_vectors) || !is.numeric(expression_vectors)) {
+    stop("`expression_vectors` must be a numeric matrix.")
   }
-  d <- nrow(vectors)
-  n_genes <- ncol(vectors)
-  
-  if (!is.integer(gene_to_family_map) || length(gene_to_family_map) != n_genes) {
-    stop("`gene_to_family_map` must be an integer vector of length n_genes.")
+  d <- nrow(expression_vectors)
+  n_genes <- ncol(expression_vectors)
+
+  if (!is.integer(gene_to_family) || length(gene_to_family) != n_genes) {
+    stop("`gene_to_family` must be an integer vector of length n_genes.")
   }
   if (!is.logical(ortholog_set) || length(ortholog_set) != n_genes) {
     stop("`ortholog_set` must be a logical vector of length n_genes.")
@@ -1289,21 +1307,23 @@ tox_group_centroid <- function(vectors, gene_to_family_map, num_families, orthol
 
   # 2) Prepare inputs/outputs for Fortran
   use_all_mode <- (mode == 'all')
-  centroid_matrix_out <- matrix(0.0, nrow = d, ncol = num_families)
+  centroid_matrix_out <- matrix(0.0, nrow = d, ncol = n_families)
   selected_indices_ws <- integer(n_genes) # Workspace buffer
+  ierr <- as.integer(0)
 
   # 3) Call Fortran
   result <- .Fortran("group_centroid_r",
-                     vectors = as.double(vectors),
+                     expression_vectors = as.double(expression_vectors),
                      d = as.integer(d),
                      n = as.integer(n_genes),
-                     gene_to_family_map = as.integer(gene_to_family_map),
-                     num_families = as.integer(num_families),
+                     gene_to_family = as.integer(gene_to_family),
+                     num_families = as.integer(n_families),
                      centroid_matrix = centroid_matrix_out,
                      use_all_mode = as.logical(use_all_mode),
                      ortholog_set = as.logical(ortholog_set),
                      selected_indices = selected_indices_ws,
-                     selected_indices_len = as.integer(n_genes))
+                     selected_indices_len = as.integer(n_genes),
+                     ierr)
   
   # 4) Return the populated output matrix
   return(result$centroid_matrix)

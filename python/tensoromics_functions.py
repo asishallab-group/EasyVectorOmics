@@ -1059,39 +1059,41 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
     }-----------------------------------------------------------
 
 
-def tox_group_centroid(vectors, gene_to_family_map, num_families, ortholog_set, mode='all'):
+def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_set, mode='all'):
     """
     Computes expression centroids for groups of genes.
 
-    Parameters
-    ----------
-    vectors : np.ndarray
-        A 2D NumPy array (d x n_genes) of gene expression vectors.
-    gene_to_family_map : np.ndarray
-        A 1D NumPy array of length n_genes, mapping each gene to a family ID.
-    num_families : int
-        The total number of unique families.
-    ortholog_set : np.ndarray
-        A 1D boolean NumPy array of length n_genes, indicating ortholog membership.
-    mode : str, optional
-        The calculation mode. 'all' (default) or 'ortho'.
+    Computes the centroids for each gene family based on the expression vectors of its member genes.
+    This function automatically checks for errors and throws informative exceptions.
 
-    Returns
-    -------
-    np.ndarray
-        A read-only (d x num_families) NumPy array containing the computed centroids.
+    Args:
+        vectors : np.ndarray
+            A 2D NumPy array (d x n_genes) of gene expression vectors.
+        gene_to_family_map : np.ndarray
+            A 1D NumPy array of length n_genes, mapping each gene to a family ID.
+        n_families : int
+            The total number of unique families.
+        ortholog_set : np.ndarray
+            A 1D boolean NumPy array of length n_genes, indicating ortholog membership.
+        mode : str, optional
+            The calculation mode. 'all' (default) or 'ortho'.
+
+    Returns:
+        np.ndarray
+            A read-only (d x n_families) NumPy array containing the computed centroids.
     """
+    
     # 1) Validate and prepare inputs
-    if not isinstance(vectors, np.ndarray) or vectors.ndim != 2:
+    if not isinstance(expression_vectors, np.ndarray) or expression_vectors.ndim != 2:
         raise ValueError("`vectors` must be a 2D NumPy array.")
-    d, n_genes = vectors.shape
+    d, n_genes = expression_vectors.shape
 
-    vecs_f = np.asarray(vectors, dtype=np.float64, order="F")
-    g2f_map_f = np.asarray(gene_to_family_map, dtype=np.int32, order="F")
+    vecs_f = np.asarray(expression_vectors, dtype=np.float64, order="F")
+    g2f_map_f = np.asarray(gene_to_family, dtype=np.int32, order="F")
     ortho_set_int_f = np.asarray(ortholog_set, dtype=np.int32, order="F")
     
     if g2f_map_f.size != n_genes:
-        raise ValueError("`gene_to_family_map` must be a 1D NumPy array of size n_genes.")
+        raise ValueError("`gene_to_family` must be a 1D NumPy array of size n_genes.")
     if ortho_set_int_f.size != n_genes:
         raise ValueError("`ortholog_set` must be a 1D NumPy array of size n_genes.")
     if mode not in ['all', 'ortho']:
@@ -1099,22 +1101,24 @@ def tox_group_centroid(vectors, gene_to_family_map, num_families, ortholog_set, 
 
     # 2) Prepare output buffers and mode flag
     use_all_mode_int = 1 if mode == 'all' else 0
-    centroids_out = np.zeros((d, num_families), dtype=np.float64, order="F")
+    centroids_out = np.zeros((d, n_families), dtype=np.float64, order="F")
     selected_indices = np.zeros(n_genes, dtype=np.int32, order="F")
+    ierr = ctypes.c_int(0)
 
     # 3) Setup C-interface signature
     group_centroid_c = lib.group_centroid_c
     group_centroid_c.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # vectors
-        ctypes.c_int,                                                  # d
-        ctypes.c_int,                                                  # n
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),  # gene_to_family_map
-        ctypes.c_int,                                                  # num_families
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # expression_vectors
+        ctypes.c_int,                                                   # d
+        ctypes.c_int,                                                   # n
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # gene_to_family
+        ctypes.c_int,                                                   # n_families
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # centroid_matrix (out)
-        ctypes.c_int,                                                  # use_all_mode (as int)
+        ctypes.c_int,                                                   # use_all_mode (as int)
         np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # ortholog_set (as int array)
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),  # selected_indices
-        ctypes.c_int                                                   # selected_indices_len
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # selected_indices
+        ctypes.c_int,                                                   # selected_indices_len
+        ctypes.POINTER(ctypes.c_int)                                    # ierr
     ]
     group_centroid_c.restype = None
 
@@ -1124,12 +1128,13 @@ def tox_group_centroid(vectors, gene_to_family_map, num_families, ortholog_set, 
         d,
         n_genes,
         g2f_map_f,
-        num_families,
+        n_families,
         centroids_out,
         use_all_mode_int,
         ortho_set_int_f,
         selected_indices,
-        n_genes
+        n_genes,
+        ierr
     )
 
     # 5) Mark output as read-only and return

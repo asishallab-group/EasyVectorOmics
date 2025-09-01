@@ -64,7 +64,7 @@ contains
   end subroutine mean_vector
 
   !> Iterates over families, filters gene indices, and computes centroids.
-  pure subroutine group_centroid(expression_vectors, d, n_genes, gene_to_family_map, num_families, &
+  pure subroutine group_centroid(expression_vectors, d, n_genes, gene_to_family, n_families, &
                                  centroid_matrix, use_all_mode, ortholog_set, selected_indices, ierr)
     implicit none
     !| Dimensionality of the expression vectors.
@@ -72,13 +72,13 @@ contains
     !| Total number of genes in the 'expression_vectors' matrix.
     integer(int32), intent(in) :: n_genes
     !| Total number of gene families to compute centroids for.
-    integer(int32), intent(in) :: num_families
+    integer(int32), intent(in) :: n_families
     !| The input matrix of all gene expression vectors (d x n_genes).
     real(real64), intent(in) :: expression_vectors(d, n_genes)
     !| An array mapping each gene (by index) to a family ID.
-    integer(int32), intent(in) :: gene_to_family_map(n_genes)
-    !| The output matrix (d x num_families) to store the computed centroids.
-    real(real64), intent(out) :: centroid_matrix(d, num_families)
+    integer(int32), intent(in) :: gene_to_family(n_genes)
+    !| The output matrix (d x n_families) to store the computed centroids.
+    real(real64), intent(out) :: centroid_matrix(d, n_families)
     !| A logical flag; if true, all genes in a family are used.
     logical, intent(in) :: use_all_mode
     !| A logical array indicating if a gene is part of a specific subset (e.g., orthologs).
@@ -96,21 +96,21 @@ contains
     call set_ok(ierr)
 
     ! Check for n_genes < 0
-    if (d <= 0 .or. n_genes <= 0 .or. num_families <= 0) then
+    if (d <= 0 .or. n_genes <= 0 .or. n_families <= 0) then
       call set_err_once(ierr, ERR_EMPTY_INPUT)
       return
     end if
 
     selected_indices = 0
 
-    do j = 1, num_families
+    do j = 1, n_families
       n_selected = 0
       do i = 1, n_genes
-        if (gene_to_family_map(i) < 1 .or. gene_to_family_map(i) > num_families) then
+        if (gene_to_family(i) < 1 .or. gene_to_family(i) > n_families) then
           call set_err_once(ierr, ERR_INVALID_INPUT)
           return
         end if
-        if (gene_to_family_map(i) == j .and. (use_all_mode .or. ortholog_set(i))) then
+        if (gene_to_family(i) == j .and. (use_all_mode .or. ortholog_set(i))) then
           n_selected = n_selected + 1
           local_selected_indices(n_selected) = i
         end if
@@ -126,10 +126,10 @@ end module tox_gene_centroids
 ! C Wrapper Subroutine
 ! =============================================================================
 !> C interface wrapper for group_centroid.
-pure subroutine group_centroid_c(expression_vectors, d, n_genes, gene_to_family_map, num_families, &
+pure subroutine group_centroid_c(expression_vectors, d, n_genes, gene_to_family, n_families, &
                                  centroid_matrix, use_all_mode, ortholog_set, &
                                  selected_indices, selected_indices_len, ierr) &
-  bind(c, name='group_centroid_c')
+                                 bind(c, name='group_centroid_c')
   use, intrinsic :: iso_c_binding, only: c_int, c_double
   use tox_gene_centroids, only: group_centroid
   implicit none
@@ -138,19 +138,19 @@ pure subroutine group_centroid_c(expression_vectors, d, n_genes, gene_to_family_
   !| Total number of genes.
   integer(c_int), value, intent(in) :: n_genes
   !| Total number of families.
-  integer(c_int), value, intent(in) :: num_families
+  integer(c_int), value, intent(in) :: n_families
   !| The allocated length of the 'selected_indices' array.
   integer(c_int), value, intent(in) :: selected_indices_len
   !| Input expression vectors (passed from C).
   real(c_double), intent(in) :: expression_vectors(d, n_genes)
   !| Array mapping gene index to family ID.
-  integer(c_int), intent(in) :: gene_to_family_map(n_genes)
+  integer(c_int), intent(in) :: gene_to_family(n_genes)
   !| Integer flag from C (0=false, non-zero=true) to use all genes.
   integer(c_int), value, intent(in) :: use_all_mode
   !| Integer array from C indicating subset membership.
   integer(c_int), intent(in) :: ortholog_set(n_genes)
   !| Output matrix for centroids.
-  real(c_double), intent(out) :: centroid_matrix(d, num_families)
+  real(c_double), intent(out) :: centroid_matrix(d, n_families)
   !| Output array for selected indices.
   integer(c_int), intent(out) :: selected_indices(selected_indices_len)
   !| Error code: 0 - success, non-zero = error
@@ -166,7 +166,7 @@ pure subroutine group_centroid_c(expression_vectors, d, n_genes, gene_to_family_
     ortholog_set_fortran(i) = (ortholog_set(i) /= 0)
   end do
 
-  call group_centroid(expression_vectors, d, n_genes, gene_to_family_map, num_families, &
+  call group_centroid(expression_vectors, d, n_genes, gene_to_family, n_families, &
                       centroid_matrix, use_all_mode_fortran, ortholog_set_fortran, selected_indices, ierr)
 end subroutine group_centroid_c
 
@@ -174,7 +174,7 @@ end subroutine group_centroid_c
 ! R Wrapper Subroutine
 ! =============================================================================
 !> R interface wrapper for group_centroid.
-pure subroutine group_centroid_r(expression_vectors, d, n_genes, gene_to_family_map, num_families, &
+pure subroutine group_centroid_r(expression_vectors, d, n_genes, gene_to_family, n_families, &
                                  centroid_matrix, use_all_mode, ortholog_set, &
                                  selected_indices, selected_indices_len, ierr)
   use, intrinsic :: iso_fortran_env, only: int32, real64
@@ -185,24 +185,24 @@ pure subroutine group_centroid_r(expression_vectors, d, n_genes, gene_to_family_
   !| Total number of genes in the 'expression_vectors' matrix.
   integer(int32), intent(in) :: n_genes
   !| Total number of gene families to compute centroids for.
-  integer(int32), intent(in) :: num_families
+  integer(int32), intent(in) :: n_families
   !| The allocated length of the 'selected_indices' array.
   integer(int32), intent(in) :: selected_indices_len
   !| The input matrix of all gene expression vectors (d x n).
   real(real64), intent(in) :: expression_vectors(d, n_genes)
   !| An array mapping each gene (by index) to a family ID.
-  integer(int32), intent(in) :: gene_to_family_map(n_genes)
+  integer(int32), intent(in) :: gene_to_family(n_genes)
   !| A logical flag; if true, all genes in a family are used.
   logical, intent(in) :: use_all_mode
   !| A logical array indicating if a gene is part of a specific subset.
   logical, intent(in) :: ortholog_set(n_genes)
-  !| The output matrix (d x num_families) to store the computed centroids.
-  real(real64), intent(out) :: centroid_matrix(d, num_families)
+  !| The output matrix (d x n_families) to store the computed centroids.
+  real(real64), intent(out) :: centroid_matrix(d, n_families)
   !| An output array for storing selected gene indices.
   integer(int32), intent(out) :: selected_indices(selected_indices_len)
   !| Error code: 0 - success, non-zero = error
   integer(int32), intent(out) :: ierr
 
-  call group_centroid(expression_vectors, d, n_genes, gene_to_family_map, num_families, &
+  call group_centroid(expression_vectors, d, n_genes, gene_to_family, n_families, &
                       centroid_matrix, use_all_mode, ortholog_set, selected_indices, ierr)
 end subroutine group_centroid_r
