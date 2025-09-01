@@ -3,6 +3,60 @@ module tox_normalization
   use, intrinsic :: iso_fortran_env, only: real64, int32
 contains
 
+  !> Complete normalization pipeline for gene expression data.
+  !! Performs: std dev normalization, quantile normalization, replicate averaging, log2(x+1) transformation.
+  !! Final result is in buf_log. If fold change is needed, call calc_fchange separately.
+  pure subroutine normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps)
+
+    implicit none
+
+    !| Number of genes (rows)
+    integer(int32), intent(in) :: n_genes
+    !| Number of tissues (columns)
+    integer(int32), intent(in) :: n_tissues
+    !| Flattened input matrix (n_genes * n_tissues), column-major
+    real(real64), intent(in) :: input_matrix(n_genes * n_tissues)
+    !| Buffer for std dev normalization (n_genes * n_tissues)
+    real(real64), intent(out) :: buf_stddev(n_genes * n_tissues)
+    !| Buffer for quantile normalization (n_genes * n_tissues)
+    real(real64), intent(out) :: buf_quant(n_genes * n_tissues)
+    !| Buffer for replicate averaging (n_genes * n_grps)
+    real(real64), intent(out) :: buf_avg(n_genes * n_grps)
+    !| Buffer for log2(x+1) transformation (n_genes * n_grps)
+    real(real64), intent(out) :: buf_log(n_genes * n_grps)
+    !| Temporary column vector for sorting (n_genes)
+    real(real64), intent(inout) :: temp_col(n_genes)
+    !| Buffer for rank means (n_genes)
+    real(real64), intent(inout) :: rank_means(n_genes)
+    !| Permutation vector for sorting (n_genes)
+    integer(int32), intent(inout) :: perm(n_genes)
+    !| Left stack for quicksort (max_stack)
+    integer(int32), intent(inout) :: stack_left(max_stack)
+    !| Right stack for quicksort (max_stack)
+    integer(int32), intent(inout) :: stack_right(max_stack)
+    !| Stack size for quicksort
+    integer(int32), intent(in) :: max_stack
+    !| Start column index for each replicate group (n_grps)
+    integer(int32), intent(in) :: group_s(n_grps)
+    !| Number of columns per replicate group (n_grps)
+    integer(int32), intent(in) :: group_c(n_grps)
+    !| Number of replicate groups
+    integer(int32), intent(in) :: n_grps
+
+    ! Step 1: Normalize per-gene by std dev
+    call normalize_by_std_dev(n_genes, n_tissues, input_matrix, buf_stddev)
+
+    ! Step 2: Quantile normalization
+    call quantile_normalization(n_genes, n_tissues, buf_stddev, buf_quant, temp_col, rank_means, perm, stack_left, stack_right, max_stack)
+
+    ! Step 3: Average replicates
+    call calc_tiss_avg(n_genes, n_grps, group_s, group_c, buf_quant, buf_avg)
+
+    ! Step 4: Log2(x+1) transformation
+    call log2_transformation(n_genes, n_tissues, buf_avg, buf_log)
+
+  end subroutine normalization_pipeline
+
   !> Normalizes each gene's expression vector using `sqrt(mean(x^2))`
   !| across tissues (not classical standard deviation).
   pure subroutine normalize_by_std_dev(n_genes, n_tissues, input_matrix, output_matrix)
@@ -458,3 +512,88 @@ subroutine calc_fchange_c(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_m
 
   call calc_fchange(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix)
 end subroutine calc_fchange_c
+
+!> R/Fortran wrapper for normalization pipeline.
+!| Provides an interface for R (.Fortran) and Fortran code to call the normalization pipeline routine.
+!| Performs: std dev normalization, quantile normalization, replicate averaging, log2(x+1) transformation.
+!| Final result is in buf_log. If fold change is needed, call calc_fchange separately.
+
+subroutine normalization_pipeline_r(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps)
+  use tox_normalization
+  !| Number of genes (rows)
+  integer(int32), intent(in) :: n_genes
+  !| Number of tissues (columns)
+  integer(int32), intent(in) :: n_tissues
+  !| Flattened input matrix (n_genes * n_tissues), column-major
+  real(real64), intent(in) :: input_matrix(n_genes * n_tissues)
+  !| Buffer for std dev normalization (n_genes * n_tissues)
+  real(real64), intent(out) :: buf_stddev(n_genes * n_tissues)
+  !| Buffer for quantile normalization (n_genes * n_tissues)
+  real(real64), intent(out) :: buf_quant(n_genes * n_tissues)
+  !| Buffer for replicate averaging (n_genes * n_grps)
+  real(real64), intent(out) :: buf_avg(n_genes * n_grps)
+  !| Buffer for log2(x+1) transformation (n_genes * n_grps)
+  real(real64), intent(out) :: buf_log(n_genes * n_grps)
+  !| Temporary column vector for sorting (n_genes)
+  real(real64), intent(inout) :: temp_col(n_genes)
+  !| Buffer for rank means (n_genes)
+  real(real64), intent(inout) :: rank_means(n_genes)
+  !| Permutation vector for sorting (n_genes)
+  integer(int32), intent(inout) :: perm(n_genes)
+  !| Left stack for quicksort (max_stack)
+  integer(int32), intent(inout) :: stack_left(max_stack)
+  !| Right stack for quicksort (max_stack)
+  integer(int32), intent(inout) :: stack_right(max_stack)
+  !| Stack size for quicksort
+  integer(int32), intent(in) :: max_stack
+  !| Start column index for each replicate group (n_grps)
+  integer(int32), intent(in) :: group_s(n_grps)
+  !| Number of columns per replicate group (n_grps)
+  integer(int32), intent(in) :: group_c(n_grps)
+  !| Number of replicate groups
+  integer(int32), intent(in) :: n_grps
+  call normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps)
+end subroutine normalization_pipeline_r
+
+!> C/Python wrapper for normalization pipeline.
+!| Provides a C/Python-compatible interface to the normalization pipeline routine.
+!| Suitable for use with ctypes. Performs: std dev normalization, quantile normalization, replicate averaging, log2(x+1) transformation.
+!| Final result is in buf_log. If fold change is needed, call calc_fchange separately.
+
+subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps) bind(C, name="normalization_pipeline_c")
+  use iso_c_binding, only : c_int, c_double, c_bool
+  use tox_normalization
+  !| Number of genes (rows)
+  integer(c_int), intent(in), value :: n_genes
+  !| Number of tissues (columns)
+  integer(c_int), intent(in), value :: n_tissues
+  !| Flattened input matrix (n_genes * n_tissues), column-major
+  real(c_double), intent(in), target :: input_matrix(n_genes * n_tissues)
+  !| Buffer for std dev normalization (n_genes * n_tissues)
+  real(c_double), intent(out), target :: buf_stddev(n_genes * n_tissues)
+  !| Buffer for quantile normalization (n_genes * n_tissues)
+  real(c_double), intent(out), target :: buf_quant(n_genes * n_tissues)
+  !| Buffer for replicate averaging (n_genes * n_grps)
+  real(c_double), intent(out), target :: buf_avg(n_genes * n_grps)
+  !| Buffer for log2(x+1) transformation (n_genes * n_grps)
+  real(c_double), intent(out), target :: buf_log(n_genes * n_grps)
+  !| Temporary column vector for sorting (n_genes)
+  real(c_double), intent(inout), target :: temp_col(n_genes)
+  !| Buffer for rank means (n_genes)
+  real(c_double), intent(inout), target :: rank_means(n_genes)
+  !| Permutation vector for sorting (n_genes)
+  integer(c_int), intent(inout), target :: perm(n_genes)
+  !| Left stack for quicksort (max_stack)
+  integer(c_int), intent(inout), target :: stack_left(max_stack)
+  !| Right stack for quicksort (max_stack)
+  integer(c_int), intent(inout), target :: stack_right(max_stack)
+  !| Stack size for quicksort
+  integer(c_int), intent(in), value :: max_stack
+  !| Start column index for each replicate group (n_grps)
+  integer(c_int), intent(in), target :: group_s(n_grps)
+  !| Number of columns per replicate group (n_grps)
+  integer(c_int), intent(in), target :: group_c(n_grps)
+  !| Number of replicate groups
+  integer(c_int), intent(in), value :: n_grps
+  call normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps)
+end subroutine normalization_pipeline_c

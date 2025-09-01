@@ -241,7 +241,7 @@ tox_calculate_tissue_averages <- function(df) {
   n_columns <- ncol(df)    # Number of columns (tissues)
 
   # --- Parse all column names to find their corresponding tissue group ---
-  tissue_groups <- sapply(colnames(df), tox_parse_tissue_group)
+  tissue_groups <- as.character(sapply(colnames(df), tox_parse_tissue_group))
 
   # --- Identify unique tissue groups ---
   unique_groups <- unique(tissue_groups)
@@ -254,22 +254,21 @@ tox_calculate_tissue_averages <- function(df) {
   # --- Sort the dataframe by tissue group name ---
   df_sorted <- df[, order(tissue_groups)]
   sorted_tissue_groups <- tissue_groups[order(tissue_groups)]
-
-  current_group <- sorted_tissue_groups[1]
+  current_group <- as.character(sorted_tissue_groups[1])
   group_starts[1] <- 1
   group_counts[1] <- 1
   group_idx <- 1
 
   # --- Build group_starts and group_counts arrays ---
   for (i in 2:length(sorted_tissue_groups)) {
-    if (sorted_tissue_groups[i] == current_group) {
+    # Ensure both are character and not NA before comparison
+    if (!is.na(sorted_tissue_groups[i]) && !is.na(current_group) && as.character(sorted_tissue_groups[i]) == as.character(current_group)) {
       group_counts[group_idx] <- group_counts[group_idx] + 1
-    } else
-      {
+    } else {
       group_idx <- group_idx + 1
       group_starts[group_idx] <- i
       group_counts[group_idx] <- 1
-      current_group <- sorted_tissue_groups[i]
+      current_group <- as.character(sorted_tissue_groups[i])
     }
   }
 
@@ -648,6 +647,64 @@ tox_clean_data_for_normalization <- function(df_matrix,
   return(df_matrix)
 }
 
+
+
+#' Complete normalization pipeline for gene expression data (up to log2(x+1))
+#'
+#' This function wraps the Fortran subroutine `normalization_pipeline_r`.
+#' It performs std dev normalization, quantile normalization, replicate averaging, and log2(x+1) transformation.
+#'
+#' @param input_matrix Numeric matrix (genes x tissues)
+#' @param group_s Integer vector: start column index for each replicate group (1-based)
+#' @param group_c Integer vector: number of columns per replicate group
+#' @return Numeric matrix: log2(x+1) normalized expression
+tox_normalization_pipeline <- function(input_matrix, group_s, group_c) {
+  n_genes <- nrow(input_matrix)
+  n_tissues <- ncol(input_matrix)
+  n_grps <- length(group_s)
+
+  # Flatten input matrix (column-major)
+  input_vector <- as.numeric(as.vector(input_matrix))
+  buf_stddev <- numeric(n_genes * n_tissues)
+  buf_quant <- numeric(n_genes * n_tissues)
+  buf_avg <- numeric(n_genes * n_grps)
+  buf_log <- numeric(n_genes * n_grps)
+  temp_col <- numeric(n_genes)
+  rank_means <- numeric(n_genes)
+  perm <- integer(n_genes)
+  max_stack <- as.integer(ceiling(log2(n_genes)) + 10)
+  stack_left <- integer(max_stack)
+  stack_right <- integer(max_stack)
+
+  # Fortran expects integer arrays (1-based)
+  storage.mode(group_s) <- "integer"
+  storage.mode(group_c) <- "integer"
+
+  # Call Fortran routine
+  result <- .Fortran("normalization_pipeline_r",
+      n_genes = as.integer(n_genes),
+      n_tissues = as.integer(n_tissues),
+      input_vector = input_vector,
+      buf_stddev = buf_stddev,
+      buf_quant = buf_quant,
+      buf_avg = buf_avg,
+      buf_log = buf_log,
+      temp_col = temp_col,
+      rank_means = rank_means,
+      perm = perm,
+      stack_left = stack_left,
+      stack_right = stack_right,
+      max_stack = as.integer(max_stack),
+      group_s = group_s,
+      group_c = group_c,
+      n_grps = as.integer(n_grps)
+  )
+
+  return(matrix(result$buf_log, nrow = n_genes, ncol = n_grps))
+
+}
+
+
 # ===================================================================
 # TISSUE VERSATILITY FUNCTIONS
 # ===================================================================
@@ -694,7 +751,7 @@ tox_calculate_tissue_versatility <- function(expression_vectors, vector_selectio
   n_vectors <- ncol(expression_vectors)
   n_selected_vectors <- sum(vector_selection)
   n_selected_axes <- sum(axis_selection)
-  
+
   # Validate dimensions
   if (length(vector_selection) != n_vectors) {
     stop("vector_selection length must match number of columns in expression_vectors")

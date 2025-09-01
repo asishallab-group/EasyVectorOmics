@@ -232,6 +232,73 @@ def tox_calculate_tissue_averages(input_matrix, group_starts, group_counts):
     _readonly(result)
     return result
 
+def tox_normalization_pipeline(input_matrix, group_starts, group_counts):
+    """
+    Complete normalization pipeline for gene expression data (up to log2(x+1))
+    Mirrors Fortran normalization_pipeline (no fold change).
+
+    Args:
+        input_matrix: Numeric matrix (genes x tissues)
+        group_starts: Integer array, start column index for each replicate group (1-based)
+        group_counts: Integer array, number of columns per replicate group
+
+    Returns:
+        numpy.ndarray: log2(x+1) normalized expression (genes x groups)
+    """
+    input_matrix = np.asarray(input_matrix, dtype=np.float64)
+    group_starts = np.asarray(group_starts, dtype=np.int32)
+    group_counts = np.asarray(group_counts, dtype=np.int32)
+
+    n_genes, n_tissues = input_matrix.shape
+    n_grps = len(group_starts)
+
+    # Flatten input and allocate workspace
+    input_flat = np.asfortranarray(input_matrix).ravel(order='F')
+    buf_stddev = np.zeros(n_genes * n_tissues, dtype=np.float64)
+    buf_quant = np.zeros(n_genes * n_tissues, dtype=np.float64)
+    buf_avg = np.zeros(n_genes * n_grps, dtype=np.float64)
+    buf_log = np.zeros(n_genes * n_grps, dtype=np.float64)
+    temp_col = np.zeros(n_genes, dtype=np.float64)
+    rank_means = np.zeros(n_genes, dtype=np.float64)
+    perm = np.zeros(n_genes, dtype=np.int32)
+    max_stack = max(2 * n_genes, 2)
+    stack_left = np.zeros(max_stack, dtype=np.int32)
+    stack_right = np.zeros(max_stack, dtype=np.int32)
+
+    # Setup C wrapper
+    normalization_pipeline_c = lib.normalization_pipeline_c
+    normalization_pipeline_c.argtypes = [
+        ctypes.c_int,  # n_genes
+        ctypes.c_int,  # n_tissues
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # input_flat
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # buf_stddev
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # buf_quant
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # buf_avg
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # buf_log
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # temp_col
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # rank_means
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # perm
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_left
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_right
+        ctypes.c_int,  # max_stack
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # group_starts
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # group_counts
+        ctypes.c_int,  # n_grps
+    ]
+    normalization_pipeline_c.restype = None
+
+    # Call Fortran routine
+    normalization_pipeline_c(
+        n_genes, n_tissues, input_flat, buf_stddev, buf_quant, buf_avg, buf_log,
+        temp_col, rank_means, perm, stack_left, stack_right, max_stack,
+        group_starts, group_counts, n_grps
+    )
+
+    # Reshape and return log2(x+1) output
+    result = buf_log.reshape((n_genes, n_grps), order='F')
+    _readonly(result)
+    return result
+
 def tox_calculate_fold_changes(input_matrix, control_cols, condition_cols):
     """
     Calculate log2 fold changes between control and condition columns
