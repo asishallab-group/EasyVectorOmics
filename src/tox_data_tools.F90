@@ -24,10 +24,8 @@ module tox_data_tools
 contains
 
 ! Read tabular files (CSV/TSV)
-! Read tabular files (CSV/TSV)
 subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
                              n_header_rows, gene_col, value_cols, start_row, ierr)
-
     character(len=*), intent(in) :: file_list(:)
     character(len=*), intent(inout) :: gene_ids(:)
     real(real64), intent(inout) :: expression_vectors(:,:)
@@ -37,9 +35,10 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
     integer(int32), intent(out) :: ierr
 
     integer :: i, j, k, unit, ios, idx, row_count, n_genes, expected_idx, n_value_cols
-    integer :: current_sample
+    integer :: current_sample, n_columns_in_file, n_valid_cols
     character(len=2048) :: line
-    character(len=:), allocatable :: fields(:)
+    character(len=:), allocatable :: fields(:), test_fields(:)
+    integer(int32), allocatable :: valid_cols(:)
     real(real64) :: value
     character(len=len(gene_ids)) :: gene
     logical :: order_mismatch
@@ -48,12 +47,16 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
     n_genes = size(gene_ids)
     n_value_cols = size(value_cols)
     
+    ! Allocate temporary array for valid columns
+    allocate(valid_cols(n_value_cols))
+    
     current_sample = start_row - 1
     
     do i = 1, size(file_list)
         open(newunit=unit, file=trim(file_list(i)), status='old', action='read', iostat=ios)
         if (ios /= 0) then
             ierr = 1
+            deallocate(valid_cols)
             return
         end if
 
@@ -62,6 +65,39 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
             read(unit, '(A)', iostat=ios) line
             if (ios /= 0) exit
         end do
+
+        ! Read first data line to determine number of columns in this file
+        read(unit, '(A)', iostat=ios) line
+        if (ios /= 0) then
+            ierr = 3
+            close(unit)
+            deallocate(valid_cols)
+            return
+        end if
+        
+        call split_string(line, test_fields, char(9))
+        n_columns_in_file = size(test_fields)
+        
+        ! Rewind to beginning of data section
+        rewind(unit)
+        do j = 1, n_header_rows
+            read(unit, '(A)', iostat=ios) line
+        end do
+
+        ! Determine valid columns for this file
+        n_valid_cols = 0
+        do k = 1, n_value_cols
+            if (value_cols(k) <= n_columns_in_file) then
+                n_valid_cols = n_valid_cols + 1
+                valid_cols(n_valid_cols) = value_cols(k)
+            end if
+        end do
+
+        ! Debug output
+        write(*,*) 'Processing file: ', trim(file_list(i))
+        write(*,*) 'Columns in file: ', n_columns_in_file
+        write(*,*) 'Valid value columns: ', valid_cols(1:n_valid_cols)
+        write(*,*) 'Current sample start: ', current_sample + 1
 
         row_count = 0
         order_mismatch = .false.
@@ -76,7 +112,7 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
             end if
 
             call split_string(line, fields, char(9))
-            if (size(fields) < max(gene_col, maxval(value_cols))) cycle
+            if (size(fields) < max(gene_col, maxval(valid_cols(1:n_valid_cols)))) cycle
 
             gene = trim(adjustl(fields(gene_col)))
 
@@ -94,24 +130,29 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
                 end if
             end if
             
-            ! Read all value columns for this gene 
-            do k = 1, n_value_cols
-                read(fields(value_cols(k)), *, iostat=ios) value
+            ! Read all valid value columns for this gene 
+            do k = 1, n_valid_cols
+                read(fields(valid_cols(k)), *, iostat=ios) value
                 if (ios == 0) then
                     expression_vectors(current_sample + k, idx) = value
+                else
+                    ! Set to zero if read fails
+                    expression_vectors(current_sample + k, idx) = 0.0_real64
                 end if
             end do
         end do
         close(unit)
         
         ! Update sample offset for next file 
-        current_sample = current_sample + n_value_cols
+        current_sample = current_sample + n_valid_cols
         
         ! Report if order mismatch was detected
         if (order_mismatch) then
             write(*,*) 'Note: Gene order mismatch detected in file: ', trim(file_list(i))
         end if
     end do
+    
+    deallocate(valid_cols)
 end subroutine read_tabular_files
 
 subroutine read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, ierr)
@@ -162,13 +203,14 @@ end subroutine read_gene_ids_from_file
 subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     use hashmap_module
     character(len=*), intent(in) :: filename
-    character(len=*), intent(in) :: gene_ids(:)  ! Bereits vorhandene Gene-IDs
+    character(len=*), intent(in) :: gene_ids(:)
     character(len=*), intent(out) :: family_ids(:)
     integer(int32), intent(out) :: gene_to_fam(:)
     integer(int32), intent(out) :: ierr
 
     integer(int32) :: unit, ios, i, j, fam_idx, gene_idx, n_families, n_genes
-    character(len=2048) :: line
+    integer(int32) :: pos, start_pos, end_pos  ! <- ADD THESE DECLARATIONS
+    character(len=4096) :: line
     character(len=:), allocatable :: fields(:), genes(:)
     character(len=len(family_ids)) :: current_family
     type(hashmap_type) :: gene_map
@@ -218,6 +260,7 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
         if (ios /= 0) exit
 
         fam_idx = fam_idx + 1
+        
         if (mod(fam_idx, 1000) == 0) then
             write(*,*) 'Processed ', fam_idx, ' families...'
         end if
@@ -341,8 +384,8 @@ subroutine split_string(input, output, delimiter)
     character(len=1), optional, intent(in) :: delimiter
     
     character(len=1) :: delim
-    integer :: n, i, start_pos, field_count
-    logical :: in_field
+    integer :: n, i, start_pos, end_pos, field_count
+    integer, allocatable :: field_starts(:), field_ends(:)
     
     if (present(delimiter)) then
         delim = delimiter
@@ -350,37 +393,39 @@ subroutine split_string(input, output, delimiter)
         delim = ' '
     end if
 
-    ! Count fields
-    n = 0
-    in_field = .false.
-    do i = 1, len_trim(input)
-        if (input(i:i) == delim) then
-            in_field = .false.
-        else if (.not. in_field) then
-            n = n + 1
-            in_field = .true.
-        end if
-    end do
-
-    allocate(character(len=len(input)) :: output(n))
+    ! First pass: find field boundaries
+    allocate(field_starts(len_trim(input)))
+    allocate(field_ends(len_trim(input)))
     
-    field_count = 0
+    n = 0
     start_pos = 1
     do i = 1, len_trim(input)
         if (input(i:i) == delim) then
             if (start_pos <= i-1) then
-                field_count = field_count + 1
-                output(field_count) = trim(adjustl(input(start_pos:i-1)))
+                n = n + 1
+                field_starts(n) = start_pos
+                field_ends(n) = i-1
             end if
             start_pos = i + 1
         end if
     end do
     
-    ! Add last field
+    ! Add last field if exists
     if (start_pos <= len_trim(input)) then
-        field_count = field_count + 1
-        output(field_count) = trim(adjustl(input(start_pos:)))
+        n = n + 1
+        field_starts(n) = start_pos
+        field_ends(n) = len_trim(input)
     end if
+
+    ! Allocate output array
+    allocate(character(len=maxval(field_ends(1:n) - field_starts(1:n) + 1)) :: output(n))
+    
+    ! Extract fields
+    do i = 1, n
+        output(i) = trim(adjustl(input(field_starts(i):field_ends(i))))
+    end do
+    
+    deallocate(field_starts, field_ends)
 end subroutine split_string
 
 subroutine get_family_for_gene_index(gene_idx, gene_to_fam, out_family_idx, ierr)

@@ -111,9 +111,9 @@ program test_expression_readers
     write(*,*) '========================================'
 
     ! Optional: Show a small preview
-    write(*,*) 'First 5 genes, first 5 samples:'
-    do i = 1, min(5, total_samples)
-        write(*, '(10(F8.2,1X))') kallisto_expr(i, 1:min(10,n_genes))
+    write(*,*) 'First 3 genes, first 25 samples:'
+    do i = 1, min(25, total_samples)
+        write(*, '(10(F8.2,1X))') kallisto_expr(i, 1:min(3,n_genes))
     end do
 
     write(*,*) 'First 5 gene IDs:'
