@@ -13,8 +13,19 @@ module asserts
   public :: assert_sorted_real, assert_same_shape, assert_string_equal
   public :: assert_string_contains, assert_allclose_array_real
   public :: assert_sum_equal, assert_unique_int, assert_permutation
+  public :: assert_equal_array_char
 
 contains
+
+  !> Asserts that two character arrays are equal
+  subroutine assert_equal_array_char(a, b, n, msg)
+    character(len=*), intent(in) :: a(n), b(n), msg
+    integer, intent(in) :: n
+    if (any(a /= b)) then
+      write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (character arrays differ)"
+      stop 1
+    end if
+  end subroutine
 
   !> Assert that a logical condition is true.
   subroutine assert_true(cond, msg)
