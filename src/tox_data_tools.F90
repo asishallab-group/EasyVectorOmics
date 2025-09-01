@@ -71,7 +71,7 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
             row_count = row_count + 1
             
             if (row_count > n_genes) then
-                ierr = 2 ! More genes than allocated space [cite: 24, 25]
+                ierr = 2 ! More genes than allocated space 
                 exit
             end if
 
@@ -80,12 +80,12 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
 
             gene = trim(adjustl(fields(gene_col)))
 
-            ! Fast path: check if gene matches expected position [cite: 30, 31]
+            ! Fast path: check if gene matches expected position 
             expected_idx = row_count
             if (expected_idx <= n_genes .and. trim(adjustl(gene_ids(expected_idx))) == trim(adjustl(gene))) then
                 idx = expected_idx
             else
-                ! Slow path: search through all genes [cite: 32]
+                ! Slow path: search through all genes
                 idx = get_gene_index(gene_ids, gene)
                 if (idx == 0) then
                     write(*,*) 'Warning: Gene ', trim(gene), ' not found in master gene list'
@@ -94,7 +94,7 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
                 end if
             end if
             
-            ! Read all value columns for this gene [cite: 35]
+            ! Read all value columns for this gene 
             do k = 1, n_value_cols
                 read(fields(value_cols(k)), *, iostat=ios) value
                 if (ios == 0) then
@@ -104,10 +104,10 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
         end do
         close(unit)
         
-        ! Update sample offset for next file [cite: 37]
+        ! Update sample offset for next file 
         current_sample = current_sample + n_value_cols
         
-        ! Report if order mismatch was detected [cite: 38]
+        ! Report if order mismatch was detected
         if (order_mismatch) then
             write(*,*) 'Note: Gene order mismatch detected in file: ', trim(file_list(i))
         end if
@@ -168,7 +168,7 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     integer(int32), intent(out) :: ierr
 
     integer(int32) :: unit, ios, i, j, fam_idx, gene_idx, n_families, n_genes
-    character(len=1024) :: line
+    character(len=2048) :: line
     character(len=:), allocatable :: fields(:), genes(:)
     character(len=len(family_ids)) :: current_family
     type(hashmap_type) :: gene_map
