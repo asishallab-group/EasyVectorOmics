@@ -1,108 +1,195 @@
+program main
+  use mod_test_sorting
+  use mod_test_get_outliers
+  use mod_test_loess_smoothing
+  use mod_test_normalize_by_std_dev
+  use mod_test_quantile_normalization
+  use mod_test_log2_transformation
+  use mod_test_calc_tiss_avg
+  use mod_test_calc_fchange
+  use mod_test_euclidean_distance
+  use mod_test_tissue_versatility
+  use mod_test_shift_vectors
 
-!> @brief Main program to run the entire test suite.
-PROGRAM run_tests
-    USE, INTRINSIC :: iso_fortran_env, ONLY: INT32
-    ! Import all test suites
-    USE mod_test_gene_centroids 
+  implicit none
 
-    IMPLICIT NONE
+  ! Type for suite registry
+  type :: suite_entry
+    character(len=64) :: name
+    procedure(run_all_interface), pointer, nopass :: run_all => null()
+    procedure(run_named_interface), pointer, nopass :: run_named => null()
+  end type suite_entry
 
-    ABSTRACT INTERFACE
-        SUBROUTINE run_all_tests_interface()
-        END SUBROUTINE
-        SUBROUTINE run_named_tests_interface(test_names)
-            CHARACTER(LEN=*), INTENT(IN) :: test_names(:)
-        END SUBROUTINE
-    END INTERFACE
+  ! Abstract interfaces
+  abstract interface
+    subroutine run_all_interface()
+    end subroutine run_all_interface
+    
+    subroutine run_named_interface(test_names)
+      character(len=*), intent(in) :: test_names(:)
+    end subroutine run_named_interface
+  end interface
 
-    TYPE :: test_suite
-        CHARACTER(LEN=64) :: name
-        PROCEDURE(run_all_tests_interface), POINTER, NOPASS :: run_all => NULL()
-        PROCEDURE(run_named_tests_interface), POINTER, NOPASS :: run_named => NULL()
-    END TYPE test_suite
+  ! Registry of all available suites
+  type(suite_entry), allocatable :: available_suites(:)
 
-    TYPE(test_suite), ALLOCATABLE :: available_suites(:)
-    INTEGER :: i, n_args
-    CHARACTER(LEN=256) :: arg
-    LOGICAL :: suite_found
-    CHARACTER(LEN=64), ALLOCATABLE :: test_names_to_run(:)
+  integer :: nargs
+  character(len=64) :: requested_suite, test_list
 
-    CALL initialize_suites()
-    n_args = command_argument_count()
+  ! Initialize the suite registry
+  call initialize_suites()
 
-    IF (n_args == 0) THEN
-        WRITE(*, '(A)') "Running all tests from all suites..."
-        WRITE(*,*)
-        DO i = 1, SIZE(available_suites)
-            CALL available_suites(i)%run_all()
-        END DO
-        WRITE(*, '(A)') "All tests completed."
-        STOP 0
-    END IF
+  nargs = command_argument_count()
+  
+  if (nargs == 0) then
+    ! Run all tests from all suites
+    call run_all_suites()
+    
+  else if (nargs == 1) then
+    ! Run all tests in specified suite
+    call get_command_argument(1, requested_suite)
+    call run_suite_all(trim(requested_suite))
+    
+  else if (nargs == 2) then
+    ! Run specific tests in suite
+    call get_command_argument(1, requested_suite)
+    call get_command_argument(2, test_list)
+    call run_suite_named(trim(requested_suite), test_list)
+    
+  else
+    print *, "Too many arguments"
+    call print_usage()
+    stop 1
+  end if
 
-    IF (n_args >= 1) THEN
-        CALL get_command_argument(1, arg)
-        suite_found = .FALSE.
-        DO i = 1, SIZE(available_suites)
-            IF (TRIM(arg) == TRIM(available_suites(i)%name)) THEN
-                suite_found = .TRUE.
-                IF (n_args == 1) THEN
-                    CALL available_suites(i)%run_all()
-                ELSE IF (n_args == 2) THEN
-                    CALL get_command_argument(2, arg)
-                    CALL parse_test_names(arg, test_names_to_run)
-                    CALL available_suites(i)%run_named(test_names_to_run)
-                END IF
-                EXIT
-            END IF
-        END DO
-        IF (.NOT. suite_found) THEN
-            WRITE(*,*) "ERROR: Test suite '", TRIM(arg), "' not found."
-            STOP 1
-        END IF
-    END IF
+contains
 
-CONTAINS
+  !> Initialize the suite registry - ADD NEW SUITES HERE (no numbers!)
+  subroutine initialize_suites()
+    ! Start with empty registry
+    allocate(available_suites(0))
+    
+    ! Add each suite 
+    call add_suite("sorting", run_all_tests_sorting, run_named_tests_sorting)
+    call add_suite("get_outliers",run_all_tests_get_outliers, run_named_tests_get_outliers)
+    call add_suite("loess_smoothing",run_all_tests_loess_smoothing, run_named_tests_loess_smoothing)
+    call add_suite("normalization", run_all_tests_normalize_by_std_dev, run_named_tests_normalize_by_std_dev)
+    call add_suite("quantile_normalization", run_all_tests_quantile_normalization, run_named_tests_quantile_normalization)
+    call add_suite("log2_transformation", run_all_tests_log2_transformation, run_named_tests_log2_transformation)
+    call add_suite("calc_tiss_avg", run_all_tests_calc_tiss_avg, run_named_tests_calc_tiss_avg)
+    call add_suite("calc_fchange", run_all_tests_calc_fchange, run_named_tests_calc_fchange)
+    call add_suite("euclidean_distance", run_all_tests_euclidean_distance, run_named_tests_euclidean_distance)
+    call add_suite("tissue_versatility", run_all_tests_tissue_versatility, run_named_tests_tissue_versatility)
+    call add_suite("shift_vectors", run_all_tests_shift_vectors, run_named_tests_shift_vectors)
+  end subroutine initialize_suites
 
-    SUBROUTINE add_suite(name, run_all_proc, run_named_proc)
-        CHARACTER(LEN=*), INTENT(IN) :: name
-        PROCEDURE(run_all_tests_interface) :: run_all_proc
-        PROCEDURE(run_named_tests_interface) :: run_named_proc
-        TYPE(test_suite), ALLOCATABLE :: new_suites(:)
-        INTEGER :: old_size
-        old_size = 0
-        IF (ALLOCATED(available_suites)) old_size = SIZE(available_suites)
-        ALLOCATE(new_suites(old_size + 1))
-        IF (old_size > 0) new_suites(1:old_size) = available_suites
-        new_suites(old_size + 1)%name = name
-        new_suites(old_size + 1)%run_all => run_all_proc
-        new_suites(old_size + 1)%run_named => run_named_proc
-        CALL move_alloc(new_suites, available_suites)
-    END SUBROUTINE add_suite
+  !> Add a suite to the registry (grows automatically)
+  subroutine add_suite(name, run_all_proc, run_named_proc)
+    character(len=*), intent(in) :: name
+    procedure(run_all_interface) :: run_all_proc
+    procedure(run_named_interface) :: run_named_proc
+    type(suite_entry), allocatable :: temp_suites(:)
+    integer :: n
+    
+    n = size(available_suites)
+    
+    ! Create temporary array with one more slot
+    allocate(temp_suites(n + 1))
+    
+    ! Copy existing suites
+    if (n > 0) then
+      temp_suites(1:n) = available_suites(1:n)
+    end if
+    
+    ! Add new suite
+    temp_suites(n + 1) = suite_entry(name, run_all_proc, run_named_proc)
+    
+    ! Replace the registry
+    call move_alloc(temp_suites, available_suites)
+  end subroutine add_suite
 
-    SUBROUTINE initialize_suites()
-        ! The USE statement at the top of the program makes the procedures available,
-        ! so the EXTERNAL statement is not needed and has been removed.
-        CALL add_suite("gene_centroids", run_all_tests_gene_centroids, run_named_tests_gene_centroids) 
-    END SUBROUTINE initialize_suites
+  !> Run all tests from all suites
+  subroutine run_all_suites()
+    integer :: i
+    do i = 1, size(available_suites)
+      print *, "Running suite: ", trim(available_suites(i)%name)
+      call available_suites(i)%run_all()
+    end do
+  end subroutine run_all_suites
 
-    SUBROUTINE parse_test_names(names_str, names_arr)
-        CHARACTER(LEN=*), INTENT(IN) :: names_str
-        CHARACTER(LEN=64), ALLOCATABLE, INTENT(OUT) :: names_arr(:)
-        CHARACTER(LEN=LEN(names_str)) :: temp_str
-        INTEGER :: count, i, start
-        temp_str = TRIM(names_str)
-        count = 1
-        DO i = 1, LEN_TRIM(temp_str); IF (temp_str(i:i) == ',') count = count + 1; END DO
-        ALLOCATE(names_arr(count))
-        start = 1; count = 1
-        DO i = 1, LEN_TRIM(temp_str)
-            IF (temp_str(i:i) == ',') THEN
-                names_arr(count) = temp_str(start:i-1)
-                start = i + 1; count = count + 1
-            END IF
-        END DO
-        names_arr(count) = temp_str(start:)
-    END SUBROUTINE parse_test_names
+  !> Run all tests in a specific suite
+  subroutine run_suite_all(requested_suite)
+    character(len=*), intent(in) :: requested_suite
+    integer :: i
+    
+    do i = 1, size(available_suites)
+      if (trim(available_suites(i)%name) == requested_suite) then
+        call available_suites(i)%run_all()
+        return
+      end if
+    end do
+    
+    print *, "Unknown test suite: ", requested_suite
+    call print_usage()
+    stop 1
+  end subroutine run_suite_all
 
-END PROGRAM run_tests
+  !> Run named tests in a specific suite
+  subroutine run_suite_named(requested_suite, test_list)
+    character(len=*), intent(in) :: requested_suite, test_list
+    integer :: i
+    
+    do i = 1, size(available_suites)
+      if (trim(available_suites(i)%name) == requested_suite) then
+        call run_tests_from_list(test_list, available_suites(i)%run_named)
+        return
+      end if
+    end do
+    
+    print *, "Unknown test suite: ", requested_suite
+    call print_usage()
+    stop 1
+  end subroutine run_suite_named
+
+  !> Run tests from comma-separated list using a specific runner
+  subroutine run_tests_from_list(test_list, run_named_proc)
+    character(len=*), intent(in) :: test_list
+    procedure(run_named_interface) :: run_named_proc
+    character(len=64) :: test_name
+    character(len=64) :: single_test_array(1)
+    integer :: start, end, pos
+    
+    start = 1
+    
+    do while (start <= len_trim(test_list))
+      pos = index(test_list(start:), ',')
+      if (pos > 0) then
+        end = start + pos - 2
+      else
+        end = len_trim(test_list)
+      end if
+      
+      test_name = trim(adjustl(test_list(start:end)))
+      single_test_array(1) = test_name
+      call run_named_proc(single_test_array)
+      
+      start = end + 2
+      if (pos == 0) exit
+    end do
+  end subroutine run_tests_from_list
+
+  !> Print usage information
+  subroutine print_usage()
+    integer :: i
+    print *, "Usage:"
+    print *, "  run_tests                                   # Run all tests"
+    print *, "  run_tests <suite>                           # Run all tests in suite"
+    print *, "  run_tests <suite> <test1,test2,...>         # Run specific tests"
+    print *, ""
+    print *, "Available test suites:"
+    do i = 1, size(available_suites)
+      print *, "  ", trim(available_suites(i)%name)
+    end do
+  end subroutine print_usage
+
+end program main
