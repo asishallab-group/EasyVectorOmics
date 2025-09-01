@@ -76,5 +76,3 @@ echo "Linking exit code: $linking_result"
 echo "Running tests..."
 # Run the executable
 $EXECUTABLE "$@"
-
-rm test_*arr*.bin

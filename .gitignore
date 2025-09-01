@@ -51,7 +51,9 @@ doc/
 # latexrun
 latex.out/
 build/
+doc/
 results/
+doc/
 
 ## Auxiliary and intermediate files from other packages:
 # algorithms
