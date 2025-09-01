@@ -1,5 +1,5 @@
 {
-    "R call to get_array_metdata":{
+    "R call to get_array_metadata":{
         "prefix": "f42:R_get_array_metadata",
         "body": [
             "tox_get_array_metadata <- function(filename, max_dims = 5, with_clen = FALSE) {",
