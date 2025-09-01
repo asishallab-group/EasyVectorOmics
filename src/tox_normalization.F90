@@ -8,12 +8,14 @@ contains
   !! Final result is in buf_log. If fold change is needed, call calc_fchange separately.
   pure subroutine normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps)
 
-    implicit none
-
     !| Number of genes (rows)
     integer(int32), intent(in) :: n_genes
     !| Number of tissues (columns)
     integer(int32), intent(in) :: n_tissues
+    !| Number of replicate groups
+    integer(int32), intent(in) :: n_grps
+    !| Stack size for quicksort
+    integer(int32), intent(in) :: max_stack
     !| Flattened input matrix (n_genes * n_tissues), column-major
     real(real64), intent(in) :: input_matrix(n_genes * n_tissues)
     !| Buffer for std dev normalization (n_genes * n_tissues)
@@ -34,14 +36,10 @@ contains
     integer(int32), intent(inout) :: stack_left(max_stack)
     !| Right stack for quicksort (max_stack)
     integer(int32), intent(inout) :: stack_right(max_stack)
-    !| Stack size for quicksort
-    integer(int32), intent(in) :: max_stack
     !| Start column index for each replicate group (n_grps)
     integer(int32), intent(in) :: group_s(n_grps)
     !| Number of columns per replicate group (n_grps)
     integer(int32), intent(in) :: group_c(n_grps)
-    !| Number of replicate groups
-    integer(int32), intent(in) :: n_grps
 
     ! Step 1: Normalize per-gene by std dev
     call normalize_by_std_dev(n_genes, n_tissues, input_matrix, buf_stddev)
@@ -116,12 +114,12 @@ contains
     real(real64), intent(inout) :: rank_means(n_genes)
     !| Permutation vector (size n_genes)
     integer(int32), intent(inout) :: perm(n_genes)
+    !| Stack size passed from R
+    integer(int32), intent(in) :: max_stack
     !| Manual quicksort stack (≥ log2(n_genes) + 10)
     integer(int32), intent(inout) :: stack_left(max_stack)
     !| Manual quicksort stack (same size as stack_left)
     integer(int32), intent(inout) :: stack_right(max_stack)
-    !| Stack size passed from R
-    integer(int32), intent(in) :: max_stack
 
       ! Locals
       integer(int32) :: i, j
@@ -320,10 +318,8 @@ subroutine normalize_by_std_dev_c(n_genes, n_tissues, input_matrix, output_matri
   real(c_double), intent(in), target :: input_matrix(n_genes * n_tissues)
   !| Output normalized matrix (flattened, same shape as input)
   real(c_double), intent(out), target :: output_matrix(n_genes * n_tissues)
-  real(c_double), pointer :: inmat(:,:), outmat(:,:)
-  call c_f_pointer(c_loc(input_matrix(1)), inmat, [n_genes, n_tissues])
-  call c_f_pointer(c_loc(output_matrix(1)), outmat, [n_genes, n_tissues])
-  call normalize_by_std_dev(n_genes, n_tissues, inmat, outmat)
+
+  call normalize_by_std_dev(n_genes, n_tissues, input_matrix, output_matrix)
 end subroutine normalize_by_std_dev_c
 
 
@@ -524,6 +520,8 @@ subroutine normalization_pipeline_r(n_genes, n_tissues, input_matrix, buf_stddev
   integer(int32), intent(in) :: n_genes
   !| Number of tissues (columns)
   integer(int32), intent(in) :: n_tissues
+  !| Number of replicate groups
+  integer(int32), intent(in) :: n_grps
   !| Flattened input matrix (n_genes * n_tissues), column-major
   real(real64), intent(in) :: input_matrix(n_genes * n_tissues)
   !| Buffer for std dev normalization (n_genes * n_tissues)
@@ -540,18 +538,17 @@ subroutine normalization_pipeline_r(n_genes, n_tissues, input_matrix, buf_stddev
   real(real64), intent(inout) :: rank_means(n_genes)
   !| Permutation vector for sorting (n_genes)
   integer(int32), intent(inout) :: perm(n_genes)
+  !| Stack size for quicksort
+  integer(int32), intent(in) :: max_stack
   !| Left stack for quicksort (max_stack)
   integer(int32), intent(inout) :: stack_left(max_stack)
   !| Right stack for quicksort (max_stack)
   integer(int32), intent(inout) :: stack_right(max_stack)
-  !| Stack size for quicksort
-  integer(int32), intent(in) :: max_stack
   !| Start column index for each replicate group (n_grps)
   integer(int32), intent(in) :: group_s(n_grps)
   !| Number of columns per replicate group (n_grps)
   integer(int32), intent(in) :: group_c(n_grps)
-  !| Number of replicate groups
-  integer(int32), intent(in) :: n_grps
+
   call normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps)
 end subroutine normalization_pipeline_r
 
@@ -567,6 +564,8 @@ subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev
   integer(c_int), intent(in), value :: n_genes
   !| Number of tissues (columns)
   integer(c_int), intent(in), value :: n_tissues
+  !| Number of replicate groups
+  integer(c_int), intent(in), value :: n_grps
   !| Flattened input matrix (n_genes * n_tissues), column-major
   real(c_double), intent(in), target :: input_matrix(n_genes * n_tissues)
   !| Buffer for std dev normalization (n_genes * n_tissues)
@@ -583,17 +582,16 @@ subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev
   real(c_double), intent(inout), target :: rank_means(n_genes)
   !| Permutation vector for sorting (n_genes)
   integer(c_int), intent(inout), target :: perm(n_genes)
+  !| Stack size for quicksort
+  integer(c_int), intent(in), value :: max_stack
   !| Left stack for quicksort (max_stack)
   integer(c_int), intent(inout), target :: stack_left(max_stack)
   !| Right stack for quicksort (max_stack)
   integer(c_int), intent(inout), target :: stack_right(max_stack)
-  !| Stack size for quicksort
-  integer(c_int), intent(in), value :: max_stack
   !| Start column index for each replicate group (n_grps)
   integer(c_int), intent(in), target :: group_s(n_grps)
   !| Number of columns per replicate group (n_grps)
   integer(c_int), intent(in), target :: group_c(n_grps)
-  !| Number of replicate groups
-  integer(c_int), intent(in), value :: n_grps
+
   call normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps)
 end subroutine normalization_pipeline_c
