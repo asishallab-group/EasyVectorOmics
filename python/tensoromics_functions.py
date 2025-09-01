@@ -1056,7 +1056,7 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
     # Return structured result (no ierr since we checked for errors)
     return {
         "shift_vectors": shift_vectors
-    }-----------------------------------------------------------
+    }
 
 
 def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_set, mode='all'):
@@ -1082,7 +1082,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
         np.ndarray
             A read-only (d x n_families) NumPy array containing the computed centroids.
     """
-    
+
     # 1) Validate and prepare inputs
     if not isinstance(expression_vectors, np.ndarray) or expression_vectors.ndim != 2:
         raise ValueError("`vectors` must be a 2D NumPy array.")
