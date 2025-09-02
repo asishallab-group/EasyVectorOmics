@@ -125,34 +125,63 @@ end module tox_gene_centroids
 ! =============================================================================
 ! C Wrapper Subroutine
 ! =============================================================================
+!> C interface wrapper for mean_vector.
+pure subroutine mean_vector_c(expression_vectors, d, n_genes, gene_indices, n_selected_genes, centroid_col, ierr) &
+  bind(c, name='mean_vector_c')
+  use, intrinsic :: iso_c_binding, only: c_int, c_double
+  use tox_gene_centroids, only: mean_vector
+  implicit none
+  !| Dimension of the vectors (e.g., number of tissues).
+  integer(c_int), intent(in), value :: d
+  !| Total number of genes in the input matrix.
+  integer(c_int), intent(in), value :: n_genes
+  !| The input matrix of all gene expression vectors (d x n_genes).
+  real(c_double), intent(in), target :: expression_vectors(d, n_genes)
+  !| The number of genes in the current family to be averaged.
+  integer(c_int), intent(in), value :: n_selected_genes
+  !| An array containing the column indices of the selected genes in 'expression_vectors'.
+  integer(c_int), intent(in), target :: gene_indices(n_selected_genes)
+  !| The output vector representing the computed centroid.
+  real(c_double), intent(out), target :: centroid_col(d)
+  !| Error code: 0 - success, non-zero = error
+  integer(c_int), intent(out) :: ierr
+
+  ! Local variables
+  integer(c_int) :: i, j, gene_idx
+  real(c_double) :: inv_n_genes
+  real(c_double) :: sum_val
+
+  call mean_vector(expression_vectors, d, n_genes, gene_indices, n_selected_genes, centroid_col, ierr)
+end subroutine mean_vector_c
+
 !> C interface wrapper for group_centroid.
 pure subroutine group_centroid_c(expression_vectors, d, n_genes, gene_to_family, n_families, &
                                  centroid_matrix, use_all_mode, ortholog_set, &
                                  selected_indices, selected_indices_len, ierr) &
-                                 bind(c, name='group_centroid_c')
+  bind(c, name='group_centroid_c')
   use, intrinsic :: iso_c_binding, only: c_int, c_double
   use tox_gene_centroids, only: group_centroid
   implicit none
   !| Dimension of the expression vectors.
-  integer(c_int), value, intent(in) :: d
+  integer(c_int), intent(in), value :: d
   !| Total number of genes.
-  integer(c_int), value, intent(in) :: n_genes
+  integer(c_int), intent(in), value :: n_genes
   !| Total number of families.
-  integer(c_int), value, intent(in) :: n_families
+  integer(c_int), intent(in), value :: n_families
   !| The allocated length of the 'selected_indices' array.
-  integer(c_int), value, intent(in) :: selected_indices_len
+  integer(c_int), intent(in), value :: selected_indices_len
   !| Input expression vectors (passed from C).
-  real(c_double), intent(in) :: expression_vectors(d, n_genes)
+  real(c_double), intent(in), target :: expression_vectors(d, n_genes)
   !| Array mapping gene index to family ID.
-  integer(c_int), intent(in) :: gene_to_family(n_genes)
+  integer(c_int), intent(in), target :: gene_to_family(n_genes)
   !| Integer flag from C (0=false, non-zero=true) to use all genes.
-  integer(c_int), value, intent(in) :: use_all_mode
+  integer(c_int), intent(in), value :: use_all_mode
   !| Integer array from C indicating subset membership.
-  integer(c_int), intent(in) :: ortholog_set(n_genes)
+  integer(c_int), intent(in), target :: ortholog_set(n_genes)
   !| Output matrix for centroids.
-  real(c_double), intent(out) :: centroid_matrix(d, n_families)
+  real(c_double), intent(out), target :: centroid_matrix(d, n_families)
   !| Output array for selected indices.
-  integer(c_int), intent(out) :: selected_indices(selected_indices_len)
+  integer(c_int), intent(out), target :: selected_indices(selected_indices_len)
   !| Error code: 0 - success, non-zero = error
   integer(c_int), intent(out) :: ierr
 
@@ -173,6 +202,34 @@ end subroutine group_centroid_c
 ! =============================================================================
 ! R Wrapper Subroutine
 ! =============================================================================
+!> R interface wrapper for mean_vector.
+pure subroutine mean_vector_r(expression_vectors, d, n_genes, gene_indices, n_selected_genes, centroid_col, ierr)
+  use, intrinsic :: iso_fortran_env, only: int32, real64
+  use tox_gene_centroids, only: mean_vector
+  implicit none
+  !| Dimension of the vectors (e.g., number of tissues).
+  integer(int32), intent(in) :: d
+  !| Total number of genes in the input matrix.
+  integer(int32), intent(in) :: n_genes
+  !| The input matrix of all gene expression vectors (d x n_genes).
+  real(real64), intent(in) :: expression_vectors(d, n_genes)
+  !| The number of genes in the current family to be averaged.
+  integer(int32), intent(in) :: n_selected_genes
+  !| An array containing the column indices of the selected genes in 'expression_vectors'.
+  integer(int32), intent(in) :: gene_indices(n_selected_genes)
+  !| The output vector representing the computed centroid.
+  real(real64), intent(out) :: centroid_col(d)
+  !| Error code: 0 - success, non-zero = error
+  integer(int32), intent(out) :: ierr
+
+  ! Local variables
+  integer(int32) :: i, j, gene_idx
+  real(real64) :: inv_n_genes
+  real(real64) :: sum_val
+
+  call mean_vector(expression_vectors, d, n_genes, gene_indices, n_selected_genes, centroid_col, ierr)
+end subroutine mean_vector_r
+
 !> R interface wrapper for group_centroid.
 pure subroutine group_centroid_r(expression_vectors, d, n_genes, gene_to_family, n_families, &
                                  centroid_matrix, use_all_mode, ortholog_set, &
