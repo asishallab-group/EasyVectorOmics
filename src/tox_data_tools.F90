@@ -60,7 +60,7 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
             return
         end if
 
-        ! Skip header rows [cite: 23, 42]
+        ! Skip header rows
         do j = 1, n_header_rows
             read(unit, '(A)', iostat=ios) line
             if (ios /= 0) exit

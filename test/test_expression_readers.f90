@@ -11,7 +11,10 @@ program test_expression_readers
 
     ! File lists
     character(len=256), allocatable :: files_6_replicates(:)
-    character(len=256) :: file_8_replicates
+    character(len=256), allocatable :: files_7_replicates(:)
+    character(len=256), allocatable :: files_5_replicates(:)
+    character(len=256), allocatable :: files_4_replicates(:)
+
     integer :: i
 
     ierr = 0
@@ -19,26 +22,34 @@ program test_expression_readers
     !-------------------------------
     ! Initialize file lists
     allocate(files_6_replicates(12))
+    allocate(files_4_replicates(1))
+    allocate(files_5_replicates(1))
+    ALLOCATE(files_7_replicates(1))
     files_6_replicates = [ &
         'material/kallisto_sex_data_Adipose.tsv  ', &
         'material/kallisto_sex_data_Adrenal.tsv  ', &
-        'material/kallisto_sex_data_Brain.tsv    ', &
         'material/kallisto_sex_data_Colon.tsv    ', &
         'material/kallisto_sex_data_Heart.tsv    ', &
         'material/kallisto_sex_data_Liver.tsv    ', &
         'material/kallisto_sex_data_Lung.tsv     ', &
-        'material/kallisto_sex_data_Muscle.tsv   ', &
-        'material/kallisto_sex_data_Pituitary.tsv', &
+        'material/kallisto_sex_data_Muscle.tsv   ', &   
         'material/kallisto_sex_data_Skin.tsv     ', &
         'material/kallisto_sex_data_Spleen.tsv   ', &
         'material/kallisto_sex_data_Thyroid.tsv  '  &
     ]
+
+    files_5_replicates = [ &
+        'material/kallisto_sex_data_Brain.tsv    ']
+
+    files_4_replicates = [ &
+        'material/kallisto_sex_data_Pituitary.tsv']
     
-    file_8_replicates = 'material/kallisto_sex_data_Testis.tsv'
+    files_7_replicates = [ &
+        'material/kallisto_sex_data_Testis.tsv']
 
     !-------------------------------
     ! Calculate total samples in advance
-    total_samples = 12 * 6 + 8  ! 12 files × 6 replicates + 1 file × 8 replicates = 80 samples
+    total_samples = 10 * 6 + 7 + 5 + 4 
 
     !-------------------------------
     ! Step 1: Read gene IDs from first Kallisto file
@@ -67,20 +78,38 @@ program test_expression_readers
         stop
     end if
 
-    write(*,*) 'Processed 72 samples from 6-replicate files'
+    write(*,*) 'Processed 60 samples from 6-replicate files'
 
     !-------------------------------
-    ! Step 3: Process file with 8 replicates (columns 2-9)
-    write(*,*) 'Processing 1 file with 8 replicates...'
+    ! Step 3: Process file with 7 replicates (columns 2-8)
+    write(*,*) 'Processing 1 file with 7 replicates...'
     
-    call read_tabular_files([file_8_replicates], gene_ids, kallisto_expr, &
-                           n_header_rows, 1, [2, 3, 4, 5, 6, 7, 8, 9], 73, ierr)
+    call read_tabular_files([files_7_replicates], gene_ids, kallisto_expr, &
+                           n_header_rows, 1, [2, 3, 4, 5, 6, 7, 8], 61, ierr)
     if (ierr /= 0) then
-        write(*,*) 'Error reading file with 8 replicates'
+        write(*,*) 'Error reading file with 7 replicates'
         stop
     end if
 
-    write(*,*) 'Processed additional 8 samples from 8-replicate file'
+    write(*,*) 'Processed additional 5 samples from 5-replicate file'
+
+    call read_tabular_files([files_5_replicates], gene_ids, kallisto_expr, &
+                           n_header_rows, 1, [2, 3, 4, 5, 6], 69, ierr)
+    if (ierr /= 0) then
+        write(*,*) 'Error reading file with 5 replicates'
+        stop
+    end if
+
+    write(*,*) 'Processed additional 4 samples from 4-replicate file'
+
+    call read_tabular_files([files_4_replicates], gene_ids, kallisto_expr, &
+                           n_header_rows, 1, [2, 3, 4, 5], 73, ierr)
+    if (ierr /= 0) then
+        write(*,*) 'Error reading file with 4 replicates'
+        stop
+    end if
+
+    write(*,*) 'Processed additional 4 samples from 4-replicate file'
 
     !-------------------------------
         ! Step 4: Read orthogroups (family mapping)
