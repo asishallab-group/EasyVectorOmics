@@ -1310,7 +1310,6 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
   centroid_matrix_out <- matrix(0.0, nrow = d, ncol = n_families)
   selected_indices_ws <- integer(n_genes) # Workspace buffer
   ierr <- as.integer(0)
-
   # 3) Call Fortran
   result <- .Fortran("group_centroid_r",
                      expression_vectors = as.double(expression_vectors),
@@ -1323,8 +1322,11 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
                      ortholog_set = as.logical(ortholog_set),
                      selected_indices = selected_indices_ws,
                      selected_indices_len = as.integer(n_genes),
-                     ierr)
+                     ierr = ierr)
   
-  # 4) Return the populated output matrix
+  # Check for errors and throw informative messages
+  tox_errors(result$ierr)
+
+  # 4) Return the populated output matrix (no ierr since we checked for errors)
   return(result$centroid_matrix)
 }
