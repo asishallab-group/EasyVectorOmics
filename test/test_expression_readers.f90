@@ -1,6 +1,7 @@
 program test_expression_readers
     use iso_fortran_env, only: real64, int32
     use tox_data_tools
+    use tox_data_validation
     implicit none
 
     integer(int32), allocatable :: gene_to_fam(:)
@@ -140,14 +141,24 @@ program test_expression_readers
     write(*,*) '========================================'
 
     ! Optional: Show a small preview
-    write(*,*) 'First 3 genes, first 25 samples:'
-    do i = 1, min(25, total_samples)
-        write(*, '(10(F8.2,1X))') kallisto_expr(i, 1:min(3,n_genes))
+    write(*,*) 'First 5 genes, first 40 samples:'
+    do i = 1, min(40, total_samples)
+        write(*, '(10(F8.2,1X))') kallisto_expr(i, 1:min(5,n_genes))
     end do
 
     write(*,*) 'First 5 gene IDs:'
     do i = 1, min(5, n_genes)
         write(*, *) trim(gene_ids(i))
     end do
+
+    write(*,*) 'Verifying data...'
+    call validate_expression_data(kallisto_expr, .true., ierr)
+    if (ierr /= 0) write(*,*) 'Expression data could not be verified: ', ierr
+    
+    call validate_gene_to_family_mapping(gene_to_fam, n_families, ierr)
+    if (ierr/=0) write(*,*) 'Gene to family mapping could not be verified: ', ierr
+
+    call validate_gene_ids_uniqueness(gene_ids, ierr)
+    if (ierr/=0) write(*,*) 'Gene IDs contain duplicates: ', ierr
 
 end program test_expression_readers
