@@ -1137,6 +1137,9 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
         ierr
     )
 
+    # Check for errors and throw informative messages
+    tox_errors(ierr.value)
+
     # 5) Mark output as read-only and return
     _readonly(centroids_out)
     return centroids_out
