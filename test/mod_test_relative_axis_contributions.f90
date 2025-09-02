@@ -74,7 +74,9 @@ contains
     integer(int32), parameter :: n = 3
     real(real64) :: vec(n) = [1.0_real64, 2.0_real64, 3.0_real64]
     real(real64) :: contrib(n)
-    call compute_relative_axis_contributions(vec, n, contrib)
+    integer(int32) :: ierr
+    call compute_relative_axis_contributions(vec, n, contrib, ierr)
+    call assert_equal_int(ierr, 0, 'ierr should be 0 for valid input: positive vector')
     call assert_sum_equal(contrib, n, 1.0_real64, 'positive vector: sum')
     call assert_no_nan_real(contrib, n, 'positive vector: nan')
     call assert_no_inf_real(contrib, n, 'positive vector: inf')
@@ -87,7 +89,9 @@ contains
     integer(int32), parameter :: n = 3
     real(real64) :: vec(n) = [-1.0_real64, -2.0_real64, -3.0_real64]
     real(real64) :: contrib(n)
-    call compute_relative_axis_contributions(vec, n, contrib)
+    integer(int32) :: ierr
+    call compute_relative_axis_contributions(vec, n, contrib, ierr)
+    call assert_equal_int(ierr, 0, 'ierr should be 0 for valid input: negative vector')
     call assert_sum_equal(contrib, n, 1.0_real64, 'negative vector: sum')
     call assert_no_nan_real(contrib, n, 'negative vector: nan')
     call assert_no_inf_real(contrib, n, 'negative vector: inf')
@@ -100,7 +104,9 @@ contains
     integer(int32), parameter :: n = 3
     real(real64) :: vec(n) = [2.0_real64, -2.0_real64, 4.0_real64]
     real(real64) :: contrib(n)
-    call compute_relative_axis_contributions(vec, n, contrib)
+    integer(int32) :: ierr
+    call compute_relative_axis_contributions(vec, n, contrib, ierr)
+    call assert_equal_int(ierr, 0, 'ierr should be 0 for valid input: mixed vector')
     call assert_sum_equal(contrib, n, 1.0_real64, 'mixed vector: sum')
     call assert_no_nan_real(contrib, n, 'mixed vector: nan')
     call assert_no_inf_real(contrib, n, 'mixed vector: inf')
@@ -113,7 +119,9 @@ contains
     integer(int32), parameter :: n = 3
     real(real64) :: vec(n) = [0.0_real64, 0.0_real64, 0.0_real64]
     real(real64) :: contrib(n)
-    call compute_relative_axis_contributions(vec, n, contrib)
+    integer(int32) :: ierr
+    call compute_relative_axis_contributions(vec, n, contrib, ierr)
+    call assert_true(ierr /= 0, 'ierr should be nonzero for zero vector')
     call assert_sum_equal(contrib, n, 0.0_real64, 'zero vector: sum')
     call assert_no_nan_real(contrib, n, 'zero vector: nan')
     call assert_no_inf_real(contrib, n, 'zero vector: inf')
@@ -126,7 +134,9 @@ contains
     integer(int32), parameter :: n = 3
     real(real64) :: vec(n) = [0.0_real64, 5.0_real64, 0.0_real64]
     real(real64) :: contrib(n)
-    call compute_relative_axis_contributions(vec, n, contrib)
+    integer(int32) :: ierr
+    call compute_relative_axis_contributions(vec, n, contrib, ierr)
+    call assert_equal_int(ierr, 0, 'ierr should be 0 for valid input: one nonzero axis')
     call assert_sum_equal(contrib, n, 1.0_real64, 'one nonzero axis: sum')
     call assert_no_nan_real(contrib, n, 'one nonzero axis: nan')
     call assert_no_inf_real(contrib, n, 'one nonzero axis: inf')
@@ -139,7 +149,9 @@ contains
     integer(int32), parameter :: n = 3
     real(real64) :: vec(n) = [2.0_real64, 2.0_real64, 2.0_real64]
     real(real64) :: contrib(n)
-    call compute_relative_axis_contributions(vec, n, contrib)
+    integer(int32) :: ierr
+    call compute_relative_axis_contributions(vec, n, contrib, ierr)
+    call assert_equal_int(ierr, 0, 'ierr should be 0 for valid input: all equal')
     call assert_sum_equal(contrib, n, 1.0_real64, 'all equal: sum')
     call assert_no_nan_real(contrib, n, 'all equal: nan')
     call assert_no_inf_real(contrib, n, 'all equal: inf')
@@ -152,8 +164,10 @@ contains
     integer(int32), parameter :: n = 100
     real(real64) :: vec(n)
     real(real64) :: contrib(n)
+    integer(int32) :: ierr
     vec = 1.0_real64
-    call compute_relative_axis_contributions(vec, n, contrib)
+    call compute_relative_axis_contributions(vec, n, contrib, ierr)
+    call assert_equal_int(ierr, 0, 'ierr should be 0 for valid input: large vector')
     call assert_sum_equal(contrib, n, 1.0_real64, 'large vector: sum')
     call assert_no_nan_real(contrib, n, 'large vector: nan')
     call assert_no_inf_real(contrib, n, 'large vector: inf')
@@ -165,8 +179,10 @@ contains
   subroutine test_wrappers()
     integer(int32), parameter :: n = 3
     real(real64) :: vec(n), contrib(n)
+    integer(int32) :: ierr
     vec = [1.0_real64, -2.0_real64, 3.0_real64]
-    call relative_axes_changes_from_shift_vector(vec, n, contrib)
+    call relative_axes_changes_from_shift_vector(vec, n, contrib, ierr)
+    call assert_equal_int(ierr, 0, 'ierr should be 0 for valid input: wrapper shift')
     call assert_sum_equal(contrib, n, 1.0_real64, 'wrapper shift: sum')
     call assert_no_nan_real(contrib, n, 'wrapper shift: nan')
     call assert_no_inf_real(contrib, n, 'wrapper shift: inf')
@@ -174,7 +190,8 @@ contains
     call assert_in_range_real(maxval(contrib), 0.0_real64, 1.0_real64, 'wrapper shift: max')
 
     vec = [4.0_real64, 0.0_real64, 2.0_real64]
-    call relative_axes_expression_from_expression_vector(vec, n, contrib)
+    call relative_axes_expression_from_expression_vector(vec, n, contrib, ierr)
+    call assert_equal_int(ierr, 0, 'ierr should be 0 for valid input: wrapper expression')
     call assert_sum_equal(contrib, n, 1.0_real64, 'wrapper expression: sum')
     call assert_no_nan_real(contrib, n, 'wrapper expression: nan')
     call assert_no_inf_real(contrib, n, 'wrapper expression: inf')

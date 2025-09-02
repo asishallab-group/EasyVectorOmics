@@ -4,6 +4,9 @@
 
 library(readr)
 
+# Source the main functions
+source("r/tensoromics_functions.R")
+
 # Function to generate gene_to_family mapping from Orthogroups.tsv file
 generate_gene_to_family_mapping <- function(orthogroups_file, centroids_file, gene_expression_file, 
                                            use_all_species = TRUE, target_species = NULL) {
@@ -86,38 +89,6 @@ generate_gene_to_family_mapping <- function(orthogroups_file, centroids_file, ge
   ))
 }
 
-# Function to call Fortran code
-call_distance_to_centroid <- function(gene_expression_matrix, centroids_matrix, gene_to_family_vector) {
-  # Verify dimensions
-  n_genes <- ncol(gene_expression_matrix)
-  n_families <- ncol(centroids_matrix)
-  d <- nrow(gene_expression_matrix)
-  
-  # Verify dimension compatibility
-  if (length(gene_to_family_vector) != n_genes) {
-    stop("Error: gene_to_family length doesn't match number of genes")
-  }
-  
-  if (nrow(centroids_matrix) != d) {
-    stop("Error: centroid dimensions don't match gene expression")
-  }
-  
-  # Prepare output vector
-  distances <- numeric(n_genes)
-  
-  # Call Fortran function
-  result <- .Fortran("distance_to_centroid_r",
-                     n_genes = as.integer(n_genes),
-                     n_families = as.integer(n_families),
-                     genes = as.double(gene_expression_matrix),
-                     centroids = as.double(centroids_matrix),
-                     gene_to_fam = as.integer(gene_to_family_vector),
-                     distances = as.double(distances),
-                     d = as.integer(d))
-  
-  return(result$distances)
-}
-
 # Main function to run the complete example
 run_real_data_example <- function() {
   cat("=== EUCLIDEAN DISTANCE CALCULATION WITH REAL DATA ===\n\n")
@@ -135,8 +106,7 @@ run_real_data_example <- function() {
     }
   }
   
-  # Load Fortran library
-  dyn.load("build/libtensor-omics.so")
+  # Load data and wrapper functions (library already loaded in tensoromics_functions.R)
   
   # Generate mapping and load data
   mapping_data <- generate_gene_to_family_mapping(
@@ -153,8 +123,13 @@ run_real_data_example <- function() {
   centroids_matrix <- as.matrix(mapping_data$centroids[, -1])  # Exclude Orthogroup column
   centroids_matrix <- t(centroids_matrix)  # Transpose for Fortran column-major format
   
-  # Call Fortran function
-  distances <- call_distance_to_centroid(gene_expr_matrix, centroids_matrix, mapping_data$gene_to_family)
+  # Convert matrices to vectors (column-major format for Fortran)
+  genes_vector <- as.vector(gene_expr_matrix)
+  centroids_vector <- as.vector(centroids_matrix)
+  d <- nrow(gene_expr_matrix)
+  
+  # Call distance_to_centroid wrapper function directly from tensoromics_functions.R
+  distances <- tox_distance_to_centroid(genes_vector, centroids_vector, mapping_data$gene_to_family, d)
   
   # Create results dataframe
   results_df <- data.frame(

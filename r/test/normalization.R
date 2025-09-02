@@ -16,14 +16,14 @@ df_matrix <- as.matrix(df[,-1])   # Convert the expression values into a matrix
 
 # === Diagnose data quality before normalization ===
 cat("Analyzing data quality before normalization...\n")
-diagnostics <- diagnose_data_quality(df_matrix)
+diagnostics <- tox_diagnose_data_quality(df_matrix)
 
 # Clean data if there are problems
 if (diagnostics$problems$na_count > 0 || diagnostics$problems$inf_count > 0 || diagnostics$problems$nan_count > 0) {
   cat("Data contains problematic values. Cleaning data...\n")
   
   # Clean the data using our cleaning function
-  df_matrix_clean <- clean_data_for_normalization(
+  df_matrix_clean <- tox_clean_data_for_normalization(
     df_matrix,
     remove_all_zero_genes = TRUE,
     na_strategy = "impute_mean",  # Impute NA with gene means instead of removing genes
@@ -41,10 +41,10 @@ if (diagnostics$problems$na_count > 0 || diagnostics$problems$inf_count > 0 || d
 }
 
 # === Apply normalization steps sequentially ===
-normalized_matrix_std <- normalize_by_std_dev(df_matrix_clean)    # Normalize by standard deviation
-normalized_matrix_qtl <- quantile_normalization(normalized_matrix_std)  # Apply quantile normalization
-normalized_matrix_log <- log2_transformation(normalized_matrix_qtl)     # Log2(x+1) transformation
-averaged_df <- calculate_tissue_averages(normalized_matrix_log)         # Average replicates by tissue
+normalized_matrix_std <- tox_normalize_by_std_dev(df_matrix_clean)    # Normalize by standard deviation
+normalized_matrix_qtl <- tox_quantile_normalization(normalized_matrix_std)  # Apply quantile normalization
+normalized_matrix_log <- tox_log2_transformation(normalized_matrix_qtl)     # Log2(x+1) transformation
+averaged_df <- tox_calculate_tissue_averages(normalized_matrix_log)         # Average replicates by tissue
 
 # # === Calculate fold changes between specified groups ===
 # fc_df <- calculate_fc_by_patterns(

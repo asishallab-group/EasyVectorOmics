@@ -29,13 +29,16 @@ def test_identical_vectors_2d():
     v2 = np.array([1.0, 0.0], dtype=np.float64)
     selected_axes = np.array([1, 1], dtype=np.int32)  # Ignored for 2D
     
-    result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
-    
-    expected = 0.0
-    print("Test: Identical 2D vectors [1,0] vs [1,0]:")
-    print(f"  Fortran result: {result}")
-    print(f"  Expected: {expected}")
-    print(f"  Match: {abs(result - expected) < TOL}")
+    try:
+        result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
+        
+        expected = 0.0
+        print("Test: Identical 2D vectors [1,0] vs [1,0]:")
+        print(f"  Fortran result: {result}")
+        print(f"  Expected: {expected}")
+        print(f"  Match: {abs(result - expected) < TOL}")
+    except Exception as e:
+        print(f"  ERROR: {e}")
     print()
 
 def test_perpendicular_vectors_2d():
@@ -46,15 +49,18 @@ def test_perpendicular_vectors_2d():
     v2 = np.array([0.0, 1.0], dtype=np.float64)
     selected_axes = np.array([1, 1], dtype=np.int32)  # Ignored for 2D
     
-    result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
-    
-    expected_magnitude = PI/2
-    print("Test: Perpendicular 2D vectors [1,0] vs [0,1]:")
-    print(f"  Fortran result: {result}")
-    print(f"  Expected magnitude: ±{expected_magnitude}")
-    print(f"  Magnitude match: {abs(abs(result) - expected_magnitude) < TOL}")
-    print(f"  Sign (should be positive): {result > 0}")
-    print(f"  Angle in degrees: {result * 180/PI:.2f}°")
+    try:
+        result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
+        
+        expected_magnitude = PI/2
+        print("Test: Perpendicular 2D vectors [1,0] vs [0,1]:")
+        print(f"  Fortran result: {result}")
+        print(f"  Expected magnitude: ±{expected_magnitude}")
+        print(f"  Magnitude match: {abs(abs(result) - expected_magnitude) < TOL}")
+        print(f"  Sign (should be positive): {result > 0}")
+        print(f"  Angle in degrees: {result * 180/PI:.2f}°")
+    except Exception as e:
+        print(f"  ERROR: {e}")
     print()
 
 def test_opposite_vectors_2d():
@@ -65,14 +71,17 @@ def test_opposite_vectors_2d():
     v2 = np.array([-1.0, 0.0], dtype=np.float64)
     selected_axes = np.array([1, 1], dtype=np.int32)  # Ignored for 2D
     
-    result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
-    
-    expected_magnitude = PI
-    print("Test: Opposite 2D vectors [1,0] vs [-1,0]:")
-    print(f"  Fortran result: {result}")
-    print(f"  Expected magnitude: ±{expected_magnitude}")
-    print(f"  Magnitude match: {abs(abs(result) - expected_magnitude) < TOL}")
-    print(f"  Angle in degrees: {result * 180/PI:.2f}°")
+    try:
+        result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
+        
+        expected_magnitude = PI
+        print("Test: Opposite 2D vectors [1,0] vs [-1,0]:")
+        print(f"  Fortran result: {result}")
+        print(f"  Expected magnitude: ±{expected_magnitude}")
+        print(f"  Magnitude match: {abs(abs(result) - expected_magnitude) < TOL}")
+        print(f"  Angle in degrees: {result * 180/PI:.2f}°")
+    except Exception as e:
+        print(f"  ERROR: {e}")
     print()
 
 def test_45_degree_rotation_2d():
@@ -83,16 +92,19 @@ def test_45_degree_rotation_2d():
     v2 = np.array([math.sqrt(2)/2, math.sqrt(2)/2], dtype=np.float64)  # 45 degrees
     selected_axes = np.array([1, 1], dtype=np.int32)  # Ignored for 2D
     
-    result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
-    
-    expected = PI/4
-    print("Test: 45-degree counterclockwise rotation:")
-    print(f"  v1: {v1}")
-    print(f"  v2: {v2}")
-    print(f"  Fortran result: {result}")
-    print(f"  Expected: {expected}")
-    print(f"  Match: {abs(result - expected) < TOL}")
-    print(f"  Angle in degrees: {result * 180/PI:.2f}°")
+    try:
+        result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
+        
+        expected = PI/4
+        print("Test: 45-degree counterclockwise rotation:")
+        print(f"  v1: {v1}")
+        print(f"  v2: {v2}")
+        print(f"  Fortran result: {result}")
+        print(f"  Expected: {expected}")
+        print(f"  Match: {abs(result - expected) < TOL}")
+        print(f"  Angle in degrees: {result * 180/PI:.2f}°")
+    except Exception as e:
+        print(f"  ERROR: {e}")
     print()
 
 def test_clockwise_vs_counterclockwise_2d():
@@ -104,15 +116,18 @@ def test_clockwise_vs_counterclockwise_2d():
     v2_cw = np.array([0.0, -1.0], dtype=np.float64)   # 90° clockwise
     selected_axes = np.array([1, 1], dtype=np.int32)  # Ignored for 2D
     
-    result_ccw = tox_clock_hand_angle_between_vectors(v1, v2_ccw, selected_axes)
-    result_cw = tox_clock_hand_angle_between_vectors(v1, v2_cw, selected_axes)
-    
-    print("Test: Clockwise vs Counterclockwise:")
-    print(f"  Counterclockwise angle: {result_ccw:.6f} ({result_ccw * 180/PI:.2f}°)")
-    print(f"  Clockwise angle: {result_cw:.6f} ({result_cw * 180/PI:.2f}°)")
-    print(f"  CCW > 0: {result_ccw > 0}")
-    print(f"  CW < 0: {result_cw < 0}")
-    print(f"  Magnitudes equal: {abs(abs(result_ccw) - abs(result_cw)) < TOL}")
+    try:
+        result_ccw = tox_clock_hand_angle_between_vectors(v1, v2_ccw, selected_axes)
+        result_cw = tox_clock_hand_angle_between_vectors(v1, v2_cw, selected_axes)
+        
+        print("Test: Clockwise vs Counterclockwise:")
+        print(f"  Counterclockwise angle: {result_ccw:.6f} ({result_ccw * 180/PI:.2f}°)")
+        print(f"  Clockwise angle: {result_cw:.6f} ({result_cw * 180/PI:.2f}°)")
+        print(f"  CCW > 0: {result_ccw > 0}")
+        print(f"  CW < 0: {result_cw < 0}")
+        print(f"  Magnitudes equal: {abs(abs(result_ccw) - abs(result_cw)) < TOL}")
+    except Exception as e:
+        print(f"  ERROR: {e}")
     print()
 
 def test_3d_vectors():
@@ -146,30 +161,24 @@ def test_3d_vectors():
 def test_high_dimensional():
     """Test high-dimensional vectors with selected axes"""
     print("=== Testing High-Dimensional Vectors ===")
-    
-    # 5D vectors, perpendicular in first two dimensions
+    # 5D vectors, perpendicular in the first two axes
     v1 = np.array([1.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float64)
     v2 = np.array([0.0, 1.0, 0.0, 0.0, 0.0], dtype=np.float64)
-    selected_axes = np.array([1, 2, 3, 0, 0], dtype=np.int32)  # Use first 3 dimensions for orientation
-    
+    selected_axes = np.array([1, 2, 3], dtype=np.int32)  # Only 3 indices
     result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
-    
     expected_magnitude = PI/2
-    print("Test 1: 5D vectors perpendicular in first two dimensions:")
+    print("Test 1: 5D vectors perpendicular in first two axes:")
     print(f"  v1: {v1}")
     print(f"  v2: {v2}")
     print(f"  Selected axes: {selected_axes}")
     print(f"  Result: {result:.6f} ({result * 180/PI:.2f}°)")
     print(f"  Expected magnitude: ±{expected_magnitude}")
     print(f"  Magnitude match: {abs(abs(result) - expected_magnitude) < TOL}")
-    
-    # 7D vectors with specific selected axes
+    # 7D vectors with selected axes
     v1 = np.array([0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float64)
     v2 = np.array([0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0], dtype=np.float64)
-    selected_axes = np.array([3, 5, 1, 0, 0, 0, 0], dtype=np.int32)  # Use dimensions 3, 5, 1 for orientation
-    
+    selected_axes = np.array([3, 5, 1], dtype=np.int32)  # Only 3 indices
     result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
-    
     print("Test 2: 7D vectors with selected axes [3,5,1]:")
     print(f"  v1: {v1}")
     print(f"  v2: {v2}")
@@ -420,7 +429,7 @@ def test_performance():
             targets[:, i] /= target_norm
     
     vecs_selection_mask = np.ones(n_vecs, dtype=np.int32)
-    selected_axes = np.array([1, 2, 3] + [0] * (n_dims - 3), dtype=np.int32)
+    selected_axes = np.array([1, 2, 3], dtype=np.int32)
     
     # Time the operation
     start_time = time.time()
@@ -441,8 +450,143 @@ def test_performance():
     print("  Performance test completed successfully!")
     print()
 
+def test_invalid_selected_axes():
+    """Test invalid selected axes (same indices)"""
+    print("=== Testing Invalid Selected Axes ===")
+    v1 = np.array([1.0, 0.0, 0.0, 0.0, 0.0], dtype=np.float64)
+    v2 = np.array([0.0, 1.0, 0.0, 0.0, 0.0], dtype=np.float64)
+    selected_axes = np.array([1, 1, 1, 0, 0], dtype=np.int32)
+    try:
+        result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
+        print(f"  ERROR: Expected exception, got result {result}")
+    except Exception as e:
+        print(f"  Passed: Caught expected error: {e}")
+    print()
+
+def test_out_of_bounds_selected_axes():
+    """Test out-of-bounds selected axes"""
+    print("=== Testing Out-of-Bounds Selected Axes ===")
+    v1 = np.array([1.0, 0.0, 0.0, 2.3], dtype=np.float64)
+    v2 = np.array([0.0, 1.0, 0.0, 2.3], dtype=np.float64)
+    selected_axes = np.array([1, 2, 5, 6], dtype=np.int32)
+    try:
+        result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
+        print(f"  ERROR: Expected exception, got result {result}")
+    except Exception as e:
+        print(f"  Passed: Caught expected error: {e}")
+    print()
+
+def test_zero_vectors():
+    """Test zero vectors (should not produce NaN)"""
+    print("=== Testing Zero Vectors ===")
+    v1 = np.array([0.0, 0.0, 0.0], dtype=np.float64)
+    v2 = np.array([1.0, 0.0, 0.0], dtype=np.float64)
+    selected_axes = np.array([1, 2, 3], dtype=np.int32)
+    try:
+        result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
+        print(f"  Result: {result}")
+        print(f"  Not NaN: {not np.isnan(result)}")
+    except Exception as e:
+        print(f"  ERROR: {e}")
+    print()
+
+def test_denormalized_vectors():
+    """Test denormalized vectors (large magnitude)"""
+    print("=== Testing Denormalized Vectors ===")
+    v1 = np.array([100.0, 0.0], dtype=np.float64)
+    v2 = np.array([0.0, 50.0], dtype=np.float64)
+    selected_axes = np.array([1, 2], dtype=np.int32)
+    try:
+        result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
+        expected = PI/2
+        print(f"  Result: {result:.6f} ({result * 180/PI:.2f}°)")
+        print(f"  Expected: {expected:.6f}")
+        print(f"  Match: {abs(result - expected) < TOL}")
+    except Exception as e:
+        print(f"  ERROR: {e}")
+    print()
+
+def test_tiny_vectors_precision():
+    """Test tiny vectors near machine precision"""
+    print("=== Testing Tiny Vectors Precision ===")
+    tiny = 1e-14
+    v1 = np.array([tiny, 0.0], dtype=np.float64)
+    v2 = np.array([0.0, tiny], dtype=np.float64)
+    selected_axes = np.array([1, 2], dtype=np.int32)
+    try:
+        result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
+        expected = PI/2
+        print(f"  Result: {result:.6f} ({result * 180/PI:.2f}°)")
+        print(f"  Expected magnitude: ±{expected:.6f}")
+        print(f"  Magnitude match: {abs(abs(result) - expected) < 1e-10}")
+    except Exception as e:
+        print(f"  ERROR: {e}")
+    print()
+
+def test_huge_vectors_precision():
+    """Test huge vectors near overflow"""
+    print("=== Testing Huge Vectors Precision ===")
+    huge_val = 1e14
+    v1 = np.array([huge_val, 0.0], dtype=np.float64)
+    v2 = np.array([0.0, huge_val], dtype=np.float64)
+    selected_axes = np.array([1, 2], dtype=np.int32)
+    try:
+        result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
+        expected = PI/2
+        print(f"  Result: {result:.6f} ({result * 180/PI:.2f}°)")
+        print(f"  Expected: {expected:.6f}")
+        print(f"  Match: {abs(result - expected) < TOL}")
+    except Exception as e:
+        print(f"  ERROR: {e}")
+    print()
+
+def test_nearly_identical_vectors():
+    """Test nearly identical vectors (precision boundary)"""
+    print("=== Testing Nearly Identical Vectors ===")
+    epsilon = 1e-15
+    v1 = np.array([1.0, 0.0], dtype=np.float64)
+    v2 = np.array([1.0, epsilon], dtype=np.float64)
+    selected_axes = np.array([1, 2], dtype=np.int32)
+    try:
+        result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
+        print(f"  Result: {result:.2e} radians")
+        print(f"  Very small angle: {abs(result) < 1e-10}")
+    except Exception as e:
+        print(f"  ERROR: {e}")
+    print()
+
+def test_nearly_opposite_vectors():
+    """Test nearly opposite vectors (precision boundary)"""
+    print("=== Testing Nearly Opposite Vectors ===")
+    epsilon = 1e-15
+    v1 = np.array([1.0, 0.0], dtype=np.float64)
+    v2 = np.array([-1.0, epsilon], dtype=np.float64)
+    selected_axes = np.array([1, 2], dtype=np.int32)
+    try:
+        result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
+        print(f"  Result: {result:.6f} ({result * 180/PI:.2f}°)")
+        print(f"  Nearly π: {abs(abs(result) - PI) < 1e-10}")
+    except Exception as e:
+        print(f"  ERROR: {e}")
+    print()
+
+def test_mixed_positive_negative():
+    """Test vectors with mixed positive/negative components"""
+    print("=== Testing Mixed Positive/Negative Vectors ===")
+    v1 = np.array([1.0, -2.0, 3.0], dtype=np.float64)
+    v2 = np.array([-2.0, 1.0, -3.0], dtype=np.float64)
+    selected_axes = np.array([1, 2, 3], dtype=np.int32)
+    v1 = v1 / np.sqrt(np.sum(v1**2))
+    v2 = v2 / np.sqrt(np.sum(v2**2))
+    try:
+        result = tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
+        print(f"  Result: {result:.6f}")
+        print(f"  In valid range: {abs(result) >= 0.0 and abs(result) <= PI}")
+    except Exception as e:
+        print(f"  ERROR: {e}")
+    print()
+
 def main():
-    """Run all tests"""
     print("=================================================")
     print("    CLOCK HAND ANGLES PYTHON INTERFACE TESTS")
     print("=================================================")
@@ -471,6 +615,17 @@ def main():
     
     # Performance test
     test_performance()
+    
+    # Error conditions and edge cases
+    test_invalid_selected_axes()
+    test_out_of_bounds_selected_axes()
+    test_zero_vectors()
+    test_denormalized_vectors()
+    test_tiny_vectors_precision()
+    test_huge_vectors_precision()
+    test_nearly_identical_vectors()
+    test_nearly_opposite_vectors()
+    test_mixed_positive_negative()
     
     print("=================================================")
     print("             ALL TESTS COMPLETED")

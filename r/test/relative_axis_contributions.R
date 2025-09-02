@@ -1,6 +1,5 @@
 ## ==================== TESTS FOR RELATIVE AXIS CONTRIBUTIONS ====================
 # Load the compiled Fortran library
-dyn.load("build/libtensor-omics.so")  # Uncomment when library is built
 source("r/tensoromics_functions.R")
 
 #' Assert that two numeric vectors are approximately equal

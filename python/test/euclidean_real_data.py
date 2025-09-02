@@ -1,46 +1,21 @@
 #!/usr/bin/env python3
 """
-Example of using the Fortran module with real data
-This script demonstrates how to use distance_to_centroid with normalized TPM data,
-orthogroup centroids and gene-to-family mapping
+Real data example for Euclidean distance functions using Python wrapper
+Uses tensoromics_functions.py wrapper functions (mirrors R euclidean_real_data.R)
 """
 
 import numpy as np
 import pandas as pd
-import ctypes
+import sys
 import os
 from pathlib import Path
 
-# Load library
-ctypes.CDLL("libgomp.so.1", mode=ctypes.RTLD_GLOBAL)
-lib = ctypes.CDLL("build/libtensor-omics.so")
+# Add parent directory to path to import tensoromics_functions
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from tensoromics_functions import tox_euclidean_distance, tox_distance_to_centroid
 
-def setup_euclidean_distance():
-    """Setup euclidean distance function"""
-    euclidean_distance = lib.euclidean_distance_c
-    euclidean_distance.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        ctypes.c_int,
-        ctypes.POINTER(ctypes.c_double)
-    ]
-    euclidean_distance.restype = None
-    return euclidean_distance
-
-def setup_distance_to_centroid():
-    """Setup distance to centroid function"""
-    distance_to_centroid = lib.distance_to_centroid_c
-    distance_to_centroid.argtypes = [
-        ctypes.c_int,  # n_genes
-        ctypes.c_int,  # n_families
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # genes
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # centroids
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # gene_to_fam
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # distances
-        ctypes.c_int   # d
-    ]
-    distance_to_centroid.restype = None
-    return distance_to_centroid
+print("=== Real data example using Python wrapper functions ===")
+print("Demonstrates euclidean distance calculation with genomic data")
 
 def generate_gene_to_family_mapping(orthogroups_file, centroids_file, gene_expression_file, 
                                    use_all_species=True, target_species=None):
@@ -128,9 +103,9 @@ def generate_gene_to_family_mapping(orthogroups_file, centroids_file, gene_expre
         'centroids': centroids
     }
 
-def call_distance_to_centroid(gene_expression_matrix, centroids_matrix, gene_to_family_vector):
+def call_tox_distance_to_centroid(gene_expression_matrix, centroids_matrix, gene_to_family_vector):
     """
-    Call Fortran distance_to_centroid function
+    Call wrapper distance_to_centroid function
     
     Parameters:
     -----------
@@ -156,23 +131,13 @@ def call_distance_to_centroid(gene_expression_matrix, centroids_matrix, gene_to_
     if d_centroids != d:
         raise ValueError("Error: centroid dimensions don't match gene expression")
     
-    # Prepare arrays for Fortran (C-contiguous)
-    genes_flat = np.ascontiguousarray(gene_expression_matrix.ravel(order='F'))
-    centroids_flat = np.ascontiguousarray(centroids_matrix.ravel(order='F'))
-    gene_to_fam = np.ascontiguousarray(gene_to_family_vector, dtype=np.int32)
-    distances = np.zeros(n_genes, dtype=np.float64)
+    # Prepare arrays for wrapper function (flatten in Fortran order)
+    genes_flat = gene_expression_matrix.ravel(order='F')
+    centroids_flat = centroids_matrix.ravel(order='F')
+    gene_to_fam = gene_to_family_vector.astype(np.int32)
     
-    # Call Fortran function
-    distance_to_centroid = setup_distance_to_centroid()
-    distance_to_centroid(
-        n_genes,
-        n_families,
-        genes_flat,
-        centroids_flat,
-        gene_to_fam,
-        distances,
-        d
-    )
+    # Call wrapper function
+    distances = tox_distance_to_centroid(genes_flat, centroids_flat, gene_to_fam, d)
     
     return distances
 
@@ -213,7 +178,7 @@ def run_real_data_example():
     print(f"Gene-to-family vector length: {len(mapping_data['gene_to_family'])}")
     
     # Call Fortran function
-    distances = call_distance_to_centroid(
+    distances = call_tox_distance_to_centroid(
         gene_expr_matrix, 
         centroids_matrix, 
         mapping_data['gene_to_family']
@@ -224,11 +189,21 @@ def run_real_data_example():
         'gene_id': mapping_data['gene_expression'].iloc[:, 0],
         'family_index': mapping_data['gene_to_family'],
         'distance_to_centroid': distances,
-        'has_family': mapping_data['gene_to_family'] > 0
+        'has_family': (mapping_data['gene_to_family'] > 0) & (distances != -1)
     })
     
-    # Filter genes with assigned families
+    # Filter genes with assigned families and valid distances
     results_with_families = results_df[results_df['has_family']].copy()
+    
+    # Print summary
+    total_genes = len(results_df)
+    genes_with_families = len(results_with_families)
+    genes_without_families = total_genes - genes_with_families
+    
+    print(f"Total genes: {total_genes}")
+    print(f"Genes with families: {genes_with_families}")
+    print(f"Genes without families: {genes_without_families}")
+    print(f"Invalid distances (-1): {sum(distances == -1)}")
     
     # Save results
     output_file = "results/distance_to_centroids_python.tsv"
@@ -247,27 +222,19 @@ def test_basic_euclidean():
     vec1 = np.array([1.0, 2.0, 3.0], dtype=np.float64)
     vec2 = np.array([4.0, 5.0, 6.0], dtype=np.float64)
     
-    # Call Fortran function
-    euclidean_distance = setup_euclidean_distance()
-    result = ctypes.c_double()
-    
-    euclidean_distance(
-        np.ascontiguousarray(vec1),
-        np.ascontiguousarray(vec2),
-        len(vec1),
-        ctypes.byref(result)
-    )
+    # Call wrapper function
+    result = tox_euclidean_distance(vec1, vec2)
     
     # Expected result
     expected = np.sqrt(np.sum((vec1 - vec2)**2))
     
     print(f"Vector 1: {vec1}")
     print(f"Vector 2: {vec2}")
-    print(f"Fortran result: {result.value:.6f}")
+    print(f"Wrapper result: {result:.6f}")
     print(f"Python expected: {expected:.6f}")
-    print(f"Match: {abs(result.value - expected) < 1e-12}")
+    print(f"Match: {abs(result - expected) < 1e-12}")
     
-    return abs(result.value - expected) < 1e-12
+    return abs(result - expected) < 1e-12
 
 if __name__ == "__main__":
     print("TENSOR-OMICS PYTHON EUCLIDEAN DISTANCE EXAMPLE")

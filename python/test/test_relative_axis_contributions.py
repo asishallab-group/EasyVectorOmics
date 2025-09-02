@@ -2,6 +2,11 @@
 Unit tests for relative axis contributions Python wrappers
 """
 import numpy as np
+import sys
+import os
+
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+
 from tensoromics_functions import (
     relative_axes_changes_from_shift_vector,
     relative_axes_expression_from_expression_vector
@@ -49,10 +54,11 @@ def test_shift_mixed_vector():
 
 def test_shift_zero_vector():
     vec = np.array([0, 0, 0], dtype=np.float64)
-    contrib = relative_axes_changes_from_shift_vector(vec)
-    assert_vec_sum(contrib, 0.0, msg="shift zero vector")
-    assert_all_finite(contrib, "shift zero vector")
-    assert_in_range(contrib, msg="shift zero vector")
+    try:
+        contrib = relative_axes_changes_from_shift_vector(vec)
+        raise AssertionError("Expected exception for zero vector, but got result: {}".format(contrib))
+    except RuntimeError as e:
+        print("✓ shift zero vector: caught expected exception ({})".format(e))
 
 def test_shift_one_nonzero_axis():
     vec = np.array([0, 5, 0], dtype=np.float64)
@@ -99,10 +105,11 @@ def test_expr_mixed_vector():
 
 def test_expr_zero_vector():
     vec = np.array([0, 0, 0], dtype=np.float64)
-    contrib = relative_axes_expression_from_expression_vector(vec)
-    assert_vec_sum(contrib, 0.0, msg="expr zero vector")
-    assert_all_finite(contrib, "expr zero vector")
-    assert_in_range(contrib, msg="expr zero vector")
+    try:
+        contrib = relative_axes_expression_from_expression_vector(vec)
+        raise AssertionError("Expected exception for zero vector, but got result: {}".format(contrib))
+    except RuntimeError as e:
+        print("✓ expr zero vector: caught expected exception ({})".format(e))
 
 def test_expr_one_nonzero_axis():
     vec = np.array([0, 5, 0], dtype=np.float64)

@@ -2,7 +2,6 @@
 # Uses Fortran wrappers for RAP projections and angle calculations
 
 # Load the compiled Fortran library
-dyn.load("build/libtensor-omics.so")  # Uncomment when library is built
 source("r/tensoromics_functions.R")
 
 # Constants
@@ -34,7 +33,6 @@ assert_true <- function(condition, message = "") {
 test_identical_vectors_2d <- function() {
   v1 <- c(1.0, 0.0)
   v2 <- c(1.0, 0.0)
-  
   signed_angle <- tox_clock_hand_angle_between_vectors(v1, v2)
   assert_equal(signed_angle, 0.0, TOL, "Identical 2D vectors should give 0 angle")
 }
@@ -42,7 +40,6 @@ test_identical_vectors_2d <- function() {
 test_opposite_vectors_2d <- function() {
   v1 <- c(1.0, 0.0)
   v2 <- c(-1.0, 0.0)
-  
   signed_angle <- tox_clock_hand_angle_between_vectors(v1, v2)
   assert_equal(abs(signed_angle), PI, TOL, "Opposite 2D vectors should give ±π")
 }
@@ -50,7 +47,6 @@ test_opposite_vectors_2d <- function() {
 test_perpendicular_vectors_2d <- function() {
   v1 <- c(1.0, 0.0)
   v2 <- c(0.0, 1.0)
-  
   signed_angle <- tox_clock_hand_angle_between_vectors(v1, v2)
   assert_equal(abs(signed_angle), PI/2, TOL, "Perpendicular 2D vectors magnitude")
   assert_true(signed_angle > 0, "Counterclockwise rotation should be positive")
@@ -60,7 +56,6 @@ test_45_degree_rotation_2d <- function() {
   v1 <- c(1.0, 0.0)
   v2 <- c(sqrt(2)/2, sqrt(2)/2)  # 45 degrees
   expected <- PI/4
-  
   signed_angle <- tox_clock_hand_angle_between_vectors(v1, v2)
   assert_equal(signed_angle, expected, TOL, "45-degree counterclockwise rotation")
 }
@@ -69,10 +64,8 @@ test_clockwise_vs_counterclockwise_2d <- function() {
   v1 <- c(1.0, 0.0)
   v2_ccw <- c(0.0, 1.0)   # 90° counterclockwise
   v2_cw <- c(0.0, -1.0)   # 90° clockwise
-  
   angle_ccw <- tox_clock_hand_angle_between_vectors(v1, v2_ccw)
   angle_cw <- tox_clock_hand_angle_between_vectors(v1, v2_cw)
-  
   assert_true(angle_ccw > 0, "Counterclockwise should be positive")
   assert_true(angle_cw < 0, "Clockwise should be negative")
   assert_equal(abs(angle_ccw), abs(angle_cw), TOL, "Magnitudes should be equal")
@@ -83,7 +76,6 @@ test_clockwise_vs_counterclockwise_2d <- function() {
 test_identical_vectors_3d <- function() {
   v1 <- c(1.0, 1.0, 1.0)
   v2 <- c(1.0, 1.0, 1.0)
-  
   signed_angle <- tox_clock_hand_angle_between_vectors(v1, v2)
   assert_equal(signed_angle, 0.0, TOL, "Identical 3D vectors should give 0 angle")
 }
@@ -91,7 +83,6 @@ test_identical_vectors_3d <- function() {
 test_perpendicular_vectors_3d <- function() {
   v1 <- c(1.0, 0.0, 0.0)
   v2 <- c(0.0, 1.0, 0.0)
-  
   signed_angle <- tox_clock_hand_angle_between_vectors(v1, v2)
   assert_equal(abs(signed_angle), PI/2, TOL, "Perpendicular 3D vectors")
 }
@@ -99,14 +90,9 @@ test_perpendicular_vectors_3d <- function() {
 test_arbitrary_3d_rotation <- function() {
   v1 <- c(1.0, 2.0, 3.0)
   v2 <- c(2.0, 1.0, 3.0)
-  
-  # Normalize vectors
   v1 <- v1 / sqrt(sum(v1^2))
   v2 <- v2 / sqrt(sum(v2^2))
-  
   signed_angle <- tox_clock_hand_angle_between_vectors(v1, v2)
-  
-  # Check magnitude is correct
   dot_product <- sum(v1 * v2)
   expected_magnitude <- acos(max(-1, min(1, dot_product)))
   assert_equal(abs(signed_angle), expected_magnitude, TOL, "3D arbitrary rotation magnitude")
@@ -118,17 +104,14 @@ test_high_dimensional_basic <- function() {
   v1 <- c(1.0, 0.0, 0.0, 0.0, 0.0)
   v2 <- c(0.0, 1.0, 0.0, 0.0, 0.0)
   selected_axes <- c(1, 2, 3)
-  
   signed_angle <- tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
   assert_equal(abs(signed_angle), PI/2, TOL, "High-dimensional perpendicular vectors")
 }
 
 test_high_dimensional_selected_axes <- function() {
-  # Vectors that are perpendicular in dimensions 3 and 5
   v1 <- c(0.0, 0.0, 1.0, 0.0, 0.0, 0.0, 0.0)
   v2 <- c(0.0, 0.0, 0.0, 0.0, 1.0, 0.0, 0.0)
-  selected_axes <- c(3, 5, 1)  # Use dimensions 3, 5, 1 for orientation
-  
+  selected_axes <- c(3, 5, 1)
   signed_angle <- tox_clock_hand_angle_between_vectors(v1, v2, selected_axes)
   assert_equal(abs(signed_angle), PI/2, TOL, "High-dimensional with selected axes")
 }
@@ -361,4 +344,3 @@ if (failed == 0) {
 } else {
   cat("❌ Some tests failed. Please check the output above.\n")
 }
-  

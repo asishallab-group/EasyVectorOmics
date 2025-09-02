@@ -46,7 +46,7 @@ contains
 
       integer(int32) :: n_axes, n_vecs, n_selected_axes, n_selected_vecs
       real(real64), allocatable :: projections(:,:)
-      integer(int32) :: i_vec
+      integer(int32) :: i_vec, ierr
 
       n_axes = size(axes_mask)
       n_vecs = size(vecs_mask)
@@ -56,7 +56,9 @@ contains
       allocate(projections(n_selected_axes, n_selected_vecs))
       projections = 1
 
-      call omics_vector_RAP_projection_r(vecs, n_axes, n_vecs, vecs_mask, n_selected_vecs, axes_mask, n_selected_axes, projections)
+      call omics_vector_RAP_projection_r(vecs, n_axes, n_vecs, vecs_mask, n_selected_vecs, axes_mask, n_selected_axes, projections, ierr)
+
+      call assert_equal_int(ierr, 0, "ierr should be 0 for valid input: " // trim(test_name))
 
       do i_vec = 1, n_selected_vecs
          call assert_equal_real(&
@@ -75,56 +77,96 @@ contains
    !> Test all axes and vectors are selected
    subroutine test_omics_vector_RAP_projection_all_selected()
       implicit none
-
       real(real64), dimension(3,3) :: vecs
       logical :: axes_mask(3), vecs_mask(3)
+      real(real64), allocatable :: projections(:,:)
+      integer(int32) :: ierr, n_selected_axes, n_selected_vecs, i_vec
 
       vecs = reshape([1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0], [3,3])
       axes_mask = [.true., .true., .true.]
       vecs_mask = [.true., .true., .true.]
-      call call_omics_vector_RAP_projection("All selected", vecs, axes_mask, vecs_mask)
+      n_selected_axes = count(axes_mask)
+      n_selected_vecs = count(vecs_mask)
+
+      allocate(projections(n_selected_axes, n_selected_vecs))
+      projections = 1
+
+      call omics_vector_RAP_projection_r(vecs, 3, 3, vecs_mask, n_selected_vecs, axes_mask, n_selected_axes, projections, ierr)
+      call assert_equal_int(ierr, 0, "ierr should be 0 for valid input: all selected")
+
+      ! Check the projection
+      do i_vec = 1, n_selected_vecs
+         call assert_equal_real(&
+            sum(projections(:, i_vec)) / real(n_selected_axes, real64),&
+            0.0_real64,&
+            1d-12,&
+            "test_omics_vector_RAP_projection_all_selected: projection failed"&
+         )
+      end do
    end subroutine test_omics_vector_RAP_projection_all_selected
 
    !> Test one axis and all vectors are selected
    subroutine test_omics_vector_RAP_projection_one_axis_selected()
       implicit none
-
       real(real64), dimension(3,3) :: vecs
       logical :: axes_mask(3), vecs_mask(3)
+      real(real64), allocatable :: projections(:,:)
+      integer(int32) :: ierr, n_selected_axes, n_selected_vecs
 
       vecs = reshape([1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0], [3,3])
       axes_mask = [.false., .true., .false.]
       vecs_mask = [.true., .true., .true.]
-      call call_omics_vector_RAP_projection("One axis selected", vecs, axes_mask, vecs_mask)
+      n_selected_axes = count(axes_mask)
+      n_selected_vecs = count(vecs_mask)
+
+      allocate(projections(n_selected_axes, n_selected_vecs))
+      projections = 1
+
+      call omics_vector_RAP_projection_r(vecs, 3, 3, vecs_mask, n_selected_vecs, axes_mask, n_selected_axes, projections, ierr)
+      call assert_equal_int(ierr, 0, "ierr should be 0 for valid input: one axis selected")
    end subroutine test_omics_vector_RAP_projection_one_axis_selected
 
    !> Test all axes and one vector are selected
    subroutine test_omics_vector_RAP_projection_one_vector_selected()
       implicit none
-
       real(real64), dimension(3,3) :: vecs
       logical :: axes_mask(3), vecs_mask(3)
+      real(real64), allocatable :: projections(:,:)
+      integer(int32) :: ierr, n_selected_axes, n_selected_vecs
 
       vecs = reshape([1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0], [3,3])
       axes_mask = [.true., .true., .true.]
       vecs_mask = [.false., .true., .false.]
-      call call_omics_vector_RAP_projection("One vector selected", vecs, axes_mask, vecs_mask)
+      n_selected_axes = count(axes_mask)
+      n_selected_vecs = count(vecs_mask)
+
+      allocate(projections(n_selected_axes, n_selected_vecs))
+      projections = 1
+
+      call omics_vector_RAP_projection_r(vecs, 3, 3, vecs_mask, n_selected_vecs, axes_mask, n_selected_axes, projections, ierr)
+      call assert_equal_int(ierr, 0, "ierr should be 0 for valid input: one vector selected")
    end subroutine test_omics_vector_RAP_projection_one_vector_selected
 
    !> Test constant vector
    subroutine test_omics_vector_RAP_projection_constant_vector()
       implicit none
-
       real(real64), dimension(3,3) :: vecs
-      real(real64), dimension(3,3) :: projections
+      real(real64), allocatable :: projections(:,:)
       logical :: axes_mask(3), vecs_mask(3)
+      integer(int32) :: ierr, n_selected_axes, n_selected_vecs
 
       vecs = 0.0_real64
       vecs(:,1) = [5.0, 5.0, 5.0]
       axes_mask = [.true., .true., .true.]
       vecs_mask = [.true., .true., .true.]
+      n_selected_axes = count(axes_mask)
+      n_selected_vecs = count(vecs_mask)
 
-      call call_omics_vector_RAP_projection("Constant vector", vecs, axes_mask, vecs_mask, projections)
+      allocate(projections(n_selected_axes, n_selected_vecs))
+      projections = 1
+
+      call omics_vector_RAP_projection_r(vecs, 3, 3, vecs_mask, n_selected_vecs, axes_mask, n_selected_axes, projections, ierr)
+      call assert_equal_int(ierr, 0, "ierr should be 0 for valid input: constant vector")
       call assert_equal_array_real(&
          projections(:, 1),&
          [0.0_real64, 0.0_real64, 0.0_real64],&
@@ -134,58 +176,97 @@ contains
       )
    end subroutine test_omics_vector_RAP_projection_constant_vector
 
+   !> Test orthogonal vector
    subroutine test_omics_vector_RAP_projection_orthogonal_vector()
       implicit none
-
       real(real64), dimension(3,3) :: vecs
       logical :: axes_mask(3), vecs_mask(3)
+      real(real64), allocatable :: projections(:,:)
+      integer(int32) :: ierr, n_selected_axes, n_selected_vecs
 
       vecs = 0.0_real64
       vecs(:,1) = [1.0, 0.0, -1.0]
       axes_mask = [.true., .true., .true.]
       vecs_mask = [.true., .true., .true.]
-      call call_omics_vector_RAP_projection("Orthogonal vector", vecs, axes_mask, vecs_mask)
+      n_selected_axes = count(axes_mask)
+      n_selected_vecs = count(vecs_mask)
+
+      allocate(projections(n_selected_axes, n_selected_vecs))
+      projections = 1
+
+      call omics_vector_RAP_projection_r(vecs, 3, 3, vecs_mask, n_selected_vecs, axes_mask, n_selected_axes, projections, ierr)
+      call assert_equal_int(ierr, 0, "ierr should be 0 for valid input: orthogonal vector")
    end subroutine test_omics_vector_RAP_projection_orthogonal_vector
 
+   !> Test no axes
    subroutine test_omics_vector_RAP_projection_no_axes()
       implicit none
-
       real(real64), dimension(3,3) :: vecs
       logical :: axes_mask(3), vecs_mask(3)
+      real(real64), allocatable :: projections(:,:)
+      integer(int32) :: ierr, n_selected_axes, n_selected_vecs
 
       vecs = reshape([1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0], [3,3])
       axes_mask = [.false., .false., .false.]
       vecs_mask = [.true., .true., .true.]
-      call call_omics_vector_RAP_projection("No axes selected", vecs, axes_mask, vecs_mask)
+      n_selected_axes = count(axes_mask)
+      n_selected_vecs = count(vecs_mask)
+
+      allocate(projections(n_selected_axes, n_selected_vecs))
+      projections = 1
+
+      call omics_vector_RAP_projection_r(vecs, 3, 3, vecs_mask, n_selected_vecs, axes_mask, n_selected_axes, projections, ierr)
+      call assert_equal_int(ierr, 201, "ierr should be 201 for invalid input: no axes")
    end subroutine test_omics_vector_RAP_projection_no_axes
 
+   !> Test no vectors
    subroutine test_omics_vector_RAP_projection_no_vectors()
       implicit none
-
       real(real64), dimension(3,3) :: vecs
       logical :: axes_mask(3), vecs_mask(3)
+      real(real64), allocatable :: projections(:,:)
+      integer(int32) :: ierr, n_selected_axes, n_selected_vecs
 
       vecs = reshape([1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0], [3,3])
       axes_mask = [.true., .true., .true.]
       vecs_mask = [.false., .false., .false.]
-      call call_omics_vector_RAP_projection("No vectors selected", vecs, axes_mask, vecs_mask)
+      n_selected_axes = count(axes_mask)
+      n_selected_vecs = count(vecs_mask)
+
+      allocate(projections(n_selected_axes, n_selected_vecs))
+      projections = 1
+
+      call omics_vector_RAP_projection_r(vecs, 3, 3, vecs_mask, n_selected_vecs, axes_mask, n_selected_axes, projections, ierr)
+      call assert_equal_int(ierr, 201, "ierr should be 201 for invalid input: no vectors")
    end subroutine test_omics_vector_RAP_projection_no_vectors
 
+   !> Test mixed selection
    subroutine test_omics_vector_RAP_projection_mixed_selection()
       implicit none
-
       real(real64), dimension(3,3) :: vecs
       logical :: axes_mask(3), vecs_mask(3)
+      real(real64), allocatable :: projections(:,:)
+      integer(int32) :: ierr, n_selected_axes, n_selected_vecs
 
       vecs = reshape([1.0,2.0,3.0,4.0,5.0,6.0,7.0,8.0,9.0], [3,3])
       axes_mask = [.true., .false., .true.]
       vecs_mask = [.true., .false., .true.]
-      call call_omics_vector_RAP_projection("Mixed selection", vecs, axes_mask, vecs_mask)
+      n_selected_axes = count(axes_mask)
+      n_selected_vecs = count(vecs_mask)
+
+      allocate(projections(n_selected_axes, n_selected_vecs))
+      projections = 1
+
+      call omics_vector_RAP_projection_r(vecs, 3, 3, vecs_mask, n_selected_vecs, axes_mask, n_selected_axes, projections, ierr)
+      call assert_equal_int(ierr, 0, "ierr should be 0 for valid input: mixed selection")
    end subroutine test_omics_vector_RAP_projection_mixed_selection
 
+   !> Test non-square vecs
    subroutine test_omics_vector_RAP_projection_non_square_vecs()
       real(real64), dimension(4,2) :: vecs
       logical :: axes_mask(4), vecs_mask(2)
+      real(real64), allocatable :: projections(:,:)
+      integer(int32) :: ierr, n_selected_axes, n_selected_vecs
 
       ! Define two 4D vectors
       vecs(:,1) = [1.0, 2.0, 3.0, 4.0]
@@ -194,8 +275,14 @@ contains
       ! Select all axes and both vectors
       axes_mask = [.true., .true., .true., .true.]
       vecs_mask = [.true., .true.]
+      n_selected_axes = count(axes_mask)
+      n_selected_vecs = count(vecs_mask)
 
-      call call_omics_vector_RAP_projection("Non-square vecs (4D x 2)", vecs, axes_mask, vecs_mask)
+      allocate(projections(n_selected_axes, n_selected_vecs))
+      projections = 1
+
+      call omics_vector_RAP_projection_r(vecs, 4, 2, vecs_mask, n_selected_vecs, axes_mask, n_selected_axes, projections, ierr)
+      call assert_equal_int(ierr, 0, "ierr should be 0 for valid input: non-square vecs")
    end subroutine test_omics_vector_RAP_projection_non_square_vecs
 
 
