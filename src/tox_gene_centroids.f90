@@ -67,7 +67,7 @@ contains
   pure subroutine group_centroid(expression_vectors, d, n_genes, gene_to_family, n_families, &
                                  centroid_matrix, use_all_mode, ortholog_set, selected_indices, ierr)
     implicit none
-    !| Dimensionality of the expression vectors.
+    !| Dimension of the expression vectors.
     integer(int32), intent(in) :: d
     !| Total number of genes in the 'expression_vectors' matrix.
     integer(int32), intent(in) :: n_genes
@@ -180,7 +180,7 @@ pure subroutine group_centroid_r(expression_vectors, d, n_genes, gene_to_family,
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use tox_gene_centroids, only: group_centroid
   implicit none
-  !| Dimensionality of the expression vectors.
+  !| Dimension of the expression vectors.
   integer(int32), intent(in) :: d
   !| Total number of genes in the 'expression_vectors' matrix.
   integer(int32), intent(in) :: n_genes
