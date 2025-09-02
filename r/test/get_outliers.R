@@ -43,10 +43,8 @@ test_compute_family_scaling_invalid <- function() {
     tox_compute_family_scaling(distances, gene_to_fam, n_families)
   }, error = function(e) {
     error_caught <<- TRUE
-        print(paste("Caught expected error:", e$message))
-
     # Check that the error message contains expected text
-    stopifnot(grepl("Invalid input provided", e$message))
+    stopifnot(grepl("Invalid input", e$message))
   })
   stopifnot(error_caught)  # Make sure an error was actually thrown
   

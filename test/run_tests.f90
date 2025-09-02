@@ -12,6 +12,8 @@ program main
   use mod_test_rap_tools_omics_field_RAP_projection
   use mod_test_clock_hand_angles
   use mod_test_relative_axis_contributions
+  use mod_test_tissue_versatility
+  use mod_test_shift_vectors
 
   implicit none
 
@@ -85,6 +87,8 @@ contains
     call add_suite("rap_tools_omics_field_RAP_projection", run_all_tests_rap_tools_omics_field_RAP_projection, run_named_tests_rap_tools_omics_field_RAP_projection)
     call add_suite("clock_hand_angles", run_all_tests_clock_hand_angles, run_named_tests_clock_hand_angles)
     call add_suite("relative_axis_contributions", run_all_tests_relative_axis, run_named_tests_relative_axis)
+    call add_suite("tissue_versatility", run_all_tests_tissue_versatility, run_named_tests_tissue_versatility)
+    call add_suite("shift_vectors", run_all_tests_shift_vectors, run_named_tests_shift_vectors)
   end subroutine initialize_suites
 
   !> Add a suite to the registry (grows automatically)

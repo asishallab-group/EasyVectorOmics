@@ -751,44 +751,9 @@
     ],
     "description": "Setup relative_axes_expression_from_expression_vector function binding for Python/ctypes"
   },
-  "Python set up call function for omics_vector_RAP_projection": {
-    "prefix": "tox:py_omics_vector_RAP_projection",
-    "body": [
-      "def setup_omics_vector_RAP_projection():",
-      "    \"\"\"Setup omics vector RAP projection function\"\"\"",
-      "     omics_vector_RAP_projection = lib.omics_vector_RAP_projection_c",
-      "",
-      "    omics_vector_RAP_projection.argtypes = [",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"F_CONTIGUOUS\"),",
-      "        ctypes.c_int,",
-      "        ctypes.c_int,",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        ctypes.c_int,",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        ctypes.c_int,",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"F_CONTIGUOUS\")",
-      "    ]",
-      "",
-      "    omics_vector_RAP_projection.restype = None",
-      "",
-      "    # create function to create the input arguments",
-      "    # this enables reusability of inputs and access to the in-place changes of the arguments",
-      "    def initArgs(vecs, vecs_selection_mask, axes_selection_mask):",
-      "        return (",
-      "            np.asfortranarray(vecs, dtype=np.float64),",
-      "            np.ascontiguousarray(vecs_selection_mask, dtype=np.int32),",
-      "            np.ascontiguousarray(axes_selection_mask, dtype=np.int32),",
-      "            np.empty((sum(axes_selection_mask), sum(vecs_selection_mask)), order=\"F\", dtype=np.float64)",
-      "        )",
-      "",
-      "    return omics_vector_RAP_projection, initArgs"
-    ],
-    "description": "Setup omics_vector_RAP_projection function binding"
-  },
   "R set up call function for omics_vector_RAP_projection": {
     "prefix": "tox:r_omics_vector_RAP_projection",
     "body": [
-      "omics_vector_RAP_projection <- function(vecs, vecs_selection_mask, axes_selection_mask) {",
       "  n_selected_vecs <- sum(vecs_selection_mask == 1)",
       "  n_selected_axes <- sum(axes_selection_mask == 1)",
       "  res <- .Fortran(\"omics_vector_RAP_projection_r\",",
@@ -799,56 +764,14 @@
       "                  n_selected_vecs = n_selected_vecs,",
       "                  axes_selection_mask = as.integer(axes_selection_mask),",
       "                  n_selected_axes = n_selected_axes,",
-      "                  projections = matrix(as.double(1), nrow = n_selected_axes, ncol = n_selected_vecs))",
-      "  return(res$projections)",
-      "}"
+      "                  projections = matrix(as.double(1), nrow = n_selected_axes, ncol = n_selected_vecs),",
+      "                  ierr = as.integer(0))"
     ],
-    "description": "Setup omics_vector_RAP_projection function binding"
-  },
-  "Fortran call to omics_vector_RAP_projection": {
-    "prefix": "tox:omics_vector_RAP_projection",
-    "body": [
-      "call omics_vector_RAP_projection({1:vecs}, {2:n_axes}, {3:n_vecs}, {4:vecs_selection_mask}, {5:n_selected_vecs}, {6:axes_selection_mask}, {7:n_selected_axes}, {8:projections})"
-    ]
-  },
-  "Python set up call function for omics_field_RAP_projection": {
-    "prefix": "tox:py_omics_field_RAP_projection",
-    "body": [
-      "def setup_omics_field_RAP_projection():",
-      "    \"\"\"Setup omics field RAP projection function\"\"\"",
-      "    omics_field_RAP_projection = lib.omics_field_RAP_projection_c",
-      "",
-      "    omics_field_RAP_projection.argtypes = [",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"F_CONTIGUOUS\"),",
-      "        ctypes.c_int,",
-      "        ctypes.c_int,",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        ctypes.c_int,",
-      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),",
-      "        ctypes.c_int,",
-      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"F_CONTIGUOUS\")",
-      "    ]",
-      "",
-      "    omics_field_RAP_projection.restype = None",
-      "",
-      "    # create function to create the input arguments",
-      "    # this enables reusability of inputs and access to the in-place changes of the arguments",
-      "    def initArgs(vecs, vecs_selection_mask, axes_selection_mask):",
-      "        return (",
-      "            np.asfortranarray(vecs, dtype=np.float64),",
-      "            np.ascontiguousarray(vecs_selection_mask, dtype=np.int32),",
-      "            np.ascontiguousarray(axes_selection_mask, dtype=np.int32),",
-      "            np.empty((sum(axes_selection_mask), sum(vecs_selection_mask)), order=\"F\", dtype=np.float64)",
-      "        )",
-      "",
-      "    return omics_field_RAP_projection, initArgs"
-    ],
-    "description": "Setup omics_field_RAP_projection function binding"
+    "description": "Setup omics_vector_RAP_projection function binding with ierr error handling"
   },
   "R set up call function for omics_field_RAP_projection": {
     "prefix": "tox:r_omics_field_RAP_projection",
     "body": [
-      "omics_field_RAP_projection <- function(vecs, vecs_selection_mask, axes_selection_mask) {",
       "  n_selected_vecs <- sum(vecs_selection_mask == 1)",
       "  n_selected_axes <- sum(axes_selection_mask == 1)",
       "  res <- .Fortran(\"omics_field_RAP_projection_r\",",
@@ -859,17 +782,97 @@
       "                  n_selected_vecs = n_selected_vecs,",
       "                  axes_selection_mask = as.integer(axes_selection_mask),",
       "                  n_selected_axes = n_selected_axes,",
-      "                  projections = matrix(as.double(1), nrow = n_selected_axes, ncol = n_selected_vecs))",
-      "  return(res$projections)",
-      "}"
+      "                  projections = matrix(as.double(1), nrow = n_selected_axes, ncol = n_selected_vecs),",
+      "                  ierr = as.integer(0))"
     ],
-    "description": "Setup omics_field_RAP_projection function binding"
+    "description": "Setup omics_field_RAP_projection function binding with ierr error handling"
   },
-  "Fortran call to omics_field_RAP_projection": {
-    "prefix": "tox:omics_field_RAP_projection",
+  "Python set up call function for omics_vector_RAP_projection": {
+    "prefix": "tox:py_omics_vector_RAP_projection",
     "body": [
-      "call omics_field_RAP_projection({1:vecs}, {2:n_axes}, {3:n_vecs}, {4:vecs_selection_mask}, {5:n_selected_vecs}, {6:axes_selection_mask}, {7:n_selected_axes}, {8:projections})"
-    ]
+      "# Setup omics_vector_RAP_projection_c call (with ierr error handling)",
+      "omics_vector_RAP_projection_c.argtypes = [",
+      "    np.ctypeslib.ndpointer(dtype=np.float64, flags=\"F_CONTIGUOUS\"),  # vecs",
+      "    ctypes.c_int,  # n_axes",
+      "    ctypes.c_int,  # n_vecs",
+      "    np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),  # vecs_selection_mask",
+      "    ctypes.c_int,  # n_selected_vecs",
+      "    np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),  # axes_selection_mask",
+      "    ctypes.c_int,  # n_selected_axes",
+      "    np.ctypeslib.ndpointer(dtype=np.float64, flags=\"F_CONTIGUOUS\"),  # projections",
+      "    ctypes.POINTER(ctypes.c_int)  # ierr",
+      "]",
+      "omics_vector_RAP_projection_c.restype = None",
+      "omics_vector_RAP_projection_c(vecs, n_axes, n_vecs, vecs_selection_mask, n_selected_vecs, axes_selection_mask, n_selected_axes, projections, ctypes.byref(ierr))"
+    ],
+    "description": "Setup and call omics_vector_RAP_projection_c"
+  },
+  "Python set up call function for omics_field_RAP_projection": {
+    "prefix": "tox:py_omics_field_RAP_projection",
+    "body": [
+      "# Setup omics_field_RAP_projection_c call (with ierr error handling)",
+      "omics_field_RAP_projection_c.argtypes = [",
+      "    np.ctypeslib.ndpointer(dtype=np.float64, flags=\"F_CONTIGUOUS\"),  # vecs",
+      "    ctypes.c_int,  # n_axes",
+      "    ctypes.c_int,  # n_vecs",
+      "    np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),  # vecs_selection_mask",
+      "    ctypes.c_int,  # n_selected_vecs",
+      "    np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),  # axes_selection_mask",
+      "    ctypes.c_int,  # n_selected_axes",
+      "    np.ctypeslib.ndpointer(dtype=np.float64, flags=\"F_CONTIGUOUS\"),  # projections",
+      "    ctypes.POINTER(ctypes.c_int)  # ierr",
+      "]",
+      "omics_field_RAP_projection_c.restype = None",
+      "omics_field_RAP_projection_c(vecs, n_axes, n_vecs, vecs_selection_mask, n_selected_vecs, axes_selection_mask, n_selected_axes, projections, ctypes.byref(ierr))"
+    ],
+    "description": "Setup and call omics_field_RAP_projection_c"
+  },
+  "Call to tissue_versatility": {
+    "prefix": "tox:tissue_versatility",
+    "body": [
+      "! Calculate tissue versatility for selected expression vectors (C/Python interface)",
+      "call compute_tissue_versatility(n_axes, n_vectors, expression_vectors, &",
+      "    exp_vecs_selection_index, n_selected_vectors, axes_selection, n_selected_axes, &",
+      "    tissue_versatilities, tissue_angles_deg)"
+    ],
+    "description": "Invoke tissue versatility calculation"
+  },
+  "R call to tissue_versatility": {
+    "prefix": "tox:R_tissue_versatility",
+    "body": [
+      "result <- .Fortran(\"compute_tissue_versatility_r\",",
+      "                  n_axes = as.integer(${1:n_axes}),",
+      "                  n_vectors = as.integer(${2:n_vectors}),",
+      "                  expression_vectors = as.double(${3:expr_matrix}),",
+      "                  exp_vecs_selection_index = as.integer(${4:select_vec}),",
+      "                  n_selected_vectors = as.integer(sum(${4:select_vec})),",
+      "                  axes_selection = as.integer(${5:select_axes}),",
+      "                  n_selected_axes = as.integer(sum(${5:select_axes})),",
+      "                  tissue_versatilities = as.double(numeric(sum(${4:select_vec}))),",
+      "                  tissue_angles_deg = as.double(numeric(sum(${4:select_vec}))))"
+    ],
+    "description": "Call compute_tissue_versatility_r Fortran function from R"
+  },
+  "C call to tissue_versatility": {
+    "prefix": "tox:setup_py_tissue_versatility_c",
+    "body": [
+      "    lib.compute_tissue_versatility_c.argtypes = [",
+      "        ctypes.c_int,  # n_axes",
+      "        ctypes.c_int,  # n_vectors",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"), # expression_vectors",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # exp_vecs_selection_index",
+      "        ctypes.c_int,  # n_selected_vectors",
+      "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),    # axes_selection",
+      "        ctypes.c_int,  # n_selected_axes",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # tissue_versatilities",
+      "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\")   # tissue_angles_deg",
+      "    ]",
+      "    lib.compute_tissue_versatility_c.restype = None",
+      "    lib.compute_tissue_versatility_c(n_axes, n_vectors, expression_vectors, &",
+      "        exp_vecs_selection_index, n_selected_vectors, axes_selection, n_selected_axes, &",
+      "        tissue_versatilities, tissue_angles_deg)"
+    ],
+    "description": "Setup compute_tissue_versatility_c function binding for Python/ctypes"
   },
   "tox:set_ok": {
     "prefix": "tox:set_ok",

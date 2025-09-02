@@ -26,7 +26,18 @@ module tox_errors
     !! could not read character length
   integer(int32), parameter :: ERR_READ_DATA          = 107   
     !! could not read array data
-
+  integer(int32), parameter :: ERR_WRITE_MAGIC        = 112
+    !! could not write magic number
+  integer(int32), parameter :: ERR_WRITE_TYPE         = 113
+    !! could not write array type code
+  integer(int32), parameter :: ERR_WRITE_NDIMS        = 114
+    !! could not write number of dimensions
+  integer(int32), parameter :: ERR_WRITE_DIMS         = 115
+    !! could not write array dimensions
+  integer(int32), parameter :: ERR_WRITE_CHARLEN      = 116
+    !! could not write character length
+  integer(int32), parameter :: ERR_WRITE_DATA         = 117
+    !! could not write array data
   !------------------------------
   ! 2xx: Format / Input validation
   !------------------------------
@@ -42,6 +53,9 @@ module tox_errors
     !! NaN or Inf found where not allowed
   integer(int32), parameter :: ERR_UNSUPPORTED_TYPE   = 205 
     !! unsupported data type encountered
+  integer(int32), parameter :: ERR_SIZE_MISMATCH      = 206
+    !! Array size mismatch
+
 
   !------------------------------
   ! 3xx: Memory

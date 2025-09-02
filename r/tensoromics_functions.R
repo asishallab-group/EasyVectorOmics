@@ -122,7 +122,7 @@ tox_quantile_normalization <- function(input_matrix) {
   rank_means <- numeric(n_genes)
   perm <- integer(n_genes)
 
-  # Estimar tamaño máximo para la pila (según pseudocódigo: log2(n) + 10)
+  # Estimate maximum stack size (per pseudocode: log2(n) + 10)
   max_stack <- as.integer(ceiling(log2(n_genes)) + 10)
   stack_left <- integer(max_stack)
   stack_right <- integer(max_stack)
@@ -1034,7 +1034,6 @@ tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile =
     percentile = as.double(percentile)
   )
   
-  cat("Error code:", result$error_code, "\n")
   # Check for errors and throw informative messages
   tox_errors(result$error_code)
   
@@ -1306,7 +1305,7 @@ tox_clock_hand_angle_between_vectors <- function(v1, v2, selected_axes_for_signe
   if (length(v2) != n_dims) {
     stop("Vectors must have the same dimension")
   }
-  # Para 2D y 3D, Fortran ignora selected_axes_for_signed, pero requiere longitud 3
+  # For 2D and 3D, Fortran ignores selected_axes_for_signed, but requires length 3
   if (n_dims <= 3) {
     selected_axes_for_signed <- c(1, 2, 1)
   } else {
@@ -1359,7 +1358,7 @@ tox_clock_hand_angles_for_shift_vectors <- function(origins, targets,
     stop("vecs_selection_mask length must equal number of vector pairs")
   }
   n_selected_vecs <- sum(vecs_selection_mask)
-  # Para 2D y 3D, Fortran ignora selected_axes_for_signed, pero requiere longitud 3
+  # For 2D and 3D, Fortran ignores selected_axes_for_signed, but requires length 3
   if (n_dims <= 3) {
     selected_axes_for_signed <- c(1, 2, 1)
   } else {
