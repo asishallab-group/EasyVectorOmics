@@ -10,7 +10,7 @@ test_basic_all_mode <- function() {
   ortholog_set <- rep(FALSE, n_genes)
   expected <- matrix(c(3,3,15,15), nrow=d, ncol=n_families)
   centroids <- tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='all')
-  stopifnot(all(abs(centroids - expected) < 1e-9))
+  stopifnot(all(abs(centroids - expected) < 1e-12))
   cat("test_basic_all_mode passed\n")
 }
 
@@ -22,7 +22,7 @@ test_basic_ortho_mode <- function() {
   ortholog_set <- c(TRUE, FALSE, TRUE, TRUE, TRUE)
   expected <- matrix(c(3,3,15,15), nrow=d, ncol=n_families)
   centroids <- tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='ortho')
-  stopifnot(all(abs(centroids - expected) < 1e-9))
+  stopifnot(all(abs(centroids - expected) < 1e-12))
   cat("test_basic_ortho_mode passed\n")
 }
 
@@ -35,7 +35,7 @@ test_empty_family <- function() {
   expected <- matrix(0.0, nrow=d, ncol=n_families)
   expected[,1] <- 1.0
   centroids <- tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='all')
-  stopifnot(all(abs(centroids - expected) < 1e-9))
+  stopifnot(all(abs(centroids - expected) < 1e-12))
   cat("test_empty_family passed\n")
 }
 
@@ -47,7 +47,7 @@ test_no_matching_orthologs <- function() {
   ortholog_set <- rep(FALSE, n_genes)
   expected <- matrix(0.0, nrow=d, ncol=n_families)
   centroids <- tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='ortho')
-  stopifnot(all(abs(centroids - expected) < 1e-9))
+  stopifnot(all(abs(centroids - expected) < 1e-12))
   cat("test_no_matching_orthologs passed\n")
 }
 
@@ -58,7 +58,7 @@ test_single_gene_family <- function() {
   gene_to_family <- as.integer(1)
   ortholog_set <- TRUE
   centroids <- tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='all')
-  stopifnot(all(abs(centroids - vectors) < 1e-9))
+  stopifnot(all(abs(centroids - vectors) < 1e-12))
   cat("test_single_gene_family passed\n")
 }
 
@@ -74,7 +74,7 @@ test_extreme_values <- function() {
   ortholog_set <- rep(TRUE, n_genes)
   expected <- matrix(0.0, nrow=d, ncol=n_families)
   centroids <- tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='all')
-  stopifnot(all(abs(centroids - expected) < 1e-9))
+  stopifnot(all(abs(centroids - expected) < 1e-12))
   cat("test_extreme_values passed\n")
 }
 
@@ -92,7 +92,7 @@ test_higher_dimensions <- function() {
   # Only check family 1 centroid
   idxs <- which(gene_to_family == 1)
   expected <- apply(vectors[,idxs,drop=FALSE], 1, mean)
-  stopifnot(all(abs(centroids[,1] - expected) < 1e-9))
+  stopifnot(all(abs(centroids[,1] - expected) < 1e-12))
   cat("test_higher_dimensions passed\n")
 }
 
@@ -107,7 +107,7 @@ test_gene_order_invariance <- function() {
   ortholog_set2 <- c(TRUE, TRUE, TRUE, FALSE, TRUE)
   centroids1 <- tox_group_centroid(vectors1, gene_to_family1, n_families, ortholog_set1, mode='ortho')
   centroids2 <- tox_group_centroid(vectors2, gene_to_family2, n_families, ortholog_set2, mode='ortho')
-  stopifnot(all(abs(centroids1 - centroids2) < 1e-9))
+  stopifnot(all(abs(centroids1 - centroids2) < 1e-12))
   cat("test_gene_order_invariance passed\n")
 }
 
