@@ -1,7 +1,7 @@
 module tox_conversions
     use iso_fortran_env, only: int32, real64
     use iso_c_binding, only: c_int, c_double, c_null_char, c_double_complex, c_char
-    use tox_errors, only: ERR_ALLOC_FAIL, is_ok, set_ok, set_err_once
+    use tox_errors, only: ERR_ALLOC_FAIL, is_err, set_ok, set_err
     implicit none
 
 contains
@@ -136,8 +136,8 @@ contains
 
         ! create string
         allocate(character(len=str_len) :: str_out, stat=ierr)
-        if (.not. is_ok(ierr)) then
-           call set_err_once(ierr, ERR_ALLOC_FAIL)
+        if (is_err(ierr)) then
+           call set_err(ierr, ERR_ALLOC_FAIL)
            return
         end if
 
@@ -185,15 +185,15 @@ contains
         n_strings = size(c_char_array, 2)
 
         allocate(character(len=n_rows) :: str_out(n_strings), stat=ierr)
-        if (.not. is_ok(ierr)) then
-           call set_err_once(ierr, ERR_ALLOC_FAIL)
+        if (is_err(ierr)) then
+           call set_err(ierr, ERR_ALLOC_FAIL)
            return
         end if
 
         ! create strings
         do i_str = 1, n_strings
             call c_char_1d_as_string(c_char_array(:, i_str), string, ierr)
-            if (.not. is_ok(ierr)) return
+            if (is_err(ierr)) return
             str_out(i_str) = string
         end do
     end subroutine c_char_2d_as_string

@@ -144,7 +144,8 @@ contains
         character(len=:), allocatable :: f_char
         integer(int32) :: ierr
 
-        ierr = ERR_OK
+        call set_ok(ierr)
+
         c_char_array = ["H", "e", "l", "l", "o"]
         call c_char_1d_as_string(c_char_array, f_char, ierr)
         call assert_true(f_char == "Hello", "test_tox_conversions_c_char_1d_as_string: value mismatch")
@@ -162,7 +163,7 @@ contains
         character(len=:), allocatable :: f_char(:)
         integer(int32) :: ierr
 
-        ierr = ERR_OK
+        call set_ok(ierr)
 
         c_char_array(:, 1) = ["H", "e", "l", "l", "o"]
         c_char_array(:, 2) = [c_null_char, "e", "l", "l", "o"]
