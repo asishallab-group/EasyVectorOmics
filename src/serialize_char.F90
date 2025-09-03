@@ -21,7 +21,7 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer(int32) :: unit, clen, i, str_len
+    integer(int32) :: unit, clen
     integer(int32) :: dims(1)
     integer(int32), intent(out) :: ierr 
     !! error code
@@ -35,11 +35,9 @@ contains
     call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 1, dims, ierr, clen)
     if (.not. is_ok(ierr)) return
 
-    do i = 1, dims(1)
-      str_len = len_trim(arr(i))
-      write(unit, iostat=ioerror) str_len    
-      write(unit, iostat=ioerror) arr(i)(1:str_len)
-    end do
+    ! Write the entire array as a contiguous block
+    write(unit, iostat=ioerror) arr
+    
     if(.not. is_ok(ioerror)) then
       call set_err_once(ierr, ERR_WRITE_DATA)
     end if
@@ -53,7 +51,7 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer(int32) :: unit, clen, i, j, str_len
+    integer(int32) :: unit, clen
     integer(int32) :: dims(2)
     integer(int32), intent(out) :: ierr
     !! error code
@@ -66,13 +64,9 @@ contains
 
     if (.not. is_ok(ierr)) return
 
-    do j = 1, dims(2)
-      do i = 1, dims(1)
-        str_len = len_trim(arr(i,j))
-        write(unit, iostat=ioerror) str_len
-        write(unit, iostat=ioerror) arr(i,j)(1:str_len)
-      end do
-    end do
+    ! Write the entire array as a contiguous block
+    write(unit, iostat=ioerror) arr
+    
     if(.not. is_ok(ioerror)) then
       call set_err_once(ierr, ERR_WRITE_DATA)
     end if
@@ -86,7 +80,7 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer(int32) :: unit, clen, i, j, k, str_len
+    integer(int32) :: unit, clen
     integer(int32) :: dims(3)
     integer(int32), intent(out) :: ierr
     !! error code
@@ -99,15 +93,9 @@ contains
     call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 3, dims, ierr, clen)
     if (.not. is_ok(ierr)) return
 
-    do k = 1, dims(3)
-      do j = 1, dims(2)
-        do i = 1, dims(1)
-          str_len = len_trim(arr(i,j,k))
-          write(unit, iostat=ioerror) str_len
-          write(unit, iostat=ioerror) arr(i,j,k)(1:str_len)
-        end do
-      end do
-    end do
+    ! Write the entire array as a contiguous block
+    write(unit, iostat=ioerror) arr
+    
     if (.not. is_ok(ioerror)) then
       call set_err_once(ierr, ERR_WRITE_DATA)
     end if
@@ -121,7 +109,7 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer(int32) :: unit, clen, i, j, k, l, str_len
+    integer(int32) :: unit, clen
     integer(int32) :: dims(4)
     integer(int32), intent(out) :: ierr
     !! error code
@@ -136,17 +124,9 @@ contains
     call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 4, dims, ierr, clen)
     if (.not. is_ok(ierr)) return
 
-    do l = 1, dims(4)
-      do k = 1, dims(3)
-        do j = 1, dims(2)
-          do i = 1, dims(1)
-            str_len = len_trim(arr(i,j,k,l))
-            write(unit, iostat=ioerror) str_len
-            write(unit, iostat=ioerror) arr(i,j,k,l)(1:str_len)
-          end do
-        end do
-      end do
-    end do
+    ! Write the entire array as a contiguous block
+    write(unit, iostat=ioerror) arr
+    
     if (.not. is_ok(ioerror)) then
       call set_err_once(ierr, ERR_WRITE_DATA)
     end if
@@ -160,7 +140,7 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer(int32) :: unit, clen, i, j, k, l, m, str_len
+    integer(int32) :: unit, clen
     integer(int32) :: dims(5)
     integer(int32), intent(out) :: ierr
     !! error code
@@ -175,19 +155,9 @@ contains
 
     if (.not. is_ok(ierr)) return
 
-    do m = 1, dims(5)
-      do l = 1, dims(4)
-        do k = 1, dims(3)
-          do j = 1, dims(2)
-            do i = 1, dims(1)
-              str_len = len_trim(arr(i,j,k,l,m))
-              write(unit, iostat=ioerror) str_len
-              write(unit, iostat=ioerror) arr(i,j,k,l,m)(1:str_len)
-            end do
-          end do
-        end do
-      end do
-    end do
+    ! Write the entire array as a contiguous block
+    write(unit, iostat=ioerror) arr
+    
     if (.not. is_ok(ioerror)) then
       call set_err_once(ierr, ERR_WRITE_DATA)
     end if
@@ -196,7 +166,7 @@ contains
 
   !> Serialize a character array of arbitrary dimensions to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, character length, and the array data.
-  !! @note This routine is onyl called by R and serializes only flat character arrays to the memory
+  !! @note This routine is only called by R and serializes only flat character arrays to the memory
   subroutine serialize_char_nd(flat, dims, ndim, clen, filename, ierr)
     implicit none
     character(len=*), intent(in) :: flat(:)
@@ -210,7 +180,7 @@ contains
     integer(int32), intent(out) :: ierr
     !! error code
     integer(int32) :: ioerror
-    integer(int32) :: unit, i, str_len
+    integer(int32) :: unit
 
     call set_ok(ierr)
     call set_ok(ioerror)
@@ -218,13 +188,9 @@ contains
     call write_file_header(filename, unit, ARRAY_TYPE_CHAR, ndim, dims, ierr, clen)
     if(.not. is_ok(ierr)) return
 
-    do i = 1, size(flat)
-      str_len = len_trim(flat(i))
-      write(unit, iostat=ioerror) str_len
-      if (str_len > 0) then
-        write(unit, iostat=ioerror) flat(i)(1:str_len)
-      end if
-    end do
+    ! Write the entire array as a contiguous block
+    write(unit, iostat=ioerror) flat
+    
     if (.not. is_ok(ioerror)) then
       call set_err_once(ierr, ERR_WRITE_DATA)
     end if

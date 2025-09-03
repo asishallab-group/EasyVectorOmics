@@ -8,192 +8,138 @@ module int_deserialize_mod
 
   private
   public :: deserialize_int_1d, deserialize_int_2d, &
-           deserialize_int_3d, deserialize_int_4d, deserialize_int_5d, deserialize_int_flat
+           deserialize_int_3d, deserialize_int_4d, deserialize_int_5d
 
 contains
   !> Deserialize a flat integer array from a file
-  subroutine deserialize_int_flat(flat, dims, filename, ierr)
-    integer(int32), pointer, intent(out) :: flat(:)
-    !! Output flat array
-    integer(int32), allocatable, intent(out) :: dims(:)
-    !! Output dimensions array
+  !> Directly deserialize a 1D integer array from a file
+  subroutine deserialize_int_1d(arr, filename, ierr)
+    integer(int32), intent(out) :: arr(:)
     character(len=*), intent(in) :: filename
-    !! Name of the file to read
-    INTEGER(int32), INTENT(OUT) :: ierr
-    !! Error code
+    integer(int32), intent(out) :: ierr
 
-    integer(int32) :: unit
-    !! fortran representation of unit number
-    integer(int32) :: ioerror
-    !! internal error code
-    integer(int32) :: magic, type_code, ndims, clen
+    integer(int32) :: unit, type_code, ndims, clen, ioerror
+    integer(int32), allocatable :: dims(:)
 
     call set_ok(ierr)
-    call set_ok(ioerror)
-    ! Read file
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    allocate(flat(product(dims)), stat=ioerror)
-    if(.not. is_ok(ioerror)) then
-      call set_err_once(ierr, ERR_ALLOC_FAIL)
-      RETURN
+    if (ndims /= 1) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      return
     end if
 
-    read(unit, iostat=ioerror) flat
+    read(unit, iostat=ioerror) arr
     close(unit)
     if (.not. is_ok(ioerror)) then
       call set_err_once(ierr, ERR_READ_DATA)
-      if(associated(flat)) deallocate(flat)
       return
     end if
-    
-  end subroutine deserialize_int_flat
-
-  !> Deserialize a 1D integer array from a file
-  !> @note The array is allocated by the deserialize flat routine, this is just for consistency 
-  !> since a 1D array can not be deserialized to 1D
-  subroutine deserialize_int_1d(arr, filename, ierr)
-    integer(int32), pointer, intent(out) :: arr(:)
-    !! Output array
-    character(len=*), intent(in) :: filename
-    !! Name of the file to read
-    integer(int32), intent(out) :: ierr
-    !! Error code
-
-    integer(int32), pointer :: flat(:)
-    !! Output flat array
-    integer(int32), allocatable :: dims(:)
-    !! Output dimensions array
-    
-    call set_ok(ierr)
-    call deserialize_int_flat(flat, dims, filename, ierr)
-    if(.not. is_ok(ierr)) then
-      if(associated(flat)) deallocate(flat)
-      RETURN
-    end if
-    call check_okay_dims(dims, 1, ierr)
-    if(.not. is_ok(ierr)) then
-      if(associated(flat)) deallocate(flat)
-      RETURN
-    end if
-    call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1)])
   end subroutine deserialize_int_1d
 
-  !> Deserialize a 2D integer array from a file
-  !> @note The array is allocated by the deserialize flat routine
+  !> Directly deserialize a 2D integer array from a file
   subroutine deserialize_int_2d(arr, filename, ierr)
-    integer(int32), pointer, intent(out) :: arr(:,:)
-    !! Output array
+    integer(int32), intent(out) :: arr(:,:)
     character(len=*), intent(in) :: filename
-    !! Name of the file to read
     integer(int32), intent(out) :: ierr
-    !! Error code
 
-    integer(int32), pointer :: flat(:)
-    !! Output flat array
+    integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
-    !! Output dimensions array
-    
+
     call set_ok(ierr)
-    call deserialize_int_flat(flat, dims, filename, ierr)
-    if(.not. is_ok(ierr)) then
-      if(associated(flat)) deallocate(flat)
-      RETURN
+    call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    if (.not. is_ok(ierr)) return
+
+    if (ndims /= 2) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      return
     end if
-    call check_okay_dims(dims, 2, ierr)
-    if(.not. is_ok(ierr)) then
-      if(associated(flat)) deallocate(flat)
-      RETURN
+
+    read(unit, iostat=ioerror) arr
+    close(unit)
+    if (.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_READ_DATA)
+      return
     end if
-    call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2)])
   end subroutine deserialize_int_2d
 
-  !> Deserialize a 3D integer array from a file
-  !> @note The array is allocated by the deserialize flat routine
+  !> Directly deserialize a 3D integer array from a file
   subroutine deserialize_int_3d(arr, filename, ierr)
-    integer(int32), pointer, intent(out) :: arr(:,:,:)
-    !! Output array
+    integer(int32), intent(out) :: arr(:,:,:)
     character(len=*), intent(in) :: filename
-    !! Name of the file to read
     integer(int32), intent(out) :: ierr
-    !! Error code
 
-    integer(int32), pointer :: flat(:)
-    !! Output flat array
+    integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
-    !! Output dimensions array
-    
+
     call set_ok(ierr)
-    call deserialize_int_flat(flat, dims, filename, ierr)
-    if(.not. is_ok(ierr)) then
-      if(associated(flat)) deallocate(flat)
-      RETURN
+    call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    if (.not. is_ok(ierr)) return
+
+    if (ndims /= 3) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      return
     end if
-    call check_okay_dims(dims, 3, ierr)
-    if(.not. is_ok(ierr)) then
-      if(associated(flat)) deallocate(flat)
-      RETURN
+
+    read(unit, iostat=ioerror) arr
+    close(unit)
+    if (.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_READ_DATA)
+      return
     end if
-    call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3)])
   end subroutine deserialize_int_3d
 
-  !> Deserialize a 4D integer array from a file
-  !> @note The array is allocated by the deserialize flat routine
+  !> Directly deserialize a 4D integer array from a file
   subroutine deserialize_int_4d(arr, filename, ierr)
-    integer(int32), pointer, intent(out) :: arr(:,:,:,:)
-    !! Output array
+    integer(int32), intent(out) :: arr(:,:,:,:)
     character(len=*), intent(in) :: filename
-    !! Name of the file to read
     integer(int32), intent(out) :: ierr
-    !! Error code
 
-    integer(int32), pointer :: flat(:)
-    !! Output flat array
+    integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
-    !! Output dimensions array
-    
+
     call set_ok(ierr)
-    call deserialize_int_flat(flat, dims, filename, ierr)
-    if(.not. is_ok(ierr)) then
-      if(associated(flat)) deallocate(flat)
-      RETURN
+    call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    if (.not. is_ok(ierr)) return
+
+    if (ndims /= 4) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      return
     end if
-    call check_okay_dims(dims, 4, ierr)
-    if(.not. is_ok(ierr)) then
-      if(associated(flat)) deallocate(flat)
-      RETURN
+
+    read(unit, iostat=ioerror) arr
+    close(unit)
+    if (.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_READ_DATA)
+      return
     end if
-    call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3), dims(4)])
   end subroutine deserialize_int_4d
 
-  !> Deserialize a 5D integer array from a file
-  !> @note The array is allocated by the deserialize flat routine
+  !> Directly deserialize a 5D integer array from a file
   subroutine deserialize_int_5d(arr, filename, ierr)
-    integer(int32), pointer, intent(out) :: arr(:,:,:,:,:)
-    !! Output array
+    integer(int32), intent(out) :: arr(:,:,:,:,:)
     character(len=*), intent(in) :: filename
-    !! Name of the file to read
     integer(int32), intent(out) :: ierr
-    !! Error code
 
-    integer(int32), pointer :: flat(:)
-    !! Output flat array
+    integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
-    !! Output dimensions array
-    
+
     call set_ok(ierr)
-    call deserialize_int_flat(flat, dims, filename, ierr)
-    if(.not. is_ok(ierr)) then
-      if(associated(flat)) deallocate(flat)
-      RETURN
+    call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    if (.not. is_ok(ierr)) return
+
+    if (ndims /= 5) then
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      return
     end if
-    call check_okay_dims(dims, 5, ierr)
-    if(.not. is_ok(ierr)) then
-      if(associated(flat)) deallocate(flat)
-      RETURN
+
+    read(unit, iostat=ioerror) arr
+    close(unit)
+    if (.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_READ_DATA)
+      return
     end if
-    call c_f_pointer(c_loc(flat(1)), arr, shape=[dims(1), dims(2), dims(3), dims(4), dims(5)])
   end subroutine deserialize_int_5d
 
 end module int_deserialize_mod
