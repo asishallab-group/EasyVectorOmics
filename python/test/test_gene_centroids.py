@@ -13,7 +13,7 @@ sys.path.append(str(Path(__file__).parent.parent))
 from tensoromics_functions import tox_group_centroid
 
 def test_basic_all_mode():
-    d, n_genes, n_families = 2, 5, 2
+    n_genes, n_families = 5, 2
     vectors = np.array([[1, 3, 10, 20, 5],
                         [1, 3, 10, 20, 5]], dtype=np.float64)
     gene_to_family = np.array([1, 1, 2, 2, 1], dtype=np.int32)
@@ -25,7 +25,7 @@ def test_basic_all_mode():
     print("test_basic_all_mode passed")
 
 def test_basic_ortho_mode():
-    d, n_genes, n_families = 2, 5, 2
+    n_families = 2
     vectors = np.array([[1, 3, 10, 20, 5],
                         [1, 3, 10, 20, 5]], dtype=np.float64)
     gene_to_family = np.array([1, 1, 2, 2, 1], dtype=np.int32)
@@ -37,29 +37,29 @@ def test_basic_ortho_mode():
     print("test_basic_ortho_mode passed")
 
 def test_empty_family():
-    d, n_genes, n_families = 3, 4, 2
-    vectors = np.ones((d, n_genes), dtype=np.float64)
+    n_axes, n_genes, n_families = 3, 4, 2
+    vectors = np.ones((n_axes, n_genes), dtype=np.float64)
     gene_to_family = np.ones(n_genes, dtype=np.int32)
     ortholog_set = np.ones(n_genes, dtype=bool)
-    expected = np.zeros((d, n_families), dtype=np.float64)
+    expected = np.zeros((n_axes, n_families), dtype=np.float64)
     expected[:, 0] = 1.0
     centroids = tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='all')
     np.testing.assert_allclose(centroids, expected, atol=1e-12)
     print("test_empty_family passed")
 
 def test_no_matching_orthologs():
-    d, n_genes, n_families = 2, 3, 1
+    n_axes, n_genes, n_families = 2, 3, 1
     vectors = np.array([[10, 20, 30],
                         [10, 20, 30]], dtype=np.float64)
     gene_to_family = np.ones(n_genes, dtype=np.int32)
     ortholog_set = np.zeros(n_genes, dtype=bool)
-    expected = np.zeros((d, n_families), dtype=np.float64)
+    expected = np.zeros((n_axes, n_families), dtype=np.float64)
     centroids = tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='ortho')
     np.testing.assert_allclose(centroids, expected, atol=1e-12)
     print("test_no_matching_orthologs passed")
 
 def test_single_gene_family():
-    d, n_genes, n_families = 3, 1, 1
+    n_families = 1
     vectors = np.array([[12.3], [-4.5], [6.7]], dtype=np.float64)
     gene_to_family = np.array([1], dtype=np.int32)
     ortholog_set = np.array([True])
@@ -68,22 +68,22 @@ def test_single_gene_family():
     print("test_single_gene_family passed")
 
 def test_extreme_values():
-    d, n_genes, n_families = 2, 4, 1
-    vectors = np.zeros((d, n_genes), dtype=np.float64)
+    n_axes, n_genes, n_families = 2, 4, 1
+    vectors = np.zeros((n_axes, n_genes), dtype=np.float64)
     vectors[:, 0] = [1e12, -1e-12]
     vectors[:, 1] = [-1e12, 1e-12]
     vectors[:, 2] = [0, 5]
     vectors[:, 3] = [0, -5]
     gene_to_family = np.ones(n_genes, dtype=np.int32)
     ortholog_set = np.ones(n_genes, dtype=bool)
-    expected = np.zeros((d, n_families), dtype=np.float64)
+    expected = np.zeros((n_axes, n_families), dtype=np.float64)
     centroids = tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='all')
     np.testing.assert_allclose(centroids, expected, atol=1e-12)
     print("test_extreme_values passed")
 
 def test_higher_dimensions():
-    d, n_genes, n_families = 10, 100, 5
-    vectors = np.zeros((d, n_genes), dtype=np.float64)
+    n_axes, n_genes, n_families = 10, 100, 5
+    vectors = np.zeros((n_axes, n_genes), dtype=np.float64)
     gene_to_family = np.zeros(n_genes, dtype=np.int32)
     for i in range(n_genes):
         vectors[:, i] = i + 1
@@ -96,7 +96,7 @@ def test_higher_dimensions():
     print("test_higher_dimensions passed")
 
 def test_gene_order_invariance():
-    d, n_genes, n_families = 2, 5, 2
+    n_families = 2
     vectors1 = np.array([[1, 3, 10, 20, 5],
                          [1, 3, 10, 20, 5]], dtype=np.float64)
     gene_to_family1 = np.array([1, 1, 2, 2, 1], dtype=np.int32)
@@ -111,20 +111,20 @@ def test_gene_order_invariance():
     print("test_gene_order_invariance passed")
 
 def test_invalid_input_arguments():
-    d, n_genes, n_families = 2, 5, 2
+    n_axes, n_genes, n_families = 2, 5, 2
     vectors = np.array([[1, 3, 10, 20, 5],
                         [1, 3, 10, 20, 5]], dtype=np.float64)
     gene_to_family = np.array([1, 1, 2, 2, 1], dtype=np.int32)
     ortholog_set = np.zeros(n_genes, dtype=bool)
-    # Invalid d (empty vectors)
+    # Invalid n_axes (empty vectors)
     try:
         tox_group_centroid(np.empty((0, n_genes)), gene_to_family, n_families, ortholog_set, mode='all')
-        assert False, "Expected ValueError for d=0"
+        assert False, "Expected ValueError for n_axes=0"
     except Exception:
         pass
     # Invalid n_genes (empty gene set)
     try:
-        tox_group_centroid(np.empty((d, 0)), np.array([], dtype=np.int32), n_families, np.array([], dtype=bool), mode='all')
+        tox_group_centroid(np.empty((n_axes, 0)), np.array([], dtype=np.int32), n_families, np.array([], dtype=bool), mode='all')
         assert False, "Expected ValueError for n_genes=0"
     except Exception:
         pass
@@ -137,7 +137,7 @@ def test_invalid_input_arguments():
     print("test_invalid_input_arguments passed")
 
 def test_invalid_family_mapping():
-    d, n_genes, n_families = 2, 5, 2
+    n_genes, n_families = 5, 2
     vectors = np.array([[1, 3, 10, 20, 5],
                         [1, 3, 10, 20, 5]], dtype=np.float64)
     gene_to_family = np.array([1, 1, 2, 3, 1], dtype=np.int32)  # 3 is invalid

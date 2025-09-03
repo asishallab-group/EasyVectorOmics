@@ -4,11 +4,11 @@ source("r/tensoromics_functions.R")
 
 # 1. Basic functionality in 'all' mode
 test_basic_all_mode <- function() {
-  d <- 2; n_genes <- 5; n_families <- 2
-  vectors <- matrix(c(1,1,3,3,10,10,20,20,5,5), nrow=d, ncol=n_genes)
+  n_axes <- 2; n_genes <- 5; n_families <- 2
+  vectors <- matrix(c(1,1,3,3,10,10,20,20,5,5), nrow=n_axes, ncol=n_genes)
   gene_to_family <- as.integer(c(1,1,2,2,1))
   ortholog_set <- rep(FALSE, n_genes)
-  expected <- matrix(c(3,3,15,15), nrow=d, ncol=n_families)
+  expected <- matrix(c(3,3,15,15), nrow=n_axes, ncol=n_families)
   centroids <- tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='all')
   stopifnot(all(abs(centroids - expected) < 1e-12))
   cat("test_basic_all_mode passed\n")
@@ -16,11 +16,11 @@ test_basic_all_mode <- function() {
 
 # 2. Basic functionality in 'ortho' mode
 test_basic_ortho_mode <- function() {
-  d <- 2; n_genes <- 5; n_families <- 2
-  vectors <- matrix(c(1,1,3,3,10,10,20,20,5,5), nrow=d, ncol=n_genes)
+  n_axes <- 2; n_genes <- 5; n_families <- 2
+  vectors <- matrix(c(1,1,3,3,10,10,20,20,5,5), nrow=n_axes, ncol=n_genes)
   gene_to_family <- as.integer(c(1,1,2,2,1))
   ortholog_set <- c(TRUE, FALSE, TRUE, TRUE, TRUE)
-  expected <- matrix(c(3,3,15,15), nrow=d, ncol=n_families)
+  expected <- matrix(c(3,3,15,15), nrow=n_axes, ncol=n_families)
   centroids <- tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='ortho')
   stopifnot(all(abs(centroids - expected) < 1e-12))
   cat("test_basic_ortho_mode passed\n")
@@ -28,11 +28,11 @@ test_basic_ortho_mode <- function() {
 
 # 3. A family exists but has no genes assigned to it
 test_empty_family <- function() {
-  d <- 3; n_genes <- 4; n_families <- 2
-  vectors <- matrix(1.0, nrow=d, ncol=n_genes)
+  n_axes <- 3; n_genes <- 4; n_families <- 2
+  vectors <- matrix(1.0, nrow=n_axes, ncol=n_genes)
   gene_to_family <- as.integer(rep(1, n_genes))
   ortholog_set <- rep(TRUE, n_genes)
-  expected <- matrix(0.0, nrow=d, ncol=n_families)
+  expected <- matrix(0.0, nrow=n_axes, ncol=n_families)
   expected[,1] <- 1.0
   centroids <- tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='all')
   stopifnot(all(abs(centroids - expected) < 1e-12))
@@ -41,11 +41,11 @@ test_empty_family <- function() {
 
 # 4. 'ortho' mode, but a family has no orthologs
 test_no_matching_orthologs <- function() {
-  d <- 2; n_genes <- 3; n_families <- 1
-  vectors <- matrix(c(10,10,20,20,30,30), nrow=d, ncol=n_genes)
+  n_axes <- 2; n_genes <- 3; n_families <- 1
+  vectors <- matrix(c(10,10,20,20,30,30), nrow=n_axes, ncol=n_genes)
   gene_to_family <- as.integer(rep(1, n_genes))
   ortholog_set <- rep(FALSE, n_genes)
-  expected <- matrix(0.0, nrow=d, ncol=n_families)
+  expected <- matrix(0.0, nrow=n_axes, ncol=n_families)
   centroids <- tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='ortho')
   stopifnot(all(abs(centroids - expected) < 1e-12))
   cat("test_no_matching_orthologs passed\n")
@@ -53,8 +53,8 @@ test_no_matching_orthologs <- function() {
 
 # 5. A family contains only a single gene
 test_single_gene_family <- function() {
-  d <- 3; n_genes <- 1; n_families <- 1
-  vectors <- matrix(c(12.3, -4.5, 6.7), nrow=d, ncol=n_genes)
+  n_axes <- 3; n_genes <- 1; n_families <- 1
+  vectors <- matrix(c(12.3, -4.5, 6.7), nrow=n_axes, ncol=n_genes)
   gene_to_family <- as.integer(1)
   ortholog_set <- TRUE
   centroids <- tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='all')
@@ -64,15 +64,15 @@ test_single_gene_family <- function() {
 
 # 6. Input vectors with extreme values
 test_extreme_values <- function() {
-  d <- 2; n_genes <- 4; n_families <- 1
-  vectors <- matrix(0.0, nrow=d, ncol=n_genes)
+  n_axes <- 2; n_genes <- 4; n_families <- 1
+  vectors <- matrix(0.0, nrow=n_axes, ncol=n_genes)
   vectors[,1] <- c(1e12, -1e-12)
   vectors[,2] <- c(-1e12, 1e-12)
   vectors[,3] <- c(0, 5)
   vectors[,4] <- c(0, -5)
   gene_to_family <- as.integer(rep(1, n_genes))
   ortholog_set <- rep(TRUE, n_genes)
-  expected <- matrix(0.0, nrow=d, ncol=n_families)
+  expected <- matrix(0.0, nrow=n_axes, ncol=n_families)
   centroids <- tox_group_centroid(vectors, gene_to_family, n_families, ortholog_set, mode='all')
   stopifnot(all(abs(centroids - expected) < 1e-12))
   cat("test_extreme_values passed\n")
@@ -80,8 +80,8 @@ test_extreme_values <- function() {
 
 # 7. Higher dimensional data
 test_higher_dimensions <- function() {
-  d <- 10; n_genes <- 100; n_families <- 5
-  vectors <- matrix(0.0, nrow=d, ncol=n_genes)
+  n_axes <- 10; n_genes <- 100; n_families <- 5
+  vectors <- matrix(0.0, nrow=n_axes, ncol=n_genes)
   gene_to_family <- integer(n_genes)
   for (i in 1:n_genes) {
     vectors[,i] <- i
@@ -98,11 +98,11 @@ test_higher_dimensions <- function() {
 
 # 8. Ensure result is invariant to order of genes
 test_gene_order_invariance <- function() {
-  d <- 2; n_genes <- 5; n_families <- 2
-  vectors1 <- matrix(c(1,1,3,3,10,10,20,20,5,5), nrow=d, ncol=n_genes)
+  n_axes <- 2; n_genes <- 5; n_families <- 2
+  vectors1 <- matrix(c(1,1,3,3,10,10,20,20,5,5), nrow=n_axes, ncol=n_genes)
   gene_to_family1 <- as.integer(c(1,1,2,2,1))
   ortholog_set1 <- c(TRUE, FALSE, TRUE, TRUE, TRUE)
-  vectors2 <- matrix(c(5,5,10,10,1,1,3,3,20,20), nrow=d, ncol=n_genes)
+  vectors2 <- matrix(c(5,5,10,10,1,1,3,3,20,20), nrow=n_axes, ncol=n_genes)
   gene_to_family2 <- as.integer(c(1,2,1,1,2))
   ortholog_set2 <- c(TRUE, TRUE, TRUE, FALSE, TRUE)
   centroids1 <- tox_group_centroid(vectors1, gene_to_family1, n_families, ortholog_set1, mode='ortho')
@@ -113,11 +113,11 @@ test_gene_order_invariance <- function() {
 
 # 9. Test for invalid input arguments
 test_invalid_input_arguments <- function() {
-  d <- 2; n_genes <- 5; n_families <- 2
-  vectors <- matrix(c(1,1,3,3,10,10,20,20,5,5), nrow=d, ncol=n_genes)
+  n_axes <- 2; n_genes <- 5; n_families <- 2
+  vectors <- matrix(c(1,1,3,3,10,10,20,20,5,5), nrow=n_axes, ncol=n_genes)
   gene_to_family <- as.integer(c(1,1,2,2,1))
   ortholog_set <- rep(FALSE, n_genes)
-  # Invalid d
+  # Invalid n_axes
   error_caught <- FALSE
   tryCatch({
     tox_group_centroid(matrix(numeric(0), nrow=0, ncol=n_genes), gene_to_family, n_families, ortholog_set, mode='all')
@@ -126,7 +126,7 @@ test_invalid_input_arguments <- function() {
   # Invalid n_genes
   error_caught <- FALSE
   tryCatch({
-    tox_group_centroid(matrix(numeric(0), nrow=d, ncol=0), integer(0), n_families, logical(0), mode='all')
+    tox_group_centroid(matrix(numeric(0), nrow=n_axes, ncol=0), integer(0), n_families, logical(0), mode='all')
   }, error=function(e) { error_caught <<- TRUE })
   stopifnot(error_caught)
   # Invalid n_families
@@ -140,8 +140,8 @@ test_invalid_input_arguments <- function() {
 
 # 10. Test for invalid family mapping
 test_invalid_family_mapping <- function() {
-  d <- 2; n_genes <- 5; n_families <- 2
-  vectors <- matrix(c(1,1,3,3,10,10,20,20,5,5), nrow=d, ncol=n_genes)
+  n_axes <- 2; n_genes <- 5; n_families <- 2
+  vectors <- matrix(c(1,1,3,3,10,10,20,20,5,5), nrow=n_axes, ncol=n_genes)
   gene_to_family <- as.integer(c(1,1,2,3,1)) # 3 is invalid
   ortholog_set <- rep(FALSE, n_genes)
   error_caught <- FALSE

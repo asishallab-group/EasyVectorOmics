@@ -1292,7 +1292,7 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
   if (!is.matrix(expression_vectors) || !is.numeric(expression_vectors)) {
     stop("`expression_vectors` must be a numeric matrix.")
   }
-  d <- nrow(expression_vectors)
+  n_axes <- nrow(expression_vectors)
   n_genes <- ncol(expression_vectors)
 
   if (!is.integer(gene_to_family) || length(gene_to_family) != n_genes) {
@@ -1307,13 +1307,13 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
 
   # 2) Prepare inputs/outputs for Fortran
   use_all_mode <- (mode == 'all')
-  centroid_matrix_out <- matrix(0.0, nrow = d, ncol = n_families)
+  centroid_matrix_out <- matrix(0.0, nrow = n_axes, ncol = n_families)
   selected_indices_ws <- integer(n_genes) # Workspace buffer
   ierr <- as.integer(0)
   # 3) Call Fortran
   result <- .Fortran("group_centroid_r",
                      expression_vectors = as.double(expression_vectors),
-                     d = as.integer(d),
+                     n_axes = as.integer(n_axes),
                      n = as.integer(n_genes),
                      gene_to_family = as.integer(gene_to_family),
                      num_families = as.integer(n_families),
@@ -1336,10 +1336,10 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
 #' This function wraps the Fortran subroutine `mean_vector_r`
 #' to compute the centroid (mean vector) for a selected set of genes.
 #'
-#' @param expression_vectors Numeric matrix (d x n_genes) of gene expression vectors
+#' @param expression_vectors Numeric matrix (n_axes x n_genes) of gene expression vectors
 #' @param gene_indices Integer vector of column indices of selected genes (1-based)
 #'
-#' @return Numeric vector of length d representing the computed centroid
+#' @return Numeric vector of length n_axes representing the computed centroid
 #'
 
 tox_mean_vector <- function(expression_vectors, gene_indices) {
@@ -1347,20 +1347,20 @@ tox_mean_vector <- function(expression_vectors, gene_indices) {
   if (!is.matrix(expression_vectors) || !is.numeric(expression_vectors)) {
     stop("`expression_vectors` must be a numeric matrix.")
   }
-  d <- nrow(expression_vectors)
+  n_axes <- nrow(expression_vectors)
   n_genes <- ncol(expression_vectors)
   n_selected_genes <- length(gene_indices)
   if (!is.integer(gene_indices) || any(gene_indices < 1) || any(gene_indices > n_genes)) {
     stop("`gene_indices` must be integer indices between 1 and n_genes.")
   }
-  
-  centroid_col <- numeric(d)
+
+  centroid_col <- numeric(n_axes)
   ierr <- as.integer(0)
   
   # Call Fortran wrapper
   result <- .Fortran("mean_vector_r",
                      expression_vectors = as.double(expression_vectors),
-                     d = as.integer(d),
+                     n_axes = as.integer(n_axes),
                      n_genes = as.integer(n_genes),
                      gene_indices = as.integer(gene_indices),
                      n_selected_genes = as.integer(n_selected_genes),

@@ -78,47 +78,47 @@ contains
 
   ! Test case 1: Basic functionality in 'all' mode.
   subroutine test_basic_all_mode()
-    integer, parameter :: d = 2, n_genes = 5, n_families = 2
-    real(real64) :: vectors(d, n_genes), centroids(d, n_families)
+    integer, parameter :: n_axes = 2, n_genes = 5, n_families = 2
+    real(real64) :: vectors(n_axes, n_genes), centroids(n_axes, n_families)
     integer(int32) :: gene_to_family(n_genes), selected_indices(n_genes), ierr
     logical :: ortholog_set(n_genes)
-    real(real64) :: expected(d, n_families)
+    real(real64) :: expected(n_axes, n_families)
 
-    vectors = reshape([1.0, 1.0, 3.0, 3.0, 10.0, 10.0, 20.0, 20.0, 5.0, 5.0], [d, n_genes])
+    vectors = reshape([1.0, 1.0, 3.0, 3.0, 10.0, 10.0, 20.0, 20.0, 5.0, 5.0], [n_axes, n_genes])
     gene_to_family = [1, 1, 2, 2, 1]
     ortholog_set = .false.
-    expected = reshape([3.0, 3.0, 15.0, 15.0], [d, n_families])
+    expected = reshape([3.0, 3.0, 15.0, 15.0], [n_axes, n_families])
 
-    call group_centroid(vectors, d, n_genes, gene_to_family, n_families, &
+    call group_centroid(vectors, n_axes, n_genes, gene_to_family, n_families, &
                         centroids, .true., ortholog_set, selected_indices, ierr)
-    call assert_allclose_array_real(centroids, expected, d*n_families, 0.0_real64, 1e-9_real64, "test_basic_all_mode")
+    call assert_allclose_array_real(centroids, expected, n_axes*n_families, 0.0_real64, 1e-9_real64, "test_basic_all_mode")
   end subroutine test_basic_all_mode
 
   ! Test case 2: Basic functionality in 'ortho' mode.
   subroutine test_basic_ortho_mode()
-    integer, parameter :: d = 2, n_genes = 5, n_families = 2
-    real(real64) :: vectors(d, n_genes), centroids(d, n_families)
+    integer, parameter :: n_axes = 2, n_genes = 5, n_families = 2
+    real(real64) :: vectors(n_axes, n_genes), centroids(n_axes, n_families)
     integer(int32) :: gene_to_family(n_genes), selected_indices(n_genes), ierr
     logical :: ortholog_set(n_genes)
-    real(real64) :: expected(d, n_families)
+    real(real64) :: expected(n_axes, n_families)
 
-    vectors = reshape([1.0, 1.0, 3.0, 3.0, 10.0, 10.0, 20.0, 20.0, 5.0, 5.0], [d, n_genes])
+    vectors = reshape([1.0, 1.0, 3.0, 3.0, 10.0, 10.0, 20.0, 20.0, 5.0, 5.0], [n_axes, n_genes])
     gene_to_family = [1, 1, 2, 2, 1]
     ortholog_set = [.true., .false., .true., .true., .true.]
-    expected = reshape([3.0, 3.0, 15.0, 15.0], [d, n_families])
+    expected = reshape([3.0, 3.0, 15.0, 15.0], [n_axes, n_families])
 
-    call group_centroid(vectors, d, n_genes, gene_to_family, n_families, &
+    call group_centroid(vectors, n_axes, n_genes, gene_to_family, n_families, &
                         centroids, .false., ortholog_set, selected_indices, ierr)
-    call assert_allclose_array_real(centroids, expected, d*n_families, 0.0_real64, 1e-9_real64, "test_basic_ortho_mode")
+    call assert_allclose_array_real(centroids, expected, n_axes*n_families, 0.0_real64, 1e-9_real64, "test_basic_ortho_mode")
   end subroutine test_basic_ortho_mode
 
   ! Test case 3: A family exists but has no genes assigned to it.
   subroutine test_empty_family()
-    integer, parameter :: d = 3, n_genes = 4, n_families = 2
-    real(real64) :: vectors(d, n_genes), centroids(d, n_families)
+    integer, parameter :: n_axes = 3, n_genes = 4, n_families = 2
+    real(real64) :: vectors(n_axes, n_genes), centroids(n_axes, n_families)
     integer(int32) :: gene_to_family(n_genes), selected_indices(n_genes), ierr
     logical :: ortholog_set(n_genes)
-    real(real64) :: expected(d, n_families)
+    real(real64) :: expected(n_axes, n_families)
 
     vectors = 1.0
     gene_to_family = [1, 1, 1, 1] ! All genes in family 1, none in family 2
@@ -126,33 +126,33 @@ contains
     expected = 0.0
     expected(:, 1) = 1.0 ! Centroid of family 1 is just the vector itself
 
-    call group_centroid(vectors, d, n_genes, gene_to_family, n_families, &
+    call group_centroid(vectors, n_axes, n_genes, gene_to_family, n_families, &
                         centroids, .true., ortholog_set, selected_indices, ierr)
-    call assert_allclose_array_real(centroids, expected, d*n_families, 0.0_real64, 1e-9_real64, "test_empty_family")
+    call assert_allclose_array_real(centroids, expected, n_axes*n_families, 0.0_real64, 1e-9_real64, "test_empty_family")
   end subroutine test_empty_family
 
   ! Test case 4: 'ortho' mode is selected, but a family has no orthologs.
   subroutine test_no_matching_orthologs()
-    integer, parameter :: d = 2, n_genes = 3, n_families = 1
-    real(real64) :: vectors(d, n_genes), centroids(d, n_families)
+    integer, parameter :: n_axes = 2, n_genes = 3, n_families = 1
+    real(real64) :: vectors(n_axes, n_genes), centroids(n_axes, n_families)
     integer(int32) :: gene_to_family(n_genes), selected_indices(n_genes), ierr
     logical :: ortholog_set(n_genes)
-    real(real64) :: expected(d, n_families)
+    real(real64) :: expected(n_axes, n_families)
 
-    vectors = reshape([10.0, 10.0, 20.0, 20.0, 30.0, 30.0], [d, n_genes])
+    vectors = reshape([10.0, 10.0, 20.0, 20.0, 30.0, 30.0], [n_axes, n_genes])
     gene_to_family = [1, 1, 1]
     ortholog_set = .false. ! No genes are orthologs
     expected = 0.0 ! Expect a zero vector
 
-    call group_centroid(vectors, d, n_genes, gene_to_family, n_families, &
+    call group_centroid(vectors, n_axes, n_genes, gene_to_family, n_families, &
                         centroids, .false., ortholog_set, selected_indices, ierr)
-    call assert_allclose_array_real(centroids, expected, d*n_families, 0.0_real64, 1e-9_real64, "test_no_matching_orthologs")
+    call assert_allclose_array_real(centroids, expected, n_axes*n_families, 0.0_real64, 1e-9_real64, "test_no_matching_orthologs")
   end subroutine test_no_matching_orthologs
 
   ! Test case 5: A family contains only a single gene.
   subroutine test_single_gene_family()
-    integer, parameter :: d = 3, n_genes = 1, n_families = 1
-    real(real64) :: vectors(d, n_genes), centroids(d, n_families)
+    integer, parameter :: n_axes = 3, n_genes = 1, n_families = 1
+    real(real64) :: vectors(n_axes, n_genes), centroids(n_axes, n_families)
     integer(int32) :: gene_to_family(n_genes), selected_indices(n_genes), ierr
     logical :: ortholog_set(n_genes)
 
@@ -160,18 +160,18 @@ contains
     gene_to_family = [1]
     ortholog_set = .true.
 
-    call group_centroid(vectors, d, n_genes, gene_to_family, n_families, &
+    call group_centroid(vectors, n_axes, n_genes, gene_to_family, n_families, &
                         centroids, .true., ortholog_set, selected_indices, ierr)
-    call assert_allclose_array_real(centroids, vectors, d*n_families, 0.0_real64, 1e-9_real64, "test_single_gene_family")
+    call assert_allclose_array_real(centroids, vectors, n_axes*n_families, 0.0_real64, 1e-9_real64, "test_single_gene_family")
   end subroutine test_single_gene_family
 
   ! Test case 6: Input vectors with extreme values.
   subroutine test_extreme_values()
-    integer, parameter :: d = 2, n_genes = 4, n_families = 1
-    real(real64) :: vectors(d, n_genes), centroids(d, n_families)
+    integer, parameter :: n_axes = 2, n_genes = 4, n_families = 1
+    real(real64) :: vectors(n_axes, n_genes), centroids(n_axes, n_families)
     integer(int32) :: gene_to_family(n_genes), selected_indices(n_genes), ierr
     logical :: ortholog_set(n_genes)
-    real(real64) :: expected(d, n_families)
+    real(real64) :: expected(n_axes, n_families)
 
     vectors(:, 1) = [1.0e12, -1.0e-12]
     vectors(:, 2) = [-1.0e12, 1.0e-12]
@@ -181,19 +181,19 @@ contains
     ortholog_set = .true.
     expected(:, 1) = [0.0, 0.0]
 
-    call group_centroid(vectors, d, n_genes, gene_to_family, n_families, &
+    call group_centroid(vectors, n_axes, n_genes, gene_to_family, n_families, &
                         centroids, .true., ortholog_set, selected_indices, ierr)
-    call assert_allclose_array_real(centroids, expected, d*n_families, 0.0_real64, 1e-9_real64, "test_extreme_values")
+    call assert_allclose_array_real(centroids, expected, n_axes*n_families, 0.0_real64, 1e-9_real64, "test_extreme_values")
   end subroutine test_extreme_values
 
   ! Test case 7: Higher dimensional data.
   subroutine test_higher_dimensions()
-    integer, parameter :: d = 10, n_genes = 100, n_families = 5
-    real(real64) :: vectors(d, n_genes), centroids(d, n_families)
+    integer, parameter :: n_axes = 10, n_genes = 100, n_families = 5
+    real(real64) :: vectors(n_axes, n_genes), centroids(n_axes, n_families)
     integer(int32) :: gene_to_family(n_genes), selected_indices(n_genes), ierr
     logical :: ortholog_set(n_genes)
     integer :: i
-    real(real64) :: expected(d, n_families)
+    real(real64) :: expected(n_axes, n_families)
 
     do i = 1, n_genes
       vectors(:, i) = real(i, real64)
@@ -204,79 +204,79 @@ contains
     expected = 0.0
     expected(:, 1) = sum(vectors(:, 1:n_genes:n_families), dim=2)/real(count(gene_to_family == 1), real64)
 
-    call group_centroid(vectors, d, n_genes, gene_to_family, n_families, &
+    call group_centroid(vectors, n_axes, n_genes, gene_to_family, n_families, &
                         centroids, .true., ortholog_set, selected_indices, ierr)
-    call assert_allclose_array_real(centroids(:, 1), expected(:, 1), d, 0.0_real64, 1e-9_real64, "test_higher_dimensions")
+    call assert_allclose_array_real(centroids(:, 1), expected(:, 1), n_axes, 0.0_real64, 1e-9_real64, "test_higher_dimensions")
   end subroutine test_higher_dimensions
 
   ! Test case 8: Ensure the result is invariant to the order of genes.
   subroutine test_gene_order_invariance()
-    integer, parameter :: d = 2, n_genes = 5, n_families = 2
-    real(real64) :: vectors1(d, n_genes), centroids1(d, n_families)
+    integer, parameter :: n_axes = 2, n_genes = 5, n_families = 2
+    real(real64) :: vectors1(n_axes, n_genes), centroids1(n_axes, n_families)
     integer(int32) :: gene_to_family1(n_genes), selected_indices1(n_genes), ierr
     logical :: ortholog_set1(n_genes)
 
-    real(real64) :: vectors2(d, n_genes), centroids2(d, n_families)
+    real(real64) :: vectors2(n_axes, n_genes), centroids2(n_axes, n_families)
     integer(int32) :: gene_to_family2(n_genes), selected_indices2(n_genes)
     logical :: ortholog_set2(n_genes)
 
     ! Setup 1: Original order
-    vectors1 = reshape([1.0, 1.0, 3.0, 3.0, 10.0, 10.0, 20.0, 20.0, 5.0, 5.0], [d, n_genes])
+    vectors1 = reshape([1.0, 1.0, 3.0, 3.0, 10.0, 10.0, 20.0, 20.0, 5.0, 5.0], [n_axes, n_genes])
     gene_to_family1 = [1, 1, 2, 2, 1]
     ortholog_set1 = [.true., .false., .true., .true., .true.]
 
     ! Setup 2: Shuffled order
-    vectors2 = reshape([5.0, 5.0, 10.0, 10.0, 1.0, 1.0, 3.0, 3.0, 20.0, 20.0], [d, n_genes])
+    vectors2 = reshape([5.0, 5.0, 10.0, 10.0, 1.0, 1.0, 3.0, 3.0, 20.0, 20.0], [n_axes, n_genes])
     gene_to_family2 = [1, 2, 1, 1, 2]
     ortholog_set2 = [.true., .true., .true., .false., .true.]
 
-    call group_centroid(vectors1, d, n_genes, gene_to_family1, n_families, &
+    call group_centroid(vectors1, n_axes, n_genes, gene_to_family1, n_families, &
                         centroids1, .false., ortholog_set1, selected_indices1, ierr)
-    call group_centroid(vectors2, d, n_genes, gene_to_family2, n_families, &
+    call group_centroid(vectors2, n_axes, n_genes, gene_to_family2, n_families, &
                         centroids2, .false., ortholog_set2, selected_indices2, ierr)
 
-    call assert_allclose_array_real(centroids1, centroids2, d*n_families, &
+    call assert_allclose_array_real(centroids1, centroids2, n_axes*n_families, &
                                     0.0_real64, 1e-9_real64, "test_gene_order_invariance")
   end subroutine test_gene_order_invariance
 
   ! Test case 9: Test for invalid input arguments.
   subroutine test_invalid_input_arguments()
-    integer, parameter :: d = 0, n_genes = 5, n_families = 2, d_invalid = 0, n_genes_invalid = 0, n_families_invalid = 0
-    real(real64) :: vectors(d, n_genes), centroids(d, n_families)
+    integer, parameter :: n_axes = 0, n_genes = 5, n_families = 2, n_axes_invalid = 0, n_genes_invalid = 0, n_families_invalid = 0
+    real(real64) :: vectors(n_axes, n_genes), centroids(n_axes, n_families)
     integer(int32) :: gene_to_family(n_genes), selected_indices(n_genes), ierr
     logical :: ortholog_set(n_genes)
-    real(real64) :: expected(d, n_families)
+    real(real64) :: expected(n_axes, n_families)
 
-    vectors = reshape([1.0, 1.0, 3.0, 3.0, 10.0, 10.0, 20.0, 20.0, 5.0, 5.0], [d, n_genes])
+    vectors = reshape([1.0, 1.0, 3.0, 3.0, 10.0, 10.0, 20.0, 20.0, 5.0, 5.0], [n_axes, n_genes])
     gene_to_family = [1, 1, 2, 2, 1]
     ortholog_set = .false.
-    expected = reshape([3.0, 3.0, 15.0, 15.0], [d, n_families])
+    expected = reshape([3.0, 3.0, 15.0, 15.0], [n_axes, n_families])
 
-    call group_centroid(vectors, d_invalid, n_genes, gene_to_family, n_families, &
+    call group_centroid(vectors, n_axes_invalid, n_genes, gene_to_family, n_families, &
                         centroids, .true., ortholog_set, selected_indices, ierr)
     call assert_equal_int(ierr, ERR_EMPTY_INPUT, "Invalid 0 dimension should return ERR_EMPTY_INPUT")
-    call group_centroid(vectors, d, n_genes_invalid, gene_to_family, n_families, &
+    call group_centroid(vectors, n_axes, n_genes_invalid, gene_to_family, n_families, &
                         centroids, .true., ortholog_set, selected_indices, ierr)
     call assert_equal_int(ierr, ERR_EMPTY_INPUT, "Invalid 0 n_genes should return ERR_EMPTY_INPUT")
-    call group_centroid(vectors, d, n_genes, gene_to_family, n_families_invalid, &
+    call group_centroid(vectors, n_axes, n_genes, gene_to_family, n_families_invalid, &
                         centroids, .true., ortholog_set, selected_indices, ierr)
     call assert_equal_int(ierr, ERR_EMPTY_INPUT, "Invalid 0 families should return ERR_EMPTY_INPUT")
   end subroutine test_invalid_input_arguments
 
   ! Test case 10: Test for invalid family mapping.
   subroutine test_invalid_family_mapping()
-    integer, parameter :: d = 2, n_genes = 5, n_families = 2
-    real(real64) :: vectors(d, n_genes), centroids(d, n_families)
+    integer, parameter :: n_axes = 2, n_genes = 5, n_families = 2
+    real(real64) :: vectors(n_axes, n_genes), centroids(n_axes, n_families)
     integer(int32) :: gene_to_family(n_genes), selected_indices(n_genes), ierr
     logical :: ortholog_set(n_genes)
-    real(real64) :: expected(d, n_families)
+    real(real64) :: expected(n_axes, n_families)
 
-    vectors = reshape([1.0, 1.0, 3.0, 3.0, 10.0, 10.0, 20.0, 20.0, 5.0, 5.0], [d, n_genes])
+    vectors = reshape([1.0, 1.0, 3.0, 3.0, 10.0, 10.0, 20.0, 20.0, 5.0, 5.0], [n_axes, n_genes])
     gene_to_family = [1, 1, 2, 3, 1] ! Invalid family mapping since family 3 does not exist
     ortholog_set = .false.
-    expected = reshape([3.0, 3.0, 15.0, 15.0], [d, n_families])
+    expected = reshape([3.0, 3.0, 15.0, 15.0], [n_axes, n_families])
 
-    call group_centroid(vectors, d, n_genes, gene_to_family, n_families, &
+    call group_centroid(vectors, n_axes, n_genes, gene_to_family, n_families, &
                         centroids, .true., ortholog_set, selected_indices, ierr)
     call assert_equal_int(ierr, ERR_INVALID_INPUT, "Invalid family mapping should return ERR_INVALID_INPUT")
   end subroutine test_invalid_family_mapping

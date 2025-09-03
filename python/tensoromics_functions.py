@@ -1068,7 +1068,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
 
     Args:
         vectors : np.ndarray
-            A 2D NumPy array (d x n_genes) of gene expression vectors.
+            A 2D NumPy array (n_axes x n_genes) of gene expression vectors.
         gene_to_family_map : np.ndarray
             A 1D NumPy array of length n_genes, mapping each gene to a family ID.
         n_families : int
@@ -1080,13 +1080,13 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
 
     Returns:
         np.ndarray
-            A read-only (d x n_families) NumPy array containing the computed centroids.
+            A read-only (n_axes x n_families) NumPy array containing the computed centroids.
     """
 
     # 1) Validate and prepare inputs
     if not isinstance(expression_vectors, np.ndarray) or expression_vectors.ndim != 2:
         raise ValueError("`vectors` must be a 2D NumPy array.")
-    d, n_genes = expression_vectors.shape
+    n_axes, n_genes = expression_vectors.shape
 
     vecs_f = np.asarray(expression_vectors, dtype=np.float64, order="F")
     g2f_map_f = np.asarray(gene_to_family, dtype=np.int32, order="F")
@@ -1101,7 +1101,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
 
     # 2) Prepare output buffers and mode flag
     use_all_mode_int = 1 if mode == 'all' else 0
-    centroids_out = np.zeros((d, n_families), dtype=np.float64, order="F")
+    centroids_out = np.zeros((n_axes, n_families), dtype=np.float64, order="F")
     selected_indices = np.zeros(n_genes, dtype=np.int32, order="F")
     ierr = ctypes.c_int(0)
 
@@ -1109,8 +1109,8 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
     group_centroid_c = lib.group_centroid_c
     group_centroid_c.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # expression_vectors
-        ctypes.c_int,                                                   # d
-        ctypes.c_int,                                                   # n
+        ctypes.c_int,                                                   # n_axes
+        ctypes.c_int,                                                   # n_genes
         np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # gene_to_family
         ctypes.c_int,                                                   # n_families
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # centroid_matrix (out)
@@ -1125,7 +1125,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
     # 4) Call the Fortran routine
     group_centroid_c(
         vecs_f,
-        d,
+        n_axes,
         n_genes,
         g2f_map_f,
         n_families,
@@ -1152,16 +1152,16 @@ def tox_mean_vector(expression_vectors, gene_indices):
     to compute the centroid (mean vector) for a selected set of genes.
 
     Args:
-        expression_vectors: 2D numpy array (d x n_genes) of gene expression vectors.
+        expression_vectors: 2D numpy array (n_axes x n_genes) of gene expression vectors.
         gene_indices: 1D numpy array of column indices of selected genes (1-based).
 
     Returns:
-        numpy.ndarray: 1D array of length d representing the computed centroid.
+        numpy.ndarray: 1D array of length n_axes representing the computed centroid.
     """
     # Validate inputs
     if not isinstance(expression_vectors, np.ndarray) or expression_vectors.ndim != 2:
         raise ValueError("expression_vectors must be a 2D numpy array.")
-    d, n_genes = expression_vectors.shape
+    n_axes, n_genes = expression_vectors.shape
 
     gene_indices = np.asarray(gene_indices, dtype=np.int32)
     n_selected_genes = len(gene_indices)
@@ -1169,14 +1169,14 @@ def tox_mean_vector(expression_vectors, gene_indices):
         raise ValueError("gene_indices must be integer indices between 1 and n_genes (1-based).")
 
     expr_f = np.asfortranarray(expression_vectors, dtype=np.float64)
-    centroid_col = np.zeros(d, dtype=np.float64)
+    centroid_col = np.zeros(n_axes, dtype=np.float64)
     ierr = ctypes.c_int(0)
 
     # Setup C wrapper
     mean_vector_c = lib.mean_vector_c
     mean_vector_c.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # expression_vectors
-        ctypes.c_int,                                                   # d
+        ctypes.c_int,                                                   # n_axes
         ctypes.c_int,                                                   # n_genes
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),   # gene_indices
         ctypes.c_int,                                                   # n_selected_genes
@@ -1188,7 +1188,7 @@ def tox_mean_vector(expression_vectors, gene_indices):
     # Call Fortran routine
     mean_vector_c(
         expr_f,
-        d,
+        n_axes,
         n_genes,
         gene_indices,
         n_selected_genes,
