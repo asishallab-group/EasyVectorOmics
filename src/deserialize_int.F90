@@ -15,8 +15,11 @@ contains
   !> Directly deserialize a 1D integer array from a file
   subroutine deserialize_int_1d(arr, filename, ierr)
     integer(int32), intent(out) :: arr(:)
+    !! Pre-allocated array to read the data into
     character(len=*), intent(in) :: filename
+    !! Name of the file
     integer(int32), intent(out) :: ierr
+    !! Error code
 
     integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
@@ -41,8 +44,11 @@ contains
   !> Directly deserialize a 2D integer array from a file
   subroutine deserialize_int_2d(arr, filename, ierr)
     integer(int32), intent(out) :: arr(:,:)
+    !! Pre-allocated array to read the data into
     character(len=*), intent(in) :: filename
+    !! Name of the file
     integer(int32), intent(out) :: ierr
+    !! Error code
 
     integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
@@ -67,8 +73,11 @@ contains
   !> Directly deserialize a 3D integer array from a file
   subroutine deserialize_int_3d(arr, filename, ierr)
     integer(int32), intent(out) :: arr(:,:,:)
+    !! Pre-allocated array to read the data into
     character(len=*), intent(in) :: filename
+    !! Name of the file
     integer(int32), intent(out) :: ierr
+    !! Error code
 
     integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
@@ -93,8 +102,11 @@ contains
   !> Directly deserialize a 4D integer array from a file
   subroutine deserialize_int_4d(arr, filename, ierr)
     integer(int32), intent(out) :: arr(:,:,:,:)
+    !! Pre-allocated array to read the data into
     character(len=*), intent(in) :: filename
+    !! Name of the File
     integer(int32), intent(out) :: ierr
+    !! Error code
 
     integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
@@ -119,8 +131,11 @@ contains
   !> Directly deserialize a 5D integer array from a file
   subroutine deserialize_int_5d(arr, filename, ierr)
     integer(int32), intent(out) :: arr(:,:,:,:,:)
+    !! Pre-allocated array to read the data into
     character(len=*), intent(in) :: filename
+    !! Name of the file
     integer(int32), intent(out) :: ierr
+    !! Error code
 
     integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
@@ -149,7 +164,7 @@ end module int_deserialize_mod
 subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
   use iso_fortran_env, only: int32
   use array_utils, only : ascii_to_string, read_file_header
-  use tox_errors
+  use tox_errors, only : set_err_once, set_ok, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA
   implicit none
 
   integer(int32), intent(in)  :: arr_size
@@ -199,7 +214,7 @@ subroutine deserialize_int_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C
     use iso_c_binding, only: c_int
     use iso_fortran_env, only: int32
     use array_utils, only: ascii_to_string, read_file_header
-    use tox_errors
+    use tox_errors, only : set_err_once, set_ok, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA
     implicit none
 
     ! Inputs / Outputs

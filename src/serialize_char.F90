@@ -21,10 +21,10 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer(int32) :: unit, clen
-    integer(int32) :: dims(1)
     integer(int32), intent(out) :: ierr 
     !! error code
+    integer(int32) :: unit, clen
+    integer(int32) :: dims(1)
     integer(int32) :: ioerror
     dims = shape(arr)
     clen = len(arr)
@@ -51,10 +51,10 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer(int32) :: unit, clen
-    integer(int32) :: dims(2)
     integer(int32), intent(out) :: ierr
     !! error code
+    integer(int32) :: unit, clen
+    integer(int32) :: dims(2)
     integer(int32) :: ioerror
     dims = shape(arr)
     clen = len(arr)
@@ -80,11 +80,12 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer(int32) :: unit, clen
-    integer(int32) :: dims(3)
     integer(int32), intent(out) :: ierr
     !! error code
+
     integer(int32) :: ioerror
+    integer(int32) :: unit, clen
+    integer(int32) :: dims(3)
     dims = shape(arr)
     clen = len(arr)
     
@@ -109,10 +110,10 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer(int32) :: unit, clen
-    integer(int32) :: dims(4)
     integer(int32), intent(out) :: ierr
     !! error code
+    integer(int32) :: unit, clen
+    integer(int32) :: dims(4)
     integer(int32) :: ioerror
 
     dims = shape(arr)
@@ -140,10 +141,10 @@ contains
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
-    integer(int32) :: unit, clen
-    integer(int32) :: dims(5)
     integer(int32), intent(out) :: ierr
     !! error code
+    integer(int32) :: unit, clen
+    integer(int32) :: dims(5)
     integer(int32) :: ioerror
     dims = shape(arr)
     clen = len(arr)
@@ -173,12 +174,14 @@ contains
     !! flat array to save
     integer(int32), intent(in) :: dims(:)
     !! dimensions of the array
-    integer(int32), intent(in) :: ndim
-    integer(int32), intent(in) :: clen
     character(len=*), intent(in) :: filename
     !! output filename
     integer(int32), intent(out) :: ierr
     !! error code
+    integer(int32), intent(in) :: ndim
+    !! number of dimensions
+    integer(int32), intent(in) :: clen
+    !! Length of each string
     integer(int32) :: ioerror
     integer(int32) :: unit
 

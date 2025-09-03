@@ -59,10 +59,12 @@ contains
 
   !> Directly deserialize a 1D character array from a file (array already allocated)
   subroutine deserialize_char_1d(arr, filename, ierr)
-    implicit none
     character(len=*), intent(out) :: arr(:)
+    !! Pre-allocated array to read the data into
     character(len=*), intent(in)  :: filename
+    !! Name of the file to read from
     integer(int32), intent(out)   :: ierr
+    !! Error code
 
     integer(int32) :: unit, type_code, ndims, clen, ioerror, i
     integer(int32), allocatable :: dims(:)
@@ -74,6 +76,7 @@ contains
 
     if (ndims /= 1) then
       call set_err_once(ierr, ERR_DIM_MISMATCH)
+      close(unit)
       return
     end if
 
@@ -100,11 +103,12 @@ contains
 
   !> Directly deserialize a 2D character array from a file (array already allocated)
   subroutine deserialize_char_2d(arr, filename, ierr)
-    use, intrinsic :: iso_fortran_env, only: int32
-    implicit none
     character(len=*), intent(out) :: arr(:,:)
+    !! Pre-allocated array to read the data into
     character(len=*), intent(in)  :: filename
+    !! Name of the file
     integer(int32), intent(out)   :: ierr
+    !! Error code
 
     integer(int32) :: unit, type_code, ndims, clen, ioerror, i, j
     integer(int32), allocatable :: dims(:)
@@ -144,11 +148,12 @@ contains
 
   !> Directly deserialize a 3D character array from a file (array already allocated)
   subroutine deserialize_char_3d(arr, filename, ierr)
-    use, intrinsic :: iso_fortran_env, only: int32
-    implicit none
     character(len=*), intent(out) :: arr(:,:,:)
+    !!Pre-allocated array to read the data into
     character(len=*), intent(in)  :: filename
+    !! Name of the file
     integer(int32), intent(out)   :: ierr
+    !! Error code
 
     integer(int32) :: unit, type_code, ndims, clen, ioerror, i, j, k
     integer(int32), allocatable :: dims(:)
@@ -190,11 +195,12 @@ contains
 
   !> Directly deserialize a 4D character array from a file (array already allocated)
   subroutine deserialize_char_4d(arr, filename, ierr)
-    use, intrinsic :: iso_fortran_env, only: int32
-    implicit none
     character(len=*), intent(out) :: arr(:,:,:,:)
+    !! Pre-allocated array to read the data into
     character(len=*), intent(in)  :: filename
+    !! Name of the file
     integer(int32), intent(out)   :: ierr
+    !! Error code
 
     integer(int32) :: unit, type_code, ndims, clen, ioerror, i, j, k, l
     integer(int32), allocatable :: dims(:)
@@ -238,11 +244,12 @@ contains
 
   !> Directly deserialize a 5D character array from a file (array already allocated)
   subroutine deserialize_char_5d(arr, filename, ierr)
-    use, intrinsic :: iso_fortran_env, only: int32
-    implicit none
     character(len=*), intent(out) :: arr(:,:,:,:,:)
+    !! Pre-allocated array to read the data into
     character(len=*), intent(in)  :: filename
+    !! Name of the file
     integer(int32), intent(out)   :: ierr
+    !! Error code
 
     integer(int32) :: unit, type_code, ndims, clen, ioerror, i, j, k, l, m
     integer(int32), allocatable :: dims(:)

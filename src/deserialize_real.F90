@@ -15,11 +15,12 @@ contains
 
   !> Directly deserialize a 1D real array from a file (array already allocated)
   subroutine deserialize_real_1d(arr, filename, ierr)
-    use, intrinsic :: iso_fortran_env, only: int32, real64
-    implicit none
     real(real64), intent(out) :: arr(:)
+    !! Pre-allocated array to read the data into
     character(len=*), intent(in) :: filename
+    !! Name of the file
     integer(int32), intent(out) :: ierr
+    !! Error code
 
     integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
@@ -45,11 +46,12 @@ contains
 
   !> Directly deserialize a 2D real array from a file (array already allocated)
   subroutine deserialize_real_2d(arr, filename, ierr)
-    use, intrinsic :: iso_fortran_env, only: int32, real64
-    implicit none
     real(real64), intent(out) :: arr(:,:)
+    !! Pre-allocated array to read the data into
     character(len=*), intent(in) :: filename
+    !! Name of the file
     integer(int32), intent(out) :: ierr
+    !! Error code
 
     integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
@@ -72,14 +74,14 @@ contains
     end if
   end subroutine deserialize_real_2d
 
-
   !> Directly deserialize a 3D real array from a file (array already allocated)
   subroutine deserialize_real_3d(arr, filename, ierr)
-    use, intrinsic :: iso_fortran_env, only: int32, real64
-    implicit none
     real(real64), intent(out) :: arr(:,:,:)
+    !! Pre-allocated array to read the data into
     character(len=*), intent(in) :: filename
+    !! Name of the file
     integer(int32), intent(out) :: ierr
+    !! Error code
 
     integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
@@ -105,11 +107,12 @@ contains
 
   !> Directly deserialize a 4D real array from a file (array already allocated)
   subroutine deserialize_real_4d(arr, filename, ierr)
-    use, intrinsic :: iso_fortran_env, only: int32, real64
-    implicit none
     real(real64), intent(out) :: arr(:,:,:,:)
+    !! Pre-allocated array to read the data into
     character(len=*), intent(in) :: filename
+    !! Name of the file
     integer(int32), intent(out) :: ierr
+    !! Error code
 
     integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
@@ -135,11 +138,12 @@ contains
 
   !> Directly deserialize a 5D real array from a file (array already allocated)
   subroutine deserialize_real_5d(arr, filename, ierr)
-    use, intrinsic :: iso_fortran_env, only: int32, real64
-    implicit none
     real(real64), intent(out) :: arr(:,:,:,:,:)
+    !! Pre-allocated array to read the data into
     character(len=*), intent(in) :: filename
+    !! Name of the file
     integer(int32), intent(out) :: ierr
+    !! Error code
 
     integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
@@ -169,7 +173,7 @@ end module real_deserialize_mod
 subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
   use iso_fortran_env, only: real64, int32
   use array_utils, only : ascii_to_string, read_file_header
-  use tox_errors
+  use tox_errors, only : set_ok, set_err_once, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA
   implicit none
 
   integer(int32), intent(in) :: fn_len
@@ -220,7 +224,7 @@ subroutine deserialize_real_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(
     use iso_c_binding, only : c_int, c_double
     use iso_fortran_env, only: int32, real64
     use array_utils, only: ascii_to_string, read_file_header
-    use tox_errors
+    use tox_errors, only : set_ok, set_err_once, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA
     implicit none
 
     ! Inputs / Outputs
