@@ -244,6 +244,7 @@ tox_serialize_char_array <- function(arr, filename) {
     ierr = ierr
   )
   check_err_code(res$ierr)
+}
 #' Normalize gene expression values by standard deviation
 #'
 #' This function wraps the Fortran subroutine `normalize_by_std_dev`
