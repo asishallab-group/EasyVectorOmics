@@ -4,12 +4,12 @@
 ! wrappers are defined outside the module for compatibility.
 module tox_gene_centroids
   use, intrinsic :: iso_fortran_env, only: int32, real64
-  use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, set_ok, set_err_once
+  use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, set_ok, set_err_once, is_ok
   implicit none
 contains
 
   !> Computes the element-wise mean for a given set of vectors.
-  pure subroutine mean_vector(expression_vectors, d, n_genes, gene_indices, n_selected_genes, centroid_col, ierr)
+  pure subroutine mean_vector(expression_vectors, d, n_genes, gene_indices, n_selected_genes, centroid, ierr)
     implicit none
     !| Dimension of the vectors (e.g., number of tissues).
     integer(int32), intent(in) :: d
@@ -22,7 +22,7 @@ contains
     !| An array containing the column indices of the selected genes in 'expression_vectors'.
     integer(int32), intent(in) :: gene_indices(n_selected_genes)
     !| The output vector representing the computed centroid.
-    real(real64), intent(out) :: centroid_col(d)
+    real(real64), intent(out) :: centroid(d)
     !| Error code: 0 - success, non-zero = error
     integer(int32), intent(out) :: ierr
 
@@ -47,7 +47,7 @@ contains
     end if
 
     ! If no genes are selected, return a zero vector
-    centroid_col = 0.0_real64
+    centroid = 0.0_real64
     if (n_selected_genes == 0) return
 
     do j = 1, d
@@ -56,11 +56,10 @@ contains
         gene_idx = gene_indices(i)
         sum_val = sum_val + expression_vectors(j, gene_idx)
       end do
-      centroid_col(j) = sum_val
+      centroid(j) = sum_val
     end do
 
-    inv_n_genes = 1.0_real64/real(n_selected_genes, real64)
-    centroid_col = centroid_col*inv_n_genes
+    centroid = centroid / real(n_selected_genes, real64)
   end subroutine mean_vector
 
   !> Iterates over families, filters gene indices, and computes centroids.
@@ -116,7 +115,7 @@ contains
         end if
       end do
       call mean_vector(expression_vectors, d, n_genes, local_selected_indices, n_selected, centroid_matrix(:, j), ierr)
-      if (ierr /= 0) return
+      if (.not. is_ok(ierr)) return
     end do
   end subroutine group_centroid
 
@@ -145,11 +144,6 @@ pure subroutine mean_vector_c(expression_vectors, d, n_genes, gene_indices, n_se
   real(c_double), intent(out), target :: centroid_col(d)
   !| Error code: 0 - success, non-zero = error
   integer(c_int), intent(out) :: ierr
-
-  ! Local variables
-  integer(c_int) :: i, j, gene_idx
-  real(c_double) :: inv_n_genes
-  real(c_double) :: sum_val
 
   call mean_vector(expression_vectors, d, n_genes, gene_indices, n_selected_genes, centroid_col, ierr)
 end subroutine mean_vector_c
@@ -221,11 +215,6 @@ pure subroutine mean_vector_r(expression_vectors, d, n_genes, gene_indices, n_se
   real(real64), intent(out) :: centroid_col(d)
   !| Error code: 0 - success, non-zero = error
   integer(int32), intent(out) :: ierr
-
-  ! Local variables
-  integer(int32) :: i, j, gene_idx
-  real(real64) :: inv_n_genes
-  real(real64) :: sum_val
 
   call mean_vector(expression_vectors, d, n_genes, gene_indices, n_selected_genes, centroid_col, ierr)
 end subroutine mean_vector_r
