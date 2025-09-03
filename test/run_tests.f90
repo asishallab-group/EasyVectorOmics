@@ -10,6 +10,7 @@ program main
   use mod_test_euclidean_distance
   use mod_test_tissue_versatility
   use mod_test_shift_vectors
+  use mod_test_tox_conversions
 
   implicit none
 
@@ -81,6 +82,8 @@ contains
     call add_suite("euclidean_distance", run_all_tests_euclidean_distance, run_named_tests_euclidean_distance)
     call add_suite("tissue_versatility", run_all_tests_tissue_versatility, run_named_tests_tissue_versatility)
     call add_suite("shift_vectors", run_all_tests_shift_vectors, run_named_tests_shift_vectors)
+    call add_suite("tox_conversions", run_all_tests_tox_conversions, run_named_tests_tox_conversions)
+    
   end subroutine initialize_suites
 
   !> Add a suite to the registry (grows automatically)
