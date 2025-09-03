@@ -88,17 +88,30 @@ contains
     ierr = ERR_OK
   end subroutine set_ok
 
+  !> set the error code to specific code
+  pure subroutine set_err(ierr, code)
+    integer(int32), intent(inout) :: ierr
+    integer(int32), intent(in)    :: code
+    if (ierr == ERR_OK) ierr = code
+  end subroutine set_err
+
   !> set the error code only if it is currently OK, use to prevent overwriting first error
   pure subroutine set_err_once(ierr, code)
     integer(int32), intent(inout) :: ierr
     integer(int32), intent(in)    :: code
-    if (ierr == ERR_OK) ierr = code
+    if (ierr == ERR_OK) call set_err(ierr, code)
   end subroutine set_err_once
+
+  !> check if the error code indicates error
+  pure logical function is_err(ierr) result(not_ok)
+    integer(int32), intent(in) :: ierr
+    not_ok = (ierr /= ERR_OK)
+  end function is_err
 
   !> check if the error code indicates success
   pure logical function is_ok(ierr) result(ok)
     integer(int32), intent(in) :: ierr
-    ok = (ierr == ERR_OK)
+    ok = .not. is_err(ierr)
   end function is_ok
 
 end module tox_errors
