@@ -8,18 +8,40 @@ tox_errors <- function(ierr) {
   msg <- switch(
     as.character(ierr),
     "0" = NULL,
-    "101" = "File could not be opened",
-    "102" = "Could not read magic number", 
-    "103" = "Could not read array type code",
-    "104" = "Could not read array dimension number",
-    "105" = "Could not read array dimensions",
-    "106" = "Could not read character length",
-    "107" = "Could not read array data",
-    "200" = "Invalid file format (magic number mismatch)",
-    "201" = "Invalid input parameters",
-    "202" = "No axes selected (empty input)",
-    "5002" = "File not open or unit not connected",
-    "9999" = "Unknown error",
+    '101' = "Could not open file.",
+    '102' = "Could not read magic number.",
+    '103' = "Could not read type code.",
+    '104' = "Could not read number of dimensions.",
+    '105' = "Could not read array dimensions",
+    '106' = "Could not read character length.",
+    '107' = "Could not read array data.",
+    '112' = "Could not write magic number",
+    '113' = "Could not write type code",
+    '114' = "Could not write number of dimensions",
+    '115' = "Could not write dimensions",
+    '116' = "Could not write character length",
+    '117' = "Could not write array data",
+    # ADD MORE HERE
+    
+    # FORMAT ERRORS
+    '200' = "Invalid format detected.",
+    '201' = "Invalid input provided.",
+    '202' = "Empty input arrays provided.",
+    '203' = "Dimension mismatch detected.",
+    '204' = "NaN or Inf found in input data.",
+    '205' = "Unsupported data type encountered.",
+    '206' = "Array size mismatch detected",
+
+    # MEMORY ERRORS
+    '301' = "Memory allocation failed.",
+    '302' = "Null pointer reference encountered.",
+
+    # FORTRAN RUNTIME ERRORS
+    '5002' = "Fortran runtime error: unit not open / not connected.",
+
+    # Internal errors
+    '9001' = "Internal error: unexpected state.",
+    '9999' = "Unknown error.",
     paste("Unknown Fortran error code:", ierr)
   )
   
@@ -27,6 +49,7 @@ tox_errors <- function(ierr) {
     stop(msg)
   }
 }
+
 
 #' Normalize gene expression values by standard deviation
 #'
@@ -51,6 +74,7 @@ tox_normalize_by_std_dev <- function(input_matrix) {
   # Prepare the input vector (flatten matrix column-major) and allocate output space
   input_vector <- as.numeric(as.vector(input_matrix))
   output_vector <- numeric(n_genes * n_tissues)
+  ierr <- integer(0)
 
   # Validate input data before calling Fortran
   if (any(is.na(input_vector))) {
@@ -65,13 +89,15 @@ tox_normalize_by_std_dev <- function(input_matrix) {
 
   # Call the Fortran subroutine
   result <- .Fortran("normalize_by_std_dev_r",
-               as.integer(n_genes),
-               as.integer(n_tissues),
-               input_vector,
-               output_vector)
+               n_genes = as.integer(n_genes),
+               n_tissues = as.integer(n_tissues),
+               input_vector = input_vector,
+               output_vector = output_vector,
+               ierr = ierr)
 
-  matrix(result[[4]], nrow = n_genes, ncol = n_tissues,
-         dimnames = dimnames(input_matrix))
+  tox_errors(result$ierr)
+  return(matrix(result$output_vector, nrow = n_genes, ncol = n_tissues,
+         dimnames = dimnames(input_matrix)))
 
 }
 
@@ -99,13 +125,11 @@ tox_quantile_normalization <- function(input_matrix) {
   temp_col <- numeric(n_genes)
   rank_means <- numeric(n_genes)
   perm <- integer(n_genes)
-
-  # Estimar tamaño máximo para la pila (según pseudocódigo: log2(n) + 10)
   max_stack <- as.integer(ceiling(log2(n_genes)) + 10)
   stack_left <- integer(max_stack)
   stack_right <- integer(max_stack)
+  ierr <- integer(0)
 
-  # Fortran interop: asegurar tipos
   storage.mode(input_vector) <- "double"
   storage.mode(output_vector) <- "double"
   storage.mode(temp_col) <- "double"
@@ -114,25 +138,22 @@ tox_quantile_normalization <- function(input_matrix) {
   storage.mode(stack_left) <- "integer"
   storage.mode(stack_right) <- "integer"
 
-  # Initialize first stack entry manually
-  # stack_left[1] <- 1L
-  # stack_right[1] <- n_genes
-
   result <- .Fortran("quantile_normalization_r",
-    as.integer(n_genes),
-    as.integer(n_tissues),
-    input_vector,
-    output_vector,
-    temp_col,
-    rank_means,
-    perm,
-    stack_left,
-    stack_right,
-    as.integer(max_stack)
+    n_genes = as.integer(n_genes),
+    n_tissues = as.integer(n_tissues),
+    input_vector = input_vector,
+    output_vector = output_vector,
+    temp_col = temp_col,
+    rank_means = rank_means,
+    perm = perm,
+    stack_left = stack_left,
+    stack_right = stack_right,
+    max_stack = as.integer(max_stack),
+    ierr = ierr
   )
-
-  matrix(result[[4]], nrow = n_genes, ncol = n_tissues,
-         dimnames = dimnames(input_matrix))
+  tox_errors(result$ierr)
+  return(matrix(result$output_vector, nrow = n_genes, ncol = n_tissues,
+         dimnames = dimnames(input_matrix)))
 }
 
 
@@ -164,17 +185,19 @@ tox_log2_transformation <- function(input_matrix) {
   # Prepare the input vector (flatten matrix column-major) and allocate output space
   input_vector <- as.numeric(as.vector(input_matrix))
   output_vector <- numeric(n_genes * n_tissues)
+  ierr <- integer(0)
 
   # Call the Fortran subroutine
   result <- .Fortran("log2_transformation_r",
-               as.integer(n_genes),
-               as.integer(n_tissues),
-               input_vector,
-               output_vector)
+               n_genes = as.integer(n_genes),
+               n_tissues = as.integer(n_tissues),
+               input_vector = input_vector,
+               output_vector = output_vector,
+               ierr = ierr)
 
-  # Reconstruct the transformed matrix
-  matrix(result[[4]], nrow = n_genes, ncol = n_tissues,
-  dimnames = dimnames(input_matrix))
+  tox_errors(result$ierr)
+  return(matrix(result$output_vector, nrow = n_genes, ncol = n_tissues,
+  dimnames = dimnames(input_matrix)))
 
   # # Restore row and column names
   # colnames(normalized_matrix) <- col_names
@@ -237,31 +260,20 @@ tox_parse_tissue_group <- function(colname) {
 #' @examples
 #' averaged_df <- tox_calculate_tissue_averages(df)
 tox_calculate_tissue_averages <- function(df) {
-  n_genes <- nrow(df)      # Number of genes (rows)
-  n_columns <- ncol(df)    # Number of columns (tissues)
-
-  # --- Parse all column names to find their corresponding tissue group ---
+  n_genes <- nrow(df)
+  n_columns <- ncol(df)
   tissue_groups <- as.character(sapply(colnames(df), tox_parse_tissue_group))
-
-  # --- Identify unique tissue groups ---
   unique_groups <- unique(tissue_groups)
   n_groups <- length(unique_groups)
-
-  # --- Initialize mapping for groups ---
   group_starts <- integer(n_groups)
   group_counts <- integer(n_groups)
-
-  # --- Sort the dataframe by tissue group name ---
   df_sorted <- df[, order(tissue_groups)]
   sorted_tissue_groups <- tissue_groups[order(tissue_groups)]
   current_group <- as.character(sorted_tissue_groups[1])
   group_starts[1] <- 1
   group_counts[1] <- 1
   group_idx <- 1
-
-  # --- Build group_starts and group_counts arrays ---
   for (i in 2:length(sorted_tissue_groups)) {
-    # Ensure both are character and not NA before comparison
     if (!is.na(sorted_tissue_groups[i]) && !is.na(current_group) && as.character(sorted_tissue_groups[i]) == as.character(current_group)) {
       group_counts[group_idx] <- group_counts[group_idx] + 1
     } else {
@@ -271,27 +283,21 @@ tox_calculate_tissue_averages <- function(df) {
       current_group <- as.character(sorted_tissue_groups[i])
     }
   }
-
-  # --- Prepare input vector and allocate output space ---
   input_vector <- as.numeric(as.vector(as.matrix(df_sorted)))
   output_vector <- numeric(n_genes * n_groups)
-
-  # --- Call the Fortran subroutine to calculate averages ---
+  ierr <- integer(0)
   result <- .Fortran("calc_tiss_avg_r",
-               as.integer(n_genes),
-               as.integer(n_groups),
-               as.integer(group_starts),
-               as.integer(group_counts),
-               as.numeric(input_vector),
-               as.numeric(output_vector))
-
-  # --- Reconstruct output matrix ---
-  output_matrix <- matrix(result[[6]], nrow = n_genes, ncol = n_groups)
-
-  # --- Restore column and row names ---
+               n_genes = as.integer(n_genes),
+               n_groups = as.integer(n_groups),
+               group_starts = as.integer(group_starts),
+               group_counts = as.integer(group_counts),
+               input_vector = as.numeric(input_vector),
+               output_vector = as.numeric(output_vector),
+               ierr = ierr)
+  tox_errors(result$ierr)
+  output_matrix <- matrix(result$output_vector, nrow = n_genes, ncol = n_groups)
   colnames(output_matrix) <- unique_groups
   rownames(output_matrix) <- rownames(df)
-
   return(as.data.frame(output_matrix))
 }
 
@@ -377,22 +383,20 @@ tox_calculate_fc_by_patterns <- function(df, control_pattern, condition_patterns
   # --- Prepare input and output vectors ---
   input_vector <- as.numeric(as.vector(as.matrix(df)))
   output_vector <- numeric(n_genes * n_pairs)
-
-  print(control_cols)
-  print(condition_cols)
-  print(head(input_vector))
+  ierr <- integer(0)
   # --- Call Fortran subroutine to calculate fold changes ---
   result <- .Fortran("calc_fchange_r",
-               as.integer(n_genes),
-               as.integer(n_columns),   # Pass n_cols as required by Fortran
-               as.integer(n_pairs),
-               as.integer(control_cols),
-               as.integer(condition_cols),
-               input_vector,
-               output_vector)
-
+               n_genes = as.integer(n_genes),
+               n_columns = as.integer(n_columns),
+               n_pairs = as.integer(n_pairs),
+               control_cols = as.integer(control_cols),
+               condition_cols = as.integer(condition_cols),
+               input_vector = input_vector,
+               output_vector = output_vector,
+               ierr = ierr)
+  tox_errors(result$ierr)
   # --- Reconstruct the fold change matrix ---
-  output_matrix <- matrix(result[[7]], nrow = n_genes, ncol = n_pairs)
+  output_matrix <- matrix(result$output_vector, nrow = n_genes, ncol = n_pairs)
   colnames(output_matrix) <- condition_labels
   rownames(output_matrix) <- rownames(df)
 
@@ -675,12 +679,9 @@ tox_normalization_pipeline <- function(input_matrix, group_s, group_c) {
   max_stack <- as.integer(ceiling(log2(n_genes)) + 10)
   stack_left <- integer(max_stack)
   stack_right <- integer(max_stack)
-
-  # Fortran expects integer arrays (1-based)
   storage.mode(group_s) <- "integer"
   storage.mode(group_c) <- "integer"
-
-  # Call Fortran routine
+  ierr <- integer(0)
   result <- .Fortran("normalization_pipeline_r",
       n_genes = as.integer(n_genes),
       n_tissues = as.integer(n_tissues),
@@ -697,9 +698,10 @@ tox_normalization_pipeline <- function(input_matrix, group_s, group_c) {
       max_stack = as.integer(max_stack),
       group_s = group_s,
       group_c = group_c,
-      n_grps = as.integer(n_grps)
+      n_grps = as.integer(n_grps),
+      ierr = ierr
   )
-
+  tox_errors(result$ierr)
   return(matrix(result$buf_log, nrow = n_genes, ncol = n_grps))
 
 }
@@ -1261,7 +1263,6 @@ tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
 # SHIFT VECTOR FIELD FUNCTIONS
 # ===================================================================
 #' Calculate Shift Vector Field 
-
 #' Computes the shift vector field for each gene expression vector based on its family centroid.
 #' The shift vector is defined as the difference between the gene expression vector and its corresponding family centroid,
 #' starting at the expression vector and pointing to its family centroid.
@@ -1270,7 +1271,7 @@ tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
 #' @param expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors)
 #' @param family_centroids: Matrix where each column is a family centroid vector (n_axes x n_families)
 #' @param gene_to_centroid: Array mapping each gene to its corresponding family centroid ID in family_centroids (length n_vectors)
-#'
+#' 
 #' @return List containing:
 #'   \item{shift_vectors}{The computed shift vectors for each gene expression vector}
 #'

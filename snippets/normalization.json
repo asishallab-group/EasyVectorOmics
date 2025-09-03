@@ -18,10 +18,11 @@
       "        ctypes.c_int,  # max_stack",
       "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),   # group_s",
       "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),   # group_c",
-      "        ctypes.c_int    # n_grps",
+      "        ctypes.c_int,    # n_grps",
+      "        ctypes.POINTER(ctypes.c_int)  # ierr",
       "    ]",
       "    lib.normalization_pipeline_c.restype = None",
-      "    lib.normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps)"
+      "    lib.normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ctypes.byref(ierr))"
     ],
     "description": "Setup normalization_pipeline_c function binding for Python/ctypes"
   },
@@ -44,7 +45,8 @@
       "                  max_stack = as.integer(${5:max_stack}),",
       "                  group_s = as.integer(${6:group_s}),",
       "                  group_c = as.integer(${7:group_c}),",
-      "                  n_grps = as.integer(${4:n_grps}))"
+      "                  n_grps = as.integer(${4:n_grps}),",
+      "                  ierr = as.integer(0))"
     ],
     "description": "Call normalization_pipeline_r Fortran function from R"
   },
@@ -52,7 +54,7 @@
     "prefix": "tox:normalization_pipeline",
     "body": [
       "! Run the full normalization pipeline for gene expression data",
-      "call normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps)"
+      "call normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ierr)"
     ],
     "description": "Invoke normalization pipeline from Fortran"
   }

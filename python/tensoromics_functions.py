@@ -74,6 +74,7 @@ def tox_normalize_by_std_dev(input_matrix):
     # Flatten input and prepare output
     input_flat = np.asfortranarray(input_matrix).ravel(order='F')
     output_flat = np.zeros_like(input_flat)
+    ierr = ctypes.c_int(0)
     
     # Setup C wrapper
     normalize_c = lib.normalize_by_std_dev_c
@@ -82,11 +83,13 @@ def tox_normalize_by_std_dev(input_matrix):
         ctypes.c_int,  # n_tissues
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # input
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # output
+        ctypes.POINTER(ctypes.c_int)  # ierr
     ]
     normalize_c.restype = None
     
     # Call Fortran routine
-    normalize_c(n_genes, n_tissues, input_flat, output_flat)
+    normalize_c(n_genes, n_tissues, input_flat, output_flat, ctypes.byref(ierr))
+    tox_errors(ierr.value)
     
     # Reshape and return
     result = output_flat.reshape((n_genes, n_tissues), order='F')
@@ -114,11 +117,10 @@ def tox_quantile_normalization(input_matrix):
     temp_col = np.zeros(n_genes, dtype=np.float64)
     rank_means = np.zeros(n_genes, dtype=np.float64)
     perm = np.zeros(n_genes, dtype=np.int32)
-    
-    # Prepare stack arrays for sorting
     max_stack = max(2 * n_genes, 2)
     stack_left = np.zeros(max_stack, dtype=np.int32)
     stack_right = np.zeros(max_stack, dtype=np.int32)
+    ierr = ctypes.c_int(0)
     
     # Setup C wrapper
     quantile_norm_c = lib.quantile_normalization_c
@@ -133,12 +135,14 @@ def tox_quantile_normalization(input_matrix):
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_left
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_right
         ctypes.c_int,  # max_stack
+        ctypes.POINTER(ctypes.c_int)  # ierr
     ]
     quantile_norm_c.restype = None
     
     # Call Fortran routine
     quantile_norm_c(n_genes, n_tissues, input_flat, output_flat,
-                    temp_col, rank_means, perm, stack_left, stack_right, max_stack)
+                    temp_col, rank_means, perm, stack_left, stack_right, max_stack, ctypes.byref(ierr))
+    tox_errors(ierr.value)
     
     # Reshape and return
     result = output_flat.reshape((n_genes, n_tissues), order='F')
@@ -163,6 +167,7 @@ def tox_log2_transformation(input_matrix):
     # Flatten input and prepare output
     input_flat = np.asfortranarray(input_matrix).ravel(order='F')
     output_flat = np.zeros_like(input_flat)
+    ierr = ctypes.c_int(0)
     
     # Setup C wrapper
     log2_transform_c = lib.log2_transformation_c
@@ -171,11 +176,13 @@ def tox_log2_transformation(input_matrix):
         ctypes.c_int,  # n_tissues
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # input
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # output
+        ctypes.POINTER(ctypes.c_int)  # ierr
     ]
     log2_transform_c.restype = None
     
     # Call Fortran routine
-    log2_transform_c(n_genes, n_tissues, input_flat, output_flat)
+    log2_transform_c(n_genes, n_tissues, input_flat, output_flat, ctypes.byref(ierr))
+    tox_errors(ierr.value)
     
     # Reshape and return
     result = output_flat.reshape((n_genes, n_tissues), order='F')
@@ -209,6 +216,7 @@ def tox_calculate_tissue_averages(input_matrix, group_starts, group_counts):
     # Flatten input and prepare output
     input_flat = np.asfortranarray(input_matrix).ravel(order='F')
     output_flat = np.zeros(n_genes * n_groups, dtype=np.float64)
+    ierr = ctypes.c_int(0)
     
     # Setup C wrapper
     tiss_avg_c = lib.calc_tiss_avg_c
@@ -219,11 +227,13 @@ def tox_calculate_tissue_averages(input_matrix, group_starts, group_counts):
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # group_counts
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # input
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # output
+        ctypes.POINTER(ctypes.c_int)  # ierr
     ]
     tiss_avg_c.restype = None
     
     # Call Fortran routine
-    tiss_avg_c(n_genes, n_groups, group_starts, group_counts, input_flat, output_flat)
+    tiss_avg_c(n_genes, n_groups, group_starts, group_counts, input_flat, output_flat, ctypes.byref(ierr))
+    tox_errors(ierr.value)
     
     # Reshape and return
     result = output_flat.reshape((n_genes, n_groups), order='F')
@@ -264,6 +274,7 @@ def tox_normalization_pipeline(input_matrix, group_starts, group_counts):
     max_stack = max(2 * n_genes, 2)
     stack_left = np.zeros(max_stack, dtype=np.int32)
     stack_right = np.zeros(max_stack, dtype=np.int32)
+    ierr = ctypes.c_int(0)
 
     # Setup C wrapper
     normalization_pipeline_c = lib.normalization_pipeline_c
@@ -284,6 +295,7 @@ def tox_normalization_pipeline(input_matrix, group_starts, group_counts):
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # group_starts
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # group_counts
         ctypes.c_int,  # n_grps
+        ctypes.POINTER(ctypes.c_int)  # ierr
     ]
     normalization_pipeline_c.restype = None
 
@@ -291,8 +303,9 @@ def tox_normalization_pipeline(input_matrix, group_starts, group_counts):
     normalization_pipeline_c(
         n_genes, n_tissues, input_flat, buf_stddev, buf_quant, buf_avg, buf_log,
         temp_col, rank_means, perm, stack_left, stack_right, max_stack,
-        group_starts, group_counts, n_grps
+        group_starts, group_counts, n_grps, ctypes.byref(ierr)
     )
+    tox_errors(ierr.value)
 
     # Reshape and return log2(x+1) output
     result = buf_log.reshape((n_genes, n_grps), order='F')
@@ -324,6 +337,7 @@ def tox_calculate_fold_changes(input_matrix, control_cols, condition_cols):
     # Flatten input and prepare output
     input_flat = np.asfortranarray(input_matrix).ravel(order='F')
     output_flat = np.zeros(n_genes * n_pairs, dtype=np.float64)
+    ierr = ctypes.c_int(0)
     
     # Setup C wrapper
     fchange_c = lib.calc_fchange_c
@@ -335,11 +349,13 @@ def tox_calculate_fold_changes(input_matrix, control_cols, condition_cols):
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # condition_cols
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # input
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # output
+        ctypes.POINTER(ctypes.c_int)  # ierr
     ]
     fchange_c.restype = None
     
     # Call Fortran routine
-    fchange_c(n_genes, n_samples, n_pairs, control_cols, condition_cols, input_flat, output_flat)
+    fchange_c(n_genes, n_samples, n_pairs, control_cols, condition_cols, input_flat, output_flat, ctypes.byref(ierr))
+    tox_errors(ierr.value)
     
     # Reshape and return
     result = output_flat.reshape((n_genes, n_pairs), order='F')
