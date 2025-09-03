@@ -957,3 +957,103 @@ def tox_which(cond):
     _readonly(idx_out)
 
     return idx_out, int(m_out[0])
+
+def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to_centroid):
+    """
+    Calculate Shift Vector Field 
+
+    Computes the shift vector field for each gene expression vector based on its family centroid.
+    The shift vector is defined as the difference between the gene expression vector and its corresponding family centroid,
+    starting at the expression vector and pointing to its family centroid.
+    This function automatically checks for errors and throws informative exceptions.
+    
+    Args:
+        expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors)
+        family_centroids: Matrix where each column is a family centroid vector (n_axes x n_families)
+        gene_to_centroid: Array mapping each gene to its corresponding family centroid index in family_centroids with length n_vectors (1 based for fortran)
+
+    Returns:
+        dict: Dictionary containing:
+            - shift_vectors: The computed shift vectors for each gene expression vector
+
+    """
+    
+    # Input validation
+    if not isinstance(expression_vectors, np.ndarray):
+        raise ValueError("expression_vectors must be a numpy array")
+    
+    if expression_vectors.ndim != 2:
+        raise ValueError("expression_vectors must be a 2D array")
+
+    if not isinstance(family_centroids, np.ndarray):
+        raise ValueError("family_centroids must be a numpy array")
+
+    if family_centroids.ndim != 2:
+        raise ValueError("family_centroids must be a 2D array")
+    
+    # Convert inputs to numpy arrays
+    expression_vectors = np.asarray(expression_vectors, dtype=np.float64)
+    family_centroids = np.asarray(family_centroids, dtype=np.float64)
+    gene_to_centroid = np.asarray(gene_to_centroid, dtype=np.int32)
+    
+    # Get dimensions
+    n_axes_genes, n_vectors = expression_vectors.shape
+    n_axes_centroids, n_families = family_centroids.shape
+    
+    # Validate length of gene_to_centroid
+    if len(gene_to_centroid) != n_vectors:
+        raise ValueError("gene_to_centroid length must match number of columns in expression_vectors")
+    
+    # Validate dimensions
+    if n_axes_genes != n_axes_centroids:
+        raise ValueError("family_centroids must have the same number of axes as expression_vectors")
+
+    # Validate correct mapping between genes and centroids
+    if not np.all((gene_to_centroid > 0) & (gene_to_centroid <= n_families)):
+        raise ValueError("gene_to_centroid contains invalid family IDs")
+
+    # Ensure arrays have correct dtype and memory layout
+    expr_v = np.asfortranarray(expression_vectors, dtype=np.float64)
+    family_c = np.asfortranarray(family_centroids, dtype=np.float64)
+    gene_c = np.ascontiguousarray(gene_to_centroid.astype(np.int32))
+    
+    # Prepare output arrays
+    shift_vectors = np.empty((2*n_axes_genes, n_vectors), dtype=np.float64, order='F')
+    ierr = ctypes.c_int(0)
+
+    # Setup C/Fortran wrapper with proper type annotations
+    sv = lib.compute_shift_vector_field_c
+    sv.argtypes = [
+        ctypes.c_int,  # n_axes_genes
+        ctypes.c_int,  # n_vectors
+        ctypes.c_int,  # n_families
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # expression_vectors (Fortran order)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # family_centroids (Fortran order)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # gene_to_centroid
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # shift_vectors
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    sv.restype = None
+    
+    # Call the C/Fortran wrapper
+    sv(
+        n_axes_genes,
+        n_vectors,
+        n_families,
+        expr_v,
+        family_c,
+        gene_c,
+        shift_vectors,
+        ctypes.byref(ierr)
+    )
+
+    # Check for errors and throw informative messages
+    tox_errors(ierr.value)
+
+    # Mark outputs as read-only
+    _readonly(shift_vectors)
+    
+    # Return structured result (no ierr since we checked for errors)
+    return {
+        "shift_vectors": shift_vectors
+    }
