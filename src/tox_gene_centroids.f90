@@ -50,16 +50,17 @@ contains
     centroid = 0.0_real64
     if (n_selected_genes == 0) return
 
+    ! Compute the mean vector
     do j = 1, d
       sum_val = 0.0_real64
+      ! For each selected gene, accumulate its expression value.
       do i = 1, n_selected_genes
         gene_idx = gene_indices(i)
         sum_val = sum_val + expression_vectors(j, gene_idx)
       end do
-      centroid(j) = sum_val
+      ! Compute the mean for the current dimension by dividing through the number of selected genes.
+      centroid(j) = sum_val / real(n_selected_genes, real64)
     end do
-
-    centroid = centroid / real(n_selected_genes, real64)
   end subroutine mean_vector
 
   !> Iterates over families, filters gene indices, and computes centroids.
