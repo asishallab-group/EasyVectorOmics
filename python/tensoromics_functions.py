@@ -1,12 +1,17 @@
-<<<<<<< HEAD
-import ctypes
+"""
+TensorOmics Functions Module
+Python wrapper functions for Fortran routines via C interface
+"""
+
 import numpy as np
+import ctypes
 import os
 from error_handling import check_err_code
 
-# load fortran library
-lib_path = os.path.join(os.path.dirname(__file__), "../build/libtensor-omics.so")
-arrays_lib = ctypes.CDLL(lib_path)
+# Load library
+dll_path = os.path.abspath("build/libtensor-omics.so")
+ctypes.CDLL("libgomp.so.1", mode=ctypes.RTLD_GLOBAL)
+lib = ctypes.CDLL(dll_path)
 
 # helper to convert a filename to ASCII chars to transfer it as integer to fortran
 def _filename_to_ascii_array(filename):
@@ -47,7 +52,7 @@ def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
     clen = ctypes.c_int()  # always pass
 
     # shared function
-    arrays_lib.get_array_metadata_C.argtypes = [
+    lib.get_array_metadata_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"), # filename_ascii
         ctypes.c_int,                                                         # fn_len
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"), # dims_out
@@ -55,10 +60,10 @@ def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
         ctypes.POINTER(ctypes.c_int),                                         # ierr
         ctypes.POINTER(ctypes.c_int)                                          # clen
     ]
-    arrays_lib.get_array_metadata_C.restype = None
+    lib.get_array_metadata_C.restype = None
 
     # call
-    arrays_lib.get_array_metadata_C(
+    lib.get_array_metadata_C(
         filename_ascii,
         fn_len,
         dims_out,
@@ -96,7 +101,7 @@ def tox_serialize_int_nd(arr: np.ndarray, filename: str):
     # prepare filename
     filename_ascii, fn_len = _filename_to_ascii_array(filename)
 
-    arrays_lib.serialize_int_nd_C.argtypes = [
+    lib.serialize_int_nd_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # arr
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims
         ctypes.c_int,  # ndim
@@ -104,10 +109,10 @@ def tox_serialize_int_nd(arr: np.ndarray, filename: str):
         ctypes.c_int,  # fn_len
         ctypes.POINTER(ctypes.c_int) 
     ]
-    arrays_lib.serialize_int_nd_C.restype = None
+    lib.serialize_int_nd_C.restype = None
 
     # call function
-    arrays_lib.serialize_int_nd_C(
+    lib.serialize_int_nd_C(
         flat,
         dims,
         ndim,
@@ -132,16 +137,16 @@ def tox_deserialize_int_nd(filename):
     ascii_arr, fn_len = _filename_to_ascii_array(filename)
     ierr = ctypes.c_int()
 
-    arrays_lib.deserialize_int_C.argtypes = [
+    lib.deserialize_int_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="F_CONTIGUOUS"),  # arr
         ctypes.c_int,                                                          # total size
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
         ctypes.c_int,                                                          # fn_len
         ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
-    arrays_lib.deserialize_int_C.restype = None
+    lib.deserialize_int_C.restype = None
 
-    arrays_lib.deserialize_int_C(arr, total_size, ascii_arr, fn_len, ctypes.byref(ierr))
+    lib.deserialize_int_C(arr, total_size, ascii_arr, fn_len, ctypes.byref(ierr))
     check_err_code(ierr.value)
     return arr.reshape(dims, order='F')  # Reshape to original dimensions
 
@@ -167,7 +172,7 @@ def tox_serialize_real_nd(arr: np.ndarray, filename: str):
     filename_ascii, fn_len = _filename_to_ascii_array(filename)
 
     # declare args
-    arrays_lib.serialize_real_nd_C.argtypes = [
+    lib.serialize_real_nd_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS"), # arr
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims
         ctypes.c_int,  # ndim
@@ -175,10 +180,10 @@ def tox_serialize_real_nd(arr: np.ndarray, filename: str):
         ctypes.c_int,  # fn_len
         ctypes.POINTER(ctypes.c_int)  # ierr
     ]
-    arrays_lib.serialize_real_nd_C.restype = None
+    lib.serialize_real_nd_C.restype = None
 
     # call function
-    arrays_lib.serialize_real_nd_C(
+    lib.serialize_real_nd_C(
         flat,
         dims,
         ndim,
@@ -201,16 +206,16 @@ def tox_deserialize_real_nd(filename):
     ascii_arr, fn_len = _filename_to_ascii_array(filename)
     ierr = ctypes.c_int()
 
-    arrays_lib.deserialize_real_C.argtypes = [
+    lib.deserialize_real_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS"),  # arr
         ctypes.c_int,                                                          # total size
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
         ctypes.c_int,                                                           # fn_len
         ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
-    arrays_lib.deserialize_real_C.restype = None
+    lib.deserialize_real_C.restype = None
 
-    arrays_lib.deserialize_real_C(arr, total_size, ascii_arr, fn_len, ctypes.byref(ierr))
+    lib.deserialize_real_C(arr, total_size, ascii_arr, fn_len, ctypes.byref(ierr))
     check_err_code(ierr.value)
     return arr.reshape(dims, order='F')  # Reshape
 
@@ -230,7 +235,7 @@ def tox_serialize_char_nd(arr: np.ndarray, filename: str):
 
     filename_ascii, fn_len = _filename_to_ascii_array(filename)
 
-    arrays_lib.serialize_char_flat_C.argtypes = [
+    lib.serialize_char_flat_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),  # ascii_ptr
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),  # dims
         ctypes.c_int,                                                          # ndim
@@ -239,9 +244,9 @@ def tox_serialize_char_nd(arr: np.ndarray, filename: str):
         ctypes.c_int,                                                           # fn_len
         ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
-    arrays_lib.serialize_char_flat_C.restype = None
+    lib.serialize_char_flat_C.restype = None
 
-    arrays_lib.serialize_char_flat_C(
+    lib.serialize_char_flat_C(
         ascii_ptr,
         dims,
         ndim,
@@ -271,7 +276,7 @@ def tox_deserialize_char_nd(filename: str, ndim_max=5):
     ascii_arr = np.zeros(total * clen, dtype=np.int32)
 
     # declare arguments for the flat Fortran routine
-    arrays_lib.deserialize_char_flat_C.argtypes = [
+    lib.deserialize_char_flat_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # ascii_arr
         ctypes.c_int,           # clen
         ctypes.c_int,           # total
@@ -279,9 +284,9 @@ def tox_deserialize_char_nd(filename: str, ndim_max=5):
         ctypes.c_int,           # fn_len
         ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
-    arrays_lib.deserialize_char_flat_C.restype = None
+    lib.deserialize_char_flat_C.restype = None
 
-    arrays_lib.deserialize_char_flat_C(
+    lib.deserialize_char_flat_C(
         ascii_arr,
         clen,
         total,
@@ -307,21 +312,6 @@ def tox_deserialize_char_nd(filename: str, ndim_max=5):
     # 3) reshape to target
     result = strings_1d.reshape(tuple(dims), order='F')
     return result
-=======
-"""
-TensorOmics Functions Module
-Python wrapper functions for Fortran routines via C interface
-"""
-
-import numpy as np
-import ctypes
-import os
-
-# Load library
-dll_path = os.path.abspath("build/libtensor-omics.so")
-ctypes.CDLL("libgomp.so.1", mode=ctypes.RTLD_GLOBAL)
-lib = ctypes.CDLL(dll_path)
-
 
 def tox_errors(ierr):
     """
@@ -1367,4 +1357,3 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
     return {
         "shift_vectors": shift_vectors
     }
->>>>>>> main
