@@ -81,6 +81,48 @@
 			 <thead><tr><th>Procedure</th><th>Location</th><th>Procedure Type</th><th>Description</th></tr></thead>
 			 <tbody>
 			   <tr>
+                 <td><a href='../proc/c_char_1d_as_string.html'>c_char_1d_as_string</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts a 1D c_char array to string</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/c_char_2d_as_string.html'>c_char_2d_as_string</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts a 2D c_char array to 1D string array</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/c_char_as_char.html'>c_char_as_char</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts a c_char value to fortran character, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/c_complex_as_complex.html'>c_complex_as_complex</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts a c_double_complex value to fortran complex(real64), elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/c_double_as_real64.html'>c_double_as_real64</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts a c_double value to real64, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/c_int_as_int32.html'>c_int_as_int32</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts a c_int value to int32, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/c_int_as_logical.html'>c_int_as_logical</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts a c_int value to logical, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/calc_fchange.html'>calc_fchange</a></td>
                  <td><a href='../module/tox_normalization.html'>tox_normalization</a></td>
                  <td>Subroutine</td>
@@ -128,6 +170,18 @@ Suitable for use with ctypes. Computes average expression per gene for each grou
                  <td><p>R/Fortran wrapper for tissue average calculation.
 Provides an interface for R (.Fortran) and Fortran code to call the tissue average calculation routine.
 Computes average expression per gene for each group of tissue replicates. Arguments match R's .Fortran calling convention.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/char_as_c_char.html'>char_as_c_char</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts a character value to c_char, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/complex_as_c_complex.html'>complex_as_c_complex</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts a fortran complex(real64) value to c_double_complex, elemental -&gt; any shape</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/compute_family_scaling.html'>compute_family_scaling</a></td>
@@ -328,6 +382,18 @@ Calls identify_outliers with C-compatible types for external interface.</p></td>
 Calls identify_outliers with standard Fortran types for R interface.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/int32_as_c_int.html'>int32_as_c_int</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts a int32 value to c_int, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/is_err.html'>is_err</a></td>
+                 <td><a href='../module/tox_errors.html'>tox_errors</a></td>
+                 <td>Function</td>
+                 <td><p>check if the error code indicates error</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/is_ok.html'>is_ok</a></td>
                  <td><a href='../module/tox_errors.html'>tox_errors</a></td>
                  <td>Function</td>
@@ -381,6 +447,12 @@ Applies log2(x+1) to each element of the input matrix.</p></td>
                  <td><p>R/Fortran wrapper for log2 transformation.
 Provides an interface for R (.Fortran) and Fortran code to call the log2 transformation routine.
 Applies log2(x+1) to each element of the input matrix. Arguments match R's .Fortran calling convention and expect flat arrays.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/logical_as_c_int.html'>logical_as_c_int</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts a logical value to c_int, elemental -&gt; any shape</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/normalize_by_std_dev.html'>normalize_by_std_dev</a></td>
@@ -446,6 +518,18 @@ Indirectly sorts <code>array</code> using <code>perm</code>, same algorithm as <
 Sorts indirectly using the permutation vector <code>perm</code>. Manual stack replaces recursion.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/real64_as_c_double.html'>real64_as_c_double</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts a real64 value to c_double, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/set_err.html'>set_err</a></td>
+                 <td><a href='../module/tox_errors.html'>tox_errors</a></td>
+                 <td>Subroutine</td>
+                 <td><p>set the error code to specific code</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/set_err_once.html'>set_err_once</a></td>
                  <td><a href='../module/tox_errors.html'>tox_errors</a></td>
                  <td>Subroutine</td>
@@ -485,6 +569,18 @@ Similar to <code>sort_real</code>, but for integer input.</p></td>
 Creates a sorted version of the array by reordering the <code>perm</code> vector. The original data in <code>array</code> remains unchanged.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/string_as_c_char_1d.html'>string_as_c_char_1d</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts a string to 1D c_char array</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/string_as_c_char_2d.html'>string_as_c_char_2d</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts a 1D string array to 2D c_char array</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/swap_int.html'>swap_int</a></td>
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Subroutine</td>
@@ -522,7 +618,7 @@ Converts integer mask to logical and calls which.</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-09-01 08:26 +0000"             </p>
+ on "2025-09-03 14:21 +0000"             </p>
           </div>
         </div>
         <br>
