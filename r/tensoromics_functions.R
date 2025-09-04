@@ -1314,7 +1314,7 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
   result <- .Fortran("group_centroid_r",
                      expression_vectors = as.double(expression_vectors),
                      n_axes = as.integer(n_axes),
-                     n = as.integer(n_genes),
+                     n_genes = as.integer(n_genes),
                      gene_to_family = as.integer(gene_to_family),
                      num_families = as.integer(n_families),
                      centroid_matrix = centroid_matrix_out,
