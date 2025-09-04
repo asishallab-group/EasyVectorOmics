@@ -5,6 +5,13 @@
 module tox_data_tools
     use iso_fortran_env, only: real64, int32
     use tox_errors
+    use array_utils, only : get_array_metadata
+    use serialize_int
+    use int_deserialize_mod
+    use serialize_real
+    use real_deserialize_mod
+    use serialize_char
+    use char_deserialize_mod
     implicit none
     private
 
@@ -25,13 +32,14 @@ contains
 
 ! Read tabular files (CSV/TSV)
 subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
-                             n_header_rows, gene_col, value_cols, start_row, ierr)
+                             n_header_rows, gene_col, value_cols, start_row, ierr, delimiter)
     character(len=*), intent(in) :: file_list(:)
     character(len=*), intent(inout) :: gene_ids(:)
     real(real64), intent(inout) :: expression_vectors(:,:)
     integer(int32), intent(in) :: n_header_rows, gene_col
-    integer(int32), intent(in) :: value_cols(:) ! Array of column indices [cite: 19, 20]
+    integer(int32), intent(in) :: value_cols(:) ! Array of column indices
     integer(int32), intent(in) :: start_row ! New parameter to specify the start row
+    CHARACTER(1), optional, intent(in) :: delimiter
     integer(int32), intent(out) :: ierr
 
     integer :: i, j, k, unit, ios, idx, row_count, n_genes, expected_idx, n_value_cols
@@ -51,6 +59,8 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
     allocate(valid_cols(n_value_cols))
     
     current_sample = start_row - 1
+
+    if(.not. present(delimiter)) delimiter = char(9)
     
     do i = 1, size(file_list)
         open(newunit=unit, file=trim(file_list(i)), status='old', action='read', iostat=ios)
@@ -209,7 +219,7 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     integer(int32), intent(out) :: ierr
 
     integer(int32) :: unit, ios, i, j, fam_idx, gene_idx, n_families, n_genes
-    integer(int32) :: pos, start_pos, end_pos  ! <- ADD THESE DECLARATIONS
+    integer(int32) :: pos, start_pos, end_pos 
     character(len=4096) :: line
     character(len=:), allocatable :: fields(:), genes(:)
     character(len=len(family_ids)) :: current_family
@@ -518,180 +528,5 @@ subroutine get_shift_components(gene_idx, shift_vectors, d, out_start, out_shift
     out_start = shift_vectors(1:d, gene_idx)
     out_shift = shift_vectors(d+1:2*d, gene_idx)
 end subroutine get_shift_components
-
-
-
-!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-! READ/WRITE UTILS -> ignore if not needed
-! subroutine read_int_1d(filename, array, ierr)
-!     character(len=*), intent(in)  :: filename
-!     integer(int32), intent(out) :: array(:)
-!     integer(int32), intent(out)   :: ierr
-
-!     character(len=:), pointer :: tmp(:)
-
-!     ! Call deserialize to get the pointer view
-!     call deserialize_int_1d(tmp, filename, ierr)
-!     if (.not. is_ok(ierr)) return
-
-!     ! Check that the size matches
-!     if (size(array) /= size(tmp)) then
-!         ierr = ERR_DIM_MISMATCH
-!         if (associated(tmp)) nullify(tmp)
-!         return
-!     end if
-
-!     ! Copy data into user’s array
-!     array = tmp
-
-!     ! Clean up pointer
-!     if (associated(tmp)) nullify(tmp)
-! end subroutine
-
-! subroutine read_char_1d(filename, array, ierr)
-!     character(len=*), intent(in)  :: filename
-!     character(len=*), intent(out) :: array(:)
-!     integer(int32), intent(out)   :: ierr
-
-!     character(len=:), pointer :: tmp(:)
-
-!     ! Call deserialize to get the pointer view
-!     call deserialize_char_1d(tmp, filename, ierr)
-!     if (.not. is_ok(ierr)) return
-
-!     ! Check that the size matches
-!     if (size(array) /= size(tmp)) then
-!         ierr = ERR_DIM_MISMATCH
-!         if (associated(tmp)) nullify(tmp)
-!         return
-!     end if
-
-!     ! Copy data into user’s array
-!     array = tmp
-
-!     ! Clean up pointer
-!     if (associated(tmp)) nullify(tmp)
-
-! end subroutine
-
-! subroutine read_real_2d(filename, array, ierr)
-!     character(len=*), intent(in) :: filename
-!     real(real64), intent(out)    :: array(:,:)
-!     integer(int32), intent(out)  :: ierr
-
-!     real(real64), pointer :: tmp(:,:)
-
-!     ! First, deserialize into a pointer
-!     call deserialize_real_2d(tmp, filename, ierr)
-!     if (.not. is_ok(ierr)) return
-
-!     ! Check dimensions match user array
-!     if (any(shape(array) /= shape(tmp))) then
-!         call set_err_once(ierr, ERR_DIM_MISMATCH)
-!         return
-!     end if
-
-!     ! Copy into user’s array
-!     array = tmp
-
-!     ! Clean up
-!     if (associated(tmp)) deallocate(tmp)
-! end subroutine
-
-! subroutine save_gene_ids(filename, gene_ids, ierr)
-!     CHARACTER(len=*), INTENT(IN) :: gene_ids(:)
-!     CHARACTER(len=*), INTENT(IN) :: filename
-!     integer, intent(out) :: ierr
-
-!     call serialize_char_1D(filename, gene_ids, ierr)
-! end subroutine
-
-! subroutine save_expression_vectors(filename, expression_vectors, ierr)
-!     CHARACTER(len=*), INTENT(IN) :: filename
-!     real(real64), INTENT(IN) :: expression_vectors(:,:)
-!     integer, intent(out) :: ierr
-
-!     call serialize_real_2D(filename, expression_vectors, ierr)
-! end subroutine
-
-! subroutine save_gene_to_family(filename, gene_to_fam, ierr)
-!     CHARACTER(len=*), INTENT(IN) :: filename
-!     integer, intent(in) :: gene_to_fam(:)
-!     integer, intent(out) :: ierr
-
-!     call serialize_int_1D(filename, gene_to_fam, ierr)
-! end subroutine
-
-! subroutine save_gene_family_ids(filename, gene_family_ids, ierr)
-!     CHARACTER(len=*), INTENT(IN) :: filename
-!     CHARACTER(len=*), INTENT(IN) :: gene_family_ids(:)
-!     integer(int32), INTENT(OUT) :: ierr
-
-!     call serialize_char_1D(filename, gene_family_ids, ierr)
-! end subroutine
-
-! subroutine save_family_centroids(filename, family_centroids, ierr)
-!     CHARACTER(len=*), INTENT(IN) :: filename
-!     real(real64), INTENT(IN) :: family_centroids(:,:)
-!     integer(int32), INTENT(OUT) :: ierr
-
-!     call serialize_real_2D(filename, family_centroids, ierr)
-! end subroutine
-
-! subroutine save_shift_vectors(filename, shift_vectors, ierr)
-!     CHARACTER(len=*), INTENT(IN) :: filename
-!     real(real64), INTENT(IN) :: shift_vectors(:,:)
-!     integer(int32), INTENT(OUT) :: ierr
-
-!     call serialize_real_2D(filename, shift_vectors, ierr)
-! end subroutine
-
-! subroutine load_gene_ids(filename, gene_ids, ierr)
-!     character(len=*), intent(in)  :: filename
-!     character(len=*), intent(out) :: gene_ids(:)
-!     integer(int32), intent(out)   :: ierr
-
-!     call read_char_1d(filename, gene_ids, ierr)
-! end subroutine load_gene_ids
-
-! subroutine load_expression_vectors(filename, expression_vectors, ierr)
-!     character(len=*), intent(in) :: filename
-!     real(real64), intent(out)    :: expression_vectors(:,:)
-!     integer(int32), intent(out)  :: ierr
-
-!     call read_real_2d(filename, expression_vectors, ierr)
-! end subroutine load_expression_vectors
-
-! subroutine load_gene_to_family(filename, gene_to_fam, ierr)
-!     character(len=*), INTENT(IN) :: filename
-!     integer(int32), INTENT(OUT) :: gene_to_fam
-!     integer(int32), INTENT(OUT) :: ierr
-
-!     call read_int_1d(filename, gene_to_fam, ierr)
-! end subroutine
-
-! subroutine load_family_ids(filename, family_ids, ierr)
-!     character(len=*), intent(in) :: filename
-!     CHARACTER(len=*), intent(out) :: family_ids
-!     integer(int32), intent(out) :: ierr
-
-!     call read_char_1d(filename, family_ids, ierr)
-! end subroutine
-
-! subroutine load_family_centroids(filename, family_centroids, ierr)
-!     character(len=*), intent(in) :: filename
-!     real(real64), intent(out)    :: family_centroids(:,:)
-!     integer(int32), intent(out)  :: ierr
-
-!     call read_real_2d(filename, family_centroids, ierr)
-! end subroutine
-
-! subroutine load_shift_vectors(filename, shift_vectors, ierr)
-!     character(len=*), intent(in) :: filename
-!     real(real64), intent(out)    :: shift_vectors(:,:)
-!     integer(int32), intent(out)  :: ierr
-
-!     call read_real_2d(filename, shift_vectors, ierr)
-! end subroutine
 
 end module tox_data_tools

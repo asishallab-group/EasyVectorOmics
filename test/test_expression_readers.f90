@@ -2,13 +2,16 @@ program test_expression_readers
     use iso_fortran_env, only: real64, int32
     use tox_data_tools
     use tox_data_validation
+    use tox_data_read_write
+    use array_utils, only: get_array_metadata
     implicit none
 
     integer(int32), allocatable :: gene_to_fam(:)
     character(len=256), allocatable :: gene_family_ids(:), gene_ids(:)
-    real(real64), allocatable :: kallisto_expr(:,:)
+    real(real64), allocatable :: kallisto_expr(:,:), kallisto_expr_verify(:,:)
     integer(int32) :: n_genes, n_families, ierr, total_samples
     integer, parameter :: n_header_rows = 1
+    integer(int32) :: ndims, dims(2)
 
     ! File lists
     character(len=256), allocatable :: files_6_replicates(:)
@@ -40,7 +43,7 @@ program test_expression_readers
     ]
 
     files_5_replicates = [ &
-        'material/kallisto_sex_data_Brain.tsv    ']
+        'material/kallisto_sex_data_Brain.tsv']
 
     files_4_replicates = [ &
         'material/kallisto_sex_data_Pituitary.tsv']
@@ -160,5 +163,30 @@ program test_expression_readers
 
     call validate_gene_ids_uniqueness(gene_ids, ierr)
     if (ierr/=0) write(*,*) 'Gene IDs contain duplicates: ', ierr
+
+    call save_expression_vectors(kallisto_expr, 'kallisto_sex_data.bin', ierr)
+    if (ierr/=0) then 
+        write(*,*) 'Expression data could not be saved: ', ierr
+    else 
+        write(*,*) 'Expression data saved'
+    end if
+
+    call get_array_metadata('kallisto_sex_data.bin', dims, 2, ndims, ierr)
+    if(ierr/=0) then 
+        write(*,*) 'Metadata could not be read'
+    else 
+        write(*,*) 'Metadata read'
+    end if
+
+    allocate(kallisto_expr_verify(dims(1), dims(2)))
+
+    call load_expression_vectors(kallisto_expr_verify, 'kallisto_sex_data.bin', ierr)
+    if(ierr/=0) then
+        write(*,*) 'Expression vectors could not be loaded', ierr
+    else 
+        write(*,*) 'Expression vectors read'
+    end if 
+
+    if (any(kallisto_expr/=kallisto_expr_verify)) write(*,*) 'Data not equal'
 
 end program test_expression_readers
