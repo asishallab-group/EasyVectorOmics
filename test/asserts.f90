@@ -2,7 +2,7 @@
 !! Provides a set of reusable assertion subroutines for verifying
 !! expected behavior in tests of any kind (numeric, string, array, etc).
 module asserts
-  use, intrinsic :: iso_fortran_env, only: error_unit, real64
+  use, intrinsic :: iso_fortran_env, only: error_unit, real64, int32
   use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
   implicit none
   private
@@ -19,7 +19,8 @@ contains
 
   !> Asserts that two character arrays are equal
   subroutine assert_equal_array_char(a, b, n, msg)
-    character(len=*), intent(in) :: a(n), b(n), msg
+    character(len=*), intent(in) :: a(n), b(n)
+    character(*), intent(in) :: msg
     integer, intent(in) :: n
     if (any(a /= b)) then
       write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (character arrays differ)"

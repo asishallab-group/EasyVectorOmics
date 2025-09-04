@@ -2,7 +2,7 @@
 module int_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only : c_loc, c_f_pointer
-  use array_utils, only: ascii_to_string, read_file_header, check_okay_dims
+  use array_utils, only: ascii_to_string, read_file_header, check_okay_dims, check_okay_ndims
   use tox_errors
   implicit none
 
@@ -28,10 +28,8 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if (ndims /= 1) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
-      return
-    end if
+    call check_okay_ndims(ndims, 1, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
     read(unit, iostat=ioerror) arr
     close(unit)
@@ -57,10 +55,8 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if (ndims /= 2) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
-      return
-    end if
+    call check_okay_ndims(ndims, 2, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
     read(unit, iostat=ioerror) arr
     close(unit)
@@ -86,10 +82,8 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if (ndims /= 3) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
-      return
-    end if
+    call check_okay_ndims(ndims, 3, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
     read(unit, iostat=ioerror) arr
     close(unit)
@@ -115,10 +109,8 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if (ndims /= 4) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
-      return
-    end if
+    call check_okay_ndims(ndims, 4, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
     read(unit, iostat=ioerror) arr
     close(unit)
@@ -144,10 +136,8 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if (ndims /= 5) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
-      return
-    end if
+    call check_okay_ndims(ndims, 5, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
     read(unit, iostat=ioerror) arr
     close(unit)

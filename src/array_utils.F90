@@ -5,6 +5,7 @@ module array_utils
     implicit none
 
     PUBLIC :: get_array_metadata, ascii_to_string, read_file_header, write_file_header, string_to_ascii_arr, check_okay_dims
+    public :: check_okay_ndims
 
     integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
     !! Magic number for array files
@@ -46,6 +47,24 @@ module array_utils
     end if
 
   end subroutine
+
+  subroutine check_okay_ndims(ndims, expected, unit, ierr)
+    integer(int32), intent(in):: ndims
+    !! number of dimensions
+    integer(int32), intent(in) :: expected
+    !! expected number of dimensions
+    integer(int32), intent(in) :: unit 
+    !! unit representation
+    integer(int32), intent(out) :: ierr 
+    !! error code
+
+    if(ndims /= expected) then
+      close(unit)
+      call set_err_once(ierr, ERR_DIM_MISMATCH)
+      RETURN
+    end if
+
+  end Subroutine
 
 
   !> Opens unit and writes fileheader with all metadata to the given filename
@@ -167,10 +186,11 @@ module array_utils
 
     character(len=*), intent(in) :: filename
     !! Name of the file to read
-    integer(int32), intent(out) :: dims_out(*)
-    !! Output array for dimensions
     integer(int32), intent(out) :: ndims
     !! Output variable for the number of dimensions
+    integer(int32), intent(out) :: dims_out(*)
+    !! Output array for dimensions
+    
     integer(int32), intent(out) :: ierr
     !! Error code
 

@@ -1,7 +1,7 @@
 !> Module for deserializing character arrays from files
 module char_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
-  use array_utils, only : ascii_to_string, read_file_header, check_okay_ioerror
+  use array_utils, only : ascii_to_string, read_file_header, check_okay_ioerror, check_okay_ndims
   use tox_errors
   implicit none
 
@@ -26,8 +26,7 @@ contains
     integer(int32) :: ioerror
       !! Internal I/O error code
 
-    integer(int32) :: unit, magic, type_code, ndim, i
-    character(len=:), allocatable :: temp_flat(:)
+    integer(int32) :: unit, magic, type_code, ndim
 
     call set_ok(ierr)
     call set_ok(ioerror)
@@ -35,26 +34,18 @@ contains
     call read_file_header(filename, unit, type_code, ndim, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    ! Allocate temporary array with stored character length
-    allocate(character(len=clen) :: temp_flat(product(dims)))
+    ! Allocate output array with stored character length
+    allocate(character(len=clen) :: flat(product(dims)))
     
     ! Read the entire array as a contiguous block
-    read(unit, iostat=ioerror) temp_flat
+    read(unit, iostat=ioerror) flat
     call check_okay_ioerror(ioerror, ierr, ERR_READ_DATA, unit)
     if(.not. is_ok(ierr)) then
-      deallocate(temp_flat)
+      deallocate(flat)
       return
     end if
     
     close(unit)
-    
-    ! Allocate output array and trim strings
-    allocate(character(len=clen) :: flat(product(dims)))
-    do i = 1, product(dims)
-      flat(i) = trim(temp_flat(i))
-    end do
-    
-    deallocate(temp_flat)
   end subroutine deserialize_char_flat
 
   !> Directly deserialize a 1D character array from a file (array already allocated)
@@ -66,39 +57,24 @@ contains
     integer(int32), intent(out)   :: ierr
     !! Error code
 
-    integer(int32) :: unit, type_code, ndims, clen, ioerror, i
+    integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
-    character(len=:), allocatable :: temp_arr(:)
 
     call set_ok(ierr)
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if (ndims /= 1) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
-      close(unit)
-      return
-    end if
+    call check_okay_ndims(ndims, 1, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
-    ! Allocate temporary array with stored character length
-    allocate(character(len=clen) :: temp_arr(dims(1)))
-    
     ! Read the entire array as a contiguous block
-    read(unit, iostat=ioerror) temp_arr
+    read(unit, iostat=ioerror) arr
     close(unit)
 
     if (.not. is_ok(ioerror)) then
       call set_err_once(ierr, ERR_READ_DATA)
-      deallocate(temp_arr)
       return
     end if
-
-    ! Trim each element and copy to output array
-    do i = 1, dims(1)
-      arr(i) = trim(temp_arr(i))
-    end do
-
-    deallocate(temp_arr)
   end subroutine deserialize_char_1d
 
   !> Directly deserialize a 2D character array from a file (array already allocated)
@@ -110,40 +86,24 @@ contains
     integer(int32), intent(out)   :: ierr
     !! Error code
 
-    integer(int32) :: unit, type_code, ndims, clen, ioerror, i, j
+    integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
-    character(len=:), allocatable :: temp_arr(:,:)
 
     call set_ok(ierr)
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if (ndims /= 2) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
-      return
-    end if
+    call check_okay_ndims(ndims, 2, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
-    ! Allocate temporary array with stored character length
-    allocate(character(len=clen) :: temp_arr(dims(1), dims(2)))
-    
     ! Read the entire array as a contiguous block
-    read(unit, iostat=ioerror) temp_arr
+    read(unit, iostat=ioerror) arr
     close(unit)
 
     if (.not. is_ok(ioerror)) then
       call set_err_once(ierr, ERR_READ_DATA)
-      deallocate(temp_arr)
       return
     end if
-
-    ! Trim each element and copy to output array
-    do j = 1, dims(2)
-      do i = 1, dims(1)
-        arr(i,j) = trim(temp_arr(i,j))
-      end do
-    end do
-
-    deallocate(temp_arr)
   end subroutine deserialize_char_2d
 
   !> Directly deserialize a 3D character array from a file (array already allocated)
@@ -155,42 +115,24 @@ contains
     integer(int32), intent(out)   :: ierr
     !! Error code
 
-    integer(int32) :: unit, type_code, ndims, clen, ioerror, i, j, k
+    integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
-    character(len=:), allocatable :: temp_arr(:,:,:)
 
     call set_ok(ierr)
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if (ndims /= 3) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
-      return
-    end if
+    call check_okay_ndims(ndims, 3, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
-    ! Allocate temporary array with stored character length
-    allocate(character(len=clen) :: temp_arr(dims(1), dims(2), dims(3)))
-    
     ! Read the entire array as a contiguous block
-    read(unit, iostat=ioerror) temp_arr
+    read(unit, iostat=ioerror) arr
     close(unit)
 
     if (.not. is_ok(ioerror)) then
       call set_err_once(ierr, ERR_READ_DATA)
-      deallocate(temp_arr)
       return
     end if
-
-    ! Trim each element and copy to output array
-    do k = 1, dims(3)
-      do j = 1, dims(2)
-        do i = 1, dims(1)
-          arr(i,j,k) = trim(temp_arr(i,j,k))
-        end do
-      end do
-    end do
-
-    deallocate(temp_arr)
   end subroutine deserialize_char_3d
 
   !> Directly deserialize a 4D character array from a file (array already allocated)
@@ -202,44 +144,24 @@ contains
     integer(int32), intent(out)   :: ierr
     !! Error code
 
-    integer(int32) :: unit, type_code, ndims, clen, ioerror, i, j, k, l
+    integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
-    character(len=:), allocatable :: temp_arr(:,:,:,:)
 
     call set_ok(ierr)
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if (ndims /= 4) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
-      return
-    end if
+    call check_okay_ndims(ndims, 4, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
-    ! Allocate temporary array with stored character length
-    allocate(character(len=clen) :: temp_arr(dims(1), dims(2), dims(3), dims(4)))
-    
     ! Read the entire array as a contiguous block
-    read(unit, iostat=ioerror) temp_arr
+    read(unit, iostat=ioerror) arr
     close(unit)
 
     if (.not. is_ok(ioerror)) then
       call set_err_once(ierr, ERR_READ_DATA)
-      deallocate(temp_arr)
       return
     end if
-
-    ! Trim each element and copy to output array
-    do l = 1, dims(4)
-      do k = 1, dims(3)
-        do j = 1, dims(2)
-          do i = 1, dims(1)
-            arr(i,j,k,l) = trim(temp_arr(i,j,k,l))
-          end do
-        end do
-      end do
-    end do
-
-    deallocate(temp_arr)
   end subroutine deserialize_char_4d
 
   !> Directly deserialize a 5D character array from a file (array already allocated)
@@ -251,46 +173,24 @@ contains
     integer(int32), intent(out)   :: ierr
     !! Error code
 
-    integer(int32) :: unit, type_code, ndims, clen, ioerror, i, j, k, l, m
+    integer(int32) :: unit, type_code, ndims, clen, ioerror
     integer(int32), allocatable :: dims(:)
-    character(len=:), allocatable :: temp_arr(:,:,:,:,:)
 
     call set_ok(ierr)
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if (ndims /= 5) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
-      return
-    end if
+    call check_okay_ndims(ndims, 5, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
-    ! Allocate temporary array with stored character length
-    allocate(character(len=clen) :: temp_arr(dims(1), dims(2), dims(3), dims(4), dims(5)))
-    
     ! Read the entire array as a contiguous block
-    read(unit, iostat=ioerror) temp_arr
+    read(unit, iostat=ioerror) arr
     close(unit)
 
     if (.not. is_ok(ioerror)) then
       call set_err_once(ierr, ERR_READ_DATA)
-      deallocate(temp_arr)
       return
     end if
-
-    ! Trim each element and copy to output array
-    do m = 1, dims(5)
-      do l = 1, dims(4)
-        do k = 1, dims(3)
-          do j = 1, dims(2)
-            do i = 1, dims(1)
-              arr(i,j,k,l,m) = trim(temp_arr(i,j,k,l,m))
-            end do
-          end do
-        end do
-      end do
-    end do
-
-    deallocate(temp_arr)
   end subroutine deserialize_char_5d
   
 end module char_deserialize_mod
