@@ -10,7 +10,7 @@
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>avmod &ndash; TensorOmics</title>
+    <title>group_centroid_c &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -74,8 +74,8 @@
 
     <div class="container">
   <div class="row">
-    <h1>avmod
-      <small>Module</small>
+    <h1>group_centroid_c
+      <small>Subroutine</small>
       
     </h1>
       <div class="container p-2 mb-4 bg-light border rounded-3">
@@ -85,20 +85,20 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 5.4% of total for modules and submodules.">54 statements</a>
+                 title=" 1.7% of total for procedures.">24 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/tox_tissue_versatility.F90"> Source File</a>
+              <a href="../src/tox_gene_centroids.f90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/tox_tissue_versatility.f90.html'>tox_tissue_versatility.F90</a></li>
-            <li class="breadcrumb-item active" aria-current="page">avmod</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/tox_gene_centroids.f90.html'>tox_gene_centroids.f90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">group_centroid_c</li>
           </ol>
         </nav>
       </div>
@@ -113,10 +113,10 @@
   </script>
 
   </div>
-
+  
   <div class="row">
-    <div class="col-md-3">
-        <div id="sidebar">
+    <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
+      <div id="sidebar">
       <h3>Contents</h3>
   
   
@@ -130,18 +130,7 @@
   
   
   
-      <div class="card mb-4">
-      <a data-bs-toggle="collapse" href="#subs-0"
-         aria-expanded="false" aria-controls="subs-0">
-         <h4 class="card-header bg-primary text-white">Subroutines</h4>
-      </a>
-      <div id="subs-0" class="collapse">
-        <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../module/avmod.html#proc-compute_tissue_versatility">compute_tissue_versatility</a>
-        </div>
-      </div>
-    </div>
-
+  
   
   
   
@@ -154,48 +143,30 @@
   </div>
 
     </div>
-
+    
     <div class="col-md-9" id='text'>
-      <p>Module for calculating normalized tissue (axis) versatility.
-This module implements the angle-based metric for tissue versatility,
-quantifying how uniformly a gene is expressed across selected axes (tissues).</p>
-<br>          <div class="card mb-4">
+    <h2>pure subroutine group_centroid_c(expression_vectors, n_axes, n_genes, gene_to_family, n_families, centroid_matrix, use_all_mode, ortholog_set, selected_indices, selected_indices_len, ierr) bind(c, name='group_centroid_c')  
+</h2>
+        <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
       <div class="card-body">
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
-                  <li class="list-inline-item"><a href='tox_errors.html'>tox_errors</a></li>
+                  <li class="list-inline-item"><a href='../module/tox_gene_centroids.html'>tox_gene_centroids</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
               </ul>
             </li>
         </ul>
       </div>
     </div>
 
-      
-      <br>
+
+    <p>C interface wrapper for group_centroid.</p>
 
 
-
-
-
-
-
-
-        <section>
-          <h2>Subroutines</h2>
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-compute_tissue_versatility"></span> <h3>public pure subroutine <a href='../proc/compute_tissue_versatility.html'>compute_tissue_versatility</a>(n_axes, n_vectors, expression_vectors, exp_vecs_selection_index, n_selected_vectors, axes_selection, n_selected_axes, tissue_versatilities, tissue_angles_deg, ierr)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Computes normalized tissue versatility for selected expression vectors.
-The metric is based on the angle between each gene expression vector and the space diagonal.
-Versatility is normalized to [0, 1], where 0 means uniform expression and 1 means expression in only one axis.</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
+    <h3>Arguments</h3>
+        <table class="table table-striped varlist">
     <thead>
       <tr>
         <th scope="col">Type</th>
@@ -207,143 +178,158 @@ Versatility is normalized to [0, 1], where 0 means uniform expression and 1 mean
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_axes~7"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-expression_vectors~4"></span>
+              real(kind=c_double),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              target
+            </td>
+            <td>::</td>
+            <td><strong>expression_vectors</strong>(n_axes,n_genes)</td>
+            <td>
+                <p>Input expression vectors (passed from C).</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_axes~4"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              value
             </td>
             <td>::</td>
             <td><strong>n_axes</strong></td>
             <td>
-<p>Number of axes (tissues/dimensions)</p>
+                <p>Number of axes (tissues/dimensions).</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_vectors"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-n_genes~4"></span>
+              integer(kind=c_int),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              value
             </td>
             <td>::</td>
-            <td><strong>n_vectors</strong></td>
+            <td><strong>n_genes</strong></td>
             <td>
-<p>Number of expression vectors (genes)</p>
+                <p>Total number of genes.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expression_vectors~7"></span>
-              real(kind=real64),
+              <span class="anchor" id="variable-gene_to_family~2"></span>
+              integer(kind=c_int),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              target
             </td>
             <td>::</td>
-            <td><strong>expression_vectors</strong>(n_axes,n_vectors)</td>
+            <td><strong>gene_to_family</strong>(n_genes)</td>
             <td>
-<p>2D array (n_axes, n_vectors), each column is a gene expression vector</p>
+                <p>Array mapping gene index to family ID.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-exp_vecs_selection_index"></span>
-              logical,
+              <span class="anchor" id="variable-n_families~2"></span>
+              integer(kind=c_int),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              value
             </td>
             <td>::</td>
-            <td><strong>exp_vecs_selection_index</strong>(n_vectors)</td>
+            <td><strong>n_families</strong></td>
             <td>
-<p>Logical array (n_vectors), .TRUE. for vectors to process</p>
+                <p>Total number of families.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_selected_vectors"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-centroid_matrix~2"></span>
+              real(kind=c_double),
             </td>
-<td>intent(in)</td>
+<td>intent(out),</td>
               <td></td>            <td>
-              
+              target
             </td>
             <td>::</td>
-            <td><strong>n_selected_vectors</strong></td>
+            <td><strong>centroid_matrix</strong>(n_axes,n_families)</td>
             <td>
-<p>Number of selected expression vectors (count of .TRUE. in exp_vecs_selection_index)</p>
+                <p>Output matrix for centroids.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-axes_selection"></span>
-              logical,
+              <span class="anchor" id="variable-use_all_mode~2"></span>
+              integer(kind=c_int),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              value
             </td>
             <td>::</td>
-            <td><strong>axes_selection</strong>(n_axes)</td>
+            <td><strong>use_all_mode</strong></td>
             <td>
-<p>Logical array (n_axes), .TRUE. for axes to include in calculation</p>
+                <p>Integer flag from C (0=false, non-zero=true) to use all genes.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_selected_axes"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-ortholog_set~2"></span>
+              integer(kind=c_int),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              target
             </td>
             <td>::</td>
-            <td><strong>n_selected_axes</strong></td>
+            <td><strong>ortholog_set</strong>(n_genes)</td>
             <td>
-<p>Number of selected axes (count of .TRUE. in axes_selection)</p>
+                <p>Integer array from C indicating subset membership.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tissue_versatilities"></span>
-              real(kind=real64),
+              <span class="anchor" id="variable-selected_indices~2"></span>
+              integer(kind=c_int),
             </td>
-<td>intent(out)</td>
+<td>intent(out),</td>
               <td></td>            <td>
-              
+              target
             </td>
             <td>::</td>
-            <td><strong>tissue_versatilities</strong>(n_selected_vectors)</td>
+            <td><strong>selected_indices</strong>(selected_indices_len)</td>
             <td>
-<p>Output, real array, length = n_selected_vectors, stores the calculated tissue versatilities</p>
+                <p>Output array for selected indices.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tissue_angles_deg"></span>
-              real(kind=real64),
+              <span class="anchor" id="variable-selected_indices_len"></span>
+              integer(kind=c_int),
             </td>
-<td>intent(out)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              value
             </td>
             <td>::</td>
-            <td><strong>tissue_angles_deg</strong>(n_selected_vectors)</td>
+            <td><strong>selected_indices_len</strong></td>
             <td>
-<p>Output, real array, length = n_selected_vectors, stores the calculated angles in degrees</p>
+                <p>The allocated length of the 'selected_indices' array.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~21"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-ierr~4"></span>
+              integer(kind=c_int),
             </td>
 <td>intent(out)</td>
               <td></td>            <td>
@@ -352,21 +338,25 @@ Versatility is normalized to [0, 1], where 0 means uniform expression and 1 mean
             <td>::</td>
             <td><strong>ierr</strong></td>
             <td>
-<p>Error code: 0 = success, non-zero = error</p>
+                <p>Error code: 0 - success, non-zero = error</p>
             </td>
         </tr>
     </tbody>
   </table>
 
-
-    </div>
-  </div>
-
-        </section>
-        <br>
+    <br>
 
 
+    
+    
 
+    
+    
+
+
+
+    
+    
     </div>
   </div>
 
