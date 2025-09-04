@@ -1140,3 +1140,148 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
     return {
         "shift_vectors": shift_vectors
     }
+
+
+def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_set, mode='all'):
+    """
+    Computes expression centroids for groups of genes.
+
+    Computes the centroids for each gene family based on the expression vectors of its member genes.
+    This function automatically checks for errors and throws informative exceptions.
+
+    Args:
+        vectors : np.ndarray
+            A 2D NumPy array (n_axes x n_genes) of gene expression vectors.
+        gene_to_family_map : np.ndarray
+            A 1D NumPy array of length n_genes, mapping each gene to a family ID.
+        n_families : int
+            The total number of unique families.
+        ortholog_set : np.ndarray
+            A 1D boolean NumPy array of length n_genes, indicating ortholog membership.
+        mode : str, optional
+            The calculation mode. 'all' (default) or 'ortho'.
+
+    Returns:
+        np.ndarray
+            A read-only (n_axes x n_families) NumPy array containing the computed centroids.
+    """
+
+    # 1) Validate and prepare inputs
+    if not isinstance(expression_vectors, np.ndarray) or expression_vectors.ndim != 2:
+        raise ValueError("`vectors` must be a 2D NumPy array.")
+    n_axes, n_genes = expression_vectors.shape
+
+    vecs_f = np.asarray(expression_vectors, dtype=np.float64, order="F")
+    g2f_map_f = np.asarray(gene_to_family, dtype=np.int32, order="F")
+    ortho_set_int_f = np.asarray(ortholog_set, dtype=np.int32, order="F")
+    
+    if g2f_map_f.size != n_genes:
+        raise ValueError("`gene_to_family` must be a 1D NumPy array of size n_genes.")
+    if ortho_set_int_f.size != n_genes:
+        raise ValueError("`ortholog_set` must be a 1D NumPy array of size n_genes.")
+    if mode not in ['all', 'ortho']:
+        raise ValueError("`mode` must be either 'all' or 'ortho'.")
+
+    # 2) Prepare output buffers and mode flag
+    use_all_mode_int = 1 if mode == 'all' else 0
+    centroids_out = np.zeros((n_axes, n_families), dtype=np.float64, order="F")
+    selected_indices = np.zeros(n_genes, dtype=np.int32, order="F")
+    ierr = ctypes.c_int(0)
+
+    # 3) Setup C-interface signature
+    group_centroid_c = lib.group_centroid_c
+    group_centroid_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # expression_vectors
+        ctypes.c_int,                                                   # n_axes
+        ctypes.c_int,                                                   # n_genes
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # gene_to_family
+        ctypes.c_int,                                                   # n_families
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # centroid_matrix (out)
+        ctypes.c_int,                                                   # use_all_mode (as int)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # ortholog_set (as int array)
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # selected_indices
+        ctypes.c_int,                                                   # selected_indices_len
+        ctypes.POINTER(ctypes.c_int)                                    # ierr
+    ]
+    group_centroid_c.restype = None
+
+    # 4) Call the Fortran routine
+    group_centroid_c(
+        vecs_f,
+        n_axes,
+        n_genes,
+        g2f_map_f,
+        n_families,
+        centroids_out,
+        use_all_mode_int,
+        ortho_set_int_f,
+        selected_indices,
+        n_genes,
+        ctypes.byref(ierr)
+    )
+
+    # Check for errors and throw informative messages
+    tox_errors(ierr.value)
+
+    # 5) Mark output as read-only and return
+    _readonly(centroids_out)
+    return centroids_out
+
+def tox_mean_vector(expression_vectors, gene_indices):
+    """
+    Compute the element-wise mean for a given set of gene expression vectors.
+
+    This function wraps the Fortran subroutine `mean_vector_c`
+    to compute the centroid (mean vector) for a selected set of genes.
+
+    Args:
+        expression_vectors: 2D numpy array (n_axes x n_genes) of gene expression vectors.
+        gene_indices: 1D numpy array of column indices of selected genes (1-based).
+
+    Returns:
+        numpy.ndarray: 1D array of length n_axes representing the computed centroid.
+    """
+    # Validate inputs
+    if not isinstance(expression_vectors, np.ndarray) or expression_vectors.ndim != 2:
+        raise ValueError("expression_vectors must be a 2D numpy array.")
+    n_axes, n_genes = expression_vectors.shape
+
+    gene_indices = np.asarray(gene_indices, dtype=np.int32)
+    n_selected_genes = len(gene_indices)
+    if np.any(gene_indices < 1) or np.any(gene_indices > n_genes):
+        raise ValueError("gene_indices must be integer indices between 1 and n_genes (1-based).")
+
+    expr_f = np.asfortranarray(expression_vectors, dtype=np.float64)
+    centroid_col = np.zeros(n_axes, dtype=np.float64)
+    ierr = ctypes.c_int(0)
+
+    # Setup C wrapper
+    mean_vector_c = lib.mean_vector_c
+    mean_vector_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # expression_vectors
+        ctypes.c_int,                                                   # n_axes
+        ctypes.c_int,                                                   # n_genes
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),   # gene_indices
+        ctypes.c_int,                                                   # n_selected_genes
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"), # centroid_col (out)
+        ctypes.POINTER(ctypes.c_int)                                    # ierr
+    ]
+    mean_vector_c.restype = None
+
+    # Call Fortran routine
+    mean_vector_c(
+        expr_f,
+        n_axes,
+        n_genes,
+        gene_indices,
+        n_selected_genes,
+        centroid_col,
+        ctypes.byref(ierr)
+    )
+
+    # Error handling
+    tox_errors(ierr.value)
+
+    # Mark output as read-only
+    _readonly(centroid_col)
+    return centroid_col

@@ -1325,3 +1325,108 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
     shift_vectors = result$shift_vectors
   ))
 }
+
+# ===================================================================
+# GENE CENTROIDS FUNCTIONS
+# ===================================================================
+#' Calculate Gene Centroids
+
+#' Computes the centroids for each gene family based on the expression vectors of its member genes.
+#' This function automatically checks for errors and throws informative exceptions.
+#'
+#' @param expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors)
+#' @param gene_to_family: Array mapping each gene to its corresponding family ID (length n_vectors)
+#' @param n_families: Total number of gene families
+#' @param ortholog_set: Logical array indicating if a gene is part of a specific subset (e.g., orthologs)
+#' @param mode: Character string indicating the mode of operation ('all' or 'ortho')
+#'
+#' @return List containing:
+#'   \item{centroid_matrix}{The computed centroids for each gene family}
+#'
+
+tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, ortholog_set, mode = 'all') {
+  
+  # 1) Validate inputs
+  if (!is.matrix(expression_vectors) || !is.numeric(expression_vectors)) {
+    stop("`expression_vectors` must be a numeric matrix.")
+  }
+  n_axes <- nrow(expression_vectors)
+  n_genes <- ncol(expression_vectors)
+
+  if (!is.integer(gene_to_family) || length(gene_to_family) != n_genes) {
+    stop("`gene_to_family` must be an integer vector of length n_genes.")
+  }
+  if (!is.logical(ortholog_set) || length(ortholog_set) != n_genes) {
+    stop("`ortholog_set` must be a logical vector of length n_genes.")
+  }
+  if (!mode %in% c('all', 'ortho')) {
+    stop("`mode` must be either 'all' or 'ortho'.")
+  }
+
+  # 2) Prepare inputs/outputs for Fortran
+  use_all_mode <- (mode == 'all')
+  centroid_matrix_out <- matrix(0.0, nrow = n_axes, ncol = n_families)
+  selected_indices_ws <- integer(n_genes) # Workspace buffer
+  ierr <- as.integer(0)
+  # 3) Call Fortran
+  result <- .Fortran("group_centroid_r",
+                     expression_vectors = as.double(expression_vectors),
+                     n_axes = as.integer(n_axes),
+                     n_genes = as.integer(n_genes),
+                     gene_to_family = as.integer(gene_to_family),
+                     num_families = as.integer(n_families),
+                     centroid_matrix = centroid_matrix_out,
+                     use_all_mode = as.logical(use_all_mode),
+                     ortholog_set = as.logical(ortholog_set),
+                     selected_indices = selected_indices_ws,
+                     selected_indices_len = as.integer(n_genes),
+                     ierr = ierr)
+  
+  # Check for errors and throw informative messages
+  tox_errors(result$ierr)
+
+  # 4) Return the populated output matrix (no ierr since we checked for errors)
+  return(result$centroid_matrix)
+}
+
+#' Compute the element-wise mean for a given set of gene expression vectors
+#'
+#' This function wraps the Fortran subroutine `mean_vector_r`
+#' to compute the centroid (mean vector) for a selected set of genes.
+#'
+#' @param expression_vectors Numeric matrix (n_axes x n_genes) of gene expression vectors
+#' @param gene_indices Integer vector of column indices of selected genes (1-based)
+#'
+#' @return Numeric vector of length n_axes representing the computed centroid
+#'
+
+tox_mean_vector <- function(expression_vectors, gene_indices) {
+  # Validate inputs
+  if (!is.matrix(expression_vectors) || !is.numeric(expression_vectors)) {
+    stop("`expression_vectors` must be a numeric matrix.")
+  }
+  n_axes <- nrow(expression_vectors)
+  n_genes <- ncol(expression_vectors)
+  n_selected_genes <- length(gene_indices)
+  if (!is.integer(gene_indices) || any(gene_indices < 1) || any(gene_indices > n_genes)) {
+    stop("`gene_indices` must be integer indices between 1 and n_genes.")
+  }
+
+  centroid_col <- numeric(n_axes)
+  ierr <- as.integer(0)
+  
+  # Call Fortran wrapper
+  result <- .Fortran("mean_vector_r",
+                     expression_vectors = as.double(expression_vectors),
+                     n_axes = as.integer(n_axes),
+                     n_genes = as.integer(n_genes),
+                     gene_indices = as.integer(gene_indices),
+                     n_selected_genes = as.integer(n_selected_genes),
+                     centroid_col = centroid_col,
+                     ierr = ierr)
+  
+  # Check for errors and throw informative messages
+  tox_errors(result$ierr)
+  
+  return(result$centroid_col)
+}
