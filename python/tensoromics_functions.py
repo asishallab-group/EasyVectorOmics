@@ -50,12 +50,14 @@ def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
     ndims = ctypes.c_int()
     ierr = ctypes.c_int()
     clen = ctypes.c_int()  # always pass
+    dims_out_capacity = ctypes.c_int(max_dims)
 
     # shared function
     lib.get_array_metadata_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"), # filename_ascii
         ctypes.c_int,                                                         # fn_len
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"), # dims_out
+        ctypes.POINTER(ctypes.c_int),                                         # dims_out_capacity
         ctypes.POINTER(ctypes.c_int),                                         # ndims
         ctypes.POINTER(ctypes.c_int),                                         # ierr
         ctypes.POINTER(ctypes.c_int)                                          # clen
@@ -67,6 +69,7 @@ def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
         filename_ascii,
         fn_len,
         dims_out,
+        ctypes.byref(dims_out_capacity),
         ctypes.byref(ndims),
         ctypes.byref(ierr),
         ctypes.byref(clen)

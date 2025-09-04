@@ -1,5 +1,6 @@
 module mod_test_arrays
     use asserts
+    use array_utils, only: get_array_metadata
     use int_deserialize_mod
     use real_deserialize_mod
     use char_deserialize_mod
@@ -81,18 +82,26 @@ contains
   ! Integer tests
   ! ================================================================
   subroutine test_integer_array_1d()
-    integer(int32), allocatable :: iarr1d(:), iarr1d2(:)
-    character(len=100) :: fname
-    integer(int32) :: ierr
-    call set_ok(ierr)
-    allocate(iarr1d(5)); iarr1d = [10,20,30,40,50]
-    fname = "test_iarr1d.bin"
-    call serialize_int_1d(iarr1d, fname, ierr)
-    if (.not. is_ok(ierr)) error stop
-    allocate(iarr1d2(5))
-    call deserialize_int_1d(iarr1d2, fname, ierr)
-    if (.not. is_ok(ierr)) error stop
-    call assert_equal_array_int(iarr1d, iarr1d2, size(iarr1d), "Mismatch")
+      integer(int32), allocatable :: iarr1d(:), iarr1d2(:)
+      character(len=100) :: fname
+      integer(int32) :: ierr, ndims, dims(5)
+      call set_ok(ierr)
+      allocate(iarr1d(5)); iarr1d = [10,20,30,40,50]
+
+      fname = "test_iarr1d.bin"
+      call serialize_int_1d(iarr1d, fname, ierr)
+      if (.not. is_ok(ierr)) error stop
+
+      ! Metadata auslesen
+      call get_array_metadata(fname, dims, 5, ndims, ierr)
+      if (.not. is_ok(ierr)) error stop
+      
+      ! Array basierend auf Metadaten allokieren
+      allocate(iarr1d2(dims(1)))
+      
+      call deserialize_int_1d(iarr1d2, fname, ierr)
+      if (.not. is_ok(ierr)) error stop
+      call assert_equal_array_int(iarr1d, iarr1d2, size(iarr1d), "Mismatch")
   end subroutine test_integer_array_1d
 
   subroutine test_integer_array_2d()

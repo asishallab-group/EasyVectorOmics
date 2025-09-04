@@ -49,36 +49,32 @@ tox_get_array_metadata <- function(filename, max_dims = 5, with_clen = FALSE) {
   dims <- integer(max_dims)
   ndims <- integer(1)
   ierr <- integer(1)
+  dims_out_capacity <- integer(1)
+  dims_out_capacity = max_dims
+  clen <- integer(1)
   
-  if (with_clen) {
-    clen <- integer(1)
-    res <- .Fortran("get_array_metadata_r",
-                    as.integer(ascii),          # filename_ascii
-                    as.integer(length(ascii)),  # fn_len
-                    dims,                       # dims_out
-                    ndims,                      # ndims
-                    ierr,                       # ierr
-                    clen)                       # clen (present)
-    
-    check_err_code(res[[5]])  # ierr
+  res <- .Fortran("get_array_metadata_r",
+                  as.integer(ascii),                          # filename_ascii
+                  as.integer(length(ascii)),                  # fn_len
+                  dims,                                        # dims_out
+                  as.integer(dims_out_capacity),
+                  ndims,                                        # ndims
+                  ierr,                                       # ierr
+                  clen)     
+                                                    # clen
+  check_err_code(res[[6]])  # ierr
+
+  if(with_clen){
     return(list(
-      dims = res[[3]][1:res[[4]]],  # dims_out[1:ndims]
-      ndim = res[[4]],              # ndims
-      clen = res[[6]]               # clen
+      dims = res[[3]][1:res[[5]]],  # dims_out[1:ndims]
+      ndim = res[[5]],              # ndims
+      clen = res[[7]]               # clen
     ))
-    
-  } else {
-    res <- .Fortran("get_array_metadata_r",
-                    as.integer(ascii),          # filename_ascii
-                    as.integer(length(ascii)),  # fn_len
-                    dims,                       # dims_out
-                    ndims,                      # ndims
-                    ierr)                       # ierr (kein clen)
-    
-    check_err_code(res[[5]])  # ierr
+  }
+  else{
     return(list(
-      dims = res[[3]][1:res[[4]]],  # dims_out[1:ndims]
-      ndim = res[[4]]               # ndims
+      dims = res[[3]][1:res[[5]]],  # dims_out[1:ndims]
+      ndim = res[[5]]              # ndims
     ))
   }
 }
