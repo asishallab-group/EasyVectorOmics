@@ -107,13 +107,17 @@ contains
   subroutine test_integer_array_2d()
     integer(int32), allocatable :: iarr(:,:), iarr2(:,:)
     character(len=100) :: fname
-    integer(int32) :: ierr
+    integer(int32) :: ierr, ndims, dims(5)
     call set_ok(ierr)
     allocate(iarr(2,3)); iarr = reshape([1,2,3,4,5,6],[2,3])
+
     fname = "test_iarr2d.bin"
     call serialize_int_2d(iarr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(iarr2(2,3))
+
+    call get_array_metadata(fname, dims, 5, ndims, ierr)
+    if(.not. is_ok(ierr)) error stop
+    allocate(iarr2(dims(1),dims(2)))
     call deserialize_int_2d(iarr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_int(iarr, iarr2, size(iarr), "Mismatch")
@@ -122,13 +126,18 @@ contains
   subroutine test_integer_array_3d()
     integer(int32), allocatable :: iarr(:,:,:), iarr2(:,:,:)
     character(len=100) :: fname
-    integer(int32) :: ierr
+    integer(int32) :: ierr, ndims, dims(5)
     call set_ok(ierr)
     allocate(iarr(2,2,2)); iarr = reshape([1,2,3,4,5,6,7,8],[2,2,2])
+
     fname = "test_iarr3d.bin"
     call serialize_int_3d(iarr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(iarr2(2,2,2))
+    
+    call get_array_metadata(fname, dims, 5, ndims, ierr)
+    if (.not. is_ok(ierr)) error stop
+
+    allocate(iarr2(dims(1),dims(2),dims(3)))
     call deserialize_int_3d(iarr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_int(iarr, iarr2, size(iarr), "Mismatch")
@@ -137,14 +146,19 @@ contains
   subroutine test_integer_array_4d()
     integer(int32), allocatable :: iarr(:,:,:,:), iarr2(:,:,:,:)
     character(len=100) :: fname
-    integer(int32) :: ierr
+    integer(int32) :: ierr, ndims, dims(5)
     integer(int32) :: i
     call set_ok(ierr)
     allocate(iarr(2,2,1,2)); iarr = reshape([(i, i=1,8)],[2,2,1,2])
     fname = "test_iarr4d.bin"
+
     call serialize_int_4d(iarr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(iarr2(2,2,1,2))
+
+    call get_array_metadata(fname, dims, 5, ndims, ierr)
+    if (.not. is_ok(ierr)) error stop
+    allocate(iarr2(dims(1),dims(2),dims(3),dims(4)))
+
     call deserialize_int_4d(iarr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_int(iarr, iarr2, size(iarr), "Mismatch")
@@ -153,14 +167,18 @@ contains
   subroutine test_integer_array_5d()
     integer(int32), allocatable :: iarr(:,:,:,:,:), iarr2(:,:,:,:,:)
     character(len=100) :: fname
-    integer(int32) :: ierr
+    integer(int32) :: ierr, ndims, dims(5)
     integer(int32) :: i
     call set_ok(ierr)
     allocate(iarr(2,1,2,1,2)); iarr = reshape([(i,i=1,8)],[2,1,2,1,2])
     fname = "test_iarr5d.bin"
     call serialize_int_5d(iarr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(iarr2(2,1,2,1,2))
+
+    call get_array_metadata(fname, dims, 5, ndims, ierr)
+    if (.not. is_ok(ierr)) error stop
+    allocate(iarr2(dims(1),dims(2),dims(3),dims(4),dims(5)))
+
     call deserialize_int_5d(iarr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_int(iarr, iarr2, size(iarr), "Mismatch")
@@ -169,13 +187,18 @@ contains
   subroutine test_integer_array_1x1()
     integer(int32), allocatable :: iarr(:,:), iarr2(:,:)
     character(len=100) :: fname
-    integer(int32) :: ierr
+    integer(int32) :: ierr, ndims, dims(5)
     call set_ok(ierr)
     allocate(iarr(1,1)); iarr = 42
     fname = "test_iarr_1x1.bin"
+
     call serialize_int_2d(iarr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(iarr2(1,1))
+    
+    call get_array_metadata(fname, dims, 5, ndims, ierr)
+    if (.not. is_ok(ierr)) error stop
+
+    allocate(iarr2(dims(1),dims(2)))
     call deserialize_int_2d(iarr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_int(iarr, iarr2, size(iarr), "Mismatch")
@@ -184,13 +207,16 @@ contains
   subroutine test_integer_array_empty()
     integer(int32), allocatable :: iarr(:,:), iarr2(:,:)
     character(len=100) :: fname
-    integer(int32) :: ierr
+    integer(int32) :: ierr, ndims, dims(5)
     call set_ok(ierr)
     allocate(iarr(0,3))
     fname = "test_iarr_empty.bin"
     call serialize_int_2d(iarr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(iarr2(0,3))
+
+    call get_array_metadata(fname, dims, 5, ndims, ierr)
+    if (.not. is_ok(ierr)) error stop
+    allocate(iarr2(dims(1),dims(2)))
     call deserialize_int_2d(iarr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_int(iarr, iarr2, size(iarr), "Mismatch")
@@ -202,13 +228,16 @@ contains
   subroutine test_real_array_1d()
     real(real64), allocatable :: arr(:), arr2(:)
     character(len=100) :: fname
-    integer(int32) :: ierr
+    integer(int32) :: ierr, ndims, dims(5)
     call set_ok(ierr)
     allocate(arr(4)); arr = [1.1d0,2.2d0,3.3d0,4.4d0]
     fname = "test_rarr1d.bin"
     call serialize_real_1d(arr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(arr2(4))
+
+    call get_array_metadata(fname, dims, 5, ndims, ierr)
+    if (.not. is_ok(ierr)) error stop
+    allocate(arr2(dims(1)))
     call deserialize_real_1d(arr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_real(arr, arr2, size(arr), 1d-12, "Mismatch")
@@ -217,13 +246,16 @@ contains
   subroutine test_real_array_2d()
     real(real64), allocatable :: arr(:,:), arr2(:,:)
     character(len=100) :: fname
-    integer(int32) :: ierr
+    integer(int32) :: ierr, ndims, dims(5)
     call set_ok(ierr)
     allocate(arr(2,2)); arr = reshape([1.5d0,2.5d0,3.5d0,4.5d0],[2,2])
     fname = "test_rarr2d.bin"
     call serialize_real_2d(arr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(arr2(2,2))
+
+    call get_array_metadata(fname, dims, 5, ndims, ierr)
+    if (.not. is_ok(ierr)) error stop
+    allocate(arr2(dims(1),dims(2)))
     call deserialize_real_2d(arr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_real(arr, arr2, size(arr), 1d-12, "Mismatch")
@@ -232,13 +264,15 @@ contains
   subroutine test_real_array_3d()
     real(real64), allocatable :: arr(:,:,:), arr2(:,:,:)
     character(len=100) :: fname
-    integer(int32) :: ierr
+    integer(int32) :: ierr, ndims, dims(5)
     call set_ok(ierr)
     allocate(arr(2,2,2)); arr = reshape([1d0,2d0,3d0,4d0,5d0,6d0,7d0,8d0],[2,2,2])
     fname = "test_rarr3d.bin"
     call serialize_real_3d(arr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(arr2(2,2,2))
+    call get_array_metadata(fname, dims, 5, ndims, ierr)
+    if (.not. is_ok(ierr)) error stop
+    allocate(arr2(dims(1),dims(2),dims(3)))
     call deserialize_real_3d(arr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_real(arr, arr2, size(arr), 1d-12, "Mismatch")
@@ -247,14 +281,16 @@ contains
   subroutine test_real_array_4d()
     real(real64), allocatable :: arr(:,:,:,:), arr2(:,:,:,:)
     character(len=100) :: fname
-    integer(int32) :: ierr
+    integer(int32) :: ierr, ndims, dims(5)
     integer(int32) :: i
     call set_ok(ierr)
     allocate(arr(2,2,1,2)); arr = reshape([(real(i,real64),i=1,8)],[2,2,1,2])
     fname = "test_rarr4d.bin"
     call serialize_real_4d(arr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(arr2(2,2,1,2))
+    call get_array_metadata(fname, dims, 5, ndims, ierr)
+    if (.not. is_ok(ierr)) error stop
+    allocate(arr2(dims(1),dims(2),dims(3),dims(4)))
     call deserialize_real_4d(arr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_real(arr, arr2, size(arr), 1d-12, "Mismatch")
@@ -263,7 +299,7 @@ contains
   subroutine test_real_array_5d()
     real(real64), allocatable :: arr(:,:,:,:,:), arr2(:,:,:,:,:)
     character(len=100) :: fname
-    integer(int32) :: ierr
+    integer(int32) :: ierr, ndims, dims(5)
     integer(int32) :: i
     call set_ok(ierr)
 
@@ -271,7 +307,10 @@ contains
     fname = "test_rarr5d.bin"
     call serialize_real_5d(arr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(arr2(2,1,2,1,2))
+
+    call get_array_metadata(fname, dims, 5, ndims, ierr)
+    if (.not. is_ok(ierr)) error stop
+    allocate(arr2(dims(1),dims(2),dims(3),dims(4),dims(5)))
     call deserialize_real_5d(arr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_real(arr, arr2, size(arr), 1d-12, "Mismatch")
@@ -283,7 +322,7 @@ contains
   subroutine test_char_array_1d()
     character(len=:), allocatable :: arr(:), arr2(:)
     character(len=100) :: fname
-    integer(int32) :: clen, ierr
+    integer(int32) :: clen, ierr, ndims, dims(5)
     clen = 3
     call set_ok(ierr)
     allocate(character(len=clen) :: arr(3))
@@ -291,7 +330,10 @@ contains
     fname = "test_carr1d.bin"
     call serialize_char_1d(arr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(character(len=clen) :: arr2(3))
+
+    call get_array_metadata(fname, dims, 5, ndims, ierr, clen)
+    if (.not. is_ok(ierr)) error stop
+    allocate(character(len=clen) :: arr2(dims(1)))
     call deserialize_char_1d(arr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_char(arr, arr2, size(arr), "Mismatch")
@@ -300,7 +342,7 @@ contains
   subroutine test_char_array_2d()
     character(len=:), allocatable :: arr(:,:), arr2(:,:)
     character(len=100) :: fname
-    integer(int32) :: clen, ierr
+    integer(int32) :: clen, ierr, ndims, dims(5)
     clen = 5
     call set_ok(ierr)
     allocate(character(len=clen) :: arr(2,2))
@@ -308,7 +350,10 @@ contains
     fname = "test_carr2d.bin"
     call serialize_char_2d(arr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(character(len=clen) :: arr2(2,2))
+    call get_array_metadata(fname, dims, 5, ndims, ierr, clen)
+    if (.not. is_ok(ierr)) error stop
+
+    allocate(character(len=clen) :: arr2(dims(1),dims(2)))
     call deserialize_char_2d(arr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_char(arr, arr2, size(arr), "Mismatch")
@@ -317,7 +362,7 @@ contains
   subroutine test_char_array_3d()
     character(len=:), allocatable :: arr(:,:,:), arr2(:,:,:)
     character(len=100) :: fname
-    integer(int32) :: clen, ierr
+    integer(int32) :: clen, ierr, ndims, dims(5)
     clen = 5
     call set_ok(ierr)
     allocate(character(len=clen) :: arr(2,2,1))
@@ -325,7 +370,11 @@ contains
     fname = "test_carr3d.bin"
     call serialize_char_3d(arr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(character(len=clen) :: arr2(2,2,1))
+
+    call get_array_metadata(fname, dims, 5, ndims, ierr, clen)
+    if (.not. is_ok(ierr)) error stop  
+
+    allocate(character(len=clen) :: arr2(dims(1),dims(2),dims(3)))
     call deserialize_char_3d(arr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_char(arr, arr2, size(arr), "Mismatch")
@@ -334,7 +383,7 @@ contains
   subroutine test_char_array_4d()
     character(len=:), allocatable :: arr(:,:,:,:), arr2(:,:,:,:)
     character(len=100) :: fname
-    integer(int32) :: clen, ierr
+    integer(int32) :: clen, ierr, ndims, dims(5)
     clen = 5
     call set_ok(ierr)
     allocate(character(len=clen) :: arr(2,1,1,2))
@@ -342,7 +391,11 @@ contains
     fname = "test_carr4d.bin"
     call serialize_char_4d(arr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(character(len=clen) :: arr2(2,1,1,2))
+
+    call get_array_metadata(fname, dims, 5, ndims, ierr, clen)
+    if (.not. is_ok(ierr)) error stop
+
+    allocate(character(len=clen) :: arr2(dims(1),dims(2),dims(3),dims(4)))
     call deserialize_char_4d(arr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_char(arr, arr2, size(arr), "Mismatch")
@@ -351,7 +404,7 @@ contains
   subroutine test_char_array_5d()
     character(len=:), allocatable :: arr(:,:,:,:,:), arr2(:,:,:,:,:)
     character(len=100) :: fname
-    integer(int32) :: clen, ierr
+    integer(int32) :: clen, ierr, ndims, dims(5)
     clen = 5
     call set_ok(ierr)
     allocate(character(len=clen) :: arr(2,1,2,1,2))
@@ -359,7 +412,10 @@ contains
     fname = "test_carr5d.bin"
     call serialize_char_5d(arr, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(character(len=clen) :: arr2(2,1,2,1,2))
+    call get_array_metadata(fname, dims, 5, ndims, ierr, clen)
+    if (.not. is_ok(ierr)) error stop
+
+    allocate(character(len=clen) :: arr2(dims(1),dims(2),dims(3),dims(4),dims(5)))
     call deserialize_char_5d(arr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_char(arr, arr2, size(arr), "Mismatch")
@@ -367,15 +423,19 @@ contains
 
   subroutine test_char_array_protein()
     character(len=:), allocatable :: protein(:,:,:,:,:), protein2(:,:,:,:,:)
-    integer(int32) :: ierr
+    integer(int32) :: ierr, clen, ndims, dims(5)
     character(len=*), parameter :: fname = "test_proteins_arr.bin"
     call set_ok(ierr)
-    allocate(character :: protein(2,1,2,1,2))
+    clen=10
+    allocate(character(len=clen) :: protein(2,1,2,1,2))
     protein = reshape(['METHIONINE','GLYCINE   ','SERINE    ','LYSINE    ', &
                        'VALINE    ','HISTIDINE ','PROLINE   ','LEUCINE   '], [2,1,2,1,2])
     call serialize_char_5d(protein, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    allocate(character(len=10) :: protein2(2,1,2,1,2))
+    call get_array_metadata(fname, dims, 5, ndims, ierr, clen)
+    if (.not. is_ok(ierr)) error stop
+
+    allocate(character(len=clen) :: protein2(dims(1),dims(2),dims(3),dims(4),dims(5)))
     call deserialize_char_5d(protein2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
     call assert_equal_array_char(protein, protein2, size(protein), "Mismatch")
