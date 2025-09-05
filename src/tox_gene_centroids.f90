@@ -96,31 +96,21 @@ contains
     call set_ok(ierr)
 
     ! Check if mode is valid ("all" or "orthologs")
-    ! If mode is "all", ortholog_set must not be present
-    ! If mode is "orthologs", ortholog_set must be present
+    ! If "orthologs" mode is selected, ensure ortholog_set is provided
+    ! If "all" mode is selected, set orthologs to all true
     select case (trim(mode))
       case ("all")
-        if (present(ortholog_set)) then
-          call set_err_once(ierr, ERR_INVALID_INPUT)
-          return
-        end if
+        orthologs = .true.
       case ("orthologs")
         if (.not. present(ortholog_set)) then
           call set_err_once(ierr, ERR_INVALID_INPUT)
           return
         end if
+        orthologs = ortholog_set
       case default
         call set_err_once(ierr, ERR_INVALID_INPUT)
         return
     end select
-
-
-    ! If ortholog_set is present, use it; otherwise, set all to .true.
-    if (present(ortholog_set)) then
-      orthologs = ortholog_set
-    else
-      orthologs = .true.
-    end if
 
     ! Check for arguments <= 0
     if (n_axes <= 0 .or. n_genes <= 0 .or. n_families <= 0) then

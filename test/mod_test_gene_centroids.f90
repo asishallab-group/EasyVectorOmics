@@ -237,11 +237,9 @@ contains
     integer, parameter :: n_axes = 0, n_genes = 5, n_families = 2, n_axes_invalid = 0, n_genes_invalid = 0, n_families_invalid = 0
     real(real64) :: vectors(n_axes, n_genes), centroids(n_axes, n_families)
     integer(int32) :: gene_to_family(n_genes), selected_indices(n_genes), ierr
-    real(real64) :: expected(n_axes, n_families)
 
     vectors = reshape([1.0, 1.0, 3.0, 3.0, 10.0, 10.0, 20.0, 20.0, 5.0, 5.0], [n_axes, n_genes])
     gene_to_family = [1, 1, 2, 2, 1]
-    expected = reshape([3.0, 3.0, 15.0, 15.0], [n_axes, n_families])
 
     call group_centroid(vectors, n_axes_invalid, n_genes, gene_to_family, n_families, &
                         centroids, "all", selected_indices, ierr)
@@ -260,11 +258,9 @@ contains
     real(real64) :: vectors(n_axes, n_genes), centroids(n_axes, n_families)
     integer(int32) :: gene_to_family(n_genes), selected_indices(n_genes), ierr
     logical :: ortholog_set(n_genes)
-    real(real64) :: expected(n_axes, n_families)
 
     vectors = reshape([1.0, 1.0, 3.0, 3.0, 10.0, 10.0, 20.0, 20.0, 5.0, 5.0], [n_axes, n_genes])
     gene_to_family = [1, 1, 2, 3, 1] ! Invalid family mapping since family 3 does not exist
-    expected = reshape([3.0, 3.0, 15.0, 15.0], [n_axes, n_families])
 
     call group_centroid(vectors, n_axes, n_genes, gene_to_family, n_families, &
                         centroids, "all", selected_indices, ierr)
@@ -276,11 +272,9 @@ contains
      integer, parameter :: n_axes = 2, n_genes = 5, n_families = 2
     real(real64) :: vectors(n_axes, n_genes), centroids(n_axes, n_families)
     integer(int32) :: gene_to_family(n_genes), selected_indices(n_genes), ierr
-    real(real64) :: expected(n_axes, n_families)
 
     vectors = reshape([1.0, 1.0, 3.0, 3.0, 10.0, 10.0, 20.0, 20.0, 5.0, 5.0], [n_axes, n_genes])
     gene_to_family = [1, 1, 2, 2, 1]
-    expected = reshape([3.0, 3.0, 15.0, 15.0], [n_axes, n_families])
 
     ! Check with empty mode string
     call group_centroid(vectors, n_axes, n_genes, gene_to_family, n_families, &
@@ -297,18 +291,16 @@ contains
     integer, parameter :: n_axes = 2, n_genes = 5, n_families = 2
     real(real64) :: vectors(n_axes, n_genes), centroids(n_axes, n_families)
     integer(int32) :: gene_to_family(n_genes), selected_indices(n_genes), ierr
-    real(real64) :: expected(n_axes, n_families)
 
     vectors = reshape([1.0, 1.0, 3.0, 3.0, 10.0, 10.0, 20.0, 20.0, 5.0, 5.0], [n_axes, n_genes])
     gene_to_family = [1, 1, 2, 2, 1]
-    expected = reshape([3.0, 3.0, 15.0, 15.0], [n_axes, n_families])
 
     call group_centroid(vectors, n_axes, n_genes, gene_to_family, n_families, &
                         centroids, "orthologs", selected_indices, ierr)
     call assert_equal_int(ierr, ERR_INVALID_INPUT, "Missing ortholog_set in 'orthologs' mode should return ERR_INVALID_INPUT")
   end subroutine test_missing_ortholog_set
 
-  ! Test case 13: Test for present ortholog_set in 'all' mode.
+  ! Test case 13: Test for present ortholog_set in 'all' mode. In this case, the function should ignore the ortholog_set and proceed without error.
   subroutine test_present_ortholog_set_in_all_mode()
     integer, parameter :: n_axes = 2, n_genes = 5, n_families = 2
     real(real64) :: vectors(n_axes, n_genes), centroids(n_axes, n_families)
@@ -323,6 +315,6 @@ contains
 
     call group_centroid(vectors, n_axes, n_genes, gene_to_family, n_families, &
                         centroids, "all", selected_indices, ierr, ortholog_set)
-    call assert_equal_int(ierr, ERR_INVALID_INPUT, "Missing ortholog_set in 'orthologs' mode should return ERR_INVALID_INPUT")
+    call assert_allclose_array_real(centroids, expected, n_axes*n_families, 0.0_real64, 1e-9_real64, "test_basic_all_mode")
   end subroutine test_present_ortholog_set_in_all_mode
 end module mod_test_gene_centroids
