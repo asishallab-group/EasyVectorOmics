@@ -4,6 +4,7 @@ program test_expression_readers
     use tox_data_validation
     use tox_data_read_write
     use array_utils, only: get_array_metadata
+    use tox_gene_centroids
     implicit none
 
     integer(int32), allocatable :: gene_to_fam(:)
@@ -12,6 +13,15 @@ program test_expression_readers
     integer(int32) :: n_genes, n_families, ierr, total_samples
     integer, parameter :: n_header_rows = 1
     integer(int32) :: ndims, dims(2)
+    real(real64), ALLOCATABLE :: family_centroids(:,:)
+    logical, ALLOCATABLE :: ortholog_mask(:)
+    integer(int32), ALLOCATABLE :: selected_indices(:)
+    integer(int32) :: no_family_entries
+    integer(int32), allocatable :: indice_set(:)
+    integer(int32) :: current_idx 
+    real(real64) :: sample_sum
+    real(real64), allocatable :: test_centroid(:)
+    integer(int32) :: n_family_genes
 
     ! File lists
     character(len=256), allocatable :: files_6_replicates(:)
@@ -19,7 +29,7 @@ program test_expression_readers
     character(len=256), allocatable :: files_5_replicates(:)
     character(len=256), allocatable :: files_4_replicates(:)
 
-    integer :: i
+    integer :: i, j
 
     ierr = 0
     
@@ -164,6 +174,72 @@ program test_expression_readers
     call validate_gene_ids_uniqueness(gene_ids, ierr)
     if (ierr/=0) write(*,*) 'Gene IDs contain duplicates: ', ierr
 
+    allocate(family_centroids(total_samples, n_families))
+    ALLOCATE(ortholog_mask(n_genes))
+    allocate(selected_indices(n_genes))
+
+    no_family_entries = 0
+
+    do i = 1, n_genes
+        if (gene_to_fam(i) < 1 .or. gene_to_fam(i) > n_families) then
+          no_family_entries = no_family_entries + 1
+        end if
+    end do
+
+    write(*,*) 'Genes without families: ', no_family_entries
+
+    do i = 1, n_genes
+        ortholog_mask(i) = .true.
+    end do
+
+    call group_centroid(kallisto_expr, total_samples, n_genes, gene_to_fam, n_families, family_centroids, &
+     .true., ortholog_mask, selected_indices, ierr)
+    
+    if(ierr/=0) write (*,*) 'Failed to compute centroids: ', ierr
+
+    write(*,*) 'First 5 family centroids:'
+    do i = 1, 20
+        write(*, '(10(F8.2,1X))') family_centroids(i, 1:min(5,n_families))
+    end do
+
+    ! First, count genes in family 2
+    n_family_genes = 0
+    do i = 1, n_genes
+        if (gene_to_fam(i) == 2) then
+            n_family_genes = n_family_genes + 1
+        end if
+    end do
+
+    ! Allocate arrays
+    allocate(indice_set(n_family_genes))
+    allocate(test_centroid(total_samples))
+
+    ! Fill indice_set with indices of genes in family 2
+    current_idx = 1
+    do i = 1, n_genes
+        if (gene_to_fam(i) == 2) then
+            indice_set(current_idx) = i
+            current_idx = current_idx + 1
+        end if
+    end do
+
+    ! Calculate centroid (mean across genes for each sample)
+    do j = 1, total_samples
+        sample_sum = 0.0_real64
+        do i = 1, n_family_genes
+            sample_sum = sample_sum + kallisto_expr(j, indice_set(i))  ! Note: j is sample, indice_set(i) is gene
+        end do
+        test_centroid(j) = sample_sum / n_family_genes
+    end do
+
+    ! Output the centroid
+    write(*,*) 'Test centroid for family 2:'
+    do j = 1, total_samples
+        write(*, '(F8.2,1X)', advance='no') test_centroid(j)
+        if (mod(j, 10) == 0) write(*,*)  ! New line every 10 values
+    end do
+    write(*,*) 
+    
     call save_expression_vectors(kallisto_expr, 'kallisto_sex_data.bin', ierr)
     if (ierr/=0) then 
         write(*,*) 'Expression data could not be saved: ', ierr

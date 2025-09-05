@@ -32,14 +32,13 @@ contains
 
 ! Read tabular files (CSV/TSV)
 subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
-                             n_header_rows, gene_col, value_cols, start_row, ierr, delimiter)
+                             n_header_rows, gene_col, value_cols, start_row, ierr)
     character(len=*), intent(in) :: file_list(:)
     character(len=*), intent(inout) :: gene_ids(:)
     real(real64), intent(inout) :: expression_vectors(:,:)
     integer(int32), intent(in) :: n_header_rows, gene_col
     integer(int32), intent(in) :: value_cols(:) ! Array of column indices
     integer(int32), intent(in) :: start_row ! New parameter to specify the start row
-    CHARACTER(1), optional, intent(in) :: delimiter
     integer(int32), intent(out) :: ierr
 
     integer :: i, j, k, unit, ios, idx, row_count, n_genes, expected_idx, n_value_cols
@@ -59,8 +58,6 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
     allocate(valid_cols(n_value_cols))
     
     current_sample = start_row - 1
-
-    if(.not. present(delimiter)) delimiter = char(9)
     
     do i = 1, size(file_list)
         open(newunit=unit, file=trim(file_list(i)), status='old', action='read', iostat=ios)

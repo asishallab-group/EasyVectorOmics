@@ -2,6 +2,7 @@ gfortran -O3 -Wall -std=f2008 \
     src/error_handling.F90\
     src/hashing.F90\
     src/array_utils.F90\
+    src/tox_gene_centroids.f90\
     src/serialize_int.F90\
     src/serialize_real.F90\
     src/serialize_char.F90\
