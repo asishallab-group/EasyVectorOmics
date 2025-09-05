@@ -51,7 +51,7 @@ contains
     character(len=256), allocatable :: files_7_replicates(:)
     character(len=256), allocatable :: files_5_replicates(:)
     character(len=256), allocatable :: files_4_replicates(:)
-    integer(int32) :: ierr, i
+    integer(int32) :: ierr, i, n_genes_kept
     logical, allocatable :: ortholog_mask(:)
     integer(int32), allocatable :: selected_indices(:)
 
@@ -85,10 +85,10 @@ contains
 
     ! Calculate total samples
     total_samples = 10 * 6 + 7 + 5 + 4 
-    n_genes = 88327
+    n_genes = 88327  ! Original number of genes
     n_families = 15512
 
-    ! Allocate arrays
+    ! Allocate arrays with original size
     allocate(gene_ids(n_genes))
     allocate(kallisto_expr(total_samples, n_genes))
     allocate(gene_family_ids(n_families))
@@ -101,25 +101,30 @@ contains
     ! Read expression data
     kallisto_expr = 0.0_real64
     call read_tabular_files(files_6_replicates, gene_ids, kallisto_expr, &
-                           1, 1, [2, 3, 4, 5, 6, 7], 1, ierr, char(9))
+                          1, 1, [2, 3, 4, 5, 6, 7], 1, ierr, char(9))
     
     call assert_equal_int(ierr, 0, "Reading 6-replicate files should succeed")
 
     call read_tabular_files([files_7_replicates], gene_ids, kallisto_expr, &
-                           1, 1, [2, 3, 4, 5, 6, 7, 8], 61, ierr)
+                          1, 1, [2, 3, 4, 5, 6, 7, 8], 61, ierr)
     call assert_equal_int(ierr, 0, "Reading 7-replicate file should succeed")
 
     call read_tabular_files([files_5_replicates], gene_ids, kallisto_expr, &
-                           1, 1, [2, 3, 4, 5, 6], 69, ierr)
+                          1, 1, [2, 3, 4, 5, 6], 69, ierr)
     call assert_equal_int(ierr, 0, "Reading 5-replicate file should succeed")
 
     call read_tabular_files([files_4_replicates], gene_ids, kallisto_expr, &
-                           1, 1, [2, 3, 4, 5], 73, ierr)
+                          1, 1, [2, 3, 4, 5], 73, ierr)
     call assert_equal_int(ierr, 0, "Reading 4-replicate file should succeed")
 
     ! Read family mapping
     call read_family_file('material/Orthogroups.tsv', gene_ids, gene_family_ids, gene_to_fam, ierr)
     call assert_equal_int(ierr, 0, "Reading family file should succeed")
+
+    ! Filter out genes without family assignments
+    call filter_unassigned_genes(gene_ids, kallisto_expr, gene_to_fam, n_genes_kept, ierr)
+    call assert_equal_int(ierr, 0, "Filtering unassigned genes should succeed")
+    n_genes = n_genes_kept  ! Update n_genes to reflect the filtered count
 
     ! Compute centroids
     allocate(family_centroids(total_samples, n_families))
@@ -134,14 +139,14 @@ contains
     end do
     
     call group_centroid(kallisto_expr, total_samples, n_genes, gene_to_fam, &
-                       n_families, family_centroids, .true., &
-                       ortholog_mask, selected_indices, ierr)
+                      n_families, family_centroids, .true., &
+                      ortholog_mask, selected_indices, ierr)
     call assert_equal_int(ierr, 0, "Computing centroids should succeed")
     
     ! Compute shift vectors
     allocate(shift_vectors(2*total_samples, n_genes))
     call compute_shift_vector_field(total_samples, n_genes, n_families, kallisto_expr, &
-                                   family_centroids, gene_to_fam, shift_vectors, ierr)
+                                  family_centroids, gene_to_fam, shift_vectors, ierr)
     call assert_equal_int(ierr, 0, "Computing shift vectors should succeed")
     
     ! Clean up temporary arrays
