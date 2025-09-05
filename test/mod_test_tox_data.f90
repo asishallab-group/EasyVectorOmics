@@ -7,6 +7,8 @@ module mod_test_tox_data
   use tox_data_read_write
   use array_utils, only: get_array_metadata
   use tox_gene_centroids
+  use tox_shift_vectors
+  use tox_errors
   implicit none
   public
 
@@ -26,18 +28,21 @@ module mod_test_tox_data
   real(real64), allocatable :: kallisto_expr(:,:), kallisto_expr_verify(:,:)
   integer(int32) :: n_genes, n_families, total_samples
   real(real64), allocatable :: family_centroids(:,:)
+  real(real64), allocatable :: shift_vectors(:,:)  ! Added for shift vectors
 
 contains
 
   !> Get array of all available tests.
   function get_all_tests() result(all_tests)
-    type(test_case) :: all_tests(6)
+    type(test_case) :: all_tests(8)  ! Increased from 6 to 8
     all_tests(1) = test_case("test_read_gene_ids", test_read_gene_ids)
     all_tests(2) = test_case("test_read_expression_data", test_read_expression_data)
     all_tests(3) = test_case("test_read_family_mapping", test_read_family_mapping)
     all_tests(4) = test_case("test_validate_data", test_validate_data)
     all_tests(5) = test_case("test_compute_centroids", test_compute_centroids)
     all_tests(6) = test_case("test_write_read_binary", test_write_read_binary)
+    all_tests(7) = test_case("test_compute_shift_vectors", test_compute_shift_vectors)
+    all_tests(8) = test_case("test_write_read_shift_vectors", test_write_read_shift_vectors)
   end function get_all_tests
 
   !> Setup global test data
@@ -96,7 +101,8 @@ contains
     ! Read expression data
     kallisto_expr = 0.0_real64
     call read_tabular_files(files_6_replicates, gene_ids, kallisto_expr, &
-                           1, 1, [2, 3, 4, 5, 6, 7], 1, ierr)
+                           1, 1, [2, 3, 4, 5, 6, 7], 1, ierr, char(9))
+    
     call assert_equal_int(ierr, 0, "Reading 6-replicate files should succeed")
 
     call read_tabular_files([files_7_replicates], gene_ids, kallisto_expr, &
@@ -132,13 +138,19 @@ contains
                        ortholog_mask, selected_indices, ierr)
     call assert_equal_int(ierr, 0, "Computing centroids should succeed")
     
+    ! Compute shift vectors
+    allocate(shift_vectors(2*total_samples, n_genes))
+    call compute_shift_vector_field(total_samples, n_genes, n_families, kallisto_expr, &
+                                   family_centroids, gene_to_fam, shift_vectors, ierr)
+    call assert_equal_int(ierr, 0, "Computing shift vectors should succeed")
+    
     ! Clean up temporary arrays
     deallocate(ortholog_mask, selected_indices)
   end subroutine setup_global_data
 
   !> Run all expression reader tests.
   subroutine run_all_tests_tox_data()
-    type(test_case) :: all_tests(6)
+    type(test_case) :: all_tests(8)  ! Updated to 8
     integer(int32) :: i
     
     ! Setup global data first
@@ -155,7 +167,7 @@ contains
   !> Run specific expression reader tests by name.
   subroutine run_named_tests_tox_data(test_names)
     character(len=*), intent(in) :: test_names(:)
-    type(test_case) :: all_tests(6)
+    type(test_case) :: all_tests(8)  ! Updated to 8
     integer(int32) :: i, j
     logical :: found
     
@@ -260,17 +272,17 @@ contains
     integer(int32) :: ierr, ndims, dims(2)
     integer(int32) :: total_elements
     
-    call save_expression_vectors(kallisto_expr, ' test_kallisto_data.bin', ierr)
+    call save_expression_vectors(kallisto_expr, 'test_kallisto_data.bin', ierr)
     call assert_equal_int(ierr, 0, "Saving expression data should succeed")
     
-    call get_array_metadata(' test_kallisto_data.bin', dims, 2, ndims, ierr)
+    call get_array_metadata('test_kallisto_data.bin', dims, 2, ndims, ierr)
     call assert_equal_int(ierr, 0, "Reading metadata should succeed")
     call assert_equal_int(ndims, 2, "Array should have 2 dimensions")
     call assert_equal_int(dims(1), total_samples, "First dimension should match sample count")
     call assert_equal_int(dims(2), n_genes, "Second dimension should match gene count")
     
     allocate(kallisto_expr_verify(dims(1), dims(2)))
-    call load_expression_vectors(kallisto_expr_verify, ' test_kallisto_data.bin', ierr)
+    call load_expression_vectors(kallisto_expr_verify, 'test_kallisto_data.bin', ierr)
     call assert_equal_int(ierr, 0, "Loading expression data should succeed")
     
     ! Fixed call to match the assert_equal_array_real interface
@@ -283,5 +295,65 @@ contains
     ! Clean up
     deallocate(kallisto_expr_verify)
   end subroutine test_write_read_binary
+
+  !> Test computation of shift vectors
+  subroutine test_compute_shift_vectors()
+    integer(int32) :: ierr, i, j
+    real(real64), allocatable :: test_shift_vectors(:,:)
+    
+    call assert_true(allocated(shift_vectors), "Shift vectors should be allocated")
+    call assert_equal_int(size(shift_vectors, 1), 2*total_samples, "Shift vectors should have 2*d rows")
+    call assert_equal_int(size(shift_vectors, 2), n_genes, "Shift vectors should have n_genes columns")
+    
+    ! Verify centroids are correctly placed in first d rows
+    do i = 1, n_genes
+      if (gene_to_fam(i) >= 1 .and. gene_to_fam(i) <= n_families) then
+        call assert_equal_array_real(shift_vectors(1:total_samples, i), &
+                                    family_centroids(:, gene_to_fam(i)), &
+                                    total_samples, 1e-12_real64, &
+                                    "Centroid should match family centroid")
+      end if
+    end do
+    
+    ! Verify shift vectors are correctly computed
+    do i = 1, n_genes
+      if (gene_to_fam(i) >= 1 .and. gene_to_fam(i) <= n_families) then
+        call assert_equal_array_real(shift_vectors(total_samples+1:2*total_samples, i), &
+                                    kallisto_expr(:, i) - family_centroids(:, gene_to_fam(i)), &
+                                    total_samples, 1e-12_real64, &
+                                    "Shift vector should be expression minus centroid")
+      end if
+    end do
+  end subroutine test_compute_shift_vectors
+
+  !> Test writing and reading shift vectors
+  subroutine test_write_read_shift_vectors()
+    integer(int32) :: ierr, ndims, dims(2)
+    integer(int32) :: total_elements
+    real(real64), allocatable :: shift_vectors_loaded(:,:)
+    
+    call save_expression_vectors(shift_vectors, 'test_shift_vectors.bin', ierr)
+    call assert_equal_int(ierr, 0, "Saving shift vectors should succeed")
+    
+    call get_array_metadata('test_shift_vectors.bin', dims, 2, ndims, ierr)
+    call assert_equal_int(ierr, 0, "Reading metadata should succeed")
+    call assert_equal_int(ndims, 2, "Array should have 2 dimensions")
+    call assert_equal_int(dims(1), 2*total_samples, "First dimension should match 2*d")
+    call assert_equal_int(dims(2), n_genes, "Second dimension should match gene count")
+    
+    allocate(shift_vectors_loaded(dims(1), dims(2)))
+    call load_expression_vectors(shift_vectors_loaded, 'test_shift_vectors.bin', ierr)
+    call assert_equal_int(ierr, 0, "Loading shift vectors should succeed")
+    
+    ! Verify loaded data matches original
+    total_elements = size(shift_vectors)
+    call assert_equal_array_real(reshape(shift_vectors, [total_elements]), &
+                                reshape(shift_vectors_loaded, [total_elements]), &
+                                total_elements, 1e-12_real64, &
+                                "Original and loaded shift vectors should be identical")
+    
+    ! Clean up
+    deallocate(shift_vectors_loaded)
+  end subroutine test_write_read_shift_vectors
 
 end module mod_test_tox_data

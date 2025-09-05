@@ -32,7 +32,7 @@ contains
 
 ! Read tabular files (CSV/TSV)
 subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
-                             n_header_rows, gene_col, value_cols, start_row, ierr)
+                             n_header_rows, gene_col, value_cols, start_row, ierr, delimiter)
     character(len=*), intent(in) :: file_list(:)
     character(len=*), intent(inout) :: gene_ids(:)
     real(real64), intent(inout) :: expression_vectors(:,:)
@@ -40,6 +40,7 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
     integer(int32), intent(in) :: value_cols(:) ! Array of column indices
     integer(int32), intent(in) :: start_row ! New parameter to specify the start row
     integer(int32), intent(out) :: ierr
+    character(len=1), intent(in), optional :: delimiter ! Optional delimiter parameter
 
     integer :: i, j, k, unit, ios, idx, row_count, n_genes, expected_idx, n_value_cols
     integer :: current_sample, n_columns_in_file, n_valid_cols
@@ -49,10 +50,18 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
     real(real64) :: value
     character(len=len(gene_ids)) :: gene
     logical :: order_mismatch
+    character(len=1) :: actual_delimiter
 
     ierr = 0
     n_genes = size(gene_ids)
     n_value_cols = size(value_cols)
+    
+    ! Set the delimiter (use tab as default if not provided)
+    if (present(delimiter)) then
+        actual_delimiter = delimiter
+    else
+        actual_delimiter = char(9) ! Default to tab
+    end if
     
     ! Allocate temporary array for valid columns
     allocate(valid_cols(n_value_cols))
@@ -82,7 +91,7 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
             return
         end if
         
-        call split_string(line, test_fields, char(9))
+        call split_string(line, test_fields, actual_delimiter)
         n_columns_in_file = size(test_fields)
         
         ! Rewind to beginning of data section
@@ -118,7 +127,7 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
                 exit
             end if
 
-            call split_string(line, fields, char(9))
+            call split_string(line, fields, actual_delimiter)
             if (size(fields) < max(gene_col, maxval(valid_cols(1:n_valid_cols)))) cycle
 
             gene = trim(adjustl(fields(gene_col)))
