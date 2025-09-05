@@ -101,10 +101,10 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
         end do
 
         ! Debug output
-        write(*,*) 'Processing file: ', trim(file_list(i))
-        write(*,*) 'Columns in file: ', n_columns_in_file
-        write(*,*) 'Valid value columns: ', valid_cols(1:n_valid_cols)
-        write(*,*) 'Current sample start: ', current_sample + 1
+        ! write(*,*) 'Processing file: ', trim(file_list(i))
+        ! write(*,*) 'Columns in file: ', n_columns_in_file
+        ! write(*,*) 'Valid value columns: ', valid_cols(1:n_valid_cols)
+        ! write(*,*) 'Current sample start: ', current_sample + 1
 
         row_count = 0
         order_mismatch = .false.
@@ -234,14 +234,14 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     call hashmap_create(gene_map, n_genes)
     
     ! Hashmap mit allen Gen-IDs füllen
-    write(*,*) 'Building gene hashmap with ', n_genes, ' genes...'
+    !write(*,*) 'Building gene hashmap with ', n_genes, ' genes...'
     do i = 1, n_genes
         call hashmap_put(gene_map, gene_ids(i), i)
         if (mod(i, 10000) == 0) then
-            write(*,*) '  Processed ', i, ' genes...'
+            !write(*,*) '  Processed ', i, ' genes...'
         end if
     end do
-    write(*,*) 'Hashmap complete.'
+    !write(*,*) 'Hashmap complete.'
 
     open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
     if (ios /= 0) then
@@ -259,7 +259,7 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
         return
     end if
 
-    write(*,*) 'Reading family file with hashmap...'
+    !write(*,*) 'Reading family file with hashmap...'
     
     fam_idx = 0
     do
@@ -268,9 +268,9 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
 
         fam_idx = fam_idx + 1
         
-        if (mod(fam_idx, 1000) == 0) then
-            write(*,*) 'Processed ', fam_idx, ' families...'
-        end if
+        ! if (mod(fam_idx, 1000) == 0) then
+        !     write(*,*) 'Processed ', fam_idx, ' families...'
+        ! end if
 
         call split_string(line, fields, char(9))
         if (size(fields) < 2) cycle
@@ -304,7 +304,7 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     close(unit)
     
     call hashmap_destroy(gene_map)
-    write(*,*) 'Finished processing ', fam_idx, ' families'
+    ! write(*,*) 'Finished processing ', fam_idx, ' families'
 end subroutine read_family_file
 
 subroutine count_family_file_stats(filename, n_families, n_genes, ierr)
