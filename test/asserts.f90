@@ -11,7 +11,7 @@ module asserts
   public :: assert_equal_array_real, assert_no_nan_real, assert_no_inf_real
   public :: assert_in_range_real, assert_contains_int, assert_sorted_int
   public :: assert_sorted_real, assert_same_shape, assert_string_equal
-  public :: assert_string_contains, assert_allclose_array_real
+  public :: assert_string_contains, assert_allclose_array_real, assert_equal_array_char
   public :: assert_sum_equal, assert_unique_int, assert_permutation
 
 contains
@@ -95,6 +95,20 @@ contains
       write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (real arrays differ, tol=", tol, ")"
       stop 1
     end if
+  end subroutine
+
+  !> Asserts that two char arrays are equal
+  subroutine assert_equal_array_char(a, b, n, msg)
+    character(len=*), intent(in) :: a(n), b(n)
+    integer, intent(in) :: n
+    character(*), intent(in) :: msg
+    integer :: i
+    do i = 1, n
+      if (trim(a(i)) /= trim(b(i))) then
+        write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (char arrays differ at index ", i, ")"
+        stop 1
+      end if
+    end do
   end subroutine
 
   !> Assert that a real array contains no NaN values.

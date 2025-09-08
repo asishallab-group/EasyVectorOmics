@@ -1,5 +1,5 @@
 module hashmap_module
-    use iso_fortran_env, only: int32
+    use iso_fortran_env, only: int32, int64
     implicit none
     private
     
@@ -22,10 +22,11 @@ contains
 integer function djb2_hash(key, table_size) result(hash)
     character(len=*), intent(in) :: key
     integer(int32), intent(in) :: table_size
-    integer(int32) :: i, hash_val
+    integer(int32) :: i
+    integer(int64) :: hash_val
     character(len=1) :: c
     
-    hash_val = 5381
+    hash_val = 257
     do i = 1, len_trim(key)
         c = key(i:i)
         hash_val = (ishft(hash_val, 5) + hash_val) + iachar(c)  ! hash * 33 + c

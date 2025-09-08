@@ -16,7 +16,7 @@ module tox_data_tools
     private
 
     public :: read_gene_ids_from_file
-    public :: read_tabular_files
+    public :: read_expression_vectors
     public :: read_family_file
     public :: get_gene_index
     public :: get_family_index
@@ -32,7 +32,7 @@ module tox_data_tools
 contains
 
 ! Read tabular files (CSV/TSV)
-subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
+subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
                              n_header_rows, gene_col, value_cols, start_row, ierr, delimiter)
     character(len=*), intent(in) :: file_list(:)
     character(len=*), intent(inout) :: gene_ids(:)
@@ -170,7 +170,7 @@ subroutine read_tabular_files(file_list, gene_ids, expression_vectors, &
     end do
     
     deallocate(valid_cols)
-end subroutine read_tabular_files
+end subroutine read_expression_vectors
 
 subroutine read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, ierr)
     character(len=*), intent(in) :: filename
@@ -232,6 +232,7 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     character(len=len(family_ids)) :: current_family
     type(hashmap_type) :: gene_map
     logical :: fill_family_ids
+    integer(int32) :: hashmap_size
 
     ierr = 0
     gene_to_fam = 0
@@ -241,15 +242,13 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     fill_family_ids = all(family_ids == "")
 
     ! Hashmap für schnelle Gen-Suche erstellen
-    call hashmap_create(gene_map, n_genes)
+    hashmap_size = int(1.3 * n_genes)
+    call hashmap_create(gene_map, hashmap_size)
     
     ! Hashmap mit allen Gen-IDs füllen
     !write(*,*) 'Building gene hashmap with ', n_genes, ' genes...'
     do i = 1, n_genes
         call hashmap_put(gene_map, gene_ids(i), i)
-        if (mod(i, 10000) == 0) then
-            !write(*,*) '  Processed ', i, ' genes...'
-        end if
     end do
     !write(*,*) 'Hashmap complete.'
 

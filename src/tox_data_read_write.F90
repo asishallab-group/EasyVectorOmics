@@ -1,4 +1,5 @@
 module tox_data_read_write
+
     use iso_fortran_env, only: real64, int32
     use tox_errors
     use serialize_int, only: serialize_int_1d
@@ -8,7 +9,6 @@ module tox_data_read_write
     use serialize_char, only: serialize_char_1D
     use char_deserialize_mod, only: deserialize_char_1D
     implicit none
-    public :: save_expression_vectors, load_expression_vectors
 
 contains
 subroutine save_gene_ids(gene_ids, filename, ierr)
@@ -35,12 +35,12 @@ subroutine save_gene_to_family(gene_to_fam, filename, ierr)
     call serialize_int_1D(gene_to_fam, filename, ierr)
 end subroutine
 
-subroutine save_gene_family_ids(gene_family_ids, filename, ierr)
+subroutine save_family_ids(family_ids, filename, ierr)
     CHARACTER(len=*), INTENT(IN) :: filename
-    CHARACTER(len=*), INTENT(IN) :: gene_family_ids(:)
+    CHARACTER(len=*), INTENT(IN) :: family_ids(:)
     integer(int32), INTENT(OUT) :: ierr
 
-    call serialize_char_1D(gene_family_ids, filename, ierr)
+    call serialize_char_1D(family_ids, filename, ierr)
 end subroutine
 
 subroutine save_family_centroids(family_centroids, filename, ierr)

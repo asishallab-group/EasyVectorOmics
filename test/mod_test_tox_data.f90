@@ -34,15 +34,19 @@ contains
 
   !> Get array of all available tests.
   function get_all_tests() result(all_tests)
-    type(test_case) :: all_tests(8)  ! Increased from 6 to 8
+    type(test_case) :: all_tests(12)  ! Increased from 6 to 8
     all_tests(1) = test_case("test_read_gene_ids", test_read_gene_ids)
     all_tests(2) = test_case("test_read_expression_data", test_read_expression_data)
     all_tests(3) = test_case("test_read_family_mapping", test_read_family_mapping)
     all_tests(4) = test_case("test_validate_data", test_validate_data)
     all_tests(5) = test_case("test_compute_centroids", test_compute_centroids)
-    all_tests(6) = test_case("test_write_read_binary", test_write_read_binary)
+    all_tests(6) = test_case("test_write_read_expression_data", test_write_read_expression_data)
     all_tests(7) = test_case("test_compute_shift_vectors", test_compute_shift_vectors)
     all_tests(8) = test_case("test_write_read_shift_vectors", test_write_read_shift_vectors)
+    all_tests(9) = test_case("test_read_write_gene_ids", test_read_write_gene_ids)
+    all_tests(10) = test_case("test_read_write_gene_to_fam", test_read_write_gene_to_fam)
+    all_tests(11) = test_case("test_read_write_family_ids", test_read_write_family_ids)
+    all_tests(12) = test_case("test_read_write_family_centroids", test_read_write_centroids)
   end function get_all_tests
 
   !> Setup global test data
@@ -100,20 +104,20 @@ contains
 
     ! Read expression data
     kallisto_expr = 0.0_real64
-    call read_tabular_files(files_6_replicates, gene_ids, kallisto_expr, &
+    call read_expression_vectors(files_6_replicates, gene_ids, kallisto_expr, &
                           1, 1, [2, 3, 4, 5, 6, 7], 1, ierr, char(9))
     
     call assert_equal_int(ierr, 0, "Reading 6-replicate files should succeed")
 
-    call read_tabular_files([files_7_replicates], gene_ids, kallisto_expr, &
+    call read_expression_vectors([files_7_replicates], gene_ids, kallisto_expr, &
                           1, 1, [2, 3, 4, 5, 6, 7, 8], 61, ierr)
     call assert_equal_int(ierr, 0, "Reading 7-replicate file should succeed")
 
-    call read_tabular_files([files_5_replicates], gene_ids, kallisto_expr, &
+    call read_expression_vectors([files_5_replicates], gene_ids, kallisto_expr, &
                           1, 1, [2, 3, 4, 5, 6], 69, ierr)
     call assert_equal_int(ierr, 0, "Reading 5-replicate file should succeed")
 
-    call read_tabular_files([files_4_replicates], gene_ids, kallisto_expr, &
+    call read_expression_vectors([files_4_replicates], gene_ids, kallisto_expr, &
                           1, 1, [2, 3, 4, 5], 73, ierr)
     call assert_equal_int(ierr, 0, "Reading 4-replicate file should succeed")
 
@@ -155,7 +159,7 @@ contains
 
   !> Run all expression reader tests.
   subroutine run_all_tests_tox_data()
-    type(test_case) :: all_tests(8)  ! Updated to 8
+    type(test_case) :: all_tests(12)  ! Updated to 8
     integer(int32) :: i
     
     ! Setup global data first
@@ -172,7 +176,7 @@ contains
   !> Run specific expression reader tests by name.
   subroutine run_named_tests_tox_data(test_names)
     character(len=*), intent(in) :: test_names(:)
-    type(test_case) :: all_tests(8)  ! Updated to 8
+    type(test_case) :: all_tests(12)  ! Updated to 8
     integer(int32) :: i, j
     logical :: found
     
@@ -273,7 +277,7 @@ contains
   end subroutine test_compute_centroids
 
   !> Test binary write/read operations
-  subroutine test_write_read_binary()
+  subroutine test_write_read_expression_data()
     integer(int32) :: ierr, ndims, dims(2)
     integer(int32) :: total_elements
     
@@ -299,7 +303,7 @@ contains
     
     ! Clean up
     deallocate(kallisto_expr_verify)
-  end subroutine test_write_read_binary
+  end subroutine test_write_read_expression_data
 
   !> Test computation of shift vectors
   subroutine test_compute_shift_vectors()
@@ -361,4 +365,101 @@ contains
     deallocate(shift_vectors_loaded)
   end subroutine test_write_read_shift_vectors
 
+  subroutine test_read_write_gene_ids()
+    integer(int32) :: ierr, n_loaded_genes, ndims, dims(1)
+    character(len=256), allocatable :: loaded_gene_ids(:)
+    call save_gene_ids(gene_ids, 'test_gene_ids.bin', ierr)
+    if (.not. is_ok(ierr)) then
+      write(*,*) 'Failed to save gene IDs: ', ierr
+      error stop
+    end if
+    call get_array_metadata('test_gene_ids.bin', dims, 1, ndims, ierr)
+    if(.not. is_ok(ierr)) then
+      write(*,*) 'Failed to get metadata: ', ierr
+      error stop
+    end if
+    call assert_equal_int(ndims, 1, "Gene IDs should be 1D array")
+    allocate(loaded_gene_ids(dims(1)))
+    call load_gene_ids(loaded_gene_ids, 'test_gene_ids.bin', ierr)
+    if(.not. is_ok(ierr)) then
+      write(*,*) 'Failed to load gene IDs: ', ierr
+      error stop
+    end if
+    call assert_equal_array_char(loaded_gene_ids, gene_ids, dims(1), &
+                                "Loaded gene IDs should match original")
+  end subroutine test_read_write_gene_ids
+
+  subroutine test_read_write_gene_to_fam()
+    integer(int32) :: ierr, n_loaded_genes, ndims, dims(1)
+    integer(int32), allocatable :: loaded_gene_to_fam(:)
+    call save_gene_to_family(gene_to_fam, 'test_gene_to_fam.bin', ierr)
+    if (.not. is_ok(ierr)) then
+      write(*,*) 'Failed to save gene to family mapping: ', ierr
+      error stop
+    end if
+    call get_array_metadata('test_gene_to_fam.bin', dims, 1, ndims, ierr)
+    if(.not. is_ok(ierr)) then
+      write(*,*) 'Failed to get metadata: ', ierr
+      error stop
+    end if
+    call assert_equal_int(ndims, 1, "Gene to family mapping should be 1D array")
+    allocate(loaded_gene_to_fam(dims(1)))
+    call load_gene_to_family(loaded_gene_to_fam, 'test_gene_to_fam.bin', ierr)
+    if(.not. is_ok(ierr)) then
+      write(*,*) 'Failed to load gene to family mapping: ', ierr
+      error stop
+    end if
+    call assert_equal_array_int(loaded_gene_to_fam, gene_to_fam, dims(1), &
+                               "Loaded gene to family mapping should match original")
+  end subroutine test_read_write_gene_to_fam
+
+  subroutine test_read_write_family_ids()
+    integer(int32) :: ierr, n_loaded_families, ndims, dims(1)
+    character(len=256), allocatable :: loaded_family_ids(:)
+    call save_family_ids(gene_family_ids, 'test_family_ids.bin', ierr)
+    if (.not. is_ok(ierr)) then
+      write(*,*) 'Failed to save family IDs: ', ierr
+      error stop
+    end if
+    call get_array_metadata('test_family_ids.bin', dims, 1, ndims, ierr)
+    if(.not. is_ok(ierr)) then
+      write(*,*) 'Failed to get metadata: ', ierr
+      error stop
+    end if
+    call assert_equal_int(ndims, 1, "Family IDs should be 1D array")
+    allocate(loaded_family_ids(dims(1)))
+    call load_family_ids(loaded_family_ids, 'test_family_ids.bin', ierr)
+    if(.not. is_ok(ierr)) then
+      write(*,*) 'Failed to load family IDs: ', ierr
+      error stop
+    end if
+    call assert_equal_array_char(loaded_family_ids, gene_family_ids, dims(1), &
+                                "Loaded family IDs should match original")
+  end subroutine test_read_write_family_ids
+
+  subroutine test_read_write_centroids()
+    integer(int32) :: ierr, n_loaded_families, ndims, dims(2)
+    real(real64), allocatable :: loaded_centroids(:,:)
+    call save_family_centroids(family_centroids, 'test_family_centroids.bin', ierr)
+    if (.not. is_ok(ierr)) then
+      write(*,*) 'Failed to save family centroids: ', ierr
+      error stop
+    end if
+    call get_array_metadata('test_family_centroids.bin', dims, 2, ndims, ierr)
+    if(.not. is_ok(ierr)) then
+      write(*,*) 'Failed to get metadata: ', ierr
+      error stop
+    end if
+    call assert_equal_int(ndims, 2, "Family centroids should be 2D array")
+    allocate(loaded_centroids(dims(1), dims(2)))
+    call load_family_centroids(loaded_centroids, 'test_family_centroids.bin', ierr)
+    if(.not. is_ok(ierr)) then
+      write(*,*) 'Failed to load family centroids: ', ierr
+      error stop
+    end if
+    call assert_equal_array_real(reshape(loaded_centroids, [size(loaded_centroids)]), &
+                                reshape(family_centroids, [size(family_centroids)]), &
+                                size(family_centroids), 1e-12_real64, &
+                                "Loaded family centroids should match original")
+  end subroutine test_read_write_centroids
 end module mod_test_tox_data
