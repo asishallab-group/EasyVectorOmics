@@ -1344,7 +1344,7 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
 #'   \item{centroid_matrix}{The computed centroids for each gene family}
 #'
 
-tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, ortholog_set, mode = 'all') {
+tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, mode, ortholog_set = NULL) {
   
   # 1) Validate inputs
   if (!is.matrix(expression_vectors) || !is.numeric(expression_vectors)) {
@@ -1353,15 +1353,21 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
   n_axes <- nrow(expression_vectors)
   n_genes <- ncol(expression_vectors)
 
-  if (!is.integer(gene_to_family) || length(gene_to_family) != n_genes) {
+  if (!mode %in% c('all', 'orthologs'))
+  stop("`mode` must be either 'all' or 'orthologs'.")
+
+  if (mode == 'orthologs') {
+    if (is.null(ortholog_set))
+      stop("`ortholog_set` must be provided when mode is 'orthologs'.")
+  } else {
+    ortholog_set <- rep(TRUE, n_genes)
+  }
+
+  if (!is.integer(gene_to_family) || length(gene_to_family) != n_genes)
     stop("`gene_to_family` must be an integer vector of length n_genes.")
-  }
-  if (!is.logical(ortholog_set) || length(ortholog_set) != n_genes) {
+
+  if (!is.logical(ortholog_set) || length(ortholog_set) != n_genes)
     stop("`ortholog_set` must be a logical vector of length n_genes.")
-  }
-  if (!mode %in% c('all', 'ortho')) {
-    stop("`mode` must be either 'all' or 'ortho'.")
-  }
 
   # 2) Prepare inputs/outputs for Fortran
   use_all_mode <- (mode == 'all')
