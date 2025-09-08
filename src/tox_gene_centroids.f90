@@ -187,7 +187,7 @@ pure subroutine group_centroid_c(expression_vectors, n_axes, n_genes, gene_to_fa
   !| Array mapping gene index to family ID.
   integer(c_int), intent(in), target :: gene_to_family(n_genes)
   !| A integer logic value indicating the mode of operation (0 = orthologs, 1 = all).
-  integer(c_int), intent(in) :: use_all_mode
+  integer(c_int), intent(in), value :: use_all_mode
   !| Output matrix for centroids.
   real(c_double), intent(out), target :: centroid_matrix(n_axes, n_families)
   !| Output array for selected indices.
@@ -201,10 +201,10 @@ pure subroutine group_centroid_c(expression_vectors, n_axes, n_genes, gene_to_fa
   logical :: ortholog_set_fortran(n_genes)
   integer :: i
 
-  ! If modeID is 0, use "all", if 1 use "orthologs"
+  ! If modeID is 0, use "orthologs", if 1 use "all"
   ! If "all" mode is selected, call group_centroid directly without ortholog_set
   ! If "orthologs" mode is selected, convert ortholog_set to logical
-  if (use_all_mode) then
+  if (use_all_mode == 1) then
     call group_centroid(expression_vectors, n_axes, n_genes, gene_to_family, n_families, &
                         centroid_matrix, "all", selected_indices, ierr)
   else 

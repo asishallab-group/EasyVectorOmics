@@ -1337,8 +1337,8 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
 #' @param expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors)
 #' @param gene_to_family: Array mapping each gene to its corresponding family ID (length n_vectors)
 #' @param n_families: Total number of gene families
-#' @param ortholog_set: Logical array indicating if a gene is part of a specific subset (e.g., orthologs)
-#' @param mode: Character string indicating the mode of operation ('all' or 'ortho')
+#' @param mode: Character string indicating the mode of operation ('all' or 'orthologs')
+#' @param ortholog_set: (Optional) Logical array indicating if a gene is part of a specific subset (only required if mode is 'orthologs')
 #'
 #' @return List containing:
 #'   \item{centroid_matrix}{The computed centroids for each gene family}
