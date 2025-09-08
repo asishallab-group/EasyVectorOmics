@@ -143,8 +143,7 @@ contains
     end do
     
     call group_centroid(kallisto_expr, total_samples, n_genes, gene_to_fam, &
-                      n_families, family_centroids, .true., &
-                      ortholog_mask, selected_indices, ierr)
+                      n_families, family_centroids, 'all', selected_indices, ierr)
     call assert_equal_int(ierr, 0, "Computing centroids should succeed")
     
     ! Compute shift vectors
