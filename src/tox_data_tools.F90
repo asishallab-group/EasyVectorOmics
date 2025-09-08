@@ -1,31 +1,22 @@
-! ToDos: 
-! Update error handling
-! implement tests
-
 module tox_data_tools
     use iso_fortran_env, only: real64, int32
     use tox_errors
-    use array_utils, only : get_array_metadata
+    use array_utils, only : get_array_metadata, ascii_to_string, string_to_ascii
     use serialize_int
     use int_deserialize_mod
     use serialize_real
     use real_deserialize_mod
     use serialize_char
     use char_deserialize_mod
+    use tox_data_accessors
     implicit none
     private
 
     public :: read_gene_ids_from_file
     public :: read_expression_vectors
     public :: read_family_file
-    public :: get_gene_index
-    public :: get_family_index
-    public :: get_family_for_gene_index
-    public :: get_expression_vector
-    public :: get_family_centroid
-    public :: get_shift_components
-    PUBLIC :: split_string
-    public :: filter_unassigned_genes
+    public :: split_string
+    public :: filter_unassigned_genes, get_unassigned_mask
 
     character(len=*), parameter :: DELIMS = ', ' // char(9)
 
@@ -54,6 +45,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
     character(len=1) :: actual_delimiter
 
     ierr = 0
+    ios = 0
     n_genes = size(gene_ids)
     n_value_cols = size(value_cols)
     
@@ -72,7 +64,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
     do i = 1, size(file_list)
         open(newunit=unit, file=trim(file_list(i)), status='old', action='read', iostat=ios)
         if (ios /= 0) then
-            ierr = 1
+            ierr = 101
             deallocate(valid_cols)
             return
         end if
@@ -418,40 +410,6 @@ subroutine count_family_file_stats(filename, n_families, n_genes, ierr)
     close(unit)
 end subroutine count_family_file_stats
 
-! Helper function to find gene index with early exit optimization
-integer function get_gene_index(gene_ids, gene) result(idx)
-    character(len=*), intent(in) :: gene_ids(:)
-    character(len=*), intent(in) :: gene
-    integer :: i
-    
-    idx = 0
-    ! Quick check: if gene is empty, return immediately
-    if (len_trim(gene) == 0) return
-    
-    ! Search through gene list
-    do i = 1, size(gene_ids)
-        if (trim(adjustl(gene_ids(i))) == trim(adjustl(gene))) then
-            idx = i
-            return
-        end if
-    end do
-end function get_gene_index
-
-! Helper function to find family index
-integer function get_family_index(family_ids, family) result(idx)
-    character(len=*), intent(in) :: family_ids(:)
-    character(len=*), intent(in) :: family
-    integer :: i
-    
-    idx = 0
-    do i = 1, size(family_ids)
-        if (trim(adjustl(family_ids(i))) == trim(adjustl(family))) then
-            idx = i
-            return
-        end if
-    end do
-end function get_family_index
-
 ! Helper subroutine to split strings
 subroutine split_string(input, output, delimiter)
     character(len=*), intent(in) :: input
@@ -503,95 +461,195 @@ subroutine split_string(input, output, delimiter)
     deallocate(field_starts, field_ends)
 end subroutine split_string
 
-subroutine get_family_for_gene_index(gene_idx, gene_to_fam, out_family_idx, ierr)
-    integer(int32), intent(in) :: gene_idx
+subroutine get_unassigned_mask(gene_to_fam, mask, n_genes_kept)
+    use iso_fortran_env, only: int32
+    implicit none
+    
     integer(int32), intent(in) :: gene_to_fam(:)
-    integer(int32), intent(out) :: out_family_idx
-    integer(int32), intent(out) :: ierr
+    logical, intent(out) :: mask(size(gene_to_fam))
+    integer(int32), intent(out) :: n_genes_kept
     
-    ierr = ERR_OK
+    integer(int32) :: i
     
-    if (gene_idx < 1 .or. gene_idx > size(gene_to_fam)) then
-        ierr = ERR_INVALID_INPUT
-        out_family_idx = 0
-        return
-    end if
-    
-    out_family_idx = gene_to_fam(gene_idx)
-    
-    if (out_family_idx < 1) then
-        ierr = ERR_INVALID_INPUT
-    end if
-end subroutine get_family_for_gene_index
-
-subroutine get_expression_vector(gene_idx, expression_vectors, out_vector, ierr)
-    integer(int32), intent(in) :: gene_idx
-    real(real64), intent(in) :: expression_vectors(:,:)
-    real(real64), intent(out) :: out_vector(:)
-    integer(int32), intent(out) :: ierr
-    
-    ierr = ERR_OK
-    
-    if (gene_idx < 1 .or. gene_idx > size(expression_vectors, 2)) then
-        ierr = ERR_INVALID_INPUT
-        return
-    end if
-    
-    if (size(out_vector) /= size(expression_vectors, 1)) then
-        ierr = ERR_SIZE_MISMATCH
-        return
-    end if
-    
-    out_vector = expression_vectors(:, gene_idx)
-end subroutine get_expression_vector
-
-subroutine get_family_centroid(family_idx, family_centroids, out_centroid, ierr)
-    integer(int32), intent(in) :: family_idx
-    real(real64), intent(in) :: family_centroids(:,:)
-    real(real64), intent(out) :: out_centroid(:)
-    integer(int32), intent(out) :: ierr
-    
-    ierr = ERR_OK
-    
-    if (family_idx < 1 .or. family_idx > size(family_centroids, 2)) then
-        ierr = ERR_INVALID_INPUT
-        return
-    end if
-    
-    if (size(out_centroid) /= size(family_centroids, 1)) then
-        ierr = ERR_SIZE_MISMATCH
-        return
-    end if
-    
-    out_centroid = family_centroids(:, family_idx)
-end subroutine get_family_centroid
-
-subroutine get_shift_components(gene_idx, shift_vectors, d, out_start, out_shift, ierr)
-    integer(int32), intent(in) :: gene_idx
-    real(real64), intent(in) :: shift_vectors(:,:)
-    integer(int32), intent(in) :: d
-    real(real64), intent(out) :: out_start(:), out_shift(:)
-    integer(int32), intent(out) :: ierr
-    
-    ierr = ERR_OK
-    
-    if (gene_idx < 1 .or. gene_idx > size(shift_vectors, 2)) then
-        ierr = ERR_INVALID_INPUT
-        return
-    end if
-    
-    if (size(shift_vectors, 1) < 2*d) then
-        ierr = ERR_SIZE_MISMATCH
-        return
-    end if
-    
-    if (size(out_start) /= d .or. size(out_shift) /= d) then
-        ierr = ERR_SIZE_MISMATCH
-        return
-    end if
-    
-    out_start = shift_vectors(1:d, gene_idx)
-    out_shift = shift_vectors(d+1:2*d, gene_idx)
-end subroutine get_shift_components
+    n_genes_kept = 0
+    do i = 1, size(gene_to_fam)
+        mask(i) = (gene_to_fam(i) >= 1)
+        if (mask(i)) n_genes_kept = n_genes_kept + 1
+    end do
+end subroutine get_unassigned_mask
 
 end module tox_data_tools
+
+!> R binding to read gene IDs from a file.
+subroutine read_gene_ids_from_file_R(filename_ascii, fn_len, gene_ids_ascii, gene_ids_len, n_genes, &
+                                 n_header_rows, gene_col, ierr)
+    use iso_fortran_env, only: int32
+    use tox_data_tools, only: read_gene_ids_from_file
+    use array_utils, only: ascii_to_string_padded, string_to_ascii
+    implicit none
+    integer(int32), intent(in) :: fn_len
+    integer(int32), intent(in) :: filename_ascii(fn_len)
+    integer(int32), intent(in) :: gene_ids_len, n_genes
+    integer(int32), intent(inout) :: gene_ids_ascii(gene_ids_len, n_genes)
+    integer(int32), intent(in) :: n_header_rows, gene_col
+    integer(int32), intent(out) :: ierr
+    character(len=:), allocatable :: filename
+    character(len=gene_ids_len) :: gene_ids(n_genes)
+    integer(int32) :: i
+
+    call ascii_to_string_padded(filename_ascii, fn_len, filename)
+    call read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, ierr)
+
+    if (ierr == 0) then
+      do i = 1, n_genes
+          call string_to_ascii(gene_ids(i), gene_ids_ascii(:, i))
+      end do
+    end if
+end subroutine read_gene_ids_from_file_R
+
+!> R binding to read expression vectors from files.
+subroutine read_expression_vectors_R(file_list_ascii, file_list_len, n_files, &
+                                 gene_ids_ascii, gene_ids_len, n_genes, &
+                                 expression_vectors_flat, n_samples, n_genes2, &
+                                 n_header_rows, gene_col, value_cols, &
+                                 n_value_cols, start_row, ierr, delimiter_ascii, dlen)
+    use iso_fortran_env, only: int32, real64
+    use array_utils, only: ascii_to_string_padded, string_to_ascii
+    use tox_data_tools, only: read_expression_vectors
+    implicit none
+    integer(int32), intent(in) :: file_list_len, n_files
+    integer(int32), intent(in) :: file_list_ascii(file_list_len * n_files)
+    integer(int32), intent(in) :: gene_ids_len, n_genes
+    integer(int32), intent(inout) :: gene_ids_ascii(gene_ids_len * n_genes)
+    real(real64), intent(inout) :: expression_vectors_flat(n_samples * n_genes)
+    integer(int32), intent(in) :: n_samples, n_genes2
+    integer(int32), intent(in) :: n_header_rows, gene_col
+    integer(int32), intent(in) :: value_cols(n_value_cols)
+    integer(int32), intent(in) :: n_value_cols, start_row
+    integer(int32), intent(out) :: ierr
+    integer(int32), intent(in) :: delimiter_ascii(dlen)
+    integer(int32), intent(in) :: dlen
+
+    character(len=:), allocatable :: file_list(:)
+    character(len=:), allocatable :: gene_ids(:)
+    character(len=:), allocatable :: delimiter
+    character(len=:), allocatable :: tmp_str
+    real(real64), allocatable :: expression_vectors(:,:)
+    integer(int32) :: i, j, start_idx, end_idx
+
+    allocate(file_list(n_files), mold='')
+    allocate(gene_ids(n_genes), mold='')
+    allocate(expression_vectors(n_samples, n_genes))
+
+    ierr = 0
+    print *, 'File list len: ', file_list_len
+    print *, 'First ascii files ascii chars: ', file_list_ascii(1:min(10, file_list_len*n_files))
+    print *, 'Number of files: ', n_files
+    print *, 'Number of genes: ', n_genes
+    print *, 'Number of samples: ', n_samples
+
+    ! Convert flat ASCII arrays to string arrays
+    do i = 1, n_files
+      start_idx = (i-1)*file_list_len + 1
+      end_idx = i*file_list_len
+      call ascii_to_string_padded(file_list_ascii(start_idx:end_idx), file_list_len, tmp_str)
+      file_list(i) = trim(tmp_str)
+      print *, 'File ', i, ': ', file_list(i) ! Move debug output here
+    end do
+    
+    do i = 1, n_genes
+      start_idx = (i-1)*gene_ids_len + 1
+      end_idx = i*gene_ids_len
+      call ascii_to_string_padded(gene_ids_ascii(start_idx:end_idx), gene_ids_len, tmp_str)
+      gene_ids(i) = trim(tmp_str)
+    end do
+
+    if (dlen > 0) then
+      call ascii_to_string_padded(delimiter_ascii, dlen, delimiter)
+    else
+      delimiter = char(9)
+    end if
+
+    call read_expression_vectors(file_list, gene_ids, expression_vectors, &
+                                n_header_rows, gene_col, value_cols, &
+                                start_row, ierr, delimiter)
+
+    ! Flatten the 2D array back to 1D for R
+    do j = 1, n_genes
+      do i = 1, n_samples
+        expression_vectors_flat((j-1)*n_samples + i) = expression_vectors(i, j)
+      end do
+    end do
+
+    if (ierr == 0) then
+      do i = 1, n_genes
+        call string_to_ascii(gene_ids(i), gene_ids_ascii((i-1)*gene_ids_len+1:i*gene_ids_len))
+      end do
+    end if
+
+    deallocate(file_list, gene_ids, expression_vectors)
+end subroutine read_expression_vectors_R
+
+subroutine read_family_file_R(filename_ascii, fn_len, gene_ids_ascii, gene_ids_len, n_genes, &
+                             family_ids_ascii, family_ids_len, n_families, gene_to_fam, ierr)
+    use iso_fortran_env, only: int32
+    use array_utils, only: ascii_to_string, string_to_ascii
+    use tox_data_tools, only: read_family_file
+    implicit none
+    
+    integer(int32), intent(in) :: fn_len
+    integer(int32), intent(in) :: filename_ascii(fn_len)
+    integer(int32), intent(in) :: gene_ids_len, n_genes
+    integer(int32), intent(in) :: gene_ids_ascii(gene_ids_len, n_genes)
+    integer(int32), intent(in) :: family_ids_len, n_families
+    integer(int32), intent(out) :: family_ids_ascii(family_ids_len, n_families)
+    integer(int32), intent(out) :: gene_to_fam(n_genes)
+    integer(int32), intent(out) :: ierr
+    
+    character(len=fn_len) :: filename
+    character(len=gene_ids_len) :: gene_ids(n_genes)
+    character(len=family_ids_len) :: family_ids(n_families)
+    character(len=:), allocatable :: temp_str
+    integer(int32) :: i
+    
+    ! Initialize family_ids with spaces
+    family_ids = ' '
+    
+    ! Convert filename from ASCII
+    call ascii_to_string(filename_ascii, fn_len, temp_str)
+    filename = trim(adjustl(temp_str))
+    
+    ! Convert gene IDs from ASCII to strings
+    do i = 1, n_genes
+        call ascii_to_string(gene_ids_ascii(:, i), gene_ids_len, temp_str)
+        gene_ids(i) = trim(adjustl(temp_str))
+    end do
+    
+    call read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
+    
+    ! Convert family IDs to ASCII
+    do i = 1, n_families
+        call string_to_ascii(trim(adjustl(family_ids(i))), family_ids_ascii(:, i))
+    end do
+end subroutine read_family_file_R
+
+subroutine filter_unassigned_genes_R(gene_ids_ascii, gene_ids_len, n_genes, &
+                                    expression_vectors_flat, n_samples, &
+                                    gene_to_fam, mask, n_genes_kept, ierr)
+    use iso_fortran_env, only: real64, int32
+    use array_utils, only: ascii_to_string, string_to_ascii
+    use tox_data_tools, only: get_unassigned_mask
+    implicit none
+    
+    integer(int32), intent(in) :: gene_ids_len, n_genes
+    integer(int32), intent(in) :: gene_ids_ascii(gene_ids_len, n_genes)
+    integer(int32), intent(in) :: n_samples
+    real(real64), intent(in) :: expression_vectors_flat(n_samples * n_genes)
+    integer(int32), intent(in) :: gene_to_fam(n_genes)
+    logical, intent(out) :: mask(n_genes)
+    integer(int32), intent(out) :: n_genes_kept
+    integer(int32), intent(out) :: ierr
+    
+    ierr = 0
+    call get_unassigned_mask(gene_to_fam, mask, n_genes_kept)
+end subroutine filter_unassigned_genes_R
