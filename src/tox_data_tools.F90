@@ -44,8 +44,8 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
     logical :: order_mismatch
     character(len=1) :: actual_delimiter
 
-    ierr = 0
-    ios = 0
+    call set_ok(ierr)
+    call set_ok(ios)
     n_genes = size(gene_ids)
     n_value_cols = size(value_cols)
     
@@ -518,9 +518,9 @@ subroutine read_expression_vectors_R(file_list_ascii, file_list_len, n_files, &
     use tox_data_tools, only: read_expression_vectors
     implicit none
     integer(int32), intent(in) :: file_list_len, n_files
-    integer(int32), intent(in) :: file_list_ascii(file_list_len * n_files)
+    integer(int32), intent(in) :: file_list_ascii(file_list_len, n_files)
     integer(int32), intent(in) :: gene_ids_len, n_genes
-    integer(int32), intent(inout) :: gene_ids_ascii(gene_ids_len * n_genes)
+    integer(int32), intent(inout) :: gene_ids_ascii(gene_ids_len, n_genes)
     real(real64), intent(inout) :: expression_vectors_flat(n_samples * n_genes)
     integer(int32), intent(in) :: n_samples, n_genes2
     integer(int32), intent(in) :: n_header_rows, gene_col
@@ -530,37 +530,28 @@ subroutine read_expression_vectors_R(file_list_ascii, file_list_len, n_files, &
     integer(int32), intent(in) :: delimiter_ascii(dlen)
     integer(int32), intent(in) :: dlen
 
-    character(len=:), allocatable :: file_list(:)
-    character(len=:), allocatable :: gene_ids(:)
+    character(len=file_list_len), allocatable :: file_list(:)
+    character(len=gene_ids_len), allocatable :: gene_ids(:)
     character(len=:), allocatable :: delimiter
     character(len=:), allocatable :: tmp_str
     real(real64), allocatable :: expression_vectors(:,:)
-    integer(int32) :: i, j, start_idx, end_idx
+    integer(int32) :: i, j
 
-    allocate(file_list(n_files), mold='')
-    allocate(gene_ids(n_genes), mold='')
+    allocate(file_list(n_files))
+    allocate(gene_ids(n_genes))
     allocate(expression_vectors(n_samples, n_genes))
 
     ierr = 0
-    print *, 'File list len: ', file_list_len
-    print *, 'First ascii files ascii chars: ', file_list_ascii(1:min(10, file_list_len*n_files))
-    print *, 'Number of files: ', n_files
-    print *, 'Number of genes: ', n_genes
-    print *, 'Number of samples: ', n_samples
 
-    ! Convert flat ASCII arrays to string arrays
+    ! Convert 2D ASCII arrays to string arrays
     do i = 1, n_files
-      start_idx = (i-1)*file_list_len + 1
-      end_idx = i*file_list_len
-      call ascii_to_string_padded(file_list_ascii(start_idx:end_idx), file_list_len, tmp_str)
+      call ascii_to_string_padded(file_list_ascii(:, i), file_list_len, tmp_str)
       file_list(i) = trim(tmp_str)
-      print *, 'File ', i, ': ', file_list(i) ! Move debug output here
+      write(*,*) 'File ', i, ': ', trim(file_list(i))  ! Debug output
     end do
     
     do i = 1, n_genes
-      start_idx = (i-1)*gene_ids_len + 1
-      end_idx = i*gene_ids_len
-      call ascii_to_string_padded(gene_ids_ascii(start_idx:end_idx), gene_ids_len, tmp_str)
+      call ascii_to_string_padded(gene_ids_ascii(:, i), gene_ids_len, tmp_str)
       gene_ids(i) = trim(tmp_str)
     end do
 
@@ -583,11 +574,9 @@ subroutine read_expression_vectors_R(file_list_ascii, file_list_len, n_files, &
 
     if (ierr == 0) then
       do i = 1, n_genes
-        call string_to_ascii(gene_ids(i), gene_ids_ascii((i-1)*gene_ids_len+1:i*gene_ids_len))
+        call string_to_ascii(gene_ids(i), gene_ids_ascii(:, i))
       end do
     end if
-
-    deallocate(file_list, gene_ids, expression_vectors)
 end subroutine read_expression_vectors_R
 
 subroutine read_family_file_R(filename_ascii, fn_len, gene_ids_ascii, gene_ids_len, n_genes, &

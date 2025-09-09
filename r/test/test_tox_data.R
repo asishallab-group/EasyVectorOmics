@@ -71,7 +71,7 @@ res_expr_7 <- read_expression_vectors(
   n_header_rows = 1,
   gene_col = 1,
   value_cols = value_cols_7,
-  start_row = 61,
+  start_row = 1,
   delimiter = "\t",
   n_samples = 7
 )
@@ -86,7 +86,7 @@ res_expr_5 <- read_expression_vectors(
   n_header_rows = 1,
   gene_col = 1,
   value_cols = value_cols_5,
-  start_row = 68,
+  start_row = 1,
   delimiter = "\t",
   n_samples = 5
 )
@@ -101,7 +101,7 @@ res_expr_4 <- read_expression_vectors(
   n_header_rows = 1,
   gene_col = 1,
   value_cols = value_cols_4,
-  start_row = 73,
+  start_row = 1,
   delimiter = "\t",
   n_samples = 4
 )

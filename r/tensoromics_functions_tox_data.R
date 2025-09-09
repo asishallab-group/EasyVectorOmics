@@ -35,17 +35,19 @@ strings_to_ascii_matrix <- function(arr, clen) {
     chars <- utf8ToInt(substr(arr[i], 1, clen))
     mat[seq_along(chars), i] <- chars
   }
-  as.integer(mat)  # Convert to 1D vector for Fortran
+  mat  # Return the matrix directly (not as.integer)
 }
 
-ascii_matrix_to_strings <- function(ascii_vec, clen) {
-  n <- length(ascii_vec) / clen
+ascii_matrix_to_strings <- function(ascii_mat, clen) {
+  # ascii_mat: integer vector or matrix, possibly 1D if only one gene
+  if (is.null(dim(ascii_mat))) {
+    # 1D vector: convert to matrix with one column
+    ascii_mat <- matrix(ascii_mat, nrow = clen)
+  }
+  n <- ncol(ascii_mat)
   strings <- character(n)
-  mat <- matrix(ascii_vec, nrow = clen, ncol = n)
-  
-  for (i in 1:n) {
-    # Remove trailing zeros and convert to string
-    chars <- mat[, i]
+  for (i in seq_len(n)) {
+    chars <- ascii_mat[, i]
     non_zero <- which(chars != 0)
     if (length(non_zero) > 0) {
       strings[i] <- intToUtf8(chars[1:max(non_zero)])
@@ -78,45 +80,54 @@ string_to_ascii <- function(s, len) {
 #'   - ierr: Integer error code (0 if successful)
 read_expression_vectors <- function(file_list, gene_ids, 
                                     n_header_rows, gene_col, value_cols, start_row, delimiter = "\t", n_samples) {
-  nfiles <- length(file_list)
-  file_len <- max(nchar(file_list))
-  ngenes <- length(gene_ids)
-  gene_len <- max(nchar(gene_ids))
+    nfiles <- length(file_list)
+    ngenes <- length(gene_ids)
+    gene_len <- max(nchar(gene_ids))
 
-  # ASCII matrices
-  file_ascii <- strings_to_ascii_matrix(file_list, file_len)
-  gene_ascii <- strings_to_ascii_matrix(gene_ids, gene_len)
-  delimiter_ascii <- string_to_ascii(delimiter, 1)
-  
-  # Prepare numeric output vector (flattened)
-  expression_vectors <- double(n_samples * ngenes)
-  
-  out <- .Fortran("read_expression_vectors_R",
-    file_list_ascii = as.integer(file_ascii),
-    file_list_len = as.integer(file_len),
-    n_files = as.integer(nfiles),
-    gene_ids_ascii = as.integer(gene_ascii),
-    gene_ids_len = as.integer(gene_len),
-    n_genes = as.integer(ngenes),
-    expression_vectors = as.double(expression_vectors),
-    n_samples = as.integer(n_samples),
-    n_genes2 = as.integer(ngenes),
-    n_header_rows = as.integer(n_header_rows),
-    gene_col = as.integer(gene_col),
-    value_cols = as.integer(value_cols),
-    n_value_cols = as.integer(length(value_cols)),
-    start_row = as.integer(start_row),
-    ierr = 0L,
-    delimiter_ascii = as.integer(delimiter_ascii),
-    dlen = as.integer(length(delimiter_ascii))
-  )
+    # Convert file names to ASCII integers (pad with spaces, not zeros)
+    file_ascii_list <- lapply(file_list, function(f) {
+    raw <- charToRaw(enc2native(f))          # native single-byte encoding
+    chars <- as.integer(raw)
+    c(chars, rep(32L, 256 - length(chars)))  # pad with spaces (32)
+    })
+    file_ascii <- do.call(cbind, file_ascii_list)
 
-  tox_errors(out$ierr)
   
-  list(
-    expression_vectors = matrix(out$expression_vectors, nrow = n_samples, ncol = ngenes),
-    ierr = out$ierr
-  )
+    # Convert gene IDs to ASCII matrix
+    gene_ascii <- strings_to_ascii_matrix(gene_ids, gene_len)
+    
+    # Convert delimiter to ASCII
+    delimiter_ascii <- utf8ToInt(delimiter)
+    
+    # Prepare output
+    expression_vectors <- double(n_samples * ngenes)
+    
+    out <- .Fortran("read_expression_vectors_R",
+        file_list_ascii = as.integer(file_ascii),
+        file_list_len = as.integer(256),  # Fixed length of 256
+        n_files = as.integer(nfiles),
+        gene_ids_ascii = as.integer(gene_ascii),
+        gene_ids_len = as.integer(gene_len),
+        n_genes = as.integer(ngenes),
+        expression_vectors = as.double(expression_vectors),
+        n_samples = as.integer(n_samples),
+        n_genes2 = as.integer(ngenes),
+        n_header_rows = as.integer(n_header_rows),
+        gene_col = as.integer(gene_col),
+        value_cols = as.integer(value_cols),
+        n_value_cols = as.integer(length(value_cols)),
+        start_row = as.integer(start_row),
+        ierr = 0L,
+        delimiter_ascii = as.integer(delimiter_ascii),
+        dlen = as.integer(length(delimiter_ascii))
+    )
+
+    tox_errors(out$ierr)
+    
+    list(
+        expression_vectors = matrix(out$expression_vectors, nrow = n_samples, ncol = ngenes),
+        ierr = out$ierr
+    )
 }
 
 #' Read gene IDs from a single file
@@ -129,13 +140,16 @@ read_expression_vectors <- function(file_list, gene_ids,
 #'   - gene_ids: Character vector of gene IDs read from the file
 #'   - ierr: Integer error code (0 if successful)
 read_gene_ids_from_file <- function(filename, ngenes, gene_len, n_header_rows = 1, gene_col = 1) {
-  filename_ascii <- string_to_ascii(filename, nchar(filename))
+  # Convert filename to ASCII integers
+  filename_ascii <- utf8ToInt(filename)
+  filename_ascii <- c(filename_ascii, rep(0L, 256 - length(filename_ascii)))  # Pad to 256
+  
   gene_ascii <- matrix(0L, nrow = gene_len, ncol = ngenes)
   ierr <- integer(1)
   
   out <- .Fortran("read_gene_ids_from_file_R",
     filename_ascii = as.integer(filename_ascii),
-    fn_len = as.integer(nchar(filename)),
+    fn_len = as.integer(256),  # Fixed length of 256
     gene_ids_ascii = as.integer(gene_ascii),
     gene_ids_len = as.integer(gene_len),
     n_genes = as.integer(ngenes),
@@ -165,7 +179,10 @@ read_family_file <- function(filename, gene_ids, n_families, family_len) {
   ngenes <- length(gene_ids)
   gene_len <- max(nchar(gene_ids))
   
-  filename_ascii <- string_to_ascii(filename, nchar(filename))
+  # Convert filename to ASCII integers
+  filename_ascii <- utf8ToInt(filename)
+  filename_ascii <- c(filename_ascii, rep(0L, 256 - length(filename_ascii)))  # Pad to 256
+  
   gene_ascii <- strings_to_ascii_matrix(gene_ids, gene_len)
   family_ascii <- matrix(0L, nrow = family_len, ncol = n_families)
   gene_to_fam <- integer(ngenes)
@@ -173,7 +190,7 @@ read_family_file <- function(filename, gene_ids, n_families, family_len) {
   
   out <- .Fortran("read_family_file_R",
     filename_ascii = as.integer(filename_ascii),
-    fn_len = as.integer(nchar(filename)),
+    fn_len = as.integer(256),  # Fixed length of 256
     gene_ids_ascii = as.integer(gene_ascii),
     gene_ids_len = as.integer(gene_len),
     n_genes = as.integer(ngenes),
