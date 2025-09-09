@@ -1,13 +1,7 @@
 module tox_data_tools
     use iso_fortran_env, only: real64, int32
     use tox_errors
-    use array_utils, only : get_array_metadata, ascii_to_string, string_to_ascii
-    use serialize_int
-    use int_deserialize_mod
-    use serialize_real
-    use real_deserialize_mod
-    use serialize_char
-    use char_deserialize_mod
+    use array_utils, only :ascii_to_string, string_to_ascii
     use tox_data_accessors
     implicit none
     private
@@ -25,17 +19,18 @@ contains
 ! Read tabular files (CSV/TSV)
 subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
                              n_header_rows, gene_col, value_cols, start_row, ierr, delimiter)
+    use hashmap_module
     character(len=*), intent(in) :: file_list(:)
     character(len=*), intent(inout) :: gene_ids(:)
     real(real64), intent(inout) :: expression_vectors(:,:)
     integer(int32), intent(in) :: n_header_rows, gene_col
-    integer(int32), intent(in) :: value_cols(:) ! Array of column indices
-    integer(int32), intent(in) :: start_row ! New parameter to specify the start row
+    integer(int32), intent(in) :: value_cols(:)
+    integer(int32), intent(in) :: start_row
     integer(int32), intent(out) :: ierr
-    character(len=1), intent(in), optional :: delimiter ! Optional delimiter parameter
+    character(len=1), intent(in), optional :: delimiter
 
-    integer :: i, j, k, unit, ios, idx, row_count, n_genes, expected_idx, n_value_cols
-    integer :: current_sample, n_columns_in_file, n_valid_cols
+    integer(int32) :: i, j, k, unit, ios, idx, n_genes, expected_idx, n_value_cols
+    integer(int32) :: current_sample, n_columns_in_file, n_valid_cols
     character(len=2048) :: line
     character(len=:), allocatable :: fields(:), test_fields(:)
     integer(int32), allocatable :: valid_cols(:)
@@ -43,6 +38,9 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
     character(len=len(gene_ids)) :: gene
     logical :: order_mismatch
     character(len=1) :: actual_delimiter
+
+    ! Hashmap for gene lookup
+    type(hashmap_type) :: gene_map
 
     call set_ok(ierr)
     call set_ok(ios)
@@ -53,34 +51,65 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
     if (present(delimiter)) then
         actual_delimiter = delimiter
     else
-        actual_delimiter = char(9) ! Default to tab
+        actual_delimiter = char(9)
     end if
     
+    if (n_value_cols <= 0) then
+        call set_err_once(ierr, ERR_INVALID_INPUT)
+        write(*,*) 'Error: No value columns specified.'
+        return
+    end if
+
+    if (size(gene_ids) < n_genes) then
+        call set_err_once(ierr, ERR_INVALID_INPUT)
+        write(*,*) 'Error: gene_ids array is too small.'
+        return
+    end if
+
     ! Allocate temporary array for valid columns
-    allocate(valid_cols(n_value_cols))
+    allocate(valid_cols(n_value_cols), stat = ios)
+    if (.not. is_ok(ios)) then
+        call set_err_once(ierr, ERR_ALLOC_FAIL)
+        return
+    end if
+
+    ! Build gene hashmap for fast lookup
+    call hashmap_create(gene_map, int(1.3 * n_genes))
+    do i = 1, n_genes
+        call hashmap_put(gene_map, gene_ids(i), i)
+    end do
     
     current_sample = start_row - 1
     
     do i = 1, size(file_list)
+        write(*,*) 'Reading file: ', trim(file_list(i))
         open(newunit=unit, file=trim(file_list(i)), status='old', action='read', iostat=ios)
-        if (ios /= 0) then
-            ierr = 101
+        if (.not. is_ok(ios)) then
+            call set_err_once(ierr, ERR_FILE_OPEN)
             deallocate(valid_cols)
+            close(unit)
+            call hashmap_destroy(gene_map)
             return
         end if
 
         ! Skip header rows
         do j = 1, n_header_rows
             read(unit, '(A)', iostat=ios) line
-            if (ios /= 0) exit
+            if(.not. is_ok(ios)) then
+                call set_err_once(ierr, ERR_READ_DATA)
+                close(unit)
+                call hashmap_destroy(gene_map)
+                RETURN
+            end if
         end do
 
         ! Read first data line to determine number of columns in this file
         read(unit, '(A)', iostat=ios) line
-        if (ios /= 0) then
-            ierr = 3
+        if (.not. is_ok(ios)) then
+            call set_err_once(ierr, ERR_READ_DATA)
             close(unit)
             deallocate(valid_cols)
+            call hashmap_destroy(gene_map)
             return
         end if
         
@@ -91,6 +120,12 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
         rewind(unit)
         do j = 1, n_header_rows
             read(unit, '(A)', iostat=ios) line
+            if(.not. is_ok(ios)) then
+                call set_err_once(ierr, ERR_READ_DATA)
+                close(unit)
+                call hashmap_destroy(gene_map)
+                RETURN
+            end if
         end do
 
         ! Determine valid columns for this file
@@ -101,23 +136,22 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
                 valid_cols(n_valid_cols) = value_cols(k)
             end if
         end do
+        if (n_valid_cols == 0) then
+            call set_err_once(ierr, ERR_INVALID_INPUT)
+            write(*,*) 'Error: No valid value columns found in file: ', trim(file_list(i))
+            close(unit)
+            cycle
+        end if
 
-        ! Debug output
-        ! write(*,*) 'Processing file: ', trim(file_list(i))
-        ! write(*,*) 'Columns in file: ', n_columns_in_file
-        ! write(*,*) 'Valid value columns: ', valid_cols(1:n_valid_cols)
-        ! write(*,*) 'Current sample start: ', current_sample + 1
-
-        row_count = 0
         order_mismatch = .false.
         do
             read(unit, '(A)', iostat=ios) line
-            if (ios /= 0) exit
-            row_count = row_count + 1
-            
-            if (row_count > n_genes) then
-                ierr = 2 ! More genes than allocated space 
-                exit
+            if(ios < 0) exit !End of file
+            if (.not. is_ok(ios)) then
+                call set_err_once(ierr, ERR_READ_DATA)
+                close(unit)
+                call hashmap_destroy(gene_map)
+                RETURN
             end if
 
             call split_string(line, fields, actual_delimiter)
@@ -125,18 +159,12 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
 
             gene = trim(adjustl(fields(gene_col)))
 
-            ! Fast path: check if gene matches expected position 
-            expected_idx = row_count
-            if (expected_idx <= n_genes .and. trim(adjustl(gene_ids(expected_idx))) == trim(adjustl(gene))) then
-                idx = expected_idx
-            else
-                ! Slow path: search through all genes
-                idx = get_gene_index(gene_ids, gene)
-                if (idx == 0) then
-                    write(*,*) 'Warning: Gene ', trim(gene), ' not found in master gene list'
-                    order_mismatch = .true.
-                    cycle
-                end if
+            ! Use hashmap for gene lookup
+            idx = hashmap_get(gene_map, gene)
+            if (idx == 0) then
+                write(*,*) 'Warning: Gene ', trim(gene), ' not found in master gene list'
+                order_mismatch = .true.
+                cycle
             end if
             
             ! Read all valid value columns for this gene 
@@ -145,22 +173,20 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
                 if (ios == 0) then
                     expression_vectors(current_sample + k, idx) = value
                 else
-                    ! Set to zero if read fails
                     expression_vectors(current_sample + k, idx) = 0.0_real64
                 end if
             end do
         end do
         close(unit)
         
-        ! Update sample offset for next file 
         current_sample = current_sample + n_valid_cols
         
-        ! Report if order mismatch was detected
         if (order_mismatch) then
             write(*,*) 'Note: Gene order mismatch detected in file: ', trim(file_list(i))
         end if
     end do
-    
+
+    call hashmap_destroy(gene_map)
     deallocate(valid_cols)
 end subroutine read_expression_vectors
 
