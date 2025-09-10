@@ -18,8 +18,9 @@ module asserts
 contains
 
   !> Asserts that two character arrays are equal
-  subroutine assert_equal_array_char(a, b, n, msg)
-    character(len=*), intent(in) :: a(n), b(n)
+  subroutine assert_equal_array_char(a, b, clen, n, msg)
+    integer(int32), INTENT(IN) :: clen
+    character(len=clen), intent(in) :: a(n), b(n)
     character(*), intent(in) :: msg
     integer, intent(in) :: n
     if (any(a /= b)) then

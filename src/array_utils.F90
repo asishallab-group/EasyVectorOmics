@@ -181,28 +181,31 @@ module array_utils
   end subroutine
 
   !> Get the metadata of an array file
-  !> Get the metadata of an array file
   subroutine get_array_metadata(filename, dims_out, dims_out_capacity, ndims, ierr, clen)
     implicit none
 
     character(len=*), intent(in) :: filename
+    !! name of the file
     integer(int32), intent(out) :: ndims
+    !! number of dimensions
     integer(int32), intent(in) :: dims_out_capacity
+    !! Capacity of the dims_out array
     integer(int32), intent(out) :: dims_out(dims_out_capacity)
+    !! Array to store output dimensions
     integer(int32), intent(out) :: ierr
+    !! Error code
     integer(int32), INTENT(OUT), OPTIONAL :: clen
+    !! length of each string (needed for char arrays)
 
     integer(int32) :: unit
     integer(int32), allocatable :: dims(:)
     integer(int32) :: type_code
     integer(int32) :: i
     integer(int32) :: ioerror
-    integer(int32) :: local_clen  ! Lokale Variable für clen
+    integer(int32) :: local_clen 
 
     call set_ok(ioerror)
-    ! error handling
 
-    ! Immer read_file_header mit local_clen aufrufen
     call read_file_header(filename, unit, type_code, ndims, dims, local_clen, ierr)
     close(unit)
     if (.not. is_ok(ierr)) return
@@ -216,7 +219,6 @@ module array_utils
       dims_out(i) = dims(i)
     end do
 
-    ! Optionalen clen-Parameter setzen, falls vorhanden
     if (present(clen)) then
       clen = local_clen
     end if

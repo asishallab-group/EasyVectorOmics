@@ -336,7 +336,7 @@ contains
     allocate(character(len=clen) :: arr2(dims(1)))
     call deserialize_char_1d(arr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    call assert_equal_array_char(arr, arr2, size(arr), "Mismatch")
+    call assert_equal_array_char(arr, arr2, clen, size(arr), "Mismatch")
   end subroutine test_char_array_1d
 
   subroutine test_char_array_2d()
@@ -356,7 +356,7 @@ contains
     allocate(character(len=clen) :: arr2(dims(1),dims(2)))
     call deserialize_char_2d(arr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    call assert_equal_array_char(arr, arr2, size(arr), "Mismatch")
+    call assert_equal_array_char(arr, arr2, clen, size(arr), "Mismatch")
   end subroutine test_char_array_2d
 
   subroutine test_char_array_3d()
@@ -377,7 +377,7 @@ contains
     allocate(character(len=clen) :: arr2(dims(1),dims(2),dims(3)))
     call deserialize_char_3d(arr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    call assert_equal_array_char(arr, arr2, size(arr), "Mismatch")
+    call assert_equal_array_char(arr, arr2, clen, size(arr), "Mismatch")
   end subroutine test_char_array_3d
 
   subroutine test_char_array_4d()
@@ -398,7 +398,7 @@ contains
     allocate(character(len=clen) :: arr2(dims(1),dims(2),dims(3),dims(4)))
     call deserialize_char_4d(arr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    call assert_equal_array_char(arr, arr2, size(arr), "Mismatch")
+    call assert_equal_array_char(arr, arr2, clen, size(arr), "Mismatch")
   end subroutine test_char_array_4d
 
   subroutine test_char_array_5d()
@@ -418,7 +418,7 @@ contains
     allocate(character(len=clen) :: arr2(dims(1),dims(2),dims(3),dims(4),dims(5)))
     call deserialize_char_5d(arr2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    call assert_equal_array_char(arr, arr2, size(arr), "Mismatch")
+    call assert_equal_array_char(arr, arr2, clen, size(arr), "Mismatch")
   end subroutine test_char_array_5d
 
   subroutine test_char_array_protein()
@@ -438,7 +438,7 @@ contains
     allocate(character(len=clen) :: protein2(dims(1),dims(2),dims(3),dims(4),dims(5)))
     call deserialize_char_5d(protein2, fname, ierr)
     if (.not. is_ok(ierr)) error stop
-    call assert_equal_array_char(protein, protein2, size(protein), "Mismatch")
+    call assert_equal_array_char(protein, protein2, clen, size(protein), "Mismatch")
   end subroutine test_char_array_protein
 
 end module mod_test_arrays
