@@ -185,7 +185,7 @@ module array_utils
     implicit none
 
     character(len=*), intent(in) :: filename
-    !! name of the file
+    !! Name of the file
     integer(int32), intent(out) :: ndims
     !! number of dimensions
     integer(int32), intent(in) :: dims_out_capacity
