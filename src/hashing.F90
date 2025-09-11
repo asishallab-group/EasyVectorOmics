@@ -5,12 +5,14 @@ module hashmap_module
     
     public :: hashmap_type, hashmap_create, hashmap_destroy, hashmap_get, hashmap_put
     
+    !> Structure for each node (bucket) in the hashmap
     type :: hashmap_node_type
         character(len=:), allocatable :: key
         integer(int32) :: value
         type(hashmap_node_type), pointer :: next => null()
     end type hashmap_node_type
     
+    !> Main hashmap structure
     type :: hashmap_type
         type(hashmap_node_type), pointer :: buckets(:) => null()
         integer(int32) :: size = 0
@@ -18,37 +20,42 @@ module hashmap_module
 
 contains
 
-! DJB2 Hash Algorithmus
+! DJB2 Hash-algorithm
 integer function djb2_hash(key, table_size) result(hash)
     character(len=*), intent(in) :: key
     integer(int32), intent(in) :: table_size
     integer(int32) :: i
     integer(int64) :: hash_val
     character(len=1) :: c
-    
+
+    ! Start value
     hash_val = 257
+
     do i = 1, len_trim(key)
         c = key(i:i)
         hash_val = (ishft(hash_val, 5) + hash_val) + iachar(c)  ! hash * 33 + c
     end do
     
+    ! Use abs(mod(...)) to ensure non-negative index in correct range
     hash = mod(abs(hash_val), table_size) + 1
 end function djb2_hash
 
-! Hashmap erstellen
+!> Create the hashmap
 subroutine hashmap_create(map, size)
     type(hashmap_type), intent(out) :: map
+    ! The hashmap with hashmap type
     integer(int32), intent(in) :: size
+    ! Number of buckets in the hashmap
     integer(int32) :: i
     
     allocate(map%buckets(size))
     do i = 1, size
-        nullify(map%buckets(i)%next)  ! Korrekte Initialisierung
+        nullify(map%buckets(i)%next)
     end do
     map%size = size
 end subroutine hashmap_create
 
-! Hashmap zerstören
+! Delete hashmap if no longer in use
 subroutine hashmap_destroy(map)
     type(hashmap_type), intent(inout) :: map
     integer(int32) :: i
@@ -68,11 +75,14 @@ subroutine hashmap_destroy(map)
     map%size = 0
 end subroutine hashmap_destroy
 
-! Wert in Hashmap speichern
+! Save a new value in the hashmap
 subroutine hashmap_put(map, key, value)
     type(hashmap_type), intent(inout) :: map
+        ! The hashmap with hashmap type
     character(len=*), intent(in) :: key
+        ! The key to store
     integer(int32), intent(in) :: value
+        ! The value to store
     
     integer(int32) :: hash_idx
     type(hashmap_node_type), pointer :: new_node, current
@@ -99,7 +109,7 @@ subroutine hashmap_put(map, key, value)
     map%buckets(hash_idx)%next => new_node
 end subroutine hashmap_put
 
-! Wert aus Hashmap lesen
+! get value from hashmap by key, return 0 if not found
 integer function hashmap_get(map, key) result(value)
     type(hashmap_type), intent(in) :: map
     character(len=*), intent(in) :: key
@@ -122,6 +132,7 @@ integer function hashmap_get(map, key) result(value)
     end do
 end function hashmap_get
 
+! Normalize gene ID by trimming spaces and converting to uppercase
 function normalize_gene_id(gene_id) result(normalized)
     character(len=*), intent(in) :: gene_id
     character(len=:), allocatable :: normalized
