@@ -206,6 +206,7 @@ subroutine read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, 
     open(newunit=unit, file=trim(filename), status='old', action='read', iostat=ios)
     if (ios /= 0) then
         ierr = 1
+        write(*,*) "Error: Could not open file ", trim(filename)
         return
     end if
 
@@ -249,7 +250,6 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     character(len=:), allocatable :: fields(:), genes(:)
     character(len=len(family_ids)) :: current_family
     type(hashmap_type) :: gene_map
-    logical :: fill_family_ids
     integer(int32) :: hashmap_size
 
     ierr = 0
@@ -257,36 +257,37 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     n_families = size(family_ids)
     n_genes = size(gene_ids)
     
-    fill_family_ids = all(family_ids == "")
-
     ! Hashmap für schnelle Gen-Suche erstellen
     hashmap_size = int(1.3 * n_genes)
     call hashmap_create(gene_map, hashmap_size)
     
     ! Hashmap mit allen Gen-IDs füllen
-    !write(*,*) 'Building gene hashmap with ', n_genes, ' genes...'
+    write(*,*) 'Building gene hashmap with ', n_genes, ' genes...'
     do i = 1, n_genes
         call hashmap_put(gene_map, gene_ids(i), i)
     end do
-    !write(*,*) 'Hashmap complete.'
+    write(*,*) 'Hashmap complete.'
 
     open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
     if (ios /= 0) then
+        write(*,*) 'Error opening file: ', trim(filename)
         ierr = 1
         call hashmap_destroy(gene_map)
         return
     end if
+    write(*,*) 'Successfully opened file: ', trim(filename)
 
     ! Header-Zeile überspringen
     read(unit, '(A)', iostat=ios) line
     if (ios /= 0) then
+        write(*,*) 'Error reading header line.'
         ierr = 4
         close(unit)
         call hashmap_destroy(gene_map)
         return
     end if
 
-    !write(*,*) 'Reading family file with hashmap...'
+    write(*,*) 'Reading family file with hashmap...'
     
     fam_idx = 0
     do
@@ -295,22 +296,32 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
 
         fam_idx = fam_idx + 1
         
-        ! if (mod(fam_idx, 1000) == 0) then
-        !     write(*,*) 'Processed ', fam_idx, ' families...'
-        ! end if
+        ! Debug-Ausgaben für die ersten 10 Familien
+        if (fam_idx <= 10) then
+            write(*,*) '--- Debugging for family ', fam_idx, ' ---'
+            write(*,*) 'Raw line: "', trim(adjustl(line)), '"'
+        end if
 
         call split_string(line, fields, char(9))
-        if (size(fields) < 2) cycle
 
-        if (fill_family_ids .and. fam_idx > n_families) then
-            ierr = 2
-            exit
+        if (fam_idx <= 10) then
+            write(*,*) 'Split into ', size(fields), ' fields'
+        end if
+
+        if (size(fields) < 2) then
+            if (fam_idx <= 10) then
+                write(*,*) 'Warning: Skipping invalid line (less than 2 fields).'
+            end if
+            cycle
         end if
 
         current_family = trim(adjustl(fields(1)))
-        if (fill_family_ids) then
-            family_ids(fam_idx) = current_family
+        
+        if (fam_idx <= 10) then
+            write(*,*) 'Family ID: "', current_family, '"'
         end if
+
+        family_ids(fam_idx) = current_family
 
         ! Process all gene columns mit Hashmap-Lookup
         do i = 2, size(fields)
@@ -331,7 +342,7 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     close(unit)
     
     call hashmap_destroy(gene_map)
-    ! write(*,*) 'Finished processing ', fam_idx, ' families'
+    write(*,*) 'Finished processing ', fam_idx, ' families'
 end subroutine read_family_file
 
 !> Filter out genes that are not assigned to any family.
@@ -668,3 +679,231 @@ subroutine filter_unassigned_genes_R(gene_ids_ascii, gene_ids_len, n_genes, &
     ierr = 0
     call get_unassigned_mask(gene_to_fam, mask, n_genes_kept)
 end subroutine filter_unassigned_genes_R
+
+!> C binding for reading gene IDs from a file
+subroutine read_gene_ids_from_file_C(filename_ascii, fn_len, gene_ids_ascii, gene_ids_len, n_genes, &
+                                 n_header_rows, gene_col, ierr) bind(C, name="read_gene_ids_from_file_C")
+    use iso_c_binding, only: c_int, c_ptr, c_f_pointer
+    use array_utils, only: ascii_to_string_padded, string_to_ascii
+    use tox_data_tools, only: read_gene_ids_from_file
+    implicit none
+    type(c_ptr), value :: filename_ascii  ! Pointer to filename array
+    integer(c_int), value :: fn_len       ! Length of filename
+    type(c_ptr), value :: gene_ids_ascii  ! Pointer to gene_ids array
+    integer(c_int), value :: gene_ids_len ! Length of each gene ID string
+    integer(c_int), value :: n_genes      ! Number of genes
+    integer(c_int), value :: n_header_rows, gene_col
+    integer(c_int), intent(out) :: ierr
+
+    integer(c_int), pointer :: f_filename_ascii(:)
+    integer(c_int), pointer :: f_gene_ids_ascii(:,:)
+    character(len=:), allocatable :: filename
+    character(len=gene_ids_len) :: gene_ids(n_genes)
+    integer(c_int) :: i
+
+    ! Convert C pointers to Fortran arrays
+    call c_f_pointer(filename_ascii, f_filename_ascii, [fn_len])
+    call c_f_pointer(gene_ids_ascii, f_gene_ids_ascii, [gene_ids_len, n_genes])
+
+    print *, 'Filename length: ', fn_len
+    print *, 'First few chars of filename ASCII: ', f_filename_ascii(1:min(10, fn_len))
+
+    call ascii_to_string_padded(f_filename_ascii, fn_len, filename)
+    write(*,*) 'Reading gene IDs from file: ', trim(filename)
+
+    call read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, ierr)
+    if (ierr == 0) then
+      do i = 1, n_genes
+        call string_to_ascii(gene_ids(i), f_gene_ids_ascii(:, i))
+      end do
+    end if
+end subroutine read_gene_ids_from_file_C
+
+!> C binding for reading expression vectors from files
+subroutine read_expression_vectors_C(file_list_ascii, file_list_len, n_files, &
+                                 gene_ids_ascii, gene_ids_len, n_genes, &
+                                 expression_vectors_flat, n_samples, n_genes2, &
+                                 n_header_rows, gene_col, value_cols, &
+                                 n_value_cols, start_row, ierr, delimiter_ascii, dlen) bind(C, name="read_expression_vectors_C")
+    use iso_c_binding, only: c_int, c_double, c_ptr, c_f_pointer
+    use tox_data_tools, only: read_expression_vectors
+    use array_utils, only: ascii_to_string_padded, string_to_ascii
+    implicit none
+    type(c_ptr), value :: file_list_ascii      ! Pointer to file_list array
+    integer(c_int), value :: file_list_len     ! Length of each filename
+    integer(c_int), value :: n_files           ! Number of files
+    type(c_ptr), value :: gene_ids_ascii       ! Pointer to gene_ids array
+    integer(c_int), value :: gene_ids_len      ! Length of each gene ID
+    integer(c_int), value :: n_genes           ! Number of genes
+    type(c_ptr), value :: expression_vectors_flat ! Pointer to expression vectors (flat array)
+    integer(c_int), value :: n_samples, n_genes2
+    integer(c_int), value :: n_header_rows, gene_col
+    type(c_ptr), value :: value_cols           ! Pointer to value_cols array
+    integer(c_int), value :: n_value_cols, start_row
+    integer(c_int), intent(out) :: ierr
+    type(c_ptr), value :: delimiter_ascii      ! Pointer to delimiter array
+    integer(c_int), value :: dlen              ! Length of delimiter
+
+    integer(c_int), pointer :: f_file_list_ascii(:,:)
+    integer(c_int), pointer :: f_gene_ids_ascii(:,:)
+    real(c_double), pointer :: f_expression_vectors_flat(:)
+    integer(c_int), pointer :: f_value_cols(:)
+    integer(c_int), pointer :: f_delimiter_ascii(:)
+    
+    character(len=file_list_len), allocatable :: file_list(:)
+    character(len=gene_ids_len), allocatable :: gene_ids(:)
+    character(len=:), allocatable :: delimiter
+    character(len=:), allocatable :: tmp_str
+    real(c_double), allocatable :: expression_vectors(:,:)
+    integer(c_int) :: i, j
+
+    ! Convert C pointers to Fortran arrays
+    call c_f_pointer(file_list_ascii, f_file_list_ascii, [file_list_len, n_files])
+    call c_f_pointer(gene_ids_ascii, f_gene_ids_ascii, [gene_ids_len, n_genes])
+    call c_f_pointer(expression_vectors_flat, f_expression_vectors_flat, [n_samples * n_genes])
+    call c_f_pointer(value_cols, f_value_cols, [n_value_cols])
+    call c_f_pointer(delimiter_ascii, f_delimiter_ascii, [dlen])
+
+    allocate(file_list(n_files))
+    allocate(gene_ids(n_genes))
+    allocate(expression_vectors(n_samples, n_genes))
+
+    ierr = 0
+
+    ! Convert 2D ASCII arrays to string arrays
+    do i = 1, n_files
+      call ascii_to_string_padded(f_file_list_ascii(:, i), file_list_len, tmp_str)
+      file_list(i) = trim(tmp_str)
+      write(*,*) 'File ', i, ': ', trim(file_list(i))
+    end do
+    
+    do i = 1, n_genes
+      call ascii_to_string_padded(f_gene_ids_ascii(:, i), gene_ids_len, tmp_str)
+      gene_ids(i) = trim(tmp_str)
+    end do
+
+    if (dlen > 0) then
+      call ascii_to_string_padded(f_delimiter_ascii, dlen, delimiter)
+    else
+      delimiter = char(9)
+    end if
+
+    call read_expression_vectors(file_list, gene_ids, expression_vectors, &
+                                n_header_rows, gene_col, f_value_cols, &
+                                start_row, ierr, delimiter)
+
+    ! Flatten the 2D array back to 1D for C
+    do j = 1, n_genes
+      do i = 1, n_samples
+        f_expression_vectors_flat((j-1)*n_samples + i) = expression_vectors(i, j)
+      end do
+    end do
+
+    if (ierr == 0) then
+      do i = 1, n_genes
+        call string_to_ascii(gene_ids(i), f_gene_ids_ascii(:, i))
+      end do
+    end if
+    
+    deallocate(file_list, gene_ids, expression_vectors)
+end subroutine read_expression_vectors_C
+
+!> C binding for reading family file
+subroutine read_family_file_C(filename_ascii, fn_len, gene_ids_ascii, gene_ids_len, n_genes, &
+                             family_ids_ascii, family_ids_len, n_families, gene_to_fam, ierr) bind(C, name="read_family_file_C")
+    use iso_c_binding, only: c_int, c_ptr, c_f_pointer
+    use tox_data_tools, only: read_family_file
+    use array_utils, only: ascii_to_string_padded, string_to_ascii
+    implicit none
+    type(c_ptr), value :: filename_ascii       ! Pointer to filename array
+    integer(c_int), value :: fn_len            ! Length of filename
+    type(c_ptr), value :: gene_ids_ascii       ! Pointer to gene_ids array
+    integer(c_int), value :: gene_ids_len      ! Length of each gene ID
+    integer(c_int), value :: n_genes           ! Number of genes
+    type(c_ptr), value :: family_ids_ascii     ! Pointer to family_ids array
+    integer(c_int), value :: family_ids_len    ! Length of each family ID
+    integer(c_int), value :: n_families        ! Number of families
+    type(c_ptr), value :: gene_to_fam          ! Pointer to gene_to_fam array
+    integer(c_int), intent(out) :: ierr
+
+    integer(c_int), pointer :: f_filename_ascii(:)
+    integer(c_int), pointer :: f_gene_ids_ascii(:,:)
+    integer(c_int), pointer :: f_family_ids_ascii(:,:)
+    integer(c_int), pointer :: f_gene_to_fam(:)
+    
+    character(len=fn_len) :: filename
+    character(len=gene_ids_len) :: gene_ids(n_genes)
+    character(len=family_ids_len) :: family_ids(n_families)
+    character(len=:), allocatable :: temp_str
+    integer(c_int) :: i
+
+    ! Convert C pointers to Fortran arrays
+    call c_f_pointer(filename_ascii, f_filename_ascii, [fn_len])
+    call c_f_pointer(gene_ids_ascii, f_gene_ids_ascii, [gene_ids_len, n_genes])
+    call c_f_pointer(family_ids_ascii, f_family_ids_ascii, [family_ids_len, n_families])
+    call c_f_pointer(gene_to_fam, f_gene_to_fam, [n_genes])
+
+    ! Initialize family_ids with spaces
+    family_ids = ' '
+    
+    ! Convert filename from ASCII
+    call ascii_to_string_padded(f_filename_ascii, fn_len, temp_str)
+    filename = trim(adjustl(temp_str))
+    
+    ! Convert gene IDs from ASCII to strings
+    do i = 1, n_genes
+        call ascii_to_string_padded(f_gene_ids_ascii(:, i), gene_ids_len, temp_str)
+        gene_ids(i) = trim(adjustl(temp_str))
+    end do
+    
+    call read_family_file(filename, gene_ids, family_ids, f_gene_to_fam, ierr)
+    
+    ! Convert family IDs to ASCII
+    do i = 1, n_families
+        call string_to_ascii(trim(adjustl(family_ids(i))), f_family_ids_ascii(:, i))
+    end do
+end subroutine read_family_file_C
+
+!> C binding for filtering unassigned genes
+subroutine filter_unassigned_genes_C(gene_ids_ascii, gene_ids_len, n_genes, &
+                                    expression_vectors_flat, n_samples, &
+                                    gene_to_fam, mask, n_genes_kept, ierr) bind(C, name="filter_unassigned_genes_C")
+    use iso_c_binding, only: c_int, c_double, c_ptr, c_f_pointer
+    use iso_fortran_env, only: int32
+    use tox_conversions, only: c_int_as_logical, logical_as_c_int
+    use tox_data_tools, only: get_unassigned_mask
+    implicit none
+    type(c_ptr), value :: gene_ids_ascii       ! Pointer to gene_ids array
+    integer(c_int), value :: gene_ids_len      ! Length of each gene ID
+    integer(c_int), value :: n_genes           ! Number of genes
+    type(c_ptr), value :: expression_vectors_flat ! Pointer to expression vectors (flat array)
+    integer(c_int), value :: n_samples         ! Number of samples
+    type(c_ptr), value :: gene_to_fam          ! Pointer to gene_to_fam array
+    type(c_ptr), value :: mask                 ! Pointer to mask array
+    integer(c_int), intent(out) :: n_genes_kept
+    integer(c_int), intent(out) :: ierr
+    
+    integer(c_int), pointer :: f_gene_ids_ascii(:,:)
+    real(c_double), pointer :: f_expression_vectors_flat(:)
+    integer(c_int), pointer :: f_gene_to_fam(:)
+    integer(c_int), pointer :: f_mask(:)
+    
+    integer(int32) :: i
+    logical, allocatable :: mask_logical(:)
+
+    ! Convert C pointers to Fortran arrays
+    call c_f_pointer(gene_ids_ascii, f_gene_ids_ascii, [gene_ids_len, n_genes])
+    call c_f_pointer(expression_vectors_flat, f_expression_vectors_flat, [n_samples * n_genes])
+    call c_f_pointer(gene_to_fam, f_gene_to_fam, [n_genes])
+    call c_f_pointer(mask, f_mask, [n_genes])
+
+    allocate(mask_logical(n_genes))
+
+    call get_unassigned_mask(f_gene_to_fam, mask_logical, n_genes_kept)
+
+    do i = 1, n_genes
+        call logical_as_c_int(mask_logical(i), f_mask(i))
+    end do
+    
+    deallocate(mask_logical)
+end subroutine filter_unassigned_genes_C

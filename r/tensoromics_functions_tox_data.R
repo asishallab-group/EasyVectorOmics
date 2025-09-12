@@ -3,7 +3,7 @@ dyn.load("build/libtensor-omics.so")
 #' Check error code and throw informative error if needed
 #' 
 #' @param ierr Error code from Fortran routine
-check_err_code <- function(ierr) {
+tox_errors <- function(ierr) {
   if (ierr == 0) return(invisible(NULL))
   msg <- switch(as.character(ierr),
     # I/O errors
@@ -269,4 +269,261 @@ filter_unassigned_genes <- function(gene_ids, expression_vectors, gene_to_fam) {
     n_genes_kept = n_genes_kept,
     ierr = out$ierr
   )
+}
+
+# tox_data_validation.R
+# R wrappers for Fortran validation routines
+# Uses ASCII conversion helpers: strings_to_ascii_matrix, ascii_matrix_to_strings
+
+validate_data_structure <- function(n_genes, n_families, n_samples, d,
+                                    gene_ids, gene_family_ids,
+                                    gene_to_fam, expression_vectors,
+                                    family_centroids, shift_vectors) {
+  gene_len <- max(nchar(gene_ids))
+  fam_len  <- max(nchar(gene_family_ids))
+  gene_ascii <- strings_to_ascii_matrix(gene_ids, gene_len)
+  fam_ascii  <- strings_to_ascii_matrix(gene_family_ids, fam_len)
+  ierr <- integer(1)
+
+  out <- .Fortran("validate_data_structure_R",
+                  as.integer(n_genes),
+                  as.integer(n_families),
+                  as.integer(n_samples),
+                  as.integer(d),
+                  as.integer(gene_ascii),
+                  as.integer(gene_len),
+                  as.integer(fam_ascii),
+                  as.integer(fam_len),
+                  as.integer(gene_to_fam),
+                  as.double(expression_vectors),
+                  as.double(family_centroids),
+                  as.double(shift_vectors),
+                  ierr = ierr)
+  tox_errors(out$ierr)
+  list(ierr = out$ierr)
+}
+
+validate_gene_to_family_mapping <- function(gene_to_fam, n_genes, n_families) {
+  ierr <- integer(1)
+  out <- .Fortran("validate_gene_to_family_mapping_R",
+                  as.integer(gene_to_fam),
+                  as.integer(n_genes),
+                  as.integer(n_families),
+                  ierr = ierr)
+  tox_errors(out$ierr)
+  list(ierr = out$ierr)
+}
+
+validate_expression_data <- function(expression_vectors, n_genes, n_samples, check_non_negative = TRUE) {
+  ierr <- integer(1)
+  out <- .Fortran("validate_expression_data_R",
+                  as.double(expression_vectors),
+                  as.integer(n_genes),
+                  as.integer(n_samples),
+                  as.logical(check_non_negative),
+                  ierr = ierr)
+  tox_errors(out$ierr)
+  list(ierr = out$ierr)
+}
+
+validate_family_centroids <- function(family_centroids, n_families, d) {
+  ierr <- integer(1)
+  out <- .Fortran("validate_family_centroids_R",
+                  as.double(family_centroids),
+                  as.integer(n_families),
+                  as.integer(d),
+                  ierr = ierr)
+  tox_errors(out$ierr)
+  list(ierr = out$ierr)
+}
+
+# Update the validate_shift_vectors function to match Fortran signature
+validate_shift_vectors <- function(shift_vectors, expression_vectors, family_centroids, gene_to_fam, d) {
+  ierr <- integer(1)
+  
+  # Get dimensions
+  n_genes <- ncol(expression_vectors)
+  n_samples <- nrow(expression_vectors)
+  n_families <- ncol(family_centroids)
+  
+  out <- .Fortran("validate_shift_vectors_R",
+                  as.double(shift_vectors),
+                  as.double(expression_vectors),
+                  as.double(family_centroids),
+                  as.integer(gene_to_fam),
+                  as.integer(d),
+                  as.integer(n_genes),
+                  as.integer(n_samples),
+                  as.integer(n_families),
+                  ierr = ierr)
+  tox_errors(out$ierr)
+  list(ierr = out$ierr)
+}
+
+validate_gene_ids_uniqueness <- function(gene_ids, n_genes) {
+  gene_len <- max(nchar(gene_ids))
+  gene_ascii <- strings_to_ascii_matrix(gene_ids, gene_len)
+  ierr <- integer(1)
+  out <- .Fortran("validate_gene_ids_uniqueness_R",
+                  as.integer(gene_ascii),
+                  as.integer(gene_len),
+                  as.integer(n_genes),
+                  ierr = ierr)
+  tox_errors(out$ierr)
+  list(ierr = out$ierr)
+}
+
+validate_family_ids_uniqueness <- function(family_ids, n_families) {
+  fam_len <- max(nchar(family_ids))
+  fam_ascii <- strings_to_ascii_matrix(family_ids, fam_len)
+  ierr <- integer(1)
+  out <- .Fortran("validate_family_ids_uniqueness_R",
+                  as.integer(fam_ascii),
+                  as.integer(fam_len),
+                  as.integer(n_families),
+                  ierr = ierr)
+  tox_errors(out$ierr)
+  list(ierr = out$ierr)
+}
+
+validate_empty_strings <- function(strings, n) {
+  str_len <- max(nchar(strings))
+  str_ascii <- strings_to_ascii_matrix(strings, str_len)
+  ierr <- integer(1)
+  out <- .Fortran("validate_empty_strings_R",
+                  as.integer(str_ascii),
+                  as.integer(str_len),
+                  as.integer(n),
+                  ierr = ierr)
+  tox_errors(out$ierr)
+  list(ierr = out$ierr)
+}
+
+validate_all_data <- function(n_genes, n_families, n_samples, d,
+                              gene_ids, gene_family_ids,
+                              gene_to_fam, expression_vectors,
+                              family_centroids, shift_vectors) {
+  # Determine max lengths for string encoding
+  gene_len <- max(nchar(gene_ids))
+  fam_len  <- max(nchar(gene_family_ids))
+
+  # Convert to ASCII matrices
+  gene_ascii <- strings_to_ascii_matrix(gene_ids, gene_len)
+  fam_ascii  <- strings_to_ascii_matrix(gene_family_ids, fam_len)
+
+  ierr <- integer(1)
+
+  out <- .Fortran("validate_all_data_R",
+                  as.integer(n_genes),
+                  as.integer(n_families),
+                  as.integer(n_samples),
+                  as.integer(d),
+                  as.integer(gene_ascii),
+                  as.integer(gene_len),
+                  as.integer(fam_ascii),
+                  as.integer(fam_len),
+                  as.integer(gene_to_fam),
+                  as.double(expression_vectors),
+                  as.double(family_centroids),
+                  as.double(shift_vectors),
+                  ierr = ierr)
+
+  tox_errors(out$ierr)
+  list(ierr = out$ierr)
+}
+
+# ONLY FOR TEST PURPOSES
+tox_compute_shift_vector_field <- function(expression_vectors, family_centroids, gene_to_centroid) {
+  # Input validation
+  if (!is.matrix(expression_vectors)) {
+    stop("expression_vectors must be a matrix")
+  }
+
+  if (!is.matrix(family_centroids)) {
+    stop("family_centroids must be a matrix")
+  }
+  
+  # Dimensions and counts
+  n_axes_genes <- nrow(expression_vectors)
+  n_vectors <- ncol(expression_vectors)
+  n_axes_centroids <- nrow(family_centroids)
+  n_families <- ncol(family_centroids)
+  
+  # Validate length of gene_to_centroid
+  if (n_vectors != length(gene_to_centroid)) {
+    stop("number of expression_vectors must be equal to length of gene_to_centroid")
+  }
+
+  # Validate dimensions
+  if (n_axes_genes != n_axes_centroids) {
+    stop("family_centroids must have the same number of axes as expression_vectors")
+  }
+  
+  # Prepare output arrays
+  shift_vectors <- matrix(0.0, nrow = 2 *n_axes_genes, ncol = n_vectors)
+  ierr <- as.integer(0)
+  
+  # Call Fortran wrapper
+  result <- .Fortran("compute_shift_vector_field_r",
+                     n_axes_genes = as.integer(n_axes_genes),
+                     n_vectors = as.integer(n_vectors),
+                     n_families = as.integer(n_families),
+                     expression_vectors = as.double(expression_vectors),
+                     family_centroids = as.double(family_centroids),
+                     gene_to_centroid = as.integer(gene_to_centroid),
+                     shift_vectors = as.double(shift_vectors),
+                     ierr = ierr)
+  
+  # Check for errors and throw informative messages
+  tox_errors(result$ierr)
+  
+  # Return structured result (no ierr since we checked for errors)
+  return(list(
+    shift_vectors = result$shift_vectors
+  ))
+}
+
+tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, ortholog_set, mode = 'all') {
+  
+  # 1) Validate inputs
+  if (!is.matrix(expression_vectors) || !is.numeric(expression_vectors)) {
+    stop("`expression_vectors` must be a numeric matrix.")
+  }
+  n_axes <- nrow(expression_vectors)
+  n_genes <- ncol(expression_vectors)
+
+  if (!is.integer(gene_to_family) || length(gene_to_family) != n_genes) {
+    stop("`gene_to_family` must be an integer vector of length n_genes.")
+  }
+  if (!is.logical(ortholog_set) || length(ortholog_set) != n_genes) {
+    stop("`ortholog_set` must be a logical vector of length n_genes.")
+  }
+  if (!mode %in% c('all', 'ortho')) {
+    stop("`mode` must be either 'all' or 'ortho'.")
+  }
+
+  # 2) Prepare inputs/outputs for Fortran
+  use_all_mode <- (mode == 'all')
+  centroid_matrix_out <- matrix(0.0, nrow = n_axes, ncol = n_families)
+  selected_indices_ws <- integer(n_genes) # Workspace buffer
+  ierr <- as.integer(0)
+  # 3) Call Fortran
+  result <- .Fortran("group_centroid_r",
+                     expression_vectors = as.double(expression_vectors),
+                     n_axes = as.integer(n_axes),
+                     n_genes = as.integer(n_genes),
+                     gene_to_family = as.integer(gene_to_family),
+                     num_families = as.integer(n_families),
+                     centroid_matrix = centroid_matrix_out,
+                     use_all_mode = as.logical(use_all_mode),
+                     ortholog_set = as.logical(ortholog_set),
+                     selected_indices = selected_indices_ws,
+                     selected_indices_len = as.integer(n_genes),
+                     ierr = ierr)
+  
+  # Check for errors and throw informative messages
+  tox_errors(result$ierr)
+
+  # 4) Return the populated output matrix (no ierr since we checked for errors)
+  return(result$centroid_matrix)
 }

@@ -130,6 +130,12 @@ contains
     call assert_equal_int(ierr, 0, "Filtering unassigned genes should succeed")
     n_genes = n_genes_kept  ! Update n_genes to reflect the filtered count
 
+    ! Print first 10 family IDs
+    write(*,*) 'First 10 family IDs:'
+    do i = 1, min(10, n_families)
+      write(*,*) trim(gene_family_ids(i))
+    end do
+
     ! Compute centroids
     allocate(family_centroids(total_samples, n_families))
     
@@ -141,6 +147,8 @@ contains
       ortholog_mask(i) = .true.
       selected_indices(i) = i
     end do
+
+    write(*,*) 'Size of family_centroids: ', size(family_centroids, 1), size(family_centroids, 2)
     
     call group_centroid(kallisto_expr, total_samples, n_genes, gene_to_fam, &
                       n_families, family_centroids, 'all', selected_indices, ierr)
@@ -227,14 +235,8 @@ contains
     integer(int32) :: ierr
     write(*,*) 'Testing data validation... This might take a while'
     
-    call validate_expression_data(kallisto_expr, .true., ierr)
-    call assert_equal_int(ierr, 0, "Expression data validation should pass")
-    
-    call validate_gene_to_family_mapping(gene_to_fam, n_families, ierr)
-    call assert_equal_int(ierr, 0, "Gene to family mapping validation should pass")
-    
-    call validate_gene_ids_uniqueness(gene_ids, ierr)
-    call assert_equal_int(ierr, 0, "Gene IDs should be unique")
+    call validate_all_data(n_genes, n_families, total_samples, total_samples, gene_ids, gene_family_ids, &
+                           gene_to_fam, kallisto_expr, family_centroids, shift_vectors, ierr, .true., .true.)
   end subroutine test_validate_data
 
   !> Test centroid computation

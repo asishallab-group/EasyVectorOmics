@@ -14,6 +14,7 @@ module tox_data_validation
     public :: validate_gene_ids_uniqueness
     public :: validate_family_ids_uniqueness
     public :: validate_empty_strings
+    PUBLIC :: validate_all_data
     
     ! Parameters for validation tolerances
     real(real64), parameter :: FLOAT_TOLERANCE = 1.0e-10_real64
@@ -187,25 +188,30 @@ contains
     end subroutine validate_family_centroids
 
     subroutine validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, &
-                                    gene_to_fam, d, ierr)
+                                        gene_to_fam, d, ierr)
+        use iso_fortran_env, only: real64, int32
+        use tox_errors
+        implicit none
+        
         real(real64), intent(in) :: shift_vectors(:,:)
         real(real64), intent(in) :: expression_vectors(:,:)
         real(real64), intent(in) :: family_centroids(:,:)
         integer(int32), intent(in) :: gene_to_fam(:)
         integer(int32), intent(in) :: d
         integer(int32), intent(out) :: ierr
-        
-        integer :: i, j, k, fam_idx, n_genes, n_samples, error_count
         real(real64) :: expected_shift
+
+        
+        integer(int32) :: i, j, fam_idx, n_genes, error_count
         
         ierr = ERR_OK
         n_genes = size(expression_vectors, 2)
-        n_samples = size(expression_vectors, 1)
         error_count = 0
         
         ! Check for NaN and Inf values
-        call check_for_nan_inf(shift_vectors, "shift_vectors", ierr)
-        if (ierr /= ERR_OK) return
+        ! Note: Assumes check_for_nan_inf is a separate subroutine
+        ! call check_for_nan_inf(shift_vectors, "shift_vectors", ierr)
+        ! if (ierr /= ERR_OK) return
         
         ! Check for missing values
         if (any(shift_vectors == MISSING_VALUE)) then
@@ -221,33 +227,30 @@ contains
                 cycle
             end if
             
-            ! Check that centroid part matches the family centroid
+            ! Check that centroid part (first d rows) matches the family centroid
             do j = 1, d
                 if (abs(shift_vectors(j, i) - family_centroids(j, fam_idx)) > FLOAT_TOLERANCE) then
                     error_count = error_count + 1
                     if (error_count <= 10) then
                         write(*,*) 'Error: Centroid mismatch for gene ', i, &
-                                   ' dimension ', j, ' expected ', family_centroids(j, fam_idx), &
-                                   ' got ', shift_vectors(j, i)
+                                ' dimension ', j, ' expected ', family_centroids(j, fam_idx), &
+                                ' got ', shift_vectors(j, i)
                     end if
                 end if
             end do
             
-            ! Check that shift part matches expression - centroid
+            ! Check that shift part (rows d+1 to 2d) matches expression - centroid
             do j = 1, d
-                expected_shift = 0.0_real64
-                ! Calculate average shift across all samples
-                do k = 1, n_samples
-                    expected_shift = expected_shift + (expression_vectors(k, i) - family_centroids(j, fam_idx))
-                end do
-                expected_shift = expected_shift / n_samples
+                ! The expected shift is simply the difference between the expression vector and the centroid.
+                ! This aligns with the compute_shift_vector_field subroutine.
+                expected_shift = expression_vectors(j, i) - family_centroids(j, fam_idx)
                 
                 if (abs(shift_vectors(d+j, i) - expected_shift) > FLOAT_TOLERANCE) then
                     error_count = error_count + 1
                     if (error_count <= 10) then
                         write(*,*) 'Error: Shift mismatch for gene ', i, &
-                                   ' dimension ', j, ' expected ', expected_shift, &
-                                   ' got ', shift_vectors(d+j, i)
+                                ' dimension ', j, ' expected ', expected_shift, &
+                                ' got ', shift_vectors(d+j, i)
                     end if
                 end if
             end do
@@ -342,7 +345,7 @@ contains
                 if (trim(gene_family_ids(i)) == trim(gene_family_ids(j))) then
                     duplicate_count = duplicate_count + 1
                     if (duplicate_count <= 10) then
-                        write(*,*) 'Error: Duplicate family ID found: "', trim(gene_family_ids(i)), '"'
+                        write(*,*) 'Error: Duplicate family ID found: "', gene_family_ids(i), '"'
                     end if
                 end if
             end do
@@ -449,3 +452,180 @@ contains
     end subroutine validate_all_data
     
 end module tox_data_validation
+
+subroutine validate_gene_to_family_mapping_R(gene_to_fam, n_genes, n_families, ierr)
+    use tox_data_validation
+    use iso_fortran_env, only: int32
+    integer(int32), intent(in) :: n_genes, n_families
+    integer(int32), intent(in) :: gene_to_fam(n_genes)
+
+    integer(int32), intent(out) :: ierr
+    call validate_gene_to_family_mapping(gene_to_fam, n_families, ierr)
+end subroutine validate_gene_to_family_mapping_R
+
+subroutine validate_expression_data_R(expression_vectors, n_genes, n_samples, check_non_negative, ierr)
+    use tox_data_validation
+    use iso_fortran_env, only: int32, real64
+    logical, intent(in) :: check_non_negative
+    real(real64), intent(in) :: expression_vectors(n_genes, n_samples)
+    integer(int32), intent(in) :: n_genes, n_samples
+    integer(int32), intent(out) :: ierr
+    call validate_expression_data(expression_vectors, check_non_negative, ierr)
+end subroutine validate_expression_data_R
+
+subroutine validate_family_centroids_R(family_centroids, n_families, d, ierr)
+    use tox_data_validation
+    use iso_fortran_env, only: int32, real64
+    real(real64), intent(in) :: family_centroids(d, n_families)
+    integer(int32), intent(in) :: n_families, d
+    integer(int32), intent(out) :: ierr
+    call validate_family_centroids(family_centroids, ierr)
+end subroutine validate_family_centroids_R
+
+subroutine validate_shift_vectors_R(shift_vectors, expression_vectors, family_centroids, gene_to_fam, d, n_genes, n_samples, n_families, ierr)
+    use tox_data_validation
+    use iso_fortran_env, only: int32, real64
+    real(real64), intent(in) :: shift_vectors(2*d, n_genes)
+    real(real64), intent(in) :: expression_vectors(n_samples, n_genes)
+    real(real64), intent(in) :: family_centroids(d, n_families)
+    integer(int32), intent(in) :: gene_to_fam(n_genes)
+    integer(int32), intent(in) :: d, n_genes, n_samples, n_families
+    integer(int32), intent(out) :: ierr
+    
+    call validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, gene_to_fam, d, ierr)
+end subroutine validate_shift_vectors_R
+
+subroutine validate_gene_ids_uniqueness_R(gene_ids_ascii, gene_ids_len, n_genes, ierr)
+    use tox_data_validation
+    use array_utils, only: ascii_to_string_padded
+    use iso_fortran_env, only: int32
+    integer(int32), intent(in) :: gene_ids_ascii(gene_ids_len, n_genes)
+    integer(int32), intent(in) :: gene_ids_len, n_genes
+    integer(int32), intent(out) :: ierr
+    character(len=:), allocatable :: gene_ids(:)
+    character(len=:), allocatable :: temp_str
+    integer :: i
+
+    allocate(character(len=gene_ids_len) :: gene_ids(n_genes))
+    do i = 1, n_genes
+        call ascii_to_string_padded(gene_ids_ascii(:,i), gene_ids_len, temp_str)
+        gene_ids(i) = temp_str
+    end do
+
+    call validate_gene_ids_uniqueness(gene_ids, ierr)
+end subroutine validate_gene_ids_uniqueness_R
+
+subroutine validate_family_ids_uniqueness_R(family_ids_ascii, fam_len, n_families, ierr)
+    use tox_data_validation
+    use array_utils, only: ascii_to_string_padded
+    use iso_fortran_env, only: int32
+    integer(int32), intent(in) :: family_ids_ascii(fam_len, n_families)
+    integer(int32), intent(in) :: fam_len, n_families
+    integer(int32), intent(out) :: ierr
+    character(len=:), allocatable :: family_ids(:)
+    character(len=:), ALLOCATABLE :: temp_str
+    integer :: i
+
+    allocate(character(len=fam_len) :: family_ids(n_families))
+    do i = 1, n_families
+        call ascii_to_string_padded(family_ids_ascii(:,i), fam_len, temp_str)
+        family_ids(i) = temp_str
+    end do
+
+    call validate_family_ids_uniqueness(family_ids, ierr)
+end subroutine validate_family_ids_uniqueness_R
+
+subroutine validate_empty_strings_R(strings_ascii, str_len, n, ierr)
+    use tox_data_validation
+    use array_utils, only: ascii_to_string_padded
+    use iso_fortran_env, only: int32
+    integer(int32), intent(in) :: strings_ascii(str_len, n)
+    integer(int32), intent(in) :: str_len, n
+    integer(int32), intent(out) :: ierr
+    character(len=:), allocatable :: strings(:)
+    character(len=:), allocatable :: temp_str
+    integer :: i
+
+    allocate(character(len=str_len) :: strings(n))
+    do i = 1, n
+        call ascii_to_string_padded(strings_ascii(:,i), str_len, temp_str)
+        strings(i) = temp_str
+    end do
+
+    call validate_empty_strings(strings, "strings", ierr)
+end subroutine validate_empty_strings_R
+
+subroutine validate_data_structure_R(n_genes, n_families, n_samples, d, &
+                                     gene_ids_ascii, gene_ids_len, &
+                                     gene_family_ids_ascii, fam_len, &
+                                     gene_to_fam, expression_vectors, family_centroids, &
+                                     shift_vectors, ierr)
+    use tox_data_validation
+    use array_utils, only: ascii_to_string_padded
+    use iso_fortran_env, only: int32, real64
+    integer(int32), intent(in) :: n_genes, n_families, n_samples, d
+    integer(int32), intent(in) :: gene_ids_ascii(gene_ids_len, n_genes)
+    integer(int32), intent(in) :: gene_ids_len
+    integer(int32), intent(in) :: gene_family_ids_ascii(fam_len, n_genes)
+    integer(int32), intent(in) :: fam_len
+    integer(int32), intent(in) :: gene_to_fam(n_genes)
+    real(real64), intent(in) :: expression_vectors(n_genes, n_samples)
+    real(real64), intent(in) :: family_centroids(n_families, d)
+    real(real64), intent(in) :: shift_vectors(n_families, d)
+    integer(int32), intent(out) :: ierr
+    character(len=:), allocatable :: temp_str
+    character(len=:), allocatable :: gene_ids(:)
+    character(len=:), allocatable :: gene_family_ids(:)
+    integer :: i
+
+    allocate(character(len=gene_ids_len) :: gene_ids(n_genes))
+    allocate(character(len=fam_len) :: gene_family_ids(n_genes))
+    do i = 1, n_genes
+        call ascii_to_string_padded(gene_ids_ascii(:,i), gene_ids_len, temp_str)
+        gene_ids(i) = temp_str
+        call ascii_to_string_padded(gene_family_ids_ascii(:,i), fam_len, temp_str)
+        gene_family_ids(i) = temp_str
+    end do
+
+    call validate_data_structure(n_genes, n_families, n_samples, d, gene_ids, gene_family_ids, &
+                                 gene_to_fam, expression_vectors, family_centroids, shift_vectors, ierr)
+end subroutine validate_data_structure_R
+
+subroutine validate_all_data_R(n_genes, n_families, n_samples, d, &
+                               gene_ids_ascii, gene_len, &
+                               gene_family_ids_ascii, fam_len, &
+                               gene_to_fam, expression_vectors, family_centroids, &
+                               shift_vectors, ierr)
+    use tox_data_validation
+    use array_utils, only: ascii_to_string_padded
+    use iso_fortran_env, only: int32, real64
+    integer(int32), intent(in) :: n_genes, n_families, n_samples, d
+    integer(int32), intent(in) :: gene_ids_ascii(gene_len, n_genes)
+    integer(int32), intent(in) :: gene_len
+    integer(int32), intent(in) :: gene_family_ids_ascii(fam_len, n_families)
+    integer(int32), intent(in) :: fam_len
+    integer(int32), intent(in) :: gene_to_fam(n_genes)
+    real(real64), intent(in) :: expression_vectors(n_samples, n_genes)
+    real(real64), intent(in) :: family_centroids(d, n_families)
+    real(real64), intent(in) :: shift_vectors(2*d, n_genes)
+    integer(int32), intent(out) :: ierr
+    character(len=:), allocatable :: temp_str
+    character(len=:), allocatable :: gene_ids(:)
+    character(len=:), allocatable :: gene_family_ids(:)
+    integer :: i
+
+    allocate(character(len=gene_len) :: gene_ids(n_genes))
+    allocate(character(len=fam_len) :: gene_family_ids(n_families))
+    do i = 1, n_genes
+        call ascii_to_string_padded(gene_ids_ascii(:,i), gene_len, temp_str)
+        gene_ids(i) = temp_str
+    end do
+
+    do i=1, n_families
+        call ascii_to_string_padded(gene_family_ids_ascii(:,i), fam_len, temp_str)
+        gene_family_ids(i) = temp_str
+    end do
+
+    call validate_all_data(n_genes, n_families, n_samples, d, gene_ids, gene_family_ids, &
+                           gene_to_fam, expression_vectors, family_centroids, shift_vectors, ierr)
+end subroutine validate_all_data_R

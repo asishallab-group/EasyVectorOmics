@@ -126,5 +126,57 @@ gene_to_fam <- res_filter$gene_to_fam
 n_genes_kept <- res_filter$n_genes_kept
 cat("n_genes_kept:", n_genes_kept, "\n")
 
-# ...continue with further steps as needed...
+# Data validation
+cat("Starting data validation...\n")
 
+# Set parameters for validation
+n_genes <- n_genes_kept
+n_samples <- nrow(kallisto_expr)
+
+# Validate individual components
+cat("Validating gene IDs uniqueness...\n")
+validate_gene_ids_uniqueness(gene_ids, n_genes)
+
+cat("Validating family IDs uniqueness...\n")
+validate_family_ids_uniqueness(gene_family_ids, n_families)
+
+cat("Validating gene-to-family mapping...\n")
+validate_gene_to_family_mapping(gene_to_fam, n_genes, n_families)
+
+cat("Validating expression data...\n")
+validate_expression_data(kallisto_expr, n_genes, n_samples)
+
+ortholog_set <- rep(TRUE, n_genes)
+family_centroids <- tox_group_centroid(kallisto_expr, gene_to_fam, n_families, ortholog_set, mode='all')
+
+cat(nrow(family_centroids), "x", ncol(family_centroids), "\n")
+
+cat("Validating family centroids...\n")
+validate_family_centroids(family_centroids, n_families, n_samples)
+
+res <- tox_compute_shift_vector_field(kallisto_expr, family_centroids, gene_to_fam)
+shift_vectors <- matrix(res$shift_vectors, nrow=2*n_samples, ncol=n_genes)
+
+cat("Validating shift vectors...\n")
+validate_shift_vectors(shift_vectors, kallisto_expr, family_centroids, gene_to_fam, n_samples)
+
+# Comprehensive validation
+cat("Performing comprehensive data validation...\n")
+validate_all_data(
+  n_genes, n_families, n_samples, n_samples,
+  gene_ids, gene_family_ids,
+  gene_to_fam, kallisto_expr,
+  family_centroids, shift_vectors
+)
+
+cat("All validations passed successfully!\n")
+
+# Additional diagnostic output
+cat("\n=== DATA SUMMARY ===\n")
+cat("Samples:", n_samples, "\n")
+cat("Genes:", n_genes, "\n")
+cat("Families:", n_families, "\n")
+cat("Expression matrix dimensions:", dim(kallisto_expr), "\n")
+cat("Gene ID examples:", head(gene_ids), "\n")
+cat("Family ID examples:", head(gene_family_ids), "\n")
+cat("Gene-to-family mapping examples:", head(gene_to_fam), "\n")
