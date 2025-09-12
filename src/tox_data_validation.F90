@@ -1,6 +1,6 @@
 module tox_data_validation
     use iso_fortran_env, only: real64, int32
-    use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, ERR_SIZE_MISMATCH
+    use tox_errors, only: set_ok, is_ok, set_err_once, ERR_INVALID_INPUT, ERR_SIZE_MISMATCH
     implicit none
     private
 
@@ -18,7 +18,6 @@ module tox_data_validation
     
     ! Parameters for validation tolerances
     real(real64), parameter :: FLOAT_TOLERANCE = 1.0e-10_real64
-    real(real64), parameter :: MISSING_VALUE = -999.0_real64
     
 contains
 
@@ -34,40 +33,38 @@ contains
         real(real64), intent(in) :: shift_vectors(:,:)
         integer(int32), intent(out) :: ierr
         
-        ierr = ERR_OK
+        call set_ok(ierr)
         
         ! Check basic dimensions
         if (n_genes <= 0 .or. n_families < 0 .or. n_samples <= 0 .or. d <= 0) then
-            ierr = ERR_INVALID_INPUT
-            write(*,*) 'Error: Invalid dimensions n_genes=', n_genes, ' n_families=', n_families, &
-                       ' n_samples=', n_samples, ' d=', d
+            call set_err_once(ierr, ERR_INVALID_INPUT)
             return
         end if
         
         ! Check gene_ids array
         if (size(gene_ids) /= n_genes) then
-            ierr = ERR_SIZE_MISMATCH
+            call set_err_once(ierr, ERR_SIZE_MISMATCH)
             write(*,*) 'Error: gene_ids size mismatch. Expected:', n_genes, ' Actual:', size(gene_ids)
             return
         end if
         
         ! Check gene_family_ids array
         if (size(gene_family_ids) /= n_families) then
-            ierr = ERR_SIZE_MISMATCH
+            call set_err_once(ierr, ERR_SIZE_MISMATCH)
             write(*,*) 'Error: gene_family_ids size mismatch. Expected:', n_families, ' Actual:', size(gene_family_ids)
             return
         end if
         
         ! Check gene_to_fam array
         if (size(gene_to_fam) /= n_genes) then
-            ierr = ERR_SIZE_MISMATCH
+            call set_err_once(ierr, ERR_SIZE_MISMATCH)
             write(*,*) 'Error: gene_to_fam size mismatch. Expected:', n_genes, ' Actual:', size(gene_to_fam)
             return
         end if
         
         ! Check expression_vectors array
         if (size(expression_vectors, 1) /= n_samples .or. size(expression_vectors, 2) /= n_genes) then
-            ierr = ERR_SIZE_MISMATCH
+            call set_err_once(ierr, ERR_SIZE_MISMATCH)
             write(*,*) 'Error: expression_vectors size mismatch. Expected: (', n_samples, ',', n_genes, &
                        ') Actual: (', size(expression_vectors, 1), ',', size(expression_vectors, 2), ')'
             return
@@ -76,16 +73,19 @@ contains
         ! Check family_centroids array if families exist
         if (n_families > 0) then
             if (size(family_centroids, 1) /= d .or. size(family_centroids, 2) /= n_families) then
-                ierr = ERR_SIZE_MISMATCH
+                call set_err_once(ierr, ERR_SIZE_MISMATCH)
                 write(*,*) 'Error: family_centroids size mismatch. Expected: (', d, ',', n_families, &
                            ') Actual: (', size(family_centroids, 1), ',', size(family_centroids, 2), ')'
                 return
             end if
+        else 
+            call set_err_once(ierr, ERR_INVALID_INPUT)
+            return
         end if
         
         ! Check shift_vectors array
         if (size(shift_vectors, 1) /= 2*d .or. size(shift_vectors, 2) /= n_genes) then
-            ierr = ERR_SIZE_MISMATCH
+            call set_err_once(ierr, ERR_SIZE_MISMATCH)
             write(*,*) 'Error: shift_vectors size mismatch. Expected: (', 2*d, ',', n_genes, &
                        ') Actual: (', size(shift_vectors, 1), ',', size(shift_vectors, 2), ')'
             return
@@ -93,12 +93,12 @@ contains
         
         ! Check for empty strings in gene_ids
         call validate_empty_strings(gene_ids, "gene_ids", ierr)
-        if (ierr /= ERR_OK) return
+        if (.not. is_ok(ierr)) return
         
         ! Check for empty strings in gene_family_ids if families exist
         if (n_families > 0) then
             call validate_empty_strings(gene_family_ids, "gene_family_ids", ierr)
-            if (ierr /= ERR_OK) return
+            if (.not. is_ok(ierr)) return
         end if
         
     end subroutine validate_data_structure
@@ -110,7 +110,7 @@ contains
         
         integer :: i, invalid_count
         
-        ierr = ERR_OK
+        call set_ok(ierr)
         invalid_count = 0
         
         if (n_families == 0) then
@@ -118,27 +118,26 @@ contains
             do i = 1, size(gene_to_fam)
                 if (gene_to_fam(i) /= 0) then
                     invalid_count = invalid_count + 1
-                    if (invalid_count <= 10) then
-                        write(*,*) 'Error: gene_to_fam(', i, ') = ', gene_to_fam(i), ' but should be 0 (no families)'
-                    end if
                 end if
             end do
-        else
+            if (invalid_count > 0) then
+                call set_err_once(ierr, ERR_INVALID_INPUT)
+                write(*,*) 'Error: gene_to_fam should be all zeros when no families are defined'
+                RETURN
+            end if
+        else 
             ! Check that all gene_to_fam values are valid family indices
             do i = 1, size(gene_to_fam)
                 if (gene_to_fam(i) < 0 .or. gene_to_fam(i) > n_families) then
                     invalid_count = invalid_count + 1
-                    if (invalid_count <= 10) then
+                    if(invalid_count > 0) then
                         write(*,*) 'Error: gene_to_fam(', i, ') = ', gene_to_fam(i), &
                                    ' but valid range is 0 to ', n_families
+                        call set_err_once(ierr, ERR_INVALID_INPUT)
+                        return
                     end if
                 end if
             end do
-        end if
-        
-        if (invalid_count > 0) then
-            ierr = ERR_INVALID_INPUT
-            write(*,*) 'Error: Found ', invalid_count, ' invalid gene-to-family mappings'
         end if
         
     end subroutine validate_gene_to_family_mapping
@@ -148,24 +147,19 @@ contains
         logical, intent(in) :: check_non_negative
         integer(int32), intent(out) :: ierr
         
-        ierr = ERR_OK
+        call set_ok(ierr)
         
         ! Check for NaN and Inf values
         call check_for_nan_inf(expression_vectors, "expression_vectors", ierr)
-        if (ierr /= ERR_OK) return
+        if (.not. is_ok(ierr)) return
         
         ! Check for negative values if requested
         if (check_non_negative) then
             if (any(expression_vectors < 0.0_real64)) then
-                ierr = ERR_INVALID_INPUT
+                call set_err_once(ierr, ERR_INVALID_INPUT)
                 write(*,*) 'Error: Negative values found in expression data'
                 return
             end if
-        end if
-        
-        ! Check for missing values
-        if (any(expression_vectors == MISSING_VALUE)) then
-            write(*,*) 'Warning: Missing values (', MISSING_VALUE, ') found in expression data'
         end if
         
     end subroutine validate_expression_data
@@ -174,17 +168,12 @@ contains
         real(real64), intent(in) :: family_centroids(:,:)
         integer(int32), intent(out) :: ierr
         
-        ierr = ERR_OK
+        call set_ok(ierr)
         
         ! Check for NaN and Inf values
         call check_for_nan_inf(family_centroids, "family_centroids", ierr)
-        if (ierr /= ERR_OK) return
-        
-        ! Check for missing values
-        if (any(family_centroids == MISSING_VALUE)) then
-            write(*,*) 'Warning: Missing values (', MISSING_VALUE, ') found in family centroids'
-        end if
-        
+        if (.not. is_ok(ierr)) return
+
     end subroutine validate_family_centroids
 
     subroutine validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, &
@@ -209,22 +198,16 @@ contains
         error_count = 0
         
         ! Check for NaN and Inf values
-        ! Note: Assumes check_for_nan_inf is a separate subroutine
-        ! call check_for_nan_inf(shift_vectors, "shift_vectors", ierr)
-        ! if (ierr /= ERR_OK) return
-        
-        ! Check for missing values
-        if (any(shift_vectors == MISSING_VALUE)) then
-            write(*,*) 'Warning: Missing values (', MISSING_VALUE, ') found in shift vectors'
-        end if
+        call check_for_nan_inf(shift_vectors, "shift_vectors", ierr)
+        if (.not. is_ok(ierr)) return
         
         ! Verify shift vectors structure: first d rows should be centroids, next d rows should be shifts
         do i = 1, n_genes
             fam_idx = gene_to_fam(i)
             
             if (fam_idx == 0) then
-                ! Gene has no family assignment, skip validation
-                cycle
+                call set_err_once(ierr, ERR_INVALID_INPUT)
+                RETURN
             end if
             
             ! Check that centroid part (first d rows) matches the family centroid
@@ -232,12 +215,14 @@ contains
                 if (abs(shift_vectors(j, i) - family_centroids(j, fam_idx)) > FLOAT_TOLERANCE) then
                     error_count = error_count + 1
                     if (error_count <= 10) then
+                        call set_err_once(ierr, ERR_INVALID_INPUT)
                         write(*,*) 'Error: Centroid mismatch for gene ', i, &
                                 ' dimension ', j, ' expected ', family_centroids(j, fam_idx), &
                                 ' got ', shift_vectors(j, i)
                     end if
                 end if
             end do
+            if(.not. is_ok(ierr)) return
             
             ! Check that shift part (rows d+1 to 2d) matches expression - centroid
             do j = 1, d
@@ -248,18 +233,15 @@ contains
                 if (abs(shift_vectors(d+j, i) - expected_shift) > FLOAT_TOLERANCE) then
                     error_count = error_count + 1
                     if (error_count <= 10) then
+                        call set_err_once(ierr, ERR_INVALID_INPUT)
                         write(*,*) 'Error: Shift mismatch for gene ', i, &
                                 ' dimension ', j, ' expected ', expected_shift, &
                                 ' got ', shift_vectors(d+j, i)
                     end if
                 end if
             end do
+            if(.not. is_ok(ierr)) return
         end do
-        
-        if (error_count > 0) then
-            ierr = ERR_INVALID_INPUT
-            write(*,*) 'Error: Found ', error_count, ' inconsistencies in shift vectors'
-        end if
         
     end subroutine validate_shift_vectors
 
@@ -270,7 +252,7 @@ contains
         
         integer :: i, j, nan_inf_count
         
-        ierr = ERR_OK
+        call set_ok(ierr)
         nan_inf_count = 0
         
         do j = 1, size(array, 2)
@@ -278,19 +260,18 @@ contains
                 if (is_nan(array(i, j)) .or. is_inf(array(i, j))) then
                     nan_inf_count = nan_inf_count + 1
                     if (nan_inf_count <= 10) then
+                        call set_err_once(ierr, ERR_INVALID_INPUT)
                         write(*,*) 'Error: NaN/Inf found in ', array_name, &
                                    ' at position (', i, ',', j, ')'
                     end if
                 end if
             end do
         end do
-        
-        if (nan_inf_count > 0) then
-            ierr = ERR_INVALID_INPUT
-            write(*,*) 'Error: Found ', nan_inf_count, ' NaN/Inf values in ', array_name
-        end if
+        if(.not. is_ok(ierr)) return
         
     contains
+
+        !Possibly replace by existing asserts
 
         logical function is_nan(x)
             real(real64), intent(in) :: x
@@ -310,7 +291,7 @@ contains
         
         integer :: i, j, duplicate_count
         
-        ierr = ERR_OK
+        call set_ok(ierr)
         duplicate_count = 0
         
         do i = 1, size(gene_ids) - 1
@@ -318,16 +299,12 @@ contains
                 if (trim(gene_ids(i)) == trim(gene_ids(j))) then
                     duplicate_count = duplicate_count + 1
                     if (duplicate_count <= 10) then
+                        call set_err_once(ierr, ERR_INVALID_INPUT)
                         write(*,*) 'Error: Duplicate gene ID found: "', trim(gene_ids(i)), '"'
                     end if
                 end if
             end do
         end do
-        
-        if (duplicate_count > 0) then
-            ierr = ERR_INVALID_INPUT
-            write(*,*) 'Error: Found ', duplicate_count, ' duplicate gene IDs'
-        end if
         
     end subroutine validate_gene_ids_uniqueness
 
@@ -337,7 +314,7 @@ contains
         
         integer :: i, j, duplicate_count
         
-        ierr = ERR_OK
+        call set_ok(ierr)
         duplicate_count = 0
         
         do i = 1, size(gene_family_ids) - 1
@@ -345,16 +322,12 @@ contains
                 if (trim(gene_family_ids(i)) == trim(gene_family_ids(j))) then
                     duplicate_count = duplicate_count + 1
                     if (duplicate_count <= 10) then
+                        call set_err_once(ierr, ERR_INVALID_INPUT)
                         write(*,*) 'Error: Duplicate family ID found: "', gene_family_ids(i), '"'
                     end if
                 end if
             end do
         end do
-        
-        if (duplicate_count > 0) then
-            ierr = ERR_INVALID_INPUT
-            write(*,*) 'Error: Found ', duplicate_count, ' duplicate family IDs'
-        end if
         
     end subroutine validate_family_ids_uniqueness
 
@@ -365,26 +338,22 @@ contains
         
         integer :: i, empty_count
         
-        ierr = ERR_OK
+        call set_ok(ierr)
         empty_count = 0
         
         do i = 1, size(string_array)
             if (len_trim(string_array(i)) == 0) then
                 empty_count = empty_count + 1
                 if (empty_count <= 10) then
+                    call set_err_once(ierr, ERR_INVALID_INPUT)
                     write(*,*) 'Error: Empty string found in ', array_name, ' at index ', i
                 end if
             end if
         end do
         
-        if (empty_count > 0) then
-            ierr = ERR_INVALID_INPUT
-            write(*,*) 'Error: Found ', empty_count, ' empty strings in ', array_name
-        end if
-        
     end subroutine validate_empty_strings
 
-    ! New: Comprehensive validation routine
+    ! Comprehensive validation routine, combining all checks
     subroutine validate_all_data(n_genes, n_families, n_samples, d, gene_ids, gene_family_ids, &
                                gene_to_fam, expression_vectors, family_centroids, &
                                shift_vectors, ierr, check_uniqueness, check_shift_consistency)
@@ -407,43 +376,47 @@ contains
         do_check_shift_consistency = .true.
         if (present(check_shift_consistency)) do_check_shift_consistency = check_shift_consistency
         
-        ierr = ERR_OK
+        call set_ok(ierr)
         
-        write(*,*) 'Starting comprehensive data validation...'
+        write(*,*) 'Starting comprehensive data validation, this might take a while...'
         
         ! 1. Check basic structure
         call validate_data_structure(n_genes, n_families, n_samples, d, gene_ids, gene_family_ids, &
                                    gene_to_fam, expression_vectors, family_centroids, &
                                    shift_vectors, ierr)
-        if (ierr /= ERR_OK) return
+        if (.not. is_ok(ierr)) return
         
         ! 2. Check gene-to-family mapping
         call validate_gene_to_family_mapping(gene_to_fam, n_families, ierr)
-        if (ierr /= ERR_OK) return
+        if (.not. is_ok(ierr)) return
         
         ! 3. Check expression data
         call validate_expression_data(expression_vectors, .true., ierr)  ! Check for non-negative
-        if (ierr /= ERR_OK) return
+        if (.not. is_ok(ierr)) return
         
         ! 4. Check family centroids
         if (n_families > 0) then
             call validate_family_centroids(family_centroids, ierr)
-            if (ierr /= ERR_OK) return
+            if (.not. is_ok(ierr)) return
+        else 
+            write(*,*) 'Warning: No families defined, skipping family centroid checks.'
         end if
         
         ! 5. Check shift vectors
-        call validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, &
+        if (do_check_shift_consistency) then 
+            call validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, &
                                   gene_to_fam, d, ierr)
-        if (ierr /= ERR_OK .and. do_check_shift_consistency) return
-        
+            if (.not. is_ok(ierr)) return
+        end if
+
         ! 6. Check uniqueness (optional, can be slow for large datasets)
         if (do_check_uniqueness) then
             call validate_gene_ids_uniqueness(gene_ids, ierr)
-            if (ierr /= ERR_OK) return
+            if (.not. is_ok(ierr)) return
             
             if (n_families > 0) then
                 call validate_family_ids_uniqueness(gene_family_ids, ierr)
-                if (ierr /= ERR_OK) return
+                if (.not. is_ok(ierr)) return
             end if
         end if
         
@@ -454,36 +427,43 @@ contains
 end module tox_data_validation
 
 subroutine validate_gene_to_family_mapping_R(gene_to_fam, n_genes, n_families, ierr)
-    use tox_data_validation
+    use tox_data_validation, only: validate_gene_to_family_mapping
+    use tox_errors, only: set_ok
     use iso_fortran_env, only: int32
     integer(int32), intent(in) :: n_genes, n_families
     integer(int32), intent(in) :: gene_to_fam(n_genes)
 
     integer(int32), intent(out) :: ierr
+    call set_ok(ierr)
     call validate_gene_to_family_mapping(gene_to_fam, n_families, ierr)
 end subroutine validate_gene_to_family_mapping_R
 
 subroutine validate_expression_data_R(expression_vectors, n_genes, n_samples, check_non_negative, ierr)
-    use tox_data_validation
+    use tox_data_validation, only: validate_expression_data
+    use tox_errors, only: set_ok
     use iso_fortran_env, only: int32, real64
     logical, intent(in) :: check_non_negative
     real(real64), intent(in) :: expression_vectors(n_genes, n_samples)
     integer(int32), intent(in) :: n_genes, n_samples
     integer(int32), intent(out) :: ierr
+    call set_ok(ierr)
     call validate_expression_data(expression_vectors, check_non_negative, ierr)
 end subroutine validate_expression_data_R
 
 subroutine validate_family_centroids_R(family_centroids, n_families, d, ierr)
-    use tox_data_validation
+    use tox_data_validation, only : validate_family_centroids
+    use tox_errors, only: set_ok
     use iso_fortran_env, only: int32, real64
     real(real64), intent(in) :: family_centroids(d, n_families)
     integer(int32), intent(in) :: n_families, d
     integer(int32), intent(out) :: ierr
+    call set_ok(ierr)
     call validate_family_centroids(family_centroids, ierr)
 end subroutine validate_family_centroids_R
 
 subroutine validate_shift_vectors_R(shift_vectors, expression_vectors, family_centroids, gene_to_fam, d, n_genes, n_samples, n_families, ierr)
-    use tox_data_validation
+    use tox_data_validation, only: validate_shift_vectors
+    use tox_errors, only: set_ok
     use iso_fortran_env, only: int32, real64
     real(real64), intent(in) :: shift_vectors(2*d, n_genes)
     real(real64), intent(in) :: expression_vectors(n_samples, n_genes)
@@ -491,12 +471,14 @@ subroutine validate_shift_vectors_R(shift_vectors, expression_vectors, family_ce
     integer(int32), intent(in) :: gene_to_fam(n_genes)
     integer(int32), intent(in) :: d, n_genes, n_samples, n_families
     integer(int32), intent(out) :: ierr
+    call set_ok(ierr)
     
     call validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, gene_to_fam, d, ierr)
 end subroutine validate_shift_vectors_R
 
 subroutine validate_gene_ids_uniqueness_R(gene_ids_ascii, gene_ids_len, n_genes, ierr)
-    use tox_data_validation
+    use tox_data_validation, only: validate_gene_ids_uniqueness
+    use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
     use array_utils, only: ascii_to_string_padded
     use iso_fortran_env, only: int32
     integer(int32), intent(in) :: gene_ids_ascii(gene_ids_len, n_genes)
@@ -504,9 +486,17 @@ subroutine validate_gene_ids_uniqueness_R(gene_ids_ascii, gene_ids_len, n_genes,
     integer(int32), intent(out) :: ierr
     character(len=:), allocatable :: gene_ids(:)
     character(len=:), allocatable :: temp_str
-    integer :: i
+    integer(int32) :: i, ios
 
-    allocate(character(len=gene_ids_len) :: gene_ids(n_genes))
+    call set_ok(ierr)
+    call set_ok(ios)
+
+    allocate(character(len=gene_ids_len) :: gene_ids(n_genes), stat=ios)
+    if(.not. is_ok(ios)) then
+        call set_err_once(ierr, ERR_ALLOC_FAIL)
+        return
+    end if
+
     do i = 1, n_genes
         call ascii_to_string_padded(gene_ids_ascii(:,i), gene_ids_len, temp_str)
         gene_ids(i) = temp_str
@@ -516,7 +506,8 @@ subroutine validate_gene_ids_uniqueness_R(gene_ids_ascii, gene_ids_len, n_genes,
 end subroutine validate_gene_ids_uniqueness_R
 
 subroutine validate_family_ids_uniqueness_R(family_ids_ascii, fam_len, n_families, ierr)
-    use tox_data_validation
+    use tox_data_validation, only: validate_family_ids_uniqueness
+    use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
     use array_utils, only: ascii_to_string_padded
     use iso_fortran_env, only: int32
     integer(int32), intent(in) :: family_ids_ascii(fam_len, n_families)
@@ -524,9 +515,17 @@ subroutine validate_family_ids_uniqueness_R(family_ids_ascii, fam_len, n_familie
     integer(int32), intent(out) :: ierr
     character(len=:), allocatable :: family_ids(:)
     character(len=:), ALLOCATABLE :: temp_str
-    integer :: i
+    integer(int32) :: i, ios
 
-    allocate(character(len=fam_len) :: family_ids(n_families))
+    call set_ok(ierr)
+    call set_ok(ios)
+
+    allocate(character(len=fam_len) :: family_ids(n_families), stat=ios)
+    if(.not. is_ok(ios)) then
+        call set_err_once(ierr, ERR_ALLOC_FAIL)
+        return
+    end if
+
     do i = 1, n_families
         call ascii_to_string_padded(family_ids_ascii(:,i), fam_len, temp_str)
         family_ids(i) = temp_str
@@ -536,7 +535,8 @@ subroutine validate_family_ids_uniqueness_R(family_ids_ascii, fam_len, n_familie
 end subroutine validate_family_ids_uniqueness_R
 
 subroutine validate_empty_strings_R(strings_ascii, str_len, n, ierr)
-    use tox_data_validation
+    use tox_data_validation, only: validate_empty_strings
+    use tox_errors, only: set_ok
     use array_utils, only: ascii_to_string_padded
     use iso_fortran_env, only: int32
     integer(int32), intent(in) :: strings_ascii(str_len, n)
@@ -544,7 +544,9 @@ subroutine validate_empty_strings_R(strings_ascii, str_len, n, ierr)
     integer(int32), intent(out) :: ierr
     character(len=:), allocatable :: strings(:)
     character(len=:), allocatable :: temp_str
-    integer :: i
+    integer(int32) :: i
+
+    call set_ok(ierr)
 
     allocate(character(len=str_len) :: strings(n))
     do i = 1, n
@@ -560,7 +562,8 @@ subroutine validate_data_structure_R(n_genes, n_families, n_samples, d, &
                                      gene_family_ids_ascii, fam_len, &
                                      gene_to_fam, expression_vectors, family_centroids, &
                                      shift_vectors, ierr)
-    use tox_data_validation
+    use tox_data_validation, only: validate_data_structure
+    use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
     use array_utils, only: ascii_to_string_padded
     use iso_fortran_env, only: int32, real64
     integer(int32), intent(in) :: n_genes, n_families, n_samples, d
@@ -576,10 +579,17 @@ subroutine validate_data_structure_R(n_genes, n_families, n_samples, d, &
     character(len=:), allocatable :: temp_str
     character(len=:), allocatable :: gene_ids(:)
     character(len=:), allocatable :: gene_family_ids(:)
-    integer :: i
+    integer(int32) :: i, ios
 
-    allocate(character(len=gene_ids_len) :: gene_ids(n_genes))
-    allocate(character(len=fam_len) :: gene_family_ids(n_genes))
+    call set_ok(ierr)
+    call set_ok(ios)
+
+    allocate(character(len=gene_ids_len) :: gene_ids(n_genes), stat=ios)
+    allocate(character(len=fam_len) :: gene_family_ids(n_genes), stat=ios)
+    if(.not. is_ok(ios)) then
+        call set_err_once(ierr, ERR_ALLOC_FAIL)
+        return
+    end if
     do i = 1, n_genes
         call ascii_to_string_padded(gene_ids_ascii(:,i), gene_ids_len, temp_str)
         gene_ids(i) = temp_str
@@ -596,7 +606,8 @@ subroutine validate_all_data_R(n_genes, n_families, n_samples, d, &
                                gene_family_ids_ascii, fam_len, &
                                gene_to_fam, expression_vectors, family_centroids, &
                                shift_vectors, ierr)
-    use tox_data_validation
+    use tox_data_validation, only: validate_all_data
+    use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
     use array_utils, only: ascii_to_string_padded
     use iso_fortran_env, only: int32, real64
     integer(int32), intent(in) :: n_genes, n_families, n_samples, d
@@ -612,10 +623,13 @@ subroutine validate_all_data_R(n_genes, n_families, n_samples, d, &
     character(len=:), allocatable :: temp_str
     character(len=:), allocatable :: gene_ids(:)
     character(len=:), allocatable :: gene_family_ids(:)
-    integer :: i
+    integer(int32) :: i, ios
 
-    allocate(character(len=gene_len) :: gene_ids(n_genes))
-    allocate(character(len=fam_len) :: gene_family_ids(n_families))
+    call set_ok(ierr)
+    call set_ok(ios)
+
+    allocate(character(len=gene_len) :: gene_ids(n_genes), stat=ios)
+    allocate(character(len=fam_len) :: gene_family_ids(n_families), stat=ios)
     do i = 1, n_genes
         call ascii_to_string_padded(gene_ids_ascii(:,i), gene_len, temp_str)
         gene_ids(i) = temp_str
