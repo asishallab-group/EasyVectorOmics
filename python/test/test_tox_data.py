@@ -4,12 +4,25 @@ import numpy as np
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from tensoromics_functions_tox_data import (
-    read_gene_ids_from_file,
     read_expression_vectors,
     read_family_file,
     filter_unassigned_genes,
-)
+    read_gene_ids_from_file,
+    validate_all_data,
+    validate_data_structure,
+    validate_empty_strings,
+    validate_expression_data,
+    validate_family_centroids,
+    validate_gene_ids_uniqueness,
+    validate_family_ids_uniqueness,
+    validate_gene_to_family_mapping,
+    validate_shift_vectors
 
+)
+from tensoromics_functions import (
+    tox_group_centroid,
+    tox_compute_shift_vector_field
+)
 # ---- Example: replicate Fortran test logic in Python ----
 
 # Define your file lists (replace with your actual file paths)
@@ -128,3 +141,36 @@ filtered_gene_to_fam = gene_to_fam[mask.astype(bool)]
 print("filtered_gene_ids sample:", filtered_gene_ids[:5])
 print("filtered_kallisto_expr shape:", filtered_kallisto_expr.shape)
 print("filtered_gene_to_fam sample:", filtered_gene_to_fam[:10])
+
+validate_gene_ids_uniqueness(gene_ids)
+validate_family_ids_uniqueness(family_ids)
+validate_expression_data(kallisto_expr, True)
+
+ortholog_set = [True for i in range(n_genes_kept)]
+
+centroids = tox_group_centroid(filtered_kallisto_expr, filtered_gene_to_fam, n_families, ortholog_set)
+
+print("Validating centroids...")
+validate_family_centroids(centroids)
+print("Centroids validated")
+
+shift_vectors = tox_compute_shift_vector_field(filtered_kallisto_expr, centroids, filtered_gene_to_fam)
+
+print("Validating shift vectors...")
+validate_shift_vectors(shift_vectors["shift_vectors"], filtered_kallisto_expr, centroids, filtered_gene_to_fam, n_samples, n_genes_kept, n_samples, n_families)
+print("Shift vectors validated")
+
+validate_gene_to_family_mapping(filtered_gene_to_fam, n_families)
+
+print("Number of genes kept after filtering:", n_genes_kept)
+print("gene_family_size:", len(filtered_gene_to_fam))
+print("filtered gene ids size:", len(filtered_gene_ids))
+
+print("Validating data structure...")
+validate_data_structure(n_genes_kept, n_families, n_samples, n_samples, filtered_gene_ids, 
+                        family_ids, filtered_gene_to_fam, filtered_kallisto_expr, centroids, shift_vectors["shift_vectors"])
+print("Data structure validated")
+print("Validating all data...")
+validate_all_data(n_genes_kept, n_families, n_samples, n_samples, filtered_gene_ids, family_ids, 
+                  filtered_gene_to_fam, filtered_kallisto_expr, centroids, shift_vectors["shift_vectors"])
+print("All data validated")

@@ -643,3 +643,257 @@ subroutine validate_all_data_R(n_genes, n_families, n_samples, d, &
     call validate_all_data(n_genes, n_families, n_samples, d, gene_ids, gene_family_ids, &
                            gene_to_fam, expression_vectors, family_centroids, shift_vectors, ierr)
 end subroutine validate_all_data_R
+
+! ---- C bindings for validation routines ----
+
+subroutine validate_gene_to_family_mapping_C(gene_to_fam, n_genes, n_families, ierr) bind(C, name="validate_gene_to_family_mapping_C")
+    use iso_c_binding, only: c_int, c_ptr, c_f_pointer
+    use tox_data_validation, only: validate_gene_to_family_mapping
+    use tox_errors, only: set_ok
+    implicit none
+    type(c_ptr), value :: gene_to_fam
+    integer(c_int), value :: n_genes, n_families
+    integer(c_int), intent(out) :: ierr
+    integer(c_int), pointer :: f_gene_to_fam(:)
+    call set_ok(ierr)
+    call c_f_pointer(gene_to_fam, f_gene_to_fam, [n_genes])
+    call validate_gene_to_family_mapping(f_gene_to_fam, n_families, ierr)
+end subroutine validate_gene_to_family_mapping_C
+
+subroutine validate_expression_data_C(expression_vectors, n_genes, n_samples, check_non_negative, ierr) bind(C, name="validate_expression_data_C")
+    use iso_c_binding, only: c_int, c_double, c_ptr, c_f_pointer
+    use tox_data_validation, only: validate_expression_data
+    use tox_errors, only: set_ok
+    implicit none
+    type(c_ptr), value :: expression_vectors
+    integer(c_int), value :: n_genes, n_samples
+    integer(c_int), value :: check_non_negative
+    integer(c_int), intent(out) :: ierr
+    real(c_double), pointer :: f_expression_vectors(:,:)
+    logical :: l_check
+    call set_ok(ierr)
+    call c_f_pointer(expression_vectors, f_expression_vectors, [n_genes, n_samples])
+    l_check = (check_non_negative /= 0)
+    call validate_expression_data(f_expression_vectors, l_check, ierr)
+end subroutine validate_expression_data_C
+
+subroutine validate_family_centroids_C(family_centroids, n_families, d, ierr) bind(C, name="validate_family_centroids_C")
+    use iso_c_binding, only: c_int, c_double, c_ptr, c_f_pointer
+    use tox_data_validation, only: validate_family_centroids
+    use tox_errors, only: set_ok
+    implicit none
+    type(c_ptr), value :: family_centroids
+    integer(c_int), value :: n_families, d
+    integer(c_int), intent(out) :: ierr
+    real(c_double), pointer :: f_family_centroids(:,:)
+    call set_ok(ierr)
+    call c_f_pointer(family_centroids, f_family_centroids, [d, n_families])
+    call validate_family_centroids(f_family_centroids, ierr)
+end subroutine validate_family_centroids_C
+
+subroutine validate_shift_vectors_C(shift_vectors, expression_vectors, family_centroids, gene_to_fam, d, n_genes, n_samples, n_families, ierr) bind(C, name="validate_shift_vectors_C")
+    use iso_c_binding, only: c_int, c_double, c_ptr, c_f_pointer
+    use tox_data_validation, only: validate_shift_vectors
+    use tox_errors, only: set_ok
+    implicit none
+    type(c_ptr), value :: shift_vectors, expression_vectors, family_centroids, gene_to_fam
+    integer(c_int), value :: d, n_genes, n_samples, n_families
+    integer(c_int), intent(out) :: ierr
+    real(c_double), pointer :: f_shift_vectors(:,:), f_expression_vectors(:,:), f_family_centroids(:,:)
+    integer(c_int), pointer :: f_gene_to_fam(:)
+    call set_ok(ierr)
+    call c_f_pointer(shift_vectors, f_shift_vectors, [2*d, n_genes])
+    call c_f_pointer(expression_vectors, f_expression_vectors, [n_samples, n_genes])
+    call c_f_pointer(family_centroids, f_family_centroids, [d, n_families])
+    call c_f_pointer(gene_to_fam, f_gene_to_fam, [n_genes])
+    call validate_shift_vectors(f_shift_vectors, f_expression_vectors, f_family_centroids, f_gene_to_fam, d, ierr)
+end subroutine validate_shift_vectors_C
+
+subroutine validate_gene_ids_uniqueness_C(gene_ids_ascii, gene_ids_len, n_genes, ierr) bind(C, name="validate_gene_ids_uniqueness_C")
+    use iso_c_binding, only: c_int, c_ptr, c_f_pointer
+    use tox_data_validation, only: validate_gene_ids_uniqueness
+    use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
+    use array_utils, only: ascii_to_string_padded
+    implicit none
+    type(c_ptr), value :: gene_ids_ascii
+    integer(c_int), value :: gene_ids_len, n_genes
+    integer(c_int), intent(out) :: ierr
+    integer(c_int), pointer :: f_gene_ids_ascii(:,:)
+    character(len=:), allocatable :: gene_ids(:)
+    character(len=:), allocatable :: temp_str
+    integer :: i, ios
+    call set_ok(ierr)
+    call c_f_pointer(gene_ids_ascii, f_gene_ids_ascii, [gene_ids_len, n_genes])
+    allocate(character(len=gene_ids_len) :: gene_ids(n_genes), stat=ios)
+    if(.not. is_ok(ios)) then
+        call set_err_once(ierr, ERR_ALLOC_FAIL)
+        return
+    end if
+    do i = 1, n_genes
+        call ascii_to_string_padded(f_gene_ids_ascii(:,i), gene_ids_len, temp_str)
+        gene_ids(i) = temp_str
+    end do
+    call validate_gene_ids_uniqueness(gene_ids, ierr)
+end subroutine validate_gene_ids_uniqueness_C
+
+subroutine validate_family_ids_uniqueness_C(family_ids_ascii, fam_len, n_families, ierr) bind(C, name="validate_family_ids_uniqueness_C")
+    use iso_c_binding, only: c_int, c_ptr, c_f_pointer
+    use tox_data_validation, only: validate_family_ids_uniqueness
+    use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
+    use array_utils, only: ascii_to_string_padded
+    implicit none
+    type(c_ptr), value :: family_ids_ascii
+    integer(c_int), value :: fam_len, n_families
+    integer(c_int), intent(out) :: ierr
+    integer(c_int), pointer :: f_family_ids_ascii(:,:)
+    character(len=:), allocatable :: family_ids(:)
+    character(len=:), allocatable :: temp_str
+    integer :: i, ios
+    call set_ok(ierr)
+    call c_f_pointer(family_ids_ascii, f_family_ids_ascii, [fam_len, n_families])
+    allocate(character(len=fam_len) :: family_ids(n_families), stat=ios)
+    if(.not. is_ok(ios)) then
+        call set_err_once(ierr, ERR_ALLOC_FAIL)
+        return
+    end if
+    do i = 1, n_families
+        call ascii_to_string_padded(f_family_ids_ascii(:,i), fam_len, temp_str)
+        family_ids(i) = temp_str
+    end do
+    call validate_family_ids_uniqueness(family_ids, ierr)
+end subroutine validate_family_ids_uniqueness_C
+
+subroutine validate_empty_strings_C(strings_ascii, str_len, n, ierr) bind(C, name="validate_empty_strings_C")
+    use iso_c_binding, only: c_int, c_ptr, c_f_pointer
+    use tox_data_validation, only: validate_empty_strings
+    use tox_errors, only: set_ok, set_err_once, ERR_ALLOC_FAIL, is_ok
+    use array_utils, only: ascii_to_string_padded
+    implicit none
+    type(c_ptr), value :: strings_ascii
+    integer(c_int), value :: str_len, n
+    integer(c_int), intent(out) :: ierr
+    integer(c_int), pointer :: f_strings_ascii(:,:)
+    character(len=:), allocatable :: strings(:)
+    character(len=:), allocatable :: temp_str
+    integer :: i, ios
+    call set_ok(ierr)
+    call c_f_pointer(strings_ascii, f_strings_ascii, [str_len, n])
+    allocate(character(len=str_len) :: strings(n), stat=ios)
+    if(.not. is_ok(ios)) then
+        call set_err_once(ierr, ERR_ALLOC_FAIL)
+        return
+    end if
+    do i = 1, n
+        call ascii_to_string_padded(f_strings_ascii(:,i), str_len, temp_str)
+        strings(i) = temp_str
+    end do
+    call validate_empty_strings(strings, "strings", ierr)
+end subroutine validate_empty_strings_C
+
+subroutine validate_data_structure_C(n_genes, n_families, n_samples, d, &
+                                     gene_ids_ascii, gene_ids_len, &
+                                     gene_family_ids_ascii, fam_len, &
+                                     gene_to_fam, expression_vectors, family_centroids, &
+                                     shift_vectors, ierr) bind(C, name="validate_data_structure_C")
+    use iso_c_binding, only: c_int, c_double, c_ptr, c_f_pointer
+    use tox_data_validation, only: validate_data_structure
+    use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
+    use array_utils, only: ascii_to_string_padded
+    implicit none
+    integer(c_int), value :: n_genes, n_families, n_samples, d
+    type(c_ptr), value :: gene_ids_ascii
+    integer(c_int), value :: gene_ids_len
+    type(c_ptr), value :: gene_family_ids_ascii
+    integer(c_int), value :: fam_len
+    type(c_ptr), value :: gene_to_fam
+    type(c_ptr), value :: expression_vectors
+    type(c_ptr), value :: family_centroids
+    type(c_ptr), value :: shift_vectors
+    integer(c_int), intent(out) :: ierr
+    integer(c_int), pointer :: f_gene_ids_ascii(:,:), f_gene_family_ids_ascii(:,:)
+    integer(c_int), pointer :: f_gene_to_fam(:)
+    real(c_double), pointer :: f_expression_vectors(:,:), f_family_centroids(:,:), f_shift_vectors(:,:)
+    character(len=:), allocatable :: temp_str
+    character(len=:), allocatable :: gene_ids(:)
+    character(len=:), allocatable :: gene_family_ids(:)
+    integer :: i, ios
+    call set_ok(ierr)
+    call c_f_pointer(gene_ids_ascii, f_gene_ids_ascii, [gene_ids_len, n_genes])
+    call c_f_pointer(gene_family_ids_ascii, f_gene_family_ids_ascii, [fam_len, n_families])
+    call c_f_pointer(gene_to_fam, f_gene_to_fam, [n_genes])
+    call c_f_pointer(expression_vectors, f_expression_vectors, [n_samples, n_genes])
+    call c_f_pointer(family_centroids, f_family_centroids, [d, n_families])
+    call c_f_pointer(shift_vectors, f_shift_vectors, [2*d, n_genes])
+
+    allocate(character(len=gene_ids_len) :: gene_ids(n_genes), stat=ios)
+    allocate(character(len=fam_len) :: gene_family_ids(n_families), stat=ios)
+
+    if(.not. is_ok(ios)) then
+        call set_err_once(ierr, ERR_ALLOC_FAIL)
+        return
+    end if
+
+    do i = 1, n_genes
+        call ascii_to_string_padded(f_gene_ids_ascii(:,i), gene_ids_len, temp_str)
+        gene_ids(i) = temp_str
+    end do 
+    do i = 1, n_families
+        call ascii_to_string_padded(f_gene_family_ids_ascii(:,i), fam_len, temp_str)
+        gene_family_ids(i) = temp_str
+    end do
+
+    call validate_data_structure(n_genes, n_families, n_samples, d, gene_ids, gene_family_ids, &
+                                 f_gene_to_fam, f_expression_vectors, f_family_centroids, f_shift_vectors, ierr)
+end subroutine validate_data_structure_C
+
+subroutine validate_all_data_C(n_genes, n_families, n_samples, d, &
+                               gene_ids_ascii, gene_len, &
+                               gene_family_ids_ascii, fam_len, &
+                               gene_to_fam, expression_vectors, family_centroids, &
+                               shift_vectors, ierr) bind(C, name="validate_all_data_C")
+    use iso_c_binding, only: c_int, c_double, c_ptr, c_f_pointer
+    use tox_data_validation, only: validate_all_data
+    use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
+    use array_utils, only: ascii_to_string_padded
+    implicit none
+    integer(c_int), value :: n_genes, n_families, n_samples, d
+    type(c_ptr), value :: gene_ids_ascii
+    integer(c_int), value :: gene_len
+    type(c_ptr), value :: gene_family_ids_ascii
+    integer(c_int), value :: fam_len
+    type(c_ptr), value :: gene_to_fam
+    type(c_ptr), value :: expression_vectors
+    type(c_ptr), value :: family_centroids
+    type(c_ptr), value :: shift_vectors
+    integer(c_int), intent(out) :: ierr
+    integer(c_int), pointer :: f_gene_ids_ascii(:,:), f_gene_family_ids_ascii(:,:)
+    integer(c_int), pointer :: f_gene_to_fam(:)
+    real(c_double), pointer :: f_expression_vectors(:,:), f_family_centroids(:,:), f_shift_vectors(:,:)
+    character(len=:), allocatable :: temp_str
+    character(len=:), allocatable :: gene_ids(:)
+    character(len=:), allocatable :: gene_family_ids(:)
+    integer :: i, ios
+    call set_ok(ierr)
+    call c_f_pointer(gene_ids_ascii, f_gene_ids_ascii, [gene_len, n_genes])
+    call c_f_pointer(gene_family_ids_ascii, f_gene_family_ids_ascii, [fam_len, n_families])
+    call c_f_pointer(gene_to_fam, f_gene_to_fam, [n_genes])
+    call c_f_pointer(expression_vectors, f_expression_vectors, [n_samples, n_genes])
+    call c_f_pointer(family_centroids, f_family_centroids, [d, n_families])
+    call c_f_pointer(shift_vectors, f_shift_vectors, [2*d, n_genes])
+    allocate(character(len=gene_len) :: gene_ids(n_genes), stat=ios)
+    allocate(character(len=fam_len) :: gene_family_ids(n_families), stat=ios)
+    if(.not. is_ok(ios)) then
+        call set_err_once(ierr, ERR_ALLOC_FAIL)
+        return
+    end if
+    do i = 1, n_genes
+        call ascii_to_string_padded(f_gene_ids_ascii(:,i), gene_len, temp_str)
+        gene_ids(i) = temp_str
+    end do
+    do i=1, n_families
+        call ascii_to_string_padded(f_gene_family_ids_ascii(:,i), fam_len, temp_str)
+        gene_family_ids(i) = temp_str
+    end do
+    call validate_all_data(n_genes, n_families, n_samples, d, gene_ids, gene_family_ids, &
+                           f_gene_to_fam, f_expression_vectors, f_family_centroids, f_shift_vectors, ierr)
+end subroutine validate_all_data_C
