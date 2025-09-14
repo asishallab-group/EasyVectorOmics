@@ -3,7 +3,7 @@
 
 module f42_utils
   use, intrinsic :: iso_fortran_env, only: real64, int32
-  use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, ERR_EMPTY_INPUT, set_ok, set_err_once
+  use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_INTERNAL, set_ok, set_err_once
   implicit none
 
   public :: sort_real, sort_integer, sort_character
@@ -13,6 +13,74 @@ module f42_utils
     module procedure sort_real, sort_integer, sort_character
   end interface sort_array
 contains
+
+  pure real(real64) function norm(vector, n_dims) result(euclidean_norm)
+    integer(int32), intent(in) :: n_dims
+    real(real64), dimension(n_dims), intent(in) :: vector
+
+    integer(int32) :: i_dim
+
+    euclidean_norm = 0
+    do i_dim = 1, n_dims
+      euclidean_norm = euclidean_norm + vector(i_dim) ** 2
+    end do
+    euclidean_norm = sqrt(euclidean_norm)
+  end function norm
+
+  pure subroutine add_vector(vector, n_dims, to_be_added)
+    integer(int32), intent(in) :: n_dims
+    real(real64), dimension(n_dims), intent(inout) :: vector
+    real(real64), dimension(n_dims), intent(in) :: to_be_added
+
+    integer(int32) :: i_dim
+
+    do i_dim = 1, n_dims
+      vector(i_dim) = vector(i_dim) + to_be_added(i_dim)
+    end do
+  end subroutine add_vector
+
+  pure subroutine subtract_vector(vector, n_dims, to_be_subtracted)
+    integer(int32), intent(in) :: n_dims
+    real(real64), dimension(n_dims), intent(inout) :: vector
+    real(real64), dimension(n_dims), intent(in) :: to_be_subtracted
+
+    integer(int32) :: i_dim
+
+    do i_dim = 1, n_dims
+      vector(i_dim) = vector(i_dim) - to_be_subtracted(i_dim)
+    end do
+  end subroutine subtract_vector
+  
+  !> Calculate the percentile of an array
+  pure real(real64) function nth_percentile(n, array, perm) result(percentile)
+    integer(int32), intent(in) :: n
+      !! value between 0-100 defining the percentage
+    real(real64), dimension(:), intent(in) :: array
+      !! array holding the data values
+    integer(int32), dimension(size(array)), intent(in) :: perm
+      !! array holding the indices for `array` for ascending sorted order
+
+    real(real64) :: percent
+    integer(int32) :: index, i_array, lower_index, upper_index
+
+    percent = real(n, real64) * (size(array) - 1) / 100.0
+    index = int(percent) + 1
+    lower_index = -1
+    upper_index = -1
+
+    do i_array = 1, size(array)
+      if (perm(i_array) == index) then
+        lower_index = i_array
+      else if (perm(i_array) == index + 1) then
+        upper_index = i_array
+      end if
+    end do
+
+    percentile = array(lower_index)
+    if (upper_index > -1) then
+      percentile = percentile + (percent - int(percent)) * (array(upper_index) - percentile)
+    end if
+  end function nth_percentile
 
   !> Sort a real array indirectly using quicksort.
   !| Creates a sorted version of the array by reordering the `perm` vector. The original data in `array` remains unchanged.
