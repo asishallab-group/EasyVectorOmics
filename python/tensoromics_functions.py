@@ -28,7 +28,7 @@ lib.bst_range_query_C.argtypes = [
 
 # Configure KD-Tree argument types
 lib.build_kd_index_C.argtypes = [
-    np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # X_flat (col-major)
+    np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='F_CONTIGUOUS'),  # X_flat (col-major)
     ctypes.c_int32,                                                  # d
     ctypes.c_int32,                                                  # n
     np.ctypeslib.ndpointer(dtype=np.int32),                          # kd_ix (out)
@@ -117,6 +117,7 @@ def build_kd_index(points, dimension_order=None):
     # Ensure Fortran order (column-major)
     if not points.flags.f_contiguous:
         points = np.asfortranarray(points)
+
     
     # Initialize arrays
     kd_indices = np.empty(n, dtype=np.int32)
@@ -127,7 +128,7 @@ def build_kd_index(points, dimension_order=None):
     stack_right = np.empty(n, dtype=np.int32)
     ierr = ctypes.c_int()
     
-    # Build KD-Tree index
+    # Build KD-Tree index using the flat array
     lib.build_kd_index_C(points, d, n, kd_indices, dimension_order, workspace, 
                         value_buffer, permutation, stack_left, stack_right, ctypes.byref(ierr))
     check_err_code(ierr.value)

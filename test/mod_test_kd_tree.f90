@@ -124,9 +124,9 @@ contains
 
     call set_ok(ierr)
     
-    ! This should not crash - just testing robustness
+    ! This should return ERR_EMPTY_INPUT
     call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, ierr)
-    if(.not. is_ok(ierr)) error stop
+    if(is_ok(ierr)) error stop
     
     call assert_true(.true., "KD-Tree empty array handling")
   end subroutine test_kd_empty_array
