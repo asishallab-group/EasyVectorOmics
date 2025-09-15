@@ -23,7 +23,10 @@ contains
 ! DJB2 Hash-algorithm
 integer function djb2_hash(key, table_size) result(hash)
     character(len=*), intent(in) :: key
+    !! string to hash
     integer(int32), intent(in) :: table_size
+    !! size of the hash table (number of buckets)
+
     integer(int32) :: i
     integer(int64) :: hash_val
     character(len=1) :: c
@@ -58,6 +61,7 @@ end subroutine hashmap_create
 ! Delete hashmap if no longer in use
 subroutine hashmap_destroy(map)
     type(hashmap_type), intent(inout) :: map
+    !! The hashmap with hashmap type
     integer(int32) :: i
     type(hashmap_node_type), pointer :: current, next
     
@@ -112,7 +116,9 @@ end subroutine hashmap_put
 ! get value from hashmap by key, return 0 if not found
 integer function hashmap_get(map, key) result(value)
     type(hashmap_type), intent(in) :: map
+        ! The hashmap with hashmap type
     character(len=*), intent(in) :: key
+        ! The key to look up
     
     integer(int32) :: hash_idx
     type(hashmap_node_type), pointer :: current

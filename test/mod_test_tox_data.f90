@@ -4,6 +4,7 @@ module mod_test_tox_data
   use iso_fortran_env, only: real64, int32
   use tox_data_tools
   use tox_data_validation
+  use tox_data_accessors
   use tox_data_read_write
   use array_utils, only: get_array_metadata
   use tox_gene_centroids
@@ -34,7 +35,7 @@ contains
 
   !> Get array of all available tests.
   function get_all_tests() result(all_tests)
-    type(test_case) :: all_tests(12)  ! Increased from 6 to 8
+    type(test_case) :: all_tests(13)  ! Increased from 6 to 8
     all_tests(1) = test_case("test_read_gene_ids", test_read_gene_ids)
     all_tests(2) = test_case("test_read_expression_data", test_read_expression_data)
     all_tests(3) = test_case("test_read_family_mapping", test_read_family_mapping)
@@ -47,6 +48,7 @@ contains
     all_tests(10) = test_case("test_read_write_gene_to_fam", test_read_write_gene_to_fam)
     all_tests(11) = test_case("test_read_write_family_ids", test_read_write_family_ids)
     all_tests(12) = test_case("test_read_write_family_centroids", test_read_write_centroids)
+    all_tests(13) = test_case("test_data_accessors", test_data_accessors)
   end function get_all_tests
 
   !> Setup global test data
@@ -166,7 +168,7 @@ contains
 
   !> Run all expression reader tests.
   subroutine run_all_tests_tox_data()
-    type(test_case) :: all_tests(12)  ! Updated to 8
+    type(test_case) :: all_tests(13)  ! Updated
     integer(int32) :: i
     
     ! Setup global data first
@@ -183,7 +185,7 @@ contains
   !> Run specific expression reader tests by name.
   subroutine run_named_tests_tox_data(test_names)
     character(len=*), intent(in) :: test_names(:)
-    type(test_case) :: all_tests(12)  ! Updated to 8
+    type(test_case) :: all_tests(13)  ! Updated
     integer(int32) :: i, j
     logical :: found
     
@@ -463,4 +465,34 @@ contains
                                 size(family_centroids), 1e-12_real64, &
                                 "Loaded family centroids should match original")
   end subroutine test_read_write_centroids
+
+  subroutine test_data_accessors()
+    real(real64), allocatable :: returned_centroid(:)
+    integer(int32) :: family_idx, ierr, gene_idx
+
+    allocate(returned_centroid(total_samples))
+
+    gene_idx = get_gene_index(gene_ids, 'NP_001000001.1')
+    call assert_equal_int(gene_idx, 2, "Gene index for NP_001000001.1 should be 2")
+    call get_family_for_gene_index(gene_idx, gene_to_fam, family_idx, ierr)
+    if (.not. is_ok(ierr)) then
+      write(*,*) 'Failed to get family for gene index: ', ierr
+      error stop
+    end if
+    call assert_equal_int(family_idx, 48, "Family index for gene index 2")
+    call assert_string_equal(gene_family_ids(family_idx), 'OG0000047', &
+                        "Family ID for family index 48 should be OG0000047")
+
+    family_idx = get_family_index(gene_family_ids, 'OG0000001')
+    call assert_equal_int(family_idx, 2, "Family index for OG0000001 should be 2")
+    call get_family_centroid(family_idx, family_centroids, returned_centroid, ierr)
+
+    if (.not. is_ok(ierr)) then
+      write(*,*) 'Failed to get family centroid: ', ierr
+      error stop
+    end if
+    call assert_equal_array_real(returned_centroid, family_centroids(:, family_idx), &
+                               size(family_centroids, 1), 1e-12_real64, &
+                               "Retrieved centroid should match original")
+  end subroutine test_data_accessors
 end module mod_test_tox_data
