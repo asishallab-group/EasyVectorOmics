@@ -14,9 +14,11 @@ module asserts
   public :: assert_string_contains, assert_allclose_array_real
   public :: assert_sum_equal, assert_unique_int, assert_permutation
   public :: assert_equal_array_char
+  public :: assert_equal_complex, assert_not_equal_complex, assert_equal_array_complex
+
 
 contains
-
+  
   !> Asserts that two character arrays are equal
   subroutine assert_equal_array_char(a, b, clen, n, msg)
     integer(int32), INTENT(IN) :: clen
@@ -25,6 +27,42 @@ contains
     integer, intent(in) :: n
     if (any(a /= b)) then
       write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (character arrays differ)"
+      stop 1
+    end if
+  end subroutine
+
+  !> Assert that two complex numbers are equal within a tolerance.
+  subroutine assert_equal_complex(a, b, tol, msg)
+    complex(real64), intent(in) :: a, b
+    real(real64), intent(in) :: tol
+    character(*), intent(in) :: msg
+    if (abs(a - b) > tol) then
+      write(error_unit,*) "ASSERTION FAILED: ", trim(msg), &
+           " (got ", a, ", expected ", b, ", tol=", tol, ")"
+      stop 1
+    end if
+  end subroutine
+
+  !> Assert that two complex numbers are not equal within a tolerance.
+  subroutine assert_not_equal_complex(a, b, tol, msg)
+    complex(real64), intent(in) :: a, b
+    real(real64), intent(in) :: tol
+    character(*), intent(in) :: msg
+    if (abs(a - b) <= tol) then
+      write(error_unit,*) "ASSERTION FAILED (should not be equal): ", trim(msg)
+      stop 1
+    end if
+  end subroutine
+
+  !> Assert that two complex arrays are equal within a tolerance.
+  subroutine assert_equal_array_complex(a, b, n, tol, msg)
+    complex(real64), intent(in) :: a(n), b(n)
+    integer, intent(in) :: n
+    real(real64), intent(in) :: tol
+    character(*), intent(in) :: msg
+    if (any(abs(a - b) > tol)) then
+      write(error_unit,*) "ASSERTION FAILED: ", trim(msg), &
+           " (complex arrays differ, tol=", tol, ")"
       stop 1
     end if
   end subroutine
