@@ -11,7 +11,7 @@ module binary_search_tree
 contains
   
   !> Build the BST index by sorting indices using values in x.
-  subroutine build_bst_index(values, num_values, sorted_indices, left_stack, right_stack, ierr)
+  pure subroutine build_bst_index(values, num_values, sorted_indices, left_stack, right_stack, ierr)
     integer(int32), intent(in) :: num_values           
     !! Number of elements in values array
     real(real64), intent(in) :: values(num_values)      
@@ -80,7 +80,7 @@ contains
   end function get_sorted_value
 
   !> Perform a 1D range query over the sorted index.
-  subroutine bst_range_query(values, sorted_indices, num_values, lower_bound, upper_bound, &
+  pure subroutine bst_range_query(values, sorted_indices, num_values, lower_bound, upper_bound, &
                             output_indices, num_matches, ierr)
 
     integer(int32), intent(in) :: num_values           
