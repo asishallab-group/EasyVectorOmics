@@ -1,0 +1,647 @@
+{
+  "Python call to read_gene_ids_from_file_C_setup": {
+    "prefix": "tensoromics:read_gene_ids_setup",
+    "body": [
+      "lib.read_gene_ids_from_file_C.argtypes = [",
+      "    ctypes.POINTER(ctypes.c_int),  # filename_ascii",
+      "    ctypes.c_int,                  # fn_len",
+      "    ctypes.POINTER(ctypes.c_int),  # gene_ids_ascii",
+      "    ctypes.c_int,                  # gene_ids_len",
+      "    ctypes.c_int,                  # n_genes",
+      "    ctypes.c_int,                  # n_header_rows",
+      "    ctypes.c_int,                  # gene_col",
+      "    ctypes.POINTER(ctypes.c_int)   # ierr",
+      "]",
+      "lib.read_gene_ids_from_file_C.restype = None"
+    ],
+    "description": "Argument type setup for read_gene_ids_from_file_C"
+  },
+  "Python call to read_expression_vectors_C_setup": {
+    "prefix": "tensoromics:read_expression_setup",
+    "body": [
+      "lib.read_expression_vectors_C.argtypes = [",
+      "    ctypes.POINTER(ctypes.c_int),  # file_list_ascii",
+      "    ctypes.c_int,                  # file_list_len",
+      "    ctypes.c_int,                  # n_files",
+      "    ctypes.POINTER(ctypes.c_int),  # gene_ids_ascii",
+      "    ctypes.c_int,                  # gene_ids_len",
+      "    ctypes.c_int,                  # n_genes",
+      "    ctypes.POINTER(ctypes.c_double), # expression_vectors_flat",
+      "    ctypes.c_int,                  # n_samples",
+      "    ctypes.c_int,                  # n_genes2",
+      "    ctypes.c_int,                  # n_header_rows",
+      "    ctypes.c_int,                  # gene_col",
+      "    ctypes.POINTER(ctypes.c_int),  # value_cols",
+      "    ctypes.c_int,                  # n_value_cols",
+      "    ctypes.c_int,                  # start_row",
+      "    ctypes.POINTER(ctypes.c_int),  # ierr",
+      "    ctypes.POINTER(ctypes.c_int),  # delimiter_ascii",
+      "    ctypes.c_int                   # dlen",
+      "]",
+      "lib.read_expression_vectors_C.restype = None"
+    ],
+    "description": "Argument type setup for read_expression_vectors_C"
+  },
+  "Python call to read_family_file_C_setup": {
+    "prefix": "tensoromics:read_family_setup",
+    "body": [
+      "lib.read_family_file_C.argtypes = [",
+      "    ctypes.POINTER(ctypes.c_int),  # filename_ascii",
+      "    ctypes.c_int,                  # fn_len",
+      "    ctypes.POINTER(ctypes.c_int),  # gene_ids_ascii",
+      "    ctypes.c_int,                  # gene_ids_len",
+      "    ctypes.c_int,                  # n_genes",
+      "    ctypes.POINTER(ctypes.c_int),  # family_ids_ascii",
+      "    ctypes.c_int,                  # family_ids_len",
+      "    ctypes.c_int,                  # n_families",
+      "    ctypes.POINTER(ctypes.c_int),  # gene_to_fam",
+      "    ctypes.POINTER(ctypes.c_int)   # ierr",
+      "]",
+      "lib.read_family_file_C.restype = None"
+    ],
+    "description": "Argument type setup for read_family_file_C"
+  },
+  "Python call to filter_unassigned_genes_C_setup": {
+    "prefix": "tensoromics:filter_genes_setup",
+    "body": [
+      "lib.filter_unassigned_genes_C.argtypes = [",
+      "    ctypes.POINTER(ctypes.c_int),  # gene_ids_ascii",
+      "    ctypes.c_int,                  # gene_ids_len",
+      "    ctypes.c_int,                  # n_genes",
+      "    ctypes.POINTER(ctypes.c_double), # expression_vectors_flat",
+      "    ctypes.c_int,                  # n_samples",
+      "    ctypes.POINTER(ctypes.c_int),  # gene_to_fam",
+      "    ctypes.POINTER(ctypes.c_int),  # mask",
+      "    ctypes.POINTER(ctypes.c_int),  # n_genes_kept",
+      "    ctypes.POINTER(ctypes.c_int)   # ierr",
+      "]",
+      "lib.filter_unassigned_genes_C.restype = None"
+    ],
+    "description": "Argument type setup for filter_unassigned_genes_C"
+  },
+  "Python call to validate_gene_to_family_mapping_C_setup": {
+    "prefix": "tensoromics:validate_mapping_setup",
+    "body": [
+      "lib.validate_gene_to_family_mapping_C.argtypes = [",
+      "    ctypes.POINTER(ctypes.c_int), # gene_to_fam",
+      "    ctypes.c_int,                 # n_genes",
+      "    ctypes.c_int,                 # n_families",
+      "    ctypes.POINTER(ctypes.c_int)  # ierr",
+      "]",
+      "lib.validate_gene_to_family_mapping_C.restype = None"
+    ],
+    "description": "Argument type setup for validate_gene_to_family_mapping_C"
+  },
+  "Python call to validate_expression_data_C_setup": {
+    "prefix": "tensoromics:validate_expression_setup",
+    "body": [
+      "lib.validate_expression_data_C.argtypes = [",
+      "    ctypes.POINTER(ctypes.c_double), # expression_vectors",
+      "    ctypes.c_int,                    # n_genes",
+      "    ctypes.c_int,                    # n_samples",
+      "    ctypes.c_int,                    # check_non_negative",
+      "    ctypes.POINTER(ctypes.c_int)     # ierr",
+      "]",
+      "lib.validate_expression_data_C.restype = None"
+    ],
+    "description": "Argument type setup for validate_expression_data_C"
+  },
+  "Python call to validate_family_centroids_C_setup": {
+    "prefix": "tensoromics:validate_centroids_setup",
+    "body": [
+      "lib.validate_family_centroids_C.argtypes = [",
+      "    ctypes.POINTER(ctypes.c_double), # family_centroids",
+      "    ctypes.c_int,                    # n_families",
+      "    ctypes.c_int,                    # d",
+      "    ctypes.POINTER(ctypes.c_int)     # ierr",
+      "]",
+      "lib.validate_family_centroids_C.restype = None"
+    ],
+    "description": "Argument type setup for validate_family_centroids_C"
+  },
+  "Python call to validate_shift_vectors_C_setup": {
+    "prefix": "tensoromics:validate_shifts_setup",
+    "body": [
+      "lib.validate_shift_vectors_C.argtypes = [",
+      "    ctypes.POINTER(ctypes.c_double), # shift_vectors",
+      "    ctypes.POINTER(ctypes.c_double), # expression_vectors",
+      "    ctypes.POINTER(ctypes.c_double), # family_centroids",
+      "    ctypes.POINTER(ctypes.c_int),    # gene_to_fam",
+      "    ctypes.c_int,                    # d",
+      "    ctypes.c_int,                    # n_genes",
+      "    ctypes.c_int,                    # n_samples",
+      "    ctypes.c_int,                    # n_families",
+      "    ctypes.POINTER(ctypes.c_int)     # ierr",
+      "]",
+      "lib.validate_shift_vectors_C.restype = None"
+    ],
+    "description": "Argument type setup for validate_shift_vectors_C"
+  },
+  "Python call to validate_gene_ids_uniqueness_C_setup": {
+    "prefix": "tensoromics:validate_gene_unique_setup",
+    "body": [
+      "lib.validate_gene_ids_uniqueness_C.argtypes = [",
+      "    ctypes.POINTER(ctypes.c_int), # gene_ids_ascii",
+      "    ctypes.c_int,                 # gene_ids_len",
+      "    ctypes.c_int,                 # n_genes",
+      "    ctypes.POINTER(ctypes.c_int)  # ierr",
+      "]",
+      "lib.validate_gene_ids_uniqueness_C.restype = None"
+    ],
+    "description": "Argument type setup for validate_gene_ids_uniqueness_C"
+  },
+  "Python call to validate_family_ids_uniqueness_C_setup": {
+    "prefix": "tensoromics:validate_family_unique_setup",
+    "body": [
+      "lib.validate_family_ids_uniqueness_C.argtypes = [",
+      "    ctypes.POINTER(ctypes.c_int), # family_ids_ascii",
+      "    ctypes.c_int,                 # fam_len",
+      "    ctypes.c_int,                 # n_families",
+      "    ctypes.POINTER(ctypes.c_int)  # ierr",
+      "]",
+      "lib.validate_family_ids_uniqueness_C.restype = None"
+    ],
+    "description": "Argument type setup for validate_family_ids_uniqueness_C"
+  },
+  "Python call to validate_empty_strings_C_setup": {
+    "prefix": "tensoromics:validate_nonempty_setup",
+    "body": [
+      "lib.validate_empty_strings_C.argtypes = [",
+      "    ctypes.POINTER(ctypes.c_int), # strings_ascii",
+      "    ctypes.c_int,                 # str_len",
+      "    ctypes.c_int,                 # n",
+      "    ctypes.POINTER(ctypes.c_int)  # ierr",
+      "]",
+      "lib.validate_empty_strings_C.restype = None"
+    ],
+    "description": "Argument type setup for validate_empty_strings_C"
+  },
+  "Python call to validate_data_structure_C_setup": {
+    "prefix": "tensoromics:validate_structure_setup",
+    "body": [
+      "lib.validate_data_structure_C.argtypes = [",
+      "    ctypes.c_int,                 # n_genes",
+      "    ctypes.c_int,                 # n_families",
+      "    ctypes.c_int,                 # n_samples",
+      "    ctypes.c_int,                 # d",
+      "    ctypes.POINTER(ctypes.c_int), # gene_ids_ascii",
+      "    ctypes.c_int,                 # gene_ids_len",
+      "    ctypes.POINTER(ctypes.c_int), # gene_family_ids_ascii",
+      "    ctypes.c_int,                 # fam_len",
+      "    ctypes.POINTER(ctypes.c_int), # gene_to_fam",
+      "    ctypes.POINTER(ctypes.c_double), # expression_vectors",
+      "    ctypes.POINTER(ctypes.c_double), # family_centroids",
+      "    ctypes.POINTER(ctypes.c_double), # shift_vectors",
+      "    ctypes.POINTER(ctypes.c_int)     # ierr",
+      "]",
+      "lib.validate_data_structure_C.restype = None"
+    ],
+    "description": "Argument type setup for validate_data_structure_C"
+  },
+  "Python call to validate_all_data_C_setup": {
+    "prefix": "tensoromics:validate_all_setup",
+    "body": [
+      "lib.validate_all_data_C.argtypes = [",
+      "    ctypes.c_int,                 # n_genes",
+      "    ctypes.c_int,                 # n_families",
+      "    ctypes.c_int,                 # n_samples",
+      "    ctypes.c_int,                 # d",
+      "    ctypes.POINTER(ctypes.c_int), # gene_ids_ascii",
+      "    ctypes.c_int,                 # gene_len",
+      "    ctypes.POINTER(ctypes.c_int), # gene_family_ids_ascii",
+      "    ctypes.c_int,                 # fam_len",
+      "    ctypes.POINTER(ctypes.c_int), # gene_to_fam",
+      "    ctypes.POINTER(ctypes.c_double), # expression_vectors",
+      "    ctypes.POINTER(ctypes.c_double), # family_centroids",
+      "    ctypes.POINTER(ctypes.c_double), # shift_vectors",
+      "    ctypes.POINTER(ctypes.c_int)     # ierr",
+      "]",
+      "lib.validate_all_data_C.restype = None"
+    ],
+    "description": "Argument type setup for validate_all_data_C"
+  },
+  "Python call to read_gene_ids_from_file": {
+    "prefix": "tensoromics:read_gene_ids",
+    "body": [
+      "gene_ids = read_gene_ids_from_file(filename, n_genes, gene_ids_len, n_header_rows, gene_col)"
+    ],
+    "description": "Read gene IDs from file using Fortran backend"
+  },
+  "Python call to read_expression_vectors": {
+    "prefix": "tensoromics:read_expression",
+    "body": [
+      "expression_vectors = read_expression_vectors(",
+      "    file_list,",
+      "    gene_ids,",
+      "    n_samples,",
+      "    n_header_rows,",
+      "    gene_col,",
+      "    value_cols,",
+      "    start_row,",
+      "    delimiter",
+      ")"
+    ],
+    "description": "Read expression vectors from multiple files"
+  },
+  "Python call to read_family_file": {
+    "prefix": "tensoromics:read_family",
+    "body": [
+      "family_ids, gene_to_fam = read_family_file(",
+      "    filename,",
+      "    gene_ids,",
+      "    family_ids_len,",
+      "    n_families",
+      ")"
+    ],
+    "description": "Read gene family mappings from file"
+  },
+  "Python call to filter_unassigned_genes": {
+    "prefix": "tensoromics:filter_genes",
+    "body": [
+      "mask, n_kept = filter_unassigned_genes(",
+      "    gene_ids,",
+      "    expression_vectors,",
+      "    gene_to_fam",
+      ")"
+    ],
+    "description": "Filter genes without family assignments"
+  },
+  "Python call to validate_gene_to_family_mapping": {
+    "prefix": "tensoromics:validate_mapping",
+    "body": [
+      "validate_gene_to_family_mapping(gene_to_fam, n_families)"
+    ],
+    "description": "Validate gene-to-family mapping structure"
+  },
+  "Python call to validate_expression_data": {
+    "prefix": "tensoromics:validate_expression",
+    "body": [
+      "validate_expression_data(expression_vectors, check_non_negative)"
+    ],
+    "description": "Validate expression data matrix"
+  },
+  "Python call to validate_family_centroids": {
+    "prefix": "tensoromics:validate_centroids",
+    "body": [
+      "validate_family_centroids(family_centroids)"
+    ],
+    "description": "Validate family centroids matrix"
+  },
+  "Python call to validate_shift_vectors": {
+    "prefix": "tensoromics:validate_shifts",
+    "body": [
+      "validate_shift_vectors(",
+      "    shift_vectors,",
+      "    expression_vectors,",
+      "    family_centroids,",
+      "    gene_to_fam,",
+      "    d,",
+      "    n_genes,",
+      "    n_samples,",
+      "    n_families",
+      ")"
+    ],
+    "description": "Validate shift vectors consistency"
+  },
+  "Python call to validate_gene_ids_uniqueness": {
+    "prefix": "tensoromics:validate_gene_unique",
+    "body": [
+      "validate_gene_ids_uniqueness(gene_ids)"
+    ],
+    "description": "Validate gene IDs are unique"
+  },
+  "Python call to validate_family_ids_uniqueness": {
+    "prefix": "tensoromics:validate_family_unique",
+    "body": [
+      "validate_family_ids_uniqueness(family_ids)"
+    ],
+    "description": "Validate family IDs are unique"
+  },
+  "Python call to validate_data_structure": {
+    "prefix": "tensoromics:validate_structure",
+    "body": [
+      "validate_data_structure(",
+      "    n_genes,",
+      "    n_families,",
+      "    n_samples,",
+      "    d,",
+      "    gene_ids,",
+      "    gene_family_ids,",
+      "    gene_to_fam,",
+      "    expression_vectors,",
+      "    family_centroids,",
+      "    shift_vectors",
+      ")"
+    ],
+    "description": "Complete data structure validation"
+  },
+  "Python call to validate_all_data": {
+    "prefix": "tensoromics:validate_all",
+    "body": [
+      "validate_all_data(",
+      "    n_genes,",
+      "    n_families,",
+      "    n_samples,",
+      "    d,",
+      "    gene_ids,",
+      "    gene_family_ids,",
+      "    gene_to_fam,",
+      "    expression_vectors,",
+      "    family_centroids,",
+      "    shift_vectors",
+      ")"
+    ],
+    "description": "Comprehensive data validation"
+  },
+  "R call to read_expression_vectors_R": {
+    "prefix": "R:read_expression_vectors_R",
+    "body": [
+      "out <- .Fortran(\"read_expression_vectors_R\",",
+      "    file_list_ascii = as.integer(file_ascii),",
+      "    file_list_len = as.integer(256),",
+      "    n_files = as.integer(nfiles),",
+      "    gene_ids_ascii = as.integer(gene_ascii),",
+      "    gene_ids_len = as.integer(gene_len),",
+      "    n_genes = as.integer(ngenes),",
+      "    expression_vectors = as.double(expression_vectors),",
+      "    n_samples = as.integer(n_samples),",
+      "    n_genes2 = as.integer(ngenes),",
+      "    n_header_rows = as.integer(n_header_rows),",
+      "    gene_col = as.integer(gene_col),",
+      "    value_cols = as.integer(value_cols),",
+      "    n_value_cols = as.integer(length(value_cols)),",
+      "    start_row = as.integer(start_row),",
+      "    ierr = 0L,",
+      "    delimiter_ascii = as.integer(delimiter_ascii),",
+      "    dlen = as.integer(length(delimiter_ascii))",
+      ")",
+      "tox_errors(out$ierr)",
+      "list(",
+      "    expression_vectors = matrix(out$expression_vectors, nrow = n_samples, ncol = ngenes),",
+      "    ierr = out$ierr",
+      ")"
+    ],
+    "description": "Fortran call to read expression vectors with error handling"
+  },
+  "R call to read_gene_ids_from_file_R": {
+    "prefix": "R:read_gene_ids_from_file_R",
+    "body": [
+      "out <- .Fortran(\"read_gene_ids_from_file_R\",",
+      "    filename_ascii = as.integer(filename_ascii),",
+      "    fn_len = as.integer(256),",
+      "    gene_ids_ascii = as.integer(gene_ascii),",
+      "    gene_ids_len = as.integer(gene_len),",
+      "    n_genes = as.integer(ngenes),",
+      "    n_header_rows = as.integer(n_header_rows),",
+      "    gene_col = as.integer(gene_col),",
+      "    ierr = 0",
+      ")",
+      "tox_errors(out$ierr)",
+      "list(",
+      "    gene_ids = ascii_matrix_to_strings(out$gene_ids_ascii, gene_len),",
+      "    ierr = out$ierr",
+      ")"
+    ],
+    "description": "Fortran call to read gene IDs with error handling"
+  },
+  "R call to read_family_file_R": {
+    "prefix": "R:read_family_file_R",
+    "body": [
+      "out <- .Fortran(\"read_family_file_R\",",
+      "    filename_ascii = as.integer(filename_ascii),",
+      "    fn_len = as.integer(256),",
+      "    gene_ids_ascii = as.integer(gene_ascii),",
+      "    gene_ids_len = as.integer(gene_len),",
+      "    n_genes = as.integer(ngenes),",
+      "    family_ids_ascii = as.integer(family_ascii),",
+      "    family_ids_len = as.integer(family_len),",
+      "    n_families = as.integer(n_families),",
+      "    gene_to_fam = as.integer(gene_to_fam),",
+      "    ierr = 0",
+      ")",
+      "tox_errors(out$ierr)",
+      "list(",
+      "    family_ids = ascii_matrix_to_strings(matrix(out$family_ids_ascii, nrow = family_len, ncol = n_families)),",
+      "    gene_to_fam = out$gene_to_fam,",
+      "    ierr = out$ierr",
+      ")"
+    ],
+    "description": "Fortran call to read family file with error handling"
+  },
+  "R call to filter_unassigned_genes_R": {
+    "prefix": "R:filter_unassigned_genes_R",
+    "body": [
+      "out <- .Fortran(\"filter_unassigned_genes_R\",",
+      "    gene_ids_ascii = as.integer(gene_ascii),",
+      "    gene_ids_len = as.integer(gene_len),",
+      "    n_genes = as.integer(ngenes),",
+      "    expression_vectors_flat = as.double(as.vector(expression_vectors)),",
+      "    n_samples = as.integer(n_samples),",
+      "    gene_to_fam = as.integer(gene_to_fam),",
+      "    mask = logical(ngenes),",
+      "    n_genes_kept = integer(1),",
+      "    ierr = 0",
+      ")",
+      "tox_errors(out$ierr)",
+      "list(",
+      "    gene_ids = gene_ids[mask],",
+      "    expression_vectors = expression_vectors[, mask, drop = FALSE],",
+      "    gene_to_fam = gene_to_fam[mask],",
+      "    n_genes_kept = n_genes_kept,",
+      "    ierr = out$ierr",
+      ")"
+    ],
+    "description": "Fortran call to filter unassigned genes with error handling"
+  },
+  "R call to validate_data_structure_R": {
+    "prefix": "R:validate_data_structure_R",
+    "body": [
+      "out <- .Fortran(\"validate_data_structure_R\",",
+      "    as.integer(n_genes),",
+      "    as.integer(n_families),",
+      "    as.integer(n_samples),",
+      "    as.integer(d),",
+      "    as.integer(gene_ascii),",
+      "    as.integer(gene_len),",
+      "    as.integer(fam_ascii),",
+      "    as.integer(fam_len),",
+      "    as.integer(gene_to_fam),",
+      "    as.double(expression_vectors),",
+      "    as.double(family_centroids),",
+      "    as.double(shift_vectors),",
+      "    ierr = ierr",
+      ")",
+      "tox_errors(out$ierr)",
+      "list(ierr = out$ierr)"
+    ],
+    "description": "Fortran call to validate data structure with error handling"
+  },
+  "R call to validate_gene_to_family_mapping_R": {
+    "prefix": "R:validate_gene_to_family_mapping_R",
+    "body": [
+      "out <- .Fortran(\"validate_gene_to_family_mapping_R\",",
+      "    as.integer(gene_to_fam),",
+      "    as.integer(n_genes),",
+      "    as.integer(n_families),",
+      "    ierr = ierr",
+      ")",
+      "tox_errors(out$ierr)",
+      "list(ierr = out$ierr)"
+    ],
+    "description": "Fortran call to validate gene-to-family mapping with error handling"
+  },
+  "R call to validate_expression_data_R_setup": {
+    "prefix": "R:validate_expression_data_R_setup",
+    "body": [
+      "out <- .Fortran(\"validate_expression_data_R\",",
+      "    as.double(expression_vectors),",
+      "    as.integer(n_genes),",
+      "    as.integer(n_samples),",
+      "    as.logical(check_non_negative),",
+      "    ierr = ierr",
+      ")",
+      "tox_errors(out$ierr)",
+      "list(ierr = out$ierr)"
+    ],
+    "description": "Fortran call to validate expression data with error handling"
+  },
+  "R call to validate_family_centroids_R_setup": {
+    "prefix": "R:validate_family_centroids_R_setup",
+    "body": [
+      "out <- .Fortran(\"validate_family_centroids_R\",",
+      "    as.double(family_centroids),",
+      "    as.integer(n_families),",
+      "    as.integer(d),",
+      "    ierr = ierr",
+      ")",
+      "tox_errors(out$ierr)",
+      "list(ierr = out$ierr)"
+    ],
+    "description": "Fortran call to validate family centroids with error handling"
+  },
+  "R call to validate_shift_vectors_R_setup": {
+    "prefix": "R:validate_shift_vectors_R_setup",
+    "body": [
+      "out <- .Fortran(\"validate_shift_vectors_R\",",
+      "    as.double(shift_vectors),",
+      "    as.double(expression_vectors),",
+      "    as.double(family_centroids),",
+      "    as.integer(gene_to_fam),",
+      "    as.integer(d),",
+      "    as.integer(n_genes),",
+      "    as.integer(n_samples),",
+      "    as.integer(n_families),",
+      "    ierr = ierr",
+      ")",
+      "tox_errors(out$ierr)",
+      "list(ierr = out$ierr)"
+    ],
+    "description": "Fortran call to validate shift vectors with error handling"
+  },
+  "R call to validate_gene_ids_uniqueness_R_setup": {
+    "prefix": "R:validate_gene_ids_uniqueness_R_setup",
+    "body": [
+      "out <- .Fortran(\"validate_gene_ids_uniqueness_R\",",
+      "    as.integer(gene_ascii),",
+      "    as.integer(gene_len),",
+      "    as.integer(n_genes),",
+      "    ierr = ierr",
+      ")",
+      "tox_errors(out$ierr)",
+      "list(ierr = out$ierr)"
+    ],
+    "description": "Fortran call to validate gene IDs uniqueness with error handling"
+  },
+  "R call to validate_family_ids_uniqueness_R_setup": {
+    "prefix": "R:validate_family_ids_uniqueness_R_setup",
+    "body": [
+      "out <- .Fortran(\"validate_family_ids_uniqueness_R\",",
+      "    as.integer(fam_ascii),",
+      "    as.integer(fam_len),",
+      "    as.integer(n_families),",
+      "    ierr = ierr",
+      ")",
+      "tox_errors(out$ierr)",
+      "list(ierr = out$ierr)"
+    ],
+    "description": "Fortran call to validate family IDs uniqueness with error handling"
+  },
+  "R call to validate_empty_strings_R_setup": {
+    "prefix": "R:validate_empty_strings_R_setup",
+    "body": [
+      "out <- .Fortran(\"validate_empty_strings_R\",",
+      "    as.integer(str_ascii),",
+      "    as.integer(str_len),",
+      "    as.integer(n),",
+      "    ierr = ierr",
+      ")",
+      "tox_errors(out$ierr)",
+      "list(ierr = out$ierr)"
+    ],
+    "description": "Fortran call to validate empty strings with error handling"
+  },
+  "R call to validate_all_data_R_setup": {
+    "prefix": "R:validate_all_data_R_setup",
+    "body": [
+      "out <- .Fortran(\"validate_all_data_R\",",
+      "    as.integer(n_genes),",
+      "    as.integer(n_families),",
+      "    as.integer(n_samples),",
+      "    as.integer(d),",
+      "    as.integer(gene_ascii),",
+      "    as.integer(gene_len),",
+      "    as.integer(fam_ascii),",
+      "    as.integer(fam_len),",
+      "    as.integer(gene_to_fam),",
+      "    as.double(expression_vectors),",
+      "    as.double(family_centroids),",
+      "    as.double(shift_vectors),",
+      "    ierr = ierr",
+      ")",
+      "tox_errors(out$ierr)",
+      "list(ierr = out$ierr)"
+    ],
+    "description": "Fortran call to validate all data with error handling"
+  },
+  "R call to compute_shift_vector_field_r_setup": {
+    "prefix": "R:compute_shift_vector_field_r_setup",
+    "body": [
+      "result <- .Fortran(\"compute_shift_vector_field_r\",",
+      "    n_axes_genes = as.integer(n_axes_genes),",
+      "    n_vectors = as.integer(n_vectors),",
+      "    n_families = as.integer(n_families),",
+      "    expression_vectors = as.double(expression_vectors),",
+      "    family_centroids = as.double(family_centroids),",
+      "    gene_to_centroid = as.integer(gene_to_centroid),",
+      "    shift_vectors = as.double(shift_vectors),",
+      "    ierr = ierr",
+      ")",
+      "tox_errors(result$ierr)",
+      "list(",
+      "    shift_vectors = result$shift_vectors",
+      ")"
+    ],
+    "description": "Fortran call to compute shift vector field with error handling"
+  },
+  "R call to group_centroid_r_setup": {
+    "prefix": "R:group_centroid_r_setup",
+    "body": [
+      "result <- .Fortran(\"group_centroid_r\",",
+      "    expression_vectors = as.double(expression_vectors),",
+      "    n_axes = as.integer(n_axes),",
+      "    n_genes = as.integer(n_genes),",
+      "    gene_to_family = as.integer(gene_to_family),",
+      "    num_families = as.integer(n_families),",
+      "    centroid_matrix = centroid_matrix_out,",
+      "    use_all_mode = as.logical(use_all_mode),",
+      "    ortholog_set = as.logical(ortholog_set),",
+      "    selected_indices = selected_indices_ws,",
+      "    selected_indices_len = as.integer(n_genes),",
+      "    ierr = ierr",
+      ")",
+      "tox_errors(result$ierr)",
+      "result$centroid_matrix"
+    ],
+    "description": "Fortran call to group centroid with error handling"
+  }
+}

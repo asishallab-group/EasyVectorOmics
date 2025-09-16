@@ -10,6 +10,7 @@ module mod_test_tox_data
   use tox_gene_centroids
   use tox_shift_vectors
   use tox_errors
+  use tox_archive
   implicit none
   public
 
@@ -35,7 +36,7 @@ contains
 
   !> Get array of all available tests.
   function get_all_tests() result(all_tests)
-    type(test_case) :: all_tests(13)  ! Increased from 6 to 8
+    type(test_case) :: all_tests(14)  ! Increased from 6 to 8
     all_tests(1) = test_case("test_read_gene_ids", test_read_gene_ids)
     all_tests(2) = test_case("test_read_expression_data", test_read_expression_data)
     all_tests(3) = test_case("test_read_family_mapping", test_read_family_mapping)
@@ -49,6 +50,7 @@ contains
     all_tests(11) = test_case("test_read_write_family_ids", test_read_write_family_ids)
     all_tests(12) = test_case("test_read_write_family_centroids", test_read_write_centroids)
     all_tests(13) = test_case("test_data_accessors", test_data_accessors)
+    all_tests(14) = test_case("test_archive", test_archive)
   end function get_all_tests
 
   !> Setup global test data
@@ -168,7 +170,7 @@ contains
 
   !> Run all expression reader tests.
   subroutine run_all_tests_tox_data()
-    type(test_case) :: all_tests(13)  ! Updated
+    type(test_case) :: all_tests(14)  ! Updated
     integer(int32) :: i
     
     ! Setup global data first
@@ -185,7 +187,7 @@ contains
   !> Run specific expression reader tests by name.
   subroutine run_named_tests_tox_data(test_names)
     character(len=*), intent(in) :: test_names(:)
-    type(test_case) :: all_tests(13)  ! Updated
+    type(test_case) :: all_tests(14)  ! Updated
     integer(int32) :: i, j
     logical :: found
     
@@ -495,4 +497,83 @@ contains
                                size(family_centroids, 1), 1e-12_real64, &
                                "Retrieved centroid should match original")
   end subroutine test_data_accessors
+
+  subroutine test_archive()
+    use tox_archive
+    use iso_fortran_env, only: real64, int32
+    implicit none
+    
+    ! Declare verification arrays
+    character(len=:), allocatable :: gene_ids_verify(:)
+    real(real64), allocatable :: kallisto_verify(:,:)
+    integer(int32), allocatable :: gene_to_fam_verify(:)
+    character(len=:), allocatable :: gene_family_ids_verify(:)
+    real(real64), allocatable :: family_centroids_verify(:,:)
+    real(real64), allocatable :: shift_vectors_verify(:,:)
+    
+    integer(int32) :: ierr
+    
+    ! Save data to archive
+    call save_tox_data("test_archive.zip", ierr, &
+                      gene_ids=gene_ids, gene_ids_file="gene_ids_v1.bin", &
+                      expression=kallisto_expr, expression_file="kallisto_v1.bin", &
+                      gene_to_family=gene_to_fam, gene_to_family_file="gene_to_fam.bin", &
+                      family_ids=gene_family_ids, family_ids_file="family_ids.bin", &
+                      family_centroids=family_centroids, family_centroids_file="family_centroids.bin", &
+                      shift_vectors=shift_vectors, shift_vectors_file="shift_vectors.bin")
+    
+    if (ierr /= 0) then
+        print *, "Error saving archive: ", ierr
+        return
+    end if
+    
+    ! Read data from archive
+    call read_tox_data("test_archive.zip", ierr, &
+                      gene_ids=gene_ids_verify, &
+                      expression=kallisto_verify, &
+                      gene_to_family=gene_to_fam_verify, &
+                      family_ids=gene_family_ids_verify, &
+                      family_centroids=family_centroids_verify, &
+                      shift_vectors=shift_vectors_verify)
+    
+    if (ierr /= 0) then
+        print *, "Error reading archive: ", ierr
+        return
+    end if
+    
+    ! Verify the data (simple checks)
+    print *, "Archive test completed successfully!"
+    if (allocated(gene_ids_verify)) then
+        print *, "Gene IDs verified, count: ", size(gene_ids_verify)
+    end if
+    if (allocated(kallisto_verify)) then
+        print *, "Expression data verified, shape: ", shape(kallisto_verify)
+    end if
+    if (allocated(gene_to_fam_verify)) then
+        print *, "Gene to family mapping verified, count: ", size(gene_to_fam_verify)
+    end if
+    if (allocated(gene_family_ids_verify)) then
+        print *, "Family IDs verified, count: ", size(gene_family_ids_verify)
+    end if
+    if (allocated(family_centroids_verify)) then
+        print *, "Family centroids verified, shape: ", shape(family_centroids_verify)
+    end if
+    if (allocated(shift_vectors_verify)) then
+        print *, "Shift vectors verified, shape: ", shape(shift_vectors_verify)
+    end if
+    
+    ! Clean up
+    if (allocated(gene_ids)) deallocate(gene_ids)
+    if (allocated(kallisto_expr)) deallocate(kallisto_expr)
+    if (allocated(gene_to_fam)) deallocate(gene_to_fam)
+    if (allocated(gene_family_ids)) deallocate(gene_family_ids)
+    if (allocated(family_centroids)) deallocate(family_centroids)
+    if (allocated(shift_vectors)) deallocate(shift_vectors)
+    if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
+    if (allocated(kallisto_verify)) deallocate(kallisto_verify)
+    if (allocated(gene_to_fam_verify)) deallocate(gene_to_fam_verify)
+    if (allocated(gene_family_ids_verify)) deallocate(gene_family_ids_verify)
+    if (allocated(family_centroids_verify)) deallocate(family_centroids_verify)
+    if (allocated(shift_vectors_verify)) deallocate(shift_vectors_verify)
+end subroutine test_archive
 end module mod_test_tox_data

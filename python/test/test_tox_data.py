@@ -10,7 +10,6 @@ from tensoromics_functions_tox_data import (
     read_gene_ids_from_file,
     validate_all_data,
     validate_data_structure,
-    validate_empty_strings,
     validate_expression_data,
     validate_family_centroids,
     validate_gene_ids_uniqueness,

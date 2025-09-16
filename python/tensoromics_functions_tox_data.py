@@ -163,14 +163,6 @@ lib.validate_family_ids_uniqueness_C.argtypes = [
 ]
 lib.validate_family_ids_uniqueness_C.restype = None
 
-lib.validate_empty_strings_C.argtypes = [
-    ctypes.POINTER(ctypes.c_int), # strings_ascii
-    ctypes.c_int,                 # str_len
-    ctypes.c_int,                 # n
-    ctypes.POINTER(ctypes.c_int)  # ierr
-]
-lib.validate_empty_strings_C.restype = None
-
 lib.validate_data_structure_C.argtypes = [
     ctypes.c_int,                 # n_genes
     ctypes.c_int,                 # n_families
@@ -435,22 +427,6 @@ def validate_family_ids_uniqueness(family_ids):
     )
     if ierr.value != 0:
         raise Exception(f"Validation failed: family_ids uniqueness (error {ierr.value})")
-
-def validate_empty_strings(strings):
-    str_len = max(len(s) for s in strings)
-    n = len(strings)
-    strings_ascii = np.zeros((str_len, n), dtype=np.int32, order='F')
-    for i, s in enumerate(strings):
-        strings_ascii[:, i] = string_to_ascii_array(s, str_len)
-    ierr = ctypes.c_int()
-    lib.validate_empty_strings_C(
-        strings_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
-        ctypes.c_int(str_len),
-        ctypes.c_int(n),
-        ctypes.byref(ierr)
-    )
-    if ierr.value != 0:
-        raise Exception(f"Validation failed: empty strings check (error {ierr.value})")
 
 def validate_data_structure(n_genes, n_families, n_samples, d, gene_ids, gene_family_ids, gene_to_fam, expression_vectors, family_centroids, shift_vectors):
     gene_ids_len = max(len(g) for g in gene_ids)
