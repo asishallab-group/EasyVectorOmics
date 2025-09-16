@@ -13,6 +13,7 @@ program main
   use mod_test_shift_vectors
   use mod_test_gene_centroids
   use mod_test_tox_conversions
+  use mod_test_arrays
 
 
   implicit none

@@ -56,10 +56,6 @@ module tox_errors
   integer(int32), parameter :: ERR_SIZE_MISMATCH      = 206
     !! Array size mismatch
 
-<<<<<<< HEAD
-=======
-
->>>>>>> main
   !------------------------------
   ! 3xx: Memory
   !------------------------------
