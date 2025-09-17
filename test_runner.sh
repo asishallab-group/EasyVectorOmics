@@ -21,7 +21,7 @@ echo "Detected alignment: $ALIGN"
 
 # Detect compiler and flags
 if [[ "$FC" == "ifx" || "$FC" == "ifort" ]]; then
-  FLAGS="-O3 -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC"
+  FLAGS="-O3 -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC -lzip"
   MODULE_FLAG="-module $BUILD_DIR"
   COMPILER="ifx"
 else
