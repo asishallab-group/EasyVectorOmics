@@ -44,8 +44,12 @@ tox_errors <- function(ierr) {
     '9999' = "Unknown error.",
     paste("Unknown Fortran error code:", ierr)
   )
-  stop(msg)
+  
+  if (!is.null(msg)) {
+    stop(msg)
+  }
 }
+
 
 tox_get_array_metadata <- function(filename, max_dims = 5, with_clen = FALSE) {
   ascii <- utf8ToInt(filename)
@@ -65,7 +69,7 @@ tox_get_array_metadata <- function(filename, max_dims = 5, with_clen = FALSE) {
                   ierr,                                       # ierr
                   clen)     
                                                     # clen
-  check_err_code(res[[6]])  # ierr
+  tox_errors(res[[6]])  # ierr
 
   if(with_clen){
     return(list(
@@ -100,7 +104,7 @@ tox_deserialize_int_array <- function(filename, max_dims = 5) {
                 filename_ascii = as.integer(ascii),
                 fn_len = as.integer(length(ascii)),
                 ierr = ierr)
-    check_err_code(res$ierr)
+    tox_errors(res$ierr)
 
     array(res$flat_arr[1:prod(meta$dims)], dim = meta$dims)
 }
@@ -124,7 +128,7 @@ tox_deserialize_real_array <- function(filename, max_dims = 5) {
                 filename_ascii = as.integer(ascii),
                 fn_len = as.integer(length(ascii)),
                 ierr = ierr)
-    check_err_code(res$ierr)
+    tox_errors(res$ierr)
     array(res$flat_arr[1:prod(meta$dims)], dim = meta$dims)
 }
 
@@ -154,7 +158,7 @@ tox_deserialize_char_array <- function(filename, max_dims = 5) {
     fn_len = as.integer(length(ascii)),
     ierr = ierr
   )
-  check_err_code(res$ierr)
+  tox_errors(res$ierr)
   # translate ASCII back to char
   mat <- matrix(res$ascii_arr, nrow = clen)
   chars <- apply(mat, 2, function(col) rawToChar(as.raw(col[col > 0])))
@@ -184,7 +188,7 @@ tox_serialize_int_array <- function(arr, filename) {
            filename_ascii = as.integer(ascii),
            fn_len = as.integer(length(ascii)),
            ierr = ierr)
-  check_err_code(res$ierr)
+  tox_errors(res$ierr)
 }
 
 # BASE R arrays are column-major just like fortran, so no serialization is needed for the array structure.
@@ -210,7 +214,7 @@ tox_serialize_real_array <- function(arr, filename) {
            filename_ascii = as.integer(ascii),
            fn_len = as.integer(length(ascii)),
            ierr = ierr)
-  check_err_code(res$ierr)
+  tox_errors(res$ierr)
 }
 
 # Serializes a character array to a file, encoding it as an integer matrix
@@ -242,7 +246,7 @@ tox_serialize_char_array <- function(arr, filename) {
     fn_len = nchar(filename),
     ierr = ierr
   )
-  check_err_code(res$ierr)
+  tox_errors(res$ierr)
 }
 
 #' Normalize gene expression values by standard deviation
