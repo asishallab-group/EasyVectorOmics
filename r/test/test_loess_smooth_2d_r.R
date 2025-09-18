@@ -197,7 +197,7 @@ test_loess_invalid_dimensions <- function() {
   }, error = function(e) {
     error_caught <<- TRUE
     # Check that the error message contains expected text
-    stopifnot(grepl("Invalid input|No axes selected", e$message))
+    stopifnot(grepl("Empty input arrays provided.", e$message))
   })
   stopifnot(error_caught)  # Make sure an error was actually thrown
   

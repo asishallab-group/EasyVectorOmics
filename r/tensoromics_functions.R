@@ -1,51 +1,7 @@
 # === Load the shared library ===
 dyn.load("./build/libtensor-omics.so")
+source("r/error_handling.R")
 
-#' Check error code and throw informative error if needed
-#' 
-#' @param ierr Error code from Fortran routine
-tox_errors <- function(ierr) {
-  msg <- switch(
-    as.character(ierr),
-    "0" = NULL,
-    '101' = "Could not open file.",
-    '102' = "Could not read magic number.",
-    '103' = "Could not read type code.",
-    '104' = "Could not read number of dimensions.",
-    '105' = "Could not read array dimensions",
-    '106' = "Could not read character length.",
-    '107' = "Could not read array data.",
-    '112' = "Could not write magic number",
-    '113' = "Could not write type code",
-    '114' = "Could not write number of dimensions",
-    '115' = "Could not write dimensions",
-    '116' = "Could not write character length",
-    '117' = "Could not write array data",
-    # ADD MORE HERE
-    
-    # FORMAT ERRORS
-    '200' = "Invalid format detected.",
-    '201' = "Invalid input provided.",
-    '202' = "Empty input arrays provided.",
-    '203' = "Dimension mismatch detected.",
-    '204' = "NaN or Inf found in input data.",
-    '205' = "Unsupported data type encountered.",
-    '206' = "Array size mismatch detected",
-
-    # MEMORY ERRORS
-    '301' = "Memory allocation failed.",
-    '302' = "Null pointer reference encountered.",
-
-    # FORTRAN RUNTIME ERRORS
-    '5002' = "Fortran runtime error: unit not open / not connected.",
-
-    # Internal errors
-    '9001' = "Internal error: unexpected state.",
-    '9999' = "Unknown error.",
-    paste("Unknown Fortran error code:", ierr)
-  )
-  stop(msg)
-}
 
 tox_get_array_metadata <- function(filename, max_dims = 5, with_clen = FALSE) {
   ascii <- utf8ToInt(filename)
@@ -268,7 +224,7 @@ tox_normalize_by_std_dev <- function(input_matrix) {
   # Prepare the input vector (flatten matrix column-major) and allocate output space
   input_vector <- as.numeric(as.vector(input_matrix))
   output_vector <- numeric(n_genes * n_tissues)
-  ierr <- integer(0)
+  ierr <- as.integer(0)
 
   # Validate input data before calling Fortran
   if (any(is.na(input_vector))) {
@@ -289,7 +245,7 @@ tox_normalize_by_std_dev <- function(input_matrix) {
                output_vector = output_vector,
                ierr = ierr)
 
-  tox_errors(result$ierr)
+  check_err_code(result$ierr)
   return(matrix(result$output_vector, nrow = n_genes, ncol = n_tissues,
          dimnames = dimnames(input_matrix)))
 
@@ -322,7 +278,7 @@ tox_quantile_normalization <- function(input_matrix) {
   max_stack <- as.integer(ceiling(log2(n_genes)) + 10)
   stack_left <- integer(max_stack)
   stack_right <- integer(max_stack)
-  ierr <- integer(0)
+  ierr <- as.integer(0)
 
   storage.mode(input_vector) <- "double"
   storage.mode(output_vector) <- "double"
@@ -345,7 +301,7 @@ tox_quantile_normalization <- function(input_matrix) {
     max_stack = as.integer(max_stack),
     ierr = ierr
   )
-  tox_errors(result$ierr)
+  check_err_code(result$ierr)
   return(matrix(result$output_vector, nrow = n_genes, ncol = n_tissues,
          dimnames = dimnames(input_matrix)))
 }
@@ -379,7 +335,7 @@ tox_log2_transformation <- function(input_matrix) {
   # Prepare the input vector (flatten matrix column-major) and allocate output space
   input_vector <- as.numeric(as.vector(input_matrix))
   output_vector <- numeric(n_genes * n_tissues)
-  ierr <- integer(0)
+  ierr <- as.integer(0)
 
   # Call the Fortran subroutine
   result <- .Fortran("log2_transformation_r",
@@ -389,7 +345,7 @@ tox_log2_transformation <- function(input_matrix) {
                output_vector = output_vector,
                ierr = ierr)
 
-  tox_errors(result$ierr)
+  check_err_code(result$ierr)
   return(matrix(result$output_vector, nrow = n_genes, ncol = n_tissues,
   dimnames = dimnames(input_matrix)))
 
@@ -479,7 +435,7 @@ tox_calculate_tissue_averages <- function(df) {
   }
   input_vector <- as.numeric(as.vector(as.matrix(df_sorted)))
   output_vector <- numeric(n_genes * n_groups)
-  ierr <- integer(0)
+  ierr <- as.integer(0)
   result <- .Fortran("calc_tiss_avg_r",
                n_genes = as.integer(n_genes),
                n_groups = as.integer(n_groups),
@@ -488,7 +444,7 @@ tox_calculate_tissue_averages <- function(df) {
                input_vector = as.numeric(input_vector),
                output_vector = as.numeric(output_vector),
                ierr = ierr)
-  tox_errors(result$ierr)
+  check_err_code(result$ierr)
   output_matrix <- matrix(result$output_vector, nrow = n_genes, ncol = n_groups)
   colnames(output_matrix) <- unique_groups
   rownames(output_matrix) <- rownames(df)
@@ -577,7 +533,7 @@ tox_calculate_fc_by_patterns <- function(df, control_pattern, condition_patterns
   # --- Prepare input and output vectors ---
   input_vector <- as.numeric(as.vector(as.matrix(df)))
   output_vector <- numeric(n_genes * n_pairs)
-  ierr <- integer(0)
+  ierr <- as.integer(0)
   # --- Call Fortran subroutine to calculate fold changes ---
   result <- .Fortran("calc_fchange_r",
                n_genes = as.integer(n_genes),
@@ -588,7 +544,7 @@ tox_calculate_fc_by_patterns <- function(df, control_pattern, condition_patterns
                input_vector = input_vector,
                output_vector = output_vector,
                ierr = ierr)
-  tox_errors(result$ierr)
+  check_err_code(result$ierr)
   # --- Reconstruct the fold change matrix ---
   output_matrix <- matrix(result$output_vector, nrow = n_genes, ncol = n_pairs)
   colnames(output_matrix) <- condition_labels
@@ -875,7 +831,7 @@ tox_normalization_pipeline <- function(input_matrix, group_s, group_c) {
   stack_right <- integer(max_stack)
   storage.mode(group_s) <- "integer"
   storage.mode(group_c) <- "integer"
-  ierr <- integer(0)
+  ierr <- as.integer(0)
   result <- .Fortran("normalization_pipeline_r",
       n_genes = as.integer(n_genes),
       n_tissues = as.integer(n_tissues),
@@ -895,7 +851,7 @@ tox_normalization_pipeline <- function(input_matrix, group_s, group_c) {
       n_grps = as.integer(n_grps),
       ierr = ierr
   )
-  tox_errors(result$ierr)
+  check_err_code(result$ierr)
   return(matrix(result$buf_log, nrow = n_genes, ncol = n_grps))
 
 }
@@ -975,7 +931,7 @@ tox_calculate_tissue_versatility <- function(expression_vectors, vector_selectio
                      ierr = ierr)
   
   # Check for errors and throw informative messages
-  tox_errors(result$ierr)
+  check_err_code(result$ierr)
   
   # Return structured result (no ierr since we checked for errors)
   return(list(
@@ -1026,7 +982,7 @@ tox_compute_family_scaling <- function(distances, gene_to_fam, n_families) {
   )
   
   # Check for errors and throw informative messages
-  tox_errors(result$error_code)
+  check_err_code(result$error_code)
   
   return(list(
     dscale = result$dscale,
@@ -1109,7 +1065,7 @@ tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families
   )
   
   # Check for errors and throw informative messages
-  tox_errors(result$error_code)
+  check_err_code(result$error_code)
   
   return(list(
     dscale = result$dscale,
@@ -1266,7 +1222,7 @@ tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile =
   )
   
   # Check for errors and throw informative messages
-  tox_errors(result$error_code)
+  check_err_code(result$error_code)
   
   return(list(
     is_outlier = result$is_outlier,
@@ -1340,7 +1296,7 @@ tox_loess_smooth_2d <- function(x_ref, y_ref, x_query, indices_used = NULL,
   )
   
   # Check for errors and throw informative messages
-  tox_errors(result$ierr)
+  check_err_code(result$ierr)
   
   return(list(
     y_out = result$y_out,
@@ -1512,7 +1468,7 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
                      ierr = ierr)
   
   # Check for errors and throw informative messages
-  tox_errors(result$ierr)
+  check_err_code(result$ierr)
   
   # Return structured result (no ierr since we checked for errors)
   return(list(
@@ -1577,7 +1533,7 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
                      ierr = ierr)
   
   # Check for errors and throw informative messages
-  tox_errors(result$ierr)
+  check_err_code(result$ierr)
 
   # 4) Return the populated output matrix (no ierr since we checked for errors)
   return(result$centroid_matrix)
@@ -1620,7 +1576,7 @@ tox_mean_vector <- function(expression_vectors, gene_indices) {
                      ierr = ierr)
   
   # Check for errors and throw informative messages
-  tox_errors(result$ierr)
+  check_err_code(result$ierr)
   
   return(result$centroid_col)
 }
