@@ -19,7 +19,7 @@ contains
 ! Read tabular files (CSV/TSV)
 subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
                              n_header_rows, gene_col, value_cols, start_row, ierr, delimiter)
-    use hashmap_module
+    use xxh3_hashmap_module
     character(len=*), intent(in) :: file_list(:)
     character(len=*), intent(inout) :: gene_ids(:)
     real(real64), intent(inout) :: expression_vectors(:,:)
@@ -74,9 +74,9 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
     end if
 
     ! Build gene hashmap for fast lookup
-    call hashmap_create(gene_map, int(1.3 * n_genes))
+    call hashmap_create(gene_map, initial_size=n_genes)
     do i = 1, n_genes
-        call hashmap_put(gene_map, gene_ids(i), i)
+        call hashmap_put(gene_map, trim(gene_ids(i)), i)
     end do
     
     current_sample = start_row - 1
@@ -248,7 +248,7 @@ subroutine read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, 
 end subroutine read_gene_ids_from_file
 
 subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
-    use hashmap_module
+    use xxh3_hashmap_module
     character(len=*), intent(in) :: filename
     character(len=*), intent(in) :: gene_ids(:)
     character(len=*), intent(out) :: family_ids(:)
@@ -268,9 +268,8 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     n_families = size(family_ids)
     n_genes = size(gene_ids)
     
-    ! Hashmap for efficient lookups, use 1.3*n_genes to reduce collisions
-    hashmap_size = int(1.3 * n_genes)
-    call hashmap_create(gene_map, hashmap_size)
+    ! Hashmap for efficient lookups
+    call hashmap_create(gene_map, initial_size = n_genes)
     
     ! Fill hashmap
     do i = 1, n_genes

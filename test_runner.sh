@@ -19,21 +19,31 @@ fi
 
 echo "Detected alignment: $ALIGN"
 
+# Check if xxHash library is available
+if pkg-config --exists libxxhash 2>/dev/null; then
+    HAS_XXHASH=1
+    XXHASH_FLAGS=$(pkg-config --cflags libxxhash)
+    XXHASH_LIBS=$(pkg-config --libs libxxhash)
+else
+    echo "Warning: xxHash library not found. Using fallback hashing."
+    HAS_XXHASH=0
+    XXHASH_FLAGS=""
+    XXHASH_LIBS=""
+fi
+
 # Detect compiler and flags
 if [[ "$FC" == "ifx" || "$FC" == "ifort" ]]; then
-  FLAGS="-O3 -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC -lzip"
+  FLAGS="-O3 -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC -lzip $XXHASH_FLAGS"
   MODULE_FLAG="-module $BUILD_DIR"
   COMPILER="ifx"
 else
-  FLAGS="-O3 -march=native -mtune=native -fopenmp -ffast-math -funroll-loops -ftree-vectorize -fassociative-math -fPIC -lzip"
+  FLAGS="-O3 -march=native -mtune=native -fopenmp -ffast-math -funroll-loops -ftree-vectorize -fassociative-math -fPIC -lzip $XXHASH_FLAGS"
   MODULE_FLAG="-J$BUILD_DIR"
   COMPILER="gfortran"
 fi
 
-echo "Compiling src/"
-bash build.sh 
-
 echo "Using compiler: $COMPILER"
+echo "xxHash support: $([ $HAS_XXHASH -eq 1 ] && echo "Enabled" || echo "Disabled")"
 
 MAX_PERF_FLAG=""
 for arg in "$@"; do
@@ -50,8 +60,11 @@ if [ -e "$EXECUTABLE" ]; then
   rm -rf "$EXECUTABLE"
 fi
 
+echo "Building main library first..."
+bash build.sh 
+
 echo "Compiling test modules..."
-# Then compile test/ modules using .mod files from build/
+# Compile test modules using .mod files from build/
 $COMPILER $FLAGS $MODULE_FLAG -DDEFAULT_ALIGNMENT=$ALIGN $MAX_PERF_FLAG \
   -I$BUILD_DIR -I$SOURCE_DIR -I$TEST_DIR \
   -c $TEST_DIR/*.f90
@@ -59,22 +72,34 @@ $COMPILER $FLAGS $MODULE_FLAG -DDEFAULT_ALIGNMENT=$ALIGN $MAX_PERF_FLAG \
 compilation_result=$?
 echo "Test compilation exit code: $compilation_result"
 
-
 # Move object files to build/
 mv *.o $BUILD_DIR/ 2>/dev/null || true
 mv *.mod $BUILD_DIR/ 2>/dev/null || true
 
-
 echo "Linking executable..."
-# Finally link everything together
+# Find all object files including the C object file if it exists
+OBJECT_FILES=($BUILD_DIR/*.o)
+
+# Link everything together with proper libraries
 $COMPILER $FLAGS -I$BUILD_DIR \
-  $BUILD_DIR/*.o -o $EXECUTABLE
+  "${OBJECT_FILES[@]}" -o $EXECUTABLE \
+  $XXHASH_LIBS -fopenmp -lzip
 
 linking_result=$?
 echo "Linking exit code: $linking_result"
 
-echo "Running tests..."
-# Run the executable
-$EXECUTABLE "$@"
+if [ $linking_result -eq 0 ]; then
+    echo "Running tests..."
+    # Run the executable
+    $EXECUTABLE "$@"
+    TEST_RESULT=$?
+    echo "Test execution completed with exit code: $TEST_RESULT"
+else
+    echo "Error: Failed to link test executable"
+    exit 1
+fi
 
-rm test_*.bin
+# Cleanup
+rm -f test_*.bin 2>/dev/null || true
+
+exit $TEST_RESULT

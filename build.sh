@@ -1,5 +1,5 @@
 #!/bin/bash
-# build.sh | Optimized build script for FPM with dynamic alignment
+# build.sh | Optimized build script for FPM with dynamic alignment and xxHash support
 # Build with selected profile and alignment parameter:
 # Default fallback alignment for the most likely situation:
 ALIGN=32
@@ -13,13 +13,29 @@ ALIGN=32
 elif lscpu | grep -q sse2; then
 ALIGN=16
 fi
+
+# Check if xxHash library is available
+if [ -f /usr/lib/libxxhash.so ] || [ -f /usr/lib64/libxxhash.so ]; then
+    HAS_XXHASH=1
+    # Arch Linux typically places headers in /usr/include and libraries in /usr/lib
+    XXHASH_FLAGS="-I/usr/include"
+    XXHASH_LIBS="-L/usr/lib -lxxhash"
+else
+    echo "Warning: xxHash library not found. Trying to compile without it..."
+    HAS_XXHASH=0
+    XXHASH_FLAGS=""
+    XXHASH_LIBS=""
+fi
+
 # Detect compiler and choose appropriate profile:
 if [[ "$FC" == "ifx" || "$FC" == "ifort" ]]; then
-  FLAGS="-O3 -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC -lzip"
+  FLAGS="-O3 -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC -lzip $XXHASH_FLAGS"
   COMPILER="ifx"
+  C_COMPILER="icc"
 else
-  FLAGS="-O3 -march=native -mtune=native -fopenmp -ffast-math -funroll-loops -ftree-vectorize -fassociative-math -fPIC -lzip"
+  FLAGS="-O3 -march=native -mtune=native -fopenmp -ffast-math -funroll-loops -ftree-vectorize -fassociative-math -fPIC -lzip $XXHASH_FLAGS"
   COMPILER="gfortran"
+  C_COMPILER="gcc"
 fi
 
 # Detect --max-performance flag
@@ -35,7 +51,10 @@ if [ -d "build" ]; then
   rm -rf build
 fi
 
-# Build with FPM first
+# Create build directory
+mkdir -p build
+
+# Build with FPM
 export FC
 fpm build --compiler $COMPILER --flag "$FLAGS" --flag "-DDEFAULT_ALIGNMENT=$ALIGN" --flag "$MAX_PERF_FLAG"
 
@@ -55,6 +74,11 @@ for compiler_dir in build/${COMPILER}_*; do
 done
 
 echo "Build complete with compiler: $COMPILER, alignment: $ALIGN bytes"
+if [ $HAS_XXHASH -eq 1 ]; then
+    echo "xxHash support: Enabled"
+else
+    echo "xxHash support: Disabled (using fallback hashing)"
+fi
 
 # Verify that we have the necessary files for test_runner.sh
 mod_count=$(find build -name "*.mod" | wc -l)

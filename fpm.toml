@@ -3,8 +3,12 @@ version = "0.1.0"
 license = "MIT"
 
 [install]
+[install.library]
 library = true
+c-sources = ["src/tox_data/xxh3_hash.c"]
 
 [library]
 type = "shared" 
 
+[build]
+link = ["xxhash"]
