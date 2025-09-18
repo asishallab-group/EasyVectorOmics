@@ -1,8 +1,6 @@
 program main
-<<<<<<< HEAD
   use mod_test_bst
   use mod_test_kd_tree
-=======
   use mod_test_sorting
   use mod_test_get_outliers
   use mod_test_loess_smoothing
@@ -18,7 +16,6 @@ program main
   use mod_test_gene_centroids
   use mod_test_tox_conversions
 
->>>>>>> main
 
   implicit none
 
