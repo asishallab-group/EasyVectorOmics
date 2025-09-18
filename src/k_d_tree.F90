@@ -10,7 +10,7 @@ contains
 
     !> Build a k-d tree index using a stack-based, non-recursive approach.
     pure subroutine build_kd_index(points, num_dimensions, num_points, kd_indices, dimension_order, &
-                            workspace, value_buffer, permutation, left_stack, right_stack, ierr)
+                            workspace, value_buffer, permutation, left_stack, right_stack, recursion_stack, ierr)
         integer(int32), intent(in) :: num_dimensions      
         !! Number of dimensions
         integer(int32), intent(in) :: num_points          
@@ -19,6 +19,9 @@ contains
         !! Data points
         integer(int32), intent(in) :: dimension_order(num_dimensions)   
         !! Dimension order (by variance)
+        integer(int32), intent(out) :: recursion_stack(3, num_points) 
+        !! Stack for l, r, depth
+
         integer(int32), intent(out) :: kd_indices(num_points)           
         !! Output index array (k-d tree order)
         integer(int32), intent(out) :: workspace(num_points)          
@@ -27,20 +30,16 @@ contains
         !! Workspace for sorting
         integer(int32), intent(out) :: permutation(num_points)        
         !! Workspace for sorting
-        integer(int32), intent(out) :: left_stack(:)                  
+        integer(int32), intent(out) :: left_stack(num_points)                  
         !! Workspace for sorting
-        integer(int32), intent(out) :: right_stack(:)                 
+        integer(int32), intent(out) :: right_stack(num_points)                 
         !! Workspace for sorting
         integer(int32), intent(out) :: ierr                             
         !! Error code
-        
-        integer(int32) :: max_depth
-        integer(int32) :: recursion_stack(3, num_points)  !! Stack for l, r, depth
+
         integer(int32) :: stack_top
         integer(int32) :: left_idx, right_idx, mid_idx, current_dim, current_depth
         integer(int32) :: i
-
-        max_depth = num_points
 
         call set_ok(ierr)
         
@@ -84,11 +83,6 @@ contains
             current_depth = recursion_stack(3, stack_top)
             stack_top = stack_top - 1
 
-            if (current_depth > max_depth) then
-                call set_err_once(ierr, ERR_SIZE_MISMATCH)
-                return
-            end if
-
             if (right_idx <= left_idx) cycle
 
             !! Choose split dimension by cycling through dimension_order
@@ -98,7 +92,7 @@ contains
             mid_idx = left_idx + (right_idx - left_idx) / 2
 
             !! Partition kd_indices(left_idx:right_idx) by points(current_dim, kd_indices(:))
-            call partial_sort_by_dimension(points, num_dimensions, kd_indices, left_idx, right_idx, &
+            call partial_sort_by_dimension(points, num_points, num_dimensions, kd_indices, left_idx, right_idx, &
                                         current_dim, mid_idx, workspace, value_buffer, permutation, &
                                         left_stack, right_stack, ierr)
             if (.not. is_ok(ierr)) return
@@ -120,7 +114,7 @@ contains
     end subroutine build_kd_index
 
     !> Helper: sorts kd_indices(left_idx:right_idx) by points(dimension, kd_indices(:))
-    pure subroutine partial_sort_by_dimension(points, num_dimensions, kd_indices, left_idx, right_idx, &
+    pure subroutine partial_sort_by_dimension(points, n_points, num_dimensions, kd_indices, left_idx, right_idx, &
                                         dim, mid_idx, workspace, value_buffer, permutation, &
                                         left_stack, right_stack, ierr)
         use f42_utils, only: sort_array
@@ -134,7 +128,9 @@ contains
         !! Dimension to sort by
         integer(int32), intent(in) :: mid_idx             
         !! Target median index
-        real(real64), intent(in) :: points(num_dimensions, *)  
+        integer(int32), intent(in) :: n_points
+        !! size of points
+        real(real64), intent(in) :: points(num_dimensions, n_points)  
         !! Input points array
         integer(int32), intent(out) :: kd_indices(:)         
         !! Index array to modify
@@ -198,7 +194,7 @@ contains
     !> Build spherical k-d tree index
     pure subroutine build_spherical_kd(vectors, num_dimensions, num_vectors, sphere_indices, &
                                 dimension_order, workspace, value_buffer, permutation, &
-                                left_stack, right_stack, ierr)
+                                left_stack, right_stack, recursion_stack, ierr)
 
         integer(int32), intent(in) :: num_dimensions      
         !! Number of dimensions
@@ -206,6 +202,8 @@ contains
         !! Number of vectors
         real(real64), intent(in) :: vectors(num_dimensions, num_vectors)  
         !! Input unit vectors
+        integer(int32), intent(out) :: recursion_stack(3, num_vectors)
+        !! Stack for recursive calls
         integer(int32), intent(out) :: sphere_indices(num_vectors)  
         !! Output index array
         integer(int32), intent(out) :: dimension_order(num_dimensions)  
@@ -216,49 +214,16 @@ contains
         !! Value buffer
         integer(int32), intent(out) :: permutation(num_vectors)   
         !! Permutation array
-        integer(int32), intent(out) :: left_stack(:)              
+        integer(int32), intent(out) :: left_stack(num_vectors)              
         !! Left stack
-        integer(int32), intent(out) :: right_stack(:)             
+        integer(int32), intent(out) :: right_stack(num_vectors)             
         !! Right stack
         integer(int32), intent(out) :: ierr                         
         !! Error code
 
         call build_kd_index(vectors, num_dimensions, num_vectors, sphere_indices, dimension_order, &
-                          workspace, value_buffer, permutation, left_stack, right_stack, ierr)
+                          workspace, value_buffer, permutation, left_stack, right_stack, recursion_stack, ierr)
     end subroutine build_spherical_kd
-
-    !> Get value from sorted array
-    function get_value_sorted(values, indices, position, ierr) result(sorted_value)
-        real(real64), intent(in) :: values(:)            
-        !! Input array
-        integer(int32), intent(in) :: indices(:)         
-        !! Index array
-        integer(int32), intent(in) :: position           
-        !! Position in sorted array
-        integer(int32), intent(out) :: ierr              
-        !! Error code
-        real(real64) :: sorted_value
-
-        call set_ok(ierr)
-        
-        ! Input validation
-        if (position < 1 .or. position > size(indices)) then
-            call set_err_once(ierr, ERR_INVALID_INPUT)
-            return
-        end if
-        
-        if (size(indices) == 0) then
-            call set_err_once(ierr, ERR_EMPTY_INPUT)
-            return
-        end if
-        
-        if (indices(position) < 1 .or. indices(position) > size(values)) then
-            call set_err_once(ierr, ERR_DIM_MISMATCH)
-            return
-        end if
-        
-        sorted_value = values(indices(position))
-    end function get_value_sorted
 
     !> Get point from KD index
     pure subroutine get_kd_point(points, kd_indices, position, point_values, ierr)
@@ -325,8 +290,10 @@ subroutine build_kd_index_r(points, num_dimensions, num_points, kd_indices, dime
     integer(int32), intent(out) :: ierr                
     !! Error code
 
+    integer(int32) :: recursion_stack(3, num_points)
+
     call build_kd_index(points, num_dimensions, num_points, kd_indices, dimension_order, &
-                      workspace, value_buffer, permutation, left_stack, right_stack, ierr)
+                      workspace, value_buffer, permutation, left_stack, right_stack, recursion_stack, ierr)
 end subroutine build_kd_index_r
 
 !> R interface for building spherical KD index
@@ -359,8 +326,10 @@ subroutine build_spherical_kd_r(vectors, num_dimensions, num_vectors, sphere_ind
     integer(int32), intent(out) :: ierr                
     !! Error code
 
+    integer(int32) :: recursion_stack(3, num_vectors)
+
     call build_spherical_kd(vectors, num_dimensions, num_vectors, sphere_indices, dimension_order, &
-                          workspace, value_buffer, permutation, left_stack, right_stack, ierr)
+                          workspace, value_buffer, permutation, left_stack, right_stack, recursion_stack, ierr)
 end subroutine build_spherical_kd_r
 
 !> C interface for building KD index
@@ -368,6 +337,7 @@ subroutine build_kd_index_C(points, num_dimensions, num_points, kd_indices, dime
                           workspace, value_buffer, permutation, left_stack, right_stack, ierr) &
                           bind(C, name="build_kd_index_C")
     use iso_c_binding, only: c_int, c_double, c_f_pointer, c_loc
+    use iso_fortran_env, only : int32
     use kd_tree, only: build_kd_index
     implicit none
     integer(c_int), value :: num_dimensions
@@ -382,7 +352,9 @@ subroutine build_kd_index_C(points, num_dimensions, num_points, kd_indices, dime
     integer(c_int), intent(out) :: right_stack(num_points)
     integer(c_int), intent(out) :: ierr
 
+    integer(int32) :: recursion_stack(3, num_points)
+
     ! Call the original implementation
     call build_kd_index(points, num_dimensions, num_points, kd_indices, dimension_order, &
-                      workspace, value_buffer, permutation, left_stack, right_stack, ierr)
+                      workspace, value_buffer, permutation, left_stack, right_stack, recursion_stack, ierr)
 end subroutine build_kd_index_C

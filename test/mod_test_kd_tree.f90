@@ -88,10 +88,11 @@ contains
     integer(int32) :: kd_ix(n), dim_order(d) = [1, 2]
     integer(int32) :: work(n), perm(n), stack_left(n), stack_right(n), ierr
     real(real64) :: subarray(n)
+    integer(int32) :: recursion_stack(3,n)
 
     call set_ok(ierr)
     
-    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, ierr)
+    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, recursion_stack, ierr)
     if(.not. is_ok(ierr)) error stop
     
     call assert_permutation(kd_ix, n, "2D Cartesian KD-Tree")
@@ -104,11 +105,12 @@ contains
     integer(int32) :: sphere_ix(n), dim_order(d) = [1, 2, 3]
     integer(int32) :: work(n), perm(n), stack_left(n), stack_right(n), ierr
     real(real64) :: subarray(n)
+    integer(int32) :: recursion_stack(3,n)
 
     call set_ok(ierr)
     
     call random_unit_vectors(V, d, n)
-    call build_spherical_kd(V, d, n, sphere_ix, dim_order, work, subarray, perm, stack_left, stack_right, ierr)
+    call build_spherical_kd(V, d, n, sphere_ix, dim_order, work, subarray, perm, stack_left, stack_right, recursion_stack, ierr)
     if(.not. is_ok(ierr)) error stop
     
     call assert_permutation(sphere_ix, n, "3D Spherical KD-Tree")
@@ -121,11 +123,12 @@ contains
     integer(int32) :: kd_ix(n), dim_order(d) = [1, 2]
     integer(int32) :: work(n), perm(n), stack_left(n), stack_right(n), ierr
     real(real64) :: subarray(n)
+    integer(int32) :: recursion_stack(3,n)
 
     call set_ok(ierr)
     
     ! This should return ERR_EMPTY_INPUT
-    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, ierr)
+    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, recursion_stack, ierr)
     if(is_ok(ierr)) error stop
     
     call assert_true(.true., "KD-Tree empty array handling")
@@ -138,10 +141,11 @@ contains
     integer(int32) :: kd_ix(n), dim_order(d) = [1, 2]
     integer(int32) :: work(n), perm(n), stack_left(n), stack_right(n), ierr
     real(real64) :: subarray(n)
+    integer(int32) :: recursion_stack(3,n)
 
     call set_ok(ierr)
     
-    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, ierr)
+    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, recursion_stack, ierr)
     if(.not. is_ok(ierr)) error stop
     
     call assert_equal_int(kd_ix(1), 1, "KD-Tree single point index incorrect")
@@ -154,10 +158,11 @@ contains
     integer(int32) :: kd_ix(n), dim_order(d) = [1, 2, 3]
     integer(int32) :: work(n), perm(n), stack_left(n), stack_right(n), ierr
     real(real64) :: subarray(n)
+    integer(int32) :: recursion_stack(3,n)
 
     call set_ok(ierr)
     
-    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, ierr)
+    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, recursion_stack, ierr)
     if(.not. is_ok(ierr)) error stop
     
     call assert_permutation(kd_ix, n, "KD-Tree identical points")
@@ -171,6 +176,7 @@ contains
     integer(int32) :: work(n), perm(n), stack_left(n), stack_right(n)
     real(real64) :: subarray(n)
     integer(int32) :: i, ierr
+    integer(int32) :: recursion_stack(3, n)
 
     call set_ok(ierr)
     
@@ -178,7 +184,7 @@ contains
       V(i,i) = 1.0d0
     end do
     
-    call build_spherical_kd(V, d, n, sphere_ix, dim_order, work, subarray, perm, stack_left, stack_right, ierr)
+    call build_spherical_kd(V, d, n, sphere_ix, dim_order, work, subarray, perm, stack_left, stack_right, recursion_stack, ierr)
     if(.not. is_ok(ierr)) error stop
     
     call assert_permutation(sphere_ix, n, "KD-Tree unit vectors")
@@ -192,10 +198,11 @@ contains
     integer(int32) :: kd_ix(n), dim_order(d) = [(i, i = 1, d)]
     integer(int32) :: work(n), perm(n), stack_left(n), stack_right(n), ierr
     real(real64) :: subarray(n)
+    integer(int32) :: recursion_stack(3, n)
     call set_ok(ierr)
     
     call random_matrix(X, d, n)
-    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, ierr)
+    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, recursion_stack, ierr)
     if(.not. is_ok(ierr)) error stop
     
     call assert_permutation(kd_ix, n, "KD-Tree high dimension low points")
@@ -209,6 +216,7 @@ contains
     integer(int32) :: work(n), perm(n), stack_left(n), stack_right(n)
     real(real64) :: subarray(n)
     integer(int32) :: i, ierr
+    integer(int32) :: recursion_stack(3, n)
 
     call set_ok(ierr)
     
@@ -216,7 +224,7 @@ contains
       X(1,i) = i
     end do
     
-    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, ierr)
+    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, recursion_stack, ierr)
     if(.not. is_ok(ierr)) error stop
     
     call assert_permutation(kd_ix, n, "1D sorted KD-Tree")
@@ -229,10 +237,11 @@ contains
     integer(int32) :: kd_ix(n), dim_order(d) = [1, 2]
     integer(int32) :: work(n), perm(n), stack_left(n), stack_right(n), ierr
     real(real64) :: subarray(n)
+    integer(int32) :: recursion_stack(3,n)
 
     call set_ok(ierr)
     
-    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, ierr)
+    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, recursion_stack, ierr)
     if(.not. is_ok(ierr)) error stop
     
     call assert_permutation(kd_ix, n, "2D minimal KD-Tree")
@@ -245,10 +254,11 @@ contains
     integer(int32) :: kd_ix(n), dim_order(d) = [1]
     integer(int32) :: work(n), perm(n), stack_left(n), stack_right(n), ierr
     real(real64) :: subarray(n)
+    integer(int32) :: recursion_stack(3, n)
 
     call set_ok(ierr)
     
-    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, ierr)
+    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, recursion_stack, ierr)
     if(.not. is_ok(ierr)) error stop
     
     call assert_permutation(kd_ix, n, "1D minimal KD-Tree")
@@ -262,11 +272,12 @@ contains
     integer(int32) :: work(n), perm(n), stack_left(n), stack_right(n), ierr
     real(real64) :: subarray(n)
     real(real64) :: val(d)
+    integer(int32) :: recursion_stack(3, n)
 
     call set_ok(ierr)
     
     call random_matrix(X, d, n)
-    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, ierr)
+    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, recursion_stack, ierr)
     if(.not. is_ok(ierr)) error stop
     call get_kd_point(X, kd_ix, 4, val, ierr)
     if(.not. is_ok(ierr)) error stop
@@ -281,11 +292,12 @@ contains
     integer(int32) :: kd_ix(n), dim_order(d) = [1, 2, 3, 4, 5]
     integer(int32) :: work(n), perm(n), stack_left(n), stack_right(n), ierr
     real(real64) :: subarray(n)
+    integer(int32) :: recursion_stack(3, n)
 
     call set_ok(ierr)
     
     call random_matrix(X, d, n)
-    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, ierr)
+    call build_kd_index(X, d, n, kd_ix, dim_order, work, subarray, perm, stack_left, stack_right, recursion_stack, ierr)
     if(.not. is_ok(ierr)) error stop
     
     call assert_permutation(kd_ix, n, "5D medium KD-Tree")
