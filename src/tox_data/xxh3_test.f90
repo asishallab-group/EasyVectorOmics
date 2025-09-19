@@ -1,3 +1,4 @@
+!! TEST PROGRAMM FOR XXH3 NOT ACTUAL TEST CASES !!
 program test_hashmap
     use xxh3_hashmap_module
     implicit none

@@ -953,3 +953,635 @@ contains
     end subroutine read_tox_data
 
 end module tox_archive
+
+! Subroutines for R interface
+! Helper subroutines for array conversions
+subroutine strings_to_ascii_array(strings, ascii_array, str_len, n_strings)
+    use iso_fortran_env, only: int32
+    implicit none
+    character(len=*), intent(in) :: strings(:)
+    integer(int32), intent(out) :: ascii_array(*)
+    integer(int32), intent(in) :: str_len, n_strings
+    integer(int32) :: i, j
+    
+    do i = 1, n_strings
+        do j = 1, str_len
+            if (j <= len_trim(strings(i))) then
+                ascii_array((i-1)*str_len + j) = ichar(strings(i)(j:j))
+            else
+                ascii_array((i-1)*str_len + j) = 0
+            end if
+        end do
+    end do
+end subroutine strings_to_ascii_array
+
+subroutine ascii_array_to_strings(ascii_array, str_len, n_strings, strings)
+    use iso_fortran_env, only: int32
+    implicit none
+    integer(int32), intent(in) :: ascii_array(*)
+    integer(int32), intent(in) :: str_len, n_strings
+    character(len=str_len), intent(out) :: strings(n_strings)
+    integer(int32) :: i, j
+    
+    do i = 1, n_strings
+        strings(i) = ''
+        do j = 1, str_len
+            if (ascii_array((i-1)*str_len + j) /= 0) then
+                strings(i)(j:j) = char(ascii_array((i-1)*str_len + j))
+            end if
+        end do
+    end do
+end subroutine ascii_array_to_strings
+
+! Simplified version of the R binding using helper routines
+subroutine read_tox_data_R(zip_filename_ascii, zip_filename_len, flags, &
+                          gene_ids_ascii, gene_ids_len, n_genes, &
+                          expression_vectors, n_samples, n_genes_exp, &
+                          gene_to_family, n_genes_gtf, &
+                          family_ids_ascii, family_ids_len, n_families, &
+                          family_centroids, n_families_cent, d_cent, &
+                          shift_vectors, n_genes_shift, d_shift, &
+                          ierr) bind(C, name="read_tox_data_R")
+    use iso_c_binding
+    use tox_archive
+    use tox_conversions
+    use array_utils
+    implicit none
+    
+    ! Input
+    integer(c_int), intent(in) :: zip_filename_ascii(*)
+    integer(c_int), intent(in) :: zip_filename_len
+    integer(c_int), intent(in) :: flags(6)
+    
+    ! Output for gene_ids
+    integer(c_int), intent(out) :: gene_ids_ascii(*)
+    integer(c_int), intent(out) :: gene_ids_len, n_genes
+    
+    ! Output for expression
+    real(c_double), intent(out) :: expression_vectors(*)
+    integer(c_int), intent(out) :: n_samples, n_genes_exp
+    
+    ! Output for gene_to_family
+    integer(c_int), intent(out) :: gene_to_family(*)
+    integer(c_int), intent(out) :: n_genes_gtf
+    
+    ! Output for family_ids
+    integer(c_int), intent(out) :: family_ids_ascii(*)
+    integer(c_int), intent(out) :: family_ids_len, n_families
+    
+    ! Output for family_centroids
+    real(c_double), intent(out) :: family_centroids(*)
+    integer(c_int), intent(out) :: n_families_cent, d_cent
+    
+    ! Output for shift_vectors
+    real(c_double), intent(out) :: shift_vectors(*)
+    integer(c_int), intent(out) :: n_genes_shift, d_shift
+    
+    integer(c_int), intent(out) :: ierr
+    
+    ! Local variables
+    character(len=:), allocatable :: zip_filename
+    character(len=:), allocatable :: gene_ids(:), family_ids(:)
+    real(real64), allocatable :: expression(:,:), family_centroids_arr(:,:), shift_vectors_arr(:,:)
+    integer(int32), allocatable :: gene_to_family_arr(:)
+    integer :: i, j, k, temp_ierr
+    character(kind=c_char, len=1), dimension(:), allocatable :: c_char_array
+    
+    call set_ok(ierr)
+    
+    ! Convert zip filename from ASCII
+    allocate(c_char_array(zip_filename_len))
+    do i = 1, zip_filename_len
+        c_char_array(i) = char(zip_filename_ascii(i))
+    end do
+    call c_char_1d_as_string(c_char_array, zip_filename, temp_ierr)
+    if (temp_ierr /= 0) then
+        ierr = temp_ierr
+        return
+    end if
+    
+    ! Call the Fortran function
+    call read_tox_data(zip_filename, ierr, &
+                      gene_ids=gene_ids, &
+                      expression=expression, &
+                      gene_to_family=gene_to_family_arr, &
+                      family_ids=family_ids, &
+                      family_centroids=family_centroids_arr, &
+                      shift_vectors=shift_vectors_arr)
+    if (ierr /= 0) return
+    
+    ! Convert outputs back to ASCII arrays using helper routines
+    if (flags(1) == 1 .and. allocated(gene_ids)) then
+        n_genes = size(gene_ids)
+        gene_ids_len = maxval(len_trim(gene_ids))
+        call strings_to_ascii_array(gene_ids, gene_ids_ascii, gene_ids_len, n_genes)
+    else
+        n_genes = 0
+        gene_ids_len = 0
+    end if
+    
+    if (flags(2) == 1 .and. allocated(expression)) then
+        n_samples = size(expression, 1)
+        n_genes_exp = size(expression, 2)
+        k = 1
+        do j = 1, n_genes_exp
+            do i = 1, n_samples
+                expression_vectors(k) = expression(i, j)
+                k = k + 1
+            end do
+        end do
+    else
+        n_samples = 0
+        n_genes_exp = 0
+    end if
+    
+    if (flags(3) == 1 .and. allocated(gene_to_family_arr)) then
+        n_genes_gtf = size(gene_to_family_arr)
+        do i = 1, n_genes_gtf
+            gene_to_family(i) = gene_to_family_arr(i)
+        end do
+    else
+        n_genes_gtf = 0
+    end if
+    
+    if (flags(4) == 1 .and. allocated(family_ids)) then
+        n_families = size(family_ids)
+        family_ids_len = maxval(len_trim(family_ids))
+        call strings_to_ascii_array(family_ids, family_ids_ascii, family_ids_len, n_families)
+    else
+        n_families = 0
+        family_ids_len = 0
+    end if
+    
+    if (flags(5) == 1 .and. allocated(family_centroids_arr)) then
+        d_cent = size(family_centroids_arr, 1)
+        n_families_cent = size(family_centroids_arr, 2)
+        k = 1
+        do j = 1, n_families_cent
+            do i = 1, d_cent
+                family_centroids(k) = family_centroids_arr(i, j)
+                k = k + 1
+            end do
+        end do
+    else
+        n_families_cent = 0
+        d_cent = 0
+    end if
+    
+    if (flags(6) == 1 .and. allocated(shift_vectors_arr)) then
+        d_shift = size(shift_vectors_arr, 1)
+        n_genes_shift = size(shift_vectors_arr, 2)
+        k = 1
+        do j = 1, n_genes_shift
+            do i = 1, d_shift
+                shift_vectors(k) = shift_vectors_arr(i, j)
+                k = k + 1
+            end do
+        end do
+    else
+        n_genes_shift = 0
+        d_shift = 0
+    end if
+end subroutine read_tox_data_R
+
+! Similarly simplified version for save_tox_data_R
+subroutine save_tox_data_R(zip_filename_ascii, zip_filename_len, flags, &
+                          gene_ids_ascii, gene_ids_len, n_genes, &
+                          expression_vectors, n_samples, n_genes_exp, &
+                          gene_to_family, n_genes_gtf, &
+                          family_ids_ascii, family_ids_len, n_families, &
+                          family_centroids, n_families_cent, d_cent, &
+                          shift_vectors, n_genes_shift, d_shift, &
+                          ierr) bind(C, name="save_tox_data_R")
+    use iso_c_binding
+    use tox_archive
+    use tox_conversions
+    use array_utils
+    implicit none
+    
+    ! Input
+    integer(c_int), intent(in) :: zip_filename_ascii(*)
+    integer(c_int), intent(in) :: zip_filename_len
+    integer(c_int), intent(in) :: flags(6)
+    integer(c_int), intent(in) :: gene_ids_ascii(*)
+    integer(c_int), intent(in) :: gene_ids_len, n_genes
+    real(c_double), intent(in) :: expression_vectors(*)
+    integer(c_int), intent(in) :: n_samples, n_genes_exp
+    integer(c_int), intent(in) :: gene_to_family(*)
+    integer(c_int), intent(in) :: n_genes_gtf
+    integer(c_int), intent(in) :: family_ids_ascii(*)
+    integer(c_int), intent(in) :: family_ids_len, n_families
+    real(c_double), intent(in) :: family_centroids(*)
+    integer(c_int), intent(in) :: n_families_cent, d_cent
+    real(c_double), intent(in) :: shift_vectors(*)
+    integer(c_int), intent(in) :: n_genes_shift, d_shift
+    integer(c_int), intent(out) :: ierr
+    
+    ! Local variables
+    character(len=:), allocatable :: zip_filename
+    character(len=:), allocatable :: gene_ids(:), family_ids(:)
+    real(real64), allocatable :: expression(:,:), family_centroids_arr(:,:), shift_vectors_arr(:,:)
+    integer(int32), allocatable :: gene_to_family_arr(:)
+    integer :: i, j, k, temp_ierr
+    character(kind=c_char, len=1), dimension(:), allocatable :: c_char_array
+    
+    call set_ok(ierr)
+    
+    ! Convert zip filename from ASCII
+    allocate(c_char_array(zip_filename_len))
+    do i = 1, zip_filename_len
+        c_char_array(i) = char(zip_filename_ascii(i))
+    end do
+    call c_char_1d_as_string(c_char_array, zip_filename, temp_ierr)
+    if (temp_ierr /= 0) then
+        ierr = temp_ierr
+        return
+    end if
+    
+    ! Convert inputs to Fortran arrays using helper routines
+    if (flags(1) == 1 .and. n_genes > 0) then
+        allocate(character(len=gene_ids_len) :: gene_ids(n_genes))
+        call ascii_array_to_strings(gene_ids_ascii, gene_ids_len, n_genes, gene_ids)
+    end if
+    
+    if (flags(2) == 1 .and. n_genes_exp > 0 .and. n_samples > 0) then
+        allocate(expression(n_samples, n_genes_exp))
+        k = 1
+        do j = 1, n_genes_exp
+            do i = 1, n_samples
+                expression(i, j) = expression_vectors(k)
+                k = k + 1
+            end do
+        end do
+    end if
+    
+    if (flags(3) == 1 .and. n_genes_gtf > 0) then
+        allocate(gene_to_family_arr(n_genes_gtf))
+        do i = 1, n_genes_gtf
+            gene_to_family_arr(i) = gene_to_family(i)
+        end do
+    end if
+    
+    if (flags(4) == 1 .and. n_families > 0) then
+        allocate(character(len=family_ids_len) :: family_ids(n_families))
+        call ascii_array_to_strings(family_ids_ascii, family_ids_len, n_families, family_ids)
+    end if
+    
+    if (flags(5) == 1 .and. n_families_cent > 0 .and. d_cent > 0) then
+        allocate(family_centroids_arr(d_cent, n_families_cent))
+        k = 1
+        do j = 1, n_families_cent
+            do i = 1, d_cent
+                family_centroids_arr(i, j) = family_centroids(k)
+                k = k + 1
+            end do
+        end do
+    end if
+    
+    if (flags(6) == 1 .and. n_genes_shift > 0 .and. d_shift > 0) then
+        allocate(shift_vectors_arr(d_shift, n_genes_shift))
+        k = 1
+        do j = 1, n_genes_shift
+            do i = 1, d_shift
+                shift_vectors_arr(i, j) = shift_vectors(k)
+                k = k + 1
+            end do
+        end do
+    end if
+    
+    ! Call the Fortran function
+    call save_tox_data(zip_filename, ierr, &
+                      gene_ids=gene_ids, &
+                      expression=expression, &
+                      gene_to_family=gene_to_family_arr, &
+                      family_ids=family_ids, &
+                      family_centroids=family_centroids_arr, &
+                      shift_vectors=shift_vectors_arr)
+end subroutine save_tox_data_R
+
+! Subroutines for C interface
+
+! Zero-copy improved C-binding wrappers for read_tox_data_C and save_tox_data_C
+! Changes:
+! - Removed reshape usage for numeric arrays.
+! - Use c_loc (Fortran → C) to expose contiguous allocatables directly.
+! - Use c_f_pointer (C → Fortran) to alias C buffers without copies.
+! - String arrays still require copies (conversion unavoidable).
+
+subroutine read_tox_data_C(zip_filename_ascii, fn_len, flags, &
+                          gene_ids, gene_ids_len, n_genes, &
+                          expression_vectors, n_samples, n_genes_exp, &
+                          gene_to_family, n_genes_gtf, &
+                          family_ids, family_ids_len, n_families, &
+                          family_centroids, n_families_cent, d_cent, &
+                          shift_vectors, n_genes_shift, d_shift, &
+                          ierr) bind(C, name="read_tox_data_C")
+    use iso_c_binding, only: c_int, c_char
+    use iso_fortran_env, only: int32, real64
+    use array_utils, only: string_to_ascii, check_okay_ioerror
+    use tox_archive
+    use tox_conversions
+    implicit none
+
+    ! Inputs
+    integer(c_int), intent(in) :: fn_len
+    character(c_char), intent(in) :: zip_filename_ascii(fn_len)
+    integer(c_int), intent(in) :: flags(6)
+
+    ! Outputs (preallocated by caller)
+    integer(c_int), intent(out) :: gene_ids(gene_ids_len, n_genes)
+    real(real64), intent(out)   :: expression_vectors(n_samples, n_genes_exp)
+    integer(int32), intent(out) :: gene_to_family(n_genes_gtf)
+    integer(c_int), intent(out) :: family_ids(family_ids_len, n_families)
+    real(real64), intent(out)   :: family_centroids(d_cent, n_families_cent)
+    real(real64), intent(out)   :: shift_vectors(d_shift, n_genes_shift)
+
+    integer(c_int), intent(in)  :: gene_ids_len, n_genes
+    integer(c_int), intent(in)  :: n_samples, n_genes_exp
+    integer(c_int), intent(in)  :: n_genes_gtf
+    integer(c_int), intent(in)  :: family_ids_len, n_families
+    integer(c_int), intent(in)  :: n_families_cent, d_cent
+    integer(c_int), intent(in)  :: n_genes_shift, d_shift
+    integer(c_int), intent(out) :: ierr
+
+    ! Locals
+    character(len=:), allocatable :: f_zip_filename
+    character(len=:), allocatable :: f_gene_ids(:), f_family_ids(:)
+    real(real64), allocatable     :: f_expression(:,:), f_family_centroids(:,:), f_shift_vectors(:,:)
+    integer(int32), allocatable   :: f_gene_to_family(:)
+    integer :: j
+
+    call set_ok(ierr)
+
+    ! Convert ASCII filename
+    call ascii_to_string(zip_filename_ascii, fn_len, f_zip_filename)
+
+    ! Read full dataset into Fortran allocatables
+    call read_tox_data(f_zip_filename, ierr, flags, &
+                       f_gene_ids, gene_ids_len, n_genes, &
+                       f_expression, n_samples, n_genes_exp, &
+                       f_gene_to_family, n_genes_gtf, &
+                       f_family_ids, family_ids_len, n_families, &
+                       f_family_centroids, n_families_cent, d_cent, &
+                       f_shift_vectors, n_genes_shift, d_shift)
+    call check_okay_ioerror(ierr)
+
+    ! Copy Fortran strings → ASCII
+    do j = 1, n_genes
+        call string_to_ascii(trim(f_gene_ids(j)), gene_ids(:, j))
+    end do
+    do j = 1, n_families
+        call string_to_ascii(trim(f_family_ids(j)), family_ids(:, j))
+    end do
+
+    ! Copy numeric arrays directly
+    expression_vectors = f_expression
+    gene_to_family     = f_gene_to_family
+    family_centroids   = f_family_centroids
+    shift_vectors      = f_shift_vectors
+end subroutine
+
+subroutine save_tox_data_C(zip_filename_ascii, fn_len, flags, &
+           gene_ids, gene_ids_len, n_genes, &
+           expression_vectors, n_samples, n_genes_exp, &
+           gene_to_family, n_genes_gtf, &
+           family_ids, family_ids_len, n_families, &
+           family_centroids, n_families_cent, d_cent, &
+           shift_vectors, n_genes_shift, d_shift, &
+           ierr) bind(C, name="save_tox_data_C")
+    use iso_c_binding, only: c_int, c_char
+    use iso_fortran_env, only: int32, real64
+    use array_utils, only: ascii_to_string_padded, check_okay_ioerror
+    use tox_archive
+    use tox_conversions
+    implicit none
+
+    ! Inputs
+    integer(c_int), intent(in) :: fn_len
+    character(c_char), intent(in) :: zip_filename_ascii(fn_len)
+    integer(c_int), intent(in) :: flags(6)
+
+    integer(c_int), intent(in) :: gene_ids(gene_ids_len, n_genes)
+    real(real64), intent(in)   :: expression_vectors(n_samples, n_genes_exp)
+    integer(int32), intent(in) :: gene_to_family(n_genes_gtf)
+    integer(c_int), intent(in) :: family_ids(family_ids_len, n_families)
+    real(real64), intent(in)   :: family_centroids(d_cent, n_families_cent)
+    real(real64), intent(in)   :: shift_vectors(d_shift, n_genes_shift)
+
+    integer(c_int), intent(in) :: gene_ids_len, n_genes
+    integer(c_int), intent(in) :: n_samples, n_genes_exp
+    integer(c_int), intent(in) :: n_genes_gtf
+    integer(c_int), intent(in) :: family_ids_len, n_families
+    integer(c_int), intent(in) :: n_families_cent, d_cent
+    integer(c_int), intent(in) :: n_genes_shift, d_shift
+    integer(c_int), intent(out) :: ierr
+
+    ! Locals
+    character(len=:), allocatable :: f_zip_filename
+    character(len=:), allocatable :: f_gene_ids(:), f_family_ids(:)
+    integer :: j
+
+    call set_ok(ierr)
+
+    ! Convert ASCII filename
+    call ascii_to_string_padded(zip_filename_ascii, fn_len, f_zip_filename)
+
+    ! Convert ASCII arrays → Fortran strings
+    allocate(f_gene_ids(n_genes))
+    do j = 1, n_genes
+        call ascii_to_string_padded(gene_ids(:, j), gene_ids_len, f_gene_ids(j))
+    end do
+    allocate(f_family_ids(n_families))
+    do j = 1, n_families
+        call ascii_to_string_padded(family_ids(:, j), family_ids_len, f_family_ids(j))
+    end do
+
+    ! Save directly
+    call save_tox_data(f_zip_filename, ierr, &
+                       gene_ids=f_gene_ids, &
+                       expression=expression_vectors, &
+                       gene_to_family=gene_to_family, &
+                       family_ids=f_family_ids, &
+                       family_centroids=family_centroids, &
+                       shift_vectors=shift_vectors)
+    call check_okay_ioerror(ierr)
+end subroutine
+
+! R interface (no bind(C) - to be called with .Fortran())
+subroutine extract_zip_archive_R(zip_filename, zip_filename_len, ierr)
+    use iso_c_binding
+    use tox_archive
+    use iso_fortran_env, only: int32
+    implicit none
+    
+    ! Input
+    integer(int32), intent(in) :: zip_filename_len
+    integer(int32), intent(in) :: zip_filename(zip_filename_len)
+    
+    ! Output
+    integer(int32), intent(out) :: ierr
+    
+    ! Local variables
+    character(len=:), allocatable :: f_zip_filename
+    integer :: i
+    
+    call set_ok(ierr)
+    
+    ! Convert integer array to Fortran string
+    allocate(character(len=zip_filename_len) :: f_zip_filename)
+    do i = 1, zip_filename_len
+        f_zip_filename(i:i) = char(zip_filename(i))
+    end do
+    
+    ! Extract all files from the archive
+    call extract_zip_archive_simple(f_zip_filename, ierr)
+    
+    deallocate(f_zip_filename)
+end subroutine extract_zip_archive_R
+
+! C interface (with bind(C))
+subroutine extract_zip_archive_C(zip_filename, ierr) bind(C, name="extract_zip_archive_C")
+    use iso_c_binding
+    use tox_archive
+    use iso_fortran_env, only: int32
+    implicit none
+    
+    ! Input
+    character(kind=c_char), intent(in) :: zip_filename(*)
+    
+    ! Output
+    integer(c_int), intent(out) :: ierr
+    
+    ! Local variables
+    character(len=:), allocatable :: f_zip_filename
+    integer :: i, len
+    
+    call set_ok(ierr)
+    
+    ! Calculate length of C string
+    len = 0
+    do while(zip_filename(len+1) /= c_null_char)
+        len = len + 1
+    end do
+    
+    ! Convert C string to Fortran string
+    allocate(character(len=len) :: f_zip_filename)
+    do i = 1, len
+        f_zip_filename(i:i) = zip_filename(i)
+    end do
+    
+    ! Extract all files from the archive
+    call extract_zip_archive_simple(f_zip_filename, ierr)
+    
+    deallocate(f_zip_filename)
+end subroutine extract_zip_archive_C
+
+! Helper subroutine that does the actual extraction
+subroutine extract_zip_archive_simple(zip_filename, ierr)
+    use iso_c_binding
+    use tox_errors
+    use iso_fortran_env, only: int32
+    implicit none
+    
+    character(len=*), intent(in) :: zip_filename
+    integer(int32), intent(out) :: ierr
+    
+    type(c_ptr) :: zip_handle, file_handle
+    integer(c_int) :: error
+    integer(c_int64_t) :: i, num_entries, bytes_read
+    character(len=:), allocatable :: filename
+    integer(int32) :: unit, iostat
+    integer(int32), parameter :: CHUNK_SIZE = 4096
+    character(kind=c_char), dimension(:), allocatable, target :: buffer
+    logical :: file_exists
+    
+    call set_ok(ierr)
+    call set_ok(error)
+    call set_ok(iostat)
+    
+    ! Check if file exists
+    inquire(file=zip_filename, exist=file_exists)
+    if (.not. file_exists) then
+        call set_err_once(ierr, ERR_FILE_OPEN)
+        print *, "ZIP file does not exist: ", trim(zip_filename)
+        return
+    end if
+    
+    ! Open ZIP archive for reading
+    zip_handle = zip_open(trim(zip_filename)//c_null_char, ZIP_RDONLY, error)
+    if (error /= 0 .or. .not. c_associated(zip_handle)) then
+        call set_err_once(ierr, ERR_FILE_OPEN)
+        print *, "Error opening ZIP file for reading: ", error
+        return
+    end if
+    
+    ! Get number of entries in the ZIP
+    num_entries = zip_get_num_entries(zip_handle, 0)
+    
+    ! Extract each file
+    do i = 0, num_entries - 1
+        ! Get filename
+        call get_zip_entry_name(zip_handle, i, filename, ierr)
+        if(.not. is_ok(ierr)) then
+            print *, "Error getting name for index: ", i
+            cycle
+        end if
+        
+        if (len_trim(filename) == 0) then
+            print *, "Empty filename for index: ", i
+            cycle
+        end if
+        
+        ! Open file in ZIP
+        file_handle = zip_fopen(zip_handle, trim(filename)//c_null_char, 0)
+        if (.not. c_associated(file_handle)) then
+            call set_err_once(ierr, ERR_FILE_OPEN)
+            print *, "Error opening file in ZIP: ", trim(filename)
+            cycle
+        end if
+        
+        ! Open output file
+        open(newunit=unit, file=trim(filename), access='stream', form='unformatted', &
+             iostat=iostat, status='replace')
+        if (.not. is_ok(iostat)) then
+            call set_err_once(ierr, ERR_FILE_OPEN)
+            print *, "Error creating file: ", trim(filename)
+            error = zip_fclose(file_handle)
+            cycle
+        end if
+        
+        ! Read and write in chunks
+        allocate(buffer(CHUNK_SIZE))
+        do
+            bytes_read = zip_fread(file_handle, c_loc(buffer), int(CHUNK_SIZE, c_size_t))
+            if (bytes_read <= 0) exit
+            write(unit, iostat=iostat) buffer(1:bytes_read)
+            if (.not. is_ok(iostat)) then
+                call set_err_once(ierr, ERR_FILE_OPEN)
+                print *, "Error writing file: ", trim(filename)
+                exit
+            end if
+        end do
+        
+        ! Clean up
+        deallocate(buffer)
+        close(unit)
+        error = zip_fclose(file_handle)
+        if (.not. is_ok(error)) then
+            call set_err_once(ierr, ERR_INTERNAL)
+            print *, "Error closing file in ZIP: ", trim(filename)
+        end if
+        
+        print *, "Extracted: ", trim(filename)
+    end do
+    
+    ! Close ZIP archive
+    error = zip_close(zip_handle)
+    if (.not. is_ok(error)) then
+        print *, "Error closing ZIP file: ", error
+        call set_err_once(ierr, ERR_FILE_OPEN)
+        return
+    end if
+    
+    print *, "All files extracted successfully from: ", trim(zip_filename)
+end subroutine extract_zip_archive_simple
