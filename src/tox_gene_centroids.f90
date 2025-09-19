@@ -153,13 +153,13 @@ pure subroutine mean_vector_c(expression_vectors, n_axes, n_genes, gene_indices,
   !| Total number of genes in the input matrix.
   integer(c_int), intent(in), value :: n_genes
   !| The input matrix of all gene expression vectors (n_axes x n_genes).
-  real(c_double), intent(in), target :: expression_vectors(n_axes, n_genes)
+  real(c_double), intent(in) :: expression_vectors(n_axes, n_genes)
   !| The number of genes in the current family to be averaged.
   integer(c_int), intent(in), value :: n_selected_genes
   !| An array containing the column indices of the selected genes in 'expression_vectors'.
-  integer(c_int), intent(in), target :: gene_indices(n_selected_genes)
+  integer(c_int), intent(in) :: gene_indices(n_selected_genes)
   !| The output vector representing the computed centroid.
-  real(c_double), intent(out), target :: centroid_col(n_axes)
+  real(c_double), intent(out) :: centroid_col(n_axes)
   !| Error code: 0 - success, non-zero = error
   integer(c_int), intent(out) :: ierr
 
@@ -183,19 +183,19 @@ pure subroutine group_centroid_c(expression_vectors, n_axes, n_genes, gene_to_fa
   !| The allocated length of the 'selected_indices' array.
   integer(c_int), intent(in), value :: selected_indices_len
   !| Input expression vectors (passed from C).
-  real(c_double), intent(in), target :: expression_vectors(n_axes, n_genes)
+  real(c_double), intent(in) :: expression_vectors(n_axes, n_genes)
   !| Array mapping gene index to family ID.
-  integer(c_int), intent(in), target :: gene_to_family(n_genes)
+  integer(c_int), intent(in) :: gene_to_family(n_genes)
   !| A integer logic value indicating the mode of operation (0 = orthologs, 1 = all).
   integer(c_int), intent(in), value :: use_all_mode
   !| Output matrix for centroids.
-  real(c_double), intent(out), target :: centroid_matrix(n_axes, n_families)
+  real(c_double), intent(out) :: centroid_matrix(n_axes, n_families)
   !| Output array for selected indices.
-  integer(c_int), intent(out), target :: selected_indices(selected_indices_len)
+  integer(c_int), intent(out) :: selected_indices(selected_indices_len)
   !| Error code: 0 - success, non-zero = error
   integer(c_int), intent(out) :: ierr
   !| Integer array from C indicating subset membership.
-  integer(c_int), intent(in), target :: ortholog_set(n_genes)
+  integer(c_int), intent(in) :: ortholog_set(n_genes)
 
   ! Local variables
   logical :: ortholog_set_fortran(n_genes)
