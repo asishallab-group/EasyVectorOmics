@@ -5,7 +5,7 @@
 module binary_search_tree
   use f42_utils, only: sort_array
   use iso_fortran_env, only: int32, real64
-  use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_DIM_MISMATCH, ERR_SIZE_MISMATCH, is_ok, set_err_once, set_ok
+  use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_DIM_MISMATCH, ERR_SIZE_MISMATCH, is_ok, set_err_once, set_ok, validate_dimension_size
   implicit none
   public :: build_bst_index, get_sorted_value, bst_range_query
 contains
@@ -28,22 +28,8 @@ contains
 
     call set_ok(ierr)
     
-    ! Input validation
-    if (num_values < 0) then
-      call set_err_once(ierr, ERR_INVALID_INPUT)
-      return
-    end if
-    
-    if (num_values == 0) then
-      call set_err_once(ierr, ERR_EMPTY_INPUT)
-      return
-    end if
-    
-    if (size(values) < num_values .or. size(sorted_indices) < num_values .or. &
-        size(left_stack) < num_values .or. size(right_stack) < num_values) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
-      return
-    end if
+    call validate_dimension_size(num_values, ierr)
+    if(.not. is_ok(ierr)) return
 
     do idx = 1, num_values
       sorted_indices(idx) = idx
@@ -103,25 +89,11 @@ contains
 
     call set_ok(ierr)
     
-    ! Input validation
-    if (num_values < 0) then
-      call set_err_once(ierr, ERR_INVALID_INPUT)
-      return
-    end if
-    
-    if (num_values == 0) then
-      call set_err_once(ierr, ERR_EMPTY_INPUT)
-      return
-    end if
+    call validate_dimension_size(num_values, ierr)
+    if(.not. is_ok(ierr)) return
     
     if (lower_bound > upper_bound) then
       call set_err_once(ierr, ERR_INVALID_INPUT)
-      return
-    end if
-    
-    if (size(values) < num_values .or. size(sorted_indices) < num_values .or. &
-        size(output_indices) < num_values) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
       return
     end if
 

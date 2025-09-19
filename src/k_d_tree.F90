@@ -1,7 +1,7 @@
 module kd_tree
     use f42_utils, only: sort_array
     use iso_fortran_env, only: int32, real64
-    use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_DIM_MISMATCH, ERR_SIZE_MISMATCH, set_ok, set_err_once, is_ok
+    use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_DIM_MISMATCH, ERR_SIZE_MISMATCH, set_ok, set_err_once, is_ok, validate_dimension_size
     implicit none
     private
     public :: build_kd_index, build_spherical_kd, get_kd_point
@@ -40,29 +40,26 @@ contains
         integer(int32) :: stack_top
         integer(int32) :: left_idx, right_idx, mid_idx, current_dim, current_depth
         integer(int32) :: i
+        logical :: is_invalid
 
         call set_ok(ierr)
         
         ! Input validation
-        if (num_dimensions <= 0 .or. num_points < 0) then
-            call set_err_once(ierr, ERR_INVALID_INPUT)
-            return
-        end if
+        call validate_dimension_size(num_points, ierr)
+        if(.not. is_ok(ierr)) return
         
-        if (num_points == 0) then
-            call set_err_once(ierr, ERR_EMPTY_INPUT)
-            return
-        end if
+        call validate_dimension_size(num_dimensions, ierr)
+        if(.not. is_ok(ierr)) return
         
-        if (size(points, 1) < num_dimensions .or. size(points, 2) < num_points .or. &
-            size(kd_indices) < num_points .or. size(workspace) < num_points .or. &
-            size(value_buffer) < num_points .or. size(permutation) < num_points .or. &
-            size(left_stack) < num_points .or. size(right_stack) < num_points) then
-            call set_err_once(ierr, ERR_DIM_MISMATCH)
-            return
-        end if
-        
-        if (any(dimension_order < 1) .or. any(dimension_order > num_dimensions)) then
+        is_invalid = .false.
+        do i = 1, size(dimension_order)
+            if (dimension_order(i) < 1 .or. dimension_order(i) > num_dimensions) then
+                is_invalid = .true.
+                exit  ! Exit the loop as soon as an invalid value is found
+            end if
+        end do
+
+        if (is_invalid) then
             call set_err_once(ierr, ERR_INVALID_INPUT)
             return
         end if
