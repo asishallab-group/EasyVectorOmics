@@ -4,16 +4,12 @@ module tox_paralog_analysis
     use f42_utils, only: nth_percentile, add_vector, subtract_vector, norm
     implicit none
 
-    private
-    public :: detect_patterns, angle_between, mask_check_active
-    public :: DOSAGE_PATTERN, SUBFUNC_PATTERN
-
     integer(int32), parameter :: DOSAGE_PATTERN = 0
     integer(int32), parameter :: SUBFUNC_PATTERN = 1
 
 contains
 
-    pure subroutine detect_patterns(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, pattern, paralog_angles, sorted_paralog_angles_perm, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, temp_paralog_vector, ierr)
+    pure subroutine detect_patterns(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, pattern, paralog_angles, sorted_paralog_angles_perm, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, global_mask, candidate_mask, temp_paralog_vector, ierr)
 
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
@@ -59,11 +55,9 @@ contains
 
         ! Locals
         real(real64) :: min_norm, max_angle, residual_norm, residual_angle
-        integer(int32) :: i_paralog, i_subset_size, i_dim, max_subset_size, n_active_masks, n_new_active_masks
+        integer(int32) :: i_paralog, i_subset_size, i_dim, n_active_masks, n_new_active_masks
 
         call set_ok(ierr)
-
-        if (max_subset_size < 2) return
 
         max_angle = maxval(paralog_angles)
         min_norm = 0_real64
@@ -128,7 +122,7 @@ contains
 
                 temp_paralog_vector = ancestor
                 do i_paralog = 1, n_paralogs
-                    if (mask_check_active(candidate_mask, i_paralog)) then
+                    if (mask_check_state(candidate_mask, i_paralog)) then
                         call subtract_vector(temp_paralog_vector, n_dims, paralogs(:, i_paralog))
                     end if
                     if (is_err(ierr)) return
@@ -137,7 +131,7 @@ contains
                 ! generate extended subsets by adding successing paralogs of the first active paralog if suitable.
                 ! `mask_count_leftmost_zero_bits` returns the index of inactive paralog before first active one, so +2 gives the first potential non-active
                 do i_paralog = mask_count_leftmost_zero_bits(candidate_mask) + 2, n_paralogs
-                    if (mask_check_active(global_mask, i_paralog) .and. .not. mask_check_active(candidate_mask, i_paralog)) then
+                    if (mask_check_state(global_mask, i_paralog) .and. .not. mask_check_state(candidate_mask, i_paralog)) then
                         call mask_set_state(candidate_mask, i_paralog, .true., ierr)
                         if (is_err(ierr)) return
 
@@ -258,24 +252,24 @@ contains
         end if
     end subroutine mask_set_state
 
-    pure function mask_check_active(bit_mask, i_paralog) result(is_active)
+    pure function mask_check_state(bit_mask, i_paralog) result(state)
         integer(int32), dimension(:), intent(in) :: bit_mask
             !! chunked mask to mark active paralogs
         integer(int32), intent(in) :: i_paralog
             !! index of paralog top be marked active
-        logical :: is_active
+        logical :: state
             !! check result
 
         integer(int32) :: i_mask_chunk
 
         i_mask_chunk = (i_paralog - 1) / 32 + 1
         if (i_mask_chunk > size(bit_mask)) then
-            is_active = .false.
+            state = .false.
         else
-            is_active = btest(bit_mask(i_mask_chunk), mod(i_paralog - 1, 32))
+            state = btest(bit_mask(i_mask_chunk), mod(i_paralog - 1, 32))
         end if
 
-    end function mask_check_active
+    end function mask_check_state
 
     pure subroutine angle_between(v1, v2, n_dims, angle)
         integer(int32), intent(in) :: n_dims
