@@ -204,7 +204,7 @@ contains
     pure function mask_count_leftmost_zero_bits(bit_mask) result(n_zeros)
         integer(int32), dimension(:), intent(in) :: bit_mask
             !! chunked mask to mark active paralogs
-        logical :: n_zeros
+        integer(int32) :: n_zeros
             !! number of leftmost zeros in the bitmask
 
         integer(int32) :: i_mask_chunk, i_bit
@@ -212,14 +212,14 @@ contains
         n_zeros = 0
         i_mask_chunk = size(bit_mask)
         do while (i_mask_chunk > 0)
+            if (bit_mask(i_mask_chunk) /= 0) exit
             n_zeros = n_zeros + 32
             i_mask_chunk = i_mask_chunk - 1
-            if (bit_mask(i_mask_chunk) /= 0) exit
         end do
 
         if (i_mask_chunk > 0) then
-            do i_bit = 0, 31
-                if (.not. btest(bit_mask(i_mask_chunk), i_bit)) exit
+            do i_bit = 31, 0, -1
+                if (btest(bit_mask(i_mask_chunk), i_bit)) exit
                 n_zeros = n_zeros + 1
             end do
         end if

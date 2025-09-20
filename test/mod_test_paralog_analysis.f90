@@ -19,7 +19,7 @@ module mod_test_tox_paralog_analysis
         procedure(test_interface), pointer, nopass :: test_proc => null()
     end type test_case
 
-    integer(int32), parameter :: TEST_COUNT = 2
+    integer(int32), parameter :: TEST_COUNT = 3
     real(real64), parameter :: TOL = 1d-12
 
 contains
@@ -30,6 +30,7 @@ contains
 
         all_tests(1) = test_case("test_tox_paralog_analysis_mask_set_state", test_tox_paralog_analysis_mask_set_state)
         all_tests(2) = test_case("test_tox_paralog_analysis_mask_check_state", test_tox_paralog_analysis_mask_check_state)
+        all_tests(3) = test_case("test_tox_paralog_analysis_mask_count_leftmost_zero_bits", test_tox_paralog_analysis_mask_count_leftmost_zero_bits)
     end function get_all_tests
 
     subroutine test_tox_paralog_analysis_mask_set_state
@@ -89,18 +90,44 @@ contains
         ! set first paralog
         paralog = 1
         mask(1) = ibset(mask(1), paralog - 1)
-        call assert_true(mask_check_state(mask, paralog), "test_tox_paralog_analysis_mask_check_state: could not set first paralog")
+        call assert_true(mask_check_state(mask, paralog), "test_tox_paralog_analysis_mask_check_state: first paralog wrong state")
 
         ! set last paralog
         paralog = n_paralogs
         mask(2) = ibset(mask(2), paralog - 32 - 1)
-        call assert_true(mask_check_state(mask, paralog), "test_tox_paralog_analysis_mask_check_state: could not set last paralog")
+        call assert_true(mask_check_state(mask, paralog), "test_tox_paralog_analysis_mask_check_state: last paralog wrong state")
 
         ! set 32nd paralog
         paralog = 32
         mask(1) = ibset(mask(1), paralog - 1)
-        call assert_true(mask_check_state(mask, paralog), "test_tox_paralog_analysis_mask_check_state: could not set 32nd paralog")
+        call assert_true(mask_check_state(mask, paralog), "test_tox_paralog_analysis_mask_check_state: 32nd paralog wrong state")
     end subroutine test_tox_paralog_analysis_mask_check_state
+
+    subroutine test_tox_paralog_analysis_mask_count_leftmost_zero_bits
+        integer(int32), parameter :: n_paralogs = 32 + 27
+        integer(int32), parameter :: mask_size = 2
+        integer(int32), dimension(mask_size) :: mask
+        integer(int32) :: paralog
+
+        mask = 0
+
+        call assert_equal_int(mask_count_leftmost_zero_bits(mask), mask_size * 32, "test_tox_paralog_analysis_mask_count_leftmost_zero_bits: wrong number of zeros")
+
+        ! set first paralog
+        paralog = 1
+        mask(1) = ibset(mask(1), paralog - 1)
+        call assert_equal_int(mask_count_leftmost_zero_bits(mask), mask_size * 32 - paralog, "test_tox_paralog_analysis_mask_count_leftmost_zero_bits: wrong number of zeros")
+
+        ! set 32nd paralog
+        paralog = 32
+        mask(1) = ibset(mask(1), paralog - 1)
+        call assert_equal_int(mask_count_leftmost_zero_bits(mask), mask_size * 32 - paralog, "test_tox_paralog_analysis_mask_count_leftmost_zero_bits: wrong number of zeros")
+
+        ! set last paralog
+        paralog = n_paralogs
+        mask(2) = ibset(mask(2), paralog - 32 - 1)
+        call assert_equal_int(mask_count_leftmost_zero_bits(mask), mask_size * 32 - paralog, "test_tox_paralog_analysis_mask_count_leftmost_zero_bits: wrong number of zeros")
+    end subroutine test_tox_paralog_analysis_mask_count_leftmost_zero_bits
 
     !> Run all tox_paralog_analysis tests.
     subroutine run_all_tests_tox_paralog_analysis
