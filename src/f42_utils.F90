@@ -61,24 +61,14 @@ contains
       !! array holding the indices for `array` for ascending sorted order
 
     real(real64) :: percent
-    integer(int32) :: index, i_array, lower_index, upper_index
+    integer(int32) :: index, lower_index, upper_index
 
     percent = real(n, real64) * (size(array) - 1) / 100.0
     index = int(percent) + 1
-    lower_index = -1
-    upper_index = -1
 
-    do i_array = 1, size(array)
-      if (perm(i_array) == index) then
-        lower_index = i_array
-      else if (perm(i_array) == index + 1) then
-        upper_index = i_array
-      end if
-    end do
-
-    percentile = array(lower_index)
-    if (upper_index > -1) then
-      percentile = percentile + (percent - int(percent)) * (array(upper_index) - percentile)
+    percentile = array(perm(index))
+    if (index < size(array)) then
+      percentile = percentile + (percent - int(percent)) * (array(perm(index + 1)) - percentile)
     end if
   end function nth_percentile
 
