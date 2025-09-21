@@ -29,7 +29,7 @@ contains
 
         all_tests(1) = test_case("test_tox_paralog_analysis_mask_set_state", test_mask_set_state)
         all_tests(2) = test_case("test_tox_paralog_analysis_mask_check_state", test_mask_check_state)
-        all_tests(3) = test_case("test_tox_paralog_analysis_mask_count_leading_inactives", test_mask_count_leading_inactives)
+        all_tests(3) = test_case("test_tox_paralog_analysis_mask_get_first_successor_idx", test_mask_get_first_successor_idx)
         all_tests(4) = test_case("test_tox_paralog_analysis_calc_work_arr_paralog_subsets_size", test_calc_work_arr_paralog_subsets_size)
     end function get_all_tests
 
@@ -107,7 +107,7 @@ contains
         call assert_true(mask_check_state(mask, paralog), "test_tox_paralog_analysis_mask_check_state: 32nd paralog wrong state")
     end subroutine test_mask_check_state
 
-    subroutine test_mask_count_leading_inactives
+    subroutine test_mask_get_first_successor_idx
         integer(int32), parameter :: n_paralogs = 32 + 27
         integer(int32), parameter :: mask_size = 2
         integer(int32), dimension(mask_size) :: mask
@@ -115,14 +115,14 @@ contains
 
         mask = 0
 
-        call assert_equal_int(mask_count_leading_inactives(mask, n_paralogs), n_paralogs, "test_tox_paralog_analysis_mask_count_leading_inactives: wrong number of zeros")
+        call assert_equal_int(mask_get_first_successor_idx(mask, n_paralogs), 1, "test_tox_paralog_analysis_mask_get_first_successor_idx: wrong number of zeros")
 
-        do paralog = n_paralogs, 1, -1
+        do paralog = 1, n_paralogs
             call mask_set_state(mask, paralog, .true., ierr)
-            call assert_true(is_ok(ierr), "test_tox_paralog_analysis_mask_count_leading_inactives: Unexpected error when setting paralog active")
-            call assert_equal_int(mask_count_leading_inactives(mask, n_paralogs), paralog - 1, "test_tox_paralog_analysis_mask_count_leading_inactives: wrong number of zeros")
+            call assert_true(is_ok(ierr), "test_tox_paralog_analysis_mask_get_first_successor_idx: Unexpected error when setting paralog active")
+            call assert_equal_int(mask_get_first_successor_idx(mask, n_paralogs), paralog + 1, "test_tox_paralog_analysis_mask_get_first_successor_idx: wrong number of zeros")
         end do
-    end subroutine test_mask_count_leading_inactives
+    end subroutine test_mask_get_first_successor_idx
 
     !> Run all tox_paralog_analysis tests.
     subroutine run_all_tests_tox_paralog_analysis

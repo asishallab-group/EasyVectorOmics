@@ -1,20 +1,24 @@
 module tox_paralog_analysis
     use, intrinsic :: iso_fortran_env, only: int32, real64
-    use tox_errors, only: set_ok, set_err, is_err, ERR_INVALID_INPUT
-    use f42_utils, only: percentile, add_vector, subtract_vector, norm
+    use tox_errors, only: set_ok, set_err, is_err, ERR_INVALID_INPUT, ERR_SIZE_MISMATCH
+    use f42_utils, only: calc_percentile, add_vector, subtract_vector, norm, PI
     implicit none
 
     integer(int32), parameter :: DOSAGE_PATTERN = 0
     integer(int32), parameter :: SUBFUNC_PATTERN = 1
 
+    real(real64), parameter :: DOSAGE_MAX_ANGLE_DEG = PI
+    real(real64), parameter :: DOSAGE_GAIN_GAMMA = 0.1_real64
+
 contains
 
-    pure subroutine detect_patterns(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, pattern, pattern_percentile, paralog_angles, sorted_paralog_angles_perm, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, global_mask, candidate_mask, temp_paralog_vector, ierr)
-
+    pure subroutine detect_patterns(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, pattern, filtered_paralogs_mask, n_mask_chunks, paralog_angles, sorted_paralog_angles_perm, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, ierr)
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
         integer(int32), intent(in) :: n_paralogs
             !! number of vectors in `paralogs`
+        integer(int32), intent(in) :: n_mask_chunks
+            !! number of 32 bit chunks a mask needs to encode `n_paralogs` paralogs. Use subroutine `mask_chunk_count` for calculation
         real(real64), dimension(n_dims), intent(in) :: ancestor
             !! expression vector of ancestral ortholog
         real(real64), dimension(n_dims, n_paralogs), intent(in) :: paralogs
@@ -29,8 +33,6 @@ contains
             !! |    Dosage Effect     |   0   |
             !! | Subfunctionalization |   1   |
             !!
-        real(real64), intent(in) :: pattern_percentile
-            !! value between 0.0-1.0 defining the percentile that is used for filtering
         real(real64), dimension(n_paralogs), intent(in) :: paralog_angles
             !! vector, holding the ascending sorted angles between ancestor and paralogs. Needed for filtering paralogs
         integer(int32), dimension(n_paralogs), intent(in) :: sorted_paralog_angles_perm
@@ -41,82 +43,135 @@ contains
             !! maximum subset size of checked paralog subsets. ***USE `calc_work_arr_paralog_subsets_size` TO DETERMINE THIS NUMBER***
         integer(int32), intent(in) :: n_paralog_subsets
             !! number of paralog subsets that can be stored in `work_arr_paralog_subsets`. ***USE `calc_work_arr_paralog_subsets_size` TO DETERMINE THIS NUMBER***
-        integer(int32), dimension((n_paralogs + 31) / 32, n_paralog_subsets), intent(out) :: work_arr_paralog_subsets
+        integer(int32), dimension(n_mask_chunks, n_paralog_subsets), intent(out) :: work_arr_paralog_subsets
             !! working array to hold bitmask encoded subsets for detection.
             !! @note
             !! Each bitmask is built of 32 bit chunks. `(n_paralogs + 31) / 32` is equivalent to `ceil(n_paralogs / 32)` and represents the number of chunks
             !! @endnote
-        integer(int32), dimension((n_paralogs + 31) / 32), intent(out) :: global_mask
-            !! bit mask that will have indices of paralogs kept by pattern set to 1, else 0
-        integer(int32), dimension((n_paralogs + 31) / 32), intent(out) :: candidate_mask
-            !! working array to hold a subset that is a potential result candidate
+        integer(int32), dimension(n_mask_chunks), intent(in) :: filtered_paralogs_mask
+            !! bit mask with paralogs' indices kept by pattern set to 1, else 0. Use `filter_paralogs_by_pattern` for its calculation
+        integer(int32), dimension(n_mask_chunks), intent(out) :: active_mask
+            !! working array to hold the extended subsets
         real(real64), dimension(n_dims), intent(out) :: temp_paralog_vector
             !! vector used for pruning subsets
         integer(int32), intent(out) :: ierr
             !! error code
 
         ! Locals
-        real(real64) :: min_norm, max_angle, residual_norm, residual_angle, percentile_value
-        integer(int32) :: i_paralog, i_subset_size, i_dim, n_active_masks, n_new_active_masks
+        real(real64) :: residual_norm, residual_angle
+        integer(int32) :: i_paralog, subset_size, n_active_masks, n_new_active_masks
 
         call set_ok(ierr)
 
-        max_angle = paralog_angles(1)
-        min_norm = norm(paralogs(:, 1), n_dims)
+        work_arr_paralog_subsets = 0_int32
+        n_active_masks = 0_int32
 
-        do i_paralog = 2, n_paralogs
-            min_norm = min(min_norm, norm(paralogs(:, i_paralog), n_dims))
-            max_angle = max(max_angle, paralog_angles(i_paralog))
+        ! initialize first `n_paralogs` subsets of size 1 to be extended
+        do i_paralog = 1, n_paralogs
+            if (mask_check_state(filtered_paralogs_mask, i_paralog)) then
+                n_active_masks = n_active_masks + 1
+                call mask_set_state(work_arr_paralog_subsets(:, n_active_masks), i_paralog, .true., ierr)
+                if (is_err(ierr)) return
+            end if
         end do
 
-        n_active_masks = 0_int32
-        work_arr_paralog_subsets = 0_int32
-        global_mask = 0_int32
+        n_results = 0_int32
+        do subset_size = 2, max_subset_size
+            n_new_active_masks = 0_int32
+            do while (n_active_masks > 0)
+                call take_active_mask(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, active_mask, ierr)
+                if (is_err(ierr)) return
+
+                call generate_subsets(active_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, rdi_threshold, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, ierr)
+                if (is_err(ierr)) return
+            end do
+
+            n_active_masks = n_new_active_masks
+        end do
+    end subroutine detect_patterns
+
+    pure subroutine generate_subsets(candidate_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, rdi_threshold, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, ierr)
+        integer(int32), intent(in) :: n_dims
+            !! size of `ancestor` vector and vectors in `paralogs`
+        integer(int32), intent(in) :: n_paralogs
+            !! number of vectors in `paralogs`
+        integer(int32), intent(in) :: n_mask_chunks
+            !! number of 32 bit chunks a mask needs to encode `n_paralogs` paralogs
+        real(real64), dimension(n_dims), intent(in) :: ancestor
+            !! expression vector of ancestral ortholog
+        real(real64), dimension(n_dims, n_paralogs), intent(in) :: paralogs
+            !! expression vectors of paralogs
+        real(real64), intent(in) :: rdi_threshold
+            !! max allowed residual distance from `ancestor`
+        integer(int32), intent(in) :: pattern
+            !! used pattern for detection
+            !!
+            !! |       Pattern        | Value |
+            !! |----------------------|-------|
+            !! |    Dosage Effect     |   0   |
+            !! | Subfunctionalization |   1   |
+            !!
+        integer(int32), intent(in) :: n_paralog_subsets
+            !! number of paralog subsets that can be stored in `work_arr_paralog_subsets`. ***USE `calc_work_arr_paralog_subsets_size` TO DETERMINE THIS NUMBER***
+        integer(int32), dimension(n_mask_chunks, n_paralog_subsets), intent(out) :: work_arr_paralog_subsets
+            !! working array to hold bitmask encoded subsets for detection.
+        integer(int32), dimension(n_mask_chunks), intent(in) :: filtered_paralogs_mask
+            !! bit mask that will have indices of paralogs kept by pattern set to 1, else 0
+        integer(int32), dimension(n_mask_chunks), intent(inout) :: candidate_mask
+            !! working array to hold a subset that is a potential result candidate
+        real(real64), dimension(n_dims), intent(inout) :: temp_paralog_vector
+            !! vector used for pruning subsets
+        integer(int32), intent(inout) :: n_results
+            !! number of results in `work_arr_paralog_subsets`
+        integer(int32), intent(in) :: n_active_masks
+            !! number of active subsets in `work_arr_paralog_subsets`
+        integer(int32), intent(inout) :: n_new_active_masks
+            !! number of new active subsets in `work_arr_paralog_subsets`
+        integer(int32), intent(out) :: ierr
+            !! error code
+
+        integer(int32) :: i_paralog
 
         select case (pattern)
         case (DOSAGE_PATTERN)
-            call percentile(pattern_percentile, paralog_angles, sorted_paralog_angles_perm, percentile_value, ierr)
-            if (is_err(ierr)) return
+            block
+                real(real64) :: subset_angle
 
-            ! only paralogs with angles below the gene-family median or lower five percentile are marked active
-            do i_paralog = 1, n_paralogs
-                if (paralog_angles(i_paralog) < percentile_value) then
-                    n_active_masks = n_active_masks + 1
-                    call mask_set_state(work_arr_paralog_subsets(:, n_active_masks), i_paralog, .true., ierr)
-                    call mask_set_state(global_mask, i_paralog, .true., ierr)
+                temp_paralog_vector = 0
+                do i_paralog = 1, n_paralogs
+                    if (mask_check_state(candidate_mask, i_paralog)) then
+                        call add_vector(temp_paralog_vector, n_dims, paralogs(:, i_paralog))
+                    end if
                     if (is_err(ierr)) return
-                end if
-            end do
+                end do
+
+                ! generate extended subsets by adding successing paralogs of the first active paralog if suitable.
+                do i_paralog = mask_get_first_successor_idx(candidate_mask, n_paralogs), n_paralogs
+                    if (mask_check_state(filtered_paralogs_mask, i_paralog) .and. .not. mask_check_state(candidate_mask, i_paralog)) then
+                        call mask_set_state(candidate_mask, i_paralog, .true., ierr)
+                        if (is_err(ierr)) return
+
+                        call add_vector(temp_paralog_vector, n_dims, paralogs(:, i_paralog))
+
+                        call angle_between(temp_paralog_vector, ancestor, n_dims, subset_angle)
+                        if (subset_angle <= DOSAGE_MAX_ANGLE_DEG) then
+                            if (norm(temp_paralog_vector, n_dims) >= (1 + DOSAGE_GAIN_GAMMA) * norm(ancestor, n_dims)) then
+                                call add_to_results(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
+                            else
+                                call add_new_active_mask(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
+                            end if
+                            if (is_err(ierr)) return
+                        end if
+
+                        call subtract_vector(temp_paralog_vector, n_dims, paralogs(:, i_paralog))
+                        call mask_set_state(candidate_mask, i_paralog, .false., ierr)
+                        if (is_err(ierr)) return
+                    end if
+                end do
+            end block
         case (SUBFUNC_PATTERN)
-            call percentile(pattern_percentile, paralog_angles, sorted_paralog_angles_perm, percentile_value, ierr)
-            if (is_err(ierr)) return
-
-            ! only paralogs with angles greater than the gene-family median angle are marked active
-            do i_paralog = 1, n_paralogs
-                if (paralog_angles(i_paralog) > percentile_value) then
-                    n_active_masks = n_active_masks + 1
-                    call mask_set_state(work_arr_paralog_subsets(:, n_active_masks), i_paralog, .true., ierr)
-                    call mask_set_state(global_mask, i_paralog, .true., ierr)
-                    if (is_err(ierr)) return
-                end if
-            end do
-        case default
-            call set_err(ierr, ERR_INVALID_INPUT)
-            return
-        end select
-
-        n_results = 0_int32
-        do i_subset_size = 2, max_subset_size
-            n_new_active_masks = 0_int32
-            do while (n_active_masks > 0)
-                ! take handled mask, always the first one
-                candidate_mask = work_arr_paralog_subsets(:, n_results + 1)
-
-                ! move last active mask to first index
-                work_arr_paralog_subsets(:, 1) = work_arr_paralog_subsets(:, n_results + n_active_masks)
-                ! replace moved mask by last new active mask
-                work_arr_paralog_subsets(:, n_results + n_active_masks) = work_arr_paralog_subsets(:, n_results + n_active_masks + n_new_active_masks)
-                n_active_masks = n_active_masks - 1
+            block
+                real(real64) :: residual_norm
 
                 temp_paralog_vector = ancestor
                 do i_paralog = 1, n_paralogs
@@ -127,52 +182,230 @@ contains
                 end do
 
                 ! generate extended subsets by adding successing paralogs of the first active paralog if suitable.
-                ! `mask_count_leading_inactives` returns the index of inactive paralog before first active one, so +2 gives the first potential non-active
-                do i_paralog = mask_count_leading_inactives(candidate_mask, n_paralogs) + 2, n_paralogs
-                    if (mask_check_state(global_mask, i_paralog) .and. .not. mask_check_state(candidate_mask, i_paralog)) then
+                do i_paralog = mask_get_first_successor_idx(candidate_mask, n_paralogs), n_paralogs
+                    if (mask_check_state(filtered_paralogs_mask, i_paralog) .and. .not. mask_check_state(candidate_mask, i_paralog)) then
                         call mask_set_state(candidate_mask, i_paralog, .true., ierr)
                         if (is_err(ierr)) return
 
                         call subtract_vector(temp_paralog_vector, n_dims, paralogs(:, i_paralog))
+
                         residual_norm = norm(temp_paralog_vector, n_dims)
                         if (residual_norm < rdi_threshold) then
-                            ! move first new active mask to end
-                            work_arr_paralog_subsets(:, n_results + n_active_masks + n_new_active_masks + 1) = work_arr_paralog_subsets(:, n_results + n_active_masks + 1)
-                            ! move first active mask before new active masks
-                            work_arr_paralog_subsets(:, n_results + n_active_masks + 1) = work_arr_paralog_subsets(:, n_results + 1)
-                            ! store result
-                            n_results = n_results + 1
-                            work_arr_paralog_subsets(:, n_results) = candidate_mask
-                        else
-                            call angle_between(temp_paralog_vector, ancestor, n_dims, residual_angle)
-                            if (&
-                              (pattern == DOSAGE_PATTERN .and. max_angle > residual_angle)&
-                              .or.&
-                              (pattern == SUBFUNC_PATTERN .and. min_norm < residual_norm)&
-                            ) then
-                                n_new_active_masks = n_new_active_masks + 1
-                                work_arr_paralog_subsets(:, n_results + n_active_masks + n_new_active_masks) = candidate_mask
-                            end if
+                            call add_to_results(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
+                        else ! if (min_norm_among_remaining < residual_norm)
+                            call add_new_active_mask(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
                         end if
+                        if (is_err(ierr)) return
 
                         call add_vector(temp_paralog_vector, n_dims, paralogs(:, i_paralog))
                         call mask_set_state(candidate_mask, i_paralog, .false., ierr)
+                        if (is_err(ierr)) return
                     end if
-                    if (is_err(ierr)) return
                 end do
-            end do
+            end block
+        case default
+            call set_err(ierr, ERR_INVALID_INPUT)
+            return
+        end select
 
-            n_active_masks = n_new_active_masks
-        end do
-    end subroutine detect_patterns
+    end subroutine generate_subsets
 
-    pure subroutine calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size)
+    pure subroutine take_active_mask(subsets, n_mask_chunks, n_subsets, n_results, n_active_masks, n_new_active_masks, active_mask, ierr)
+        integer(int32), intent(in) :: n_mask_chunks
+            !! number of 32 bit chunks in a mask
+        integer(int32), intent(in) :: n_subsets
+            !! number of subsets that can be hold
+        integer(int32), intent(in) :: n_results
+            !! number of results in `subsets`
+        integer(int32), intent(inout) :: n_active_masks
+            !! number of active masks in `subsets`
+        integer(int32), intent(in) :: n_new_active_masks
+            !! number of new active masks in `subsets`
+        integer(int32), dimension(n_mask_chunks, n_subsets), intent(inout) :: subsets
+            !! working array to hold bitmask encoded subsets for detection.
+        integer(int32), dimension(n_mask_chunks), intent(out) :: active_mask
+            !! taken active mask
+        integer(int32), intent(out) :: ierr
+            !! error code
+
+        if (n_active_masks <= 0 .or. n_results < 0 .or. n_new_active_masks < 0) then
+            call set_err(ierr, ERR_INVALID_INPUT)
+            return
+        end if
+
+        if (n_subsets < n_results + n_active_masks + n_new_active_masks) then
+            call set_err(ierr, ERR_SIZE_MISMATCH)
+            return
+        end if
+
+        ! take handled mask, always the first one after results
+        active_mask = subsets(:, n_results + 1)
+
+        ! move last active mask to first index after results
+        subsets(:, n_results + 1) = subsets(:, n_results + n_active_masks)
+        ! replace moved mask by last new active mask
+        subsets(:, n_results + n_active_masks) = subsets(:, n_results + n_active_masks + n_new_active_masks)
+        n_active_masks = n_active_masks - 1
+    end subroutine take_active_mask
+
+    pure subroutine add_to_results(subsets, n_mask_chunks, n_subsets, n_results, n_active_masks, n_new_active_masks, result, ierr)
+        integer(int32), intent(in) :: n_mask_chunks
+            !! number of 32 bit chunks in a mask
+        integer(int32), intent(in) :: n_subsets
+            !! number of subsets that can be hold
+        integer(int32), intent(inout) :: n_results
+            !! number of results in `subsets`
+        integer(int32), intent(in) :: n_active_masks
+            !! number of active masks in `subsets`
+        integer(int32), intent(in) :: n_new_active_masks
+            !! number of new active masks in `subsets`
+        integer(int32), dimension(n_mask_chunks, n_subsets), intent(inout) :: subsets
+            !! working array to hold bitmask encoded subsets for detection.
+        integer(int32), dimension(n_mask_chunks), intent(in) :: result
+            !! result to add
+        integer(int32), intent(out) :: ierr
+            !! error code
+
+        if (n_active_masks < 0 .or. n_results < 0 .or. n_new_active_masks < 0) then
+            call set_err(ierr, ERR_INVALID_INPUT)
+            return
+        end if
+
+        if (n_subsets < n_results + n_active_masks + n_new_active_masks + 1) then
+            call set_err(ierr, ERR_SIZE_MISMATCH)
+            return
+        end if
+
+        ! move first new active mask to end
+        subsets(:, n_results + n_active_masks + n_new_active_masks + 1) = subsets(:, n_results + n_active_masks + 1)
+        ! move first active mask before new active masks
+        subsets(:, n_results + n_active_masks + 1) = subsets(:, n_results + 1)
+        ! store result
+        n_results = n_results + 1
+        subsets(:, n_results) = result
+    end subroutine add_to_results
+
+    pure subroutine add_new_active_mask(subsets, n_mask_chunks, n_subsets, n_results, n_active_masks, n_new_active_masks, new_active_mask, ierr)
+        integer(int32), intent(in) :: n_mask_chunks
+            !! number of 32 bit chunks in a mask
+        integer(int32), intent(in) :: n_subsets
+            !! number of subsets that can be hold
+        integer(int32), intent(in) :: n_results
+            !! number of results in `subsets`
+        integer(int32), intent(in) :: n_active_masks
+            !! number of active masks in `subsets`
+        integer(int32), intent(inout) :: n_new_active_masks
+            !! number of new active masks in `subsets`
+        integer(int32), dimension(n_mask_chunks, n_subsets), intent(out) :: subsets
+            !! working array to hold bitmask encoded subsets for detection.
+        integer(int32), dimension(n_mask_chunks), intent(in) :: new_active_mask
+            !! new active mask to add
+        integer(int32), intent(out) :: ierr
+            !! error code
+
+        if (n_active_masks < 0 .or. n_results < 0 .or. n_new_active_masks < 0) then
+            call set_err(ierr, ERR_INVALID_INPUT)
+            return
+        end if
+
+        if (n_subsets < n_results + n_active_masks + n_new_active_masks + 1) then
+            call set_err(ierr, ERR_SIZE_MISMATCH)
+            return
+        end if
+
+        n_new_active_masks = n_new_active_masks + 1
+        subsets(:, n_results + n_active_masks + n_new_active_masks) = new_active_mask
+    end subroutine add_new_active_mask
+
+    pure subroutine mask_chunk_count(n_paralogs, count)
         integer(int32), intent(in) :: n_paralogs
+            !! number of vectors in `paralogs`
+        integer(int32), intent(out) :: count
+            !! number of 32 bit chunks a mask needs to encode `n_paralogs` paralogs
+
+        !! Each bitmask is built of 32 bit chunks. `(n_paralogs + 31) / 32` is equivalent to `ceil(n_paralogs / 32)` and represents the number of chunks
+        count = (n_paralogs + 31) / 32
+    end subroutine mask_chunk_count
+
+    pure subroutine filter_paralogs_by_pattern(pattern, pattern_percentile, paralog_angles, sorted_paralog_angles_perm, n_paralogs, mask, n_mask_chunks, ierr)
+        integer(int32), intent(in) :: n_paralogs
+            !! number of vectors in `paralogs`
+        integer(int32), intent(in) :: n_mask_chunks
+            !! number of 32 bit chunks a mask needs to encode `n_paralogs` paralogs
+        integer(int32), intent(in) :: pattern
+            !! used pattern for detection
+            !!
+            !! |       Pattern        | Value |
+            !! |----------------------|-------|
+            !! |    Dosage Effect     |   0   |
+            !! | Subfunctionalization |   1   |
+            !!
+        real(real64), intent(in) :: pattern_percentile
+            !! value between 0.0-1.0 defining the percentile that is used for filtering
+        real(real64), dimension(n_paralogs), intent(in) :: paralog_angles
+            !! vector, holding the ascending sorted angles between ancestor and paralogs. Needed for filtering paralogs
+        integer(int32), dimension(n_paralogs), intent(in) :: sorted_paralog_angles_perm
+            !! vector, holding the indices for the `paralog_angles` for ascending sorted order
+        integer(int32), dimension(n_mask_chunks), intent(out) :: mask
+            !! bit mask that will have indices of paralogs kept by pattern set to 1, else 0
+        integer(int32), intent(out) :: ierr
+            !! error code
+
+        real(real64) :: percentile_value
+        integer(int32) :: i_paralog
+
+        call set_ok(ierr)
+
+        mask = 0_int32
+
+        select case (pattern)
+        case (DOSAGE_PATTERN)
+            call calc_percentile(pattern_percentile, paralog_angles, sorted_paralog_angles_perm, percentile_value, ierr)
+            if (is_err(ierr)) return
+
+            ! only paralogs with angles below the gene-family median or lower five percentile are marked active
+            do i_paralog = 1, n_paralogs
+                if (paralog_angles(i_paralog) <= percentile_value) then
+                    call mask_set_state(mask, i_paralog, .true., ierr)
+                    if (is_err(ierr)) return
+                end if
+            end do
+        case (SUBFUNC_PATTERN)
+            call calc_percentile(pattern_percentile, paralog_angles, sorted_paralog_angles_perm, percentile_value, ierr)
+            if (is_err(ierr)) return
+
+            ! only paralogs with angles greater than the gene-family median angle are marked active
+            do i_paralog = 1, n_paralogs
+                if (paralog_angles(i_paralog) >= percentile_value) then
+                    call mask_set_state(mask, i_paralog, .true., ierr)
+                    if (is_err(ierr)) return
+                end if
+            end do
+        case default
+            call set_err(ierr, ERR_INVALID_INPUT)
+            return
+        end select
+    end subroutine filter_paralogs_by_pattern
+
+    pure subroutine calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
+        integer(int32), intent(in) :: n_paralogs
+        integer(int32), intent(in) :: n_mask_chunks
+            !! number of 32 bit chunks a mask needs to encode `n_paralogs` paralogs
         integer(int32), intent(inout) :: max_subset_size
         integer(int32), intent(out) :: work_array_size
+        integer(int32), dimension(n_mask_chunks), intent(in) :: filtered_paralogs_mask
+        integer(int32), intent(out) :: ierr
 
         integer(int32), parameter :: max_int32 = huge(0_int32)
-        integer(int32) :: subset_size, extensions_count, results, previous_results
+        integer(int32) :: i_paralog, subset_size, extensions_count, results, previous_results, n_paralogs_filtered
+        real(real64) :: percentile_rank
+
+        n_paralogs_filtered = 0
+        do i_paralog = 1, n_paralogs
+            if (mask_check_state(filtered_paralogs_mask, i_paralog)) then
+                n_paralogs_filtered = n_paralogs_filtered + 1
+            end if
+        end do
 
         work_array_size = 0
         extensions_count = 1
@@ -199,7 +432,7 @@ contains
 
             ! The current subsets will be replaced by their extensions.
             ! In worst case all extended subsets won't be pruned.
-            ! Thus, the extensions count will be the work array size.
+            ! Thus, the extensions count will be the work array size, plus the subsets from previous iterations that became results.
 
             ! if there are less extensions than before, the work array size won't grow anymore
             if (extensions_count > max_int32 - previous_results) then
@@ -211,31 +444,29 @@ contains
         end do
     end subroutine calc_work_arr_paralog_subsets_size
 
-    pure function mask_count_leading_inactives(bit_mask, n_paralogs) result(n_zeros)
+    pure function mask_get_first_successor_idx(bit_mask, n_paralogs) result(idx)
         integer(int32), dimension(:), intent(in) :: bit_mask
             !! chunked mask to mark active paralogs
         integer(int32), intent(in) :: n_paralogs
             !! number of paralogs `bit_mask` is made for
-        integer(int32) :: n_zeros
-            !! number of leftmost zeros in the bitmask
+        integer(int32) :: idx
+            !! index of last active paralog
 
         integer(int32) :: i_mask_chunk, i_bit
 
-        n_zeros = 0
-        i_mask_chunk = size(bit_mask)
-        do i_mask_chunk = 1, size(bit_mask)
+        idx = size(bit_mask) * 32
+        do i_mask_chunk = size(bit_mask), 1, -1
             if (bit_mask(i_mask_chunk) == 0) then
-                n_zeros = n_zeros + 32
+                idx = idx - 32
             else                
-                do i_bit = 0, 31
+                do i_bit = 31, 0, -1
                     if (btest(bit_mask(i_mask_chunk), i_bit)) exit
-                    n_zeros = n_zeros + 1
+                    idx = idx - 1
                 end do
             end if
         end do
-
-        n_zeros = min(n_zeros, n_paralogs)
-    end function mask_count_leading_inactives
+        idx = idx + 1
+    end function mask_get_first_successor_idx
 
     pure subroutine mask_set_state(bit_mask, i_paralog, state, ierr)
         integer(int32), dimension(:), intent(out) :: bit_mask
@@ -304,8 +535,8 @@ contains
             norm1 = norm1 + v1(i) ** 2
             norm2 = norm2 + v2(i) ** 2
         end do
-        angle = acos(dot_product / (sqrt(norm1) * sqrt(norm2)))
+        theta = dot_product / (sqrt(norm1) * sqrt(norm2))
+        theta = max(-1.0_real64, min(1.0_real64, theta))
+        angle = acos(theta)
     end subroutine angle_between
-
-
 end module tox_paralog_analysis

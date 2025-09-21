@@ -3,7 +3,7 @@
 
 module f42_utils
   use, intrinsic :: iso_fortran_env, only: real64, int32
-  use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_INTERNAL, set_ok, set_err_once, set_err
+  use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_INTERNAL, set_ok, set_err_once, set_err, is_err
   implicit none
 
   public :: sort_real, sort_integer, sort_character
@@ -12,6 +12,8 @@ module f42_utils
   interface sort_array
     module procedure sort_real, sort_integer, sort_character
   end interface sort_array
+
+  real(real64), parameter :: PI = 4.0_real64 * atan(1.0_real64)
 contains
 
   pure real(real64) function norm(vector, n_dims) result(euclidean_norm)
@@ -52,7 +54,7 @@ contains
   end subroutine subtract_vector
   
   !> Calculate the percentile of an array
-  pure subroutine percentile(percent, array, perm, percentile_value, ierr)
+  pure subroutine calc_percentile(percent, array, perm, percentile_value, ierr)
     real(real64), intent(in) :: percent
       !! value between 0.0-1.0 defining the percentage of the percentile
     real(real64), dimension(:), intent(in) :: array
@@ -65,21 +67,29 @@ contains
       !! error code
 
     integer(int32) :: index
+    real(real64) :: rank
 
     call set_ok(ierr)
 
-    index = int(percent) * (size(array) - 1)
-
-    if (index > size(array)) then
+    if (percent > 1 .or. percent < 0) then
         call set_err(ierr, ERR_INVALID_INPUT)
         return
     end if
 
+    if (size(array) == 0) then
+        call set_err(ierr, ERR_EMPTY_INPUT)
+        return
+    end if
+
+    rank = percent * (size(array) - 1) + 1
+    index = max(1, floor(rank))
+    index = min(index, size(array))
+
     percentile_value = array(perm(index))
     if (index < size(array)) then
-      percentile_value = percentile_value + (percent - int(percent)) * (array(perm(index + 1)) - percentile_value)
+      percentile_value = percentile_value + (rank - index) * (array(perm(index + 1)) - percentile_value)
     end if
-  end subroutine percentile
+  end subroutine calc_percentile
 
   !> Sort a real array indirectly using quicksort.
   !| Creates a sorted version of the array by reordering the `perm` vector. The original data in `array` remains unchanged.
