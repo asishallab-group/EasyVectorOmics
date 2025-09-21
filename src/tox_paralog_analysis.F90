@@ -1,7 +1,7 @@
 module tox_paralog_analysis
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use tox_errors, only: set_ok, set_err, is_err, ERR_INVALID_INPUT
-    use f42_utils, only: nth_percentile, add_vector, subtract_vector, norm
+    use f42_utils, only: percentile, add_vector, subtract_vector, norm
     implicit none
 
     integer(int32), parameter :: DOSAGE_PATTERN = 0
@@ -9,7 +9,7 @@ module tox_paralog_analysis
 
 contains
 
-    pure subroutine detect_patterns(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, pattern, paralog_angles, sorted_paralog_angles_perm, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, global_mask, candidate_mask, temp_paralog_vector, ierr)
+    pure subroutine detect_patterns(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, pattern, pattern_percentile, paralog_angles, sorted_paralog_angles_perm, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, global_mask, candidate_mask, temp_paralog_vector, ierr)
 
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
@@ -29,6 +29,8 @@ contains
             !! |    Dosage Effect     |   0   |
             !! | Subfunctionalization |   1   |
             !!
+        real(real64), intent(in) :: pattern_percentile
+            !! value between 0.0-1.0 defining the percentile that is used for filtering
         real(real64), dimension(n_paralogs), intent(in) :: paralog_angles
             !! vector, holding the ascending sorted angles between ancestor and paralogs. Needed for filtering paralogs
         integer(int32), dimension(n_paralogs), intent(in) :: sorted_paralog_angles_perm
@@ -54,16 +56,17 @@ contains
             !! error code
 
         ! Locals
-        real(real64) :: min_norm, max_angle, residual_norm, residual_angle
+        real(real64) :: min_norm, max_angle, residual_norm, residual_angle, percentile_value
         integer(int32) :: i_paralog, i_subset_size, i_dim, n_active_masks, n_new_active_masks
 
         call set_ok(ierr)
 
-        max_angle = maxval(paralog_angles)
-        min_norm = 0_real64
+        max_angle = paralog_angles(1)
+        min_norm = norm(paralogs(:, 1), n_dims)
 
-        do i_paralog = 1, n_paralogs
+        do i_paralog = 2, n_paralogs
             min_norm = min(min_norm, norm(paralogs(:, i_paralog), n_dims))
+            max_angle = max(max_angle, paralog_angles(i_paralog))
         end do
 
         n_active_masks = 0_int32
@@ -72,36 +75,31 @@ contains
 
         select case (pattern)
         case (DOSAGE_PATTERN)
-            block
-                real(real64) :: percentile_angle, median_angle
-                percentile_angle = nth_percentile(5_int32, paralog_angles, sorted_paralog_angles_perm)
-                median_angle = nth_percentile(50_int32, paralog_angles, sorted_paralog_angles_perm)
+            call percentile(pattern_percentile, paralog_angles, sorted_paralog_angles_perm, percentile_value, ierr)
+            if (is_err(ierr)) return
 
-                ! only paralogs with angles below the gene-family median or lower five percentile are marked active
-                do i_paralog = 1, n_paralogs
-                    if (paralog_angles(i_paralog) < median_angle .and. paralog_angles(i_paralog) > percentile_angle) then
-                        n_active_masks = n_active_masks + 1
-                        call mask_set_state(work_arr_paralog_subsets(:, n_active_masks), i_paralog, .true., ierr)
-                        call mask_set_state(global_mask, i_paralog, .true., ierr)
-                        if (is_err(ierr)) return
-                    end if
-                end do
-            end block
+            ! only paralogs with angles below the gene-family median or lower five percentile are marked active
+            do i_paralog = 1, n_paralogs
+                if (paralog_angles(i_paralog) < percentile_value) then
+                    n_active_masks = n_active_masks + 1
+                    call mask_set_state(work_arr_paralog_subsets(:, n_active_masks), i_paralog, .true., ierr)
+                    call mask_set_state(global_mask, i_paralog, .true., ierr)
+                    if (is_err(ierr)) return
+                end if
+            end do
         case (SUBFUNC_PATTERN)
-            block
-                real(real64) :: median_angle
-                median_angle = nth_percentile(50_int32, paralog_angles, sorted_paralog_angles_perm)
+            call percentile(pattern_percentile, paralog_angles, sorted_paralog_angles_perm, percentile_value, ierr)
+            if (is_err(ierr)) return
 
-                ! only paralogs with angles greater than the gene-family median angle are marked active
-                do i_paralog = 1, n_paralogs
-                    if (paralog_angles(i_paralog) > median_angle) then
-                        n_active_masks = n_active_masks + 1
-                        call mask_set_state(work_arr_paralog_subsets(:, n_active_masks), i_paralog, .true., ierr)
-                        call mask_set_state(global_mask, i_paralog, .true., ierr)
-                        if (is_err(ierr)) return
-                    end if
-                end do
-            end block
+            ! only paralogs with angles greater than the gene-family median angle are marked active
+            do i_paralog = 1, n_paralogs
+                if (paralog_angles(i_paralog) > percentile_value) then
+                    n_active_masks = n_active_masks + 1
+                    call mask_set_state(work_arr_paralog_subsets(:, n_active_masks), i_paralog, .true., ierr)
+                    call mask_set_state(global_mask, i_paralog, .true., ierr)
+                    if (is_err(ierr)) return
+                end if
+            end do
         case default
             call set_err(ierr, ERR_INVALID_INPUT)
             return
@@ -129,8 +127,8 @@ contains
                 end do
 
                 ! generate extended subsets by adding successing paralogs of the first active paralog if suitable.
-                ! `mask_count_leftmost_zero_bits` returns the index of inactive paralog before first active one, so +2 gives the first potential non-active
-                do i_paralog = mask_count_leftmost_zero_bits(candidate_mask) + 2, n_paralogs
+                ! `mask_count_leading_inactives` returns the index of inactive paralog before first active one, so +2 gives the first potential non-active
+                do i_paralog = mask_count_leading_inactives(candidate_mask, n_paralogs) + 2, n_paralogs
                     if (mask_check_state(global_mask, i_paralog) .and. .not. mask_check_state(candidate_mask, i_paralog)) then
                         call mask_set_state(candidate_mask, i_paralog, .true., ierr)
                         if (is_err(ierr)) return
@@ -169,41 +167,55 @@ contains
     end subroutine detect_patterns
 
     pure subroutine calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size)
-        integer(int32), intent(in) :: max_subset_size, n_paralogs
+        integer(int32), intent(in) :: n_paralogs
+        integer(int32), intent(inout) :: max_subset_size
         integer(int32), intent(out) :: work_array_size
 
         integer(int32), parameter :: max_int32 = huge(0_int32)
-        integer(int32) :: subset_size, extensions_count
+        integer(int32) :: subset_size, extensions_count, results, previous_results
 
         work_array_size = 0
         extensions_count = 1
+        previous_results = 0
+        results = 0
         do subset_size = 1, max_subset_size
+            ! results holds the number of subsets of current subset size that don't have any successing paralogs to be extended with -> result in worst case
+            ! previous_results holds the number of results that come from previous subset sizes
+            if (previous_results > max_int32 - results) then
+                max_subset_size = subset_size - 1
+                exit
+            end if
+            previous_results = previous_results + results
+            results = extensions_count - results
 
             ! calculate the number of extensions of current subsets
-
             ! overflow check
-            if (extensions_count > max_int32 / (n_paralogs - subset_size + 1)) exit
+            if (extensions_count > max_int32 / (n_paralogs - subset_size + 1)) then
+                max_subset_size = subset_size - 1
+                exit
+            end if
             extensions_count = extensions_count * (n_paralogs - subset_size + 1)
             extensions_count = extensions_count / subset_size
-
 
             ! The current subsets will be replaced by their extensions.
             ! In worst case all extended subsets won't be pruned.
             ! Thus, the extensions count will be the work array size.
-            ! As every subset will be extended by one paralog of its successors, the last subset doesn't have extensions, but could be a result.
-            ! As this applies to each iteration and the results are stored in the work array, the current subset size holds the number of those possible results.
 
-            ! overflow check
-            if (extensions_count > max_int32 - subset_size) exit
             ! if there are less extensions than before, the work array size won't grow anymore
-            if (extensions_count + subset_size < work_array_size) exit
-            work_array_size = extensions_count + subset_size
+            if (extensions_count > max_int32 - previous_results) then
+                max_subset_size = subset_size - 1
+                exit
+            end if
+            if (extensions_count + previous_results < work_array_size) exit
+            work_array_size = extensions_count + previous_results
         end do
     end subroutine calc_work_arr_paralog_subsets_size
 
-    pure function mask_count_leftmost_zero_bits(bit_mask) result(n_zeros)
+    pure function mask_count_leading_inactives(bit_mask, n_paralogs) result(n_zeros)
         integer(int32), dimension(:), intent(in) :: bit_mask
             !! chunked mask to mark active paralogs
+        integer(int32), intent(in) :: n_paralogs
+            !! number of paralogs `bit_mask` is made for
         integer(int32) :: n_zeros
             !! number of leftmost zeros in the bitmask
 
@@ -211,19 +223,19 @@ contains
 
         n_zeros = 0
         i_mask_chunk = size(bit_mask)
-        do while (i_mask_chunk > 0)
-            if (bit_mask(i_mask_chunk) /= 0) exit
-            n_zeros = n_zeros + 32
-            i_mask_chunk = i_mask_chunk - 1
+        do i_mask_chunk = 1, size(bit_mask)
+            if (bit_mask(i_mask_chunk) == 0) then
+                n_zeros = n_zeros + 32
+            else                
+                do i_bit = 0, 31
+                    if (btest(bit_mask(i_mask_chunk), i_bit)) exit
+                    n_zeros = n_zeros + 1
+                end do
+            end if
         end do
 
-        if (i_mask_chunk > 0) then
-            do i_bit = 31, 0, -1
-                if (btest(bit_mask(i_mask_chunk), i_bit)) exit
-                n_zeros = n_zeros + 1
-            end do
-        end if
-    end function mask_count_leftmost_zero_bits
+        n_zeros = min(n_zeros, n_paralogs)
+    end function mask_count_leading_inactives
 
     pure subroutine mask_set_state(bit_mask, i_paralog, state, ierr)
         integer(int32), dimension(:), intent(out) :: bit_mask
