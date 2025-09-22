@@ -26,14 +26,14 @@ else
     XXHASH_FLAGS=""
     XXHASH_LIBS=""
 fi
-
+LIBS="-lzip"
 # Detect compiler and choose appropriate profile:
 if [[ "$FC" == "ifx" || "$FC" == "ifort" ]]; then
-  FLAGS="-O3 -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC -lzip $XXHASH_FLAGS"
+  FLAGS="-O3 -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC $XXHASH_FLAGS"
   COMPILER="ifx"
   C_COMPILER="icc"
 else
-  FLAGS="-O3 -march=native -mtune=native -fopenmp -ffast-math -funroll-loops -ftree-vectorize -fassociative-math -fPIC -lzip $XXHASH_FLAGS"
+  FLAGS="-O3 -march=native -mtune=native -fopenmp -ffast-math -funroll-loops -ftree-vectorize -fassociative-math -fPIC $XXHASH_FLAGS"
   COMPILER="gfortran"
   C_COMPILER="gcc"
 fi
@@ -56,7 +56,7 @@ mkdir -p build
 
 # Build with FPM
 export FC
-fpm build --compiler $COMPILER --flag "$FLAGS" --flag "-DDEFAULT_ALIGNMENT=$ALIGN" --flag "$MAX_PERF_FLAG"
+fpm build --compiler $COMPILER --flag "$FLAGS" --flag "-DDEFAULT_ALIGNMENT=$ALIGN" --flag "$MAX_PERF_FLAG" --flag $LIBS
 
 # Move .mod, .o and .so files from FPM build directories to root
 for compiler_dir in build/${COMPILER}_*; do

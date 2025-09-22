@@ -11,4 +11,4 @@ c-sources = ["src/tox_data/xxh3_hash.c"]
 type = "shared" 
 
 [build]
-link = ["xxhash"]
+link = ["xxhash", "zip"]
