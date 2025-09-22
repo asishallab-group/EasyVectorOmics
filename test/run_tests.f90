@@ -1,4 +1,6 @@
 program main
+  use mod_test_bst
+  use mod_test_kd_tree
   use mod_test_sorting
   use mod_test_get_outliers
   use mod_test_loess_smoothing
@@ -74,7 +76,8 @@ contains
     ! Start with empty registry
     allocate(available_suites(0))
     
-    ! Add each suite 
+    call add_suite("bst", run_all_tests_bst, run_named_tests_bst)
+    call add_suite("k-d-tree", run_all_tests_kd_tree, run_named_tests_kd_tree)
     call add_suite("sorting", run_all_tests_sorting, run_named_tests_sorting)
     call add_suite("get_outliers",run_all_tests_get_outliers, run_named_tests_get_outliers)
     call add_suite("loess_smoothing",run_all_tests_loess_smoothing, run_named_tests_loess_smoothing)
