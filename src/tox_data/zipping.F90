@@ -798,13 +798,25 @@ contains
                             actual_gene_to_family_file, actual_family_ids_file, &
                             actual_family_centroids_file, actual_shift_vectors_file, ierr)
         
+        if(is_err(ierr)) return
         ! Clean up temporary files
         if (gene_ids_present) call delete_file(actual_gene_ids_file, ierr)
+        if(is_err(ierr)) write(*,*) 'Gene IDs could not be removed'
+        call set_ok(ierr)
         if (expression_present) call delete_file(actual_expression_file, ierr)
+        if(is_err(ierr)) write(*,*) 'Expression file could not be removed'
+        call set_ok(ierr)
         if (gene_to_family_present) call delete_file(actual_gene_to_family_file, ierr)
+        if(is_err(ierr)) write(*,*) 'Gene to family mapping could not be removed'
+        call set_ok(ierr)
         if (family_ids_present) call delete_file(actual_family_ids_file, ierr)
+        if(is_err(ierr)) write(*,*) 'Family IDscould not be removed'
+        call set_ok(ierr)
         if (family_centroids_present) call delete_file(actual_family_centroids_file, ierr)
+        if(is_err(ierr)) write(*,*) 'Centroids could not be removed'
+        call set_ok(ierr)
         if (shift_vectors_present) call delete_file(actual_shift_vectors_file, ierr)
+        if(is_err(ierr)) write(*,*) 'Shift vectors could not be removed'
     end subroutine save_tox_data
 
     subroutine read_tox_data(zip_filename, ierr, gene_ids, gene_ids_file, expression, expression_file, &
@@ -869,7 +881,6 @@ contains
                 print *, "Error getting metadata for gene_ids file"
                 return
             end if
-            call delete_file(extracted_gene_ids_file, ierr)
         end if
         
         expression_requested = present(expression) .and. len_trim(extracted_expression_file) > 0
@@ -885,7 +896,6 @@ contains
                 print *, "Error getting metadata for expression file"
                 return
             end if
-            call delete_file(extracted_expression_file, ierr)
         end if
         
         gene_to_family_requested = present(gene_to_family) .and. len_trim(extracted_gene_to_family_file) > 0
@@ -901,7 +911,6 @@ contains
                 print *, "Error getting metadata for gene_to_family file"
                 return
             end if
-            call delete_file(extracted_gene_to_family_file, ierr)
         end if
         
         family_ids_requested = present(family_ids) .and. len_trim(extracted_family_ids_file) > 0
@@ -916,7 +925,6 @@ contains
                 print *, "Error getting metadata for family_ids file"
                 return
             end if
-            call delete_file(extracted_family_ids_file, ierr)
         end if
         
         family_centroids_requested = present(family_centroids) .and. len_trim(extracted_family_centroids_file) > 0
@@ -932,7 +940,6 @@ contains
                 print *, "Error getting metadata for family_centroids file"
                 return
             end if
-            call delete_file(extracted_family_centroids_file, ierr)
         end if
         
         shift_vectors_requested = present(shift_vectors) .and. len_trim(extracted_shift_vectors_file) > 0
@@ -948,8 +955,14 @@ contains
                 print *, "Error getting metadata for shift_vectors file"
                 return
             end if
-            call delete_file(extracted_shift_vectors_file, ierr)
         end if
+
+        if(len_trim(extracted_gene_ids_file) > 0) call delete_file(extracted_gene_ids_file, ierr)
+        if(len_trim(extracted_expression_file) > 0) call delete_file(extracted_expression_file, ierr)
+        if(len_trim(extracted_gene_to_family_file) > 0) call delete_file(extracted_gene_to_family_file, ierr)
+        if(len_trim(extracted_family_ids_file) > 0) call delete_file(extracted_family_ids_file, ierr)
+        if(len_trim(extracted_family_centroids_file) > 0) call delete_file(extracted_family_centroids_file, ierr)
+        if(len_trim(extracted_shift_vectors_file) > 0) call delete_file(extracted_shift_vectors_file, ierr)
     end subroutine read_tox_data
 
 end module tox_archive
