@@ -1,7 +1,7 @@
 !> Module for tools related to relative axis planes (RAPs), i.e. planes in higher-dimensional gene expression space
 module relative_axis_plane_tools
    use, intrinsic :: iso_fortran_env, only: real64, int32
-   use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, set_ok, set_err_once
+   use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, set_ok, set_err_once, is_ok
    implicit none
 
 contains
@@ -25,7 +25,7 @@ contains
       real(real64), dimension(n_selected_axes, n_selected_vecs), intent(out) :: projections
          !! projected vectors
       integer(int32), intent(out) :: ierr
-         !! Error code: 0=ok, 201=invalid input
+         !! Error code
 
       integer(int32) :: i_vec, i_axis, i_vec_proj, i_axis_proj
       ! Error handling
@@ -78,7 +78,7 @@ contains
       real(real64), dimension(n_selected_axes, n_selected_vecs), intent(out) :: projections
          !! projected vectors
       integer(int32), intent(out) :: ierr
-         !! Error code: 0=ok, 201=invalid input
+         !! Error code
 
       integer(int32) :: i_vec, i_axis, i_vec_proj, i_axis_proj
       ! Error handling
@@ -157,7 +157,7 @@ contains
       integer(int32), dimension(3), intent(in) :: selected_axes_for_signed
          !! Indices of 3 axes to use for directionality calculation (ignored if n_dims <= 3)
       integer(int32), intent(out) :: ierr
-         !! Error code: 0=ok, 201=invalid input
+         !! Error code
 
       real(real64) :: dot_product, unsigned_angle, orientation_sign
       integer(int32) :: i
@@ -200,18 +200,19 @@ contains
       unsigned_angle = acos(dot_product)
 
       ! Calculate orientation sign for directionality
-      if (n_dims == 2) then
-         ! For 2D: use determinant directly
-         orientation_sign = sign(1.0_real64, v1(1) * v2(2) - v1(2) * v2(1))
-      else if (n_dims == 3) then
-         ! For 3D: use z-component of cross product
-         orientation_sign = sign(1.0_real64, v1(1) * v2(2) - v1(2) * v2(1))
-      else
-         ! For >3D: use selected axes to form 3D subspace
-         orientation_sign = sign(1.0_real64, &
-            v1(selected_axes_for_signed(1)) * v2(selected_axes_for_signed(2)) - &
-            v1(selected_axes_for_signed(2)) * v2(selected_axes_for_signed(1)))
-      end if
+      select case (n_dims)
+         case (2)
+            ! For 2D: use determinant directly
+            orientation_sign = sign(1.0_real64, v1(1) * v2(2) - v1(2) * v2(1))
+         case (3)
+            ! For 3D, use [1,2,3] directly
+            orientation_sign = cross_product_orientation_sign(v1, v2, n_dims, [1,2,3])
+         case (4:)
+            ! For >3D, use selected_axes_for_signed
+            orientation_sign = cross_product_orientation_sign(v1, v2, n_dims, selected_axes_for_signed)
+         case default
+            orientation_sign = 1.0_real64
+      end select
 
       ! Apply sign to unsigned angle
       signed_angle = orientation_sign * unsigned_angle
@@ -241,7 +242,7 @@ contains
       real(real64), dimension(n_selected_vecs), intent(out) :: signed_angles
          !! Signed rotation angles between vector pairs in radians [-π, π]
       integer(int32), intent(out) :: ierr
-         !! Error code: 0=ok, 201=invalid input
+         !! Error code
 
       integer(int32) :: i_vec, i_result
 
@@ -258,7 +259,7 @@ contains
          if (vecs_selection_mask(i_vec)) then
             call clock_hand_angle_between_vectors(origins(:, i_vec), targets(:, i_vec), n_dims, &
                                                  signed_angles(i_result), selected_axes_for_signed, ierr)
-            if (ierr /= 0) return
+            if (.not. is_ok(ierr)) return
             i_result = i_result + 1
          end if
       end do
@@ -274,7 +275,7 @@ contains
       real(real64), dimension(n_axes), intent(out) :: contributions
          !! Fractional contribution of each axis (output), values in [0,1], sum to 1
       integer(int32), intent(out) :: ierr
-         !! Error code: 0=ok, 201=invalid input
+         !! Error code
 
       real(real64) :: total_abs
       integer(int32) :: i_axis
@@ -298,13 +299,10 @@ contains
          return
       end if
 
-      if (total_abs > 0.0_real64) then
-         do i_axis = 1, n_axes
-            contributions(i_axis) = abs(vec(i_axis)) / total_abs
-         end do
-      else
-         contributions = 0.0_real64
-      end if
+      do i_axis = 1, n_axes
+         contributions(i_axis) = abs(vec(i_axis)) / total_abs
+      end do
+
    end subroutine compute_relative_axis_contributions
 
    !> Compute fractional contribution of each axis to a RAP-projected and normalized shift vector.
@@ -317,7 +315,7 @@ contains
       real(real64), dimension(n_axes), intent(out) :: contributions
          !! Fractional contribution of each axis (output), values in [0,1], sum to 1
       integer(int32), intent(out) :: ierr
-         !! Error code: 0=ok, 201=invalid input
+         !! Error code
 
       call compute_relative_axis_contributions(vec, n_axes, contributions, ierr)
    end subroutine relative_axes_changes_from_shift_vector
@@ -332,10 +330,24 @@ contains
       real(real64), dimension(n_axes), intent(out) :: contributions
          !! Fractional contribution of each axis (output), values in [0,1], sum to 1
       integer(int32), intent(out) :: ierr
-         !! Error code: 0=ok, 201=invalid input
+         !! Error code
 
       call compute_relative_axis_contributions(vec, n_axes, contributions, ierr)
    end subroutine relative_axes_expression_from_expression_vector
+
+   !> Compute orientation sign from cross product of two vectors, using selected axes 
+   pure function cross_product_orientation_sign(a, b, n_dims, selected_axes) result(orientation_sign)
+      real(real64), intent(in) :: a(n_dims), b(n_dims)
+      integer(int32), intent(in) :: n_dims
+      integer(int32), intent(in) :: selected_axes(3)
+      real(real64) :: orientation_sign
+      real(real64) :: cross1, cross2, cross3, dotprod
+      cross1 = a(selected_axes(2))*b(selected_axes(3)) - a(selected_axes(3))*b(selected_axes(2))
+      cross2 = a(selected_axes(3))*b(selected_axes(1)) - a(selected_axes(1))*b(selected_axes(3))
+      cross3 = a(selected_axes(1))*b(selected_axes(2)) - a(selected_axes(2))*b(selected_axes(1))
+      dotprod = cross1*a(selected_axes(1)) + cross2*a(selected_axes(2)) + cross3*a(selected_axes(3))
+      orientation_sign = sign(1.0_real64, dotprod)
+   end function cross_product_orientation_sign
 
 end module relative_axis_plane_tools
 
@@ -352,7 +364,7 @@ subroutine relative_axes_changes_from_shift_vector_r(vec, n_axes, contributions,
    real(real64), dimension(n_axes), intent(out) :: contributions
       !! Relative axis contributions (output), values in [0,1], sum to 1
    integer(int32), intent(out) :: ierr
-      !! Error code: 0=ok, 201=invalid input
+      !! Error code
 
    call relative_axes_changes_from_shift_vector(vec, n_axes, contributions, ierr)
 end subroutine relative_axes_changes_from_shift_vector_r
@@ -369,7 +381,7 @@ subroutine relative_axes_changes_from_shift_vector_c(vec, n_axes, contributions,
    real(c_double), dimension(n_axes), intent(out) :: contributions
       !! Relative axis contributions (output), values in [0,1], sum to 1
    integer(c_int), intent(out) :: ierr
-      !! Error code: 0=ok, 201=invalid input
+      !! Error code
 
    call relative_axes_changes_from_shift_vector(vec, n_axes, contributions, ierr)
 end subroutine relative_axes_changes_from_shift_vector_c
@@ -386,7 +398,7 @@ subroutine relative_axes_expression_from_expression_vector_r(vec, n_axes, contri
    real(real64), dimension(n_axes), intent(out) :: contributions
       !! Relative axis contributions (output), values in [0,1], sum to 1
    integer(int32), intent(out) :: ierr
-      !! Error code: 0=ok, 201=invalid input
+      !! Error code
 
    call relative_axes_expression_from_expression_vector(vec, n_axes, contributions, ierr)
 end subroutine relative_axes_expression_from_expression_vector_r
@@ -403,7 +415,7 @@ subroutine relative_axes_expression_from_expression_vector_c(vec, n_axes, contri
    real(c_double), dimension(n_axes), intent(out) :: contributions
       !! Relative axis contributions (output), values in [0,1], sum to 1
    integer(c_int), intent(out) :: ierr
-      !! Error code: 0=ok, 201=invalid input
+      !! Error code
 
    call relative_axes_expression_from_expression_vector(vec, n_axes, contributions, ierr)
 end subroutine relative_axes_expression_from_expression_vector_c
@@ -430,7 +442,7 @@ subroutine omics_vector_RAP_projection_r(vecs, n_axes, n_vecs, vecs_selection_ma
    real(real64), dimension(n_selected_axes, n_selected_vecs), intent(out) :: projections
       !! projected vectors
    integer(int32), intent(out) :: ierr
-      !! Error code: 0=ok, 201=invalid input
+      !! Error code
 
    call omics_vector_RAP_projection(vecs, n_axes, n_vecs, vecs_selection_mask, n_selected_vecs, axes_selection_mask, n_selected_axes, projections, ierr)
 end subroutine omics_vector_RAP_projection_r
@@ -457,7 +469,7 @@ subroutine omics_vector_RAP_projection_c(vecs, n_axes, n_vecs, vecs_selection_ma
    real(c_double), dimension(n_selected_axes, n_selected_vecs), intent(out) :: projections
       !! projected vectors
    integer(c_int), intent(out) :: ierr
-      !! Error code: 0=ok, 201=invalid input
+      !! Error code
 
    call omics_vector_RAP_projection(vecs, n_axes, n_vecs, vecs_selection_mask /= 0, n_selected_vecs, axes_selection_mask /= 0, n_selected_axes, projections, ierr)
 end subroutine omics_vector_RAP_projection_c
@@ -484,7 +496,7 @@ subroutine omics_field_RAP_projection_r(vecs, n_axes, n_vecs, vecs_selection_mas
    real(real64), dimension(n_selected_axes, n_selected_vecs), intent(out) :: projections
       !! projected vectors
    integer(int32), intent(out) :: ierr
-      !! Error code: 0=ok, 201=invalid input
+      !! Error code
 
    call omics_field_RAP_projection(vecs, n_axes, n_vecs, vecs_selection_mask, n_selected_vecs, axes_selection_mask, n_selected_axes, projections, ierr)
 end subroutine omics_field_RAP_projection_r
@@ -511,7 +523,7 @@ subroutine omics_field_RAP_projection_c(vecs, n_axes, n_vecs, vecs_selection_mas
    real(c_double), dimension(n_selected_axes, n_selected_vecs), intent(out) :: projections
       !! projected vectors
    integer(c_int), intent(out) :: ierr
-      !! Error code: 0=ok, 201=invalid input
+      !! Error code
 
    call omics_field_RAP_projection(vecs, n_axes, n_vecs, vecs_selection_mask /= 0, n_selected_vecs, axes_selection_mask /= 0, n_selected_axes, projections, ierr)
 end subroutine omics_field_RAP_projection_c
@@ -532,7 +544,7 @@ subroutine clock_hand_angle_between_vectors_r(v1, v2, n_dims, signed_angle, sele
    integer(int32), dimension(3), intent(in) :: selected_axes_for_signed
       !! Indices of 3 axes to use for directionality calculation (ignored if n_dims <= 3)
    integer(int32), intent(out) :: ierr  
-      !! Error code: 0=ok, 201=invalid input
+      !! Error code
 
    call clock_hand_angle_between_vectors(v1, v2, n_dims, signed_angle, selected_axes_for_signed, ierr)
 end subroutine clock_hand_angle_between_vectors_r
@@ -553,7 +565,7 @@ subroutine clock_hand_angle_between_vectors_c(v1, v2, n_dims, signed_angle, sele
    integer(c_int), dimension(3), intent(in) :: selected_axes_for_signed
       !! Indices of 3 axes to use for directionality calculation (ignored if n_dims <= 3)
    integer(c_int), intent(out) :: ierr  
-      !! Error code: 0=ok, 201=invalid input
+      !! Error code
 
    call clock_hand_angle_between_vectors(v1, v2, n_dims, signed_angle, selected_axes_for_signed, ierr)
 end subroutine clock_hand_angle_between_vectors_c
@@ -573,14 +585,14 @@ subroutine clock_hand_angles_for_shift_vectors_r(origins, targets, n_dims, n_vec
       !! Number of vector pairs
    logical, dimension(n_vecs), intent(in) :: vecs_selection_mask
       !! .true. for vector pairs where angle should be computed
-   integer(int32), intent(in) :: n_selected_vecs
-      !! Count of .true. values in vecs_selection_mask
-   integer(int32), dimension(3), intent(in) :: selected_axes_for_signed
-      !! Indices of 3 axes to use for directionality calculation (ignored if n_dims <= 3)
-   real(real64), dimension(n_selected_vecs), intent(out) :: signed_angles
-      !! Signed rotation angles between vector pairs in radians [-π, π]
-   integer(int32), intent(out) :: ierr  
-      !! Error code: 0=ok, 201=invalid input
+      integer(int32), intent(in) :: n_selected_vecs
+         !! Count of .true. values in vecs_selection_mask
+      integer(int32), dimension(3), intent(in) :: selected_axes_for_signed
+         !! Indices of 3 axes to use for directionality calculation (ignored if n_dims <= 3)
+      real(real64), dimension(n_selected_vecs), intent(out) :: signed_angles
+         !! Signed rotation angles between vector pairs in radians [-π, π]
+      integer(int32), intent(out) :: ierr  
+      !! Error code
 
    call clock_hand_angles_for_shift_vectors(origins, targets, n_dims, n_vecs, vecs_selection_mask, n_selected_vecs, selected_axes_for_signed, signed_angles, ierr)
 end subroutine clock_hand_angles_for_shift_vectors_r
@@ -607,7 +619,7 @@ subroutine clock_hand_angles_for_shift_vectors_c(origins, targets, n_dims, n_vec
    real(c_double), dimension(n_selected_vecs), intent(out) :: signed_angles
       !! Signed rotation angles between vector pairs in radians [-π, π]
    integer(c_int), intent(out) :: ierr  
-      !! Error code: 0=ok, 201=invalid input
+      !! Error code
 
    call clock_hand_angles_for_shift_vectors(origins, targets, n_dims, n_vecs, vecs_selection_mask /= 0, n_selected_vecs, selected_axes_for_signed, signed_angles, ierr)
 end subroutine clock_hand_angles_for_shift_vectors_c
