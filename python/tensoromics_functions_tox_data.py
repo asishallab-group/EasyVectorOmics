@@ -6,6 +6,14 @@ Python wrapper functions for Fortran routines via C interface
 import numpy as np
 import ctypes
 import os
+from tensoromics_functions import (
+    tox_deserialize_char_nd,
+    tox_serialize_char_nd,
+    tox_serialize_int_nd,
+    tox_deserialize_int_nd,
+    tox_serialize_real_nd,
+    tox_deserialize_real_nd
+)
 
 # Load library
 dll_path = os.path.abspath("build/libtensor-omics.so")
@@ -491,3 +499,139 @@ def validate_all_data(n_genes, n_families, n_samples, d, gene_ids, gene_family_i
     )
     if ierr.value != 0:
         raise Exception(f"Validation failed: all data (error {ierr.value})")
+    
+def save_tox_data(zip_filename, gene_ids=None, gene_ids_name=None, expression_vectors=None, expression_vectors_name=None,
+                  gene_to_fam=None, gene_to_fam_name=None, family_ids=None, family_ids_name=None, family_centroids=None,
+                  family_centroids_name=None, shift_vectors=None, shift_vectors_name=None):
+    import zipfile
+
+    if(not isinstance(zip_filename, str)):
+        raise RuntimeError(f"Type mismatch: Zip_filname must be a string")
+    
+    if(gene_ids != None):
+        if(len(gene_ids.shape) == 1):
+            gene_ids_array_valid = True
+        else:
+            raise Exception(f"Gene IDs dimensions mismatch: Expected 1 but got {len(gene_ids.shape)}")
+    if(gene_ids_name != None):
+        if(isinstance(gene_ids_name, str)):
+            gene_ids_name_valid = True
+        else:
+            raise Exception(f"Gene IDs name type mismatch: Must be a string")
+        
+    if(gene_ids_array_valid ^ gene_ids_name_valid):
+        print("Gene IDs: Either provide array and filename or none. Skipping for now")
+
+    if (expression_vectors != None):
+        if(len(expression_vectors.shape)==2):
+            expression_vectors_array_valid = True
+        else:
+            raise Exception(f"Expression vectors dim mismatch: Expected 2 but got {len(expression_vectors.shape)}")
+        
+    if (expression_vectors_name != None):
+        if(isinstance(expression_vectors_name, str)):
+            expression_vectors_name_valid = True
+        else:
+            raise Exception(f"Expression vector name must be a string")
+        
+    if(expression_vectors_array_valid ^ expression_vectors_name_valid):
+        print("Expression vectors: Either provide array and filename or none. Skipping for now")
+    
+    if(gene_to_fam != None):
+        if(len(gene_to_fam.shape) == 1):
+            gene_to_fam_array_valid = True
+        else:
+            raise Exception(f"Gene to family dimension mismatch: Expected 1 but got {len(gene_to_fam.shape)}")
+    if(gene_to_fam_name != None):
+        if(isinstance(gene_to_fam_name, str)):
+            gene_to_fam_name_valid = True
+        else:
+            raise Exception(f"Gene to family name must be a string")
+    if(gene_to_fam_array_valid ^ gene_to_fam_name_valid):
+        print("Gene to family: Either provide array and filename or none. Skipping for now")
+
+    if(family_ids != None):
+        if(len(family_ids.shape) == 1):
+            family_ids_array_valid = True
+        else:
+            raise Exception(f"Family IDs dimensions mismatch: Expected 1 but got {len(family_ids.shape)}")
+    if(family_ids_name != None):
+        if(isinstance(family_ids_name, str)):
+            family_ids_name_valid = True
+        else:
+            raise Exception(f"Family IDs name must be a string")
+    if(family_ids_array_valid ^ family_ids_name_valid):
+        print("Family IDs: Either provide array and filename or none. Skipping for now")
+
+    if(family_centroids != None):
+        if(len(family_centroids.shape) == 2):
+            family_centroids_array_valid = True
+        else:
+            raise Exception(f"Family centroids dimension mismatch: Expected 2 but got {len(family_centroids.shape)}")
+    if(family_centroids_name != None):
+        if(isinstance(family_centroids_name, str)):
+            family_centroids_name_valid = True
+        else:
+            raise Exception(f"Gene to family name must be a string")
+    if(family_centroids_array_valid ^ family_centroids_name_valid):
+        print("Family Centroids: Either provide array and filename or none. Skipping for now")
+
+    if(shift_vectors != None):
+        if(len(shift_vectors.shape) == 2):
+            shift_vectors_array_valid = True
+        else:
+            raise Exception(f"Shift vectors dimension mismatch: Expected 2 but got {len(shift_vectors.shape)}")
+    if(shift_vectors_name != None):
+        if(isinstance(shift_vectors_name, str)):
+            shift_vectors_name_valid = True
+        else:
+            raise Exception(f"Shift vectors name must be a string")
+        
+    if(shift_vectors_array_valid ^ shift_vectors_name_valid):
+        print("Shift vectors: Either provide array and filename or none. Skipping for now")
+
+    manifest =""
+    with zipfile.ZipFile(file=zip_filename, mode="w, x", compression=0) as archive: 
+        if(gene_ids_array_valid and gene_ids_name_valid):
+            tox_serialize_char_nd(gene_ids, gene_ids_name)
+            archive.write(gene_ids_name)
+            print(f"Wrote gene IDs to {gene_ids_name}")
+            manifest = manifest + "gene_ids=\"" + gene_ids_name + "\"\n"
+        else:
+            manifest = manifest + "gene_ids=\"\"\n"
+        if(expression_vectors_array_valid and expression_vectors_name_valid):
+            tox_serialize_real_nd(expression_vectors, expression_vectors_name)
+            archive.write(expression_vectors_name)
+            print(f"Wrote expression vectors to {expression_vectors_name}")
+            manifest = manifest + "expression_vectors=\"" + expression_vectors_name + "\"\n"
+        else:
+            manifest = manifest + "expression_vectors=\"\"\n"
+        if(gene_to_fam_array_valid and gene_to_fam_name_valid):
+            tox_serialize_int_nd(gene_to_fam, gene_to_fam_name)
+            archive.write(gene_to_fam_name)
+            print(f"Wrote Experession vectors to {expression_vectors_name}")
+            manifest = manifest + "gene_to_fam=\"" + gene_to_fam_name + "\"\n"
+        else:
+            manifest = manifest + "gene_to_fam=\"\"\n"
+        if(family_ids_array_valid and family_ids_name_valid):
+            tox_serialize_char_nd(family_ids, family_ids_name)
+            archive.write(family_ids_name)
+            print(f"Wrote family Ids to {family_ids_name}")
+            manifest = manifest + "family_ids=\"" + family_ids_name + "\"\n"
+        else:
+            manifest = manifest + "family_ids=\"\"\n"
+        if(family_centroids_array_valid and family_centroids_name_valid):
+            tox_serialize_real_nd(family_centroids, family_centroids_name)
+            archive.write(family_centroids_name)
+            print(f"Wrote family centroids to {family_centroids_name}")
+            manifest = manifest + "centroids=\"" + family_centroids_name + "\"\n"
+        else:
+            manifest = manifest + "centroids=\"\"\n"
+        if(shift_vectors_array_valid and shift_vectors_name_valid):
+            tox_serialize_real_nd(shift_vectors, shift_vectors_name)
+            archive.write(shift_vectors_name)
+            print(f"Wrote shift vectors to {shift_vectors_name}")
+            manifest = manifest + "shift_vectors=\"" + shift_vectors_name + "\"\n"
+        else:
+            manifest = manifest + "shift_vectors=\"\"\n"
+        archive.writestr("manifest.txt", manifest)
