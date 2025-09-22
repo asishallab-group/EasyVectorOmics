@@ -40,7 +40,6 @@ contains
         integer(int32) :: stack_top
         integer(int32) :: left_idx, right_idx, mid_idx, current_dim, current_depth
         integer(int32) :: i
-        logical :: is_invalid
 
         call set_ok(ierr)
         
