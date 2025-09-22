@@ -110,9 +110,15 @@ contains
     call set_ok(ierr)
     
     call build_bst_index(x, n, ix, stack_left, stack_right, ierr)
-    if(.not. is_ok(ierr)) error stop
+    if(.not. is_ok(ierr)) then
+      write(*,*) 'Build bst index failed for sorted values: ', ierr
+      error stop 
+    end if 
     val = get_sorted_value(x, ix, 3, ierr)
-    if(.not. is_ok(ierr)) error stop
+    if(.not. is_ok(ierr)) then
+      write(*,*) 'Get sorted value failed: ', ierr
+      error stop
+    end if
     
     call assert_equal_real(val, 3.0d0, 1d-12, "get_sorted_value returned incorrect value")
   end subroutine test_bst_sorted_values
@@ -127,9 +133,15 @@ contains
     call set_ok(ierr)
     
     call build_bst_index(x, n, ix, stack_left, stack_right, ierr)
-    if(.not. is_ok(ierr)) error stop 1
+    if(.not. is_ok(ierr)) then 
+      write(*,*) 'Build bst index failed: ', ierr
+      error stop
+    end if
     call bst_range_query(x, ix, n, 2.5d0, 7.5d0, res_ix, res_n, ierr)
-    if(.not. is_ok(ierr)) error stop 2
+    if(.not. is_ok(ierr)) then 
+      write(*,*) 'Bst range query failed: ', ierr
+      error stop
+    end if
 
     call assert_true(res_n == 5, "BST range query returned incorrect count")
   end subroutine test_bst_range_query
@@ -142,10 +154,11 @@ contains
 
     call set_ok(ierr)
 
-    ! This should not crash - just testing robustness
     call build_bst_index(x, n, ix, stack_left, stack_right, ierr)
-    if(is_ok(ierr)) error stop
-    
+    if(is_ok(ierr)) then 
+      write(*,*) 'Build bst index failed for empty array: Expected ERR_EMPTY_INPUT but got ERR_OK '
+      error stop
+    end if
     call assert_true(.true., "BST empty array handling")
   end subroutine test_bst_empty_array
 
@@ -156,7 +169,10 @@ contains
     integer(int32) :: ix(n), stack_left(n), stack_right(n), ierr
     
     call build_bst_index(x, n, ix, stack_left, stack_right, ierr)
-    if(.not. is_ok(ierr)) error stop
+    if(.not. is_ok(ierr)) then
+      write(*,*) 'Build bst index failed for single element: ', ierr
+      error stop
+    end if
     call assert_equal_int(ix(1), 1, "BST single element index incorrect")
     call assert_equal_real(x(ix(1)), 42.0d0, 1d-12, "BST single element value incorrect")
   end subroutine test_bst_single_element
@@ -171,7 +187,10 @@ contains
     call set_ok(ierr)
     
     call build_bst_index(x, n, ix, stack_left, stack_right, ierr)
-    if(.not. is_ok(ierr)) error stop
+    if(.not. is_ok(ierr)) then 
+      write(*,*) 'Build bst index failed for identical values: ', ierr
+      error stop
+    end if
     ! Should still be a valid permutation
     do i = 1, n
       call assert_true(ix(i) >= 1 .and. ix(i) <= n, "BST identical values index out of bounds")
@@ -189,7 +208,10 @@ contains
     call set_ok(ierr)
     call random_array(x, n)
     call build_bst_index(x, n, ix, stack_left, stack_right, ierr)
-    if(.not. is_ok(ierr)) error stop
+    if(.not. is_ok(ierr)) then 
+      write(*,*) 'Build bst index failed for large random values: ', ierr
+      error stop    ! Should still be a valid permutation
+    end if
     ! Check monotonicity of x(ix)
     is_sorted = .true.
     do i = 2, n

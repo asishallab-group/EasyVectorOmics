@@ -51,18 +51,14 @@ contains
         call validate_dimension_size(num_dimensions, ierr)
         if(.not. is_ok(ierr)) return
         
-        is_invalid = .false.
         do i = 1, size(dimension_order)
             if (dimension_order(i) < 1 .or. dimension_order(i) > num_dimensions) then
-                is_invalid = .true.
+                call set_err_once(ierr, ERR_INVALID_INPUT)
                 exit  ! Exit the loop as soon as an invalid value is found
             end if
         end do
 
-        if (is_invalid) then
-            call set_err_once(ierr, ERR_INVALID_INPUT)
-            return
-        end if
+        if(.not. is_ok(ierr)) return
 
         !! Initialize kd_indices to 1:num_points (original indices)
         do i = 1, num_points
