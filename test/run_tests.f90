@@ -15,6 +15,7 @@ program main
   use mod_test_shift_vectors
   use mod_test_gene_centroids
   use mod_test_tox_conversions
+  use mod_test_arrays
 
 
   implicit none
@@ -89,6 +90,7 @@ contains
     call add_suite("tissue_versatility", run_all_tests_tissue_versatility, run_named_tests_tissue_versatility)
     call add_suite("normalization_pipeline", run_all_tests_normalization_pipeline, run_named_tests_normalization_pipeline)
     call add_suite("shift_vectors", run_all_tests_shift_vectors, run_named_tests_shift_vectors)
+    call add_suite("arrays", run_all_tests_array, run_named_tests_array)
     call add_suite("gene_centroids", run_all_tests_gene_centroids, run_named_tests_gene_centroids)
     call add_suite("tox_conversions", run_all_tests_tox_conversions, run_named_tests_tox_conversions)
     
