@@ -1,18 +1,15 @@
 module tox_paralog_analysis
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use tox_errors, only: set_ok, set_err, is_err, ERR_INVALID_INPUT, ERR_SIZE_MISMATCH
-    use f42_utils, only: calc_percentile, add_vector, subtract_vector, norm, PI
+    use f42_utils, only: calc_percentile, add_vector, subtract_vector, norm
     implicit none
 
     integer(int32), parameter :: DOSAGE_PATTERN = 0
     integer(int32), parameter :: SUBFUNC_PATTERN = 1
 
-    real(real64), parameter :: DOSAGE_MAX_ANGLE_DEG = PI
-    real(real64), parameter :: DOSAGE_GAIN_GAMMA = 0.1_real64
-
 contains
 
-    pure subroutine detect_patterns(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, pattern, filtered_paralogs_mask, n_mask_chunks, paralog_angles, sorted_paralog_angles_perm, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, ierr)
+    pure subroutine detect_patterns(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, pattern, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
         integer(int32), intent(in) :: n_paralogs
@@ -33,10 +30,6 @@ contains
             !! |    Dosage Effect     |   0   |
             !! | Subfunctionalization |   1   |
             !!
-        real(real64), dimension(n_paralogs), intent(in) :: paralog_angles
-            !! vector, holding the ascending sorted angles between ancestor and paralogs. Needed for filtering paralogs
-        integer(int32), dimension(n_paralogs), intent(in) :: sorted_paralog_angles_perm
-            !! vector, holding the indices for the `paralog_angles` for ascending sorted order
         integer(int32), intent(out) :: n_results
             !! number of resulting subsets. They are stored as the first `n_results` elements of `work_arr_paralog_subsets`
         integer(int32), intent(in) :: max_subset_size
@@ -56,9 +49,18 @@ contains
             !! vector used for pruning subsets
         integer(int32), intent(out) :: ierr
             !! error code
+        real(real64), intent(in), optional :: dosage_gain_gamma
+            !! in dosage mode required true positive magnitude gain for dosage, default 0.1
+        real(real64), intent(in), optional :: dosage_max_angle
+            !! in dosage mode maximum angle in radians that a subset candidate must not exceed, otherwise pruned, default is Pi
+        real(real64), dimension(n_paralogs), intent(in), optional :: subfunc_paralog_norms
+            !! in subfunctionalization mode needed for subset pruning, holds the norms of paralogs (you can use the `norm` from `f42_utils` function for this)
+        integer(int32), dimension(n_paralogs), intent(in), optional :: subfunc_sorted_paralog_norms_perm
+            !! in subfunctionalization mode needed for subset pruning, as the minimum norm of the paralogs that could extend a subset should not be lower than the subset angle to the ancestor
+        real(real64), dimension(n_paralogs), intent(out), optional :: subfunc_temp_work_array
+            !! in subfunctionalization mode needed for efficient check of minimum value after a certain index
 
         ! Locals
-        real(real64) :: residual_norm, residual_angle
         integer(int32) :: i_paralog, subset_size, n_active_masks, n_new_active_masks
 
         call set_ok(ierr)
@@ -82,7 +84,7 @@ contains
                 call take_active_mask(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, active_mask, ierr)
                 if (is_err(ierr)) return
 
-                call generate_subsets(active_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, rdi_threshold, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, ierr)
+                call generate_subsets(active_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, rdi_threshold, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, dosage_max_angle, dosage_gain_gamma, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
                 if (is_err(ierr)) return
             end do
 
@@ -90,7 +92,7 @@ contains
         end do
     end subroutine detect_patterns
 
-    pure subroutine generate_subsets(candidate_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, rdi_threshold, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, ierr)
+    pure subroutine generate_subsets(candidate_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, rdi_threshold, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, dosage_max_angle, dosage_gain_gamma, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
         integer(int32), intent(in) :: n_paralogs
@@ -129,14 +131,29 @@ contains
             !! number of new active subsets in `work_arr_paralog_subsets`
         integer(int32), intent(out) :: ierr
             !! error code
+        real(real64), intent(in), optional :: dosage_gain_gamma
+            !! in dosage mode required true positive magnitude gain for dosage, default 0.1
+        real(real64), intent(in), optional :: dosage_max_angle
+            !! in dosage mode maximum angle in radians that a subset candidate must not exceed, otherwise pruned, default is Pi
+        real(real64), dimension(n_paralogs), intent(in), optional :: subfunc_paralog_norms
+            !! in subfunctionalization mode needed for subset pruning, holds the norms of paralogs (you can use the `norm` from `f42_utils` function for this)
+        integer(int32), dimension(n_paralogs), intent(in), optional :: subfunc_sorted_paralog_norms_perm
+            !! in subfunctionalization mode needed for subset pruning, as the minimum norm of the paralogs that could extend a subset should not be lower than the subset angle to the ancestor
+        real(real64), dimension(n_paralogs), intent(out), optional :: subfunc_temp_work_array
+            !! in subfunctionalization mode needed for efficient check of minimum value after a certain index
 
         integer(int32) :: i_paralog
 
         select case (pattern)
         case (DOSAGE_PATTERN)
             block
-                real(real64) :: subset_angle
+                use f42_utils, only: PI
+                real(real64) :: subset_angle, gain, max_angle
 
+                gain = merge(dosage_gain_gamma, 0.1_real64, present(dosage_gain_gamma))
+                max_angle = merge(dosage_max_angle, PI, present(dosage_max_angle))
+
+                !! prepare residual, so the extending paralog just needs to be included in one operation and excluded after calculation
                 temp_paralog_vector = 0
                 do i_paralog = 1, n_paralogs
                     if (mask_check_state(candidate_mask, i_paralog)) then
@@ -146,7 +163,7 @@ contains
                 end do
 
                 ! generate extended subsets by adding successing paralogs of the first active paralog if suitable.
-                do i_paralog = mask_get_first_successor_idx(candidate_mask, n_paralogs), n_paralogs
+                do i_paralog = mask_get_first_successor_idx(candidate_mask), n_paralogs
                     if (mask_check_state(filtered_paralogs_mask, i_paralog) .and. .not. mask_check_state(candidate_mask, i_paralog)) then
                         call mask_set_state(candidate_mask, i_paralog, .true., ierr)
                         if (is_err(ierr)) return
@@ -154,8 +171,8 @@ contains
                         call add_vector(temp_paralog_vector, n_dims, paralogs(:, i_paralog))
 
                         call angle_between(temp_paralog_vector, ancestor, n_dims, subset_angle)
-                        if (subset_angle <= DOSAGE_MAX_ANGLE_DEG) then
-                            if (norm(temp_paralog_vector, n_dims) >= (1 + DOSAGE_GAIN_GAMMA) * norm(ancestor, n_dims)) then
+                        if (subset_angle <= max_angle) then
+                            if (norm(temp_paralog_vector, n_dims) >= (1 + gain) * norm(ancestor, n_dims)) then
                                 call add_to_results(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
                             else
                                 call add_new_active_mask(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
@@ -173,16 +190,28 @@ contains
             block
                 real(real64) :: residual_norm
 
+                if ((.not. present(subfunc_paralog_norms)) .or. (.not. present(subfunc_sorted_paralog_norms_perm)) .or. (.not. present(subfunc_temp_work_array))) then
+                    call set_err(ierr, ERR_INVALID_INPUT)
+                    return
+                end if
+
+                !! initialize work array with min values, so each index i holds the min value in subarray subfunc_paralog_norms(i:n_paralogs)
+                call fill_array_with_minvals_for_each_idx(subfunc_temp_work_array, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, n_paralogs, ierr)
+                if (is_err(ierr)) return
+
+                !! also, prepare residual, so the extending paralog just needs to be included in one operation and excluded after calculation
                 temp_paralog_vector = ancestor
                 do i_paralog = 1, n_paralogs
+                    !! residual
                     if (mask_check_state(candidate_mask, i_paralog)) then
                         call subtract_vector(temp_paralog_vector, n_dims, paralogs(:, i_paralog))
                     end if
                     if (is_err(ierr)) return
+
                 end do
 
                 ! generate extended subsets by adding successing paralogs of the first active paralog if suitable.
-                do i_paralog = mask_get_first_successor_idx(candidate_mask, n_paralogs), n_paralogs
+                do i_paralog = mask_get_first_successor_idx(candidate_mask), n_paralogs
                     if (mask_check_state(filtered_paralogs_mask, i_paralog) .and. .not. mask_check_state(candidate_mask, i_paralog)) then
                         call mask_set_state(candidate_mask, i_paralog, .true., ierr)
                         if (is_err(ierr)) return
@@ -192,8 +221,12 @@ contains
                         residual_norm = norm(temp_paralog_vector, n_dims)
                         if (residual_norm < rdi_threshold) then
                             call add_to_results(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
-                        else ! if (min_norm_among_remaining < residual_norm)
-                            call add_new_active_mask(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
+                        else if (i_paralog < n_paralogs) then
+                            ! subfunc_temp_work_array(i_paralog) is min(norm(p_i) for i in i_paralog+1:n_paralogs )
+                            ! so if the minimum norm of the remaining paralogs is not lower the residual, prune this subset branch
+                            if (subfunc_temp_work_array(i_paralog) < residual_norm) then
+                                call add_new_active_mask(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
+                            end if
                         end if
                         if (is_err(ierr)) return
 
@@ -209,6 +242,39 @@ contains
         end select
 
     end subroutine generate_subsets
+
+    !> Helper for subfunctionalization pruning. It initializes a working array with each index i holding the min value in subarray src_arr(i:src_arr_len)
+    pure subroutine fill_array_with_minvals_for_each_idx(out_arr, src_arr, sorted_src_arr_perm, src_arr_len, ierr)
+        integer(int32), intent(in) :: src_arr_len
+            !! number elements in `src_arr`
+        real(real64), dimension(src_arr_len), intent(in), optional :: src_arr
+            !! array that holds the original values
+        integer(int32), dimension(src_arr_len), intent(in), optional :: sorted_src_arr_perm
+            !! sorted permutation vector, so each index holds the index of the value in `src_arr` as if `src_arr` was soted ascending
+        real(real64), dimension(src_arr_len), intent(out), optional :: out_arr
+            !! output array, e.g. source [50, 75, 0, 100, 25] would lead to `out_arr` [0, 0, 0, 25, 25]
+        integer(int32), intent(out) :: ierr
+            !! error code
+
+        integer(int32) :: i_out, i_perm, last_min_index, current_min_idx
+
+        call set_ok(ierr)
+
+        last_min_index = 0
+        do i_perm = 1, src_arr_len
+            current_min_idx = sorted_src_arr_perm(i_perm)
+            if (current_min_idx > src_arr_len) then
+                call set_err(ierr, ERR_INVALID_INPUT)
+                exit
+            end if
+            do i_out = last_min_index + 1, current_min_idx
+                out_arr(i_out) = src_arr(current_min_idx)
+            end do
+
+            if (current_min_idx == src_arr_len) exit
+            last_min_index = current_min_idx
+        end do
+    end subroutine fill_array_with_minvals_for_each_idx
 
     pure subroutine take_active_mask(subsets, n_mask_chunks, n_subsets, n_results, n_active_masks, n_new_active_masks, active_mask, ierr)
         integer(int32), intent(in) :: n_mask_chunks
@@ -327,7 +393,7 @@ contains
         count = (n_paralogs + 31) / 32
     end subroutine mask_chunk_count
 
-    pure subroutine filter_paralogs_by_pattern(pattern, pattern_percentile, paralog_angles, sorted_paralog_angles_perm, n_paralogs, mask, n_mask_chunks, ierr)
+    pure subroutine filter_paralogs_by_pattern(pattern, paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
         integer(int32), intent(in) :: n_paralogs
             !! number of vectors in `paralogs`
         integer(int32), intent(in) :: n_mask_chunks
@@ -340,18 +406,15 @@ contains
             !! |    Dosage Effect     |   0   |
             !! | Subfunctionalization |   1   |
             !!
-        real(real64), intent(in) :: pattern_percentile
-            !! value between 0.0-1.0 defining the percentile that is used for filtering
         real(real64), dimension(n_paralogs), intent(in) :: paralog_angles
             !! vector, holding the ascending sorted angles between ancestor and paralogs. Needed for filtering paralogs
-        integer(int32), dimension(n_paralogs), intent(in) :: sorted_paralog_angles_perm
-            !! vector, holding the indices for the `paralog_angles` for ascending sorted order
+        real(real64), intent(in) :: threshold
+            !! filter threshold
         integer(int32), dimension(n_mask_chunks), intent(out) :: mask
             !! bit mask that will have indices of paralogs kept by pattern set to 1, else 0
         integer(int32), intent(out) :: ierr
             !! error code
 
-        real(real64) :: percentile_value
         integer(int32) :: i_paralog
 
         call set_ok(ierr)
@@ -360,23 +423,17 @@ contains
 
         select case (pattern)
         case (DOSAGE_PATTERN)
-            call calc_percentile(pattern_percentile, paralog_angles, sorted_paralog_angles_perm, percentile_value, ierr)
-            if (is_err(ierr)) return
-
             ! only paralogs with angles below the gene-family median or lower five percentile are marked active
             do i_paralog = 1, n_paralogs
-                if (paralog_angles(i_paralog) <= percentile_value) then
+                if (paralog_angles(i_paralog) <= threshold) then
                     call mask_set_state(mask, i_paralog, .true., ierr)
                     if (is_err(ierr)) return
                 end if
             end do
         case (SUBFUNC_PATTERN)
-            call calc_percentile(pattern_percentile, paralog_angles, sorted_paralog_angles_perm, percentile_value, ierr)
-            if (is_err(ierr)) return
-
             ! only paralogs with angles greater than the gene-family median angle are marked active
             do i_paralog = 1, n_paralogs
-                if (paralog_angles(i_paralog) >= percentile_value) then
+                if (paralog_angles(i_paralog) >= threshold) then
                     call mask_set_state(mask, i_paralog, .true., ierr)
                     if (is_err(ierr)) return
                 end if
@@ -398,7 +455,6 @@ contains
 
         integer(int32), parameter :: max_int32 = huge(0_int32)
         integer(int32) :: i_paralog, subset_size, extensions_count, results, previous_results, n_paralogs_filtered
-        real(real64) :: percentile_rank
 
         n_paralogs_filtered = 0
         do i_paralog = 1, n_paralogs
@@ -444,11 +500,9 @@ contains
         end do
     end subroutine calc_work_arr_paralog_subsets_size
 
-    pure function mask_get_first_successor_idx(bit_mask, n_paralogs) result(idx)
+    pure function mask_get_first_successor_idx(bit_mask) result(idx)
         integer(int32), dimension(:), intent(in) :: bit_mask
             !! chunked mask to mark active paralogs
-        integer(int32), intent(in) :: n_paralogs
-            !! number of paralogs `bit_mask` is made for
         integer(int32) :: idx
             !! index of last active paralog
 

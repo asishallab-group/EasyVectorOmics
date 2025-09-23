@@ -115,12 +115,12 @@ contains
 
         mask = 0
 
-        call assert_equal_int(mask_get_first_successor_idx(mask, n_paralogs), 1, "test_tox_paralog_analysis_mask_get_first_successor_idx: wrong number of zeros")
+        call assert_equal_int(mask_get_first_successor_idx(mask), 1, "test_tox_paralog_analysis_mask_get_first_successor_idx: wrong number of zeros")
 
         do paralog = 1, n_paralogs
             call mask_set_state(mask, paralog, .true., ierr)
             call assert_true(is_ok(ierr), "test_tox_paralog_analysis_mask_get_first_successor_idx: Unexpected error when setting paralog active")
-            call assert_equal_int(mask_get_first_successor_idx(mask, n_paralogs), paralog + 1, "test_tox_paralog_analysis_mask_get_first_successor_idx: wrong number of zeros")
+            call assert_equal_int(mask_get_first_successor_idx(mask), paralog + 1, "test_tox_paralog_analysis_mask_get_first_successor_idx: wrong number of zeros")
         end do
     end subroutine test_mask_get_first_successor_idx
 
