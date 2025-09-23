@@ -3,6 +3,7 @@ module mod_test_relative_axis_contributions
   use relative_axis_plane_tools
   use asserts
   use, intrinsic :: iso_fortran_env, only: real64, int32
+  use, intrinsic :: ieee_arithmetic
   implicit none
   public 
 
@@ -24,7 +25,7 @@ contains
 
   !> Get array of all available tests for relative axis contributions
   function get_all_tests() result(all_tests)
-    type(test_case) :: all_tests(8)
+    type(test_case) :: all_tests(11)
     all_tests(1) = test_case("test_positive_vector", test_positive_vector)
     all_tests(2) = test_case("test_negative_vector", test_negative_vector)
     all_tests(3) = test_case("test_mixed_vector", test_mixed_vector)
@@ -33,10 +34,13 @@ contains
     all_tests(6) = test_case("test_all_equal", test_all_equal)
     all_tests(7) = test_case("test_large_vector", test_large_vector)
     all_tests(8) = test_case("test_wrappers", test_wrappers)
+    all_tests(9) = test_case("test_nan_vector", test_nan_vector)
+    all_tests(10) = test_case("test_inf_vector", test_inf_vector)
+    all_tests(11) = test_case("test_empty_vector", test_empty_vector)
   end function get_all_tests
   !> Run all relative axis contribution tests
   subroutine run_all_tests_relative_axis()
-    type(test_case) :: all_tests(8)
+    type(test_case) :: all_tests(11)
     integer :: i
     all_tests = get_all_tests()
     do i = 1, size(all_tests)
@@ -49,7 +53,7 @@ contains
   !> Run specific relative axis tests by name
   subroutine run_named_tests_relative_axis(test_names)
     character(len=*), intent(in) :: test_names(:)
-    type(test_case) :: all_tests(8)
+    type(test_case) :: all_tests(11)
     integer :: i, j
     logical :: found
     all_tests = get_all_tests()
@@ -197,6 +201,43 @@ contains
     call assert_no_inf_real(contrib, n, 'wrapper expression: inf')
     call assert_in_range_real(minval(contrib), 0.0_real64, 1.0_real64, 'wrapper expression: min')
     call assert_in_range_real(maxval(contrib), 0.0_real64, 1.0_real64, 'wrapper expression: max')
+  end subroutine
+
+  !> Test: vector containing NaN
+  subroutine test_nan_vector()
+    integer(int32), parameter :: n = 3
+    real(real64) :: vec(n)
+    real(real64) :: contrib(n)
+    integer(int32) :: ierr
+    vec = [1.0_real64, 0.0_real64, ieee_value(1.0_real64, ieee_quiet_nan)]
+    call compute_relative_axis_contributions(vec, n, contrib, ierr)
+    call assert_true(ierr /= 0, 'ierr should be nonzero for NaN vector')
+    call assert_no_nan_real(contrib, n, 'NaN vector: nan')
+    call assert_no_inf_real(contrib, n, 'NaN vector: inf')
+  end subroutine
+
+  !> Test: vector containing Inf
+  subroutine test_inf_vector()
+    integer(int32), parameter :: n = 3
+    real(real64) :: vec(n)
+    real(real64) :: contrib(n)
+    integer(int32) :: ierr
+    vec = [1.0_real64, 0.0_real64, ieee_value(1.0_real64, ieee_positive_inf)]
+    call compute_relative_axis_contributions(vec, n, contrib, ierr)
+    call assert_true(ierr /= 0, 'ierr should be nonzero for Inf vector')
+    call assert_no_nan_real(contrib, n, 'Inf vector: nan')
+    call assert_no_inf_real(contrib, n, 'Inf vector: inf')
+  end subroutine
+
+  !> Test: n = 0 (empty vector)
+  subroutine test_empty_vector()
+    integer(int32), parameter :: n = 0
+    real(real64), allocatable :: vec(:)
+    real(real64), allocatable :: contrib(:)
+    integer(int32) :: ierr
+    allocate(vec(n), contrib(n))
+    call compute_relative_axis_contributions(vec, n, contrib, ierr)
+    call assert_true(ierr /= 0, 'ierr should be nonzero for n=0 (empty vector)')
   end subroutine
 
 end module mod_test_relative_axis_contributions

@@ -1,6 +1,7 @@
 !> Module for tools related to relative axis planes (RAPs), i.e. planes in higher-dimensional gene expression space
 module relative_axis_plane_tools
    use, intrinsic :: iso_fortran_env, only: real64, int32
+   use, intrinsic :: ieee_arithmetic
    use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, set_ok, set_err_once, is_ok
    implicit none
 
@@ -268,6 +269,7 @@ contains
    !> Compute fractional contribution of each axis to a RAP-projected and normalized shift vector.
    !! Shared utility: computes fractional contribution of each axis to a RAP-projected and normalized vector.
    pure subroutine compute_relative_axis_contributions(vec, n_axes, contributions, ierr)
+      use, intrinsic :: ieee_arithmetic
       real(real64), dimension(n_axes), intent(in) :: vec
          !! RAP-projected and normalized vector (expression or shift)
       integer(int32), intent(in) :: n_axes
@@ -290,6 +292,11 @@ contains
 
       total_abs = 0.0_real64
       do i_axis = 1, n_axes
+         if (ieee_is_nan(vec(i_axis)) .or. .not. ieee_is_finite(vec(i_axis))) then
+            contributions = ieee_value(0.0_real64, ieee_quiet_nan) 
+            call set_err_once(ierr, ERR_INVALID_INPUT)
+            return
+         end if
          total_abs = total_abs + abs(vec(i_axis))
       end do
 
