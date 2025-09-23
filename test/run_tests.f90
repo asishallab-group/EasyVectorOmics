@@ -1,4 +1,6 @@
 program main
+  use mod_test_bst
+  use mod_test_kd_tree
   use mod_test_sorting
   use mod_test_get_outliers
   use mod_test_loess_smoothing
@@ -10,6 +12,12 @@ program main
   use mod_test_euclidean_distance
   use mod_test_tissue_versatility
   use mod_test_tox_data
+  use mod_test_normalization_pipeline
+  use mod_test_shift_vectors
+  use mod_test_gene_centroids
+  use mod_test_tox_conversions
+  use mod_test_arrays
+
 
   implicit none
 
@@ -69,7 +77,8 @@ contains
     ! Start with empty registry
     allocate(available_suites(0))
     
-    ! Add each suite 
+    call add_suite("bst", run_all_tests_bst, run_named_tests_bst)
+    call add_suite("k-d-tree", run_all_tests_kd_tree, run_named_tests_kd_tree)
     call add_suite("sorting", run_all_tests_sorting, run_named_tests_sorting)
     call add_suite("get_outliers",run_all_tests_get_outliers, run_named_tests_get_outliers)
     call add_suite("loess_smoothing",run_all_tests_loess_smoothing, run_named_tests_loess_smoothing)
@@ -81,7 +90,14 @@ contains
     call add_suite("euclidean_distance", run_all_tests_euclidean_distance, run_named_tests_euclidean_distance)
     call add_suite("tissue_versatility", run_all_tests_tissue_versatility, run_named_tests_tissue_versatility)
     call add_suite("tox_data", run_all_tests_tox_data, run_named_tests_tox_data)
+    call add_suite("normalization_pipeline", run_all_tests_normalization_pipeline, run_named_tests_normalization_pipeline)
+    call add_suite("shift_vectors", run_all_tests_shift_vectors, run_named_tests_shift_vectors)
+    call add_suite("arrays", run_all_tests_array, run_named_tests_array)
+    call add_suite("gene_centroids", run_all_tests_gene_centroids, run_named_tests_gene_centroids)
+    call add_suite("tox_conversions", run_all_tests_tox_conversions, run_named_tests_tox_conversions)
+    
   end subroutine initialize_suites
+  
 
   !> Add a suite to the registry (grows automatically)
   subroutine add_suite(name, run_all_proc, run_named_proc)

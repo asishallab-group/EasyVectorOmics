@@ -56,7 +56,6 @@ module tox_errors
   integer(int32), parameter :: ERR_SIZE_MISMATCH      = 206
     !! Array size mismatch
 
-
   !------------------------------
   ! 3xx: Memory
   !------------------------------
@@ -120,5 +119,12 @@ contains
     integer(int32), intent(out) :: ierr
     if(is_err(ios)) call set_err(ierr, ERR_ALLOC_FAIL)
   end subroutine check_io_stat
+  
+  pure subroutine validate_dimension_size(n, ierr)
+    integer(int32), intent(in) :: n
+    integer(int32), intent(out) :: ierr
+    if(n < 0) call set_err(ierr, ERR_INVALID_INPUT)  
+    if(n == 0) call set_err(ierr, ERR_EMPTY_INPUT)
+  end subroutine
 
 end module tox_errors

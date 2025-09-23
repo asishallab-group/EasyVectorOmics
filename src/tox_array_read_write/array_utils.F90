@@ -181,28 +181,31 @@ module array_utils
   end subroutine
 
   !> Get the metadata of an array file
-  !> Get the metadata of an array file
   subroutine get_array_metadata(filename, dims_out, dims_out_capacity, ndims, ierr, clen)
     implicit none
 
     character(len=*), intent(in) :: filename
+    !! Name of the file
     integer(int32), intent(out) :: ndims
+    !! number of dimensions
     integer(int32), intent(in) :: dims_out_capacity
+    !! Capacity of the dims_out array
     integer(int32), intent(out) :: dims_out(dims_out_capacity)
+    !! Array to store output dimensions
     integer(int32), intent(out) :: ierr
+    !! Error code
     integer(int32), INTENT(OUT), OPTIONAL :: clen
+    !! length of each string (needed for char arrays)
 
     integer(int32) :: unit
     integer(int32), allocatable :: dims(:)
     integer(int32) :: type_code
     integer(int32) :: i
     integer(int32) :: ioerror
-    integer(int32) :: local_clen  ! Lokale Variable für clen
+    integer(int32) :: local_clen 
 
     call set_ok(ioerror)
-    ! error handling
 
-    ! Immer read_file_header mit local_clen aufrufen
     call read_file_header(filename, unit, type_code, ndims, dims, local_clen, ierr)
     close(unit)
     if (.not. is_ok(ierr)) return
@@ -216,7 +219,6 @@ module array_utils
       dims_out(i) = dims(i)
     end do
 
-    ! Optionalen clen-Parameter setzen, falls vorhanden
     if (present(clen)) then
       clen = local_clen
     end if
@@ -265,56 +267,6 @@ module array_utils
       end do
     end do
   end subroutine string_to_ascii_arr
-
-!> subroutine to convert an ASCII array to a string
-subroutine ascii_to_string_padded(ascii_array, clen, str)
-  use iso_fortran_env, only: int32
-  implicit none
-  integer(int32), intent(in) :: clen
-  integer(int32), intent(in) :: ascii_array(clen)
-  character(len=:), allocatable, intent(out) :: str
-  integer(int32) :: i, actual_len
-
-  ! Find the actual length (up to first null character)
-  actual_len = clen
-  do i = 1, clen
-    if (ascii_array(i) == 0) then
-      actual_len = i - 1
-      exit
-    end if
-  end do
-
-  if (actual_len > 0) then
-    allocate(character(len=actual_len) :: str)
-    do i = 1, actual_len
-      str(i:i) = char(ascii_array(i))
-    end do
-  else
-    allocate(character(len=0) :: str)
-  end if
-end subroutine ascii_to_string_padded
-
-!> subroutine to convert a string to an ASCII array
-subroutine string_to_ascii(str, ascii_array)
-  use iso_fortran_env, only: int32
-  implicit none
-  character(len=*), intent(in) :: str
-  integer(int32), intent(out) :: ascii_array(:)
-  integer(int32) :: i, n
-
-  n = min(len(str), size(ascii_array))
-  
-  ! Convert characters to ASCII
-  do i = 1, n
-    ascii_array(i) = ichar(str(i:i))
-  end do
-  
-  ! Pad with zeros if needed
-  do i = n + 1, size(ascii_array)
-    ascii_array(i) = 0
-  end do
-end subroutine string_to_ascii
-
 end module array_utils
 
 !> Subroutine to get the dimensions of an array file
@@ -348,8 +300,7 @@ subroutine get_array_metadata_r(filename_ascii, fn_len, dims_out, dims_out_capac
 end subroutine get_array_metadata_r
 
 !> C binding for the subroutine to get the dimensions of an array file
-subroutine get_array_metadata_C(filename_ascii, fn_len, dims_out, dims_out_capacity, ndims, &
-                                ierr, clen) bind(C, name="get_array_metadata_C")
+subroutine get_array_metadata_C(filename_ascii, fn_len, dims_out, dims_out_capacity, ndims, ierr, clen) bind(C, name="get_array_metadata_C")
   use iso_c_binding, only: c_int
   use iso_fortran_env, only : int32
   use array_utils, only : ascii_to_string, get_array_metadata
