@@ -1,4 +1,5 @@
 dyn.load("build/libtensor-omics.so")
+source("tensoromics_functions.R")
 
 #' Check error code and throw informative error if needed
 #' 
@@ -524,4 +525,291 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
 
   # 4) Return the populated output matrix (no ierr since we checked for errors)
   return(result$centroid_matrix)
+}
+
+tox_save_data_archive <- function(zip_filename,
+                                 gene_ids = NULL, gene_ids_name = NULL,
+                                 expression_vectors = NULL, expression_vectors_name = NULL,
+                                 gene_to_fam = NULL, gene_to_fam_name = NULL,
+                                 family_ids = NULL, family_ids_name = NULL,
+                                 family_centroids = NULL, family_centroids_name = NULL,
+                                 shift_vectors = NULL, shift_vectors_name = NULL) {
+  
+  # Flags initialization
+  gene_ids_array_valid <- gene_ids_name_valid <- FALSE
+  expression_vectors_array_valid <- expression_vectors_name_valid <- FALSE
+  gene_to_fam_array_valid <- gene_to_fam_name_valid <- FALSE
+  family_ids_array_valid <- family_ids_name_valid <- FALSE
+  family_centroids_array_valid <- family_centroids_name_valid <- FALSE
+  shift_vectors_array_valid <- shift_vectors_name_valid <- FALSE
+  
+  if (!is.character(zip_filename)) {
+    stop("Type mismatch: zip_filename must be a string")
+  }
+  
+  # Validations
+  if (!is.null(gene_ids)) {
+    if (length(dim(gene_ids)) == 1 || is.vector(gene_ids)) {
+      gene_ids_array_valid <- TRUE
+    } else {
+      stop(paste("Gene IDs dimensions mismatch: Expected 1 but got", length(dim(gene_ids))))
+    }
+  }
+  if (!is.null(gene_ids_name)) {
+    if (is.character(gene_ids_name)) {
+      gene_ids_name_valid <- TRUE
+    } else {
+      stop("Gene IDs name must be a string")
+    }
+  }
+  if (xor(gene_ids_array_valid, gene_ids_name_valid)) {
+    message("Gene IDs: Either provide array and filename or none. Skipping.")
+  }
+  
+  if (!is.null(expression_vectors)) {
+    if (length(dim(expression_vectors)) == 2) {
+      expression_vectors_array_valid <- TRUE
+    } else {
+      stop(paste("Expression vectors dim mismatch: Expected 2 but got", length(dim(expression_vectors))))
+    }
+  }
+  if (!is.null(expression_vectors_name)) {
+    if (is.character(expression_vectors_name)) {
+      expression_vectors_name_valid <- TRUE
+    } else {
+      stop("Expression vector name must be a string")
+    }
+  }
+  if (xor(expression_vectors_array_valid, expression_vectors_name_valid)) {
+    message("Expression vectors: Either provide array and filename or none. Skipping.")
+  }
+  
+  if (!is.null(gene_to_fam)) {
+    if (length(dim(gene_to_fam)) == 1 || is.vector(gene_to_fam)) {
+      gene_to_fam_array_valid <- TRUE
+    } else {
+      stop(paste("Gene to family dim mismatch: Expected 1 but got", length(dim(gene_to_fam))))
+    }
+  }
+  if (!is.null(gene_to_fam_name)) {
+    if (is.character(gene_to_fam_name)) {
+      gene_to_fam_name_valid <- TRUE
+    } else {
+      stop("Gene to family name must be a string")
+    }
+  }
+  if (xor(gene_to_fam_array_valid, gene_to_fam_name_valid)) {
+    message("Gene to family: Either provide array and filename or none. Skipping.")
+  }
+  
+  if (!is.null(family_ids)) {
+    if (length(dim(family_ids)) == 1 || is.vector(family_ids)) {
+      family_ids_array_valid <- TRUE
+    } else {
+      stop(paste("Family IDs dim mismatch: Expected 1 but got", length(dim(family_ids))))
+    }
+  }
+  if (!is.null(family_ids_name)) {
+    if (is.character(family_ids_name)) {
+      family_ids_name_valid <- TRUE
+    } else {
+      stop("Family IDs name must be a string")
+    }
+  }
+  if (xor(family_ids_array_valid, family_ids_name_valid)) {
+    message("Family IDs: Either provide array and filename or none. Skipping.")
+  }
+  
+  if (!is.null(family_centroids)) {
+    if (length(dim(family_centroids)) == 2) {
+      family_centroids_array_valid <- TRUE
+    } else {
+      stop(paste("Family centroids dim mismatch: Expected 2 but got", length(dim(family_centroids))))
+    }
+  }
+  if (!is.null(family_centroids_name)) {
+    if (is.character(family_centroids_name)) {
+      family_centroids_name_valid <- TRUE
+    } else {
+      stop("Family centroids name must be a string")
+    }
+  }
+  if (xor(family_centroids_array_valid, family_centroids_name_valid)) {
+    message("Family centroids: Either provide array and filename or none. Skipping.")
+  }
+  
+  if (!is.null(shift_vectors)) {
+    if (length(dim(shift_vectors)) == 2) {
+      shift_vectors_array_valid <- TRUE
+    } else {
+      stop(paste("Shift vectors dim mismatch: Expected 2 but got", length(dim(shift_vectors))))
+    }
+  }
+  if (!is.null(shift_vectors_name)) {
+    if (is.character(shift_vectors_name)) {
+      shift_vectors_name_valid <- TRUE
+    } else {
+      stop("Shift vectors name must be a string")
+    }
+  }
+  if (xor(shift_vectors_array_valid, shift_vectors_name_valid)) {
+    message("Shift vectors: Either provide array and filename or none. Skipping.")
+  }
+  
+  # Manifest as list
+  manifest_lines <- character()
+  
+  # Create temporary directory for files
+  temp_dir <- tempfile()
+  dir.create(temp_dir)
+  
+  tryCatch({
+    # Write files to temporary directory
+    if (gene_ids_array_valid && gene_ids_name_valid) {
+      tox_serialize_char_nd(gene_ids, file.path(temp_dir, gene_ids_name))
+      message(paste("Wrote gene IDs to", gene_ids_name))
+      manifest_lines <- c(manifest_lines, paste0("gene_ids=", gene_ids_name))
+    }
+    
+    if (expression_vectors_array_valid && expression_vectors_name_valid) {
+      tox_serialize_real_nd(expression_vectors, file.path(temp_dir, expression_vectors_name))
+      message(paste("Wrote expression vectors to", expression_vectors_name))
+      manifest_lines <- c(manifest_lines, paste0("expression=", expression_vectors_name))
+    }
+    
+    if (gene_to_fam_array_valid && gene_to_fam_name_valid) {
+      tox_serialize_int_nd(gene_to_fam, file.path(temp_dir, gene_to_fam_name))
+      message(paste("Wrote gene to family to", gene_to_fam_name))
+      manifest_lines <- c(manifest_lines, paste0("gene_to_family=", gene_to_fam_name))
+    }
+    
+    if (family_ids_array_valid && family_ids_name_valid) {
+      tox_serialize_char_nd(family_ids, file.path(temp_dir, family_ids_name))
+      message(paste("Wrote family IDs to", family_ids_name))
+      manifest_lines <- c(manifest_lines, paste0("family_ids=", family_ids_name))
+    }
+    
+    if (family_centroids_array_valid && family_centroids_name_valid) {
+      tox_serialize_real_nd(family_centroids, file.path(temp_dir, family_centroids_name))
+      message(paste("Wrote family centroids to", family_centroids_name))
+      manifest_lines <- c(manifest_lines, paste0("family_centroids=", family_centroids_name))
+    }
+    
+    if (shift_vectors_array_valid && shift_vectors_name_valid) {
+      tox_serialize_real_nd(shift_vectors, file.path(temp_dir, shift_vectors_name))
+      message(paste("Wrote shift vectors to", shift_vectors_name))
+      manifest_lines <- c(manifest_lines, paste0("shift_vectors=", shift_vectors_name))
+    }
+    
+    # Write manifest file
+    writeLines(manifest_lines, file.path(temp_dir, "manifest.txt"))
+    
+    # Create zip archive with same compression level as Python (level 6)
+    files_to_zip <- list.files(temp_dir, full.names = TRUE)
+    zip::zip(zip_filename, files = files_to_zip, mode = "cherry-pick", 
+             include_directories = FALSE, compression_level = 6)
+    
+  }, finally = {
+    # Clean up temporary directory
+    unlink(temp_dir, recursive = TRUE)
+  })
+}
+
+tox_read_data_archive <- function(zip_filename,
+                                 gene_ids = NULL,
+                                 expression_vectors = NULL,
+                                 gene_to_fam = NULL,
+                                 family_ids = NULL,
+                                 family_centroids = NULL,
+                                 shift_vectors = NULL) {
+  
+  if (!is.character(zip_filename) || nchar(zip_filename) == 0) {
+    stop("Zip name needs to be a non-empty string")
+  }
+  
+  result <- list(
+    gene_ids = NULL,
+    expression_vectors = NULL,
+    gene_to_fam = NULL,
+    family_ids = NULL,
+    family_centroids = NULL,
+    shift_vectors = NULL
+  )
+  
+  # Create temporary directory for extraction
+  temp_dir <- tempfile()
+  dir.create(temp_dir)
+  
+  tryCatch({
+    # Read manifest file
+    manifest_content <- zip::zip_read(zip_filename, "manifest.txt")
+    manifest_lines <- readLines(manifest_content)
+    
+    # Parse manifest - using the same order as Python version
+    gene_ids_filename <- NA
+    expression_vectors_filename <- NA
+    gene_to_fam_filename <- NA
+    family_ids_filename <- NA
+    family_centroids_filename <- NA
+    shift_vectors_filename <- NA
+    
+    for (line in manifest_lines) {
+      if (startsWith(line, "gene_ids=")) {
+        gene_ids_filename <- sub("gene_ids=", "", line)
+      } else if (startsWith(line, "expression=")) {
+        expression_vectors_filename <- sub("expression=", "", line)
+      } else if (startsWith(line, "gene_to_family=")) {
+        gene_to_fam_filename <- sub("gene_to_family=", "", line)
+      } else if (startsWith(line, "family_ids=")) {
+        family_ids_filename <- sub("family_ids=", "", line)
+      } else if (startsWith(line, "family_centroids=")) {
+        family_centroids_filename <- sub("family_centroids=", "", line)
+      } else if (startsWith(line, "shift_vectors=")) {
+        shift_vectors_filename <- sub("shift_vectors=", "", line)
+      }
+    }
+    
+    # Extract and read files based on parameters
+    if (!is.null(gene_ids) && !is.na(gene_ids_filename)) {
+      zip::zip_extract(zip_filename, files = gene_ids_filename, exdir = temp_dir)
+      result$gene_ids <- tox_deserialize_char_nd(file.path(temp_dir, gene_ids_filename))
+      message(paste("Gene ids extracted from", gene_ids_filename))
+    }
+    
+    if (!is.null(expression_vectors) && !is.na(expression_vectors_filename)) {
+      zip::zip_extract(zip_filename, files = expression_vectors_filename, exdir = temp_dir)
+      result$expression_vectors <- tox_deserialize_real_nd(file.path(temp_dir, expression_vectors_filename))
+      message(paste("Expression Vectors extracted from", expression_vectors_filename))
+    }
+    
+    if (!is.null(gene_to_fam) && !is.na(gene_to_fam_filename)) {
+      zip::zip_extract(zip_filename, files = gene_to_fam_filename, exdir = temp_dir)
+      result$gene_to_fam <- tox_deserialize_int_nd(file.path(temp_dir, gene_to_fam_filename))
+      message(paste("Gene to family mapping extracted from", gene_to_fam_filename))
+    }
+    
+    if (!is.null(family_ids) && !is.na(family_ids_filename)) {
+      zip::zip_extract(zip_filename, files = family_ids_filename, exdir = temp_dir)
+      result$family_ids <- tox_deserialize_char_nd(file.path(temp_dir, family_ids_filename))
+      message(paste("Extracted family IDs from", family_ids_filename))
+    }
+    
+    if (!is.null(family_centroids) && !is.na(family_centroids_filename)) {
+      zip::zip_extract(zip_filename, files = family_centroids_filename, exdir = temp_dir)
+      result$family_centroids <- tox_deserialize_real_nd(file.path(temp_dir, family_centroids_filename))
+      message(paste("Extracted family centroids from", family_centroids_filename))
+    }
+    
+    if (!is.null(shift_vectors) && !is.na(shift_vectors_filename)) {
+      zip::zip_extract(zip_filename, files = shift_vectors_filename, exdir = temp_dir)
+      result$shift_vectors <- tox_deserialize_real_nd(file.path(temp_dir, shift_vectors_filename))
+      message(paste("Extracted shift vectors from", shift_vectors_filename))
+    }
+    
+  }, finally = {
+    # Clean up temporary directory
+    unlink(temp_dir, recursive = TRUE)
+  })
+  
+  return(result)
 }

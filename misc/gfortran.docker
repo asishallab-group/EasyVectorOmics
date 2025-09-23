@@ -4,6 +4,7 @@ FROM archlinux:latest
 RUN pacman -Sy --noconfirm archlinux-keyring && \
     pacman -Syu --noconfirm && \
     pacman -S --noconfirm gcc-fortran gcc make pkg-config xxhash libzip python python-pip python-numpy && \
+    pacman -S --noconfirm r gcc-fortran tk git && \
     pacman -Scc --noconfirm
 
 # Install fpm binary
@@ -12,9 +13,12 @@ RUN curl -L --output /usr/local/bin/fpm \
   chmod a+x /usr/local/bin/fpm
 
 # Korrekte Library-Pfade für Arch Linux hinzufügen
-RUN echo "/usr/lib" >> /etc/ld.so.conf && \
-    echo "/usr/local/lib" >> /etc/ld.so.conf && \
-    ldconfig
+# RUN echo "/usr/lib" >> /etc/ld.so.conf && \
+#     echo "/usr/local/lib" >> /etc/ld.so.conf && \
+#     ldconfig
+
+# Install R zip package
+RUN Rscript -e "install.packages('zip', repos='https://cloud.r-project.org/')"
 
 WORKDIR /opt
 
