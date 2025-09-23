@@ -1505,8 +1505,7 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
         gene_to_centroid: Array mapping each gene to its corresponding family centroid index in family_centroids with length n_vectors (1 based for fortran)
 
     Returns:
-        dict: Dictionary containing:
-            - shift_vectors: The computed shift vectors for each gene expression vector
+        shift_vectors: The computed shift vectors for each gene expression vector
 
     """
     
@@ -1585,10 +1584,8 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
     # Mark outputs as read-only
     _readonly(shift_vectors)
     
-    # Return structured result (no ierr since we checked for errors)
-    return {
-        "shift_vectors": shift_vectors
-    }
+    # Return result (no ierr since we checked for errors)
+    return shift_vectors
 
 
 def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_set, mode='all'):

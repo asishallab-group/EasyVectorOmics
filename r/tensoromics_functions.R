@@ -1571,8 +1571,7 @@ tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
 #' @param family_centroids: Matrix where each column is a family centroid vector (n_axes x n_families)
 #' @param gene_to_centroid: Array mapping each gene to its corresponding family centroid ID in family_centroids (length n_vectors)
 #' 
-#' @return List containing:
-#'   \item{shift_vectors}{The computed shift vectors for each gene expression vector}
+#' @return shift_vectors: The computed shift vectors for each gene expression vector
 #'
 
 tox_compute_shift_vector_field <- function(expression_vectors, family_centroids, gene_to_centroid) {
@@ -1620,9 +1619,7 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
   check_err_code(result$ierr)
   
   # Return structured result (no ierr since we checked for errors)
-  return(list(
-    shift_vectors = result$shift_vectors
-  ))
+  return(result$shift_vectors)
 }
 
 # ===================================================================
