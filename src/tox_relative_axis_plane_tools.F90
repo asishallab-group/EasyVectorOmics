@@ -293,7 +293,7 @@ contains
       total_abs = 0.0_real64
       do i_axis = 1, n_axes
          if (ieee_is_nan(vec(i_axis)) .or. .not. ieee_is_finite(vec(i_axis))) then
-            contributions = ieee_value(0.0_real64, ieee_quiet_nan) 
+            contributions = 0.0_real64
             call set_err_once(ierr, ERR_INVALID_INPUT)
             return
          end if
