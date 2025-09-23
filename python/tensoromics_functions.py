@@ -1166,9 +1166,6 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, mode, ort
             A read-only (n_axes x n_families) NumPy array containing the computed centroids.
     """
 
-    GROUP_ORTHOLOGS = 0
-    GROUP_ALL = 1
-
     # 1) Validate and prepare inputs
     if not isinstance(expression_vectors, np.ndarray) or expression_vectors.ndim != 2:
         raise ValueError("`vectors` must be a 2D NumPy array.")
@@ -1192,10 +1189,6 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, mode, ort
         raise ValueError("`ortholog_set` must be a 1D NumPy array of size n_genes.")
 
     # 2) Prepare output buffers and mode flag
-    if (mode == 'all'):
-        mode_int = GROUP_ALL
-    else:
-        mode_int = GROUP_ORTHOLOGS
     centroids_out = np.zeros((n_axes, n_families), dtype=np.float64, order="F")
     selected_indices = np.zeros(n_genes, dtype=np.int32, order="F")
     ierr = ctypes.c_int(0)
@@ -1209,7 +1202,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, mode, ort
         np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # gene_to_family
         ctypes.c_int,                                                   # n_families
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # centroid_matrix (out)
-        ctypes.c_int,                                                   # mode (as int)
+        ctypes.c_char * 10,                                             # mode (character array)
         np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # ortholog_set (as int array)
         np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # selected_indices
         ctypes.c_int,                                                   # selected_indices_len
@@ -1218,6 +1211,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, mode, ort
     group_centroid_c.restype = None
 
     # 4) Call the Fortran routine
+    mode_buffer = ctypes.create_string_buffer(mode.encode('utf-8'), size=10)
     group_centroid_c(
         vecs_f,
         n_axes,
@@ -1225,7 +1219,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, mode, ort
         g2f_map_f,
         n_families,
         centroids_out,
-        mode_int,
+        mode_buffer,
         ortho_set_int_f,
         selected_indices,
         n_genes,

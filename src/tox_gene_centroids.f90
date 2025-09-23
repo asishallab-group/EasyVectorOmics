@@ -176,6 +176,8 @@ pure subroutine group_centroid_c(expression_vectors, n_axes, n_genes, gene_to_fa
   bind(c, name='group_centroid_c')
   use, intrinsic :: iso_c_binding, only: c_int, c_double, c_char
   use tox_gene_centroids, only: group_centroid, GROUP_ORTHOLOGS, GROUP_ALL
+  use tox_errors, only: is_ok, set_err, ERR_INVALID_INPUT
+  use tox_conversions, only: c_char_1d_as_string
   implicit none
   !| Number of axes (tissues/dimensions).
   integer(c_int), intent(in), value :: n_axes
@@ -189,8 +191,8 @@ pure subroutine group_centroid_c(expression_vectors, n_axes, n_genes, gene_to_fa
   real(c_double), intent(in) :: expression_vectors(n_axes, n_genes)
   !| Array mapping gene index to family ID.
   integer(c_int), intent(in) :: gene_to_family(n_genes)
-  !| A integer value indicating the mode of operation (0 = orthologs, 1 = all).
-  integer(c_int), intent(in), value :: mode
+  !| A character array indicating the mode of operation ('orthologs' or 'all').
+  character(c_char), intent(in) :: mode(10)
   !| Output matrix for centroids.
   real(c_double), intent(out) :: centroid_matrix(n_axes, n_families)
   !| Output array for selected indices.
@@ -202,19 +204,29 @@ pure subroutine group_centroid_c(expression_vectors, n_axes, n_genes, gene_to_fa
 
   ! Local variables
   logical :: ortholog_set_fortran(n_genes)
-  integer :: i
+  integer :: i, mode_int
+  character(len=:), allocatable :: mode_string
 
-  ! If "all" mode is selected, call group_centroid directly without ortholog_set
+  ! Convert raw character array to Fortran string
+  call c_char_1d_as_string(mode, mode_string, ierr)
+  if (.not. is_ok(ierr)) then
+    call set_err(ierr, ERR_INVALID_INPUT)
+    return
+  end if
+
   ! If "orthologs" mode is selected, convert ortholog_set to logical
-  if (mode == GROUP_ALL) then
-    call group_centroid(expression_vectors, n_axes, n_genes, gene_to_family, n_families, &
-                        centroid_matrix, mode, selected_indices, ierr)
-  else 
+  ! If "all" mode is selected, call group_centroid directly without ortholog_set
+  if (mode_string == "orthologs") then
+    mode_int = GROUP_ORTHOLOGS
     do i = 1, n_genes
       ortholog_set_fortran(i) = (ortholog_set(i) /= 0)
     end do
     call group_centroid(expression_vectors, n_axes, n_genes, gene_to_family, n_families, &
-                        centroid_matrix, mode, selected_indices, ierr, ortholog_set_fortran)
+                        centroid_matrix, mode_int, selected_indices, ierr, ortholog_set_fortran)
+  else 
+    mode_int = GROUP_ALL
+    call group_centroid(expression_vectors, n_axes, n_genes, gene_to_family, n_families, &
+                        centroid_matrix, mode_int, selected_indices, ierr)
   end if
 end subroutine group_centroid_c
 
@@ -246,10 +258,13 @@ end subroutine mean_vector_r
 
 !> R interface wrapper for group_centroid.
 pure subroutine group_centroid_r(expression_vectors, n_axes, n_genes, gene_to_family, n_families, &
-                                 centroid_matrix, mode, ortholog_set, &
+                                 centroid_matrix, mode_raw, ortholog_set, &
                                  selected_indices, selected_indices_len, ierr)
   use, intrinsic :: iso_fortran_env, only: int32, real64
+  use iso_c_binding, only: c_char
   use tox_gene_centroids, only: group_centroid, GROUP_ORTHOLOGS, GROUP_ALL
+  use tox_conversions, only: c_char_1d_as_string
+  use tox_errors, only: is_ok, set_err, ERR_INVALID_INPUT
   implicit none
   !| Number of axes (tissues/dimensions).
   integer(int32), intent(in) :: n_axes
@@ -263,8 +278,8 @@ pure subroutine group_centroid_r(expression_vectors, n_axes, n_genes, gene_to_fa
   real(real64), intent(in) :: expression_vectors(n_axes, n_genes)
   !| An array mapping each gene (by index) to a family ID.
   integer(int32), intent(in) :: gene_to_family(n_genes)
-  !| A integer value indicating the mode of operation (1 = all, 0 = orthologs).
-  integer(int32), intent(in) :: mode
+  !| A raw character array indicating the mode of operation ("orthologs" or "all").
+  character(c_char), intent(in) :: mode_raw(10)
   !| A logical array indicating if a gene is part of a specific subset.
   logical, intent(in) :: ortholog_set(n_genes)
   !| The output matrix (n_axes x n_families) to store the computed centroids.
@@ -274,6 +289,24 @@ pure subroutine group_centroid_r(expression_vectors, n_axes, n_genes, gene_to_fa
   !| Error code: 0 - success, non-zero = error
   integer(int32), intent(out) :: ierr
 
+  ! Local variables
+  integer(int32) :: mode_int
+  character(len=:), allocatable :: mode_string
+
+  ! Convert raw character array to Fortran string
+  call c_char_1d_as_string(mode_raw, mode_string, ierr)
+  if (.not. is_ok(ierr)) then
+    call set_err(ierr, ERR_INVALID_INPUT)
+    return
+  end if
+
+  ! Convert string to integer mode
+  if (mode_string == "orthologs") then
+    mode_int = GROUP_ORTHOLOGS
+  else
+    mode_int = GROUP_ALL
+  end if
+
   call group_centroid(expression_vectors, n_axes, n_genes, gene_to_family, n_families, &
-                        centroid_matrix, mode, selected_indices, ierr, ortholog_set)
+                        centroid_matrix, mode_int, selected_indices, ierr, ortholog_set)
 end subroutine group_centroid_r

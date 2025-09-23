@@ -1346,9 +1346,6 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
 
 tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, mode, ortholog_set = NULL) {
   
-  GROUP_ORTHOLOGS <- 0L
-  GROUP_ALL <- 1L
-
   # 1) Validate inputs
   if (!is.matrix(expression_vectors) || !is.numeric(expression_vectors)) {
     stop("`expression_vectors` must be a numeric matrix.")
@@ -1373,15 +1370,14 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, m
     stop("`ortholog_set` must be a logical vector of length n_genes.")
 
   # 2) Prepare inputs/outputs for Fortran
-  # Convert mode to integer ('orthologs' = 0, 'all' = 1)
-  if (mode == 'all') {
-    mode_int = GROUP_ALL
-  } else {
-    mode_int = GROUP_ORTHOLOGS
-  }
+
+  mode_raw <- charToRaw(mode)  # Convert mode string to raw bytes
+  mode_raw <- c(mode_raw, as.raw(0))  # Null-terminate the string
+
   centroid_matrix_out <- matrix(0.0, nrow = n_axes, ncol = n_families)
   selected_indices_ws <- integer(n_genes) # Workspace buffer
   ierr <- as.integer(0)
+  
   # 3) Call Fortran
   result <- .Fortran("group_centroid_r",
                      expression_vectors = as.double(expression_vectors),
@@ -1390,7 +1386,7 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, m
                      gene_to_family = as.integer(gene_to_family),
                      num_families = as.integer(n_families),
                      centroid_matrix = centroid_matrix_out,
-                     mode_int = as.integer(mode_int),
+                     mode = mode_raw,
                      ortholog_set = as.logical(ortholog_set),
                      selected_indices = selected_indices_ws,
                      selected_indices_len = as.integer(n_genes),
