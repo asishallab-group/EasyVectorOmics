@@ -155,7 +155,7 @@ contains
     write(*,*) 'Size of family_centroids: ', size(family_centroids, 1), size(family_centroids, 2)
     
     call group_centroid(kallisto_expr, total_samples, n_genes, gene_to_fam, &
-                      n_families, family_centroids, 'all', selected_indices, ierr)
+                      n_families, family_centroids, .true., ortholog_mask, selected_indices, ierr)
     call assert_equal_int(ierr, 0, "Computing centroids should succeed")
     
     ! Compute shift vectors
@@ -390,7 +390,7 @@ contains
       write(*,*) 'Failed to load gene IDs: ', ierr
       error stop
     end if
-    call assert_equal_array_char(loaded_gene_ids, gene_ids, dims(1), &
+    call assert_equal_array_char(loaded_gene_ids, gene_ids, 128, dims(1), &
                                 "Loaded gene IDs should match original")
   end subroutine test_read_write_gene_ids
 
@@ -438,7 +438,7 @@ contains
       write(*,*) 'Failed to load family IDs: ', ierr
       error stop
     end if
-    call assert_equal_array_char(loaded_family_ids, gene_family_ids, dims(1), &
+    call assert_equal_array_char(loaded_family_ids, gene_family_ids, 128, dims(1), &
                                 "Loaded family IDs should match original")
   end subroutine test_read_write_family_ids
 
@@ -515,7 +515,7 @@ contains
     
     ! Test 1: Save and read all data
     print *, "Test 1: Saving and reading all data"
-    call save_tox_data("test_archive1.zip", ierr, &
+    call save_tox_data("test_archive_1_f.zip", ierr, &
                       gene_ids=gene_ids, gene_ids_file="gene_ids_v1.bin", &
                       expression=kallisto_expr, expression_file="kallisto_v1.bin", &
                       gene_to_family=gene_to_fam, gene_to_family_file="gene_to_fam.bin", &
@@ -528,7 +528,7 @@ contains
         return
     end if
     
-    call read_tox_data("test_archive1.zip", ierr, &
+    call read_tox_data("test_archive_1_f.zip", ierr, &
                       gene_ids=gene_ids_verify, &
                       expression=kallisto_verify, &
                       gene_to_family=gene_to_fam_verify, &
@@ -577,7 +577,7 @@ contains
     
     ! Test 2: Save only gene_ids and expression
     print *, "Test 2: Saving only gene_ids and expression"
-    call save_tox_data("test_archive2.zip", ierr, &
+    call save_tox_data("test_archive_2_f.zip", ierr, &
                       gene_ids=gene_ids, gene_ids_file="gene_ids_v2.bin", &
                       expression=kallisto_expr, expression_file="kallisto_v2.bin")
     
@@ -586,7 +586,7 @@ contains
         return
     end if
     
-    call read_tox_data("test_archive2.zip", ierr, &
+    call read_tox_data("test_archive_2_f.zip", ierr, &
                       gene_ids=gene_ids_verify, &
                       expression=kallisto_verify)
     
@@ -606,7 +606,7 @@ contains
     end if
     
     ! Try to read arrays that weren't saved (should not be allocated)
-    call read_tox_data("test_archive2.zip", ierr, &
+    call read_tox_data("test_archive_2_f.zip", ierr, &
                       gene_to_family=gene_to_fam_verify, &
                       family_ids=gene_family_ids_verify, &
                       family_centroids=family_centroids_verify, &
@@ -651,7 +651,7 @@ contains
     
     ! Test 3: Save only family data
     print *, "Test 3: Saving only family data"
-    call save_tox_data("test_archive3.zip", ierr, &
+    call save_tox_data("test_archive_3_f.zip", ierr, &
                       family_ids=gene_family_ids, family_ids_file="family_ids_v3.bin", &
                       family_centroids=family_centroids, family_centroids_file="family_centroids_v3.bin")
     
@@ -660,7 +660,7 @@ contains
         return
     end if
     
-    call read_tox_data("test_archive3.zip", ierr, &
+    call read_tox_data("test_archive_3_f.zip", ierr, &
                       family_ids=gene_family_ids_verify, &
                       family_centroids=family_centroids_verify)
     
@@ -685,19 +685,20 @@ contains
     
     ! Test 4: Save empty archive (should work without error)
     print *, "Test 4: Saving empty archive"
-    call save_tox_data("test_archive4.zip", ierr)
+    call save_tox_data("test_archive_4_f.zip", ierr)
     
     if (ierr /= 0) then
         print *, "Error saving empty archive: ", ierr
         return
     end if
     
-    call read_tox_data("test_archive4.zip", ierr)
+    call read_tox_data("test_archive_4_f.zip", ierr)
     
     if (ierr /= 0) then
         print *, "Error reading empty archive: ", ierr
-        return
+        error stop
     end if
+    call set_ok(ierr)
     
     print *, "Empty archive test passed"
     
@@ -711,7 +712,34 @@ contains
     else
         print *, "Correctly failed to read non-existent archive, error code: ", ierr
     end if
-    
+
+    print *, "Reading R archive"
+    call read_tox_data("test_archive_1_R.zip", ierr, &
+                      gene_ids=gene_ids_verify, &
+                      expression=kallisto_verify, &
+                      gene_to_family=gene_to_fam_verify, &
+                      family_ids=gene_family_ids_verify, &
+                      family_centroids=family_centroids_verify, &
+                      shift_vectors=shift_vectors_verify)
+    if(.not. is_ok(ierr)) then
+      write(*,*) 'Error reading R archive: ', ierr 
+      error stop 
+    end if
+    if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
+    if (allocated(kallisto_verify)) deallocate(kallisto_verify)
+    if (allocated(gene_to_fam_verify)) deallocate(gene_to_fam_verify)
+    if (allocated(gene_family_ids_verify)) deallocate(gene_family_ids_verify)
+    if (allocated(family_centroids_verify)) deallocate(family_centroids_verify)
+    if (allocated(shift_vectors_verify)) deallocate(shift_vectors_verify)
+
+    call read_tox_data("test_archive_1_R.zip", ierr, &
+                      gene_ids=gene_ids_verify, &
+                      expression=kallisto_verify)
+    if(.not. is_ok(ierr)) then
+      write(*,*) 'Error reading R archive: ', ierr 
+      error stop 
+    end if
+
     print *, "All archive tests completed successfully!"
   end subroutine test_archive
 end module mod_test_tox_data

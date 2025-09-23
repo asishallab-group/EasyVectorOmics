@@ -187,29 +187,38 @@ print("Shift vectors validated")
 # print("All data validated")
 
 print("Testing save function...")
-tox_save_data_archive("test_archive_1.zip", gene_ids=gene_ids, gene_ids_name="gene_ids_v1.bin",
+tox_save_data_archive("test_archive_1_py.zip", gene_ids=gene_ids, gene_ids_name="gene_ids_v1.bin",
                       expression_vectors=kallisto_expr, expression_vectors_name="kallisto_data_v1.bin")
 
-tox_save_data_archive("test_archive_2.zip", family_centroids=centroids, family_centroids_name="centroids.bin")
+tox_save_data_archive("test_archive_2_py.zip", family_centroids=centroids, family_centroids_name="centroids.bin")
 try:
-    tox_save_data_archive("test_archive_3.zip", family_centroids=centroids, gene_ids=kallisto_expr)
+    tox_save_data_archive("test_archive_3_py.zip", family_centroids=centroids, gene_ids=kallisto_expr)
 except:
     print("Successfully threw exception")
 
-tox_save_data_archive("test_archive_4.zip", gene_ids=gene_ids, gene_ids_name="gene_ids_v1.bin",
+tox_save_data_archive("test_archive_4_py.zip", gene_ids=gene_ids, gene_ids_name="gene_ids_v1.bin",
                       expression_vectors=kallisto_expr, expression_vectors_name="kallisto_data_v1.bin",
                       gene_to_fam=gene_to_fam, gene_to_fam_name="gene_to_fam_v1.bin",
                       family_ids=family_ids, family_ids_name="family_ids_v1.bin",
                       family_centroids=centroids, family_centroids_name="family_centroids_v1.bin",
                       shift_vectors=shift_vectors, shift_vectors_name="shift_vectors_v1.bin")
 
-result_1 = tox_read_data_archive("test_archive_4.zip", gene_ids=True, expression_vectors=True, 
+result_1 = tox_read_data_archive("test_archive_4_py.zip", gene_ids=True, expression_vectors=True, 
                                  gene_to_fam=True, family_ids=True, family_centroids=True, shift_vectors=True)
-result_2 = tox_read_data_archive("test_archive_4.zip", gene_ids=True, gene_to_fam=True)
+result_2 = tox_read_data_archive("test_archive_4_py.zip", gene_ids=True, gene_to_fam=True)
 try:
-    result_3 = tox_read_data_archive("test_archive_3", gene_ids=True)
+    result_3 = tox_read_data_archive("test_archive_3_py.zip", gene_ids=True)
 except:
     result_3 = None
     print("Successfully threw exception")
+try:
+    result_f = tox_read_data_archive("test_archive_1_f.zip", True, True, True, True, True, True)
+except:
+    result_f = None 
+    print("Could not read fortran archive. Does the file exist?")
 
-result_f = tox_read_data_archive("test_archive1.zip", True, True, True, True, True, True)
+try: 
+    result_r = tox_read_data_archive(zip_filename="test_archive_1_R.zip", gene_ids=True, expression_vectors=True, 
+                                 gene_to_fam=True, family_ids=True, family_centroids=True, shift_vectors=True)
+except:
+    print("Could not read R archive. Does the file exist?")

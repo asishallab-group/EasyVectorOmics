@@ -182,7 +182,7 @@ cat("Family ID examples:", head(gene_family_ids), "\n")
 cat("Gene-to-family mapping examples:", head(gene_to_fam), "\n")
 
 cat("===Archive tests===\n")
-tox_save_data_archive(zip_filename="Full_data_test_archive_1_R.zip", gene_ids=gene_ids, gene_ids_name="gene_ids_v1_R.bin",
+tox_save_data_archive(zip_filename="test_archive_1_R.zip", gene_ids=gene_ids, gene_ids_name="gene_ids_v1_R.bin",
                       expression_vectors=kallisto_expr, expression_vectors_name="expr_vecs_v1_R.bin", 
                       gene_to_fam=gene_to_fam, gene_to_fam_name="gene_to_fam_v1_R.bin",
                       family_ids=gene_family_ids, family_ids_name="family_ids_v1_R.bin", 
@@ -196,11 +196,11 @@ tox_save_data_archive(zip_filename="test_archive_3_R.zip", gene_ids=gene_ids, ge
                       expression_vectors=kallisto_expr, expression_vectors_name="expr_vecs_v3_R.bin", gene_to_fam=gene_to_fam)
 
 tox_save_data_archive(zip_filename="test_archive_4_R.zip", family_centroids=family_centroids, family_centroids_name="family_centroids_v1_R.bin",
-                      shift_vectors_name=shift_vectors, shift_vectors_name="shift_vectors_v1_R.bin")
+                      shift_vectors=shift_vectors, shift_vectors_name="shift_vectors_v1_R.bin")
 
 tox_save_data_archive(zip_filename="test_archive_5_R.zip")
 
-result_1 <- tox_read_data_archive(zip_filename="Full_data_test_archive_1_R.zip", 
+result_1 <- tox_read_data_archive(zip_filename="test_archive_1_R.zip", 
                                   gene_ids=TRUE,
                                   expression_vectors=TRUE,
                                   gene_to_fam=TRUE,
@@ -208,7 +208,7 @@ result_1 <- tox_read_data_archive(zip_filename="Full_data_test_archive_1_R.zip",
                                   family_centroids=TRUE,
                                   shift_vectors=TRUE)
 
-result_2 <- tox_read_data_archive(zip_filename="Full_data_test_archive_1_R.zip",
+result_2 <- tox_read_data_archive(zip_filename="test_archive_1_R.zip",
                                   family_centroids=TRUE,
                                   shift_vectors=TRUE)
 
@@ -216,3 +216,22 @@ result_3 <- tox_read_data_archive(zip_filename="test_archive_2_R.zip",
                                   gene_ids=TRUE,
                                   expression_vectors=TRUE,
                                   shift_vectors=TRUE)
+tryCatch({
+  result_py <- tox_read_data_archive(zip_filename="test_archive_1_py.zip", 
+                                  gene_ids=TRUE,
+                                  expression_vectors=TRUE,
+                                  gene_to_fam=TRUE,
+                                  family_ids=TRUE,
+                                  family_centroids=TRUE,
+                                  shift_vectors=TRUE)
+  cat("Successfully read from python archive")
+
+  result_f <- tox_read_data_archive(zip_filename="test_archive_1_f.zip", 
+                                  gene_ids=TRUE,
+                                  expression_vectors=TRUE,
+                                  gene_to_fam=TRUE,
+                                  family_ids=TRUE,
+                                  family_centroids=TRUE,
+                                  shift_vectors=TRUE)
+  cat("Successfully read from fortran archive")
+})                                  

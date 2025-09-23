@@ -7,10 +7,12 @@ module tox_archive
 
     ! libzip constants
     integer(c_int), parameter :: ZIP_CREATE = 1
+    integer(c_int), parameter :: ZIP_EXCL = 3
     integer(c_int), parameter :: ZIP_RDONLY = 0
     integer(c_int), parameter :: ZIP_FL_OVERWRITE = 8192
     integer(c_int), parameter :: ZIP_CM_STORE = 0
     integer(c_int), parameter :: ZIP_CM_DEFLATE = 8
+    integer(c_int), parameter :: ZIP_ER_EXISTS = -11
 
     ! libzip interface definitions
     interface
@@ -148,10 +150,10 @@ contains
         call set_ok(error)
         
         ! Open ZIP archive for writing
-        zip_handle = zip_open(trim(zip_filename)//c_null_char, ZIP_CREATE, error)
+        zip_handle = zip_open(trim(zip_filename)//c_null_char, ZIP_EXCL, error)
         if (.not. is_ok(error)) then
             call set_err_once(ierr, ERR_FILE_OPEN)
-            print *, "Error opening ZIP file for writing: ", error
+            if(error == 10) print *, "Error opening ZIP file for writing: File already exists"
             return
         end if
         

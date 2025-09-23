@@ -13,23 +13,10 @@ module asserts
   public :: assert_sorted_real, assert_same_shape, assert_string_equal
   public :: assert_string_contains, assert_allclose_array_real, assert_equal_array_char
   public :: assert_sum_equal, assert_unique_int, assert_permutation
-  public :: assert_equal_array_char
   public :: assert_equal_complex, assert_not_equal_complex, assert_equal_array_complex
 
 
 contains
-  
-  !> Asserts that two character arrays are equal
-  subroutine assert_equal_array_char(a, b, clen, n, msg)
-    integer(int32), INTENT(IN) :: clen
-    character(len=clen), intent(in) :: a(n), b(n)
-    character(*), intent(in) :: msg
-    integer, intent(in) :: n
-    if (any(a /= b)) then
-      write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (character arrays differ)"
-      stop 1
-    end if
-  end subroutine
 
   !> Assert that two complex numbers are equal within a tolerance.
   subroutine assert_equal_complex(a, b, tol, msg)
@@ -148,18 +135,16 @@ contains
     end if
   end subroutine
 
-  !> Asserts that two char arrays are equal
-  subroutine assert_equal_array_char(a, b, n, msg)
-    character(len=*), intent(in) :: a(n), b(n)
-    integer, intent(in) :: n
+  !> Asserts that two character arrays are equal
+  subroutine assert_equal_array_char(a, b, clen, n, msg)
+    integer(int32), INTENT(IN) :: clen
+    character(len=clen), intent(in) :: a(n), b(n)
     character(*), intent(in) :: msg
-    integer :: i
-    do i = 1, n
-      if (trim(a(i)) /= trim(b(i))) then
-        write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (char arrays differ at index ", i, ")"
-        stop 1
-      end if
-    end do
+    integer, intent(in) :: n
+    if (any(a /= b)) then
+      write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (character arrays differ)"
+      stop 1
+    end if
   end subroutine
 
   !> Assert that a real array contains no NaN values.
