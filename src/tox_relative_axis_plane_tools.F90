@@ -300,7 +300,7 @@ contains
          total_abs = total_abs + abs(vec(i_axis))
       end do
 
-      if (total_abs == 0.0_real64) then
+      if (total_abs < 1.0e-8_real64) then
          contributions = 0.0_real64
          call set_err_once(ierr, ERR_INVALID_INPUT)
          return
