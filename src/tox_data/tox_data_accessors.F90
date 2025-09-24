@@ -8,11 +8,16 @@ module tox_data_accessors
   public :: get_family_centroid, get_shift_components
 
 contains
+!> returns family index for gene index
 subroutine get_family_for_gene_index(gene_idx, gene_to_fam, out_family_idx, ierr)
     integer(int32), intent(in) :: gene_idx
+        !! gene index
     integer(int32), intent(in) :: gene_to_fam(:)
+        !! gene to family mapping
     integer(int32), intent(out) :: out_family_idx
+        !! family index
     integer(int32), intent(out) :: ierr
+        !! error code
     
     ierr = ERR_OK
     
@@ -23,17 +28,18 @@ subroutine get_family_for_gene_index(gene_idx, gene_to_fam, out_family_idx, ierr
     end if
     
     out_family_idx = gene_to_fam(gene_idx)
-    
-    if (out_family_idx < 1) then
-        ierr = ERR_INVALID_INPUT
-    end if
 end subroutine get_family_for_gene_index
 
+!> get expression vector for a specific gene id
 subroutine get_expression_vector(gene_idx, expression_vectors, out_vector, ierr)
     integer(int32), intent(in) :: gene_idx
+        !! target gene index
     real(real64), intent(in) :: expression_vectors(:,:)
+        !! expression vectors
     real(real64), intent(out) :: out_vector(:)
+        !! output vector
     integer(int32), intent(out) :: ierr
+        !! error code
     
     ierr = ERR_OK
     
@@ -50,11 +56,16 @@ subroutine get_expression_vector(gene_idx, expression_vectors, out_vector, ierr)
     out_vector = expression_vectors(:, gene_idx)
 end subroutine get_expression_vector
 
+!> get family centroid for a specific family index
 subroutine get_family_centroid(family_idx, family_centroids, out_centroid, ierr)
     integer(int32), intent(in) :: family_idx
+        !! Target index
     real(real64), intent(in) :: family_centroids(:,:)
+        !! centroid array
     real(real64), intent(out) :: out_centroid(:)
+        !! Output centroid
     integer(int32), intent(out) :: ierr
+        !! Error code
     
     ierr = ERR_OK
     
@@ -71,12 +82,20 @@ subroutine get_family_centroid(family_idx, family_centroids, out_centroid, ierr)
     out_centroid = family_centroids(:, family_idx)
 end subroutine get_family_centroid
 
+!> returns the centroid and the shift of a gene
 subroutine get_shift_components(gene_idx, shift_vectors, d, out_start, out_shift, ierr)
     integer(int32), intent(in) :: gene_idx
+        !! gene index to look for
     real(real64), intent(in) :: shift_vectors(:,:)
+        !! shift vectors
     integer(int32), intent(in) :: d
-    real(real64), intent(out) :: out_start(:), out_shift(:)
+        !! number of tissues
+    real(real64), intent(out) :: out_start(:)
+        !! centroid of the genes family
+    real(real64), intent(out) :: out_shift(:)
+        !! shift vector of the gene
     integer(int32), intent(out) :: ierr
+        !! Error code
     
     ierr = ERR_OK
     
@@ -99,10 +118,12 @@ subroutine get_shift_components(gene_idx, shift_vectors, d, out_start, out_shift
     out_shift = shift_vectors(d+1:2*d, gene_idx)
 end subroutine get_shift_components
 
-! Helper function to find gene index with early exit optimization
+!> Helper function to find gene index
 integer function get_gene_index(gene_ids, gene) result(idx)
     character(len=*), intent(in) :: gene_ids(:)
+        !! gene ids array
     character(len=*), intent(in) :: gene
+        !! gene to look for
     integer :: i
     
     idx = 0
@@ -118,10 +139,12 @@ integer function get_gene_index(gene_ids, gene) result(idx)
     end do
 end function get_gene_index
 
-! Helper function to find family index
+!> Helper function to find family index
 integer function get_family_index(family_ids, family) result(idx)
     character(len=*), intent(in) :: family_ids(:)
+        !! family ids array
     character(len=*), intent(in) :: family
+        !! family to look for
     integer :: i
     
     idx = 0

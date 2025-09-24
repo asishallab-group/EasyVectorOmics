@@ -73,7 +73,6 @@ expr_6 = read_expression_vectors(
     n_header_rows=1,
     gene_col=1,
     value_cols=value_cols_6,
-    start_row=1,
     delimiter="\t"
 )
 print("expr_6 shape:", expr_6.shape)
@@ -88,7 +87,6 @@ expr_7 = read_expression_vectors(
     n_header_rows=1,
     gene_col=1,
     value_cols=value_cols_7,
-    start_row=1,
     delimiter="\t"
 )
 print("expr_7 shape:", expr_7.shape)
@@ -103,7 +101,6 @@ expr_5 = read_expression_vectors(
     n_header_rows=1,
     gene_col=1,
     value_cols=value_cols_5,
-    start_row=1,
     delimiter="\t"
 )
 print("expr_5 shape:", expr_5.shape)
@@ -118,7 +115,6 @@ expr_4 = read_expression_vectors(
     n_header_rows=1,
     gene_col=1,
     value_cols=value_cols_4,
-    start_row=1,
     delimiter="\t"
 )
 print("expr_4 shape:", expr_4.shape)
@@ -150,41 +146,41 @@ print("filtered_gene_ids sample:", filtered_gene_ids[:5])
 print("filtered_kallisto_expr shape:", filtered_kallisto_expr.shape)
 print("filtered_gene_to_fam sample:", filtered_gene_to_fam[:10])
 
-# validate_gene_ids_uniqueness(gene_ids)
-# validate_family_ids_uniqueness(family_ids)
-# validate_expression_data(kallisto_expr, True)
+validate_gene_ids_uniqueness(gene_ids)
+validate_family_ids_uniqueness(family_ids)
+validate_expression_data(kallisto_expr, True)
 
 ortholog_set = np.array([True for i in range(n_genes_kept)])
 
 centroids = tox_group_centroid(filtered_kallisto_expr, filtered_gene_to_fam, n_families, ortholog_set)
 
-# print("Validating centroids...")
-# validate_family_centroids(centroids)
-# print("Centroids validated")
+print("Validating centroids...")
+validate_family_centroids(centroids)
+print("Centroids validated")
 
 shift_vectors_result = tox_compute_shift_vector_field(filtered_kallisto_expr, centroids, filtered_gene_to_fam)
 shift_vectors = shift_vectors_result["shift_vectors"]
 
 print("Validating shift vectors...")
 validate_shift_vectors(shift_vectors, filtered_kallisto_expr, centroids, filtered_gene_to_fam, 
-                      n_samples, n_genes_kept, n_samples, n_families)
+                      n_genes_kept, n_samples, n_families)
 print("Shift vectors validated")
 
-# validate_gene_to_family_mapping(filtered_gene_to_fam, n_families)
+validate_gene_to_family_mapping(filtered_gene_to_fam, n_families)
 
-# print("Number of genes kept after filtering:", n_genes_kept)
-# print("gene_family_size:", len(filtered_gene_to_fam))
-# print("filtered gene ids size:", len(filtered_gene_ids))
+print("Number of genes kept after filtering:", n_genes_kept)
+print("gene_family_size:", len(filtered_gene_to_fam))
+print("filtered gene ids size:", len(filtered_gene_ids))
 
-# print("Validating data structure...")
-# validate_data_structure(n_genes_kept, n_families, n_samples, n_samples, filtered_gene_ids, 
-#                         family_ids, filtered_gene_to_fam, filtered_kallisto_expr, centroids, shift_vectors)
-# print("Data structure validated")
+print("Validating data structure...")
+validate_data_structure(n_genes_kept, n_families, n_samples, filtered_gene_ids, 
+                        family_ids, filtered_gene_to_fam, filtered_kallisto_expr, centroids, shift_vectors)
+print("Data structure validated")
 
-# print("Validating all data...")
-# validate_all_data(n_genes_kept, n_families, n_samples, n_samples, filtered_gene_ids, family_ids, 
-#                   filtered_gene_to_fam, filtered_kallisto_expr, centroids, shift_vectors)
-# print("All data validated")
+print("Validating all data...")
+validate_all_data(n_genes_kept, n_families, n_samples, filtered_gene_ids, family_ids, 
+                  filtered_gene_to_fam, filtered_kallisto_expr, centroids, shift_vectors)
+print("All data validated")
 
 print("Testing save function...")
 tox_save_data_archive("test_archive_1_py.zip", gene_ids=gene_ids, gene_ids_name="gene_ids_v1.bin",

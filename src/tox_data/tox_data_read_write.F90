@@ -1,3 +1,4 @@
+!> Wrappers for serialization/deserialization of arrays
 module tox_data_read_write
 
     use iso_fortran_env, only: real64, int32

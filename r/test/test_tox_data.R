@@ -47,7 +47,6 @@ res_expr_6 <- read_expression_vectors(
   n_header_rows = 1,
   gene_col = 1,
   value_cols = value_cols_6,
-  start_row = 1,
   delimiter = "\t",
   n_samples = 60
 )
@@ -71,7 +70,6 @@ res_expr_7 <- read_expression_vectors(
   n_header_rows = 1,
   gene_col = 1,
   value_cols = value_cols_7,
-  start_row = 1,
   delimiter = "\t",
   n_samples = 7
 )
@@ -86,7 +84,6 @@ res_expr_5 <- read_expression_vectors(
   n_header_rows = 1,
   gene_col = 1,
   value_cols = value_cols_5,
-  start_row = 1,
   delimiter = "\t",
   n_samples = 5
 )
@@ -101,7 +98,6 @@ res_expr_4 <- read_expression_vectors(
   n_header_rows = 1,
   gene_col = 1,
   value_cols = value_cols_4,
-  start_row = 1,
   delimiter = "\t",
   n_samples = 4
 )
@@ -134,14 +130,14 @@ n_genes <- n_genes_kept
 n_samples <- nrow(kallisto_expr)
 
 # Validate individual components
-# cat("Validating gene IDs uniqueness...\n")
-# validate_gene_ids_uniqueness(gene_ids, n_genes)
+cat("Validating gene IDs uniqueness...\n")
+validate_gene_ids_uniqueness(gene_ids, n_genes)
 
-# cat("Validating family IDs uniqueness...\n")
-# validate_family_ids_uniqueness(gene_family_ids, n_families)
+cat("Validating family IDs uniqueness...\n")
+validate_family_ids_uniqueness(gene_family_ids, n_families)
 
-# cat("Validating gene-to-family mapping...\n")
-# validate_gene_to_family_mapping(gene_to_fam, n_genes, n_families)
+cat("Validating gene-to-family mapping...\n")
+validate_gene_to_family_mapping(gene_to_fam, n_genes, n_families)
 
 cat("Validating expression data...\n")
 validate_expression_data(kallisto_expr, n_genes, n_samples)
@@ -161,13 +157,13 @@ cat("Validating shift vectors...\n")
 validate_shift_vectors(shift_vectors, kallisto_expr, family_centroids, gene_to_fam, n_samples)
 
 # Comprehensive validation
-# cat("Performing comprehensive data validation...\n")
-# validate_all_data(
-#   n_genes, n_families, n_samples, n_samples,
-#   gene_ids, gene_family_ids,
-#   gene_to_fam, kallisto_expr,
-#   family_centroids, shift_vectors
-# )
+cat("Performing comprehensive data validation...\n")
+validate_all_data(
+  n_genes, n_families, n_samples,
+  gene_ids, gene_family_ids,
+  gene_to_fam, kallisto_expr,
+  family_centroids, shift_vectors
+)
 
 cat("All validations passed successfully!\n")
 

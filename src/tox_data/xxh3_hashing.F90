@@ -41,7 +41,9 @@ contains
 ! Find the next power of two greater than or equal to n
 function next_power_of_two(n) result(power)
     integer(int32), intent(in) :: n
+    !! input value
     integer(int32) :: power
+    !! next greater value that is a power of two
     
     power = 1
     do while (power < n)
@@ -52,7 +54,9 @@ end function next_power_of_two
 ! Create the hashmap
 subroutine hashmap_create(map, initial_size)
     type(hashmap_type), intent(out) :: map
+        !! Hashmap object to create
     integer(int32), intent(in), optional :: initial_size
+        !! Size of the hashmap
     
     integer(int32) :: table_size, i
     
@@ -60,11 +64,11 @@ subroutine hashmap_create(map, initial_size)
     if (present(initial_size)) then
         table_size = next_power_of_two(int(initial_size / MAX_LOAD_FACTOR, int32))
     else
-        table_size = 16  ! Default size
+        table_size = 1024  ! Default size
     end if
     
     ! Ensure minimum size
-    table_size = max(table_size, 16)
+    table_size = max(table_size, 128)
     
     ! Allocate buckets
     allocate(map%buckets(table_size))
@@ -83,6 +87,7 @@ end subroutine hashmap_create
 ! Destroy the hashmap
 subroutine hashmap_destroy(map)
     type(hashmap_type), intent(inout) :: map
+        !! The hashmap to delete
     
     integer(int32) :: i
     type(hashmap_node_type), pointer :: current, next
@@ -106,14 +111,17 @@ end subroutine hashmap_destroy
 ! Compute XXH3 hash of a string
 function xxh3_hash_fortran(key, table_size) result(hash_idx)
     character(len=*), intent(in) :: key
+    !! key to hash
     integer(int32), intent(in) :: table_size
+    !! table size
     integer(int32) :: hash_idx
+    !! resulting hash
     
     integer(int64) :: hash_val
     integer :: key_len
     character(len=:), allocatable, target :: trimmed_key
-    
-    trimmed_key = normalize_gene_id(key)
+    trimmed_key = trim(key)
+
     key_len = len(trimmed_key)
     
     hash_val = xxh3_hash_c(c_loc(trimmed_key), key_len)
@@ -123,15 +131,18 @@ end function xxh3_hash_fortran
 ! Insert a key-value pair
 subroutine hashmap_put(map, key, value)
     type(hashmap_type), intent(inout) :: map
+        !! hashmap to insert into
     character(len=*), intent(in) :: key
+        !! Key to store
     integer(int32), intent(in) :: value
+        !! value to store
     
     integer(int32) :: hash_idx
     type(hashmap_node_type), pointer :: new_node, current
     character(len=:), allocatable :: normalized_key
     
     ! Normalize key
-    normalized_key = normalize_gene_id(key)
+    normalized_key = trim(key)
     
     if (DEBUG) print *, "PUT: ", trim(normalized_key), " -> ", value
     
@@ -151,7 +162,7 @@ subroutine hashmap_put(map, key, value)
         if (current%key == normalized_key) then
             ! Key exists - update value
             current%value = value
-            if (DEBUG) print *, "  Updated existing key"
+            print *, "Warning: Duplicate key updated value"
             return
         end if
         current => current%next
@@ -171,17 +182,20 @@ end subroutine hashmap_put
 ! Lookup a key
 function hashmap_get(map, key) result(value)
     type(hashmap_type), intent(in) :: map
+        !! hashmap
     character(len=*), intent(in) :: key
+        !! key to look for
     integer(int32) :: value
+        !! return value
     
     integer(int32) :: hash_idx
     type(hashmap_node_type), pointer :: current
     character(len=:), allocatable :: normalized_key
     
-    value = 0  ! Default: not found
+    value = -1  ! Default: not found
     
     ! Normalize key
-    normalized_key = normalize_gene_id(key)
+    normalized_key = trim(key)
     
     if (DEBUG) print *, "GET: ", trim(normalized_key)
     
@@ -207,6 +221,7 @@ end function hashmap_get
 ! Resize the hashmap when load factor is too high
 subroutine resize_hashmap(map)
     type(hashmap_type), intent(inout) :: map
+        !! map to resize
     
     type(hashmap_type) :: new_map
     integer(int32) :: i, new_size
@@ -238,46 +253,5 @@ subroutine resize_hashmap(map)
     ! Nullify the new_map's buckets to prevent deallocation
     nullify(new_map%buckets)
 end subroutine resize_hashmap
-
-! Normalize gene ID by trimming spaces and converting to uppercase
-function normalize_gene_id(gene_id) result(normalized)
-    character(len=*), intent(in) :: gene_id
-    character(len=:), allocatable :: normalized
-    
-    integer :: i, j
-    character(len=len(gene_id)) :: buffer
-    
-    buffer = trim(adjustl(gene_id))
-    
-    ! Remove any internal whitespace
-    j = 1
-    do i = 1, len_trim(buffer)
-        if (buffer(i:i) /= ' ' .and. buffer(i:i) /= char(9)) then
-            buffer(j:j) = buffer(i:i)
-            j = j + 1
-        end if
-    end do
-    
-    ! Convert to uppercase
-    buffer(1:j-1) = to_upper(buffer(1:j-1))
-    normalized = trim(buffer(1:j-1))
-end function normalize_gene_id
-
-! Convert string to uppercase
-function to_upper(str) result(upper)
-    character(len=*), intent(in) :: str
-    character(len=len(str)) :: upper
-    
-    integer :: i, ic
-    
-    do i = 1, len(str)
-        ic = iachar(str(i:i))
-        if (ic >= iachar('a') .and. ic <= iachar('z')) then
-            upper(i:i) = achar(ic - 32)
-        else
-            upper(i:i) = str(i:i)
-        end if
-    end do
-end function to_upper
 
 end module xxh3_hashmap_module

@@ -239,8 +239,8 @@ contains
     integer(int32) :: ierr
     write(*,*) 'Testing data validation... This might take a while'
     
-    ! call validate_all_data(n_genes, n_families, total_samples, total_samples, gene_ids, gene_family_ids, &
-    !                        gene_to_fam, kallisto_expr, family_centroids, shift_vectors, ierr, .true., .true.)
+    call validate_all_data(n_genes, n_families, total_samples, gene_ids, gene_family_ids, &
+                           gene_to_fam, kallisto_expr, family_centroids, shift_vectors, ierr, .true., .true.)
   end subroutine test_validate_data
 
   !> Test centroid computation

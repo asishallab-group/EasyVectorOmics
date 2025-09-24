@@ -145,12 +145,25 @@ module tox_archive
 
 contains
 
+    !> Creates a zip archive if it does not exist already
     subroutine create_zip_archive(zip_filename, gene_ids_file, expression_file, gene_to_family_file, &
                                 family_ids_file, family_centroids_file, shift_vectors_file, ierr)
         character(len=*), intent(in) :: zip_filename
-        character(len=*), intent(in) :: gene_ids_file, expression_file, gene_to_family_file, &
-                                        family_ids_file, family_centroids_file, shift_vectors_file
+            !! Name of the zip file to create
+        character(len=*), intent(in) :: gene_ids_file
+            !! Name of the file containing the gene_ids
+        character(len=*), intent(in) :: expression_file
+            !! Name of the file containing the expression vectors
+        character(len=*), intent(in) :: gene_to_family_file
+            !! Name of the file containing the gene to family mapping
+        character(len=*), intent(in) :: family_ids_file
+            !! Name of the file containing the family ids
+        character(len=*), intent(in) :: family_centroids_file
+            !! Name of the file containing the centroids 
+        character(len=*), intent(in) :: shift_vectors_file
+            !! Name of the file containing the shift vectors
         integer, intent(out) :: ierr
+            !! Error code
         
         type(c_ptr) :: zip_handle
         integer(c_int) :: error
@@ -197,8 +210,21 @@ contains
     contains
         subroutine add_files_to_zip(zip_handle, gid_file, exp_file, g2f_file, fam_file, cent_file, shift_file, ierr)
             type(c_ptr), intent(in) :: zip_handle
-            character(len=*), intent(in) :: gid_file, exp_file, g2f_file, fam_file, cent_file, shift_file
-            integer(int32), intent(out) :: ierr
+                !! open zip file
+            character(len=*), intent(in) :: gid_file
+                !! gene_ids file
+            character(len=*), intent(in) :: exp_file 
+                !! expression file
+            character(len=*), intent(in) :: g2f_file 
+                !! gene to family file
+            character(len=*), intent(in) :: fam_file 
+                !! family file
+            character(len=*), intent(in) :: cent_file 
+                !! centroids file
+            character(len=*), intent(in) :: shift_file
+                !! shift vectors file
+            integer(int32), intent(out) :: ierr 
+                !! Error code
             
             call set_ok(ierr)
             
@@ -234,18 +260,31 @@ contains
         end subroutine add_files_to_zip
     end subroutine create_zip_archive
 
+    !> Extract a zip archive. Reads manifest and fills arrays accordingly.
     subroutine extract_zip_archive(zip_filename, gene_ids_file, expression_file, gene_to_family_file, &
                                 family_ids_file, family_centroids_file, shift_vectors_file, ierr)
         character(len=*), intent(in) :: zip_filename
-        character(len=:), allocatable, intent(out) :: gene_ids_file, expression_file, gene_to_family_file, &
-                                                    family_ids_file, family_centroids_file, shift_vectors_file
+            !! Zip file to read
+        character(len=:), allocatable, intent(out) :: gene_ids_file
+            !! Gene IDs filename
+        character(len=:), allocatable, intent(out) :: expression_file
+            !! Expression vectors filename
+        character(len=:), allocatable, intent(out) :: gene_to_family_file   
+            !! gene to family filename
+        character(len=:), allocatable, intent(out) :: family_ids_file
+            !! Family ids filename
+        character(len=:), allocatable, intent(out) :: family_centroids_file
+            !! Family centroids filename
+        character(len=:), allocatable, intent(out) :: shift_vectors_file
+            !! Shift vectors filename
         integer(int32), intent(out) :: ierr
+            !! Error code
         
         type(c_ptr) :: zip_handle
         integer(c_int) :: error
         integer(c_int64_t) :: i, num_entries
         character(len=:), allocatable :: filename
-        logical :: file_exists, extraction_failed
+        logical :: file_exists
         
         ! Initialize outputs
         gene_ids_file = ""
@@ -254,7 +293,6 @@ contains
         family_ids_file = ""
         family_centroids_file = ""
         shift_vectors_file = ""
-        extraction_failed = .false.
         
         call set_ok(ierr)
         call set_ok(error)
@@ -279,69 +317,46 @@ contains
         num_entries = zip_get_num_entries(zip_handle, 0)
         do i = 0, num_entries - 1
             call get_zip_entry_name(zip_handle, i, filename, ierr)
-            if (.not. is_ok(ierr) .or. len_trim(filename) == 0) then
-                extraction_failed = .true.
-                cycle
-            end if
+            if (.not. is_ok(ierr)) then
+                error = zip_close(zip_handle)
+                return 
+            end if 
             
             if (filename == "manifest.txt") cycle  ! Handle manifest separately
             
             call extract_file_from_zip(zip_handle, filename, ierr)
-            if (.not. is_ok(ierr)) extraction_failed = .true.
+            if (.not. is_ok(ierr)) then
+                error = zip_close(zip_handle)
+                RETURN
+            end if
         end do
         
         ! Extract and parse manifest
-        if (is_ok(ierr)) then
-            call extract_and_parse_manifest(zip_handle, gene_ids_file, expression_file, &
-                                        gene_to_family_file, family_ids_file, &
-                                        family_centroids_file, shift_vectors_file, extraction_failed, ierr)
-            if (.not. is_ok(ierr)) extraction_failed = .true.
+        call extract_and_parse_manifest(zip_handle, gene_ids_file, expression_file, &
+                                    gene_to_family_file, family_ids_file, &
+                                    family_centroids_file, shift_vectors_file, ierr)
+        if (.not. is_ok(ierr)) then
+            error = zip_close(zip_handle)
+            return 
         end if
         
         ! Close ZIP archive
         error = zip_close(zip_handle)
         if (.not. is_ok(error)) then
             print *, "Error closing ZIP file: ", error
-            if (.not. extraction_failed) call set_err_once(ierr, ERR_FILE_CLOSE)
-        end if
-        
-        ! Set final error status
-        if (extraction_failed .and. is_ok(ierr)) then
-            call set_err_once(ierr, ERR_FILE_EXTRACT)
-        else if (is_ok(ierr)) then
-            print *, "ZIP archive extracted successfully: ", trim(zip_filename)
-        end if
-    end subroutine extract_zip_archive
-
-    subroutine write_file(filename, content, ierr)
-        character(len=*), intent(in) :: filename
-        character(kind=c_char), dimension(:), intent(in) :: content
-        integer(int32), intent(out) :: ierr
-
-        integer :: unit, iostat
-        call set_ok(iostat)
-        call set_ok(ierr)
-        
-        open(unit, file=filename, access='stream', form='unformatted', iostat=iostat, status='replace')
-        if (.not. is_ok(iostat)) then
-            print *, "Error creating file: ", trim(filename)
-            call set_err_once(ierr, ERR_FILE_OPEN)
+            call set_err_once(ierr, ERR_FILE_CLOSE)
             return
         end if
         
-        write(unit, iostat=iostat) content
-        
-        close(unit)
-        
-        if (.not. is_ok(iostat)) then
-            call set_err_once(ierr, ERR_WRITE_DATA)
-            print *, "Error writing file: ", trim(filename)
-        end if
-    end subroutine write_file
+        print *, "ZIP archive extracted successfully: ", trim(zip_filename)
+    end subroutine extract_zip_archive
 
+    !> Delete a file from the disk
     subroutine delete_file(filename, ierr)
         character(len=*), intent(in) :: filename
+            !! File to delete
         integer(int32), intent(out) :: ierr
+            !! Error code
         integer :: unit, iostat
 
         call set_ok(iostat)
@@ -355,12 +370,16 @@ contains
         end if
     end subroutine delete_file
 
-    ! Helper function to get the name of a ZIP entry
-    subroutine get_zip_entry_name(zip_handle, entry_index, name, ierr)
+    !> Helper function to get the name of a ZIP entry
+    subroutine get_zip_entry_name(zip_handle, entry_index, entry_name, ierr)
         type(c_ptr), intent(in) :: zip_handle
+            !! Zip file connection
         integer(c_int64_t), intent(in) :: entry_index
-        character(len=:), allocatable, intent(out) :: name
+            !! Index of the entry
+        character(len=:), allocatable, intent(out) :: entry_name
+            !! Name of the entry
         integer(int32), intent(out) :: ierr
+            !! Error code
         
         type(c_ptr) :: name_ptr
         integer(int32) :: iostat, name_len, i
@@ -375,11 +394,11 @@ contains
         if (.not. c_associated(name_ptr)) then
             call set_err_once(ierr, ERR_POINTER_NULL)
             print *, "Error getting name for index: ", entry_index
-            name = ""
+            entry_name = ""
             return
         end if
         
-        ! Convert C string to Fortran string safely
+        ! Convert C string to Fortran string
         call c_f_pointer(name_ptr, f_ptr, [MAX_NAME_LENGTH])
         name_len = 0
         
@@ -395,24 +414,24 @@ contains
         if (i > MAX_NAME_LENGTH) then
             call set_err_once(ierr, ERR_STRING_TOO_LONG)
             print *, "ZIP entry name too long at index: ", entry_index
-            name = ""
+            entry_name = ""
             return
         end if
         
         if (name_len > 0) then
-            allocate(character(len=name_len) :: name, stat=iostat)
+            allocate(character(len=name_len) :: entry_name, stat=iostat)
             if(.not. is_ok(iostat)) then
                 call set_err_once(ierr, ERR_ALLOC_FAIL)
-                name = ""
+                entry_name = ""
                 return
             end if
             
             ! Copy the string safely
             do i = 1, name_len
-                name(i:i) = f_ptr(i)
+                entry_name(i:i) = f_ptr(i)
             end do
         else
-            name = ""
+            entry_name = ""
             print *, "Warning: Empty name for ZIP entry index: ", entry_index
         end if
     end subroutine get_zip_entry_name
@@ -420,8 +439,11 @@ contains
     ! Unified subroutine to extract a file from ZIP archive
     subroutine extract_file_from_zip(zip_handle, filename, ierr)
         type(c_ptr), intent(in) :: zip_handle
+            !! Zip connection
         character(len=*), intent(in) :: filename
+            !! Name of the file to extract
         integer(int32), intent(out) :: ierr
+            !! Error code
         
         type(c_ptr) :: file_handle
         integer(c_int) :: error
@@ -491,10 +513,15 @@ contains
     ! Unified subroutine to add data to ZIP (handles both files and strings)
     subroutine add_data_to_zip(zip_handle, filename, data_source, data_type, ierr)
         type(c_ptr), intent(in) :: zip_handle
+            !! Zip connection
         character(len=*), intent(in) :: filename
-        character(len=*), intent(in), optional :: data_source ! File path or string content
-        integer, intent(in) :: data_type ! 1 = file, 2 = string
+            !! Filename to add
+        character(len=*), intent(in) :: data_source 
+            !! File path or string content
+        integer, intent(in) :: data_type 
+            !! 1 = file, 2 = string
         integer(int32), intent(out) :: ierr
+            !! Error code
         
         integer(c_int) :: error
         integer(c_int64_t) :: index
@@ -507,13 +534,13 @@ contains
         
         call set_ok(ierr)
         
+        if (len_trim(data_source) == 0) then
+            call set_err_once(ierr, ERR_INVALID_INPUT)
+            return
+        end if
+
         select case (data_type)
         case (1) ! File data
-            if (.not. present(data_source)) then
-                call set_err_once(ierr, ERR_INVALID_INPUT)
-                return
-            end if
-            
             ! Read file content
             open(unit, file=data_source, access='stream', form='unformatted', iostat=iostat, status='old')
             if (.not. is_ok(iostat)) then
@@ -553,10 +580,6 @@ contains
             source = zip_source_buffer(zip_handle, c_data, data_len, 1)
             
         case (2) ! String data
-            if (.not. present(data_source)) then
-                call set_err_once(ierr, ERR_INVALID_INPUT)
-                return
-            end if
             
             data_len = len(data_source)
             c_data = malloc(data_len)
@@ -602,8 +625,11 @@ contains
     contains
         subroutine add_empty_file_to_zip(zip_handle, filename, ierr)
             type(c_ptr), intent(in) :: zip_handle
+                !! Zip connection
             character(len=*), intent(in) :: filename
+                !! Name of the file to add
             integer(int32), intent(out) :: ierr
+                !! Error code
             
             type(c_ptr) :: source
             integer(c_int64_t) :: index
@@ -628,14 +654,26 @@ contains
         end subroutine add_empty_file_to_zip
     end subroutine add_data_to_zip
 
-    ! Manifest creation and parsing functions
+    ! >Manifest creation
     subroutine write_manifest(gene_ids_file, expression_file, gene_to_family_file, &
                             family_ids_file, family_centroids_file, shift_vectors_file, &
                             manifest_filename, ierr)
-        character(len=*), intent(in) :: gene_ids_file, expression_file, gene_to_family_file, &
-                                        family_ids_file, family_centroids_file, shift_vectors_file
+        character(len=*), intent(in) :: gene_ids_file
+            !! Name of the gene ids file
+        character(len=*), intent(in) :: expression_file
+            !! Name of the expression file
+        character(len=*), intent(in) :: gene_to_family_file
+            !! Name of the gene to family mapping file
+        character(len=*), intent(in) :: family_ids_file 
+            !! Name of the family ids file
+        character(len=*), intent(in) :: family_centroids_file
+            !! Name of the family centroids file
+        character(len=*), intent(in) :: shift_vectors_file
+            !! Name of the shift vectors file
         character(len=*), intent(in) :: manifest_filename
+            !! Name of the manifest (should be manifest.txt)
         integer(int32), intent(out) :: ierr
+            !! Error code
         
         integer(int32) :: unit, iostat
 
@@ -679,15 +717,28 @@ contains
         close(unit)
     end subroutine write_manifest
 
+    !> Read an extracted manifest
     subroutine read_manifest(manifest_filename, gene_ids_file, expression_file, gene_to_family_file, &
                             family_ids_file, family_centroids_file, shift_vectors_file, ierr)
         character(len=*), intent(in) :: manifest_filename
-        character(len=:), allocatable, intent(out) :: gene_ids_file, expression_file, gene_to_family_file, &
-                                                    family_ids_file, family_centroids_file, shift_vectors_file
+            !! Filename of the manifest (should be manifest.txt)
+        character(len=:), allocatable, intent(out) :: gene_ids_file
+            !! gene ids filename
+        character(len=:), allocatable, intent(out) :: expression_file
+            !! expression vectors filename
+        character(len=:), allocatable, intent(out) :: gene_to_family_file
+            !! gene to family filename
+        character(len=:), allocatable, intent(out) :: family_ids_file
+            !! family ids filename
+        character(len=:), allocatable, intent(out) :: family_centroids_file
+            !! family centroids filename
+        character(len=:), allocatable, intent(out) :: shift_vectors_file
+            !! shift vectors filename
         integer(int32), intent(out) :: ierr
+            !! Error code
         
         integer(int32) :: unit, iostat
-        character(len=256) :: line
+        character(len=512) :: line
         character(len=32) :: key
         character(len=256) :: value
         
@@ -749,12 +800,23 @@ contains
     ! Module-level subroutine for manifest extraction and parsing
     subroutine extract_and_parse_manifest(zip_handle, gene_ids_file, expression_file, gene_to_family_file, &
                                         family_ids_file, family_centroids_file, shift_vectors_file, &
-                                        extraction_failed, ierr)
+                                        ierr)
         type(c_ptr), intent(in) :: zip_handle
-        character(len=:), allocatable, intent(out) :: gene_ids_file, expression_file, gene_to_family_file, &
-                                                    family_ids_file, family_centroids_file, shift_vectors_file
-        logical, intent(out) :: extraction_failed
+            !! Zip file connection
+        character(len=:), allocatable, intent(out) :: gene_ids_file
+            !! Gene ids filename
+        character(len=:), allocatable, intent(out) :: expression_file
+            !! expression vectors filename
+        character(len=:), allocatable, intent(out) :: gene_to_family_file
+            !! gene to family mapping filename
+        character(len=:), allocatable, intent(out) :: family_ids_file
+            !! family ids filename
+        character(len=:), allocatable, intent(out) :: family_centroids_file
+            !! family centroids filename
+        character(len=:), allocatable, intent(out) :: shift_vectors_file
+            !! Shift vectors filename
         integer(int32), intent(out) :: ierr
+            !! Error code
         
         type(c_ptr) :: file_handle
         integer(c_int) :: error
@@ -772,7 +834,7 @@ contains
             if (.not. is_ok(iostat)) then
                 print *, "Error creating manifest file"
                 error = zip_fclose(file_handle)
-                if (.not. extraction_failed) call set_err_once(ierr, ERR_FILE_OPEN)
+                call set_err_once(ierr, ERR_FILE_OPEN)
                 return
             end if
             
@@ -785,12 +847,14 @@ contains
                     write(unit, iostat=iostat) buffer(1:bytes_read)
                     if (.not. is_ok(iostat)) then
                         print *, "Error writing manifest file"
-                        extraction_failed = .true.
+                        call set_err(ierr, ERR_WRITE_DATA)
                         exit
                     end if
                 end do
             else
-                extraction_failed = .true.
+                call set_err(ierr, ERR_ALLOC_FAIL)
+                error = zip_close(zip_handle)
+                return
             end if
             
             ! Clean up manifest extraction
@@ -798,26 +862,24 @@ contains
             close(unit)
             error = zip_fclose(file_handle)
             
-            if (.not. extraction_failed) then
-                ! Parse the manifest file
-                call read_manifest("manifest.txt", gene_ids_file, expression_file, gene_to_family_file, &
-                                family_ids_file, family_centroids_file, shift_vectors_file, ierr)
-                
-                if (.not. is_ok(ierr)) then
-                    print *, "Error parsing manifest file"
-                    extraction_failed = .true.
-                end if
-                
-                ! Delete the temporary manifest file
-                call delete_file("manifest.txt", ierr)
-                if (.not. is_ok(ierr)) then
-                    print *, "Warning: Could not delete temporary manifest file"
-                    call set_ok(ierr)  ! Not critical
-                end if
+            ! Parse the manifest file
+            call read_manifest("manifest.txt", gene_ids_file, expression_file, gene_to_family_file, &
+                            family_ids_file, family_centroids_file, shift_vectors_file, ierr)
+            
+            if (.not. is_ok(ierr)) then
+                print *, "Error parsing manifest file"
+                return
+            end if
+            
+            ! Delete the temporary manifest file
+            call delete_file("manifest.txt", ierr)
+            if (.not. is_ok(ierr)) then
+                print *, "Warning: Could not delete temporary manifest file"
+                call set_ok(ierr)  ! Not critical
             end if
         else
             print *, "No manifest file found in ZIP archive"
-            if (.not. extraction_failed) call set_err_once(ierr, ERR_MISSING_MANIFEST)
+            call set_err_once(ierr, ERR_MISSING_MANIFEST)
         end if
     end subroutine extract_and_parse_manifest
 
@@ -828,19 +890,33 @@ contains
         implicit none
         
         character(len=*), intent(in) :: zip_filename
+            !! Name of the zipfile
         character(len=*), intent(in), optional :: gene_ids(:)
+            !! Gene ids array
         character(len=*), intent(in), optional :: family_ids(:)
+            !! family ids array
         real(real64), intent(in), optional :: expression(:,:)
+            !! Expression vectors array
         real(real64), intent(in), optional :: family_centroids(:,:)
+            !! family centroids array
         real(real64), intent(in), optional :: shift_vectors(:,:)
+            !! Shift vectors array
         integer(int32), intent(in), optional :: gene_to_family(:)
+            !! gene to family mapping array
         character(len=*), intent(in), optional :: gene_ids_file
+            !! gene ids filename
         character(len=*), intent(in), optional :: expression_file
+            !! expression vectors filename
         character(len=*), intent(in), optional :: gene_to_family_file
+            !! Gene to family mapping filename
         character(len=*), intent(in), optional :: family_ids_file
+            !! Family ids filename
         character(len=*), intent(in), optional :: family_centroids_file
+            !! Family centroids filename
         character(len=*), intent(in), optional :: shift_vectors_file
+            !! shift vectors filename
         integer(int32), intent(out) :: ierr
+            !! Error code
         
         character(len=:), allocatable :: actual_gene_ids_file, actual_expression_file, actual_gene_to_family_file, &
                                         actual_family_ids_file, actual_family_centroids_file, actual_shift_vectors_file
@@ -940,23 +1016,41 @@ contains
         implicit none
         
         character(len=*), intent(in) :: zip_filename
+            !! Zip file to read from
         integer(int32), intent(out) :: ierr
+            !! Error code
         character(len=:), allocatable, optional, intent(out) :: gene_ids(:)
+            !! Gene ids array
         character(len=:), allocatable, optional, intent(out) :: family_ids(:)
+            !! Family ids array
         real(real64), allocatable, optional, intent(out) :: expression(:,:)
+            !! expression vectors array
         real(real64), allocatable, optional, intent(out) :: family_centroids(:,:)
+            !! family centroids array
         real(real64), allocatable, optional, intent(out) :: shift_vectors(:,:)
-        integer(int32), allocatable, optional, intent(out) :: gene_to_family(:)
+            !! shift vectors array
+        integer(int32), allocatable, optional, intent(out) :: gene_to_family(:) 
+            !! gene to family mapping array
         character(len=:), allocatable, optional, intent(out) :: gene_ids_file
+            !! gene ids filename
         character(len=:), allocatable, optional, intent(out) :: expression_file
+            !! expression vectors filename
         character(len=:), allocatable, optional, intent(out) :: gene_to_family_file
+            !! gene to family mapping filename
         character(len=:), allocatable, optional, intent(out) :: family_ids_file
-        character(len=:), allocatable, optional, intent(out) :: family_centroids_file
+            !! family ids filename
+        character(len=:), allocatable, optional, intent(out) :: family_centroids_file   
+            !! family centroids filename
         character(len=:), allocatable, optional, intent(out) :: shift_vectors_file
+            !! shift vectors filename
         
-        character(len=:), allocatable :: extracted_gene_ids_file, extracted_expression_file, &
-                                        extracted_gene_to_family_file, extracted_family_ids_file, &
-                                        extracted_family_centroids_file, extracted_shift_vectors_file
+        character(len=:), allocatable :: extracted_gene_ids_file
+        character(len=:), allocatable :: extracted_expression_file
+        character(len=:), allocatable :: extracted_gene_to_family_file
+        character(len=:), allocatable :: extracted_family_ids_file 
+        character(len=:), allocatable :: extracted_family_centroids_file
+        character(len=:), allocatable :: extracted_shift_vectors_file
+
         logical :: gene_ids_requested, expression_requested, gene_to_family_requested, &
                 family_ids_requested, family_centroids_requested, shift_vectors_requested
         integer(int32) :: max_dims, ndims, dims(5), char_len

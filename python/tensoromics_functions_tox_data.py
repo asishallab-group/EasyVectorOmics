@@ -43,12 +43,10 @@ lib.read_expression_vectors_C.argtypes = [
     ctypes.c_int,                  # n_genes
     ctypes.POINTER(ctypes.c_double), # expression_vectors_flat
     ctypes.c_int,                  # n_samples
-    ctypes.c_int,                  # n_genes2
     ctypes.c_int,                  # n_header_rows
     ctypes.c_int,                  # gene_col
     ctypes.POINTER(ctypes.c_int),  # value_cols
     ctypes.c_int,                  # n_value_cols
-    ctypes.c_int,                  # start_row
     ctypes.POINTER(ctypes.c_int),  # ierr
     ctypes.POINTER(ctypes.c_int),  # delimiter_ascii
     ctypes.c_int                   # dlen
@@ -106,7 +104,7 @@ lib.validate_expression_data_C.restype = None
 lib.validate_family_centroids_C.argtypes = [
     ctypes.POINTER(ctypes.c_double), # family_centroids
     ctypes.c_int,                    # n_families
-    ctypes.c_int,                    # d
+    ctypes.c_int,                    # n_samples
     ctypes.POINTER(ctypes.c_int)     # ierr
 ]
 lib.validate_family_centroids_C.restype = None
@@ -116,7 +114,6 @@ lib.validate_shift_vectors_C.argtypes = [
     ctypes.POINTER(ctypes.c_double), # expression_vectors
     ctypes.POINTER(ctypes.c_double), # family_centroids
     ctypes.POINTER(ctypes.c_int),    # gene_to_fam
-    ctypes.c_int,                    # d
     ctypes.c_int,                    # n_genes
     ctypes.c_int,                    # n_samples
     ctypes.c_int,                    # n_families
@@ -144,7 +141,6 @@ lib.validate_data_structure_C.argtypes = [
     ctypes.c_int,                 # n_genes
     ctypes.c_int,                 # n_families
     ctypes.c_int,                 # n_samples
-    ctypes.c_int,                 # d
     ctypes.POINTER(ctypes.c_int), # gene_ids_ascii
     ctypes.c_int,                 # gene_ids_len
     ctypes.POINTER(ctypes.c_int), # gene_family_ids_ascii
@@ -161,7 +157,6 @@ lib.validate_all_data_C.argtypes = [
     ctypes.c_int,                 # n_genes
     ctypes.c_int,                 # n_families
     ctypes.c_int,                 # n_samples
-    ctypes.c_int,                 # d
     ctypes.POINTER(ctypes.c_int), # gene_ids_ascii
     ctypes.c_int,                 # gene_len
     ctypes.POINTER(ctypes.c_int), # gene_family_ids_ascii
@@ -239,7 +234,7 @@ def read_gene_ids_from_file(filename, n_genes, gene_ids_len, n_header_rows, gene
 
 # Function for read_expression_vectors_C
 def read_expression_vectors(file_list, gene_ids, n_samples, n_header_rows, 
-                           gene_col, value_cols, start_row, delimiter='\t'):
+                           gene_col, value_cols, delimiter='\t'):
     # Ensure inputs are numpy arrays
     gene_ids = _ensure_string_array(gene_ids)
     
@@ -272,12 +267,10 @@ def read_expression_vectors(file_list, gene_ids, n_samples, n_header_rows,
         ctypes.c_int(len(gene_ids)),
         expression_vectors_flat.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         ctypes.c_int(n_samples),
-        ctypes.c_int(len(gene_ids)),
         ctypes.c_int(n_header_rows),
         ctypes.c_int(gene_col),
         value_cols_ct,
         ctypes.c_int(len(value_cols)),
-        ctypes.c_int(start_row),
         ctypes.byref(ierr),
         delimiter_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         ctypes.c_int(1)
@@ -410,18 +403,18 @@ def validate_expression_data(expression_vectors, check_non_negative=True):
 def validate_family_centroids(family_centroids):
     arr = _ensure_float_array(family_centroids)
     arr = np.asfortranarray(arr, dtype=np.float64)
-    d, n_families = arr.shape
+    n_samples, n_families = arr.shape
     ierr = ctypes.c_int()
     lib.validate_family_centroids_C(
         arr.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         ctypes.c_int(n_families),
-        ctypes.c_int(d),
+        ctypes.c_int(n_samples),
         ctypes.byref(ierr)
     )
     if ierr.value != 0:
         raise Exception(f"Validation failed: family_centroids (error {ierr.value})")
 
-def validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, gene_to_fam, d, n_genes, n_samples, n_families):
+def validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, gene_to_fam, n_genes, n_samples, n_families):
     shift_vectors = _ensure_float_array(shift_vectors)
     expression_vectors = _ensure_float_array(expression_vectors)
     family_centroids = _ensure_float_array(family_centroids)
@@ -437,7 +430,6 @@ def validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, 
         expression_vectors.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         family_centroids.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         gene_to_fam.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
-        ctypes.c_int(d),
         ctypes.c_int(n_genes),
         ctypes.c_int(n_samples),
         ctypes.c_int(n_families),
@@ -480,7 +472,7 @@ def validate_family_ids_uniqueness(family_ids):
     if ierr.value != 0:
         raise Exception(f"Validation failed: family_ids uniqueness (error {ierr.value})")
 
-def validate_data_structure(n_genes, n_families, n_samples, d, gene_ids, gene_family_ids, gene_to_fam, expression_vectors, family_centroids, shift_vectors):
+def validate_data_structure(n_genes, n_families, n_samples, gene_ids, gene_family_ids, gene_to_fam, expression_vectors, family_centroids, shift_vectors):
     gene_ids = _ensure_string_array(gene_ids)
     gene_family_ids = _ensure_string_array(gene_family_ids)
     expression_vectors = _ensure_float_array(expression_vectors)
@@ -505,7 +497,6 @@ def validate_data_structure(n_genes, n_families, n_samples, d, gene_ids, gene_fa
         ctypes.c_int(n_genes),
         ctypes.c_int(n_families),
         ctypes.c_int(n_samples),
-        ctypes.c_int(d),
         gene_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         ctypes.c_int(gene_ids_len),
         gene_family_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
@@ -519,7 +510,7 @@ def validate_data_structure(n_genes, n_families, n_samples, d, gene_ids, gene_fa
     if ierr.value != 0:
         raise Exception(f"Validation failed: data structure (error {ierr.value})")
 
-def validate_all_data(n_genes, n_families, n_samples, d, gene_ids, gene_family_ids, gene_to_fam, expression_vectors, family_centroids, shift_vectors):
+def validate_all_data(n_genes, n_families, n_samples, gene_ids, gene_family_ids, gene_to_fam, expression_vectors, family_centroids, shift_vectors):
     gene_ids = _ensure_string_array(gene_ids)
     gene_family_ids = _ensure_string_array(gene_family_ids)
     expression_vectors = _ensure_float_array(expression_vectors)
@@ -544,7 +535,6 @@ def validate_all_data(n_genes, n_families, n_samples, d, gene_ids, gene_family_i
         ctypes.c_int(n_genes),
         ctypes.c_int(n_families),
         ctypes.c_int(n_samples),
-        ctypes.c_int(d),
         gene_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         ctypes.c_int(gene_ids_len),
         gene_family_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
