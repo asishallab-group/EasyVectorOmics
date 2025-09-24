@@ -38,7 +38,7 @@ module xxh3_hashmap_module
 
 contains
 
-! Find the next power of two greater than or equal to n
+!> Find the next power of two greater than or equal to n
 function next_power_of_two(n) result(power)
     integer(int32), intent(in) :: n
     !! input value
@@ -51,7 +51,7 @@ function next_power_of_two(n) result(power)
     end do
 end function next_power_of_two
 
-! Create the hashmap
+!> Create the hashmap
 subroutine hashmap_create(map, initial_size)
     type(hashmap_type), intent(out) :: map
         !! Hashmap object to create
@@ -84,7 +84,7 @@ subroutine hashmap_create(map, initial_size)
     if (DEBUG) print *, "Hashmap created with size:", table_size
 end subroutine hashmap_create
 
-! Destroy the hashmap
+!> Destroy the hashmap
 subroutine hashmap_destroy(map)
     type(hashmap_type), intent(inout) :: map
         !! The hashmap to delete
@@ -108,7 +108,7 @@ subroutine hashmap_destroy(map)
     map%count = 0
 end subroutine hashmap_destroy
 
-! Compute XXH3 hash of a string
+!> Compute XXH3 hash of a string
 function xxh3_hash_fortran(key, table_size) result(hash_idx)
     character(len=*), intent(in) :: key
     !! key to hash
@@ -128,7 +128,7 @@ function xxh3_hash_fortran(key, table_size) result(hash_idx)
     hash_idx = int(iand(hash_val, int(table_size - 1, int64)) + 1, int32)
 end function xxh3_hash_fortran
 
-! Insert a key-value pair
+!> Insert a key-value pair
 subroutine hashmap_put(map, key, value)
     type(hashmap_type), intent(inout) :: map
         !! hashmap to insert into
@@ -179,7 +179,7 @@ subroutine hashmap_put(map, key, value)
     if (DEBUG) print *, "  Added new key, count:", map%count
 end subroutine hashmap_put
 
-! Lookup a key
+!> Lookup a key
 function hashmap_get(map, key) result(value)
     type(hashmap_type), intent(in) :: map
         !! hashmap
@@ -218,7 +218,7 @@ function hashmap_get(map, key) result(value)
     if (DEBUG) print *, "  NOT FOUND"
 end function hashmap_get
 
-! Resize the hashmap when load factor is too high
+!> Resize the hashmap when load factor is too high
 subroutine resize_hashmap(map)
     type(hashmap_type), intent(inout) :: map
         !! map to resize

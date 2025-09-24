@@ -644,6 +644,7 @@ subroutine read_expression_vectors_R(file_list_ascii, file_list_len, n_files, &
     end do
 end subroutine read_expression_vectors_R
 
+!> R Binding to read a family file
 subroutine read_family_file_R(filename_ascii, fn_len, gene_ids_ascii, gene_ids_len, n_genes, &
                              family_ids_ascii, family_ids_len, n_families, gene_to_fam, ierr)
     use iso_fortran_env, only: int32
@@ -703,6 +704,7 @@ subroutine read_family_file_R(filename_ascii, fn_len, gene_ids_ascii, gene_ids_l
     end do
 end subroutine read_family_file_R
 
+!> R binding to filter unassigned genes
 subroutine filter_unassigned_genes_R(gene_ids_ascii, gene_ids_len, n_genes, &
                                     expression_vectors_flat, n_samples, &
                                     gene_to_fam, mask, n_genes_kept, ierr)

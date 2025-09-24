@@ -369,6 +369,7 @@ contains
         
     end subroutine validate_family_ids_uniqueness
 
+    !> Validate that strings in an array are not empty
     subroutine validate_empty_strings(string_array, array_name, ierr)
         character(len=*), intent(in) :: string_array(:)
             !! Array of strings
@@ -394,7 +395,7 @@ contains
         
     end subroutine validate_empty_strings
 
-    ! Comprehensive validation routine, combining all checks
+    !> Comprehensive validation routine, combining all checks
     subroutine validate_all_data(n_genes, n_families, n_samples, gene_ids, gene_family_ids, &
                                gene_to_fam, expression_vectors, family_centroids, &
                                shift_vectors, ierr, check_uniqueness, check_shift_consistency)
@@ -482,6 +483,7 @@ contains
     
 end module tox_data_validation
 
+!> R binding for gene to family mapping validating
 subroutine validate_gene_to_family_mapping_R(gene_to_fam, n_genes, n_families, ierr)
     use tox_data_validation, only: validate_gene_to_family_mapping
     use tox_errors, only: set_ok
@@ -499,6 +501,7 @@ subroutine validate_gene_to_family_mapping_R(gene_to_fam, n_genes, n_families, i
     call validate_gene_to_family_mapping(gene_to_fam, n_families, ierr)
 end subroutine validate_gene_to_family_mapping_R
 
+!> R Binding to validate expression data
 subroutine validate_expression_data_R(expression_vectors, n_genes, n_samples, check_non_negative, ierr)
     use tox_data_validation, only: validate_expression_data
     use tox_errors, only: set_ok
@@ -517,6 +520,7 @@ subroutine validate_expression_data_R(expression_vectors, n_genes, n_samples, ch
     call validate_expression_data(expression_vectors, check_non_negative, ierr)
 end subroutine validate_expression_data_R
 
+!> R Binding to validate family centroids
 subroutine validate_family_centroids_R(family_centroids, n_families, n_samples, ierr)
     use tox_data_validation, only : validate_family_centroids
     use tox_errors, only: set_ok
@@ -533,6 +537,7 @@ subroutine validate_family_centroids_R(family_centroids, n_families, n_samples, 
     call validate_family_centroids(family_centroids, ierr)
 end subroutine validate_family_centroids_R
 
+!> R Binding to validate shift vectors
 subroutine validate_shift_vectors_R(shift_vectors, expression_vectors, family_centroids, gene_to_fam, n_genes, n_samples, n_families, ierr)
     use tox_data_validation, only: validate_shift_vectors
     use tox_errors, only: set_ok
@@ -558,6 +563,7 @@ subroutine validate_shift_vectors_R(shift_vectors, expression_vectors, family_ce
     call validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, gene_to_fam, n_samples, ierr)
 end subroutine validate_shift_vectors_R
 
+!> R Binding to validate gene ids uniqueness
 subroutine validate_gene_ids_uniqueness_R(gene_ids_ascii, gene_ids_len, n_genes, ierr)
     use tox_data_validation, only: validate_gene_ids_uniqueness
     use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
@@ -593,6 +599,7 @@ subroutine validate_gene_ids_uniqueness_R(gene_ids_ascii, gene_ids_len, n_genes,
     call validate_gene_ids_uniqueness(gene_ids, ierr)
 end subroutine validate_gene_ids_uniqueness_R
 
+!> R Binding to validate family ids uniqueness
 subroutine validate_family_ids_uniqueness_R(family_ids_ascii, fam_len, n_families, ierr)
     use tox_data_validation, only: validate_family_ids_uniqueness
     use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
@@ -628,6 +635,7 @@ subroutine validate_family_ids_uniqueness_R(family_ids_ascii, fam_len, n_familie
     call validate_family_ids_uniqueness(family_ids, ierr)
 end subroutine validate_family_ids_uniqueness_R
 
+!> R Binding to validate data structure
 subroutine validate_data_structure_R(n_genes, n_families, n_samples, &
                                      gene_ids_ascii, gene_ids_len, &
                                      gene_family_ids_ascii, fam_len, &
@@ -686,6 +694,7 @@ subroutine validate_data_structure_R(n_genes, n_families, n_samples, &
                                  gene_to_fam, expression_vectors, family_centroids, shift_vectors, ierr)
 end subroutine validate_data_structure_R
 
+!> R Binding to validate all data
 subroutine validate_all_data_R(n_genes, n_families, n_samples, &
                                gene_ids_ascii, gene_len, &
                                gene_family_ids_ascii, fam_len, &
@@ -745,6 +754,7 @@ end subroutine validate_all_data_R
 
 ! ---- C bindings for validation routines ----
 
+!> C binding to validate gene to family mapping
 subroutine validate_gene_to_family_mapping_C(gene_to_fam, n_genes, n_families, ierr) bind(C, name="validate_gene_to_family_mapping_C")
     use iso_c_binding, only: c_int, c_ptr, c_f_pointer
     use tox_data_validation, only: validate_gene_to_family_mapping
@@ -766,6 +776,7 @@ subroutine validate_gene_to_family_mapping_C(gene_to_fam, n_genes, n_families, i
     call validate_gene_to_family_mapping(f_gene_to_fam, n_families, ierr)
 end subroutine validate_gene_to_family_mapping_C
 
+!> C Binding to validate expression data
 subroutine validate_expression_data_C(expression_vectors, n_genes, n_samples, check_non_negative, ierr) bind(C, name="validate_expression_data_C")
     use iso_c_binding, only: c_int, c_double, c_ptr, c_f_pointer
     use tox_data_validation, only: validate_expression_data
@@ -790,6 +801,7 @@ subroutine validate_expression_data_C(expression_vectors, n_genes, n_samples, ch
     call validate_expression_data(f_expression_vectors, l_check, ierr)
 end subroutine validate_expression_data_C
 
+!> C binding to validate family centroids
 subroutine validate_family_centroids_C(family_centroids, n_families, n_samples, ierr) bind(C, name="validate_family_centroids_C")
     use iso_c_binding, only: c_int, c_double, c_ptr, c_f_pointer
     use tox_data_validation, only: validate_family_centroids
@@ -809,6 +821,7 @@ subroutine validate_family_centroids_C(family_centroids, n_families, n_samples, 
     call validate_family_centroids(f_family_centroids, ierr)
 end subroutine validate_family_centroids_C
 
+!> C Binding to validate shift vectors
 subroutine validate_shift_vectors_C(shift_vectors, expression_vectors, family_centroids, gene_to_fam, n_genes, n_samples, n_families, ierr) bind(C, name="validate_shift_vectors_C")
     use iso_c_binding, only: c_int, c_double, c_ptr, c_f_pointer
     use tox_data_validation, only: validate_shift_vectors
@@ -841,6 +854,7 @@ subroutine validate_shift_vectors_C(shift_vectors, expression_vectors, family_ce
     call validate_shift_vectors(f_shift_vectors, f_expression_vectors, f_family_centroids, f_gene_to_fam, n_samples, ierr)
 end subroutine validate_shift_vectors_C
 
+!> C Binding to validate gene ids uniqueness
 subroutine validate_gene_ids_uniqueness_C(gene_ids_ascii, gene_ids_len, n_genes, ierr) bind(C, name="validate_gene_ids_uniqueness_C")
     use iso_c_binding, only: c_int, c_ptr, c_f_pointer
     use tox_data_validation, only: validate_gene_ids_uniqueness
@@ -874,6 +888,7 @@ subroutine validate_gene_ids_uniqueness_C(gene_ids_ascii, gene_ids_len, n_genes,
     call validate_gene_ids_uniqueness(gene_ids, ierr)
 end subroutine validate_gene_ids_uniqueness_C
 
+!> C Binding to validate gene ids uniqueness
 subroutine validate_family_ids_uniqueness_C(family_ids_ascii, fam_len, n_families, ierr) bind(C, name="validate_family_ids_uniqueness_C")
     use iso_c_binding, only: c_int, c_ptr, c_f_pointer
     use tox_data_validation, only: validate_family_ids_uniqueness
@@ -906,6 +921,7 @@ subroutine validate_family_ids_uniqueness_C(family_ids_ascii, fam_len, n_familie
     call validate_family_ids_uniqueness(family_ids, ierr)
 end subroutine validate_family_ids_uniqueness_C
 
+!> C Binding to validate data structure
 subroutine validate_data_structure_C(n_genes, n_families, n_samples, &
                                      gene_ids_ascii, gene_ids_len, &
                                      gene_family_ids_ascii, fam_len, &
@@ -976,6 +992,7 @@ subroutine validate_data_structure_C(n_genes, n_families, n_samples, &
                                  f_gene_to_fam, f_expression_vectors, f_family_centroids, f_shift_vectors, ierr)
 end subroutine validate_data_structure_C
 
+!> C Binding to validate all data
 subroutine validate_all_data_C(n_genes, n_families, n_samples, &
                                gene_ids_ascii, gene_len, &
                                gene_family_ids_ascii, fam_len, &
