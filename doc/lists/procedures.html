@@ -273,6 +273,46 @@ Computes average expression per gene for each group of tissue replicates. Argume
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/clock_hand_angle_between_vectors.html'>clock_hand_angle_between_vectors</a></td>
+                 <td><a href='../module/relative_axis_plane_tools.html'>relative_axis_plane_tools</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Compute the signed clock hand angle between two RAP-projected and normalized vectors.
+Calculates the signed rotation angle between two normalized vectors in RAP space.
+For 2D/3D: automatic directionality calculation. For &gt;3D: uses selected axes for directionality.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/clock_hand_angle_between_vectors_c.html'>clock_hand_angle_between_vectors_c</a></td>
+                 <td><a href='../sourcefile/tox_relative_axis_plane_tools.f90.html'>tox_relative_axis_plane_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/clock_hand_angle_between_vectors_r.html'>clock_hand_angle_between_vectors_r</a></td>
+                 <td><a href='../sourcefile/tox_relative_axis_plane_tools.f90.html'>tox_relative_axis_plane_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/clock_hand_angles_for_shift_vectors.html'>clock_hand_angles_for_shift_vectors</a></td>
+                 <td><a href='../module/relative_axis_plane_tools.html'>relative_axis_plane_tools</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Compute signed rotation angles between RAP-projected and normalized vector pairs.
+Takes separate arrays of RAP-projected and normalized vectors (e.g. expression centroids and paralogs) and computes the signed rotation angle between corresponding pairs.
+This measures both magnitude and directionality of angular separation in RAP space.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/clock_hand_angles_for_shift_vectors_c.html'>clock_hand_angles_for_shift_vectors_c</a></td>
+                 <td><a href='../sourcefile/tox_relative_axis_plane_tools.f90.html'>tox_relative_axis_plane_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/clock_hand_angles_for_shift_vectors_r.html'>clock_hand_angles_for_shift_vectors_r</a></td>
+                 <td><a href='../sourcefile/tox_relative_axis_plane_tools.f90.html'>tox_relative_axis_plane_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/complex_as_c_complex.html'>complex_as_c_complex</a></td>
                  <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
                  <td>Subroutine</td>
@@ -348,6 +388,13 @@ Calls compute_rdi with standard Fortran types for R interface.
 Outputs both unsorted and sorted RDI, permutation, and sorting workspace arrays for downstream use.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/compute_relative_axis_contributions.html'>compute_relative_axis_contributions</a></td>
+                 <td><a href='../module/relative_axis_plane_tools.html'>relative_axis_plane_tools</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Compute fractional contribution of each axis to a RAP-projected and normalized shift vector.
+Shared utility: computes fractional contribution of each axis to a RAP-projected and normalized vector.</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/compute_shift_vector_field.html'>compute_shift_vector_field</a></td>
                  <td><a href='../module/tox_shift_vectors.html'>tox_shift_vectors</a></td>
                  <td>Subroutine</td>
@@ -391,6 +438,12 @@ Exposes compute_tissue_versatility to C via iso_c_binding types with explicit di
                  <td>Subroutine</td>
                  <td><p>R wrapper for compute_tissue_versatility.
 Calls compute_tissue_versatility with standard Fortran types for R interface.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/cross_product_orientation_sign.html'>cross_product_orientation_sign</a></td>
+                 <td><a href='../module/relative_axis_plane_tools.html'>relative_axis_plane_tools</a></td>
+                 <td>Function</td>
+                 <td><p>Compute orientation sign from cross product of two vectors, using selected axes</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_char_1d.html'>deserialize_char_1d</a></td>
@@ -796,6 +849,48 @@ Provides a C/Python-compatible interface to the normalization routine.</p></td>
 Provides an interface for R (.Fortran) and Fortran code to call the normalization routine.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/omics_field_rap_projection.html'>omics_field_RAP_projection</a></td>
+                 <td><a href='../module/relative_axis_plane_tools.html'>relative_axis_plane_tools</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Project selected vector fields (e.g. shift vectors) onto the RAP constructed from a selected set of axes.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/omics_field_rap_projection_c.html'>omics_field_RAP_projection_c</a></td>
+                 <td><a href='../sourcefile/tox_relative_axis_plane_tools.f90.html'>tox_relative_axis_plane_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/omics_field_rap_projection_r.html'>omics_field_RAP_projection_r</a></td>
+                 <td><a href='../sourcefile/tox_relative_axis_plane_tools.f90.html'>tox_relative_axis_plane_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/omics_vector_rap_projection.html'>omics_vector_RAP_projection</a></td>
+                 <td><a href='../module/relative_axis_plane_tools.html'>relative_axis_plane_tools</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Project selected vectors (e.g. expression vectors) onto the RAP constructed from a selected set of axes.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/omics_vector_rap_projection_c.html'>omics_vector_RAP_projection_c</a></td>
+                 <td><a href='../sourcefile/tox_relative_axis_plane_tools.f90.html'>tox_relative_axis_plane_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/omics_vector_rap_projection_r.html'>omics_vector_RAP_projection_r</a></td>
+                 <td><a href='../sourcefile/tox_relative_axis_plane_tools.f90.html'>tox_relative_axis_plane_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/project_selected_vecs_onto_rap.html'>project_selected_vecs_onto_rap</a></td>
+                 <td><a href='../module/relative_axis_plane_tools.html'>relative_axis_plane_tools</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Projects selected vectors onto its RAP</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/quantile_normalization.html'>quantile_normalization</a></td>
                  <td><a href='../module/tox_normalization.html'>tox_normalization</a></td>
                  <td>Subroutine</td>
@@ -848,6 +943,44 @@ Sorts indirectly using the permutation vector <code>perm</code>. Manual stack re
                  <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
                  <td>Subroutine</td>
                  <td><p>Converts a real64 value to c_double, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/relative_axes_changes_from_shift_vector.html'>relative_axes_changes_from_shift_vector</a></td>
+                 <td><a href='../module/relative_axis_plane_tools.html'>relative_axis_plane_tools</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Compute fractional contribution of each axis to a RAP-projected and normalized shift vector.
+Wrapper for shift vectors (e.g. difference between two RAP-projected vectors)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/relative_axes_changes_from_shift_vector_c.html'>relative_axes_changes_from_shift_vector_c</a></td>
+                 <td><a href='../sourcefile/tox_relative_axis_plane_tools.f90.html'>tox_relative_axis_plane_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/relative_axes_changes_from_shift_vector_r.html'>relative_axes_changes_from_shift_vector_r</a></td>
+                 <td><a href='../sourcefile/tox_relative_axis_plane_tools.f90.html'>tox_relative_axis_plane_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/relative_axes_expression_from_expression_vector.html'>relative_axes_expression_from_expression_vector</a></td>
+                 <td><a href='../module/relative_axis_plane_tools.html'>relative_axis_plane_tools</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Compute fractional contribution of each axis to a RAP-projected and normalized expression vector.
+Wrapper for single RAP-projected expression vectors</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/relative_axes_expression_from_expression_vector_c.html'>relative_axes_expression_from_expression_vector_c</a></td>
+                 <td><a href='../sourcefile/tox_relative_axis_plane_tools.f90.html'>tox_relative_axis_plane_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/relative_axes_expression_from_expression_vector_r.html'>relative_axes_expression_from_expression_vector_r</a></td>
+                 <td><a href='../sourcefile/tox_relative_axis_plane_tools.f90.html'>tox_relative_axis_plane_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/serialize_char_1d.html'>serialize_char_1d</a></td>
@@ -1124,7 +1257,7 @@ Converts integer mask to logical and calls which.</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-09-22 15:07 +0000"             </p>
+ on "2025-09-24 11:09 +0000"             </p>
           </div>
         </div>
         <br>
