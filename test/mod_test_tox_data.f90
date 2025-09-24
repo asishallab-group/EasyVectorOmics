@@ -723,8 +723,9 @@ contains
                       shift_vectors=shift_vectors_verify)
     if(.not. is_ok(ierr)) then
       write(*,*) 'Error reading R archive: ', ierr 
-      error stop 
+      call set_ok(ierr)
     end if
+    
     if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
     if (allocated(kallisto_verify)) deallocate(kallisto_verify)
     if (allocated(gene_to_fam_verify)) deallocate(gene_to_fam_verify)
@@ -736,9 +737,29 @@ contains
                       gene_ids=gene_ids_verify, &
                       expression=kallisto_verify)
     if(.not. is_ok(ierr)) then
-      write(*,*) 'Error reading R archive: ', ierr 
-      error stop 
+      write(*,*) 'Error reading R archive: ', ierr
+      call set_ok(ierr)
     end if
+
+    print *, "Reading python archive"
+    call read_tox_data("test_archive_1_py.zip", ierr, &
+                      gene_ids=gene_ids_verify, &
+                      expression=kallisto_verify, &
+                      gene_to_family=gene_to_fam_verify, &
+                      family_ids=gene_family_ids_verify, &
+                      family_centroids=family_centroids_verify, &
+                      shift_vectors=shift_vectors_verify)
+    if(.not. is_ok(ierr)) then
+      write(*,*) 'Error reading R archive: ', ierr 
+      call set_ok(ierr)
+    end if
+
+    if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
+    if (allocated(kallisto_verify)) deallocate(kallisto_verify)
+    if (allocated(gene_to_fam_verify)) deallocate(gene_to_fam_verify)
+    if (allocated(gene_family_ids_verify)) deallocate(gene_family_ids_verify)
+    if (allocated(family_centroids_verify)) deallocate(family_centroids_verify)
+    if (allocated(shift_vectors_verify)) deallocate(shift_vectors_verify)
 
     print *, "All archive tests completed successfully!"
   end subroutine test_archive

@@ -38,6 +38,14 @@ module tox_errors
     !! could not write character length
   integer(int32), parameter :: ERR_WRITE_DATA         = 117
     !! could not write array data
+  integer(int32), parameter :: ERR_FILE_ADD           = 121
+    !! Could not add file to archive
+  integer(int32), parameter :: ERR_FILE_EXTRACT       = 122
+    !! Could not extract file from archive
+  integer(int32), parameter :: ERR_MISSING_MANIFEST   = 123
+    !! Manifest in zip file is missing 
+  integer(int32), parameter :: ERR_FILE_CLOSE         = 124
+    !! Failed to close the file
   !------------------------------
   ! 2xx: Format / Input validation
   !------------------------------
@@ -55,7 +63,8 @@ module tox_errors
     !! unsupported data type encountered
   integer(int32), parameter :: ERR_SIZE_MISMATCH      = 206
     !! Array size mismatch
-
+  integer(int32), parameter :: ERR_STRING_TOO_LONG    = 207
+    !! String exceeds buffer size 
   !------------------------------
   ! 3xx: Memory
   !------------------------------
