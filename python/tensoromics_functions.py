@@ -316,36 +316,6 @@ def tox_deserialize_char_nd(filename: str, ndim_max=5):
     result = strings_1d.reshape(tuple(dims), order='F')
     return result
 
-def tox_errors(ierr):
-    """
-    Check error code and raise informative exception if needed
-    
-    Args:
-        ierr: Error code from Fortran routine
-        context: Optional context string for debugging
-    
-    Raises:
-        RuntimeError: If error code indicates failure
-    """
-    error_messages = {
-        0: None,  # Success
-        101: "File could not be opened",
-        102: "Could not read magic number",
-        103: "Could not read array type code", 
-        104: "Could not read array dimension number",
-        105: "Could not read array dimensions",
-        106: "Could not read character length",
-        107: "Could not read array data",
-        200: "Invalid file format (magic number mismatch)",
-        202: "No axes selected (empty input)",
-        5002: "File not open or unit not connected",
-        9999: "Unknown error"
-    }
-    
-    msg = error_messages.get(ierr, f"Unknown Fortran error code: {ierr}")
-    
-    if msg is not None:
-        raise RuntimeError(msg)
 
 # Configure BST argument types
 lib.build_bst_index_C.argtypes = [
@@ -501,6 +471,280 @@ def _readonly(*arrays: np.ndarray) -> None:
             # NOTE: Returned NumPy arrays are read-only for safety.
             # If you need to modify them (e.g., for plotting), use `.copy()`.
 
+
+def tox_vector_RAP_projection(vecs, vecs_selection_mask, axes_selection_mask):
+    """
+    Project selected vectors onto RAP constructed from selected axes.
+    Args:
+        vecs: Expression vectors (n_axes x n_vecs)
+        vecs_selection_mask: Boolean/integer array (length n_vecs)
+        axes_selection_mask: Boolean/integer array (length n_axes)
+    Returns:
+        np.ndarray: Projected vectors (n_selected_axes x n_selected_vecs)
+    Raises:
+        RuntimeError: If Fortran routine returns error
+    """
+    vecs = np.asfortranarray(vecs, dtype=np.float64)
+    vecs_selection_mask = np.ascontiguousarray(vecs_selection_mask, dtype=np.int32)
+    axes_selection_mask = np.ascontiguousarray(axes_selection_mask, dtype=np.int32)
+    n_axes, n_vecs = vecs.shape
+    if len(vecs_selection_mask) != n_vecs:
+        raise ValueError("vecs_selection_mask length must match number of columns in vecs")
+    if len(axes_selection_mask) != n_axes:
+        raise ValueError("axes_selection_mask length must match number of rows in vecs")
+    n_selected_vecs = int(np.sum(vecs_selection_mask))
+    n_selected_axes = int(np.sum(axes_selection_mask))
+    projections = np.empty((n_selected_axes, n_selected_vecs), order="F", dtype=np.float64)
+    ierr = ctypes.c_int(0)
+    omics_vector_RAP_projection = lib.omics_vector_RAP_projection_c
+    omics_vector_RAP_projection.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # vecs
+        ctypes.c_int,                                                    # n_axes
+        ctypes.c_int,                                                    # n_vecs
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),   # vecs_selection_mask
+        ctypes.c_int,                                                    # n_selected_vecs
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),   # axes_selection_mask
+        ctypes.c_int,                                                    # n_selected_axes
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # projections
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
+    ]
+    omics_vector_RAP_projection.restype = None
+    omics_vector_RAP_projection(
+        vecs, n_axes, n_vecs,
+        vecs_selection_mask, n_selected_vecs,
+        axes_selection_mask, n_selected_axes,
+        projections, ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+    _readonly(projections)
+    return projections
+
+def tox_field_RAP_projection(vecs, vecs_selection_mask, axes_selection_mask):
+    """
+    Project selected vector fields onto RAP constructed from selected axes.
+    Args:
+        vecs: Vector fields (2*n_axes x n_vecs)
+        vecs_selection_mask: Boolean/integer array (length n_vecs)
+        axes_selection_mask: Boolean/integer array (length n_axes)
+    Returns:
+        np.ndarray: Projected vectors (n_selected_axes x n_selected_vecs)
+    Raises:
+        RuntimeError: If Fortran routine returns error
+    """
+    vecs = np.asfortranarray(vecs, dtype=np.float64)
+    vecs_selection_mask = np.ascontiguousarray(vecs_selection_mask, dtype=np.int32)
+    axes_selection_mask = np.ascontiguousarray(axes_selection_mask, dtype=np.int32)
+    n_axes = len(axes_selection_mask)
+    n_vecs = vecs.shape[1]
+    if len(vecs_selection_mask) != n_vecs:
+        raise ValueError("vecs_selection_mask length must match number of columns in vecs")
+    if vecs.shape[0] != 2 * n_axes:
+        raise ValueError("vecs must have 2*n_axes rows")
+    n_selected_vecs = int(np.sum(vecs_selection_mask))
+    n_selected_axes = int(np.sum(axes_selection_mask))
+    projections = np.empty((n_selected_axes, n_selected_vecs), order="F", dtype=np.float64)
+    ierr = ctypes.c_int(0)
+    omics_field_RAP_projection = lib.omics_field_RAP_projection_c
+    omics_field_RAP_projection.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # vecs
+        ctypes.c_int,                                                    # n_axes
+        ctypes.c_int,                                                    # n_vecs
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),   # vecs_selection_mask
+        ctypes.c_int,                                                    # n_selected_vecs
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),   # axes_selection_mask
+        ctypes.c_int,                                                    # n_selected_axes
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # projections
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
+    ]
+    omics_field_RAP_projection.restype = None
+    omics_field_RAP_projection(
+        vecs, n_axes, n_vecs,
+        vecs_selection_mask, n_selected_vecs,
+        axes_selection_mask, n_selected_axes,
+        projections, ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+    _readonly(projections)
+    return projections
+
+
+def tox_clock_hand_angle_between_vectors(v1, v2, selected_axes_for_signed):
+    """
+    Calculate clock hand angle between two vectors
+    
+    Args:
+        v1: First vector (numpy array)
+        v2: Second vector (numpy array)
+        selected_axes_for_signed: Integer array of axes to use for signed angle (length n_dims)
+    
+    Returns:
+        float: Signed angle between vectors in degrees
+    Raises:
+        RuntimeError: If Fortran routine returns error
+    """
+    # Input validation and conversion
+    v1 = np.ascontiguousarray(v1, dtype=np.float64)  # First vector
+    v2 = np.ascontiguousarray(v2, dtype=np.float64)  # Second vector
+    selected_axes_for_signed = np.ascontiguousarray(selected_axes_for_signed, dtype=np.int32)  # Axes for signed angle
+    n_dims = len(v1)
+    if len(v2) != n_dims:
+        raise ValueError("v1 and v2 must have same length")
+    # Para 2D y 3D, Fortran ignora selected_axes_for_signed, pero requiere longitud 3
+    if n_dims <= 3:
+        selected_axes_for_signed = np.array([1, 2, 1], dtype=np.int32)
+    else:
+        selected_axes_for_signed = np.ascontiguousarray(selected_axes_for_signed, dtype=np.int32)
+        if len(selected_axes_for_signed) != 3:
+            raise ValueError("selected_axes_for_signed must have length 3 for n_dims > 3")
+        if np.any(selected_axes_for_signed < 1) or np.any(selected_axes_for_signed > n_dims):
+            raise ValueError("selected_axes_for_signed indices must be in [1, n_dims] for n_dims > 3")
+    # Prepare output and error code
+    signed_angle = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+    # Setup C wrapper
+    clock_hand_angle = lib.clock_hand_angle_between_vectors_c
+    clock_hand_angle.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # v1
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # v2
+        ctypes.c_int,  # n_dims
+        ctypes.POINTER(ctypes.c_double),  # signed_angle
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # selected_axes_for_signed
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    clock_hand_angle.restype = None
+    # Call Fortran routine
+    clock_hand_angle(v1, v2, n_dims, ctypes.byref(signed_angle), selected_axes_for_signed, ctypes.byref(ierr))
+    # Check for errors
+    check_err_code(ierr.value)
+
+    _readonly(signed_angle)
+    return signed_angle.value
+
+def tox_clock_hand_angles_for_shift_vectors(origins, targets, vecs_selection_mask, selected_axes_for_signed):
+    """
+    Calculate clock hand angles for shift vectors
+    
+    Args:
+        origins: Origin vectors (n_dims x n_vecs)
+        targets: Target vectors (n_dims x n_vecs)
+        vecs_selection_mask: Boolean array indicating which vectors to process
+        selected_axes_for_signed: Integer array of axes to use for signed angle (length n_dims)
+    
+    Returns:
+        numpy.ndarray: Signed angles for selected vectors in degrees
+    Raises:
+        RuntimeError: If Fortran routine returns error
+    """
+    # Input validation and conversion
+    origins = np.asfortranarray(origins, dtype=np.float64)  # Origin vectors
+    targets = np.asfortranarray(targets, dtype=np.float64)  # Target vectors
+    vecs_selection_mask = np.ascontiguousarray(vecs_selection_mask, dtype=np.int32)  # Selection mask
+    selected_axes_for_signed = np.ascontiguousarray(selected_axes_for_signed, dtype=np.int32)  # Axes for signed angle
+    n_dims, n_vecs = origins.shape
+    if targets.shape != (n_dims, n_vecs):
+        raise ValueError("origins and targets must have same shape")
+    if len(vecs_selection_mask) != n_vecs:
+        raise ValueError("vecs_selection_mask must match number of vectors")
+    if n_dims <= 3:
+        selected_axes_for_signed = np.array([1, 2, 1], dtype=np.int32)
+    else:
+        selected_axes_for_signed = np.ascontiguousarray(selected_axes_for_signed, dtype=np.int32)
+        if len(selected_axes_for_signed) != 3:
+            raise ValueError("selected_axes_for_signed must have length 3 for n_dims > 3")
+        if np.any(selected_axes_for_signed < 1) or np.any(selected_axes_for_signed > n_dims):
+            raise ValueError("selected_axes_for_signed indices must be in [1, n_dims] for n_dims > 3")
+    n_selected_vecs = int(np.sum(vecs_selection_mask))
+    # Prepare output and error code
+    signed_angles = np.zeros(n_selected_vecs, dtype=np.float64)
+    ierr = ctypes.c_int(0)
+    # Setup C wrapper
+    clock_hand_angles = lib.clock_hand_angles_for_shift_vectors_c
+    clock_hand_angles.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # origins
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # targets
+        ctypes.c_int,  # n_dims
+        ctypes.c_int,  # n_vecs
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # vecs_selection_mask
+        ctypes.c_int,  # n_selected_vecs
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # selected_axes_for_signed
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # signed_angles
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    clock_hand_angles.restype = None
+    # Call Fortran routine
+    clock_hand_angles(origins, targets, n_dims, n_vecs, vecs_selection_mask, n_selected_vecs, selected_axes_for_signed, signed_angles, ctypes.byref(ierr))
+    # Check for errors
+    check_err_code(ierr.value)
+    # Mark output as read-only
+    _readonly(signed_angles)
+    return signed_angles
+
+def relative_axes_changes_from_shift_vector(shift_vector):
+    """
+    Compute relative axis contributions from a shift vector (RAP space).
+    Args:
+        shift_vector (array-like): Input vector (1D)
+    Returns:
+        np.ndarray: Relative axis contributions (sum to 1)
+    Raises:
+        RuntimeError: If Fortran routine returns error
+    """
+    # Input validation and conversion
+    vec = np.ascontiguousarray(shift_vector, dtype=np.float64)  # Shift vector
+    n_dims = len(vec)
+    # Prepare output and error code
+    contrib = np.zeros(n_dims, dtype=np.float64)
+    ierr = ctypes.c_int(0)
+    # Setup C wrapper
+    relative_axes_changes = lib.relative_axes_changes_from_shift_vector_c
+    relative_axes_changes.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # shift_vector
+        ctypes.c_int,  # n_dims
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # contrib
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    relative_axes_changes.restype = None
+    # Call Fortran routine
+    relative_axes_changes(vec, n_dims, contrib, ctypes.byref(ierr))
+    # Check for errors
+    check_err_code(ierr.value)
+    # Mark output as read-only
+    _readonly(contrib)
+    return contrib
+
+def relative_axes_expression_from_expression_vector(expression_vector):
+    """
+    Compute relative axis contributions from an expression vector (RAP space).
+    Args:
+        expression_vector (array-like): Input vector (1D)
+    Returns:
+        np.ndarray: Relative axis contributions (sum to 1)
+    Raises:
+        RuntimeError: If Fortran routine returns error
+    """
+    # Input validation and conversion
+    vec = np.ascontiguousarray(expression_vector, dtype=np.float64)  # Expression vector
+    n_dims = len(vec)
+    # Prepare output and error code
+    contrib = np.zeros(n_dims, dtype=np.float64)
+    ierr = ctypes.c_int(0)
+    # Setup C wrapper
+    relative_axes_changes = lib.relative_axes_expression_from_expression_vector_c
+    relative_axes_changes.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # expression_vector
+        ctypes.c_int,  # n_dims
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # contrib
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    relative_axes_changes.restype = None
+    # Call Fortran routine
+    relative_axes_changes(vec, n_dims, contrib, ctypes.byref(ierr))
+    # Check for errors
+    check_err_code(ierr.value)
+    # Mark output as read-only
+    _readonly(contrib)
+    return contrib
+
 def tox_normalize_by_std_dev(input_matrix):
     """
     Normalize gene expression values by standard deviation
@@ -538,7 +782,7 @@ def tox_normalize_by_std_dev(input_matrix):
     
     # Call Fortran routine
     normalize_c(n_genes, n_tissues, input_flat, output_flat, ctypes.byref(ierr))
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
     
     # Reshape and return
     result = output_flat.reshape((n_genes, n_tissues), order='F')
@@ -591,7 +835,7 @@ def tox_quantile_normalization(input_matrix):
     # Call Fortran routine
     quantile_norm_c(n_genes, n_tissues, input_flat, output_flat,
                     temp_col, rank_means, perm, stack_left, stack_right, max_stack, ctypes.byref(ierr))
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
     
     # Reshape and return
     result = output_flat.reshape((n_genes, n_tissues), order='F')
@@ -631,7 +875,7 @@ def tox_log2_transformation(input_matrix):
     
     # Call Fortran routine
     log2_transform_c(n_genes, n_tissues, input_flat, output_flat, ctypes.byref(ierr))
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
     
     # Reshape and return
     result = output_flat.reshape((n_genes, n_tissues), order='F')
@@ -682,7 +926,7 @@ def tox_calculate_tissue_averages(input_matrix, group_starts, group_counts):
     
     # Call Fortran routine
     tiss_avg_c(n_genes, n_groups, group_starts, group_counts, input_flat, output_flat, ctypes.byref(ierr))
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
     
     # Reshape and return
     result = output_flat.reshape((n_genes, n_groups), order='F')
@@ -754,7 +998,7 @@ def tox_normalization_pipeline(input_matrix, group_starts, group_counts):
         temp_col, rank_means, perm, stack_left, stack_right, max_stack,
         group_starts, group_counts, n_grps, ctypes.byref(ierr)
     )
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
 
     # Reshape and return log2(x+1) output
     result = buf_log.reshape((n_genes, n_grps), order='F')
@@ -804,7 +1048,7 @@ def tox_calculate_fold_changes(input_matrix, control_cols, condition_cols):
     
     # Call Fortran routine
     fchange_c(n_genes, n_samples, n_pairs, control_cols, condition_cols, input_flat, output_flat, ctypes.byref(ierr))
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
     
     # Reshape and return
     result = output_flat.reshape((n_genes, n_pairs), order='F')
@@ -901,7 +1145,7 @@ def tox_calculate_tissue_versatility(expression_vectors, vector_selection, axis_
     )
     
     # Check for errors and throw informative messages
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
     
     # Mark outputs as read-only
     _readonly(tissue_versatilities, tissue_angles_deg)
@@ -1101,7 +1345,7 @@ def tox_loess_smooth_2d(x_ref, y_ref, indices_used, x_query, kernel_sigma, kerne
     )
     
     # Check for errors
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
     
     # Mark output as read-only
     _readonly(y_out)
@@ -1157,7 +1401,7 @@ def tox_compute_family_scaling(distances, gene_to_fam):
     )
     
     # Check for errors
-    tox_errors(error_code[0])
+    check_err_code(error_code[0])
     
     # Mark outputs as read-only
     _readonly(dscale, loess_x, loess_y, indices_used)
@@ -1245,7 +1489,7 @@ def tox_compute_family_scaling_expert(distances, gene_to_fam, perm_tmp, stack_le
     )
     
     # Check for errors
-    tox_errors(error_code[0])
+    check_err_code(error_code[0])
     
     # Mark outputs as read-only
     _readonly(dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances)
@@ -1424,7 +1668,7 @@ def tox_detect_outliers(distances, gene_to_fam, percentile=95.0):
     )
     
     # Check for errors
-    tox_errors(error_code.value)
+    check_err_code(error_code.value)
     
     # Mark outputs as read-only
     _readonly(outliers_int, loess_x, loess_y, loess_n)
@@ -1483,7 +1727,7 @@ def tox_which(cond):
     )
     
     # Check for errors
-    tox_errors(error_code.value)
+    check_err_code(error_code.value)
     
     # Mark output as read-only
     _readonly(idx_out)
@@ -1579,7 +1823,7 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
     )
 
     # Check for errors and throw informative messages
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
 
     # Mark outputs as read-only
     _readonly(shift_vectors)
@@ -1667,7 +1911,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
     )
 
     # Check for errors and throw informative messages
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
 
     # 5) Mark output as read-only and return
     _readonly(centroids_out)
@@ -1726,7 +1970,7 @@ def tox_mean_vector(expression_vectors, gene_indices):
     )
 
     # Error handling
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
 
     # Mark output as read-only
     _readonly(centroid_col)

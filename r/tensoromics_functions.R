@@ -424,6 +424,8 @@ tox_quantile_normalization <- function(input_matrix) {
   temp_col <- numeric(n_genes)
   rank_means <- numeric(n_genes)
   perm <- integer(n_genes)
+
+  # Estimate maximum stack size (per pseudocode: log2(n) + 10)
   max_stack <- as.integer(ceiling(log2(n_genes)) + 10)
   stack_left <- integer(max_stack)
   stack_right <- integer(max_stack)
@@ -1620,6 +1622,180 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
   
   # Return structured result (no ierr since we checked for errors)
   return(result$shift_vectors)
+}
+
+#' Calculate signed clock hand angle between two normalized vectors
+#' 
+#' @param v1 First normalized vector in RAP space
+#' @param v2 Second normalized vector in RAP space
+#' @param selected_axes_for_signed Indices of 3 axes for directionality (ignored if dim <= 3)
+#' @return Signed angle in radians [-π, π]
+tox_clock_hand_angle_between_vectors <- function(v1, v2, selected_axes_for_signed = c(1, 2, 3)) {
+  # Argument validation
+  if (!is.numeric(v1) || !is.numeric(v2)) {
+    stop("Both v1 and v2 must be numeric vectors")
+  }
+  n_dims <- length(v1)
+  if (length(v2) != n_dims) {
+    stop("Vectors must have the same dimension")
+  }
+  # For 2D and 3D, Fortran ignores selected_axes_for_signed, but requires length 3
+  if (n_dims <= 3) {
+    selected_axes_for_signed <- c(1, 2, 1)
+  } else {
+    if (length(selected_axes_for_signed) != 3) {
+      stop("selected_axes_for_signed must have exactly 3 elements for n_dims > 3")
+    }
+    if (any(selected_axes_for_signed < 1 | selected_axes_for_signed > n_dims)) {
+      stop("selected_axes_for_signed indices must be in [1, n_dims] for n_dims > 3")
+    }
+  }
+  ierr <- as.integer(0)
+  # Call Fortran wrapper
+  result <- .Fortran("clock_hand_angle_between_vectors_r",
+                    v1 = as.double(v1),
+                    v2 = as.double(v2),
+                    n_dims = as.integer(n_dims),
+                    signed_angle = as.double(0),
+                    selected_axes_for_signed = as.integer(selected_axes_for_signed),
+                    ierr = ierr)
+  # Error handling
+
+  check_err_code(result$ierr)
+  
+  return(result$signed_angle)
+}
+
+#' Calculate signed clock hand angles for multiple vector pairs
+#' 
+#' @param origins Matrix of origin vectors (n_dims x n_vecs)
+#' @param targets Matrix of target vectors (n_dims x n_vecs)
+#' @param vecs_selection_mask Logical vector indicating which pairs to compute
+#' @param selected_axes_for_signed Indices of 3 axes for directionality
+#' @return Vector of signed angles in radians [-π, π]
+tox_clock_hand_angles_for_shift_vectors <- function(origins, targets, 
+                                               vecs_selection_mask = NULL,
+                                               selected_axes_for_signed = c(1, 2, 3)) {
+  if (!is.matrix(origins) || !is.matrix(targets)) {
+    stop("origins and targets must be matrices")
+  }
+  if (!identical(dim(origins), dim(targets))) {
+    stop("origins and targets must have the same dimensions")
+  }
+  n_dims <- nrow(origins)
+  n_vecs <- ncol(origins)
+  # Default selection mask (all TRUE)
+  if (is.null(vecs_selection_mask)) {
+    vecs_selection_mask <- rep(TRUE, n_vecs)
+  }
+  if (length(vecs_selection_mask) != n_vecs) {
+    stop("vecs_selection_mask length must equal number of vector pairs")
+  }
+  n_selected_vecs <- sum(vecs_selection_mask)
+  # For 2D and 3D, Fortran ignores selected_axes_for_signed, but requires length 3
+  if (n_dims <= 3) {
+    selected_axes_for_signed <- c(1, 2, 1)
+  } else {
+    if (length(selected_axes_for_signed) != 3) {
+      stop("selected_axes_for_signed must have exactly 3 elements for n_dims > 3")
+    }
+    if (any(selected_axes_for_signed < 1 | selected_axes_for_signed > n_dims)) {
+      stop("selected_axes_for_signed indices must be in [1, n_dims] for n_dims > 3")
+    }
+  }
+  ierr <- as.integer(0)
+  # Call Fortran wrapper
+  result <- .Fortran("clock_hand_angles_for_shift_vectors_r",
+                    origins = as.double(origins),
+                    targets = as.double(targets),
+                    n_dims = as.integer(n_dims),
+                    n_vecs = as.integer(n_vecs),
+                    vecs_selection_mask = as.logical(vecs_selection_mask),
+                    n_selected_vecs = as.integer(n_selected_vecs),
+                    selected_axes_for_signed = as.integer(selected_axes_for_signed),
+                    signed_angles = as.double(rep(0, n_selected_vecs)),
+                    ierr = ierr)
+  check_err_code(result$ierr)
+  return(result$signed_angles)
+}
+
+#' Calculate relative axis contributions from a shift vector
+#'
+#' This function wraps the Fortran subroutine `relative_axes_changes_from_shift_vector_r`
+#' to compute the relative axis contributions for a given shift vector in RAP space.
+#'
+#' @param shift_vector Numeric vector representing the shift in RAP space.
+#' @return Numeric vector of relative axis contributions (sums to 1).
+relative_axes_changes_from_shift_vector <- function(vec) {
+  if (all(vec == 0)) {
+    return(rep(0, length(vec)))
+  }
+  n_dims <- length(vec)
+  res <- .Fortran('relative_axes_changes_from_shift_vector_r',
+                  as.double(vec),
+                  as.integer(n_dims),
+                  contrib = double(n_dims),
+                  err = as.integer(0))
+  check_err_code(res$err)
+  return(res$contrib)
+}
+
+#' Calculate relative axis contributions from an expression vector
+#'
+#' This function wraps the Fortran subroutine `relative_axes_expression_from_expression_vector_r`
+#' to compute the relative axis contributions for a given expression vector in RAP space.
+#'
+#' @param expression_vector Numeric vector representing the expression in RAP space.
+#' @return Numeric vector of relative axis contributions (sums to 1).
+relative_axes_expression_from_expression_vector <- function(vec) {
+  if (all(vec == 0)) {
+    return(rep(0, length(vec)))
+  }
+  n_dims <- length(vec)
+  res <- .Fortran('relative_axes_expression_from_expression_vector_r',
+                  as.double(vec),
+                  as.integer(n_dims),
+                  contrib = double(n_dims),
+                  err = as.integer(0))
+  check_err_code(res$err)
+  return(res$contrib)
+}
+
+
+omics_vector_RAP_projection <- function(vecs, vecs_selection_mask, axes_selection_mask) {
+  n_selected_vecs <- sum(vecs_selection_mask == 1)
+  n_selected_axes <- sum(axes_selection_mask == 1)
+  ierr <- as.integer(0)
+  res <- .Fortran("omics_vector_RAP_projection_r",
+                  vecs = as.double(vecs),
+                  n_axes = as.integer(nrow(vecs)),
+                  n_vecs = as.integer(ncol(vecs)),
+                  vecs_selection_mask = as.integer(vecs_selection_mask),
+                  n_selected_vecs = n_selected_vecs,
+                  axes_selection_mask = as.integer(axes_selection_mask),
+                  n_selected_axes = n_selected_axes,
+                  projections = matrix(as.double(1), nrow = n_selected_axes, ncol = n_selected_vecs),
+                  ierr = ierr)
+  check_err_code(res$ierr)
+  return(res$projections)
+}
+
+omics_field_RAP_projection <- function(vecs, vecs_selection_mask, axes_selection_mask) {
+  n_selected_vecs <- sum(vecs_selection_mask == 1)
+  n_selected_axes <- sum(axes_selection_mask == 1)
+  ierr <- as.integer(0)
+  res <- .Fortran("omics_field_RAP_projection_r",
+                  vecs = as.double(vecs),
+                  n_axes = as.integer(nrow(vecs) / 2),
+                  n_vecs = as.integer(ncol(vecs)),
+                  vecs_selection_mask = as.integer(vecs_selection_mask),
+                  n_selected_vecs = n_selected_vecs,
+                  axes_selection_mask = as.integer(axes_selection_mask),
+                  n_selected_axes = n_selected_axes,
+                  projections = matrix(as.double(1), nrow = n_selected_axes, ncol = n_selected_vecs),
+                  ierr = ierr)
+  check_err_code(res$ierr)
+  return(res$projections)
 }
 
 # ===================================================================

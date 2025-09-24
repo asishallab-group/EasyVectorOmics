@@ -10,6 +10,10 @@ program main
   use mod_test_calc_tiss_avg
   use mod_test_calc_fchange
   use mod_test_euclidean_distance
+  use mod_test_rap_tools_omics_vector_RAP_projection
+  use mod_test_rap_tools_omics_field_RAP_projection
+  use mod_test_clock_hand_angles
+  use mod_test_relative_axis_contributions
   use mod_test_tissue_versatility
   use mod_test_normalization_pipeline
   use mod_test_shift_vectors
@@ -87,6 +91,10 @@ contains
     call add_suite("calc_tiss_avg", run_all_tests_calc_tiss_avg, run_named_tests_calc_tiss_avg)
     call add_suite("calc_fchange", run_all_tests_calc_fchange, run_named_tests_calc_fchange)
     call add_suite("euclidean_distance", run_all_tests_euclidean_distance, run_named_tests_euclidean_distance)
+    call add_suite("rap_tools_omics_vector_RAP_projection", run_all_tests_rap_tools_omics_vector_RAP_projection, run_named_tests_rap_tools_omics_vector_RAP_projection)
+    call add_suite("rap_tools_omics_field_RAP_projection", run_all_tests_rap_tools_omics_field_RAP_projection, run_named_tests_rap_tools_omics_field_RAP_projection)
+    call add_suite("clock_hand_angles", run_all_tests_clock_hand_angles, run_named_tests_clock_hand_angles)
+    call add_suite("relative_axis_contributions", run_all_tests_relative_axis, run_named_tests_relative_axis)
     call add_suite("tissue_versatility", run_all_tests_tissue_versatility, run_named_tests_tissue_versatility)
     call add_suite("normalization_pipeline", run_all_tests_normalization_pipeline, run_named_tests_normalization_pipeline)
     call add_suite("shift_vectors", run_all_tests_shift_vectors, run_named_tests_shift_vectors)

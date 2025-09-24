@@ -140,7 +140,7 @@ def test_dimension_edge_cases():
         tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to_centroid)
     except RuntimeError as e:
         error_raised = True
-        assert "empty input" in str(e)
+        assert "Empty input arrays provided." in str(e)
     assert error_raised, "Expected RuntimeError was not raised"
     print("test_dimension_edge_cases passed")
 
