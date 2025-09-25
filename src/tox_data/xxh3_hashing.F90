@@ -8,7 +8,7 @@ module xxh3_hashmap_module
     
     ! C interface for XXH3 hashing
     interface
-        function xxh3_hash_c(key, length) bind(C, name="xxh3_hash_c")
+        function xxh3_hash_c(key, length) bind(C, name="XXH3_64bits")
             use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_int64_t
             implicit none
             type(c_ptr), value :: key

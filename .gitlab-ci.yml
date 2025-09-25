@@ -7,7 +7,7 @@ before_script:
   # install gfortran, python, pip, git, xxhash, libzip
   - pacman -Sy --noconfirm archlinux-keyring
   - pacman -Syu --noconfirm
-  - pacman -S --noconfirm gcc-fortran python python-pip git xxhash libzip pkg-config gcc
+  - pacman -S --noconfirm gcc-fortran python python-pip git libzip xxhash
   - pacman -Scc --noconfirm
 
   # install fpm
@@ -38,11 +38,6 @@ before_script:
   - ford --version
   - gfortran --version
 
-  # Verify xxhash and libzip are installed
-  - echo "Checking for xxhash library:"
-  - pkg-config --exists libxxhash && echo "xxhash found" || echo "xxhash not found"
-  - echo "Checking for libzip:"
-  - pkg-config --exists libzip && echo "libzip found" || echo "libzip not found"
 run-tests:
   stage: run-tests
   rules:
@@ -70,8 +65,6 @@ run-tests:
     - curl https://registrationcenter-download.intel.com/akdlm/IRC_NAS/466b0d65-e502-4172-9e06-24c565029b96/intel-fortran-compiler-2025.2.1.9_offline.sh -o install_ifx.sh
     - bash install_ifx.sh -a -s --eula accept
     - source /opt/intel/oneapi/setvars.sh
-
-    - export CC=gcc
 
     # run tests using ifx
     - echo Run tests with ifx
