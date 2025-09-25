@@ -137,7 +137,7 @@ contains
           selected_indices(n_selected) = i
         end if
       end do
-      
+
       call mean_vector(expression_vectors, n_axes, n_genes, selected_indices, n_selected, centroid_matrix(:, j), ierr)
       if (.not. is_ok(ierr)) return
     end do
@@ -218,9 +218,7 @@ pure subroutine group_centroid_c(expression_vectors, n_axes, n_genes, gene_to_fa
   ! If "all" mode is selected, call group_centroid directly without ortholog_set
   if (mode_string == "orthologs") then
     mode_int = GROUP_ORTHOLOGS
-    do i = 1, n_genes
-      call c_int_as_logical(ortholog_set(i), ortholog_set_fortran(i))
-    end do
+    call c_int_as_logical(ortholog_set, ortholog_set_fortran)
   else 
     mode_int = GROUP_ALL
   end if
