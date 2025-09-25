@@ -1,5 +1,5 @@
 module xxh3_hashmap_module
-    use, intrinsic :: iso_c_binding
+    use, intrinsic :: iso_c_binding, only: c_loc
     use iso_fortran_env, only: int32, int64
     implicit none
     private
@@ -9,7 +9,7 @@ module xxh3_hashmap_module
     ! C interface for XXH3 hashing
     interface
         function xxh3_hash_c(key, length) bind(C, name="xxh3_hash_c")
-            use, intrinsic :: iso_c_binding
+            use, intrinsic :: iso_c_binding, only: c_ptr, c_int, c_int64_t
             implicit none
             type(c_ptr), value :: key
             integer(c_int), value :: length

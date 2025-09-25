@@ -203,10 +203,6 @@ contains
     !> Validates shift vectors
     subroutine validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, &
                                         gene_to_fam, n_samples, ierr)
-        use iso_fortran_env, only: real64, int32
-        use tox_errors
-        implicit none
-        
         real(real64), intent(in) :: shift_vectors(:,:)
             !! shift vectors
         real(real64), intent(in) :: expression_vectors(:,:)
@@ -224,7 +220,7 @@ contains
         
         integer(int32) :: i, j, fam_idx, n_genes, error_count
         
-        ierr = ERR_OK
+        call set_ok(ierr)
         n_genes = size(expression_vectors, 2)
         error_count = 0
         
@@ -283,7 +279,7 @@ contains
         integer(int32), intent(out) :: ierr
             !! Error code
         
-        integer :: i, j, nan_inf_count
+        integer(int32) :: i, j, nan_inf_count
         
         call set_ok(ierr)
         nan_inf_count = 0
@@ -322,9 +318,8 @@ contains
         character(len=*), intent(in) :: gene_ids(:)
             !! gene ids array
         integer(int32), intent(out) :: ierr
-            !! Error code
-        
-        integer :: i, j, duplicate_count
+            !! Error code 
+        integer(int32) :: i, j, duplicate_count
         
         call set_ok(ierr)
         duplicate_count = 0
@@ -350,7 +345,7 @@ contains
         integer(int32), intent(out) :: ierr
             !! Error code
         
-        integer :: i, j, duplicate_count
+        integer(int32) :: i, j, duplicate_count
         
         call set_ok(ierr)
         duplicate_count = 0
@@ -378,7 +373,7 @@ contains
         integer(int32), intent(out) :: ierr
             !! Error code
         
-        integer :: i, empty_count
+        integer(int32) :: i, empty_count
         
         call set_ok(ierr)
         empty_count = 0

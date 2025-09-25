@@ -1,7 +1,8 @@
 module tox_archive
-    use iso_c_binding
+    use iso_c_binding, only: c_ptr, c_char, c_int, c_int64_t, c_size_t, c_signed_char, c_f_pointer, c_loc, c_associated, c_null_char, c_null_ptr
     use tox_data_read_write
-    use tox_errors
+    use tox_errors, only: set_ok, set_err_once, is_err, ERR_FILE_OPEN, ERR_FILE_CLOSE, ERR_STRING_TOO_LONG, ERR_ALLOC_FAIL, ERR_FILE_ADD
+    use tox_errors, only: ERR_FILE_CLOSE, ERR_FILE_EXTRACT, ERR_INVALID_INPUT
     use iso_fortran_env, only: real64, int32
     implicit none
 
@@ -17,18 +18,18 @@ module tox_archive
     ! libzip interface definitions
     interface
         function malloc(size) bind(C, name="malloc")
-            use iso_c_binding
+            use iso_c_binding, only: c_ptr, c_size_t
             type(c_ptr) :: malloc
             integer(c_size_t), value :: size
         end function malloc
         
         subroutine free(ptr) bind(C, name="free")
-            use iso_c_binding
+            use iso_c_binding, only: c_ptr
             type(c_ptr), value :: ptr
         end subroutine free
 
         function zip_open(path, flags, errorp) bind(C, name="zip_open")
-            use iso_c_binding
+            use iso_c_binding, only: c_ptr, c_char, c_int
             type(c_ptr) :: zip_open
             character(kind=c_char), dimension(*) :: path
             integer(c_int), value :: flags
@@ -36,13 +37,13 @@ module tox_archive
         end function zip_open
 
         function zip_close(archive) bind(C, name="zip_close")
-            use iso_c_binding
+            use iso_c_binding, only: c_ptr, c_int
             integer(c_int) :: zip_close
             type(c_ptr), value :: archive
         end function zip_close
 
         function zip_file_add(archive, name, source, flags) bind(C, name="zip_file_add")
-            use iso_c_binding
+            use iso_c_binding, only: c_int64_t, c_ptr, c_char, c_int
             integer(c_int64_t) :: zip_file_add
             type(c_ptr), value :: archive
             character(kind=c_char), dimension(*) :: name
@@ -51,7 +52,7 @@ module tox_archive
         end function zip_file_add
 
         function zip_source_buffer(archive, data, len, freep) bind(C, name="zip_source_buffer")
-            use iso_c_binding
+            use iso_c_binding, only: c_ptr, c_size_t, c_int
             type(c_ptr) :: zip_source_buffer
             type(c_ptr), value :: archive
             type(c_ptr), value :: data
@@ -60,7 +61,7 @@ module tox_archive
         end function zip_source_buffer
 
         function zip_set_file_compression(archive, index, comp, flags) bind(C, name="zip_set_file_compression")
-            use iso_c_binding
+            use iso_c_binding, only: c_int, c_ptr, c_int64_t
             integer(c_int) :: zip_set_file_compression
             type(c_ptr), value :: archive
             integer(c_int64_t), value :: index
@@ -69,7 +70,7 @@ module tox_archive
         end function zip_set_file_compression
 
         function zip_fopen(archive, fname, flags) bind(C, name="zip_fopen")
-            use iso_c_binding
+            use iso_c_binding, only: c_ptr, c_char, c_int
             type(c_ptr) :: zip_fopen
             type(c_ptr), value :: archive
             character(kind=c_char), dimension(*) :: fname
@@ -77,7 +78,7 @@ module tox_archive
         end function zip_fopen
 
         function zip_fread(file, buf, nbytes) bind(C, name="zip_fread")
-            use iso_c_binding
+            use iso_c_binding, only: c_int64_t, c_ptr, c_size_t
             integer(c_int64_t) :: zip_fread
             type(c_ptr), value :: file
             type(c_ptr), value :: buf
@@ -85,13 +86,13 @@ module tox_archive
         end function zip_fread
 
         function zip_fclose(file) bind(C, name="zip_fclose")
-            use iso_c_binding
+            use iso_c_binding, only: c_int, c_ptr
             integer(c_int) :: zip_fclose
             type(c_ptr), value :: file
         end function zip_fclose
 
         function zip_stat(archive, fname, flags, sb) bind(C, name="zip_stat")
-            use iso_c_binding
+            use iso_c_binding, only: c_int, c_ptr, c_char
             integer(c_int) :: zip_stat
             type(c_ptr), value :: archive
             character(kind=c_char), dimension(*) :: fname
@@ -100,7 +101,7 @@ module tox_archive
         end function zip_stat
 
         function zip_file_stat(archive, index, flags, sb) bind(C, name="zip_file_stat")
-            use iso_c_binding
+            use iso_c_binding, only: c_int, c_ptr, c_int64_t
             integer(c_int) :: zip_file_stat
             type(c_ptr), value :: archive
             integer(c_int64_t), value :: index
@@ -109,14 +110,14 @@ module tox_archive
         end function zip_file_stat
 
         function zip_get_num_entries(archive, flags) bind(C, name="zip_get_num_entries")
-            use iso_c_binding
+            use iso_c_binding, only: c_int64_t, c_ptr, c_int
             integer(c_int64_t) :: zip_get_num_entries
             type(c_ptr), value :: archive
             integer(c_int), value :: flags
         end function zip_get_num_entries
 
         function zip_get_name(archive, index, flags) bind(C, name="zip_get_name")
-            use iso_c_binding
+            use iso_c_binding, only: c_ptr, c_int64_t, c_int
             type(c_ptr) :: zip_get_name
             type(c_ptr), value :: archive
             integer(c_int64_t), value :: index
@@ -124,18 +125,18 @@ module tox_archive
         end function zip_get_name
 
         subroutine zip_source_free(source) bind(C, name="zip_source_free")
-            use iso_c_binding
+            use iso_c_binding, only: c_ptr
             type(c_ptr), value :: source
         end subroutine zip_source_free
         
         function c_strlen(str) bind(C, name="strlen")
-            use iso_c_binding
+            use iso_c_binding, only: c_size_t, c_ptr
             integer(c_size_t) :: c_strlen
             type(c_ptr), value :: str
         end function c_strlen
     end interface
 
-    ! ZIP stat structure (simplified)
+    ! ZIP stat structure
     type, bind(C) :: zip_stat_t
         integer(c_int64_t) :: valid
         integer(c_int64_t) :: size
@@ -174,7 +175,7 @@ contains
         
         ! Open ZIP archive
         zip_handle = zip_open(trim(zip_filename)//c_null_char, ZIP_EXCL, error)
-        if (.not. is_ok(error)) then
+        if (is_err(error)) then
             call set_err_once(ierr, ERR_FILE_OPEN)
             if (error == 10) print *, "Error opening ZIP file for writing: File already exists"
             return
@@ -183,7 +184,7 @@ contains
         ! Add all data files
         call add_files_to_zip(zip_handle, gene_ids_file, expression_file, gene_to_family_file, &
                             family_ids_file, family_centroids_file, shift_vectors_file, ierr)
-        if (.not. is_ok(ierr)) then
+        if (is_err(ierr)) then
             error = zip_close(zip_handle)
             return
         end if
@@ -193,14 +194,15 @@ contains
         call write_manifest(gene_ids_file, expression_file, gene_to_family_file, &
                         family_ids_file, family_centroids_file, shift_vectors_file, &
                         manifest_filename, ierr)
-        if (is_ok(ierr)) then
-            call add_data_to_zip(zip_handle, manifest_filename, manifest_filename, 1, ierr)
-            if (is_ok(ierr)) call delete_file(manifest_filename, ierr)
-        end if
+        if (is_err(ierr)) return
+        call add_data_to_zip(zip_handle, manifest_filename, manifest_filename, 1, ierr)
+        if (is_err(ierr)) return
+        call delete_file(manifest_filename, ierr)
+        if(is_err(ierr)) return
         
         ! Close ZIP archive
         error = zip_close(zip_handle)
-        if (.not. is_ok(error)) then
+        if (is_err(error)) then
             call set_err_once(ierr, error)
             print *, "Error closing ZIP file: ", error
         else if (is_ok(ierr)) then
@@ -230,32 +232,32 @@ contains
             
             if (len_trim(gid_file) > 0) then
                 call add_data_to_zip(zip_handle, gid_file, gid_file, 1, ierr)
-                if (.not. is_ok(ierr)) return
+                if (is_err(ierr)) return
             end if
             
             if (len_trim(exp_file) > 0) then
                 call add_data_to_zip(zip_handle, exp_file, exp_file, 1, ierr)
-                if (.not. is_ok(ierr)) return
+                if (is_err(ierr)) return
             end if
             
             if (len_trim(g2f_file) > 0) then
                 call add_data_to_zip(zip_handle, g2f_file, g2f_file, 1, ierr)
-                if (.not. is_ok(ierr)) return
+                if (is_err(ierr)) return
             end if
             
             if (len_trim(fam_file) > 0) then
                 call add_data_to_zip(zip_handle, fam_file, fam_file, 1, ierr)
-                if (.not. is_ok(ierr)) return
+                if (is_err(ierr)) return
             end if
             
             if (len_trim(cent_file) > 0) then
                 call add_data_to_zip(zip_handle, cent_file, cent_file, 1, ierr)
-                if (.not. is_ok(ierr)) return
+                if (is_err(ierr)) return
             end if
             
             if (len_trim(shift_file) > 0) then
                 call add_data_to_zip(zip_handle, shift_file, shift_file, 1, ierr)
-                if (.not. is_ok(ierr)) return
+                if (is_err(ierr)) return
             end if
         end subroutine add_files_to_zip
     end subroutine create_zip_archive
@@ -317,7 +319,7 @@ contains
         num_entries = zip_get_num_entries(zip_handle, 0)
         do i = 0, num_entries - 1
             call get_zip_entry_name(zip_handle, i, filename, ierr)
-            if (.not. is_ok(ierr)) then
+            if (is_err(ierr)) then
                 error = zip_close(zip_handle)
                 return 
             end if 
@@ -325,7 +327,7 @@ contains
             if (filename == "manifest.txt") cycle  ! Handle manifest separately
             
             call extract_file_from_zip(zip_handle, filename, ierr)
-            if (.not. is_ok(ierr)) then
+            if (is_err(ierr)) then
                 error = zip_close(zip_handle)
                 RETURN
             end if
@@ -335,14 +337,14 @@ contains
         call extract_and_parse_manifest(zip_handle, gene_ids_file, expression_file, &
                                     gene_to_family_file, family_ids_file, &
                                     family_centroids_file, shift_vectors_file, ierr)
-        if (.not. is_ok(ierr)) then
+        if (is_err(ierr)) then
             error = zip_close(zip_handle)
             return 
         end if
         
         ! Close ZIP archive
         error = zip_close(zip_handle)
-        if (.not. is_ok(error)) then
+        if (is_err(error)) then
             print *, "Error closing ZIP file: ", error
             call set_err_once(ierr, ERR_FILE_CLOSE)
             return
@@ -357,7 +359,7 @@ contains
             !! File to delete
         integer(int32), intent(out) :: ierr
             !! Error code
-        integer :: unit, iostat
+        integer(int32) :: unit, iostat
 
         call set_ok(iostat)
         call set_ok(ierr)
@@ -384,7 +386,7 @@ contains
         type(c_ptr) :: name_ptr
         integer(int32) :: iostat, name_len, i
         character(kind=c_char), pointer :: f_ptr(:)
-        integer, parameter :: MAX_NAME_LENGTH = 4096  ! Reasonable maximum
+        integer(int32), parameter :: MAX_NAME_LENGTH = 4096  ! Reasonable maximum
 
         call set_ok(ierr)
         call set_ok(iostat)
@@ -420,7 +422,7 @@ contains
         
         if (name_len > 0) then
             allocate(character(len=name_len) :: entry_name, stat=iostat)
-            if(.not. is_ok(iostat)) then
+            if(is_err(iostat)) then
                 call set_err_once(ierr, ERR_ALLOC_FAIL)
                 entry_name = ""
                 return
@@ -457,7 +459,7 @@ contains
         ! Open file in ZIP
         file_handle = zip_fopen(zip_handle, trim(filename)//c_null_char, 0)
         if (.not. c_associated(file_handle)) then
-            call set_err_once(ierr, ERR_FILE_OPEN)
+            call set_err_once(ierr, ERR_FILE_EXTRACT)
             print *, "Error opening file in ZIP: ", trim(filename)
             return
         end if
@@ -465,7 +467,7 @@ contains
         ! Open output file
         open(newunit=unit, file=trim(filename), access='stream', form='unformatted', &
             iostat=iostat, status='replace', action='write')
-        if (.not. is_ok(iostat)) then
+        if (is_err(iostat)) then
             call set_err_once(ierr, ERR_FILE_OPEN)
             print *, "Error creating file: ", trim(filename)
             error = zip_fclose(file_handle)
@@ -474,7 +476,7 @@ contains
         
         ! Read and write in chunks
         allocate(buffer(CHUNK_SIZE), stat=iostat)
-        if (.not. is_ok(iostat)) then
+        if (is_err(iostat)) then
             call set_err_once(ierr, ERR_ALLOC_FAIL)
             print *, "Error allocating buffer for: ", trim(filename)
             close(unit, status='delete')
@@ -487,7 +489,7 @@ contains
             if (bytes_read <= 0) exit
             if (bytes_read > 0) then
                 write(unit, iostat=iostat) buffer(1:bytes_read)
-                if (.not. is_ok(iostat)) then
+                if (is_err(iostat)) then
                     call set_err_once(ierr, ERR_WRITE_DATA)
                     print *, "Error writing file: ", trim(filename)
                     exit
@@ -500,7 +502,7 @@ contains
         close(unit)
         error = zip_fclose(file_handle)
         
-        if (.not. is_ok(error)) then
+        if (is_err(error)) then
             call set_err_once(ierr, ERR_FILE_CLOSE)
             print *, "Error closing file in ZIP: ", trim(filename)
         end if
@@ -518,7 +520,7 @@ contains
             !! Filename to add
         character(len=*), intent(in) :: data_source 
             !! File path or string content
-        integer, intent(in) :: data_type 
+        integer(int32), intent(in) :: data_type 
             !! 1 = file, 2 = string
         integer(int32), intent(out) :: ierr
             !! Error code
@@ -528,7 +530,7 @@ contains
         type(c_ptr) :: source, c_data
         integer(c_signed_char), pointer :: file_data(:)
         character(kind=c_char), pointer :: string_data(:)
-        integer :: unit, iostat, file_size
+        integer(int32) :: unit, iostat, file_size
         integer(c_size_t) :: data_len
         integer(int32) :: i
         
@@ -543,7 +545,7 @@ contains
         case (1) ! File data
             ! Read file content
             open(unit, file=data_source, access='stream', form='unformatted', iostat=iostat, status='old')
-            if (.not. is_ok(iostat)) then
+            if (is_err(iostat)) then
                 call set_err_once(ierr, ERR_FILE_OPEN)
                 print *, "Error opening file: ", trim(data_source)
                 return
@@ -571,7 +573,7 @@ contains
             read(unit, iostat=iostat) file_data
             close(unit)
             
-            if (.not. is_ok(iostat)) then
+            if (is_err(iostat)) then
                 call set_err_once(ierr, ERR_READ_DATA)
                 call free(c_data)
                 return
@@ -616,7 +618,7 @@ contains
         
         ! Set compression to store (no compression)
         error = zip_set_file_compression(zip_handle, index, ZIP_CM_STORE, 0)
-        if (.not. is_ok(error)) then
+        if (is_err(error)) then
             print *, "Warning: Error setting compression for: ", trim(filename)
         end if
         
@@ -682,7 +684,7 @@ contains
         
         ! Open the manifest file for writing
         open(newunit=unit, file=manifest_filename, status='replace', iostat=iostat)
-        if (.not. is_ok(iostat)) then
+        if (is_err(iostat)) then
             call set_err_once(ierr, ERR_FILE_OPEN)
             print *, "Error creating manifest file: ", trim(manifest_filename)
             return
@@ -755,7 +757,7 @@ contains
         
         ! Open the manifest file for reading
         open(newunit=unit, file=manifest_filename, status='old', iostat=iostat)
-        if (.not. is_ok(iostat)) then
+        if (is_err(iostat)) then
             call set_err_once(ierr, ERR_FILE_OPEN)
             print *, "Error opening manifest file: ", trim(manifest_filename)
             return
@@ -765,7 +767,7 @@ contains
         do
             read(unit, '(a)', iostat=iostat) line
             if(iostat < 0) exit
-            if (.not. is_ok(iostat)) then
+            if (is_err(iostat)) then
                 call set_err_once(ierr, ERR_READ_DATA)
                 exit
             end if
@@ -831,7 +833,7 @@ contains
             ! Open output file for manifest
             open(newunit=unit, file="manifest.txt", access='stream', form='unformatted', &
                 iostat=iostat, status='replace', action='write')
-            if (.not. is_ok(iostat)) then
+            if (is_err(iostat)) then
                 print *, "Error creating manifest file"
                 error = zip_fclose(file_handle)
                 call set_err_once(ierr, ERR_FILE_OPEN)
@@ -845,7 +847,7 @@ contains
                     bytes_read = zip_fread(file_handle, c_loc(buffer), int(CHUNK_SIZE, c_size_t))
                     if (bytes_read <= 0) exit
                     write(unit, iostat=iostat) buffer(1:bytes_read)
-                    if (.not. is_ok(iostat)) then
+                    if (is_err(iostat)) then
                         print *, "Error writing manifest file"
                         call set_err(ierr, ERR_WRITE_DATA)
                         exit
@@ -866,14 +868,14 @@ contains
             call read_manifest("manifest.txt", gene_ids_file, expression_file, gene_to_family_file, &
                             family_ids_file, family_centroids_file, shift_vectors_file, ierr)
             
-            if (.not. is_ok(ierr)) then
+            if (is_err(ierr)) then
                 print *, "Error parsing manifest file"
                 return
             end if
             
             ! Delete the temporary manifest file
             call delete_file("manifest.txt", ierr)
-            if (.not. is_ok(ierr)) then
+            if (is_err(ierr)) then
                 print *, "Warning: Could not delete temporary manifest file"
                 call set_ok(ierr)  ! Not critical
             end if
@@ -1063,7 +1065,7 @@ contains
         call extract_zip_archive(zip_filename, extracted_gene_ids_file, extracted_expression_file, &
                                 extracted_gene_to_family_file, extracted_family_ids_file, &
                                 extracted_family_centroids_file, extracted_shift_vectors_file, ierr)
-        if (.not. is_ok(ierr)) return
+        if (is_err(ierr)) return
         
         ! Return filenames if requested
         if (present(gene_ids_file)) gene_ids_file = extracted_gene_ids_file
@@ -1082,7 +1084,7 @@ contains
                 ! Allocate array based on metadata with proper character length
                 allocate(character(len=char_len) :: gene_ids(dims(1)))
                 call load_gene_ids(gene_ids, extracted_gene_ids_file, ierr)
-                if(.not. is_ok(ierr)) return
+                if(is_err(ierr)) return
             else
                 print *, "Error getting metadata for gene_ids file"
                 return
@@ -1097,7 +1099,7 @@ contains
                 ! Allocate array based on metadata
                 allocate(expression(dims(1), dims(2)))
                 call load_expression_vectors(expression, extracted_expression_file, ierr)
-                if(.not. is_ok(ierr)) return
+                if(is_err(ierr)) return
             else
                 print *, "Error getting metadata for expression file"
                 return
@@ -1112,7 +1114,7 @@ contains
                 ! Allocate array based on metadata
                 allocate(gene_to_family(dims(1)))
                 call load_gene_to_family(gene_to_family, extracted_gene_to_family_file, ierr)
-                if(.not. is_ok(ierr)) return
+                if(is_err(ierr)) return
             else
                 print *, "Error getting metadata for gene_to_family file"
                 return
@@ -1141,7 +1143,7 @@ contains
                 ! Allocate array based on metadata
                 allocate(family_centroids(dims(1), dims(2)))
                 call load_family_centroids(family_centroids, extracted_family_centroids_file, ierr)
-                if(.not. is_ok(ierr)) return
+                if(is_err(ierr)) return
             else
                 print *, "Error getting metadata for family_centroids file"
                 return
@@ -1156,7 +1158,7 @@ contains
                 ! Allocate array based on metadata
                 allocate(shift_vectors(dims(1), dims(2)))
                 call load_shift_vectors(shift_vectors, extracted_shift_vectors_file, ierr)
-                if(.not. is_ok(ierr)) return
+                if(is_err(ierr)) return
             else
                 print *, "Error getting metadata for shift_vectors file"
                 return

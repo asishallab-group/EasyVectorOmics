@@ -1,8 +1,8 @@
 module tox_data_tools
     use iso_fortran_env, only: real64, int32
-    use tox_errors
-    use array_utils, only :ascii_to_string, string_to_ascii, check_okay_ioerror
-    use tox_data_accessors
+    use tox_errors, only: set_ok, set_err_once, is_err, set_err, check_io_stat
+    use tox_errors, only: ERR_INVALID_INPUT, ERR_FILE_OPEN, ERR_READ_DATA
+    use array_utils, only :ascii_to_string, string_to_ascii, check_okay_ioerror, ERR_SIZE_MISMATCH
     implicit none
     private
 
@@ -93,7 +93,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
         write(*,*) 'Reading file: ', trim(file_list(i))
         open(newunit=unit, file=trim(file_list(i)), status='old', action='read', iostat=ios)
         call check_okay_ioerror(ios, ierr, ERR_FILE_OPEN, unit)
-        if(.not. is_ok(ierr)) then
+        if(is_err(ierr)) then
             call hashmap_destroy(gene_map)
             return
         end if
@@ -102,7 +102,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
         do j = 1, n_header_rows
             read(unit, '(A)', iostat=ios) line
             call check_okay_ioerror(ios, ierr, ERR_READ_DATA, unit)
-            if(.not. is_ok(ierr)) then
+            if(is_err(ierr)) then
                 call hashmap_destroy(gene_map)
                 RETURN
             end if
@@ -111,7 +111,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
         ! Read first data line to determine number of columns in this file
         read(unit, '(A)', iostat=ios) line
         call check_okay_ioerror(ios, ierr, ERR_READ_DATA, unit)
-        if (.not. is_ok(ierr)) then
+        if (is_err(ierr)) then
             call hashmap_destroy(gene_map)
             return
         end if
@@ -124,7 +124,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
         do j = 1, n_header_rows
             read(unit, '(A)', iostat=ios) line
             call check_okay_ioerror(ios, ierr, ERR_READ_DATA, unit)
-            if(.not. is_ok(ierr)) then
+            if(is_err(ierr)) then
                 call hashmap_destroy(gene_map)
                 RETURN
             end if
@@ -160,7 +160,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
             read(unit, '(A)', iostat=ios) line
             if(ios < 0) exit !End of file
             call check_okay_ioerror(ios, ierr, ERR_READ_DATA, unit)
-            if(.not. is_ok(ierr)) then
+            if(is_err(ierr)) then
                 call hashmap_destroy(gene_map)
                 RETURN
             end if
@@ -211,7 +211,7 @@ subroutine read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, 
     integer(int32), intent(out) :: ierr
         !! Error code
 
-    integer :: unit, ios, j, row_count
+    integer(int32) :: unit, ios, j, row_count
     character(len=2048) :: line
     character(len=:), allocatable :: fields(:)
 
@@ -221,13 +221,13 @@ subroutine read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, 
 
     open(newunit=unit, file=trim(filename), status='old', action='read', iostat=ios)
     call check_okay_ioerror(ios, ierr, ERR_FILE_OPEN, unit)
-    if(.not. is_ok(ierr)) return
+    if(is_err(ierr)) return
 
     ! Skip header rows
     do j = 1, n_header_rows
         read(unit, '(A)', iostat=ios) line
         call check_okay_ioerror(ios, ierr, ERR_READ_DATA, unit)
-        if(.not. is_ok(ierr)) return
+        if(is_err(ierr)) return
     end do
 
     ! Read data rows
@@ -235,7 +235,7 @@ subroutine read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, 
         read(unit, '(A)', iostat=ios) line
         if (ios < 0) exit
         call check_okay_ioerror(ios, ierr, ERR_READ_DATA, unit)
-        if(.not. is_ok(ierr)) return
+        if(is_err(ierr)) return
         
         row_count = row_count + 1
         if (row_count > size(gene_ids)) then
@@ -289,7 +289,7 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     end do
 
     open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
-    if (.not. is_ok(ios)) then
+    if (is_err(ios)) then
         write(*,*) 'Error opening file: ', trim(filename)
         call set_err_once(ierr, ERR_FILE_OPEN)
         call hashmap_destroy(gene_map)
@@ -299,7 +299,7 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     ! skip header
     read(unit, '(A)', iostat=ios) line
     call check_okay_ioerror(ios, ierr, ERR_READ_DATA, unit)
-    if(.not. is_ok(ierr)) then
+    if(is_err(ierr)) then
         call hashmap_destroy(gene_map)
         RETURN
     end if
@@ -309,7 +309,7 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
         read(unit, '(A)', iostat=ios) line
         if (ios < 0) exit
         call check_okay_ioerror(ios, ierr, ERR_READ_DATA, unit)
-        if(.not. is_ok(ierr)) then
+        if(is_err(ierr)) then
             call hashmap_destroy(gene_map)
             RETURN
         end if
@@ -331,7 +331,7 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
         ! Process all gene columns with Hashmap-Lookup
         do i = 2, size(fields)
             call split_string(fields(i), genes, ierr, ',')
-            if(.not. is_ok(ierr)) return
+            if(is_err(ierr)) return
             do j = 1, size(genes)
                 if (len_trim(genes(j)) == 0) cycle
                 
@@ -511,7 +511,7 @@ end module tox_data_tools
 subroutine read_gene_ids_from_file_R(filename_ascii, fn_len, gene_ids_ascii, gene_ids_len, n_genes, &
                                  n_header_rows, gene_col, ierr)
     use iso_fortran_env, only: int32
-    use tox_errors, only: set_ok, is_ok
+    use tox_errors, only: set_ok, is_err
     use tox_data_tools, only: read_gene_ids_from_file
     use array_utils, only: ascii_to_string_padded, string_to_ascii
     implicit none
@@ -541,7 +541,7 @@ subroutine read_gene_ids_from_file_R(filename_ascii, fn_len, gene_ids_ascii, gen
     call ascii_to_string_padded(filename_ascii, fn_len, filename)
     call read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, ierr)
 
-    if(.not. is_ok(ierr)) return
+    if(is_err(ierr)) return
 
     do i = 1, n_genes
         call string_to_ascii(gene_ids(i), gene_ids_ascii(:, i))
@@ -648,7 +648,7 @@ end subroutine read_expression_vectors_R
 subroutine read_family_file_R(filename_ascii, fn_len, gene_ids_ascii, gene_ids_len, n_genes, &
                              family_ids_ascii, family_ids_len, n_families, gene_to_fam, ierr)
     use iso_fortran_env, only: int32
-    use tox_errors, only: set_ok, is_ok
+    use tox_errors, only: set_ok, is_err
     use array_utils, only: ascii_to_string, string_to_ascii
     use tox_data_tools, only: read_family_file
     implicit none
@@ -696,7 +696,7 @@ subroutine read_family_file_R(filename_ascii, fn_len, gene_ids_ascii, gene_ids_l
     end do
     
     call read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
-    if(.not. is_ok(ierr)) return
+    if(is_err(ierr)) return
     
     ! Convert family IDs to ASCII
     do i = 1, n_families
@@ -746,7 +746,7 @@ end subroutine filter_unassigned_genes_R
 subroutine read_gene_ids_from_file_C(filename_ascii, fn_len, gene_ids_ascii, gene_ids_len, n_genes, &
                                  n_header_rows, gene_col, ierr) bind(C, name="read_gene_ids_from_file_C")
     use iso_c_binding, only: c_int, c_ptr, c_f_pointer
-    use tox_errors, only: set_ok, is_ok
+    use tox_errors, only: set_ok, is_err
     use array_utils, only: ascii_to_string_padded, string_to_ascii
     use tox_data_tools, only: read_gene_ids_from_file
     implicit none
@@ -783,7 +783,7 @@ subroutine read_gene_ids_from_file_C(filename_ascii, fn_len, gene_ids_ascii, gen
     write(*,*) 'Reading gene IDs from file: ', trim(filename)
 
     call read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, ierr)
-    if(.not. is_ok(ierr)) return
+    if(is_err(ierr)) return
 
     do i = 1, n_genes
         call string_to_ascii(gene_ids(i), f_gene_ids_ascii(:, i))
@@ -900,7 +900,7 @@ end subroutine read_expression_vectors_C
 subroutine read_family_file_C(filename_ascii, fn_len, gene_ids_ascii, gene_ids_len, n_genes, &
                              family_ids_ascii, family_ids_len, n_families, gene_to_fam, ierr) bind(C, name="read_family_file_C")
     use iso_c_binding, only: c_int, c_ptr, c_f_pointer
-    use tox_errors, only: set_ok, is_ok
+    use tox_errors, only: set_ok, is_err
     use tox_data_tools, only: read_family_file
     use array_utils, only: ascii_to_string_padded, string_to_ascii
     implicit none
@@ -958,7 +958,7 @@ subroutine read_family_file_C(filename_ascii, fn_len, gene_ids_ascii, gene_ids_l
     end do
     
     call read_family_file(filename, gene_ids, family_ids, f_gene_to_fam, ierr)
-    if(.not. is_ok(ierr)) return
+    if(is_err(ierr)) return
     
     ! Convert family IDs to ASCII
     do i = 1, n_families
