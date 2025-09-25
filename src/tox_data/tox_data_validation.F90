@@ -315,51 +315,67 @@ contains
 
     !> Validate that no gene ids appears more than once
     subroutine validate_gene_ids_uniqueness(gene_ids, ierr)
+        use f42_utils, only: quicksort_char
         character(len=*), intent(in) :: gene_ids(:)
             !! gene ids array
         integer(int32), intent(out) :: ierr
             !! Error code 
         integer(int32) :: i, j, duplicate_count
+        integer(int32), allocatable :: perm(:), stack_left(:), stack_right(:)
         
+        allocate(perm(size(gene_ids)))
+        perm = [(i, i=1, size(gene_ids))]
+
+        allocate(stack_left(size(gene_ids)))
+        allocate(stack_right(size(gene_ids)))
+
+        call quicksort_char(gene_ids, perm, size(gene_ids), stack_left, stack_right)
+
         call set_ok(ierr)
         duplicate_count = 0
         
         do i = 1, size(gene_ids) - 1
-            do j = i + 1, size(gene_ids)
-                if (trim(gene_ids(i)) == trim(gene_ids(j))) then
-                    duplicate_count = duplicate_count + 1
-                    if (duplicate_count <= 10) then
-                        call set_err_once(ierr, ERR_INVALID_INPUT)
-                        write(*,*) 'Error: Duplicate gene ID found: "', trim(gene_ids(i)), '"'
-                    end if
+            if(trim(gene_ids(perm(i))) == trim(gene_ids(perm(i+1)))) then
+                duplicate_count = duplicate_count + 1
+                if (duplicate_count <= 10) then
+                    call set_err_once(ierr, ERR_INVALID_INPUT)
+                    write(*,*) 'Error: Duplicate gene ID found: "', trim(gene_ids(perm(i))), '"'
                 end if
-            end do
+            end if
         end do
         
     end subroutine validate_gene_ids_uniqueness
 
     !> Validate family ids uniqueness
     subroutine validate_family_ids_uniqueness(gene_family_ids, ierr)
+        use f42_utils, only: quicksort_char
         character(len=*), intent(in) :: gene_family_ids(:)
             !! gene to family mapping
         integer(int32), intent(out) :: ierr
             !! Error code
         
         integer(int32) :: i, j, duplicate_count
+        integer(int32), allocatable :: perm(:), stack_left(:), stack_right(:)
+        
+        allocate(perm(size(gene_family_ids)))
+        perm = [(i, i=1, size(gene_family_ids))]
+
+        allocate(stack_left(size(gene_family_ids)))
+        allocate(stack_right(size(gene_family_ids)))
+
+        call quicksort_char(gene_family_ids, perm, size(gene_family_ids), stack_left, stack_right)
         
         call set_ok(ierr)
         duplicate_count = 0
         
-        do i = 1, size(gene_family_ids) - 1
-            do j = i + 1, size(gene_family_ids)
-                if (trim(gene_family_ids(i)) == trim(gene_family_ids(j))) then
-                    duplicate_count = duplicate_count + 1
-                    if (duplicate_count <= 10) then
-                        call set_err_once(ierr, ERR_INVALID_INPUT)
-                        write(*,*) 'Error: Duplicate family ID found: "', gene_family_ids(i), '"'
-                    end if
+        do i = 1, size(gene_family_ids) - 1 
+            if (trim(gene_family_ids(perm(i))) == trim(gene_family_ids(perm(i+1)))) then
+                duplicate_count = duplicate_count + 1
+                if (duplicate_count <= 10) then
+                    call set_err_once(ierr, ERR_INVALID_INPUT)
+                    write(*,*) 'Error: Duplicate family ID found: "', gene_family_ids(perm(i)), '"'
                 end if
-            end do
+            end if
         end do
         
     end subroutine validate_family_ids_uniqueness
@@ -429,9 +445,7 @@ contains
         if (present(check_shift_consistency)) do_check_shift_consistency = check_shift_consistency
         
         call set_ok(ierr)
-        
-        write(*,*) 'Starting comprehensive data validation, this might take a while...'
-        
+                
         ! 1. Check basic structure
         call validate_data_structure(n_genes, n_families, n_samples, gene_ids, gene_family_ids, &
                                    gene_to_fam, expression_vectors, family_centroids, &
