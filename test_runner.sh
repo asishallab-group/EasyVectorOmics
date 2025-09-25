@@ -19,31 +19,21 @@ fi
 
 echo "Detected alignment: $ALIGN"
 
-# Check if xxHash library is available
-if pkg-config --exists libxxhash 2>/dev/null; then
-    HAS_XXHASH=1
-    XXHASH_FLAGS=$(pkg-config --cflags libxxhash)
-    XXHASH_LIBS=$(pkg-config --libs libxxhash)
-else
-    echo "Warning: xxHash library not found. Make sure it is installed"
-    HAS_XXHASH=0
-    XXHASH_FLAGS=""
-    XXHASH_LIBS=""
-fi
-
 # Detect compiler and flags
 if [[ "$FC" == "ifx" || "$FC" == "ifort" ]]; then
-  FLAGS="-O3 -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC -lzip $XXHASH_FLAGS"
+  FLAGS="-O3 -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC"
   MODULE_FLAG="-module $BUILD_DIR"
   COMPILER="ifx"
 else
-  FLAGS="-O3 -march=native -mtune=native -fopenmp -ffast-math -funroll-loops -ftree-vectorize -fassociative-math -fPIC -lzip $XXHASH_FLAGS"
+  FLAGS="-O3 -march=native -mtune=native -fopenmp -ffast-math -funroll-loops -ftree-vectorize -fassociative-math -fPIC"
   MODULE_FLAG="-J$BUILD_DIR"
   COMPILER="gfortran"
 fi
 
+LIBS="-lzip -lxxhash"
+FLAGS="$FLAGS $LIBS"
+
 echo "Using compiler: $COMPILER"
-echo "xxHash support: $([ $HAS_XXHASH -eq 1 ] && echo "Enabled" || echo "Disabled")"
 
 MAX_PERF_FLAG=""
 for arg in "$@"; do
@@ -82,8 +72,7 @@ OBJECT_FILES=($BUILD_DIR/*.o)
 
 # Link everything together with proper libraries
 $COMPILER $FLAGS -I$BUILD_DIR \
-  "${OBJECT_FILES[@]}" -o $EXECUTABLE \
-  $XXHASH_LIBS -fopenmp -lzip
+  "${OBJECT_FILES[@]}" -o $EXECUTABLE
 
 linking_result=$?
 echo "Linking exit code: $linking_result"

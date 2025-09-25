@@ -23,6 +23,10 @@ else
   COMPILER="gfortran"
 fi
 
+LIBS="-lzip -lxxhash"
+FLAGS="$FLAGS $LIBS"
+
+
 # Detect --max-performance flag
 MAX_PERF_FLAG=""
 for arg in "$@"; do
