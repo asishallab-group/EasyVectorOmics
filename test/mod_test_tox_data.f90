@@ -135,10 +135,10 @@ contains
     n_genes = n_genes_kept  ! Update n_genes to reflect the filtered count
 
     ! Print first 10 family IDs
-    write(*,*) 'First 10 family IDs:'
-    do i = 1, min(10, n_families)
-      write(*,*) trim(gene_family_ids(i))
-    end do
+    ! write(*,*) 'First 10 family IDs:'
+    ! do i = 1, min(10, n_families)
+    !   write(*,*) trim(gene_family_ids(i))
+    ! end do
 
     ! Compute centroids
     allocate(family_centroids(total_samples, n_families))
@@ -237,7 +237,6 @@ contains
   !> Test data validation
   subroutine test_validate_data()
     integer(int32) :: ierr
-    write(*,*) 'Testing data validation... This might take a while'
     
     call validate_all_data(n_genes, n_families, total_samples, gene_ids, gene_family_ids, &
                            gene_to_fam, kallisto_expr, family_centroids, shift_vectors, ierr, .true., .true.)
@@ -523,7 +522,7 @@ contains
                       family_centroids=family_centroids, family_centroids_file="family_centroids.bin", &
                       shift_vectors=shift_vectors, shift_vectors_file="shift_vectors.bin")
     
-    if (ierr /= 0) then
+    if (is_err(ierr)) then
         print *, "Error saving archive: ", ierr
         return
     end if
@@ -536,7 +535,7 @@ contains
                       family_centroids=family_centroids_verify, &
                       shift_vectors=shift_vectors_verify)
     
-    if (ierr /= 0) then
+    if (is_err(ierr)) then
         print *, "Error reading archive: ", ierr
         return
     end if
@@ -581,7 +580,7 @@ contains
                       gene_ids=gene_ids, gene_ids_file="gene_ids_v2.bin", &
                       expression=kallisto_expr, expression_file="kallisto_v2.bin")
     
-    if (ierr /= 0) then
+    if (is_err(ierr)) then
         print *, "Error saving archive: ", ierr
         return
     end if
@@ -590,7 +589,7 @@ contains
                       gene_ids=gene_ids_verify, &
                       expression=kallisto_verify)
     
-    if (ierr /= 0) then
+    if (is_err(ierr)) then
         print *, "Error reading archive: ", ierr
         return
     end if
@@ -612,7 +611,7 @@ contains
                       family_centroids=family_centroids_verify, &
                       shift_vectors=shift_vectors_verify)
     
-    if (ierr /= 0) then
+    if (is_err(ierr)) then
         print *, "Error reading archive: ", ierr
         return
     end if
@@ -655,7 +654,7 @@ contains
                       family_ids=gene_family_ids, family_ids_file="family_ids_v3.bin", &
                       family_centroids=family_centroids, family_centroids_file="family_centroids_v3.bin")
     
-    if (ierr /= 0) then
+    if (is_err(ierr)) then
         print *, "Error saving archive: ", ierr
         return
     end if
@@ -664,7 +663,7 @@ contains
                       family_ids=gene_family_ids_verify, &
                       family_centroids=family_centroids_verify)
     
-    if (ierr /= 0) then
+    if (is_err(ierr)) then
         print *, "Error reading archive: ", ierr
         return
     end if
@@ -687,14 +686,14 @@ contains
     print *, "Test 4: Saving empty archive"
     call save_tox_data("test_archive_4_f.zip", ierr)
     
-    if (ierr /= 0) then
+    if (is_err(ierr)) then
         print *, "Error saving empty archive: ", ierr
         return
     end if
     
     call read_tox_data("test_archive_4_f.zip", ierr)
     
-    if (ierr /= 0) then
+    if (is_err(ierr)) then
         print *, "Error reading empty archive: ", ierr
         error stop
     end if
