@@ -7,7 +7,7 @@ before_script:
   # install gfortran, python, pip, git
   - pacman -Sy --noconfirm archlinux-keyring
   - pacman -Syu --noconfirm
-  - pacman -S --noconfirm gcc-fortran python python-pip git
+  - pacman -S --noconfirm gcc-fortran python python-pip git libzip
   - pacman -Scc --noconfirm
 
   # install fpm
@@ -41,6 +41,9 @@ before_script:
 run-tests:
   stage: run-tests
   rules:
+    - if: '$CI_COMMIT_BRANCH == "add-libzip-to-ci"'
+      when: always
+
     # trigger when pushing to main directly, but only if src/ or test/ changed
     - if: '$CI_COMMIT_BRANCH == "main"'
       changes:
