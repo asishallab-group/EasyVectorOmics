@@ -25,7 +25,7 @@ if pkg-config --exists libxxhash 2>/dev/null; then
     XXHASH_FLAGS=$(pkg-config --cflags libxxhash)
     XXHASH_LIBS=$(pkg-config --libs libxxhash)
 else
-    echo "Warning: xxHash library not found. Using fallback hashing."
+    echo "Warning: xxHash library not found. Make sure it is installed"
     HAS_XXHASH=0
     XXHASH_FLAGS=""
     XXHASH_LIBS=""
