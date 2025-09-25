@@ -6,6 +6,7 @@ license = "MIT"
 [install.library]
 library = true
 c-sources = ["src/tox_data/xxh3_hash.c"]
+c-compiler = "gcc"
 
 [library]
 type = "shared" 
