@@ -43,7 +43,7 @@ before_script:
   - pkg-config --exists libxxhash && echo "xxhash found" || echo "xxhash not found"
   - echo "Checking for libzip:"
   - pkg-config --exists libzip && echo "libzip found" || echo "libzip not found"
-  
+
 run-tests:
   stage: run-tests
   rules:
@@ -67,10 +67,13 @@ run-tests:
     - when: never
 
   script:
-    # install ifx
-    - curl https://registrationcenter-download.intel.com/akdlm/IRC_NAS/466b0d65-e502-4172-9e06-24c565029b96/intel-fortran-compiler-2025.2.1.9_offline.sh -o install_ifx.sh
-    - bash install_ifx.sh -a -s --eula accept
+    # install full Intel oneAPI suite (including C compiler)
+    - curl https://registrationcenter-download.intel.com/akdlm/IRC_NAS/466b0d65-e502-4172-9e06-24c565029b96/intel-oneapi-compiler-dpcpp-cpp-classic-fortran-2025.2.1.9_offline.sh -o install_oneapi.sh
+    - bash install_oneapi.sh -a -s --eula accept
     - source /opt/intel/oneapi/setvars.sh
+
+    # Set CC environment variable to use gcc for C compilation
+    - export CC=gcc
 
     # run tests using ifx
     - echo Run tests with ifx
