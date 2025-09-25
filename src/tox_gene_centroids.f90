@@ -8,8 +8,8 @@ module tox_gene_centroids
   use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, set_ok, set_err_once, is_ok
   implicit none
 
-  integer, parameter, public :: GROUP_ORTHOLOGS = 0
-  integer, parameter, public :: GROUP_ALL = 1
+  integer(int32), parameter, public :: GROUP_ORTHOLOGS = 0
+  integer(int32), parameter, public :: GROUP_ALL = 1
 
 contains
 
@@ -94,26 +94,21 @@ contains
 
     ! Local variables
     integer(int32) :: i, j, n_selected
-    integer(int32) :: local_selected_indices(n_genes)
-    logical :: orthologs(n_genes)
 
     ! Initialize error code
     call set_ok(ierr)
     
     ! Determine the mode of operation
-    select case (mode)
-      case (GROUP_ALL)
-        orthologs = .true.
-      case (GROUP_ORTHOLOGS)
-        if (.not. present(ortholog_set)) then
-          call set_err_once(ierr, ERR_INVALID_INPUT)
-          return
-        end if
-        orthologs = ortholog_set
-      case default
-        call set_err_once(ierr, ERR_INVALID_INPUT)
-        return
-    end select
+    if (mode /= GROUP_ALL .and. mode /= GROUP_ORTHOLOGS) then
+      call set_err_once(ierr, ERR_INVALID_INPUT)
+      return
+    end if
+
+    ! If "orthologs" mode is selected, ensure ortholog_set is provided
+    if (mode == GROUP_ORTHOLOGS .and. .not. present(ortholog_set)) then
+      call set_err_once(ierr, ERR_INVALID_INPUT)
+      return
+    end if
 
     ! Check for arguments <= 0
     if (n_axes <= 0 .or. n_genes <= 0 .or. n_families <= 0) then
@@ -121,21 +116,29 @@ contains
       return
     end if
 
-    selected_indices = 0
-
     do j = 1, n_families
+      ! Reset selected indices for the current family
+      selected_indices = 0
       n_selected = 0
+
       do i = 1, n_genes
+        ! Validate family ID
         if (gene_to_family(i) < 1 .or. gene_to_family(i) > n_families) then
           call set_err_once(ierr, ERR_INVALID_INPUT)
           return
         end if
-        if (gene_to_family(i) == j .and. orthologs(i)) then
+
+        ! Check if the gene belongs to the current family and in orthologs set if required
+        if (gene_to_family(i) == j) then
+          if (mode == GROUP_ORTHOLOGS) then
+            if (.not. ortholog_set(i)) cycle
+          end if
           n_selected = n_selected + 1
-          local_selected_indices(n_selected) = i
+          selected_indices(n_selected) = i
         end if
       end do
-      call mean_vector(expression_vectors, n_axes, n_genes, local_selected_indices, n_selected, centroid_matrix(:, j), ierr)
+      
+      call mean_vector(expression_vectors, n_axes, n_genes, selected_indices, n_selected, centroid_matrix(:, j), ierr)
       if (.not. is_ok(ierr)) return
     end do
   end subroutine group_centroid
@@ -177,7 +180,7 @@ pure subroutine group_centroid_c(expression_vectors, n_axes, n_genes, gene_to_fa
   use, intrinsic :: iso_c_binding, only: c_int, c_double, c_char
   use tox_gene_centroids, only: group_centroid, GROUP_ORTHOLOGS, GROUP_ALL
   use tox_errors, only: is_ok, set_err, ERR_INVALID_INPUT
-  use tox_conversions, only: c_char_1d_as_string
+  use tox_conversions, only: c_char_1d_as_string, c_int_as_logical
   implicit none
   !| Number of axes (tissues/dimensions).
   integer(c_int), intent(in), value :: n_axes
@@ -209,25 +212,21 @@ pure subroutine group_centroid_c(expression_vectors, n_axes, n_genes, gene_to_fa
 
   ! Convert raw character array to Fortran string
   call c_char_1d_as_string(mode, mode_string, ierr)
-  if (.not. is_ok(ierr)) then
-    call set_err(ierr, ERR_INVALID_INPUT)
-    return
-  end if
+  if (.not. is_ok(ierr)) return
 
   ! If "orthologs" mode is selected, convert ortholog_set to logical
   ! If "all" mode is selected, call group_centroid directly without ortholog_set
   if (mode_string == "orthologs") then
     mode_int = GROUP_ORTHOLOGS
     do i = 1, n_genes
-      ortholog_set_fortran(i) = (ortholog_set(i) /= 0)
+      call c_int_as_logical(ortholog_set(i), ortholog_set_fortran(i))
     end do
-    call group_centroid(expression_vectors, n_axes, n_genes, gene_to_family, n_families, &
-                        centroid_matrix, mode_int, selected_indices, ierr, ortholog_set_fortran)
   else 
     mode_int = GROUP_ALL
-    call group_centroid(expression_vectors, n_axes, n_genes, gene_to_family, n_families, &
-                        centroid_matrix, mode_int, selected_indices, ierr)
   end if
+
+  call group_centroid(expression_vectors, n_axes, n_genes, gene_to_family, n_families, &
+                      centroid_matrix, mode_int, selected_indices, ierr, ortholog_set_fortran)
 end subroutine group_centroid_c
 
 ! =============================================================================
@@ -295,10 +294,7 @@ pure subroutine group_centroid_r(expression_vectors, n_axes, n_genes, gene_to_fa
 
   ! Convert raw character array to Fortran string
   call c_char_1d_as_string(mode_raw, mode_string, ierr)
-  if (.not. is_ok(ierr)) then
-    call set_err(ierr, ERR_INVALID_INPUT)
-    return
-  end if
+  if (.not. is_ok(ierr)) return
 
   ! Convert string to integer mode
   if (mode_string == "orthologs") then
@@ -306,7 +302,6 @@ pure subroutine group_centroid_r(expression_vectors, n_axes, n_genes, gene_to_fa
   else
     mode_int = GROUP_ALL
   end if
-
   call group_centroid(expression_vectors, n_axes, n_genes, gene_to_family, n_families, &
-                        centroid_matrix, mode_int, selected_indices, ierr, ortholog_set)
+                      centroid_matrix, mode_int, selected_indices, ierr, ortholog_set)
 end subroutine group_centroid_r
