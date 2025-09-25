@@ -4,7 +4,7 @@ stages:
 
 image: archlinux:latest
 before_script:
-  # install gfortran, python, pip, git, xxhash, libzip, AND gcc
+  # install gfortran, python, pip, git, xxhash, libzip
   - pacman -Sy --noconfirm archlinux-keyring
   - pacman -Syu --noconfirm
   - pacman -S --noconfirm gcc-fortran python python-pip git xxhash libzip pkg-config gcc
@@ -37,15 +37,12 @@ before_script:
   - pip --version
   - ford --version
   - gfortran --version
-  - gcc --version  # Verify gcc is installed
-  - pkg-config --version
 
   # Verify xxhash and libzip are installed
   - echo "Checking for xxhash library:"
   - pkg-config --exists libxxhash && echo "xxhash found" || echo "xxhash not found"
   - echo "Checking for libzip:"
   - pkg-config --exists libzip && echo "libzip found" || echo "libzip not found"
-
 run-tests:
   stage: run-tests
   rules:
@@ -55,8 +52,6 @@ run-tests:
         - src/**
         - test/**
         - test_runner.sh
-        - build.sh
-        - fpm.toml
       when: always
 
     # trigger only when a MR to 'main' is created and src/ or test/ changed
@@ -65,8 +60,6 @@ run-tests:
         - src/**
         - test/**
         - test_runner.sh
-        - build.sh
-        - fpm.toml
       when: always
 
     # prevent running on other branches outside MR context
@@ -78,22 +71,18 @@ run-tests:
     - bash install_ifx.sh -a -s --eula accept
     - source /opt/intel/oneapi/setvars.sh
 
-    # Set GCC for C compilation (lowercase 'gcc')
     - export CC=gcc
 
-    # Verify the C compiler is set correctly
-    - echo "C compiler set to: $CC"
-    - which $CC
+    # run tests using ifx
+    - echo Run tests with ifx
+    - FC=ifx bash test_runner.sh
+    - echo Run tests with gfortran
 
-    # run tests using ifx for Fortran + gcc for C
-    - echo "Run tests with ifx (Fortran) + gcc (C)"
-    - FC=ifx CC=gcc bash test_runner.sh
-    
     # run tests using gfortran
-    - echo "Run tests with gfortran"
     - bash test_runner.sh
 
-generate-docs:
+
+generate-docs:  # generate documentation after tests have passed
   stage: generate-docs
   rules:
     - if: '$CI_COMMIT_BRANCH == "main"'
@@ -101,12 +90,11 @@ generate-docs:
         - src/**
         - test/**
         - ford.yml
-        - fpm.toml
       when: always
     - when: never
   needs:
     - job: run-tests
-      optional: true
+      optional: true  # if ford.yml was changed, the test stage does not exist in the pipeline
   script:
     # generate docs
     - ford ford.yml
