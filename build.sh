@@ -14,28 +14,13 @@ elif lscpu | grep -q sse2; then
 ALIGN=16
 fi
 
-# Check if xxHash library is available
-if [ -f /usr/lib/libxxhash.so ] || [ -f /usr/lib64/libxxhash.so ]; then
-    HAS_XXHASH=1
-    # Arch Linux typically places headers in /usr/include and libraries in /usr/lib
-    XXHASH_FLAGS="-I/usr/include"
-    XXHASH_LIBS="-L/usr/lib -lxxhash"
-else
-    echo "Warning: xxHash library not found. Trying to compile without it..."
-    HAS_XXHASH=0
-    XXHASH_FLAGS=""
-    XXHASH_LIBS=""
-fi
-LIBS="-lzip"
 # Detect compiler and choose appropriate profile:
 if [[ "$FC" == "ifx" || "$FC" == "ifort" ]]; then
-  FLAGS="-O3 -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC $XXHASH_FLAGS"
+  FLAGS="-O3 -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC"
   COMPILER="ifx"
-  C_COMPILER="icc"
 else
-  FLAGS="-O3 -march=native -mtune=native -fopenmp -ffast-math -funroll-loops -ftree-vectorize -fassociative-math -fPIC $XXHASH_FLAGS"
+  FLAGS="-O3 -march=native -mtune=native -fopenmp -ffast-math -funroll-loops -ftree-vectorize -fassociative-math -fPIC"
   COMPILER="gfortran"
-  C_COMPILER="gcc"
 fi
 
 # Detect --max-performance flag
@@ -56,7 +41,7 @@ mkdir -p build
 
 # Build with FPM
 export FC
-fpm build --compiler $COMPILER --flag "$FLAGS" --flag "-DDEFAULT_ALIGNMENT=$ALIGN" --flag "$MAX_PERF_FLAG" --flag $LIBS
+fpm build --compiler $COMPILER --flag "$FLAGS" --flag "-DDEFAULT_ALIGNMENT=$ALIGN" --flag "$MAX_PERF_FLAG"
 
 # Move .mod, .o and .so files from FPM build directories to root
 for compiler_dir in build/${COMPILER}_*; do
@@ -74,11 +59,6 @@ for compiler_dir in build/${COMPILER}_*; do
 done
 
 echo "Build complete with compiler: $COMPILER, alignment: $ALIGN bytes"
-if [ $HAS_XXHASH -eq 1 ]; then
-    echo "xxHash support: Enabled"
-else
-    echo "xxHash support: Disabled (using fallback hashing)"
-fi
 
 # Verify that we have the necessary files for test_runner.sh
 mod_count=$(find build -name "*.mod" | wc -l)
