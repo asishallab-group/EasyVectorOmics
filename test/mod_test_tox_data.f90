@@ -300,8 +300,8 @@ contains
     
     ! Fixed call to match the assert_equal_array_real interface
     total_elements = size(kallisto_expr)
-    call assert_equal_array_real(reshape(kallisto_expr, [total_elements]), &
-                                reshape(kallisto_expr_verify, [total_elements]), &
+    call assert_equal_array_real(kallisto_expr, &
+                                kallisto_expr_verify, &
                                 total_elements, 1e-12_real64, &
                                 "Original and loaded data should be identical")
     
@@ -360,8 +360,8 @@ contains
     
     ! Verify loaded data matches original
     total_elements = size(shift_vectors)
-    call assert_equal_array_real(reshape(shift_vectors, [total_elements]), &
-                                reshape(shift_vectors_loaded, [total_elements]), &
+    call assert_equal_array_real(shift_vectors, &
+                                shift_vectors_loaded, &
                                 total_elements, 1e-12_real64, &
                                 "Original and loaded shift vectors should be identical")
     
@@ -461,8 +461,8 @@ contains
       write(*,*) 'Failed to load family centroids: ', ierr
       error stop
     end if
-    call assert_equal_array_real(reshape(loaded_centroids, [size(loaded_centroids)]), &
-                                reshape(family_centroids, [size(family_centroids)]), &
+    call assert_equal_array_real(loaded_centroids, &
+                                family_centroids, &
                                 size(family_centroids), 1e-12_real64, &
                                 "Loaded family centroids should match original")
   end subroutine test_read_write_centroids

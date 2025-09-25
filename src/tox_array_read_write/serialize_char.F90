@@ -17,7 +17,7 @@ contains
   !> Serialize a 1D character array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, character length, and the array data.
   subroutine serialize_char_1d(arr, filename, ierr)
-    character(len=*), intent(in) :: arr(:)
+    character(len=*), contiguous, intent(in) :: arr(:)
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
