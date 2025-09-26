@@ -25,7 +25,7 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(6)
+        type(test_case) :: all_tests(9)
 
         all_tests(1) = test_case("test_tox_paralog_analysis_mask_set_state", test_mask_set_state)
         all_tests(2) = test_case("test_tox_paralog_analysis_mask_check_state", test_mask_check_state)
@@ -33,7 +33,110 @@ contains
         all_tests(4) = test_case("test_tox_paralog_analysis_calc_work_arr_paralog_subsets_size", test_calc_work_arr_paralog_subsets_size)
         all_tests(5) = test_case("test_tox_paralog_analysis_test_filter_paralogs_by_pattern", test_filter_paralogs_by_pattern)
         all_tests(6) = test_case("test_tox_paralog_analysis_test_mask_chunk_count", test_mask_chunk_count)
+        all_tests(7) = test_case("test_tox_paralog_analysis_test_add_new_active_mask", test_add_new_active_mask)
+        all_tests(8) = test_case("test_tox_paralog_analysis_test_add_to_results", test_add_to_results)
+        all_tests(9) = test_case("test_tox_paralog_analysis_test_take_active_mask", test_take_active_mask)
     end function get_all_tests
+
+    subroutine test_take_active_mask
+        integer(int32), parameter :: n_mask_chunks = 1, n_subsets = 5
+        integer(int32), dimension(n_mask_chunks, n_subsets) :: subsets
+        integer(int32), dimension(n_mask_chunks, n_subsets) :: original_subsets
+        integer(int32), dimension(n_mask_chunks) :: taken_active_mask
+        integer(int32) :: n_results, n_active_masks, n_new_active_masks, n_actual_active_masks, ierr, i_subset
+
+        call set_ok(ierr)
+
+        original_subsets = reshape([1,2,3,4,5], [n_mask_chunks, n_subsets])
+        
+        do n_new_active_masks = 0, n_subsets
+            do n_results = 0, n_subsets - n_new_active_masks
+                subsets = original_subsets
+                do n_active_masks = n_subsets - n_new_active_masks - n_results, 0, -1
+                    n_actual_active_masks = n_active_masks
+                    call take_active_mask(subsets, n_mask_chunks, n_subsets, n_results, n_actual_active_masks, n_new_active_masks, taken_active_mask, ierr)
+                    if (n_active_masks == 0) then
+                        call assert_false(is_ok(ierr), "test_take_active_mask: expected an error when taking an active mask from zero active masks")
+                    else
+                        call assert_true(is_ok(ierr), "test_take_active_mask: unexpected error when taking active mask")
+                        call assert_equal_int(n_actual_active_masks, n_active_masks - 1, "test_take_active_mask: number of active masks did not change")
+                        call assert_equal_int(taken_active_mask(1), original_subsets(1, n_results + n_active_masks), "test_take_active_mask: taken mask does not match")
+                        call assert_equal_array_int(subsets(:, 1:n_results), original_subsets(:, 1:n_results), n_results, "test_take_active_mask: results have changed")
+                        do i_subset = 1, n_new_active_masks
+                            call assert_array_int_contains(subsets(:, n_results+n_actual_active_masks+1:n_results+n_actual_active_masks+n_new_active_masks), original_subsets(1, n_subsets-i_subset+1), n_new_active_masks, "test_take_active_mask: new active masks changed")
+                        end do
+                    end if
+                end do
+            end do
+        end do
+    end subroutine test_take_active_mask
+
+    subroutine test_add_to_results
+        integer(int32), parameter :: n_mask_chunks = 1, n_subsets = 5
+        integer(int32), dimension(n_mask_chunks, n_subsets) :: subsets
+        integer(int32), dimension(n_mask_chunks, n_subsets) :: original_subsets
+        integer(int32), dimension(n_mask_chunks) :: new_active_mask
+        integer(int32) :: n_results, n_active_masks, n_new_active_masks, n_actual_results, ierr, i_subset
+
+        call set_ok(ierr)
+
+        original_subsets = reshape([1,2,3,4,5], [n_mask_chunks, n_subsets])
+        new_active_mask = 42
+        
+        do n_new_active_masks = 0, n_subsets
+            do n_active_masks = 0, n_subsets - n_new_active_masks
+                subsets = original_subsets
+                do n_results = 0, n_subsets - n_new_active_masks - n_active_masks
+                    n_actual_results = n_results
+                    call add_to_results(subsets, n_mask_chunks, n_subsets, n_actual_results, n_active_masks, n_new_active_masks, new_active_mask, ierr)
+                    if (n_results + n_active_masks + n_new_active_masks == n_subsets) then
+                        call assert_false(is_ok(ierr), "test_add_to_results: expected an error when adding a result to full array")
+                    else
+                        call assert_true(is_ok(ierr), "test_add_to_results: unexpected error when adding result")
+                        call assert_equal_int(n_actual_results, n_results + 1, "test_add_to_results: number of results did not change")
+                        call assert_true(all(subsets(:, 1:n_actual_results) == new_active_mask(1)), "test_add_to_results: results don't match")
+                        do i_subset = 1, n_active_masks
+                            call assert_array_int_contains(subsets(:, n_actual_results+1:n_actual_results+n_active_masks), original_subsets(1, i_subset), n_active_masks, "test_add_to_results: active masks changed")
+                        end do
+                        do i_subset = 1, n_new_active_masks
+                            call assert_array_int_contains(subsets(:, n_actual_results+n_active_masks+1:n_actual_results+n_active_masks+n_new_active_masks), original_subsets(1, n_active_masks+i_subset), n_new_active_masks, "test_add_to_results: new active masks changed")
+                        end do
+                    end if
+                end do
+            end do
+        end do
+    end subroutine test_add_to_results
+
+    subroutine test_add_new_active_mask
+        integer(int32), parameter :: n_mask_chunks = 1, n_subsets = 5
+        integer(int32), dimension(n_mask_chunks, n_subsets) :: subsets
+        integer(int32), dimension(n_mask_chunks, n_subsets) :: original_subsets
+        integer(int32), dimension(n_mask_chunks) :: new_active_mask
+        integer(int32) :: n_results, n_active_masks, n_new_active_masks, n_actual_new_active_masks, ierr
+
+        call set_ok(ierr)
+
+        original_subsets = reshape([1,2,3,4,5], [n_mask_chunks, n_subsets])
+        new_active_mask = 42
+        do n_results = 0, n_subsets
+            do n_active_masks = 0, n_subsets - n_results
+                subsets = original_subsets
+                do n_new_active_masks = 0, n_subsets - n_results - n_active_masks
+                    n_actual_new_active_masks = n_new_active_masks
+                    call add_new_active_mask(subsets, n_mask_chunks, n_subsets, n_results, n_active_masks, n_actual_new_active_masks, new_active_mask, ierr)
+                    if (n_results + n_active_masks + n_new_active_masks == n_subsets) then
+                        call assert_false(is_ok(ierr), "test_add_new_active_mask: expected an error when adding a new active mask to full array")
+                    else
+                        call assert_true(is_ok(ierr), "test_add_new_active_mask: unexpected error when adding new active mask")
+                        call assert_equal_int(n_actual_new_active_masks, n_new_active_masks + 1, "test_add_new_active_mask: number of new active masks did not change")
+                        call assert_equal_array_int(subsets(:, 1:n_results), original_subsets(:, 1:n_results), n_results, "test_add_new_active_mask: results have changed")
+                        call assert_equal_array_int(subsets(:, n_results+1:n_results+n_active_masks), original_subsets(:, n_results+1:n_results+n_active_masks), n_active_masks, "test_add_new_active_mask: active masks have changed")
+                        call assert_true(all(subsets(:, n_results+n_active_masks+1:n_results+n_active_masks+n_actual_new_active_masks) == new_active_mask(1)), "test_add_new_active_mask: new active masks don't match")
+                    end if
+                end do
+            end do
+        end do
+    end subroutine test_add_new_active_mask
 
     subroutine test_mask_chunk_count
         integer(int32) :: i, n_chunks, n_expected_chunks
@@ -117,7 +220,7 @@ contains
             ! masks have at least one active bit -> non-zero
             ! masks also won't be reset to zero, as new added masks overwrite them anyway.
             ! Thus, all calculated needed space should be used during detection -> non-zero
-            call assert_equal_int(count(work_arr_paralog_subsets /= 0), work_array_size, "test_calc_work_arr_paralog_subsets_size: less subsets used than expected")
+            call assert_equal_int(count(work_arr_paralog_subsets /= 0), work_array_size, "test_calc_work_arr_paralog_subsets_size: different count of subsets used than expected")
             call assert_true(is_ok(ierr), "test_calc_work_arr_paralog_subsets_size: unexpected error when detecting patterns")
             deallocate(work_arr_paralog_subsets)
         end do

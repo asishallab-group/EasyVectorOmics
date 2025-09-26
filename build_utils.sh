@@ -30,9 +30,9 @@ function get_flags() {
   if [[ "$FC" == "ifx" || "$FC" == "ifort" ]]; then
     echo "-O2 -fopenmp-target-do-concurrent -warn all -diag-enable=all -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC"
   elif [[ "$FC" == "nvfortran" ]]; then
-    echo "-O2 -Mconcur -Mstack_arrays -fPIC -fopenmp -stdpar=multicore"
+    echo "-O2 -Mconcur -fPIC -fopenmp -stdpar=multicore"
   else
-    echo "-O2 -march=native -mtune=native -fopenmp -ffast-math -funroll-loops -ftree-vectorize -fassociative-math -fPIC"
+    echo "-O2 -march=native -mtune=native -fopenmp -funroll-loops -ftree-vectorize -fPIC"
   fi
 }
 

@@ -68,8 +68,9 @@ contains
         work_arr_paralog_subsets = 0_int32
         n_active_masks = 0_int32
 
-        ! initialize first `n_paralogs` subsets of size 1 to be extended
-        do i_paralog = n_paralogs, 1, -1
+        ! initialize first `n_paralogs - 1` subsets of size 1 to be extended
+        ! -1 because the subset with last paralog set cannot be extended, as it doesn't have successors
+        do i_paralog = 1, n_paralogs - 1
             if (mask_check_state(filtered_paralogs_mask, i_paralog)) then
                 n_active_masks = n_active_masks + 1
                 call mask_set_state(work_arr_paralog_subsets(:, n_active_masks), i_paralog, .true., ierr)
@@ -294,6 +295,8 @@ contains
         integer(int32), intent(out) :: ierr
             !! error code
 
+        call set_ok(ierr)
+
         if (n_active_masks <= 0 .or. n_results < 0 .or. n_new_active_masks < 0) then
             call set_err(ierr, ERR_INVALID_INPUT)
             return
@@ -305,11 +308,9 @@ contains
         end if
 
         ! take handled mask, always the first one after results
-        active_mask = subsets(:, n_results + 1)
+        active_mask = subsets(:, n_results + n_active_masks)
 
-        ! move last active mask to first index after results
-        subsets(:, n_results + 1) = subsets(:, n_results + n_active_masks)
-        ! replace moved mask by last new active mask
+        ! replace taken mask by last new active mask
         subsets(:, n_results + n_active_masks) = subsets(:, n_results + n_active_masks + n_new_active_masks)
         n_active_masks = n_active_masks - 1
     end subroutine take_active_mask
@@ -331,6 +332,8 @@ contains
             !! result to add
         integer(int32), intent(out) :: ierr
             !! error code
+
+        call set_ok(ierr)
 
         if (n_active_masks < 0 .or. n_results < 0 .or. n_new_active_masks < 0) then
             call set_err(ierr, ERR_INVALID_INPUT)
@@ -368,6 +371,8 @@ contains
             !! new active mask to add
         integer(int32), intent(out) :: ierr
             !! error code
+
+        call set_ok(ierr)
 
         if (n_active_masks < 0 .or. n_results < 0 .or. n_new_active_masks < 0) then
             call set_err(ierr, ERR_INVALID_INPUT)
@@ -500,11 +505,8 @@ contains
         end do
 
         ! all subsets with last paralog enabled are counted as a result.
-        ! as the subset of size 1 with last paralog is not a valid subset, remove it
-        ! for max_subset_size 1: keep it, because it is part of the initialization, so the pruning will never happen
-        if (max_subset_size > 1) then
-            work_array_size = work_array_size - 1
-        end if
+        ! as the subset of size 1 with last paralog is not a valid subset, remove it (can not be extended, thus also not part of initialization)
+        work_array_size = work_array_size - 1
     end subroutine calc_work_arr_paralog_subsets_size
 
     pure function mask_get_first_successor_idx(bit_mask) result(idx)
