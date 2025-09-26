@@ -26,6 +26,7 @@ function get_compiler() {
 
 function get_flags() {
   # Detect compiler and choose appropriate profile:
+  echo -en "-lzip -lxxhash "
   if [[ "$FC" == "ifx" || "$FC" == "ifort" ]]; then
     echo "-O2 -fopenmp-target-do-concurrent -warn all -diag-enable=all -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC"
   elif [[ "$FC" == "nvfortran" ]]; then

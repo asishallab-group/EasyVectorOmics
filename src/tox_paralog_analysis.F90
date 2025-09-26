@@ -69,7 +69,7 @@ contains
         n_active_masks = 0_int32
 
         ! initialize first `n_paralogs` subsets of size 1 to be extended
-        do i_paralog = 1, n_paralogs
+        do i_paralog = n_paralogs, 1, -1
             if (mask_check_state(filtered_paralogs_mask, i_paralog)) then
                 n_active_masks = n_active_masks + 1
                 call mask_set_state(work_arr_paralog_subsets(:, n_active_masks), i_paralog, .true., ierr)
@@ -222,9 +222,9 @@ contains
                         if (residual_norm < rdi_threshold) then
                             call add_to_results(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
                         else if (i_paralog < n_paralogs) then
-                            ! subfunc_temp_work_array(i_paralog) is min(norm(p_i) for i in i_paralog+1:n_paralogs )
+                            ! subfunc_temp_work_array(i_paralog+1) is min(norm(p_i) for i in i_paralog+1:n_paralogs )
                             ! so if the minimum norm of the remaining paralogs is not lower the residual, prune this subset branch
-                            if (subfunc_temp_work_array(i_paralog) < residual_norm) then
+                            if (subfunc_temp_work_array(i_paralog + 1) < residual_norm) then
                                 call add_new_active_mask(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
                             end if
                         end if
@@ -498,6 +498,13 @@ contains
             if (extensions_count + previous_results < work_array_size) exit
             work_array_size = extensions_count + previous_results
         end do
+
+        ! all subsets with last paralog enabled are counted as a result.
+        ! as the subset of size 1 with last paralog is not a valid subset, remove it
+        ! for max_subset_size 1: keep it, because it is part of the initialization, so the pruning will never happen
+        if (max_subset_size > 1) then
+            work_array_size = work_array_size - 1
+        end if
     end subroutine calc_work_arr_paralog_subsets_size
 
     pure function mask_get_first_successor_idx(bit_mask) result(idx)
@@ -510,14 +517,8 @@ contains
 
         idx = size(bit_mask) * 32
         do i_mask_chunk = size(bit_mask), 1, -1
-            if (bit_mask(i_mask_chunk) == 0) then
-                idx = idx - 32
-            else                
-                do i_bit = 31, 0, -1
-                    if (btest(bit_mask(i_mask_chunk), i_bit)) exit
-                    idx = idx - 1
-                end do
-            end if
+            idx = idx - leadz(bit_mask(i_mask_chunk))
+            if (mod(idx, 32) /= 0) exit
         end do
         idx = idx + 1
     end function mask_get_first_successor_idx
