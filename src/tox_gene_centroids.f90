@@ -216,12 +216,16 @@ pure subroutine group_centroid_c(expression_vectors, n_axes, n_genes, gene_to_fa
 
   ! If "orthologs" mode is selected, convert ortholog_set to logical
   ! If "all" mode is selected, call group_centroid directly without ortholog_set
-  if (mode_string == "orthologs") then
-    mode_int = GROUP_ORTHOLOGS
-    call c_int_as_logical(ortholog_set, ortholog_set_fortran)
-  else 
-    mode_int = GROUP_ALL
-  end if
+  select case (mode_string)
+    case ("orthologs")
+      mode_int = GROUP_ORTHOLOGS
+      call c_int_as_logical(ortholog_set, ortholog_set_fortran)
+    case ("all")
+      mode_int = GROUP_ALL
+    case default
+      call set_err(ierr, ERR_INVALID_INPUT)
+      return
+  end select
 
   call group_centroid(expression_vectors, n_axes, n_genes, gene_to_family, n_families, &
                       centroid_matrix, mode_int, selected_indices, ierr, ortholog_set_fortran)
@@ -295,11 +299,15 @@ pure subroutine group_centroid_r(expression_vectors, n_axes, n_genes, gene_to_fa
   if (.not. is_ok(ierr)) return
 
   ! Convert string to integer mode
-  if (mode_string == "orthologs") then
-    mode_int = GROUP_ORTHOLOGS
-  else
-    mode_int = GROUP_ALL
-  end if
+  select case (mode_string)
+    case ("orthologs")
+      mode_int = GROUP_ORTHOLOGS
+    case ("all")
+      mode_int = GROUP_ALL
+    case default
+      call set_err(ierr, ERR_INVALID_INPUT)
+      return
+  end select
   call group_centroid(expression_vectors, n_axes, n_genes, gene_to_family, n_families, &
                       centroid_matrix, mode_int, selected_indices, ierr, ortholog_set)
 end subroutine group_centroid_r
