@@ -25,13 +25,43 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(4)
+        type(test_case) :: all_tests(5)
 
         all_tests(1) = test_case("test_tox_paralog_analysis_mask_set_state", test_mask_set_state)
         all_tests(2) = test_case("test_tox_paralog_analysis_mask_check_state", test_mask_check_state)
         all_tests(3) = test_case("test_tox_paralog_analysis_mask_get_first_successor_idx", test_mask_get_first_successor_idx)
         all_tests(4) = test_case("test_tox_paralog_analysis_calc_work_arr_paralog_subsets_size", test_calc_work_arr_paralog_subsets_size)
+        all_tests(5) = test_case("test_tox_paralog_analysis_test_filter_paralogs_by_pattern", test_filter_paralogs_by_pattern)
     end function get_all_tests
+
+    subroutine test_filter_paralogs_by_pattern
+        integer(int32), parameter :: n_paralogs = 16
+        integer(int32), dimension(1) :: mask
+        real(real64), parameter :: threshold = 0.5
+        real(real64), dimension(n_paralogs) :: paralog_angles
+        integer(int32) :: ierr, i_paralog, n_in_filtered
+
+        paralog_angles = 0.5 * threshold
+        paralog_angles(1:n_paralogs:2) = 2 * threshold
+        paralog_angles(1:4) = 2 * threshold
+
+        call filter_paralogs_by_pattern(SUBFUNC_PATTERN, paralog_angles, threshold, n_paralogs, mask, size(mask), ierr)
+        n_in_filtered = 0
+        do i_paralog = 1, n_paralogs
+            if (mask_check_state(mask, i_paralog)) then
+                n_in_filtered = n_in_filtered + 1
+            end if
+        end do
+        call assert_equal_int(n_in_filtered, count(paralog_angles >= threshold), "test_filter_paralogs_by_pattern: wrong filtering for subfunctionalization")
+        call filter_paralogs_by_pattern(DOSAGE_PATTERN, paralog_angles, threshold, n_paralogs, mask, size(mask), ierr)
+        n_in_filtered = 0
+        do i_paralog = 1, n_paralogs
+            if (mask_check_state(mask, i_paralog)) then
+                n_in_filtered = n_in_filtered + 1
+            end if
+        end do
+        call assert_equal_int(n_in_filtered, count(paralog_angles <= threshold), "test_filter_paralogs_by_pattern: wrong filtering for subfunctionalization")
+    end subroutine test_filter_paralogs_by_pattern
 
     subroutine test_calc_work_arr_paralog_subsets_size
         integer(int32), parameter :: n_dims = 10
