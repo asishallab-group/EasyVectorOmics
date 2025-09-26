@@ -25,14 +25,26 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(5)
+        type(test_case) :: all_tests(6)
 
         all_tests(1) = test_case("test_tox_paralog_analysis_mask_set_state", test_mask_set_state)
         all_tests(2) = test_case("test_tox_paralog_analysis_mask_check_state", test_mask_check_state)
         all_tests(3) = test_case("test_tox_paralog_analysis_mask_get_first_successor_idx", test_mask_get_first_successor_idx)
         all_tests(4) = test_case("test_tox_paralog_analysis_calc_work_arr_paralog_subsets_size", test_calc_work_arr_paralog_subsets_size)
         all_tests(5) = test_case("test_tox_paralog_analysis_test_filter_paralogs_by_pattern", test_filter_paralogs_by_pattern)
+        all_tests(6) = test_case("test_tox_paralog_analysis_test_mask_chunk_count", test_mask_chunk_count)
     end function get_all_tests
+
+    subroutine test_mask_chunk_count
+        integer(int32) :: i, n_chunks, n_expected_chunks
+
+        do n_expected_chunks = 1, 10
+            do i = (n_expected_chunks - 1) * 32 + 1, n_expected_chunks * 32
+                call mask_chunk_count(i, n_chunks)
+                call assert_equal_int(n_chunks, n_expected_chunks, "mask_chunk_count: calculated chunk count differs from expected")
+            end do
+        end do
+    end subroutine test_mask_chunk_count
 
     subroutine test_filter_paralogs_by_pattern
         integer(int32), parameter :: n_paralogs = 16
