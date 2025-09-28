@@ -25,7 +25,7 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(10)
+        type(test_case) :: all_tests(13)
 
         all_tests(1) = test_case("test_tox_paralog_analysis_mask_set_state", test_mask_set_state)
         all_tests(2) = test_case("test_tox_paralog_analysis_mask_check_state", test_mask_check_state)
@@ -37,7 +37,50 @@ contains
         all_tests(8) = test_case("test_tox_paralog_analysis_add_to_results", test_add_to_results)
         all_tests(9) = test_case("test_tox_paralog_analysis_take_active_mask", test_take_active_mask)
         all_tests(10) = test_case("test_tox_paralog_analysis_fill_array_with_minvals_for_each_idx", test_fill_array_with_minvals_for_each_idx)
+        all_tests(11) = test_case("test_tox_paralog_analysis_angle_between", test_angle_between)
+        all_tests(12) = test_case("test_tox_paralog_analysis_generate_subsets", test_generate_subsets)
+        all_tests(13) = test_case("test_tox_paralog_analysis_detect_patterns_perfect_subfunc_split", test_detect_patterns_perfect_subfunc_split)
     end function get_all_tests
+
+    subroutine test_detect_patterns_perfect_subfunc_split
+    end subroutine test_detect_patterns_perfect_subfunc_split
+
+    subroutine test_generate_subsets
+    end subroutine test_generate_subsets
+
+    subroutine test_angle_between
+        use f42_utils, only: PI
+
+        integer(int32), parameter :: n_dims = 5
+        real(real64), dimension(n_dims) :: v1, v2
+        real(real64) :: angle
+
+        ! test v2 == v1
+        v1 = [1, 2, 3, 4, 5]
+        v2 = v1
+        call angle_between(v1, v2, n_dims, angle)
+        call assert_equal_real(angle, 0.0_real64, epsilon(angle), "test_angle_between: vector should have zero angle to itself")
+        v2 = v1 / 2
+        call angle_between(v1, v2, n_dims, angle)
+        call assert_equal_real(angle, 0.0_real64, epsilon(angle), "test_angle_between: vector should have zero angle to itself")
+
+        ! test v2 points in opposite direction
+        v2 = -v1
+        call angle_between(v1, v2, n_dims, angle)
+        call assert_equal_real(angle, PI, epsilon(angle), "test_angle_between: opposite vector should have 180 deg angle")
+
+        ! test v2 perpendicular to v1
+        v1 = [1, 0, 0, 0, 0]
+        v2 = [0, 1, 0, 0, 0]
+        call angle_between(v1, v2, n_dims, angle)
+        call assert_equal_real(angle, PI / 2, epsilon(angle), "test_angle_between: opposite vector should have 90 deg angle")
+
+        ! test v2 45 deg to v1
+        v1 = [1, 0, 0, 0, 0]
+        v2 = [0.7071, 0.7071, 0.0, 0.0, 0.0]
+        call angle_between(v1, v2, n_dims, angle)
+        call assert_equal_real(angle, PI / 4, epsilon(angle), "test_angle_between: opposite vector should have 90 deg angle")
+    end subroutine test_angle_between
 
     subroutine test_fill_array_with_minvals_for_each_idx
         integer(int32), parameter :: src_arr_len = 10
