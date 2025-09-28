@@ -16,6 +16,12 @@ module f42_utils
   real(real64), parameter :: PI = 4.0_real64 * atan(1.0_real64)
 contains
 
+  pure real(real64) function radians(degrees) result(rad)
+      real(real64), intent(in) :: degrees
+
+      rad = modulo(degrees, 360.0_real64) * PI / 180 
+  end function radians
+
   pure real(real64) function norm(vector, n_dims) result(euclidean_norm)
     integer(int32), intent(in) :: n_dims
     real(real64), dimension(n_dims), intent(in) :: vector

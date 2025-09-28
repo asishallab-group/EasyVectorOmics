@@ -9,7 +9,83 @@ module tox_paralog_analysis
 
 contains
 
-    pure subroutine detect_patterns(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, pattern, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+    subroutine detect_dosage_effect(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, ierr, max_angle, gain_gamma)
+        integer(int32), intent(in) :: n_dims
+            !! size of `ancestor` vector and vectors in `paralogs`
+        integer(int32), intent(in) :: n_paralogs
+            !! number of vectors in `paralogs`
+        integer(int32), intent(in) :: n_mask_chunks
+            !! number of 32 bit chunks a mask needs to encode `n_paralogs` paralogs. Use subroutine `mask_chunk_count` for calculation
+        real(real64), dimension(n_dims), intent(in) :: ancestor
+            !! expression vector of ancestral ortholog
+        real(real64), dimension(n_dims, n_paralogs), intent(in) :: paralogs
+            !! expression vectors of paralogs
+        real(real64), intent(in) :: rdi_threshold
+            !! max allowed residual distance from `ancestor`
+        integer(int32), intent(out) :: n_results
+            !! number of resulting subsets. They are stored as the first `n_results` elements of `work_arr_paralog_subsets`
+        integer(int32), intent(in) :: max_subset_size
+            !! maximum subset size of checked paralog subsets. ***USE `calc_work_arr_paralog_subsets_size` TO DETERMINE THIS NUMBER***
+        integer(int32), intent(in) :: n_paralog_subsets
+            !! number of paralog subsets that can be stored in `work_arr_paralog_subsets`. ***USE `calc_work_arr_paralog_subsets_size` TO DETERMINE THIS NUMBER***
+        integer(int32), dimension(n_mask_chunks, n_paralog_subsets), intent(out) :: work_arr_paralog_subsets
+            !! working array to hold bitmask encoded subsets for detection.
+        integer(int32), dimension(n_mask_chunks), intent(in) :: filtered_paralogs_mask
+            !! bit mask with paralogs' indices kept by pattern set to 1, else 0. Use `filter_paralogs_by_pattern` for its calculation
+        integer(int32), dimension(n_mask_chunks), intent(out) :: active_mask
+            !! working array to hold the extended subsets
+        real(real64), dimension(n_dims), intent(out) :: temp_paralog_vector
+            !! vector used for pruning subsets
+        integer(int32), intent(out) :: ierr
+            !! error code
+        real(real64), intent(in), optional :: gain_gamma
+            !! in dosage mode required true positive magnitude gain for dosage, default 0.1
+        real(real64), intent(in), optional :: max_angle
+            !! in dosage mode maximum angle in radians that a subset candidate must not exceed, otherwise pruned, default is Pi
+
+        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, DOSAGE_PATTERN, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, dosage_max_angle=max_angle, dosage_gain_gamma=gain_gamma, ierr=ierr)
+    end subroutine detect_dosage_effect
+
+    subroutine detect_subfunctionalization(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr)
+        integer(int32), intent(in) :: n_dims
+            !! size of `ancestor` vector and vectors in `paralogs`
+        integer(int32), intent(in) :: n_paralogs
+            !! number of vectors in `paralogs`
+        integer(int32), intent(in) :: n_mask_chunks
+            !! number of 32 bit chunks a mask needs to encode `n_paralogs` paralogs. Use subroutine `mask_chunk_count` for calculation
+        real(real64), dimension(n_dims), intent(in) :: ancestor
+            !! expression vector of ancestral ortholog
+        real(real64), dimension(n_dims, n_paralogs), intent(in) :: paralogs
+            !! expression vectors of paralogs
+        real(real64), intent(in) :: rdi_threshold
+            !! max allowed residual distance from `ancestor`
+        integer(int32), intent(out) :: n_results
+            !! number of resulting subsets. They are stored as the first `n_results` elements of `work_arr_paralog_subsets`
+        integer(int32), intent(in) :: max_subset_size
+            !! maximum subset size of checked paralog subsets. ***USE `calc_work_arr_paralog_subsets_size` TO DETERMINE THIS NUMBER***
+        integer(int32), intent(in) :: n_paralog_subsets
+            !! number of paralog subsets that can be stored in `work_arr_paralog_subsets`. ***USE `calc_work_arr_paralog_subsets_size` TO DETERMINE THIS NUMBER***
+        integer(int32), dimension(n_mask_chunks, n_paralog_subsets), intent(out) :: work_arr_paralog_subsets
+            !! working array to hold bitmask encoded subsets for detection.
+        integer(int32), dimension(n_mask_chunks), intent(in) :: filtered_paralogs_mask
+            !! bit mask with paralogs' indices kept by pattern set to 1, else 0. Use `filter_paralogs_by_pattern` for its calculation
+        integer(int32), dimension(n_mask_chunks), intent(out) :: active_mask
+            !! working array to hold the extended subsets
+        real(real64), dimension(n_dims), intent(out) :: temp_paralog_vector
+            !! vector used for pruning subsets
+        integer(int32), intent(out) :: ierr
+            !! error code
+        real(real64), dimension(n_paralogs), intent(in) :: paralog_norms
+            !! in subfunctionalization mode needed for subset pruning, holds the euclidean norms of paralogs (you can use the `norm` function from `f42_utils` function for this)
+        integer(int32), dimension(n_paralogs), intent(in) :: sorted_paralog_norms_perm
+            !! in subfunctionalization mode needed for subset pruning, as the minimum norm of the paralogs that could extend a subset should not be lower than the subset angle to the ancestor
+        real(real64), dimension(n_paralogs), intent(out) :: temp_work_array
+            !! in subfunctionalization mode needed for efficient check of minimum value after a certain index
+
+        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, SUBFUNC_PATTERN, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, subfunc_paralog_norms=paralog_norms, subfunc_sorted_paralog_norms_perm=sorted_paralog_norms_perm, subfunc_temp_work_array=temp_work_array, ierr=ierr)
+    end subroutine detect_subfunctionalization
+
+    subroutine detect_patterns(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, pattern, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
         integer(int32), intent(in) :: n_paralogs
@@ -54,7 +130,7 @@ contains
         real(real64), intent(in), optional :: dosage_max_angle
             !! in dosage mode maximum angle in radians that a subset candidate must not exceed, otherwise pruned, default is Pi
         real(real64), dimension(n_paralogs), intent(in), optional :: subfunc_paralog_norms
-            !! in subfunctionalization mode needed for subset pruning, holds the norms of paralogs (you can use the `norm` from `f42_utils` function for this)
+            !! in subfunctionalization mode needed for subset pruning, holds the euclidean norms of paralogs (you can use the `norm` from `f42_utils` function for this)
         integer(int32), dimension(n_paralogs), intent(in), optional :: subfunc_sorted_paralog_norms_perm
             !! in subfunctionalization mode needed for subset pruning, as the minimum norm of the paralogs that could extend a subset should not be lower than the subset angle to the ancestor
         real(real64), dimension(n_paralogs), intent(out), optional :: subfunc_temp_work_array
@@ -93,7 +169,7 @@ contains
         end do
     end subroutine detect_patterns
 
-    pure subroutine generate_subsets(candidate_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, rdi_threshold, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, dosage_max_angle, dosage_gain_gamma, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+    subroutine generate_subsets(candidate_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, rdi_threshold, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, dosage_max_angle, dosage_gain_gamma, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
         integer(int32), intent(in) :: n_paralogs
@@ -137,7 +213,7 @@ contains
         real(real64), intent(in), optional :: dosage_max_angle
             !! in dosage mode maximum angle in radians that a subset candidate must not exceed, otherwise pruned, default is Pi
         real(real64), dimension(n_paralogs), intent(in), optional :: subfunc_paralog_norms
-            !! in subfunctionalization mode needed for subset pruning, holds the norms of paralogs (you can use the `norm` from `f42_utils` function for this)
+            !! in subfunctionalization mode needed for subset pruning, holds the euclidean norms of paralogs (you can use the `norm` from `f42_utils` function for this)
         integer(int32), dimension(n_paralogs), intent(in), optional :: subfunc_sorted_paralog_norms_perm
             !! in subfunctionalization mode needed for subset pruning, as the minimum norm of the paralogs that could extend a subset should not be lower than the subset angle to the ancestor
         real(real64), dimension(n_paralogs), intent(out), optional :: subfunc_temp_work_array
@@ -151,8 +227,17 @@ contains
                 use f42_utils, only: PI
                 real(real64) :: subset_angle, gain, max_angle
 
-                gain = merge(dosage_gain_gamma, 0.1_real64, present(dosage_gain_gamma))
-                max_angle = merge(dosage_max_angle, PI, present(dosage_max_angle))
+                if (present(dosage_gain_gamma)) then
+                    gain = dosage_gain_gamma
+                else
+                    gain = 0.1_real64
+                end if
+
+                if (present(dosage_max_angle)) then
+                    max_angle = dosage_max_angle
+                else
+                    max_angle = PI
+                end if
 
                 !! prepare residual, so the extending paralog just needs to be included in one operation and excluded after calculation
                 temp_paralog_vector = 0
