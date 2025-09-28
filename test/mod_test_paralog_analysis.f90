@@ -15,7 +15,7 @@ module mod_test_tox_paralog_analysis
 
     ! Type to hold test name and procedure pointer
     type :: test_case
-        character(len=64) :: name
+        character(len=128) :: name
         procedure(test_interface), pointer, nopass :: test_proc => null()
     end type test_case
 
@@ -25,7 +25,7 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(13)
+        type(test_case) :: all_tests(14)
 
         all_tests(1) = test_case("test_tox_paralog_analysis_mask_set_state", test_mask_set_state)
         all_tests(2) = test_case("test_tox_paralog_analysis_mask_check_state", test_mask_check_state)
@@ -40,6 +40,7 @@ contains
         all_tests(11) = test_case("test_tox_paralog_analysis_angle_between", test_angle_between)
         all_tests(12) = test_case("test_tox_paralog_analysis_generate_subsets", test_generate_subsets)
         all_tests(13) = test_case("test_tox_paralog_analysis_detect_patterns_perfect_subfunc_split", test_detect_patterns_perfect_subfunc_split)
+        all_tests(14) = test_case("test_tox_paralog_analysis_detect_patterns_subfunc_at_angle_margin", test_detect_patterns_subfunc_at_angle_margin)
     end function get_all_tests
 
     subroutine test_detect_patterns_perfect_subfunc_split
@@ -95,6 +96,95 @@ contains
         call assert_true(is_ok(ierr), "test_detect_patterns_perfect_subfunc_split: unexpected error when detecting dosage effect")
         call assert_equal_int(n_results, 0_int32, "test_detect_patterns_perfect_subfunc_split: expected no results for dosage effect")
     end subroutine test_detect_patterns_perfect_subfunc_split
+
+    subroutine test_detect_patterns_subfunc_at_angle_margin
+        use f42_utils, only: radians
+
+        integer(int32), parameter :: n_paralogs = 2, n_dims = 3, n_mask_chunks = 1
+        real(real64), parameter ::  rdi_threshold = 1e-3
+
+        integer(int32), dimension(n_mask_chunks) :: filtered_paralogs_mask, active_mask
+        real(real64), dimension(n_dims) :: ancestor, temp_paralog_vector
+        real(real64), dimension(n_paralogs) :: temp_work_array, paralog_norms, paralog_angles
+        integer(int32), dimension(n_paralogs) :: sorted_paralog_norms_perm
+        real(real64), dimension(n_dims, n_paralogs) :: paralogs
+        integer(int32), dimension(:, :), allocatable :: work_arr_paralog_subsets
+
+        integer(int32) :: n_results, max_subset_size, work_array_size, ierr, i_paralog
+        real(real64) :: prefilter_threshold
+
+        call set_ok(ierr)
+
+        ! should not pass
+        max_subset_size = n_paralogs
+        ancestor = [ 1, 1, 0 ]
+        paralogs(:, 1) = [ 1.0_real64, 0.0_real64, 0.001_real64 ]
+        paralogs(:, 2) = [ 0.0_real64, 1.0_real64, 0.001_real64 ]
+        paralog_norms = sqrt(1.0_real64 + 0.001_real64 ** 2)
+        sorted_paralog_norms_perm = [ 1, 2 ]
+        prefilter_threshold = radians(44.9_real64)
+
+        do i_paralog = 1, n_paralogs
+            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
+        end do
+
+        call filter_paralogs_by_pattern(SUBFUNC_PATTERN, paralog_angles, prefilter_threshold, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
+        call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when filtering paralogs for subfunctionalization")
+        call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
+        call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when calculating work array size")
+        allocate(work_arr_paralog_subsets(n_mask_chunks, work_array_size))
+
+        call detect_subfunctionalization(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, work_array_size, active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr)
+        call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when detecting subfunctionalization")
+        call assert_equal_int(n_results, 0_int32, "test_detect_patterns_subfunc_at_angle_margin: expected only one result for subfunctionalization")
+
+        deallocate(work_arr_paralog_subsets)
+        call filter_paralogs_by_pattern(DOSAGE_PATTERN, paralog_angles, prefilter_threshold, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
+        call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when filtering paralogs for dosage effect")
+        call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
+        call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when calculating work array size")
+        allocate(work_arr_paralog_subsets(n_mask_chunks, work_array_size))
+
+        call detect_dosage_effect(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, work_array_size, active_mask, temp_paralog_vector, ierr)
+        call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when detecting dosage effect")
+        call assert_equal_int(n_results, 0_int32, "test_detect_patterns_subfunc_at_angle_margin: expected no results for dosage effect")
+        deallocate(work_arr_paralog_subsets)
+
+        ! should pass
+        max_subset_size = n_paralogs
+        ancestor = [ 1, 1, 0 ]
+        paralogs(:, 1) = [ 1.0_real64, 0.0_real64, 0.0004_real64 ]
+        paralogs(:, 2) = [ 0.0_real64, 1.0_real64, 0.0004_real64 ]
+        paralog_norms = sqrt(1.0_real64 + 0.0004_real64 ** 2)
+        sorted_paralog_norms_perm = [ 1, 2 ]
+        prefilter_threshold = radians(44.9_real64)
+
+        do i_paralog = 1, n_paralogs
+            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
+        end do
+
+        call filter_paralogs_by_pattern(SUBFUNC_PATTERN, paralog_angles, prefilter_threshold, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
+        call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when filtering paralogs for subfunctionalization")
+        call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
+        call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when calculating work array size")
+        allocate(work_arr_paralog_subsets(n_mask_chunks, work_array_size))
+
+        call detect_subfunctionalization(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, work_array_size, active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr)
+        call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when detecting subfunctionalization")
+        call assert_equal_int(n_results, 1_int32, "test_detect_patterns_subfunc_at_angle_margin: expected only one result for subfunctionalization")
+        call assert_equal_int(work_arr_paralog_subsets(1, 1), 3_int32, "test_detect_patterns_subfunc_at_angle_margin: expected result mask to be 3=0b011 for subfunctionalization")
+
+        deallocate(work_arr_paralog_subsets)
+        call filter_paralogs_by_pattern(DOSAGE_PATTERN, paralog_angles, prefilter_threshold, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
+        call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when filtering paralogs for dosage effect")
+        call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
+        call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when calculating work array size")
+        allocate(work_arr_paralog_subsets(n_mask_chunks, work_array_size))
+
+        call detect_dosage_effect(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, work_array_size, active_mask, temp_paralog_vector, ierr)
+        call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when detecting dosage effect")
+        call assert_equal_int(n_results, 0_int32, "test_detect_patterns_subfunc_at_angle_margin: expected no results for dosage effect")
+    end subroutine test_detect_patterns_subfunc_at_angle_margin
 
     subroutine test_generate_subsets
     end subroutine test_generate_subsets
