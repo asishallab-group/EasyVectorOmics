@@ -25,18 +25,37 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(9)
+        type(test_case) :: all_tests(10)
 
         all_tests(1) = test_case("test_tox_paralog_analysis_mask_set_state", test_mask_set_state)
         all_tests(2) = test_case("test_tox_paralog_analysis_mask_check_state", test_mask_check_state)
         all_tests(3) = test_case("test_tox_paralog_analysis_mask_get_first_successor_idx", test_mask_get_first_successor_idx)
         all_tests(4) = test_case("test_tox_paralog_analysis_calc_work_arr_paralog_subsets_size", test_calc_work_arr_paralog_subsets_size)
-        all_tests(5) = test_case("test_tox_paralog_analysis_test_filter_paralogs_by_pattern", test_filter_paralogs_by_pattern)
-        all_tests(6) = test_case("test_tox_paralog_analysis_test_mask_chunk_count", test_mask_chunk_count)
-        all_tests(7) = test_case("test_tox_paralog_analysis_test_add_new_active_mask", test_add_new_active_mask)
-        all_tests(8) = test_case("test_tox_paralog_analysis_test_add_to_results", test_add_to_results)
-        all_tests(9) = test_case("test_tox_paralog_analysis_test_take_active_mask", test_take_active_mask)
+        all_tests(5) = test_case("test_tox_paralog_analysis_filter_paralogs_by_pattern", test_filter_paralogs_by_pattern)
+        all_tests(6) = test_case("test_tox_paralog_analysis_mask_chunk_count", test_mask_chunk_count)
+        all_tests(7) = test_case("test_tox_paralog_analysis_add_new_active_mask", test_add_new_active_mask)
+        all_tests(8) = test_case("test_tox_paralog_analysis_add_to_results", test_add_to_results)
+        all_tests(9) = test_case("test_tox_paralog_analysis_take_active_mask", test_take_active_mask)
+        all_tests(10) = test_case("test_tox_paralog_analysis_fill_array_with_minvals_for_each_idx", test_fill_array_with_minvals_for_each_idx)
     end function get_all_tests
+
+    subroutine test_fill_array_with_minvals_for_each_idx
+        integer(int32), parameter :: src_arr_len = 10
+        real(real64), dimension(src_arr_len) :: out_arr, src_arr
+        integer(int32), dimension(src_arr_len) :: sorted_src_arr_perm
+        integer(int32) :: ierr, i_element
+
+        call set_ok(ierr)
+
+        src_arr = [ 0.85117158_real64, -0.35000591_real64,  0.0880246_real64 ,  1.2852401_real64 ,  1.47949047_real64, -0.28126471_real64,  0.82010833_real64,  0.03206986_real64,  0.24169488_real64, 0.39394542_real64 ]
+        sorted_src_arr_perm = [ 2, 6, 8, 3, 9, 10, 7, 1, 4, 5 ]
+        call fill_array_with_minvals_for_each_idx(out_arr, src_arr, sorted_src_arr_perm, src_arr_len, ierr)
+        call assert_true(is_ok(ierr), "test_fill_array_with_minvals_for_each_idx: unexpected error when calling routine")
+
+        do i_element = 1, src_arr_len
+            call assert_equal_real(out_arr(i_element), minval(src_arr(i_element:src_arr_len)), 0.0_real64, "test_fill_array_with_minvals_for_each_idx: min value does not match")
+        end do
+    end subroutine test_fill_array_with_minvals_for_each_idx
 
     subroutine test_take_active_mask
         integer(int32), parameter :: n_mask_chunks = 1, n_subsets = 5

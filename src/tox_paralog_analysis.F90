@@ -268,12 +268,14 @@ contains
                 call set_err(ierr, ERR_INVALID_INPUT)
                 exit
             end if
-            do i_out = last_min_index + 1, current_min_idx
-                out_arr(i_out) = src_arr(current_min_idx)
-            end do
+            if (current_min_idx > last_min_index) then
+                do i_out = last_min_index + 1, current_min_idx
+                    out_arr(i_out) = src_arr(current_min_idx)
+                end do
 
-            if (current_min_idx == src_arr_len) exit
-            last_min_index = current_min_idx
+                if (current_min_idx == src_arr_len) exit
+                last_min_index = current_min_idx
+            end if
         end do
     end subroutine fill_array_with_minvals_for_each_idx
 
