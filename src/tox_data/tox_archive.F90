@@ -128,12 +128,6 @@ module tox_archive
             use iso_c_binding, only: c_ptr
             type(c_ptr), value :: source
         end subroutine zip_source_free
-        
-        function c_strlen(str) bind(C, name="strlen")
-            use iso_c_binding, only: c_size_t, c_ptr
-            integer(c_size_t) :: c_strlen
-            type(c_ptr), value :: str
-        end function c_strlen
     end interface
 
     ! ZIP stat structure
