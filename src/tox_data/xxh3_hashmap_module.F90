@@ -1,6 +1,7 @@
 module xxh3_hashmap_module
     use, intrinsic :: iso_c_binding, only: c_loc
     use iso_fortran_env, only: int32, int64
+    use f42_utils, only: next_power_of_two
     implicit none
     private
     
@@ -37,19 +38,6 @@ module xxh3_hashmap_module
     end type hashmap_type
 
 contains
-
-!> Find the next power of two greater than or equal to n
-function next_power_of_two(n) result(power)
-    integer(int32), intent(in) :: n
-    !! input value
-    integer(int32) :: power
-    !! next greater value that is a power of two
-    
-    power = 1
-    do while (power < n)
-        power = ishft(power, 1)
-    end do
-end function next_power_of_two
 
 !> Create the hashmap
 subroutine hashmap_create(map, initial_size)
