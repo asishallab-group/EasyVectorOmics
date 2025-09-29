@@ -453,100 +453,106 @@ contains
 
     ! Unified subroutine to add data to ZIP (handles both files and strings)
     subroutine add_data_to_zip(zip_handle, filename, data_source, data_type, ierr)
-        type(c_ptr), intent(in) :: zip_handle
+        use iso_c_binding
+        implicit none
+
+        ! Arguments
+        type(c_ptr), intent(in)    :: zip_handle       
             !! Zip connection
-        character(len=*), intent(in) :: filename
+        character(len=*), intent(in) :: filename       
             !! Filename to add
-        character(len=*), intent(in) :: data_source 
+        character(len=*), intent(in) :: data_source    
             !! File path or string content
-        integer(int32), intent(in) :: data_type 
-            !! 1 = file, 2 = string
-        integer(int32), intent(out) :: ierr
+        integer(int32), intent(in) :: data_type        
+            !! Type of input
+        integer(int32), intent(out) :: ierr            
             !! Error code
-        
+
+        ! Constants for data types
+        integer(int32), parameter :: DATA_TYPE_FILE   = 1
+        integer(int32), parameter :: DATA_TYPE_STRING = 2
+
+        ! Locals
         integer(c_int) :: error
         integer(c_int64_t) :: index
         type(c_ptr) :: source, c_data
         integer(c_signed_char), pointer :: file_data(:)
         character(kind=c_char), pointer :: string_data(:)
-        integer(int32) :: unit, iostat, file_size
+        integer(int32) :: unit, iostat, file_size, i
         integer(c_size_t) :: data_len
-        integer(int32) :: i
-        
+
         call set_ok(ierr)
-        
+
         if (len_trim(data_source) == 0) then
             call set_err_once(ierr, ERR_INVALID_INPUT)
             return
         end if
 
         select case (data_type)
-        case (1) ! File data
-            ! Read file content
-            open(unit, file=data_source, access='stream', form='unformatted', iostat=iostat, status='old')
+
+        case (DATA_TYPE_FILE)
+            ! Open file
+            open(newunit=unit, file=data_source, access='stream', form='unformatted', &
+                iostat=iostat, status='old')
             if (is_err(iostat)) then
                 call set_err_once(ierr, ERR_FILE_OPEN)
-                if(DEBUG) print *, "Error opening file: ", trim(data_source)
+                if (DEBUG) print *, "Error opening file: ", trim(data_source)
                 return
             end if
-            
+
             inquire(unit, size=file_size)
             data_len = int(file_size, c_size_t)
-            
+
             if (file_size == 0) then
                 close(unit)
-                ! Add empty file
-                call add_empty_file_to_zip(zip_handle, filename, ierr)
-                return
-            end if
-            
-            ! Allocate memory and read file
-            c_data = malloc(data_len)
-            if (.not. c_associated(c_data)) then
-                call set_err_once(ierr, ERR_POINTER_NULL)
+                source = zip_source_buffer(zip_handle, c_null_ptr, 0_c_size_t, 0)
+            else
+                c_data = malloc(data_len)
+                if (.not. c_associated(c_data)) then
+                    call set_err_once(ierr, ERR_POINTER_NULL)
+                    close(unit)
+                    return
+                end if
+
+                call c_f_pointer(c_data, file_data, [file_size])
+                read(unit, iostat=iostat) file_data
                 close(unit)
-                return
+
+                if (is_err(iostat)) then
+                    call set_err_once(ierr, ERR_READ_DATA)
+                    call free(c_data)
+                    return
+                end if
+
+                source = zip_source_buffer(zip_handle, c_data, data_len, 1)
             end if
-            
-            call c_f_pointer(c_data, file_data, [file_size])
-            read(unit, iostat=iostat) file_data
-            close(unit)
-            
-            if (is_err(iostat)) then
-                call set_err_once(ierr, ERR_READ_DATA)
-                call free(c_data)
-                return
-            end if
-            
-            source = zip_source_buffer(zip_handle, c_data, data_len, 1)
-            
-        case (2) ! String data
-            
+
+        case (DATA_TYPE_STRING)
             data_len = len(data_source)
             c_data = malloc(data_len)
             if (.not. c_associated(c_data)) then
                 call set_err_once(ierr, ERR_POINTER_NULL)
                 return
             end if
-            
+
             call c_f_pointer(c_data, string_data, [data_len])
             do i = 1, data_len
                 string_data(i) = data_source(i:i)
             end do
-            
+
             source = zip_source_buffer(zip_handle, c_data, data_len, 1)
-            
+
         case default
             call set_err_once(ierr, ERR_INVALID_INPUT)
             return
         end select
-        
+
         if (.not. c_associated(source)) then
             call set_err_once(ierr, ERR_POINTER_NULL)
-            if (data_type == 1 .or. data_type == 2) call free(c_data)
+            if (data_type == DATA_TYPE_FILE .or. data_type == DATA_TYPE_STRING) call free(c_data)
             return
         end if
-        
+
         ! Add file to ZIP
         index = zip_file_add(zip_handle, trim(filename)//c_null_char, source, ZIP_FILE_OVERWRITE)
         if (index < 0) then
@@ -554,46 +560,17 @@ contains
             call zip_source_free(source)
             return
         end if
-        
-        ! Set compression to store (no compression)
+
+        ! Set compression to "store" (no compression)
         error = zip_set_file_compression(zip_handle, index, ZIP_COMPRESSION_STORE, 0)
         if (is_err(error)) then
-            if(DEBUG) print *, "Warning: Error setting compression for: ", trim(filename)
+            if (DEBUG) print *, "Warning: Error setting compression for: ", trim(filename)
         end if
-        
-        if(DEBUG) print *, "Added to ZIP: ", trim(filename)
-        
-    contains
-        subroutine add_empty_file_to_zip(zip_handle, filename, ierr)
-            type(c_ptr), intent(in) :: zip_handle
-                !! Zip connection
-            character(len=*), intent(in) :: filename
-                !! Name of the file to add
-            integer(int32), intent(out) :: ierr
-                !! Error code
-            
-            type(c_ptr) :: source
-            integer(c_int64_t) :: index
-            integer(c_int) :: error
-            
-            call set_ok(ierr)
-            
-            source = zip_source_buffer(zip_handle, c_null_ptr, 0_c_size_t, 0)
-            if (.not. c_associated(source)) then
-                call set_err_once(ierr, ERR_POINTER_NULL)
-                return
-            end if
-            
-            index = zip_file_add(zip_handle, trim(filename)//c_null_char, source, ZIP_FILE_OVERWRITE)
-            if (index < 0) then
-                call set_err_once(ierr, ERR_FILE_ADD)
-                call zip_source_free(source)
-                return
-            end if
-            
-            if(DEBUG) print *, "Added empty file to ZIP: ", trim(filename)
-        end subroutine add_empty_file_to_zip
+
+        if (DEBUG) print *, "Added to ZIP: ", trim(filename)
+
     end subroutine add_data_to_zip
+
 
     ! >Manifest creation
     subroutine write_manifest(gene_ids_file, expression_file, gene_to_family_file, &
