@@ -360,6 +360,7 @@ contains
 
     !> Helper function to get the name of a ZIP entry
     subroutine get_zip_entry_name(zip_handle, entry_index, entry_name, ierr)
+        use tox_conversions, only: c_char_1d_as_string
         type(c_ptr), intent(in) :: zip_handle
             !! Zip file connection
         integer(c_int64_t), intent(in) :: entry_index
@@ -369,59 +370,11 @@ contains
         integer(int32), intent(out) :: ierr
             !! Error code
         
-        type(c_ptr) :: name_ptr
-        integer(int32) :: iostat, name_len, i
-        character(kind=c_char), pointer :: f_ptr(:)
+        character(kind=c_char, len=1), pointer :: name_ptr(:)
         integer(int32), parameter :: MAX_NAME_LENGTH = 4096  ! Reasonable maximum
-
-        call set_ok(ierr)
-        call set_ok(iostat)
-        
         ! Get name from ZIP
-        name_ptr = zip_get_name(zip_handle, entry_index, 0)
-        if (.not. c_associated(name_ptr)) then
-            call set_err_once(ierr, ERR_POINTER_NULL)
-            if(DEBUG) print *, "Error getting name for index: ", entry_index
-            entry_name = ""
-            return
-        end if
-        
-        ! Convert C string to Fortran string
-        call c_f_pointer(name_ptr, f_ptr, [MAX_NAME_LENGTH])
-        name_len = 0
-        
-        ! Find null terminator with bounds checking
-        do i = 1, MAX_NAME_LENGTH
-            if (f_ptr(i) == c_null_char) then
-                name_len = i - 1
-                exit
-            end if
-        end do
-        
-        ! Check if we exceeded maximum length
-        if (i > MAX_NAME_LENGTH) then
-            call set_err_once(ierr, ERR_STRING_TOO_LONG)
-            if(DEBUG) print *, "ZIP entry name too long at index: ", entry_index
-            entry_name = ""
-            return
-        end if
-        
-        if (name_len > 0) then
-            allocate(character(len=name_len) :: entry_name, stat=iostat)
-            if(is_err(iostat)) then
-                call set_err_once(ierr, ERR_ALLOC_FAIL)
-                entry_name = ""
-                return
-            end if
-            
-            ! Copy the string safely
-            do i = 1, name_len
-                entry_name(i:i) = f_ptr(i)
-            end do
-        else
-            entry_name = ""
-            if(DEBUG) print *, "Warning: Empty name for ZIP entry index: ", entry_index
-        end if
+        call c_f_pointer(zip_get_name(zip_handle, entry_index, 0), name_ptr, [MAX_NAME_LENGTH])
+        call c_char_1d_as_string(name_ptr, entry_name, ierr)
     end subroutine get_zip_entry_name
 
     ! Unified subroutine to extract a file from ZIP archive

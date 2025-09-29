@@ -760,6 +760,6 @@ contains
     if (allocated(family_centroids_verify)) deallocate(family_centroids_verify)
     if (allocated(shift_vectors_verify)) deallocate(shift_vectors_verify)
 
-    print *, "All archive tests completed successfully!"
+    ! print *, "All archive tests completed successfully!"
   end subroutine test_archive
 end module mod_test_tox_data
