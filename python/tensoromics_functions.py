@@ -1832,7 +1832,7 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
     return shift_vectors
 
 
-def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_set, mode='all'):
+def tox_group_centroid(expression_vectors, gene_to_family, n_families, mode, ortholog_set = None):
     """
     Computes expression centroids for groups of genes.
 
@@ -1846,10 +1846,10 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
             A 1D NumPy array of length n_genes, mapping each gene to a family ID.
         n_families : int
             The total number of unique families.
+        mode : str
+            The calculation mode. 'all' or 'orthologs'.
         ortholog_set : np.ndarray
-            A 1D boolean NumPy array of length n_genes, indicating ortholog membership.
-        mode : str, optional
-            The calculation mode. 'all' (default) or 'ortho'.
+            (Optional) A 1D boolean NumPy array of length n_genes, indicating ortholog membership (only required in 'orthologs' mode).
 
     Returns:
         np.ndarray
@@ -1861,6 +1861,14 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
         raise ValueError("`vectors` must be a 2D NumPy array.")
     n_axes, n_genes = expression_vectors.shape
 
+    if mode != 'all' and mode != 'orthologs':
+        raise ValueError("'mode' must be either 'all' or 'orthologs'.")
+    if mode == 'orthologs': 
+        if ortholog_set is None:
+            raise ValueError("`ortholog_set` must be provided when mode is 'orthologs'.")
+    else:
+        ortholog_set = np.ones(n_genes, dtype=np.int32, order="F")
+
     vecs_f = np.asarray(expression_vectors, dtype=np.float64, order="F")
     g2f_map_f = np.asarray(gene_to_family, dtype=np.int32, order="F")
     ortho_set_int_f = np.asarray(ortholog_set, dtype=np.int32, order="F")
@@ -1869,11 +1877,8 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
         raise ValueError("`gene_to_family` must be a 1D NumPy array of size n_genes.")
     if ortho_set_int_f.size != n_genes:
         raise ValueError("`ortholog_set` must be a 1D NumPy array of size n_genes.")
-    if mode not in ['all', 'ortho']:
-        raise ValueError("`mode` must be either 'all' or 'ortho'.")
 
     # 2) Prepare output buffers and mode flag
-    use_all_mode_int = 1 if mode == 'all' else 0
     centroids_out = np.zeros((n_axes, n_families), dtype=np.float64, order="F")
     selected_indices = np.zeros(n_genes, dtype=np.int32, order="F")
     ierr = ctypes.c_int(0)
@@ -1887,7 +1892,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
         np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # gene_to_family
         ctypes.c_int,                                                   # n_families
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # centroid_matrix (out)
-        ctypes.c_int,                                                   # use_all_mode (as int)
+        ctypes.c_char * 10,                                             # mode (character array)
         np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # ortholog_set (as int array)
         np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # selected_indices
         ctypes.c_int,                                                   # selected_indices_len
@@ -1896,6 +1901,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
     group_centroid_c.restype = None
 
     # 4) Call the Fortran routine
+    mode_buffer = ctypes.create_string_buffer(mode.encode('utf-8'), size=10)
     group_centroid_c(
         vecs_f,
         n_axes,
@@ -1903,7 +1909,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
         g2f_map_f,
         n_families,
         centroids_out,
-        use_all_mode_int,
+        mode_buffer,
         ortho_set_int_f,
         selected_indices,
         n_genes,
