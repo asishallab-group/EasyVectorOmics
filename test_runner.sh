@@ -90,5 +90,6 @@ fi
 
 # Cleanup
 rm -f test_*.bin 2>/dev/null || true
+rm -f test_archive_*.zip || true
 
 exit $TEST_RESULT
