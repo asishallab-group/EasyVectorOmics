@@ -130,14 +130,6 @@ module tox_archive
         end subroutine zip_source_free
     end interface
 
-    ! ZIP stat structure
-    type, bind(C) :: zip_stat_t
-        integer(c_int64_t) :: valid
-        integer(c_int64_t) :: size
-        integer(c_size_t) :: mtime
-        integer(c_int64_t) :: crc
-    end type zip_stat_t
-
 contains
 
     !> Creates a zip archive if it does not exist already
