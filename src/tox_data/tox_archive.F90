@@ -4,6 +4,7 @@ module tox_archive
     use tox_errors, only: set_ok, set_err_once, is_err, ERR_FILE_OPEN, ERR_FILE_CLOSE, ERR_STRING_TOO_LONG, ERR_ALLOC_FAIL, ERR_FILE_ADD
     use tox_errors, only: ERR_FILE_CLOSE, ERR_FILE_EXTRACT, ERR_INVALID_INPUT
     use iso_fortran_env, only: real64, int32
+    use config, only: DEBUG
     implicit none
 
     ! libzip constants
@@ -204,9 +205,9 @@ contains
         error = zip_close(zip_handle)
         if (is_err(error)) then
             call set_err_once(ierr, error)
-            print *, "Error closing ZIP file: ", error
+            if(DEBUG) print *, "Error closing ZIP file: ", error
         else if (is_ok(ierr)) then
-            print *, "ZIP archive created successfully: ", trim(zip_filename)
+            if(DEBUG) print *, "ZIP archive created successfully: ", trim(zip_filename)
         end if
         
     contains
@@ -303,7 +304,7 @@ contains
         inquire(file=zip_filename, exist=file_exists)
         if (.not. file_exists) then
             call set_err_once(ierr, ERR_FILE_OPEN)
-            print *, "ZIP file does not exist: ", trim(zip_filename)
+            if(DEBUG) print *, "ZIP file does not exist: ", trim(zip_filename)
             return
         end if
         
@@ -311,7 +312,7 @@ contains
         zip_handle = zip_open(trim(zip_filename)//c_null_char, ZIP_RDONLY, error)
         if (error /= 0 .or. .not. c_associated(zip_handle)) then
             call set_err_once(ierr, ERR_FILE_OPEN)
-            print *, "Error opening ZIP file for reading: ", error
+            if(DEBUG) print *, "Error opening ZIP file for reading: ", error
             return
         end if
         
@@ -345,12 +346,12 @@ contains
         ! Close ZIP archive
         error = zip_close(zip_handle)
         if (is_err(error)) then
-            print *, "Error closing ZIP file: ", error
+            if(DEBUG) print *, "Error closing ZIP file: ", error
             call set_err_once(ierr, ERR_FILE_CLOSE)
             return
         end if
         
-        print *, "ZIP archive extracted successfully: ", trim(zip_filename)
+        if(DEBUG) print *, "ZIP archive extracted successfully: ", trim(zip_filename)
     end subroutine extract_zip_archive
 
     !> Delete a file from the disk
@@ -395,7 +396,7 @@ contains
         name_ptr = zip_get_name(zip_handle, entry_index, 0)
         if (.not. c_associated(name_ptr)) then
             call set_err_once(ierr, ERR_POINTER_NULL)
-            print *, "Error getting name for index: ", entry_index
+            if(DEBUG) print *, "Error getting name for index: ", entry_index
             entry_name = ""
             return
         end if
@@ -415,7 +416,7 @@ contains
         ! Check if we exceeded maximum length
         if (i > MAX_NAME_LENGTH) then
             call set_err_once(ierr, ERR_STRING_TOO_LONG)
-            print *, "ZIP entry name too long at index: ", entry_index
+            if(DEBUG) print *, "ZIP entry name too long at index: ", entry_index
             entry_name = ""
             return
         end if
@@ -434,7 +435,7 @@ contains
             end do
         else
             entry_name = ""
-            print *, "Warning: Empty name for ZIP entry index: ", entry_index
+            if(DEBUG) print *, "Warning: Empty name for ZIP entry index: ", entry_index
         end if
     end subroutine get_zip_entry_name
 
@@ -460,7 +461,7 @@ contains
         file_handle = zip_fopen(zip_handle, trim(filename)//c_null_char, 0)
         if (.not. c_associated(file_handle)) then
             call set_err_once(ierr, ERR_FILE_EXTRACT)
-            print *, "Error opening file in ZIP: ", trim(filename)
+            if(DEBUG) print *, "Error opening file in ZIP: ", trim(filename)
             return
         end if
         
@@ -469,7 +470,7 @@ contains
             iostat=iostat, status='replace', action='write')
         if (is_err(iostat)) then
             call set_err_once(ierr, ERR_FILE_OPEN)
-            print *, "Error creating file: ", trim(filename)
+            if(DEBUG) print *, "Error creating file: ", trim(filename)
             error = zip_fclose(file_handle)
             return
         end if
@@ -478,7 +479,7 @@ contains
         allocate(buffer(CHUNK_SIZE), stat=iostat)
         if (is_err(iostat)) then
             call set_err_once(ierr, ERR_ALLOC_FAIL)
-            print *, "Error allocating buffer for: ", trim(filename)
+            if(DEBUG) print *, "Error allocating buffer for: ", trim(filename)
             close(unit, status='delete')
             error = zip_fclose(file_handle)
             return
@@ -491,7 +492,7 @@ contains
                 write(unit, iostat=iostat) buffer(1:bytes_read)
                 if (is_err(iostat)) then
                     call set_err_once(ierr, ERR_WRITE_DATA)
-                    print *, "Error writing file: ", trim(filename)
+                    if(DEBUG) print *, "Error writing file: ", trim(filename)
                     exit
                 end if
             end if
@@ -504,11 +505,11 @@ contains
         
         if (is_err(error)) then
             call set_err_once(ierr, ERR_FILE_CLOSE)
-            print *, "Error closing file in ZIP: ", trim(filename)
+            if(DEBUG) print *, "Error closing file in ZIP: ", trim(filename)
         end if
         
         if (is_ok(ierr)) then
-            print *, "Extracted: ", trim(filename)
+            if(DEBUG) print *, "Extracted: ", trim(filename)
         end if
     end subroutine extract_file_from_zip
 
@@ -547,7 +548,7 @@ contains
             open(unit, file=data_source, access='stream', form='unformatted', iostat=iostat, status='old')
             if (is_err(iostat)) then
                 call set_err_once(ierr, ERR_FILE_OPEN)
-                print *, "Error opening file: ", trim(data_source)
+                if(DEBUG) print *, "Error opening file: ", trim(data_source)
                 return
             end if
             
@@ -619,10 +620,10 @@ contains
         ! Set compression to store (no compression)
         error = zip_set_file_compression(zip_handle, index, ZIP_CM_STORE, 0)
         if (is_err(error)) then
-            print *, "Warning: Error setting compression for: ", trim(filename)
+            if(DEBUG) print *, "Warning: Error setting compression for: ", trim(filename)
         end if
         
-        print *, "Added to ZIP: ", trim(filename)
+        if(DEBUG) print *, "Added to ZIP: ", trim(filename)
         
     contains
         subroutine add_empty_file_to_zip(zip_handle, filename, ierr)
@@ -652,7 +653,7 @@ contains
                 return
             end if
             
-            print *, "Added empty file to ZIP: ", trim(filename)
+            if(DEBUG) print *, "Added empty file to ZIP: ", trim(filename)
         end subroutine add_empty_file_to_zip
     end subroutine add_data_to_zip
 
@@ -686,7 +687,7 @@ contains
         open(newunit=unit, file=manifest_filename, status='replace', iostat=iostat)
         if (is_err(iostat)) then
             call set_err_once(ierr, ERR_FILE_OPEN)
-            print *, "Error creating manifest file: ", trim(manifest_filename)
+            if(DEBUG) print *, "Error creating manifest file: ", trim(manifest_filename)
             return
         end if
         
@@ -759,7 +760,7 @@ contains
         open(newunit=unit, file=manifest_filename, status='old', iostat=iostat)
         if (is_err(iostat)) then
             call set_err_once(ierr, ERR_FILE_OPEN)
-            print *, "Error opening manifest file: ", trim(manifest_filename)
+            if(DEBUG) print *, "Error opening manifest file: ", trim(manifest_filename)
             return
         end if
         
@@ -791,7 +792,7 @@ contains
                 case ('shift_vectors')
                     shift_vectors_file = trim(value)
                 case default
-                    print *, "Unknown key in manifest: ", trim(key)
+                    if(DEBUG) print *, "Unknown key in manifest: ", trim(key)
             end select
         end do
         
@@ -834,7 +835,7 @@ contains
             open(newunit=unit, file="manifest.txt", access='stream', form='unformatted', &
                 iostat=iostat, status='replace', action='write')
             if (is_err(iostat)) then
-                print *, "Error creating manifest file"
+                if(DEBUG) print *, "Error creating manifest file"
                 error = zip_fclose(file_handle)
                 call set_err_once(ierr, ERR_FILE_OPEN)
                 return
@@ -848,7 +849,7 @@ contains
                     if (bytes_read <= 0) exit
                     write(unit, iostat=iostat) buffer(1:bytes_read)
                     if (is_err(iostat)) then
-                        print *, "Error writing manifest file"
+                        if(DEBUG) print *, "Error writing manifest file"
                         call set_err(ierr, ERR_WRITE_DATA)
                         exit
                     end if
@@ -869,18 +870,18 @@ contains
                             family_ids_file, family_centroids_file, shift_vectors_file, ierr)
             
             if (is_err(ierr)) then
-                print *, "Error parsing manifest file"
+                if(DEBUG) print *, "Error parsing manifest file"
                 return
             end if
             
             ! Delete the temporary manifest file
             call delete_file("manifest.txt", ierr)
             if (is_err(ierr)) then
-                print *, "Warning: Could not delete temporary manifest file"
+                if(DEBUG) print *, "Warning: Could not delete temporary manifest file"
                 call set_ok(ierr)  ! Not critical
             end if
         else
-            print *, "No manifest file found in ZIP archive"
+            if(DEBUG) print *, "No manifest file found in ZIP archive"
             call set_err_once(ierr, ERR_MISSING_MANIFEST)
         end if
     end subroutine extract_and_parse_manifest
@@ -1003,7 +1004,7 @@ contains
             if (file_present .and. len_trim(filename) > 0) then
                 call delete_file(filename, temp_ierr)
                 if(is_err(temp_ierr)) then
-                    write(*,*) 'Warning: ', trim(description), ' file could not be removed: ', trim(filename)
+                    if(DEBUG) write(*,*) 'Warning: ', trim(description), ' file could not be removed: ', trim(filename)
                 end if
             end if
         end subroutine cleanup_temporary_files
@@ -1060,7 +1061,7 @@ contains
         call set_ok(ierr)
         max_dims = 5  ! Maximum number of dimensions supported
         
-        write(*,*) 'Extracting zip archive...'
+        if(DEBUG) write(*,*) 'Extracting zip archive...'
         ! Extract the ZIP archive and get file names from manifest
         call extract_zip_archive(zip_filename, extracted_gene_ids_file, extracted_expression_file, &
                                 extracted_gene_to_family_file, extracted_family_ids_file, &
@@ -1086,7 +1087,7 @@ contains
                 call load_gene_ids(gene_ids, extracted_gene_ids_file, ierr)
                 if(is_err(ierr)) return
             else
-                print *, "Error getting metadata for gene_ids file"
+                if(DEBUG) print *, "Error getting metadata for gene_ids file"
                 return
             end if
         end if
@@ -1101,7 +1102,7 @@ contains
                 call load_expression_vectors(expression, extracted_expression_file, ierr)
                 if(is_err(ierr)) return
             else
-                print *, "Error getting metadata for expression file"
+                if(DEBUG) print *, "Error getting metadata for expression file"
                 return
             end if
         end if
@@ -1116,7 +1117,7 @@ contains
                 call load_gene_to_family(gene_to_family, extracted_gene_to_family_file, ierr)
                 if(is_err(ierr)) return
             else
-                print *, "Error getting metadata for gene_to_family file"
+                if(DEBUG) print *, "Error getting metadata for gene_to_family file"
                 return
             end if
         end if
@@ -1130,7 +1131,7 @@ contains
                 allocate(character(len=char_len) :: family_ids(dims(1)))
                 call load_family_ids(family_ids, extracted_family_ids_file, ierr)
             else
-                print *, "Error getting metadata for family_ids file"
+                if(DEBUG) print *, "Error getting metadata for family_ids file"
                 return
             end if
         end if
@@ -1145,7 +1146,7 @@ contains
                 call load_family_centroids(family_centroids, extracted_family_centroids_file, ierr)
                 if(is_err(ierr)) return
             else
-                print *, "Error getting metadata for family_centroids file"
+                if(DEBUG) print *, "Error getting metadata for family_centroids file"
                 return
             end if
         end if
@@ -1160,7 +1161,7 @@ contains
                 call load_shift_vectors(shift_vectors, extracted_shift_vectors_file, ierr)
                 if(is_err(ierr)) return
             else
-                print *, "Error getting metadata for shift_vectors file"
+                if(DEBUG) print *, "Error getting metadata for shift_vectors file"
                 return
             end if
         end if

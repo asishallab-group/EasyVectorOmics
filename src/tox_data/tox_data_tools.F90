@@ -3,6 +3,7 @@ module tox_data_tools
     use tox_errors, only: set_ok, set_err_once, is_err, set_err, check_io_stat
     use tox_errors, only: ERR_INVALID_INPUT, ERR_FILE_OPEN, ERR_READ_DATA
     use array_utils, only :ascii_to_string, string_to_ascii, check_okay_ioerror, ERR_SIZE_MISMATCH
+    use config, only: DEBUG
     implicit none
     private
 
@@ -66,13 +67,13 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
     
     if (n_value_cols <= 0) then
         call set_err_once(ierr, ERR_INVALID_INPUT)
-        write(*,*) 'Error: No value columns specified.'
+        if(DEBUG) write(*,*) 'Error: No value columns specified.'
         return
     end if
 
     if (size(gene_ids) < n_genes) then
         call set_err_once(ierr, ERR_INVALID_INPUT)
-        write(*,*) 'Error: gene_ids array is too small.'
+        if(DEBUG) write(*,*) 'Error: gene_ids array is too small.'
         return
     end if
 
@@ -90,7 +91,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
     current_sample = start_row - 1
     
     do i = 1, size(file_list)
-        write(*,*) 'Reading file: ', trim(file_list(i))
+        if(DEBUG) write(*,*) 'Reading file: ', trim(file_list(i))
         open(newunit=unit, file=trim(file_list(i)), status='old', action='read', iostat=ios)
         call check_okay_ioerror(ios, ierr, ERR_FILE_OPEN, unit)
         if(is_err(ierr)) then
@@ -143,7 +144,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
         end do
         if (n_valid_cols == 0) then
             call set_err_once(ierr, ERR_INVALID_INPUT)
-            write(*,*) 'Error: No valid value columns found in file: ', trim(file_list(i))
+            if(DEBUG) write(*,*) 'Error: No valid value columns found in file: ', trim(file_list(i))
             close(unit)
             cycle
         end if
@@ -152,7 +153,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
         do
             if(current_row > size(gene_ids)) then
                 call set_err_once(ierr, ERR_INVALID_INPUT)
-                write(*,*) 'Provided file contains more lines then expected'
+                if(DEBUG) write(*,*) 'Provided file contains more lines then expected'
                 close(unit)
                 return
             end if
@@ -173,7 +174,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
             ! Use hashmap for gene lookup
             idx = hashmap_get(gene_map, gene)
             if (idx == -1) then
-                write(*,*) 'Warning: Gene ', trim(gene), ' not found in master gene list'
+                if(DEBUG) write(*,*) 'Warning: Gene ', trim(gene), ' not found in master gene list'
                 cycle
             end if
             
@@ -183,7 +184,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
                 if (ios == 0) then
                     expression_vectors(current_sample + k, idx) = value
                 else
-                    write(*,*) 'Missing values in row: ', k
+                    if(DEBUG) write(*,*) 'Missing values in row: ', k
                     expression_vectors(current_sample + k, idx) = 0.0_real64
                 end if
             end do
@@ -290,7 +291,7 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
 
     open(newunit=unit, file=filename, status='old', action='read', iostat=ios)
     if (is_err(ios)) then
-        write(*,*) 'Error opening file: ', trim(filename)
+        if(DEBUG) write(*,*) 'Error opening file: ', trim(filename)
         call set_err_once(ierr, ERR_FILE_OPEN)
         call hashmap_destroy(gene_map)
         return
@@ -320,7 +321,7 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
 
 
         if (size(fields) < 2) then
-            write(*,*) 'Warning: Skipping invalid line (less than 2 fields).'
+            if(DEBUG) write(*,*) 'Warning: Skipping invalid line (less than 2 fields).'
             cycle
         end if
 
@@ -340,7 +341,7 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
                 if (gene_idx > 0) then
                     gene_to_fam(gene_idx) = fam_idx
                 else
-                    write(*,*) 'Gene not found in hashmap: ', trim(adjustl(genes(j)))
+                    if(DEBUG) write(*,*) 'Gene not found in hashmap: ', trim(adjustl(genes(j)))
                 end if
             end do
         end do
@@ -416,8 +417,8 @@ subroutine filter_unassigned_genes(gene_ids, expression_vectors, gene_to_fam, n_
     call move_alloc(temp_expression_vectors, expression_vectors)
     call move_alloc(temp_gene_to_fam, gene_to_fam)
     
-    write(*,*) 'Filtered out ', n_genes_total - n_genes_kept, ' unassigned genes'
-    write(*,*) 'Kept ', n_genes_kept, ' genes with valid family assignments'
+    if(DEBUG) write(*,*) 'Filtered out ', n_genes_total - n_genes_kept, ' unassigned genes'
+    if(DEBUG) write(*,*) 'Kept ', n_genes_kept, ' genes with valid family assignments'
 end subroutine filter_unassigned_genes
 
 !> Helper subroutine to split strings
@@ -780,7 +781,6 @@ subroutine read_gene_ids_from_file_C(filename_ascii, fn_len, gene_ids_ascii, gen
     call c_f_pointer(gene_ids_ascii, f_gene_ids_ascii, [gene_ids_len, n_genes])
 
     call ascii_to_string_padded(f_filename_ascii, fn_len, filename)
-    write(*,*) 'Reading gene IDs from file: ', trim(filename)
 
     call read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, ierr)
     if(is_err(ierr)) return

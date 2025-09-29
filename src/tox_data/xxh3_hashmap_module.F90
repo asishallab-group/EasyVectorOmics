@@ -2,6 +2,7 @@ module xxh3_hashmap_module
     use, intrinsic :: iso_c_binding, only: c_loc
     use iso_fortran_env, only: int32, int64
     use f42_utils, only: next_power_of_two
+    use config, only: DEBUG
     implicit none
     private
     
@@ -28,7 +29,7 @@ module xxh3_hashmap_module
     ! Parameters
     integer, parameter :: DEFAULT_KEY_LENGTH = 256
     real, parameter :: MAX_LOAD_FACTOR = 0.75
-    logical, parameter :: DEBUG = .false.
+    logical, parameter :: debug_hashing = .false.
     
     ! Hash table structure
     type :: hashmap_type
@@ -132,7 +133,7 @@ subroutine hashmap_put(map, key, value)
     ! Normalize key
     normalized_key = trim(key)
     
-    if (DEBUG) print *, "PUT: ", trim(normalized_key), " -> ", value
+    if (debug_hashing) print *, "PUT: ", trim(normalized_key), " -> ", value
     
     ! Check if we need to resize
     if (real(map%count) / real(map%size) > MAX_LOAD_FACTOR) then
@@ -142,7 +143,7 @@ subroutine hashmap_put(map, key, value)
     ! Compute hash index
     hash_idx = xxh3_hash_fortran(normalized_key, map%size)
     
-    if (DEBUG) print *, "  Hash index:", hash_idx
+    if (debug_hashing) print *, "  Hash index:", hash_idx
     
     ! Check if key already exists
     current => map%buckets(hash_idx)%next
@@ -150,7 +151,7 @@ subroutine hashmap_put(map, key, value)
         if (current%key == normalized_key) then
             ! Key exists - update value
             current%value = value
-            print *, "Warning: Duplicate key updated value"
+            if(DEBUG) print *, "Warning: Duplicate key updated value"
             return
         end if
         current => current%next
@@ -185,19 +186,19 @@ function hashmap_get(map, key) result(value)
     ! Normalize key
     normalized_key = trim(key)
     
-    if (DEBUG) print *, "GET: ", trim(normalized_key)
+    if (debug_hashing) print *, "GET: ", trim(normalized_key)
     
     ! Compute hash index
     hash_idx = xxh3_hash_fortran(normalized_key, map%size)
     
-    if (DEBUG) print *, "  Hash index:", hash_idx
+    if (debug_hashing) print *, "  Hash index:", hash_idx
     
     ! Search for the key in the bucket
     current => map%buckets(hash_idx)%next
     do while (associated(current))
         if (current%key == normalized_key) then
             value = current%value
-            if (DEBUG) print *, "  FOUND: ", value
+            if (debug_hashing) print *, "  FOUND: ", value
             return
         end if
         current => current%next

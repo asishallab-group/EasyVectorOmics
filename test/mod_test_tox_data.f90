@@ -152,7 +152,7 @@ contains
       selected_indices(i) = i
     end do
 
-    write(*,*) 'Size of family_centroids: ', size(family_centroids, 1), size(family_centroids, 2)
+    ! write(*,*) 'Size of family_centroids: ', size(family_centroids, 1), size(family_centroids, 2)
     
     call group_centroid(kallisto_expr, total_samples, n_genes, gene_to_fam, &
                       n_families, family_centroids, .true., ortholog_mask, selected_indices, ierr)
@@ -513,7 +513,7 @@ contains
     integer(int32) :: ierr
     
     ! Test 1: Save and read all data
-    print *, "Test 1: Saving and reading all data"
+    ! print *, "Test 1: Saving and reading all data"
     call save_tox_data("test_archive_1_f.zip", ierr, &
                       gene_ids=gene_ids, gene_ids_file="gene_ids_v1.bin", &
                       expression=kallisto_expr, expression_file="kallisto_v1.bin", &
@@ -575,7 +575,7 @@ contains
     if (allocated(shift_vectors_verify)) deallocate(shift_vectors_verify)
     
     ! Test 2: Save only gene_ids and expression
-    print *, "Test 2: Saving only gene_ids and expression"
+    ! print *, "Test 2: Saving only gene_ids and expression"
     call save_tox_data("test_archive_2_f.zip", ierr, &
                       gene_ids=gene_ids, gene_ids_file="gene_ids_v2.bin", &
                       expression=kallisto_expr, expression_file="kallisto_v2.bin")
@@ -620,21 +620,21 @@ contains
         print *, "ERROR: gene_to_fam_verify should not be allocated"
         error stop
     else
-        print *, "Correctly did not allocate gene_to_fam_verify"
+        ! print *, "Correctly did not allocate gene_to_fam_verify"
     end if
     
     if (allocated(gene_family_ids_verify)) then
         print *, "ERROR: gene_family_ids_verify should not be allocated"
         error stop
     else
-        print *, "Correctly did not allocate gene_family_ids_verify"
+        ! print *, "Correctly did not allocate gene_family_ids_verify"
     end if
     
     if (allocated(family_centroids_verify)) then
         print *, "ERROR: family_centroids_verify should not be allocated"
         error stop
     else
-        print *, "Correctly did not allocate family_centroids_verify"
+        ! print *, "Correctly did not allocate family_centroids_verify"
     end if
     
     if (allocated(shift_vectors_verify)) then
@@ -649,7 +649,7 @@ contains
     if (allocated(kallisto_verify)) deallocate(kallisto_verify)
     
     ! Test 3: Save only family data
-    print *, "Test 3: Saving only family data"
+    ! print *, "Test 3: Saving only family data"
     call save_tox_data("test_archive_3_f.zip", ierr, &
                       family_ids=gene_family_ids, family_ids_file="family_ids_v3.bin", &
                       family_centroids=family_centroids, family_centroids_file="family_centroids_v3.bin")
@@ -683,7 +683,7 @@ contains
     if (allocated(family_centroids_verify)) deallocate(family_centroids_verify)
     
     ! Test 4: Save empty archive (should work without error)
-    print *, "Test 4: Saving empty archive"
+    ! print *, "Test 4: Saving empty archive"
     call save_tox_data("test_archive_4_f.zip", ierr)
     
     if (is_err(ierr)) then
@@ -699,20 +699,20 @@ contains
     end if
     call set_ok(ierr)
     
-    print *, "Empty archive test passed"
+    ! print *, "Empty archive test passed"
     
     ! Test 5: Try to read non-existent archive
-    print *, "Test 5: Trying to read non-existent archive"
+    ! print *, "Test 5: Trying to read non-existent archive"
     call read_tox_data("non_existent.zip", ierr)
     
     if (ierr == 0) then
         print *, "ERROR: Should have failed to read non-existent archive"
         error stop
     else
-        print *, "Correctly failed to read non-existent archive, error code: ", ierr
+        ! print *, "Correctly failed to read non-existent archive, error code: ", ierr
     end if
 
-    print *, "Reading R archive"
+    ! print *, "Reading R archive"
     call read_tox_data("test_archive_1_R.zip", ierr, &
                       gene_ids=gene_ids_verify, &
                       expression=kallisto_verify, &
@@ -740,7 +740,7 @@ contains
       call set_ok(ierr)
     end if
 
-    print *, "Reading python archive"
+    ! print *, "Reading python archive"
     call read_tox_data("test_archive_1_py.zip", ierr, &
                       gene_ids=gene_ids_verify, &
                       expression=kallisto_verify, &
@@ -749,7 +749,7 @@ contains
                       family_centroids=family_centroids_verify, &
                       shift_vectors=shift_vectors_verify)
     if(.not. is_ok(ierr)) then
-      write(*,*) 'Error reading R archive: ', ierr 
+      write(*,*) 'Error reading python archive: ', ierr 
       call set_ok(ierr)
     end if
 

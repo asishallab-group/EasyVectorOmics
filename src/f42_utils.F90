@@ -21,7 +21,7 @@ contains
       integer(int32) :: power
       !! next greater value that is a power of two
       
-      power = n ** (bit_size(n) - leadz(n-1))
+      power = 2 ** (bit_size(n) - leadz(n - 1))
   end function next_power_of_two
 
   !> Sort a real array indirectly using quicksort.
