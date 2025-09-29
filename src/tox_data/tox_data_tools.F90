@@ -823,9 +823,10 @@ subroutine read_expression_vectors_C(file_list_ascii, file_list_len, n_files, &
         !! Pointer to value_cols array
     integer(c_int), intent(out) :: ierr
         !! Error code
-
-    integer(c_int) :: delimiter_ascii(dlen)      ! Pointer to delimiter array
-    integer(c_int), value :: dlen              ! Length of delimiter
+    integer(c_int), intent(in), value :: dlen   
+        !! Length of the delimiter
+    integer(c_int), intent(in) :: delimiter_ascii(dlen)
+        !! Delimiter
     integer(c_int) :: start_row
     
     character(len=file_list_len), allocatable :: file_list(:)

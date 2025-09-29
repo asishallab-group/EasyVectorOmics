@@ -251,6 +251,7 @@ contains
     !> Extract a zip archive. Reads manifest and fills arrays accordingly.
     subroutine extract_zip_archive(zip_filename, gene_ids_file, expression_file, gene_to_family_file, &
                                 family_ids_file, family_centroids_file, shift_vectors_file, ierr)
+        use tox_conversions, only: int32_as_c_int64
         character(len=*), intent(in) :: zip_filename
             !! Zip file to read
         character(len=:), allocatable, intent(out) :: gene_ids_file
@@ -273,6 +274,8 @@ contains
         integer(c_int64_t) :: i, num_entries
         character(len=:), allocatable :: filename
         logical :: file_exists
+        integer(int32) :: i_fortran
+        integer(c_int64_t) :: i_c
         
         ! Initialize outputs
         gene_ids_file = ""
@@ -303,8 +306,9 @@ contains
         
         ! Extract all files
         num_entries = zip_get_num_entries(zip_handle, 0)
-        do i = 0, num_entries - 1
-            call get_zip_entry_name(zip_handle, i, filename, ierr)
+        do i_fortran = 0, int(num_entries - 1, int32)
+            call int32_as_c_int64(i_fortran, i_c)
+            call get_zip_entry_name(zip_handle, i_c, filename, ierr)
             if (is_err(ierr)) then
                 error = zip_close(zip_handle)
                 return 
@@ -379,6 +383,7 @@ contains
 
     ! Unified subroutine to extract a file from ZIP archive
     subroutine extract_file_from_zip(zip_handle, filename, ierr)
+        use tox_conversions, only: int32_as_c_size
         type(c_ptr), intent(in) :: zip_handle
             !! Zip connection
         character(len=*), intent(in) :: filename
@@ -392,6 +397,7 @@ contains
         integer(int32) :: unit, iostat
         integer(int32), parameter :: CHUNK_SIZE = 4096
         character(kind=c_char), dimension(:), allocatable, target :: buffer
+        integer(c_size_t) :: chunk_size_c
         
         call set_ok(ierr)
         
@@ -422,9 +428,10 @@ contains
             error = zip_fclose(file_handle)
             return
         end if
-        
+
+        call int32_as_c_size(CHUNK_SIZE, chunk_size_c)
         do
-            bytes_read = zip_fread(file_handle, c_loc(buffer), int(CHUNK_SIZE, c_size_t))
+            bytes_read = zip_fread(file_handle, c_loc(buffer), chunk_size_c)
             if (bytes_read <= 0) exit
             if (bytes_read > 0) then
                 write(unit, iostat=iostat) buffer(1:bytes_read)
@@ -453,7 +460,7 @@ contains
 
     ! Unified subroutine to add data to ZIP (handles both files and strings)
     subroutine add_data_to_zip(zip_handle, filename, data_source, data_type, ierr)
-        use iso_c_binding
+        use tox_conversions, only: int32_as_c_size
         implicit none
 
         ! Arguments
@@ -501,7 +508,7 @@ contains
             end if
 
             inquire(unit, size=file_size)
-            data_len = int(file_size, c_size_t)
+            call int32_as_c_size(file_size, data_len)
 
             if (file_size == 0) then
                 close(unit)
@@ -719,6 +726,7 @@ contains
     subroutine extract_and_parse_manifest(zip_handle, gene_ids_file, expression_file, gene_to_family_file, &
                                         family_ids_file, family_centroids_file, shift_vectors_file, &
                                         ierr)
+        use tox_conversions, only: int32_as_c_size
         type(c_ptr), intent(in) :: zip_handle
             !! Zip file connection
         character(len=:), allocatable, intent(out) :: gene_ids_file
@@ -742,6 +750,7 @@ contains
         integer(int32) :: unit, iostat
         integer(int32), parameter :: CHUNK_SIZE = 4096
         character(kind=c_char), dimension(:), allocatable, target :: buffer
+        integer(c_size_t) :: chunk_size_c
         
         ! Extract and parse the manifest file
         file_handle = zip_fopen(zip_handle, "manifest.txt"//c_null_char, 0)
@@ -759,8 +768,9 @@ contains
             ! Read and write in chunks
             allocate(buffer(CHUNK_SIZE), stat=iostat)
             if (is_ok(iostat)) then
-                do
-                    bytes_read = zip_fread(file_handle, c_loc(buffer), int(CHUNK_SIZE, c_size_t))
+                call int32_as_c_size(CHUNK_SIZE, chunk_size_c)
+                do  
+                    bytes_read = zip_fread(file_handle, c_loc(buffer), chunk_size_c)
                     if (bytes_read <= 0) exit
                     write(unit, iostat=iostat) buffer(1:bytes_read)
                     if (is_err(iostat)) then

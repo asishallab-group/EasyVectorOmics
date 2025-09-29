@@ -1,6 +1,6 @@
 module tox_conversions
     use iso_fortran_env, only: int32, real64
-    use iso_c_binding, only: c_int, c_double, c_null_char, c_double_complex, c_char
+    use iso_c_binding, only: c_int, c_double, c_null_char, c_double_complex, c_char, c_int64_t, c_size_t
     use tox_errors, only: ERR_ALLOC_FAIL, is_err, set_ok, set_err
     implicit none
 
@@ -211,5 +211,65 @@ contains
            call string_as_c_char_1d(strings(i_str), c_char_array(:, i_str))
         end do
     end subroutine string_as_c_char_2d
+
+    !> Converts int32 to c_int64_t, elemental -> any shape
+    elemental subroutine int32_as_c_int64(f_val, c_val)
+        integer(int32), intent(in) :: f_val
+        !! the element containing the fortran variant of the number
+        integer(c_int64_t), intent(out) :: c_val
+        !! the element that will hold the c_int64_t representation
+
+        c_val = int(f_val, kind=c_int64_t)
+    end subroutine int32_as_c_int64
+
+    !> Converts c_int64_t to int32, elemental -> any shape  
+    elemental subroutine c_int64_as_int32(c_val, f_val)
+        integer(c_int64_t), intent(in) :: c_val
+        !! the element containing the c variant of the number
+        integer(int32), intent(out) :: f_val
+        !! the element that will hold the int32 representation
+
+        f_val = int(c_val, kind=int32)
+    end subroutine c_int64_as_int32
+
+    !> Converts int32 to c_size_t, elemental -> any shape
+    elemental subroutine int32_as_c_size(f_val, c_val)
+        integer(int32), intent(in) :: f_val
+        !! the element containing the fortran variant of the number
+        integer(c_size_t), intent(out) :: c_val
+        !! the element that will hold the c_size_t representation
+
+        c_val = int(f_val, kind=c_size_t)
+    end subroutine int32_as_c_size
+
+    !> Converts c_size_t to int32, elemental -> any shape
+    elemental subroutine c_size_as_int32(c_val, f_val)
+        integer(c_size_t), intent(in) :: c_val
+        !! the element containing the c variant of the number
+        integer(int32), intent(out) :: f_val
+        !! the element that will hold the int32 representation
+
+        f_val = int(c_val, kind=int32)
+    end subroutine c_size_as_int32
+
+    !> Converts c_int64_t to c_size_t, elemental -> any shape
+    elemental subroutine c_int64_as_c_size(c64_val, csize_val)
+        integer(c_int64_t), intent(in) :: c64_val
+        !! the element containing the c_int64_t value
+        integer(c_size_t), intent(out) :: csize_val
+        !! the element that will hold the c_size_t representation
+
+        csize_val = int(c64_val, kind=c_size_t)
+    end subroutine c_int64_as_c_size
+
+    !> Converts c_size_t to c_int64_t, elemental -> any shape
+    elemental subroutine c_size_as_c_int64(csize_val, c64_val)
+        integer(c_size_t), intent(in) :: csize_val
+        !! the element containing the c_size_t value
+        integer(c_int64_t), intent(out) :: c64_val
+        !! the element that will hold the c_int64_t representation
+
+        c64_val = int(csize_val, kind=c_int64_t)
+    end subroutine c_size_as_c_int64
 
 end module tox_conversions
