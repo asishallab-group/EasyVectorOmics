@@ -9,12 +9,11 @@ module tox_archive
 
     ! libzip constants
     integer(c_int), parameter :: ZIP_CREATE = 1
-    integer(c_int), parameter :: ZIP_EXCL = 3
-    integer(c_int), parameter :: ZIP_RDONLY = 0
-    integer(c_int), parameter :: ZIP_FL_OVERWRITE = 8192
-    integer(c_int), parameter :: ZIP_CM_STORE = 0
-    integer(c_int), parameter :: ZIP_CM_DEFLATE = 8
-    integer(c_int), parameter :: ZIP_ER_EXISTS = -11
+    integer(c_int), parameter :: ZIP_EXCLUSIVE = 3
+    integer(c_int), parameter :: ZIP_READ_ONLY = 0
+    integer(c_int), parameter :: ZIP_FILE_OVERWRITE = 8192
+    integer(c_int), parameter :: ZIP_COMPRESSION_STORE = 0
+    integer(c_int), parameter :: ZIP_COMPRESSION_DEFLATE = 8
 
     ! libzip interface definitions
     interface
@@ -175,7 +174,7 @@ contains
         call set_ok(error)
         
         ! Open ZIP archive
-        zip_handle = zip_open(trim(zip_filename)//c_null_char, ZIP_EXCL, error)
+        zip_handle = zip_open(trim(zip_filename)//c_null_char, ZIP_EXCLUSIVE, error)
         if (is_err(error)) then
             call set_err_once(ierr, ERR_FILE_OPEN)
             if (error == 10) print *, "Error opening ZIP file for writing: File already exists"
@@ -309,7 +308,7 @@ contains
         end if
         
         ! Open ZIP archive
-        zip_handle = zip_open(trim(zip_filename)//c_null_char, ZIP_RDONLY, error)
+        zip_handle = zip_open(trim(zip_filename)//c_null_char, ZIP_READ_ONLY, error)
         if (error /= 0 .or. .not. c_associated(zip_handle)) then
             call set_err_once(ierr, ERR_FILE_OPEN)
             if(DEBUG) print *, "Error opening ZIP file for reading: ", error
@@ -610,7 +609,7 @@ contains
         end if
         
         ! Add file to ZIP
-        index = zip_file_add(zip_handle, trim(filename)//c_null_char, source, ZIP_FL_OVERWRITE)
+        index = zip_file_add(zip_handle, trim(filename)//c_null_char, source, ZIP_FILE_OVERWRITE)
         if (index < 0) then
             call set_err_once(ierr, ERR_FILE_ADD)
             call zip_source_free(source)
@@ -618,7 +617,7 @@ contains
         end if
         
         ! Set compression to store (no compression)
-        error = zip_set_file_compression(zip_handle, index, ZIP_CM_STORE, 0)
+        error = zip_set_file_compression(zip_handle, index, ZIP_COMPRESSION_STORE, 0)
         if (is_err(error)) then
             if(DEBUG) print *, "Warning: Error setting compression for: ", trim(filename)
         end if
@@ -646,7 +645,7 @@ contains
                 return
             end if
             
-            index = zip_file_add(zip_handle, trim(filename)//c_null_char, source, ZIP_FL_OVERWRITE)
+            index = zip_file_add(zip_handle, trim(filename)//c_null_char, source, ZIP_FILE_OVERWRITE)
             if (index < 0) then
                 call set_err_once(ierr, ERR_FILE_ADD)
                 call zip_source_free(source)
