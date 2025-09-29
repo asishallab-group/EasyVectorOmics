@@ -73,8 +73,6 @@ lib.filter_unassigned_genes_C.argtypes = [
     ctypes.POINTER(ctypes.c_int),  # gene_ids_ascii
     ctypes.c_int,                  # gene_ids_len
     ctypes.c_int,                  # n_genes
-    ctypes.POINTER(ctypes.c_double), # expression_vectors_flat
-    ctypes.c_int,                  # n_samples
     ctypes.POINTER(ctypes.c_int),  # gene_to_fam
     ctypes.POINTER(ctypes.c_int),  # mask
     ctypes.POINTER(ctypes.c_int),  # n_genes_kept
@@ -250,7 +248,7 @@ def read_expression_vectors(file_list, gene_ids, n_samples, n_header_rows,
         gene_ids_ascii[:, i] = string_to_ascii_array(gene, gene_ids_ascii.shape[0])
     
     # Prepare output arrays
-    expression_vectors_flat = np.zeros(n_samples * len(gene_ids), dtype=np.float64, order='F')
+    expression_vectors = np.zeros((n_samples, len(gene_ids)), dtype=np.float64, order='F')
     ierr = ctypes.c_int()
     delimiter_ascii = string_to_ascii_array(delimiter, 1)
     
@@ -265,7 +263,7 @@ def read_expression_vectors(file_list, gene_ids, n_samples, n_header_rows,
         gene_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         ctypes.c_int(gene_ids_ascii.shape[0]),
         ctypes.c_int(len(gene_ids)),
-        expression_vectors_flat.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
+        expression_vectors.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         ctypes.c_int(n_samples),
         ctypes.c_int(n_header_rows),
         ctypes.c_int(gene_col),
@@ -278,10 +276,7 @@ def read_expression_vectors(file_list, gene_ids, n_samples, n_header_rows,
     
     if ierr.value != 0:
         raise Exception(f"Error reading expression vectors: {ierr.value}")
-    
-    # Convert flat array back to 2D array
-    expression_vectors = expression_vectors_flat.reshape((len(gene_ids), n_samples), order='F').T
-    
+        
     return expression_vectors
 
 # Function for read_family_file_C
@@ -330,10 +325,9 @@ def read_family_file(filename, gene_ids, family_ids_len, n_families):
     }
 
 # Function for filter_unassigned_genes_C
-def filter_unassigned_genes(gene_ids, expression_vectors, gene_to_fam):
+def filter_unassigned_genes(gene_ids, gene_to_fam):
     # Ensure inputs are numpy arrays
     gene_ids = _ensure_string_array(gene_ids)
-    expression_vectors = _ensure_float_array(expression_vectors)
     gene_to_fam = _ensure_int_array(gene_to_fam)
     
     # Convert inputs to ASCII arrays
@@ -343,8 +337,7 @@ def filter_unassigned_genes(gene_ids, expression_vectors, gene_to_fam):
         gene_ids_ascii[:, i] = string_to_ascii_array(gene, gene_ids_ascii.shape[0])
     
     # Prepare output arrays
-    n_samples, n_genes = expression_vectors.shape
-    expression_vectors_flat = expression_vectors.T.reshape(-1, order='F')
+    n_genes = len(gene_ids)
     mask = np.zeros(n_genes, dtype=ctypes.c_int())
     n_genes_kept = ctypes.c_int()
     ierr = ctypes.c_int()
@@ -354,8 +347,6 @@ def filter_unassigned_genes(gene_ids, expression_vectors, gene_to_fam):
         gene_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         ctypes.c_int(gene_ids_ascii.shape[0]),
         ctypes.c_int(n_genes),
-        expression_vectors_flat.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
-        ctypes.c_int(n_samples),
         gene_to_fam.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         mask.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         ctypes.byref(n_genes_kept),
