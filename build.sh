@@ -1,5 +1,5 @@
 #!/bin/bash
-# build.sh | Optimized build script for FPM with dynamic alignment and xxHash support
+# build.sh | Optimized build script for FPM with dynamic alignment
 # Build with selected profile and alignment parameter:
 # Default fallback alignment for the most likely situation:
 ALIGN=32
@@ -13,13 +13,12 @@ ALIGN=32
 elif lscpu | grep -q sse2; then
 ALIGN=16
 fi
-
 # Detect compiler and choose appropriate profile:
 if [[ "$FC" == "ifx" || "$FC" == "ifort" ]]; then
   FLAGS="-O3 -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC"
   COMPILER="ifx"
 else
-  FLAGS="-O3 -march=native -mtune=native -fopenmp -ffast-math -funroll-loops -ftree-vectorize -fassociative-math -fPIC"
+  FLAGS="-O3 -march=native -mtune=native -fopenmp -funroll-loops -ftree-vectorize -fPIC"
   COMPILER="gfortran"
 fi
 
@@ -40,10 +39,7 @@ if [ -d "build" ]; then
   rm -rf build
 fi
 
-# Create build directory
-mkdir -p build
-
-# Build with FPM
+# Build with FPM first
 export FC
 fpm build --compiler $COMPILER --flag "$FLAGS" --flag "-DDEFAULT_ALIGNMENT=$ALIGN" --flag "$MAX_PERF_FLAG"
 
@@ -63,6 +59,7 @@ for compiler_dir in build/${COMPILER}_*; do
 done
 
 echo "Build complete with compiler: $COMPILER, alignment: $ALIGN bytes"
+echo "Flags used: $FLAGS $MAX_PERF_FLAG"
 
 # Verify that we have the necessary files for test_runner.sh
 mod_count=$(find build -name "*.mod" | wc -l)

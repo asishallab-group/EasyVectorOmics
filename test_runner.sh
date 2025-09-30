@@ -25,7 +25,7 @@ if [[ "$FC" == "ifx" || "$FC" == "ifort" ]]; then
   MODULE_FLAG="-module $BUILD_DIR"
   COMPILER="ifx"
 else
-  FLAGS="-O3 -march=native -mtune=native -fopenmp -ffast-math -funroll-loops -ftree-vectorize -fassociative-math -fPIC"
+  FLAGS="-O3 -march=native -mtune=native -fopenmp -funroll-loops -ftree-vectorize -fPIC"
   MODULE_FLAG="-J$BUILD_DIR"
   COMPILER="gfortran"
 fi
@@ -35,16 +35,25 @@ FLAGS="$FLAGS $LIBS"
 
 echo "Using compiler: $COMPILER"
 
+KEEP_ZIP="false"
 MAX_PERF_FLAG=""
-REMOVE_ZIP="true"
+TEST_ARGS=()
+BUILD_ARGS=()
 for arg in "$@"; do
   if [[ "$arg" == "--max-performance" ]]; then
     MAX_PERF_FLAG="-DMAX_PERFORMANCE"
-  fi
-  if [[ "$arg" == "--keep-zip" ]]; then
-    REMOVE_ZIP="false"
+    BUILD_ARGS+=("$arg")
+  elif [[ "$arg" == "--keep-zip" ]]; then
+    KEEP_ZIP="true"
+  else
+    TEST_ARGS+=("$arg")
   fi
 done
+
+echo "Compiling src/"
+bash build.sh "${BUILD_ARGS[@]}"
+
+echo "Using compiler: $COMPILER"
 
 mkdir -p $BUILD_DIR
 
@@ -54,11 +63,8 @@ if [ -e "$EXECUTABLE" ]; then
   rm -rf "$EXECUTABLE"
 fi
 
-echo "Building main library first..."
-bash build.sh 
-
 echo "Compiling test modules..."
-# Compile test modules using .mod files from build/
+# Then compile test/ modules using .mod files from build/
 $COMPILER $FLAGS $MODULE_FLAG -DDEFAULT_ALIGNMENT=$ALIGN $MAX_PERF_FLAG \
   -I$BUILD_DIR -I$SOURCE_DIR -I$TEST_DIR \
   -c $TEST_DIR/*.f90
@@ -66,37 +72,26 @@ $COMPILER $FLAGS $MODULE_FLAG -DDEFAULT_ALIGNMENT=$ALIGN $MAX_PERF_FLAG \
 compilation_result=$?
 echo "Test compilation exit code: $compilation_result"
 
+
 # Move object files to build/
 mv *.o $BUILD_DIR/ 2>/dev/null || true
 mv *.mod $BUILD_DIR/ 2>/dev/null || true
 
-echo "Linking executable..."
-# Find all object files including the C object file if it exists
-OBJECT_FILES=($BUILD_DIR/*.o)
 
-# Link everything together with proper libraries
+echo "Linking executable..."
+# Finally link everything together
 $COMPILER $FLAGS -I$BUILD_DIR \
-  "${OBJECT_FILES[@]}" -o $EXECUTABLE
+  $BUILD_DIR/*.o -o $EXECUTABLE
 
 linking_result=$?
 echo "Linking exit code: $linking_result"
 
-if [ $linking_result -eq 0 ]; then
-    echo "Running tests..."
-    # Run the executable
-    $EXECUTABLE "$@"
-    TEST_RESULT=$?
-    echo "Test execution completed with exit code: $TEST_RESULT"
-else
-    echo "Error: Failed to link test executable"
-    exit 1
-fi
+echo "Running tests..."
+# Run the executable with filtered arguments (excluding --max-performance)
+$EXECUTABLE "${TEST_ARGS[@]}"
 
-# Cleanup
-rm -f test_*.bin 2>/dev/null || true
-
-if [[ $REMOVE_ZIP == "true" ]]; then
+# Clean up test files if they exist
+rm -f test_*.bin
+if [[ "$KEEP_ZIP" == "false" ]]; then
   rm -f test_archive_*_*.zip
-fi 
-
-exit $TEST_RESULT
+fi
