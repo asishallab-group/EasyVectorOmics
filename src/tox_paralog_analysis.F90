@@ -9,7 +9,7 @@ module tox_paralog_analysis
 
 contains
 
-    subroutine detect_dosage_effect(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, ierr, max_angle, gain_gamma)
+    pure subroutine detect_dosage_effect(ancestor, paralogs, n_paralogs, n_dims, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, ierr, max_angle, gain_gamma)
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
         integer(int32), intent(in) :: n_paralogs
@@ -20,8 +20,6 @@ contains
             !! expression vector of ancestral ortholog
         real(real64), dimension(n_dims, n_paralogs), intent(in) :: paralogs
             !! expression vectors of paralogs
-        real(real64), intent(in) :: rdi_threshold
-            !! max allowed residual distance from `ancestor`
         integer(int32), intent(out) :: n_results
             !! number of resulting subsets. They are stored as the first `n_results` elements of `work_arr_paralog_subsets`
         integer(int32), intent(in) :: max_subset_size
@@ -43,10 +41,10 @@ contains
         real(real64), intent(in), optional :: max_angle
             !! in dosage mode maximum angle in radians that a subset candidate must not exceed, otherwise pruned, default is Pi
 
-        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, DOSAGE_PATTERN, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, dosage_max_angle=max_angle, dosage_gain_gamma=gain_gamma, ierr=ierr)
+        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, DOSAGE_PATTERN, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, dosage_max_angle=max_angle, dosage_gain_gamma=gain_gamma, ierr=ierr)
     end subroutine detect_dosage_effect
 
-    subroutine detect_subfunctionalization(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr)
+    pure subroutine detect_subfunctionalization(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr)
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
         integer(int32), intent(in) :: n_paralogs
@@ -82,10 +80,10 @@ contains
         real(real64), dimension(n_paralogs), intent(out) :: temp_work_array
             !! in subfunctionalization mode needed for efficient check of minimum value after a certain index
 
-        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, SUBFUNC_PATTERN, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, subfunc_paralog_norms=paralog_norms, subfunc_sorted_paralog_norms_perm=sorted_paralog_norms_perm, subfunc_temp_work_array=temp_work_array, ierr=ierr)
+        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, SUBFUNC_PATTERN, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, subfunc_rdi_threshold=rdi_threshold, subfunc_paralog_norms=paralog_norms, subfunc_sorted_paralog_norms_perm=sorted_paralog_norms_perm, subfunc_temp_work_array=temp_work_array, ierr=ierr)
     end subroutine detect_subfunctionalization
 
-    subroutine detect_patterns(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, pattern, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+    pure subroutine detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
         integer(int32), intent(in) :: n_paralogs
@@ -96,8 +94,6 @@ contains
             !! expression vector of ancestral ortholog
         real(real64), dimension(n_dims, n_paralogs), intent(in) :: paralogs
             !! expression vectors of paralogs
-        real(real64), intent(in) :: rdi_threshold
-            !! max allowed residual distance from `ancestor`
         integer(int32), intent(in) :: pattern
             !! used pattern for detection
             !!
@@ -135,6 +131,8 @@ contains
             !! in subfunctionalization mode needed for subset pruning, as the minimum norm of the paralogs that could extend a subset should not be lower than the subset angle to the ancestor
         real(real64), dimension(n_paralogs), intent(out), optional :: subfunc_temp_work_array
             !! in subfunctionalization mode needed for efficient check of minimum value after a certain index
+        real(real64), intent(in), optional :: subfunc_rdi_threshold
+            !! max allowed residual distance from `ancestor`
 
         ! Locals
         integer(int32) :: i_paralog, subset_size, n_active_masks, n_new_active_masks
@@ -161,7 +159,7 @@ contains
                 call take_active_mask(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, active_mask, ierr)
                 if (is_err(ierr)) return
 
-                call generate_subsets(active_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, rdi_threshold, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, dosage_max_angle, dosage_gain_gamma, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+                call generate_subsets(active_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
                 if (is_err(ierr)) return
             end do
 
@@ -169,7 +167,7 @@ contains
         end do
     end subroutine detect_patterns
 
-    subroutine generate_subsets(candidate_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, rdi_threshold, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, dosage_max_angle, dosage_gain_gamma, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+    pure subroutine generate_subsets(candidate_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
         integer(int32), intent(in) :: n_paralogs
@@ -180,7 +178,7 @@ contains
             !! expression vector of ancestral ortholog
         real(real64), dimension(n_dims, n_paralogs), intent(in) :: paralogs
             !! expression vectors of paralogs
-        real(real64), intent(in) :: rdi_threshold
+        real(real64), intent(in), optional :: subfunc_rdi_threshold
             !! max allowed residual distance from `ancestor`
         integer(int32), intent(in) :: pattern
             !! used pattern for detection
@@ -267,7 +265,7 @@ contains
             block
                 real(real64) :: residual_norm
 
-                if ((.not. present(subfunc_paralog_norms)) .or. (.not. present(subfunc_sorted_paralog_norms_perm)) .or. (.not. present(subfunc_temp_work_array))) then
+                if (.not. (present(subfunc_paralog_norms) .and. present(subfunc_sorted_paralog_norms_perm) .and. present(subfunc_temp_work_array) .and. present(subfunc_rdi_threshold))) then
                     call set_err(ierr, ERR_INVALID_INPUT)
                     return
                 end if
@@ -296,12 +294,12 @@ contains
                         call subtract_vector(temp_paralog_vector, n_dims, paralogs(:, i_paralog))
 
                         residual_norm = norm(temp_paralog_vector, n_dims)
-                        if (residual_norm < rdi_threshold) then
+                        if (residual_norm <= subfunc_rdi_threshold) then
                             call add_to_results(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
                         else if (i_paralog < n_paralogs) then
                             ! subfunc_temp_work_array(i_paralog+1) is min(norm(p_i) for i in i_paralog+1:n_paralogs )
                             ! so if the minimum norm of the remaining paralogs is not lower the residual, prune this subset branch
-                            if (subfunc_temp_work_array(i_paralog + 1) < residual_norm) then
+                            if (subfunc_temp_work_array(i_paralog + 1) <= residual_norm) then
                                 call add_new_active_mask(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
                             end if
                         end if
