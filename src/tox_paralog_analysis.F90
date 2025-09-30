@@ -227,17 +227,8 @@ contains
                 use f42_utils, only: PI
                 real(real64) :: subset_angle, gain, max_angle
 
-                if (present(dosage_gain_gamma)) then
-                    gain = dosage_gain_gamma
-                else
-                    gain = 0.1_real64
-                end if
-
-                if (present(dosage_max_angle)) then
-                    max_angle = dosage_max_angle
-                else
-                    max_angle = PI
-                end if
+                gain = merge(dosage_gain_gamma, 0.1_real64, present(dosage_gain_gamma))
+                max_angle = merge(dosage_max_angle, PI, present(dosage_max_angle))
 
                 !! prepare residual, so the extending paralog just needs to be included in one operation and excluded after calculation
                 temp_paralog_vector = 0

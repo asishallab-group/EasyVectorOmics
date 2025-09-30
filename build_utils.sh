@@ -48,6 +48,18 @@ function get_module_flag() {
   fi
 }
 
+function handle_args() {
+  MAX_PERF_FLAG=""
+  ARGS=""
+  for arg in "$@"; do
+    if [[ "$arg" == "--max-performance" ]]; then
+      MAX_PERF_FLAG="-DMAX_PERFORMANCE"
+    else
+      ARGS="$ARGS $arg"
+    fi
+  done
+}
+
 function stderr() {
   echo "$@" >&2
 }
@@ -98,8 +110,9 @@ function check_exit_code() {
   code=$?
   if [[ ! $code -eq 0 ]]; then
     if [[ "$@" ]]; then
-      echo "$@ - Exit code: $code"
+      echo -en "$@ - "
     fi
+    echo "Exit code: $code"
     exit $code
   fi
 }

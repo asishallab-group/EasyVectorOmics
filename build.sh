@@ -8,14 +8,7 @@ source build_utils.sh
 COMPILER=$(get_compiler)
 FLAGS=$(get_flags)
 ALIGN=$(get_alignment)
-
-# Detect --max-performance flag
-MAX_PERF_FLAG=""
-for arg in "$@"; do
-  if [[ "$arg" == "--max-performance" ]]; then
-    MAX_PERF_FLAG="-DMAX_PERFORMANCE"
-  fi
-done
+handle_args "$@"
 
 # Clean build directory if it exists
 if [ -d "build" ]; then

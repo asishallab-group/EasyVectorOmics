@@ -14,17 +14,12 @@ MODULE_FLAG=$(get_module_flag $BUILD_DIR)
 
 echo "Detected alignment: $ALIGN"
 echo "Compiling src/"
-bash build.sh
+bash build.sh $@
 check_exit_code "Build failed"
 
 echo "Using compiler: $COMPILER"
 
-MAX_PERF_FLAG=""
-for arg in "$@"; do
-  if [[ "$arg" == "--max-performance" ]]; then
-    MAX_PERF_FLAG="-DMAX_PERFORMANCE"
-  fi
-done
+handle_args $@
 
 mkdir -p $BUILD_DIR
 
@@ -38,7 +33,7 @@ echo "Compiling test modules..."
 # Then compile test/ modules using .mod files from build/
 $COMPILER $FLAGS $MODULE_FLAG -DDEFAULT_ALIGNMENT=$ALIGN $MAX_PERF_FLAG \
   -I$BUILD_DIR \
-  -c $TEST_DIR/*.f90
+  -c $TEST_DIR/*.[fF]90
 
 # Move object files to build/
 mv *.o $BUILD_DIR/ 2>/dev/null || true
@@ -57,4 +52,4 @@ check_exit_code "Executable compilation failed"
 
 echo "Running tests..."
 # Run the executable
-$EXECUTABLE "$@"
+$EXECUTABLE $ARGS
