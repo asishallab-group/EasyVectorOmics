@@ -36,9 +36,13 @@ FLAGS="$FLAGS $LIBS"
 echo "Using compiler: $COMPILER"
 
 MAX_PERF_FLAG=""
+REMOVE_ZIP="true"
 for arg in "$@"; do
   if [[ "$arg" == "--max-performance" ]]; then
     MAX_PERF_FLAG="-DMAX_PERFORMANCE"
+  fi
+  if [[ "$arg" == "--keep-zip" ]]; then
+    REMOVE_ZIP="false"
   fi
 done
 
@@ -90,6 +94,9 @@ fi
 
 # Cleanup
 rm -f test_*.bin 2>/dev/null || true
-rm -f test_archive_*.zip || true
+
+if [[ $REMOVE_ZIP == "true" ]]; then
+  rm -f test_archive_*_*.zip
+fi 
 
 exit $TEST_RESULT
