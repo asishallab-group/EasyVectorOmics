@@ -957,9 +957,9 @@ subroutine filter_unassigned_genes_C(gene_ids_raw, gene_ids_len, n_genes, &
     use tox_data_tools, only: get_unassigned_mask
     implicit none
 
-    integer(c_int), value :: gene_ids_len      
+    integer(c_int), intent(in), value :: gene_ids_len      
         !! Length of each gene ID
-    integer(c_int), value :: n_genes           
+    integer(c_int), intent(in), value :: n_genes           
         !! Number of genes
     character(kind=c_char, len=1), intent(in) :: gene_ids_raw(gene_ids_len, n_genes)       
         !! Pointer to gene_ids array

@@ -14,9 +14,9 @@ module tox_data_read_write
 contains
     !> Wrapper for serialize_char_1D function
 subroutine save_gene_ids(gene_ids, filename, ierr)
-    CHARACTER(len=*), INTENT(IN) :: gene_ids(:)
+    character(len=*), intent(in) :: gene_ids(:)
     !! Gene IDs to write
-    CHARACTER(len=*), INTENT(IN) :: filename
+    character(len=*), intent(in) :: filename
     !! Filename to write to
     integer(int32), intent(out) :: ierr
     !! Error code (0 if successful)
@@ -26,9 +26,9 @@ end subroutine
 
 !> Wrapper for serialize_real_2D function
 subroutine save_expression_vectors(expression_vectors, filename, ierr)
-    CHARACTER(len=*), INTENT(IN) :: filename
+    character(len=*), intent(in) :: filename
     !! Filename to write to
-    real(real64), INTENT(IN) :: expression_vectors(:,:)
+    real(real64), intent(in) :: expression_vectors(:,:)
     !! Expression vectors to write
     integer(int32), intent(out) :: ierr
     !! Error code (0 if successful)
@@ -38,7 +38,7 @@ end subroutine
 
 !> Wrapper for serialize_int_1D function
 subroutine save_gene_to_family(gene_to_fam, filename, ierr)
-    CHARACTER(len=*), INTENT(IN) :: filename
+    character(len=*), intent(in) :: filename
     !! Filename to write to
     integer(int32), intent(in) :: gene_to_fam(:)
     !! Gene to family mapping to write
@@ -49,11 +49,11 @@ end subroutine
 
 !> Wrapper for serialize_char_1D function
 subroutine save_family_ids(family_ids, filename, ierr)
-    CHARACTER(len=*), INTENT(IN) :: filename
+    character(len=*), intent(in) :: filename
     !! Filename to write to
-    CHARACTER(len=*), INTENT(IN) :: family_ids(:)
+    character(len=*), intent(in) :: family_ids(:)
     !! Family IDs to write
-    integer(int32), INTENT(OUT) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code (0 if successful)
 
     call serialize_char_1D(family_ids, filename, ierr)
@@ -61,11 +61,11 @@ end subroutine
 
 !> Wrapper for serialize_real_2D function
 subroutine save_family_centroids(family_centroids, filename, ierr)
-    CHARACTER(len=*), INTENT(IN) :: filename
+    character(len=*), intent(in) :: filename
     !! Filename to write to
-    real(real64), INTENT(IN) :: family_centroids(:,:)
+    real(real64), intent(in) :: family_centroids(:,:)
     !! Family centroids to write
-    integer(int32), INTENT(OUT) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code (0 if successful)
 
     call serialize_real_2D(family_centroids, filename, ierr)
@@ -73,11 +73,11 @@ end subroutine
 
 !> Wrapper for serialize_real_2D function
 subroutine save_shift_vectors(shift_vectors, filename, ierr)
-    CHARACTER(len=*), INTENT(IN) :: filename
+    character(len=*), intent(in) :: filename
     !! Filename to write to
-    real(real64), INTENT(IN) :: shift_vectors(:,:)
+    real(real64), intent(in) :: shift_vectors(:,:)
     !! Shift vectors to write
-    integer(int32), INTENT(OUT) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code (0 if successful)
 
     call serialize_real_2D(shift_vectors, filename, ierr)
@@ -109,11 +109,11 @@ end subroutine load_expression_vectors
 
 !> Wrapper for deserialize_int_1D function
 subroutine load_gene_to_family(gene_to_fam, filename, ierr)
-    character(len=*), INTENT(IN) :: filename
+    character(len=*), intent(in) :: filename
     !! Filename to read from
-    integer(int32), INTENT(OUT) :: gene_to_fam(:)
+    integer(int32), intent(out) :: gene_to_fam(:)
     !! Gene to family mapping to read
-    integer(int32), INTENT(OUT) :: ierr
+    integer(int32), intent(out) :: ierr
     !! Error code (0 if successful)
 
     call deserialize_int_1D(gene_to_fam, filename, ierr)

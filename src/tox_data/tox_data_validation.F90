@@ -15,7 +15,7 @@ module tox_data_validation
     public :: validate_gene_ids_uniqueness
     public :: validate_family_ids_uniqueness
     public :: validate_empty_strings
-    PUBLIC :: validate_all_data
+    public :: validate_all_data
     
     ! Parameters for validation tolerances
     real(real64), parameter :: FLOAT_TOLERANCE = 1.0e-10_real64
