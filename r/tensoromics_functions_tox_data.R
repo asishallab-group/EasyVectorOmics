@@ -1,51 +1,6 @@
 dyn.load("build/libtensor-omics.so")
 source("r/tensoromics_functions.R")
-
-#' Check error code and throw informative error if needed
-#' 
-#' @param ierr Error code from Fortran routine
-tox_errors <- function(ierr) {
-  if (ierr == 0) return(invisible(NULL))
-  msg <- switch(as.character(ierr),
-    # I/O errors
-    '101' = "Could not open file.",
-    '102' = "Could not read magic number.",
-    '103' = "Could not read type code.",
-    '104' = "Could not read number of dimensions.",
-    '105' = "Could not read array dimensions",
-    '106' = "Could not read character length.",
-    '107' = "Could not read array data.",
-    '112' = "Could not write magic number",
-    '113' = "Could not write type code",
-    '114' = "Could not write number of dimensions",
-    '115' = "Could not write dimensions",
-    '116' = "Could not write character length",
-    '117' = "Could not write array data",
-    # ADD MORE HERE
-    
-    # FORMAT ERRORS
-    '200' = "Invalid format detected.",
-    '201' = "Invalid input provided.",
-    '202' = "Empty input arrays provided.",
-    '203' = "Dimension mismatch detected.",
-    '204' = "NaN or Inf found in input data.",
-    '205' = "Unsupported data type encountered.",
-    '206' = "Array size mismatch detected",
-
-    # MEMORY ERRORS
-    '301' = "Memory allocation failed.",
-    '302' = "Null pointer reference encountered.",
-
-    # FORTRAN RUNTIME ERRORS
-    '5002' = "Fortran runtime error: unit not open / not connected.",
-
-    # Internal errors
-    '9001' = "Internal error: unexpected state.",
-    '9999' = "Unknown error.",
-    paste("Unmapped error code:", ierr)
-  )
-  stop(msg)
-}
+source("r/error_handling.R")
 
 strings_to_raw_matrix <- function(arr, clen) {
   n <- length(arr)
@@ -197,7 +152,7 @@ read_expression_vectors <- function(file_list, gene_ids,
         dlen = as.integer(length(delimiter_raw))
     )
 
-    tox_errors(out$ierr)
+    check_err_code(out$ierr)
     
     list(
         expression_vectors = matrix(out$expression_vectors, nrow = n_samples, ncol = ngenes),
@@ -231,7 +186,7 @@ read_gene_ids_from_file <- function(filename, ngenes, gene_len, n_header_rows = 
     gene_col = as.integer(gene_col),
     ierr = 0
   )
-  tox_errors(out$ierr)
+  check_err_code(out$ierr)
   
   list(
     gene_ids = raw_matrix_to_strings(out$gene_ids_raw, gene_len + 1),
@@ -273,7 +228,7 @@ read_family_file <- function(filename, gene_ids, n_families, family_len) {
     gene_to_fam = as.integer(gene_to_fam),
     ierr = 0
   )
-  tox_errors(out$ierr)
+  check_err_code(out$ierr)
   list(
     family_ids = raw_matrix_to_strings(matrix(out$family_ids_raw, nrow = family_len + 1, ncol = n_families)),
     gene_to_fam = out$gene_to_fam,
@@ -310,7 +265,7 @@ filter_unassigned_genes <- function(gene_ids, expression_vectors, gene_to_fam) {
     n_genes_kept = integer(1),
     ierr = 0
   )
-  tox_errors(out$ierr)
+  check_err_code(out$ierr)
   
   # Apply the mask on the R side
   mask <- out$mask
@@ -351,7 +306,7 @@ validate_data_structure <- function(n_genes, n_families, n_samples, d,
                   as.double(family_centroids),
                   as.double(shift_vectors),
                   ierr = ierr)
-  tox_errors(out$ierr)
+  check_err_code(out$ierr)
   list(ierr = out$ierr)
 }
 
@@ -362,7 +317,7 @@ validate_gene_to_family_mapping <- function(gene_to_fam, n_genes, n_families) {
                   as.integer(n_genes),
                   as.integer(n_families),
                   ierr = ierr)
-  tox_errors(out$ierr)
+  check_err_code(out$ierr)
   list(ierr = out$ierr)
 }
 
@@ -374,7 +329,7 @@ validate_expression_data <- function(expression_vectors, n_genes, n_samples, che
                   as.integer(n_samples),
                   as.logical(check_non_negative),
                   ierr = ierr)
-  tox_errors(out$ierr)
+  check_err_code(out$ierr)
   list(ierr = out$ierr)
 }
 
@@ -385,7 +340,7 @@ validate_family_centroids <- function(family_centroids, n_families, n_samples) {
                   as.integer(n_families),
                   as.integer(n_samples),
                   ierr = ierr)
-  tox_errors(out$ierr)
+  check_err_code(out$ierr)
   list(ierr = out$ierr)
 }
 
@@ -405,7 +360,7 @@ validate_shift_vectors <- function(shift_vectors, expression_vectors, family_cen
                   as.integer(n_samples),
                   as.integer(n_families),
                   ierr = ierr)
-  tox_errors(out$ierr)
+  check_err_code(out$ierr)
   list(ierr = out$ierr)
 }
 
@@ -418,7 +373,7 @@ validate_gene_ids_uniqueness <- function(gene_ids, n_genes) {
                   as.integer(gene_len),
                   as.integer(n_genes),
                   ierr = ierr)
-  tox_errors(out$ierr)
+  check_err_code(out$ierr)
   list(ierr = out$ierr)
 }
 
@@ -431,7 +386,7 @@ validate_family_ids_uniqueness <- function(family_ids, n_families) {
                   as.integer(fam_len),
                   as.integer(n_families),
                   ierr = ierr)
-  tox_errors(out$ierr)
+  check_err_code(out$ierr)
   list(ierr = out$ierr)
 }
 
@@ -463,7 +418,7 @@ validate_all_data <- function(n_genes, n_families, n_samples,
                   as.double(shift_vectors),
                   ierr = ierr)
 
-  tox_errors(out$ierr)
+  check_err_code(out$ierr)
   list(ierr = out$ierr)
 }
 
@@ -510,7 +465,7 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
                      ierr = ierr)
   
   # Check for errors and throw informative messages
-  tox_errors(result$ierr)
+  check_err_code(result$ierr)
   
   # Return structured result (no ierr since we checked for errors)
   return(list(
@@ -557,7 +512,7 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
                      ierr = ierr)
   
   # Check for errors and throw informative messages
-  tox_errors(result$ierr)
+  check_err_code(result$ierr)
 
   # 4) Return the populated output matrix (no ierr since we checked for errors)
   return(result$centroid_matrix)
