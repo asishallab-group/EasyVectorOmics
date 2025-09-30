@@ -55,6 +55,7 @@ for compiler_dir in build/${COMPILER}_*; do
 done
 
 echo "Build complete with compiler: $COMPILER, alignment: $ALIGN bytes"
+echo "Flags used: $FLAGS $MAX_PERF_FLAG"
 
 # Verify that we have the necessary files for test_runner.sh
 mod_count=$(find build -name "*.mod" | wc -l)
