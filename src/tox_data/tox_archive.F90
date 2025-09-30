@@ -1,7 +1,7 @@
 module tox_archive
     use iso_c_binding, only: c_ptr, c_char, c_int, c_int64_t, c_size_t, c_signed_char, c_f_pointer, c_loc, c_associated, c_null_char, c_null_ptr
     use tox_data_read_write
-    use tox_errors, only: set_ok, set_err_once, is_err, ERR_FILE_OPEN, ERR_FILE_CLOSE, ERR_STRING_TOO_LONG, ERR_ALLOC_FAIL, ERR_FILE_ADD
+    use tox_errors, only: set_ok, set_err_once, is_err, ERR_FILE_OPEN, ERR_STRING_TOO_LONG, ERR_ALLOC_FAIL, ERR_FILE_ADD
     use tox_errors, only: ERR_FILE_CLOSE, ERR_FILE_EXTRACT, ERR_INVALID_INPUT
     use iso_fortran_env, only: real64, int32
     use config, only: DEBUG
@@ -90,24 +90,6 @@ module tox_archive
             integer(c_int) :: zip_fclose
             type(c_ptr), value :: file
         end function zip_fclose
-
-        function zip_stat(archive, fname, flags, sb) bind(C, name="zip_stat")
-            use iso_c_binding, only: c_int, c_ptr, c_char
-            integer(c_int) :: zip_stat
-            type(c_ptr), value :: archive
-            character(kind=c_char), dimension(*) :: fname
-            integer(c_int), value :: flags
-            type(c_ptr), value :: sb
-        end function zip_stat
-
-        function zip_file_stat(archive, index, flags, sb) bind(C, name="zip_file_stat")
-            use iso_c_binding, only: c_int, c_ptr, c_int64_t
-            integer(c_int) :: zip_file_stat
-            type(c_ptr), value :: archive
-            integer(c_int64_t), value :: index
-            integer(c_int), value :: flags
-            type(c_ptr), value :: sb
-        end function zip_file_stat
 
         function zip_get_num_entries(archive, flags) bind(C, name="zip_get_num_entries")
             use iso_c_binding, only: c_int64_t, c_ptr, c_int
@@ -775,12 +757,12 @@ contains
                     write(unit, iostat=iostat) buffer(1:bytes_read)
                     if (is_err(iostat)) then
                         if(DEBUG) print *, "Error writing manifest file"
-                        call set_err(ierr, ERR_WRITE_DATA)
+                        call set_err_once(ierr, ERR_WRITE_DATA)
                         exit
                     end if
                 end do
             else
-                call set_err(ierr, ERR_ALLOC_FAIL)
+                call set_err_once(ierr, ERR_ALLOC_FAIL)
                 error = zip_close(zip_handle)
                 return
             end if
