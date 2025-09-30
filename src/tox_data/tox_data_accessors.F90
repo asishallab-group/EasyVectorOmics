@@ -1,6 +1,6 @@
 module tox_data_accessors
   use iso_fortran_env, only: int32, real64
-  use tox_errors, only: set_ok, set_err, ERR_SIZE_MISMATCH, ERR_INVALID_INPUT
+  use tox_errors, only: set_ok, set_err_once, ERR_SIZE_MISMATCH, ERR_INVALID_INPUT
   implicit none
 
   public :: get_gene_index, get_family_index
@@ -22,7 +22,7 @@ subroutine get_family_for_gene_index(gene_idx, gene_to_fam, out_family_idx, ierr
     call set_ok(ierr)
     
     if (gene_idx < 1 .or. gene_idx > size(gene_to_fam)) then
-        ierr = ERR_INVALID_INPUT
+        call set_err_once(ierr, ERR_INVALID_INPUT)
         out_family_idx = 0
         return
     end if
@@ -44,12 +44,12 @@ subroutine get_expression_vector(gene_idx, expression_vectors, out_vector, ierr)
     call set_ok(ierr)
     
     if (gene_idx < 1 .or. gene_idx > size(expression_vectors, 2)) then
-        call set_err(ierr, ERR_INVALID_INPUT)
+        call set_err_once(ierr, ERR_INVALID_INPUT)
         return
     end if
     
     if (size(out_vector) /= size(expression_vectors, 1)) then
-        call set_err(ierr, ERR_SIZE_MISMATCH)
+        call set_err_once(ierr, ERR_SIZE_MISMATCH)
         return
     end if
     
@@ -70,12 +70,12 @@ subroutine get_family_centroid(family_idx, family_centroids, out_centroid, ierr)
     call set_ok(ierr)
     
     if (family_idx < 1 .or. family_idx > size(family_centroids, 2)) then
-        call set_err(ierr, ERR_INVALID_INPUT)
+        call set_err_once(ierr, ERR_INVALID_INPUT)
         return
     end if
     
     if (size(out_centroid) /= size(family_centroids, 1)) then
-        call set_err(ierr, ERR_SIZE_MISMATCH)
+        call set_err_once(ierr, ERR_SIZE_MISMATCH)
         return
     end if
     
@@ -100,17 +100,17 @@ subroutine get_shift_components(gene_idx, shift_vectors, d, out_start, out_shift
     call set_ok(ierr)
     
     if (gene_idx < 1 .or. gene_idx > size(shift_vectors, 2)) then
-        call set_err(ierr, ERR_INVALID_INPUT)
+        call set_err_once(ierr, ERR_INVALID_INPUT)
         return
     end if
     
     if (size(shift_vectors, 1) < 2*d) then
-        call set_err(ierr, ERR_SIZE_MISMATCH)
+        call set_err_once(ierr, ERR_SIZE_MISMATCH)
         return
     end if
     
     if (size(out_start) /= d .or. size(out_shift) /= d) then
-        call set_err(ierr, ERR_SIZE_MISMATCH)
+        call set_err_once(ierr, ERR_SIZE_MISMATCH)
         return
     end if
     

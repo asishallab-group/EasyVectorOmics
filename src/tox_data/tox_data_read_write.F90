@@ -3,7 +3,6 @@ module tox_data_read_write
 
     use iso_fortran_env, only: real64, int32
     use tox_errors, only: set_ok, set_err, is_err, is_ok
-    use tox_errors, only: ERR_POINTER_NULL, ERR_WRITE_DATA, ERR_READ_DATA, ERR_MISSING_MANIFEST, ERR_WRITE_DATA
     use serialize_int, only: serialize_int_1d
     use int_deserialize_mod, only: deserialize_int_1D
     use serialize_real, only: serialize_real_2D
