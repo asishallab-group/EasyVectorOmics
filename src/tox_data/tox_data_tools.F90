@@ -1,6 +1,6 @@
 module tox_data_tools
     use iso_fortran_env, only: real64, int32
-    use tox_errors, only: set_ok, set_err_once, is_err, set_err, check_io_stat
+    use tox_errors, only: set_ok, set_err_once, is_err, check_io_stat
     use tox_errors, only: ERR_INVALID_INPUT, ERR_FILE_OPEN, ERR_READ_DATA
     use array_utils, only :check_okay_ioerror, ERR_SIZE_MISMATCH
     use config, only: DEBUG
@@ -138,7 +138,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
                 n_valid_cols = n_valid_cols + 1
                 valid_cols(n_valid_cols) = value_cols(k)
             else 
-                call set_err(ierr, ERR_INVALID_INPUT)
+                call set_err_once(ierr, ERR_INVALID_INPUT)
                 return 
             end if
         end do
