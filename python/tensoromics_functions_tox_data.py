@@ -20,11 +20,11 @@ dll_path = os.path.abspath("build/libtensor-omics.so")
 ctypes.CDLL("libgomp.so.1", mode=ctypes.RTLD_GLOBAL)
 lib = ctypes.CDLL(dll_path)
 
-# Update the function signature for read_gene_ids_from_file_C
+# Update function signatures for raw byte handling
 lib.read_gene_ids_from_file_C.argtypes = [
-    ctypes.POINTER(ctypes.c_int),  # filename_ascii (as pointer)
+    ctypes.POINTER(ctypes.c_char),  # filename_raw (as pointer to raw bytes)
     ctypes.c_int,                  # fn_len
-    ctypes.POINTER(ctypes.c_int),  # gene_ids_ascii (as pointer)
+    ctypes.POINTER(ctypes.c_char),  # gene_ids_raw (as pointer to raw bytes)
     ctypes.c_int,                  # gene_ids_len
     ctypes.c_int,                  # n_genes
     ctypes.c_int,                  # n_header_rows
@@ -35,10 +35,10 @@ lib.read_gene_ids_from_file_C.restype = None
 
 # read_expression_vectors_C
 lib.read_expression_vectors_C.argtypes = [
-    ctypes.POINTER(ctypes.c_int),  # file_list_ascii
+    ctypes.POINTER(ctypes.c_char),  # file_list_raw
     ctypes.c_int,                  # file_list_len
     ctypes.c_int,                  # n_files
-    ctypes.POINTER(ctypes.c_int),  # gene_ids_ascii
+    ctypes.POINTER(ctypes.c_char),  # gene_ids_raw
     ctypes.c_int,                  # gene_ids_len
     ctypes.c_int,                  # n_genes
     ctypes.POINTER(ctypes.c_double), # expression_vectors_flat
@@ -48,19 +48,19 @@ lib.read_expression_vectors_C.argtypes = [
     ctypes.POINTER(ctypes.c_int),  # value_cols
     ctypes.c_int,                  # n_value_cols
     ctypes.POINTER(ctypes.c_int),  # ierr
-    ctypes.POINTER(ctypes.c_int),  # delimiter_ascii
+    ctypes.POINTER(ctypes.c_char),  # delimiter_raw
     ctypes.c_int                   # dlen
 ]
 lib.read_expression_vectors_C.restype = None
 
 # read_family_file_C
 lib.read_family_file_C.argtypes = [
-    ctypes.POINTER(ctypes.c_int),  # filename_ascii
+    ctypes.POINTER(ctypes.c_char),  # filename_raw
     ctypes.c_int,                  # fn_len
-    ctypes.POINTER(ctypes.c_int),  # gene_ids_ascii
+    ctypes.POINTER(ctypes.c_char),  # gene_ids_raw
     ctypes.c_int,                  # gene_ids_len
     ctypes.c_int,                  # n_genes
-    ctypes.POINTER(ctypes.c_int),  # family_ids_ascii
+    ctypes.POINTER(ctypes.c_char),  # family_ids_raw
     ctypes.c_int,                  # family_ids_len
     ctypes.c_int,                  # n_families
     ctypes.POINTER(ctypes.c_int),  # gene_to_fam
@@ -70,7 +70,7 @@ lib.read_family_file_C.restype = None
 
 # filter_unassigned_genes_C
 lib.filter_unassigned_genes_C.argtypes = [
-    ctypes.POINTER(ctypes.c_int),  # gene_ids_ascii
+    ctypes.POINTER(ctypes.c_char),  # gene_ids_raw
     ctypes.c_int,                  # gene_ids_len
     ctypes.c_int,                  # n_genes
     ctypes.POINTER(ctypes.c_int),  # gene_to_fam
@@ -120,7 +120,7 @@ lib.validate_shift_vectors_C.argtypes = [
 lib.validate_shift_vectors_C.restype = None
 
 lib.validate_gene_ids_uniqueness_C.argtypes = [
-    ctypes.POINTER(ctypes.c_int), # gene_ids_ascii
+    ctypes.POINTER(ctypes.c_char), # gene_ids_raw
     ctypes.c_int,                 # gene_ids_len
     ctypes.c_int,                 # n_genes
     ctypes.POINTER(ctypes.c_int)  # ierr
@@ -128,7 +128,7 @@ lib.validate_gene_ids_uniqueness_C.argtypes = [
 lib.validate_gene_ids_uniqueness_C.restype = None
 
 lib.validate_family_ids_uniqueness_C.argtypes = [
-    ctypes.POINTER(ctypes.c_int), # family_ids_ascii
+    ctypes.POINTER(ctypes.c_char), # family_ids_raw
     ctypes.c_int,                 # fam_len
     ctypes.c_int,                 # n_families
     ctypes.POINTER(ctypes.c_int)  # ierr
@@ -139,9 +139,9 @@ lib.validate_data_structure_C.argtypes = [
     ctypes.c_int,                 # n_genes
     ctypes.c_int,                 # n_families
     ctypes.c_int,                 # n_samples
-    ctypes.POINTER(ctypes.c_int), # gene_ids_ascii
+    ctypes.POINTER(ctypes.c_char), # gene_ids_raw
     ctypes.c_int,                 # gene_ids_len
-    ctypes.POINTER(ctypes.c_int), # gene_family_ids_ascii
+    ctypes.POINTER(ctypes.c_char), # gene_family_ids_raw
     ctypes.c_int,                 # fam_len
     ctypes.POINTER(ctypes.c_int), # gene_to_fam
     ctypes.POINTER(ctypes.c_double), # expression_vectors
@@ -155,9 +155,9 @@ lib.validate_all_data_C.argtypes = [
     ctypes.c_int,                 # n_genes
     ctypes.c_int,                 # n_families
     ctypes.c_int,                 # n_samples
-    ctypes.POINTER(ctypes.c_int), # gene_ids_ascii
+    ctypes.POINTER(ctypes.c_char), # gene_ids_raw
     ctypes.c_int,                 # gene_len
-    ctypes.POINTER(ctypes.c_int), # gene_family_ids_ascii
+    ctypes.POINTER(ctypes.c_char), # gene_family_ids_raw
     ctypes.c_int,                 # fam_len
     ctypes.POINTER(ctypes.c_int), # gene_to_fam
     ctypes.POINTER(ctypes.c_double), # expression_vectors
@@ -167,19 +167,50 @@ lib.validate_all_data_C.argtypes = [
 ]
 lib.validate_all_data_C.restype = None
 
-# Helper functions for string conversion
-def string_to_ascii_array(s, length):
-    """Converts a string to a fixed-length ASCII integer array"""
-    ascii_array = np.zeros(length, dtype=np.int32, order='F')
-    for i, char in enumerate(s):
+# Helper functions for raw byte conversion
+def string_to_raw_array(s, length):
+    """Converts a string to a fixed-length raw byte array"""
+    raw_array = np.zeros(length, dtype=np.uint8, order='F')  # Use uint8 for raw bytes
+    encoded = s.encode('ascii')
+    for i, byte in enumerate(encoded):
         if i >= length:
             break
-        ascii_array[i] = ord(char)
-    return ascii_array
+        raw_array[i] = byte
+    return raw_array
 
-def ascii_array_to_string(ascii_array):
-    """Converts an ASCII integer array back to a string"""
-    return ''.join(chr(x) for x in ascii_array if x != 0).strip()
+def raw_array_to_string(raw_array):
+    """Converts a raw byte array back to a string"""
+    # Find first zero byte (null terminator)
+    non_zero = []
+    for byte in raw_array:
+        if byte == 0:
+            break
+        non_zero.append(byte)
+    if len(non_zero) == 0:
+        return ""
+    return bytes(non_zero).decode('ascii').strip()
+
+def strings_to_raw_matrix(strings, length):
+    """Converts a list of strings to a 2D raw byte matrix"""
+    n = len(strings)
+    raw_matrix = np.zeros((length, n), dtype=np.uint8, order='F')
+    for i, s in enumerate(strings):
+        encoded = s.encode('ascii')
+        for j, byte in enumerate(encoded):
+            if j >= length:
+                break
+            raw_matrix[j, i] = byte
+    return raw_matrix
+
+def raw_matrix_to_strings(raw_matrix, length):
+    """Converts a 2D raw byte matrix back to a list of strings"""
+    n = raw_matrix.shape[1]
+    strings = []
+    for i in range(n):
+        raw_vec = raw_matrix[:, i]
+        string = raw_array_to_string(raw_vec)
+        strings.append(string)
+    return strings
 
 def _ensure_string_array(arr):
     """Ensure input is a numpy array of strings"""
@@ -200,19 +231,19 @@ def _ensure_int_array(arr):
     return arr
 
 def read_gene_ids_from_file(filename, n_genes, gene_ids_len, n_header_rows, gene_col):
-    # Convert filename to ASCII array
-    fn_ascii = string_to_ascii_array(filename, len(filename))
+    # Convert filename to raw byte array
+    fn_raw = string_to_raw_array(filename, len(filename))
     
-    # Initialize gene_ids_ascii with spaces (ASCII 32)
-    gene_ids_ascii = np.full((gene_ids_len, n_genes), 32, dtype=np.int32, order='F')
+    # Initialize gene_ids_raw with zeros (will be filled by Fortran)
+    gene_ids_raw = np.zeros((gene_ids_len, n_genes), dtype=np.uint8, order='F')
     
     ierr = ctypes.c_int()
     
     # Call C function
     lib.read_gene_ids_from_file_C(
-        fn_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        fn_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
         ctypes.c_int(len(filename)),
-        gene_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        gene_ids_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
         ctypes.c_int(gene_ids_len),
         ctypes.c_int(n_genes),
         ctypes.c_int(n_header_rows),
@@ -224,9 +255,7 @@ def read_gene_ids_from_file(filename, n_genes, gene_ids_len, n_header_rows, gene
         raise Exception(f"Error reading gene IDs: {ierr.value}")
     
     # Convert result back to strings and return as numpy array
-    gene_ids = []
-    for i in range(n_genes):
-        gene_ids.append(ascii_array_to_string(gene_ids_ascii[:, i]))
+    gene_ids = raw_matrix_to_strings(gene_ids_raw, gene_ids_len)
     
     return np.array(gene_ids, dtype='U')  # Return as numpy array
 
@@ -236,32 +265,34 @@ def read_expression_vectors(file_list, gene_ids, n_samples, n_header_rows,
     # Ensure inputs are numpy arrays
     gene_ids = _ensure_string_array(gene_ids)
     
-    # Convert inputs to ASCII arrays
-    file_list_ascii = np.zeros((max(len(f) for f in file_list), len(file_list)), 
-                              dtype=np.int32, order='F')
+    # Convert inputs to raw byte arrays
+    max_file_len = max(len(f) for f in file_list)
+    file_list_raw = np.zeros((max_file_len, len(file_list)), dtype=np.uint8, order='F')
     for i, file in enumerate(file_list):
-        file_list_ascii[:, i] = string_to_ascii_array(file, file_list_ascii.shape[0])
+        file_raw = string_to_raw_array(file, max_file_len)
+        file_list_raw[:, i] = file_raw
     
-    gene_ids_ascii = np.zeros((max(len(g) for g in gene_ids), len(gene_ids)), 
-                             dtype=np.int32, order='F')
+    max_gene_len = max(len(g) for g in gene_ids)
+    gene_ids_raw = np.zeros((max_gene_len, len(gene_ids)), dtype=np.uint8, order='F')
     for i, gene in enumerate(gene_ids):
-        gene_ids_ascii[:, i] = string_to_ascii_array(gene, gene_ids_ascii.shape[0])
+        gene_raw = string_to_raw_array(gene, max_gene_len)
+        gene_ids_raw[:, i] = gene_raw
     
     # Prepare output arrays
     expression_vectors = np.zeros((n_samples, len(gene_ids)), dtype=np.float64, order='F')
     ierr = ctypes.c_int()
-    delimiter_ascii = string_to_ascii_array(delimiter, 1)
+    delimiter_raw = string_to_raw_array(delimiter, len(delimiter))
     
     # Convert value_cols to ctypes array
     value_cols_ct = (ctypes.c_int * len(value_cols))(*value_cols)
     
     # Call C function
     lib.read_expression_vectors_C(
-        file_list_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
-        ctypes.c_int(file_list_ascii.shape[0]),
+        file_list_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
+        ctypes.c_int(max_file_len),
         ctypes.c_int(len(file_list)),
-        gene_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
-        ctypes.c_int(gene_ids_ascii.shape[0]),
+        gene_ids_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
+        ctypes.c_int(max_gene_len),
         ctypes.c_int(len(gene_ids)),
         expression_vectors.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         ctypes.c_int(n_samples),
@@ -270,8 +301,8 @@ def read_expression_vectors(file_list, gene_ids, n_samples, n_header_rows,
         value_cols_ct,
         ctypes.c_int(len(value_cols)),
         ctypes.byref(ierr),
-        delimiter_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
-        ctypes.c_int(1)
+        delimiter_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
+        ctypes.c_int(len(delimiter))
     )
     
     if ierr.value != 0:
@@ -284,27 +315,28 @@ def read_family_file(filename, gene_ids, family_ids_len, n_families):
     # Ensure inputs are numpy arrays
     gene_ids = _ensure_string_array(gene_ids)
     
-    # Convert inputs to ASCII arrays
-    fn_ascii = string_to_ascii_array(filename, len(filename))
+    # Convert inputs to raw byte arrays
+    fn_raw = string_to_raw_array(filename, len(filename))
     
-    gene_ids_ascii = np.zeros((max(len(g) for g in gene_ids), len(gene_ids)), 
-                             dtype=np.int32, order='F')
+    max_gene_len = max(len(g) for g in gene_ids)
+    gene_ids_raw = np.zeros((max_gene_len, len(gene_ids)), dtype=np.uint8, order='F')
     for i, gene in enumerate(gene_ids):
-        gene_ids_ascii[:, i] = string_to_ascii_array(gene, gene_ids_ascii.shape[0])
+        gene_raw = string_to_raw_array(gene, max_gene_len)
+        gene_ids_raw[:, i] = gene_raw
     
     # Prepare output arrays
-    family_ids_ascii = np.zeros((family_ids_len, n_families), dtype=np.int32, order='F')
+    family_ids_raw = np.zeros((family_ids_len, n_families), dtype=np.uint8, order='F')
     gene_to_fam = np.zeros(len(gene_ids), dtype=np.int32, order='F')
     ierr = ctypes.c_int()
     
     # Call C function
     lib.read_family_file_C(
-        fn_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        fn_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
         ctypes.c_int(len(filename)),
-        gene_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
-        ctypes.c_int(gene_ids_ascii.shape[0]),
+        gene_ids_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
+        ctypes.c_int(max_gene_len),
         ctypes.c_int(len(gene_ids)),
-        family_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        family_ids_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
         ctypes.c_int(family_ids_len),
         ctypes.c_int(n_families),
         gene_to_fam.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
@@ -315,9 +347,7 @@ def read_family_file(filename, gene_ids, family_ids_len, n_families):
         raise Exception(f"Error reading family file: {ierr.value}")
     
     # Convert result back to strings as numpy array
-    family_ids = []
-    for i in range(n_families):
-        family_ids.append(ascii_array_to_string(family_ids_ascii[:, i]))
+    family_ids = raw_matrix_to_strings(family_ids_raw, family_ids_len)
     
     return {
         'family_ids': np.array(family_ids, dtype='U'),
@@ -330,11 +360,12 @@ def filter_unassigned_genes(gene_ids, gene_to_fam):
     gene_ids = _ensure_string_array(gene_ids)
     gene_to_fam = _ensure_int_array(gene_to_fam)
     
-    # Convert inputs to ASCII arrays
-    gene_ids_ascii = np.zeros((max(len(g) for g in gene_ids), len(gene_ids)), 
-                             dtype=np.int32, order='F')
+    # Convert inputs to raw byte arrays
+    max_gene_len = max(len(g) for g in gene_ids)
+    gene_ids_raw = np.zeros((max_gene_len, len(gene_ids)), dtype=np.uint8, order='F')
     for i, gene in enumerate(gene_ids):
-        gene_ids_ascii[:, i] = string_to_ascii_array(gene, gene_ids_ascii.shape[0])
+        gene_raw = string_to_raw_array(gene, max_gene_len)
+        gene_ids_raw[:, i] = gene_raw
     
     # Prepare output arrays
     n_genes = len(gene_ids)
@@ -344,8 +375,8 @@ def filter_unassigned_genes(gene_ids, gene_to_fam):
     
     # Call C function
     lib.filter_unassigned_genes_C(
-        gene_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
-        ctypes.c_int(gene_ids_ascii.shape[0]),
+        gene_ids_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
+        ctypes.c_int(max_gene_len),
         ctypes.c_int(n_genes),
         gene_to_fam.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         mask.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
@@ -433,12 +464,10 @@ def validate_gene_ids_uniqueness(gene_ids):
     gene_ids = _ensure_string_array(gene_ids)
     gene_ids_len = max(len(g) for g in gene_ids)
     n_genes = len(gene_ids)
-    gene_ids_ascii = np.zeros((gene_ids_len, n_genes), dtype=np.int32, order='F')
-    for i, gene in enumerate(gene_ids):
-        gene_ids_ascii[:, i] = string_to_ascii_array(gene, gene_ids_len)
+    gene_ids_raw = strings_to_raw_matrix(gene_ids, gene_ids_len)
     ierr = ctypes.c_int()
     lib.validate_gene_ids_uniqueness_C(
-        gene_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        gene_ids_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
         ctypes.c_int(gene_ids_len),
         ctypes.c_int(n_genes),
         ctypes.byref(ierr)
@@ -450,12 +479,10 @@ def validate_family_ids_uniqueness(family_ids):
     family_ids = _ensure_string_array(family_ids)
     fam_len = max(len(f) for f in family_ids)
     n_families = len(family_ids)
-    family_ids_ascii = np.zeros((fam_len, n_families), dtype=np.int32, order='F')
-    for i, fam in enumerate(family_ids):
-        family_ids_ascii[:, i] = string_to_ascii_array(fam, fam_len)
+    family_ids_raw = strings_to_raw_matrix(family_ids, fam_len)
     ierr = ctypes.c_int()
     lib.validate_family_ids_uniqueness_C(
-        family_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        family_ids_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
         ctypes.c_int(fam_len),
         ctypes.c_int(n_families),
         ctypes.byref(ierr)
@@ -473,24 +500,22 @@ def validate_data_structure(n_genes, n_families, n_samples, gene_ids, gene_famil
     
     gene_ids_len = max(len(g) for g in gene_ids)
     fam_len = max(len(f) for f in gene_family_ids)
-    gene_ids_ascii = np.zeros((gene_ids_len, n_genes), dtype=np.int32, order='F')
-    gene_family_ids_ascii = np.zeros((fam_len, n_genes), dtype=np.int32, order='F')
-    for i in range(n_genes):
-        gene_ids_ascii[:, i] = string_to_ascii_array(gene_ids[i], gene_ids_len)
-    for i in range(n_families):
-        gene_family_ids_ascii[:, i] = string_to_ascii_array(gene_family_ids[i], fam_len)
+    gene_ids_raw = strings_to_raw_matrix(gene_ids, gene_ids_len)
+    gene_family_ids_raw = strings_to_raw_matrix(gene_family_ids, fam_len)
+    
     gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
     expression_vectors = np.asfortranarray(expression_vectors, dtype=np.float64)
     family_centroids = np.asfortranarray(family_centroids, dtype=np.float64)
     shift_vectors = np.asfortranarray(shift_vectors, dtype=np.float64)
     ierr = ctypes.c_int()
+    
     lib.validate_data_structure_C(
         ctypes.c_int(n_genes),
         ctypes.c_int(n_families),
         ctypes.c_int(n_samples),
-        gene_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        gene_ids_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
         ctypes.c_int(gene_ids_len),
-        gene_family_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        gene_family_ids_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
         ctypes.c_int(fam_len),
         gene_to_fam.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         expression_vectors.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
@@ -511,24 +536,22 @@ def validate_all_data(n_genes, n_families, n_samples, gene_ids, gene_family_ids,
     
     gene_ids_len = max(len(g) for g in gene_ids)
     fam_len = max(len(f) for f in gene_family_ids)
-    gene_ids_ascii = np.zeros((gene_ids_len, n_genes), dtype=np.int32, order='F')
-    gene_family_ids_ascii = np.zeros((fam_len, n_families), dtype=np.int32, order='F')
-    for i in range(n_genes):
-        gene_ids_ascii[:, i] = string_to_ascii_array(gene_ids[i], gene_ids_len)
-    for i in range(n_families):
-        gene_family_ids_ascii[:, i] = string_to_ascii_array(gene_family_ids[i], fam_len)
+    gene_ids_raw = strings_to_raw_matrix(gene_ids, gene_ids_len)
+    gene_family_ids_raw = strings_to_raw_matrix(gene_family_ids, fam_len)
+    
     gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
     expression_vectors = np.asfortranarray(expression_vectors, dtype=np.float64)
     family_centroids = np.asfortranarray(family_centroids, dtype=np.float64)
     shift_vectors = np.asfortranarray(shift_vectors, dtype=np.float64)
     ierr = ctypes.c_int()
+    
     lib.validate_all_data_C(
         ctypes.c_int(n_genes),
         ctypes.c_int(n_families),
         ctypes.c_int(n_samples),
-        gene_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        gene_ids_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
         ctypes.c_int(gene_ids_len),
-        gene_family_ids_ascii.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
+        gene_family_ids_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
         ctypes.c_int(fam_len),
         gene_to_fam.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
         expression_vectors.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),

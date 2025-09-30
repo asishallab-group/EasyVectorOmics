@@ -574,16 +574,17 @@ subroutine validate_shift_vectors_R(shift_vectors, expression_vectors, family_ce
 end subroutine validate_shift_vectors_R
 
 !> R Binding to validate gene ids uniqueness
-subroutine validate_gene_ids_uniqueness_R(gene_ids_ascii, gene_ids_len, n_genes, ierr)
+subroutine validate_gene_ids_uniqueness_R(gene_ids_raw, gene_ids_len, n_genes, ierr)
     use tox_data_validation, only: validate_gene_ids_uniqueness
     use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
-    use array_utils, only: ascii_to_string_padded
+    use tox_conversions, only: c_char_1d_as_string
+    use iso_c_binding, only: c_char
     use iso_fortran_env, only: int32
     integer(int32), intent(in) :: gene_ids_len
         !! Length of the gene ids
     integer(int32), intent(in) :: n_genes
         !! Number of genes
-    integer(int32), intent(in) :: gene_ids_ascii(gene_ids_len, n_genes)
+    character(kind=c_char, len=1), intent(in) :: gene_ids_raw(gene_ids_len, n_genes)
         !! Gene ids array
     integer(int32), intent(out) :: ierr
         !! Error code
@@ -602,7 +603,8 @@ subroutine validate_gene_ids_uniqueness_R(gene_ids_ascii, gene_ids_len, n_genes,
     end if
 
     do i = 1, n_genes
-        call ascii_to_string_padded(gene_ids_ascii(:,i), gene_ids_len, temp_str)
+        call c_char_1d_as_string(gene_ids_raw(:,i), temp_str, ierr)
+        if (.not. is_ok(ierr)) return
         gene_ids(i) = temp_str
     end do
 
@@ -610,16 +612,17 @@ subroutine validate_gene_ids_uniqueness_R(gene_ids_ascii, gene_ids_len, n_genes,
 end subroutine validate_gene_ids_uniqueness_R
 
 !> R Binding to validate family ids uniqueness
-subroutine validate_family_ids_uniqueness_R(family_ids_ascii, fam_len, n_families, ierr)
+subroutine validate_family_ids_uniqueness_R(family_ids_raw, fam_len, n_families, ierr)
     use tox_data_validation, only: validate_family_ids_uniqueness
     use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
-    use array_utils, only: ascii_to_string_padded
+    use tox_conversions, only: c_char_1d_as_string
+    use iso_c_binding, only: c_char
     use iso_fortran_env, only: int32
     integer(int32), intent(in) :: fam_len
         !! Length of the families names
     integer(int32), intent(in) :: n_families
         !! Number of families
-    integer(int32), intent(in) :: family_ids_ascii(fam_len, n_families)
+    character(kind=c_char, len=1), intent(in) :: family_ids_raw(fam_len, n_families)
         !! Familiy ids array
     integer(int32), intent(out) :: ierr
         !! Error code
@@ -638,7 +641,8 @@ subroutine validate_family_ids_uniqueness_R(family_ids_ascii, fam_len, n_familie
     end if
 
     do i = 1, n_families
-        call ascii_to_string_padded(family_ids_ascii(:,i), fam_len, temp_str)
+        call c_char_1d_as_string(family_ids_raw(:,i), temp_str, ierr)
+        if (.not. is_ok(ierr)) return
         family_ids(i) = temp_str
     end do
 
@@ -647,13 +651,14 @@ end subroutine validate_family_ids_uniqueness_R
 
 !> R Binding to validate data structure
 subroutine validate_data_structure_R(n_genes, n_families, n_samples, &
-                                     gene_ids_ascii, gene_ids_len, &
-                                     gene_family_ids_ascii, fam_len, &
+                                     gene_ids_raw, gene_ids_len, &
+                                     gene_family_ids_raw, fam_len, &
                                      gene_to_fam, expression_vectors, family_centroids, &
                                      shift_vectors, ierr)
     use tox_data_validation, only: validate_data_structure
     use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
-    use array_utils, only: ascii_to_string_padded
+    use tox_conversions, only: c_char_1d_as_string
+    use iso_c_binding, only: c_char
     use iso_fortran_env, only: int32, real64
     integer(int32), intent(in) :: n_genes
         !! Number of genes
@@ -663,11 +668,11 @@ subroutine validate_data_structure_R(n_genes, n_families, n_samples, &
         !! Number of samples
     integer(int32), intent(in) :: gene_ids_len
         !! gene ids length    
-    integer(int32), intent(in) :: gene_ids_ascii(gene_ids_len, n_genes)
+    character(kind=c_char, len=1), intent(in) :: gene_ids_raw(gene_ids_len, n_genes)
         !! gene ids array
     integer(int32), intent(in) :: fam_len
         !! Length of the family ids
-    integer(int32), intent(in) :: gene_family_ids_ascii(fam_len, n_genes)
+    character(kind=c_char, len=1), intent(in) :: gene_family_ids_raw(fam_len, n_genes)
         !! family ids array
     integer(int32), intent(in) :: gene_to_fam(n_genes)
         !! gene to family array
@@ -694,9 +699,12 @@ subroutine validate_data_structure_R(n_genes, n_families, n_samples, &
         return
     end if
     do i = 1, n_genes
-        call ascii_to_string_padded(gene_ids_ascii(:,i), gene_ids_len, temp_str)
+        call c_char_1d_as_string(gene_ids_raw(:,i), temp_str, ierr)
+        if (.not. is_ok(ierr)) return
         gene_ids(i) = temp_str
-        call ascii_to_string_padded(gene_family_ids_ascii(:,i), fam_len, temp_str)
+        
+        call c_char_1d_as_string(gene_family_ids_raw(:,i), temp_str, ierr)
+        if (.not. is_ok(ierr)) return
         gene_family_ids(i) = temp_str
     end do
 
@@ -706,13 +714,14 @@ end subroutine validate_data_structure_R
 
 !> R Binding to validate all data
 subroutine validate_all_data_R(n_genes, n_families, n_samples, &
-                               gene_ids_ascii, gene_len, &
-                               gene_family_ids_ascii, fam_len, &
+                               gene_ids_raw, gene_len, &
+                               gene_family_ids_raw, fam_len, &
                                gene_to_fam, expression_vectors, family_centroids, &
                                shift_vectors, ierr)
     use tox_data_validation, only: validate_all_data
     use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
-    use array_utils, only: ascii_to_string_padded
+    use tox_conversions, only: c_char_1d_as_string
+    use iso_c_binding, only: c_char
     use iso_fortran_env, only: int32, real64
     integer(int32), intent(in) :: n_genes
         !! Number of genes
@@ -722,11 +731,11 @@ subroutine validate_all_data_R(n_genes, n_families, n_samples, &
         !! Number of samples
     integer(int32), intent(in) :: gene_len
         !! length of the gene ids    
-    integer(int32), intent(in) :: gene_ids_ascii(gene_len, n_genes)
+    character(kind=c_char, len=1), intent(in) :: gene_ids_raw(gene_len, n_genes)
         !! Gene ids array
     integer(int32), intent(in) :: fam_len
         !! Length of the family indices
-    integer(int32), intent(in) :: gene_family_ids_ascii(fam_len, n_families)
+    character(kind=c_char, len=1), intent(in) :: gene_family_ids_raw(fam_len, n_families)
         !! Family ids array
     integer(int32), intent(in) :: gene_to_fam(n_genes)
         !! genes to family mapping
@@ -749,12 +758,14 @@ subroutine validate_all_data_R(n_genes, n_families, n_samples, &
     allocate(character(len=gene_len) :: gene_ids(n_genes), stat=ios)
     allocate(character(len=fam_len) :: gene_family_ids(n_families), stat=ios)
     do i = 1, n_genes
-        call ascii_to_string_padded(gene_ids_ascii(:,i), gene_len, temp_str)
+        call c_char_1d_as_string(gene_ids_raw(:,i), temp_str, ierr)
+        if (.not. is_ok(ierr)) return
         gene_ids(i) = temp_str
     end do
 
     do i=1, n_families
-        call ascii_to_string_padded(gene_family_ids_ascii(:,i), fam_len, temp_str)
+        call c_char_1d_as_string(gene_family_ids_raw(:,i), temp_str, ierr)
+        if (.not. is_ok(ierr)) return
         gene_family_ids(i) = temp_str
     end do
 
@@ -855,17 +866,17 @@ subroutine validate_shift_vectors_C(shift_vectors, expression_vectors, family_ce
 end subroutine validate_shift_vectors_C
 
 !> C Binding to validate gene ids uniqueness
-subroutine validate_gene_ids_uniqueness_C(gene_ids_ascii, gene_ids_len, n_genes, ierr) bind(C, name="validate_gene_ids_uniqueness_C")
-    use iso_c_binding, only: c_int
+subroutine validate_gene_ids_uniqueness_C(gene_ids_raw, gene_ids_len, n_genes, ierr) bind(C, name="validate_gene_ids_uniqueness_C")
+    use iso_c_binding, only: c_int, c_char
     use tox_data_validation, only: validate_gene_ids_uniqueness
     use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
-    use array_utils, only: ascii_to_string_padded
+    use tox_conversions, only: c_char_1d_as_string
     implicit none
     integer(c_int), intent(in), value :: gene_ids_len
         !! Length of gene ids 
     integer(c_int), intent(in), value :: n_genes
         !! Number of genes
-    integer(c_int), intent(in) :: gene_ids_ascii(gene_ids_len, n_genes)
+    character(kind=c_char, len=1), intent(in) :: gene_ids_raw(gene_ids_len, n_genes)
         !! Pointer to gene ids array
     integer(c_int), intent(out) :: ierr 
         !! Error code
@@ -873,6 +884,7 @@ subroutine validate_gene_ids_uniqueness_C(gene_ids_ascii, gene_ids_len, n_genes,
     character(len=:), allocatable :: gene_ids(:)
     character(len=:), allocatable :: temp_str
     integer :: i, ios
+    
     call set_ok(ierr)
     allocate(character(len=gene_ids_len) :: gene_ids(n_genes), stat=ios)
     if(.not. is_ok(ios)) then
@@ -880,24 +892,25 @@ subroutine validate_gene_ids_uniqueness_C(gene_ids_ascii, gene_ids_len, n_genes,
         return
     end if
     do i = 1, n_genes
-        call ascii_to_string_padded(gene_ids_ascii(:,i), gene_ids_len, temp_str)
+        call c_char_1d_as_string(gene_ids_raw(:,i), temp_str, ierr)
+        if (.not. is_ok(ierr)) return
         gene_ids(i) = temp_str
     end do
     call validate_gene_ids_uniqueness(gene_ids, ierr)
 end subroutine validate_gene_ids_uniqueness_C
 
-!> C Binding to validate gene ids uniqueness
-subroutine validate_family_ids_uniqueness_C(family_ids_ascii, fam_len, n_families, ierr) bind(C, name="validate_family_ids_uniqueness_C")
-    use iso_c_binding, only: c_int
+!> C Binding to validate family ids uniqueness
+subroutine validate_family_ids_uniqueness_C(family_ids_raw, fam_len, n_families, ierr) bind(C, name="validate_family_ids_uniqueness_C")
+    use iso_c_binding, only: c_int, c_char
     use tox_data_validation, only: validate_family_ids_uniqueness
     use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
-    use array_utils, only: ascii_to_string_padded
+    use tox_conversions, only: c_char_1d_as_string
     implicit none
     integer(c_int), intent(in), value :: fam_len
         !! length of family ids
     integer(c_int), intent(in), value :: n_families
         !! Number of families
-    integer(c_int), intent(in) :: family_ids_ascii(fam_len, n_families)
+    character(kind=c_char, len=1), intent(in) :: family_ids_raw(fam_len, n_families)
         !! Pointer to family ids array
     integer(c_int), intent(out) :: ierr
         !! Error code
@@ -912,7 +925,8 @@ subroutine validate_family_ids_uniqueness_C(family_ids_ascii, fam_len, n_familie
         return
     end if
     do i = 1, n_families
-        call ascii_to_string_padded(family_ids_ascii(:,i), fam_len, temp_str)
+        call c_char_1d_as_string(family_ids_raw(:,i), temp_str, ierr)
+        if (.not. is_ok(ierr)) return
         family_ids(i) = temp_str
     end do
     call validate_family_ids_uniqueness(family_ids, ierr)
@@ -920,14 +934,14 @@ end subroutine validate_family_ids_uniqueness_C
 
 !> C Binding to validate data structure
 subroutine validate_data_structure_C(n_genes, n_families, n_samples, &
-                                     gene_ids_ascii, gene_ids_len, &
-                                     gene_family_ids_ascii, fam_len, &
+                                     gene_ids_raw, gene_ids_len, &
+                                     gene_family_ids_raw, fam_len, &
                                      gene_to_fam, expression_vectors, family_centroids, &
                                      shift_vectors, ierr) bind(C, name="validate_data_structure_C")
-    use iso_c_binding, only: c_int, c_double
+    use iso_c_binding, only: c_int, c_double, c_char
     use tox_data_validation, only: validate_data_structure
     use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
-    use array_utils, only: ascii_to_string_padded
+    use tox_conversions, only: c_char_1d_as_string
     implicit none
     integer(c_int), intent(in), value :: n_genes
         !! Number of genes
@@ -939,9 +953,9 @@ subroutine validate_data_structure_C(n_genes, n_families, n_samples, &
         !! Length of gene ids
     integer(c_int), intent(in), value :: fam_len
         !! Length of the family indices        
-    integer(c_int), intent(in) :: gene_ids_ascii(gene_ids_len, n_genes)
-        !! Poitner to gene ids array
-    integer(c_int), intent(in) :: gene_family_ids_ascii(fam_len, n_families)
+    character(kind=c_char, len=1), intent(in) :: gene_ids_raw(gene_ids_len, n_genes)
+        !! Pointer to gene ids array
+    character(kind=c_char, len=1), intent(in) :: gene_family_ids_raw(fam_len, n_families)
         !! Pointer to family ids array
     integer(c_int), intent(in) :: gene_to_fam(n_genes)
         !! Pointer to gene to family array
@@ -958,6 +972,7 @@ subroutine validate_data_structure_C(n_genes, n_families, n_samples, &
     character(len=:), allocatable :: gene_ids(:)
     character(len=:), allocatable :: gene_family_ids(:)
     integer :: i, ios
+    
     call set_ok(ierr)
 
     allocate(character(len=gene_ids_len) :: gene_ids(n_genes), stat=ios)
@@ -969,11 +984,13 @@ subroutine validate_data_structure_C(n_genes, n_families, n_samples, &
     end if
 
     do i = 1, n_genes
-        call ascii_to_string_padded(gene_ids_ascii(:,i), gene_ids_len, temp_str)
+        call c_char_1d_as_string(gene_ids_raw(:,i), temp_str, ierr)
+        if (.not. is_ok(ierr)) return
         gene_ids(i) = temp_str
     end do 
     do i = 1, n_families
-        call ascii_to_string_padded(gene_family_ids_ascii(:,i), fam_len, temp_str)
+        call c_char_1d_as_string(gene_family_ids_raw(:,i), temp_str, ierr)
+        if (.not. is_ok(ierr)) return
         gene_family_ids(i) = temp_str
     end do
 
@@ -983,14 +1000,14 @@ end subroutine validate_data_structure_C
 
 !> C Binding to validate all data
 subroutine validate_all_data_C(n_genes, n_families, n_samples, &
-                               gene_ids_ascii, gene_len, &
-                               gene_family_ids_ascii, fam_len, &
+                               gene_ids_raw, gene_len, &
+                               gene_family_ids_raw, fam_len, &
                                gene_to_fam, expression_vectors, family_centroids, &
                                shift_vectors, ierr) bind(C, name="validate_all_data_C")
-    use iso_c_binding, only: c_int, c_double
+    use iso_c_binding, only: c_int, c_double, c_char
     use tox_data_validation, only: validate_all_data
     use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
-    use array_utils, only: ascii_to_string_padded
+    use tox_conversions, only: c_char_1d_as_string
     implicit none
     integer(c_int), intent(in), value :: n_genes
         !! Number of genes
@@ -1000,11 +1017,11 @@ subroutine validate_all_data_C(n_genes, n_families, n_samples, &
         !! Number of samples
     integer(c_int), intent(in), value :: gene_len
         !! Length of the gene ids    
-    integer(c_int), intent(in) :: gene_ids_ascii(gene_len, n_genes)
+    character(kind=c_char, len=1), intent(in) :: gene_ids_raw(gene_len, n_genes)
         !! Pointer to gene ids array
     integer(c_int), intent(in), value :: fam_len
         !! Length of the family ids    
-    integer(c_int), intent(in) :: gene_family_ids_ascii(fam_len, n_families)
+    character(kind=c_char, len=1), intent(in) :: gene_family_ids_raw(fam_len, n_families)
         !! pointer to family ids array
     integer(c_int), intent(in) :: gene_to_fam(n_genes)
         !! Pointer to gene to family mapping
@@ -1021,6 +1038,7 @@ subroutine validate_all_data_C(n_genes, n_families, n_samples, &
     character(len=:), allocatable :: gene_ids(:)
     character(len=:), allocatable :: gene_family_ids(:)
     integer :: i, ios
+    
     call set_ok(ierr)
 
     allocate(character(len=gene_len) :: gene_ids(n_genes), stat=ios)
@@ -1030,11 +1048,13 @@ subroutine validate_all_data_C(n_genes, n_families, n_samples, &
         return
     end if
     do i = 1, n_genes
-        call ascii_to_string_padded(gene_ids_ascii(:,i), gene_len, temp_str)
+        call c_char_1d_as_string(gene_ids_raw(:,i), temp_str, ierr)
+        if (.not. is_ok(ierr)) return
         gene_ids(i) = temp_str
     end do
     do i=1, n_families
-        call ascii_to_string_padded(gene_family_ids_ascii(:,i), fam_len, temp_str)
+        call c_char_1d_as_string(gene_family_ids_raw(:,i), temp_str, ierr)
+        if (.not. is_ok(ierr)) return
         gene_family_ids(i) = temp_str
     end do
     call validate_all_data(n_genes, n_families, n_samples, gene_ids, gene_family_ids, &

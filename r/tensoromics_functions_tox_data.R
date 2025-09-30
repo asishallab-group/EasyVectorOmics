@@ -47,6 +47,61 @@ tox_errors <- function(ierr) {
   stop(msg)
 }
 
+strings_to_raw_matrix <- function(arr, clen) {
+  n <- length(arr)
+  # Create a matrix of raw bytes with dimensions clen x n
+  mat <- matrix(raw(1), nrow = clen, ncol = n)
+  for (i in seq_along(arr)) {
+    # Convert string to raw bytes
+    raw_bytes <- charToRaw(arr[i])
+    length_bytes <- length(raw_bytes)
+    if (length_bytes > 0) {
+      # Copy raw bytes into matrix
+      mat[1:min(length_bytes, clen), i] <- raw_bytes[1:min(length_bytes, clen)]
+    }
+    # Note: No null termination needed - Fortran handles this
+  }
+  mat  # Return the raw matrix
+}
+
+raw_matrix_to_strings <- function(raw_mat, clen) {
+  # raw_mat: raw matrix with dimensions clen x n
+  if (is.null(dim(raw_mat))) {
+    # 1D vector: convert to matrix with one column
+    raw_mat <- matrix(raw_mat, nrow = clen)
+  }
+  n <- ncol(raw_mat)
+  strings <- character(n)
+  for (i in seq_len(n)) {
+    raw_vec <- raw_mat[, i]
+    # Find first null byte (if any)
+    null_pos <- which(raw_vec == as.raw(0))
+    if (length(null_pos) > 0) {
+      end_pos <- min(null_pos[1] - 1, length(raw_vec))
+    } else {
+      end_pos <- length(raw_vec)
+    }
+    if (end_pos > 0) {
+      strings[i] <- rawToChar(raw_vec[1:end_pos])
+    } else {
+      strings[i] <- ""
+    }
+  }
+  strings
+}
+
+string_to_raw <- function(s, len) {
+  raw_bytes <- charToRaw(s)
+  if (length(raw_bytes) < len) {
+    # Pad with zeros if needed (Fortran will handle null termination)
+    raw_bytes <- c(raw_bytes, raw(1))
+    length(raw_bytes) <- len
+    raw_bytes[is.na(raw_bytes)] <- as.raw(0)
+  }
+  raw_bytes[1:len]  # Ensure exact length
+}
+
+# Keep the old integer conversion functions for functions that still need them
 strings_to_ascii_matrix <- function(arr, clen) {
   n <- length(arr)
   # Create a matrix of integers with dimensions clen x n
@@ -102,31 +157,33 @@ read_expression_vectors <- function(file_list, gene_ids,
                                     n_header_rows, gene_col, value_cols, delimiter = "\t", n_samples) {
     nfiles <- length(file_list)
     ngenes <- length(gene_ids)
-    gene_len <- max(nchar(gene_ids))
+    gene_len <- max(nchar(gene_ids)) + 1  # +1 for null terminator
 
-    # Convert file names to ASCII integers (pad with spaces, not zeros)
-    file_ascii_list <- lapply(file_list, function(f) {
-    raw <- charToRaw(enc2native(f))          # native single-byte encoding
-    chars <- as.integer(raw)
-    c(chars, rep(32L, 256 - length(chars)))  # pad with spaces (32)
+    # Convert file names to raw bytes
+    file_raw_list <- lapply(file_list, function(f) {
+      raw_bytes <- charToRaw(enc2native(f))
+      # Pad with zeros to fixed length of 256
+      if (length(raw_bytes) < 256) {
+        raw_bytes <- c(raw_bytes, raw(256 - length(raw_bytes)))
+      }
+      raw_bytes[1:256]
     })
-    file_ascii <- do.call(cbind, file_ascii_list)
+    file_raw <- do.call(cbind, file_raw_list)
 
-  
-    # Convert gene IDs to ASCII matrix
-    gene_ascii <- strings_to_ascii_matrix(gene_ids, gene_len)
+    # Convert gene IDs to raw matrix
+    gene_raw <- strings_to_raw_matrix(gene_ids, gene_len)
     
-    # Convert delimiter to ASCII
-    delimiter_ascii <- utf8ToInt(delimiter)
+    # Convert delimiter to raw
+    delimiter_raw <- charToRaw(delimiter)
     
     # Prepare output
     expression_vectors <- double(n_samples * ngenes)
     
     out <- .Fortran("read_expression_vectors_R",
-        file_list_ascii = as.integer(file_ascii),
-        file_list_len = as.integer(256),  # Fixed length of 256
+        file_list_raw = file_raw,              # Pass raw bytes directly
+        file_list_len = as.integer(256),       # Fixed length of 256
         n_files = as.integer(nfiles),
-        gene_ids_ascii = as.integer(gene_ascii),
+        gene_ids_raw = gene_raw,               # Pass raw bytes directly
         gene_ids_len = as.integer(gene_len),
         n_genes = as.integer(ngenes),
         expression_vectors = as.double(expression_vectors),
@@ -136,8 +193,8 @@ read_expression_vectors <- function(file_list, gene_ids,
         value_cols = as.integer(value_cols),
         n_value_cols = as.integer(length(value_cols)),
         ierr = 0L,
-        delimiter_ascii = as.integer(delimiter_ascii),
-        dlen = as.integer(length(delimiter_ascii))
+        delimiter_raw = delimiter_raw,         # Pass raw bytes directly
+        dlen = as.integer(length(delimiter_raw))
     )
 
     tox_errors(out$ierr)
@@ -158,17 +215,17 @@ read_expression_vectors <- function(file_list, gene_ids,
 #'   - gene_ids: Character vector of gene IDs read from the file
 #'   - ierr: Integer error code (0 if successful)
 read_gene_ids_from_file <- function(filename, ngenes, gene_len, n_header_rows = 1, gene_col = 1) {
-  # Convert filename to ASCII integers
-  filename_ascii <- utf8ToInt(filename)
+  # Convert filename to raw bytes
+  filename_raw <- charToRaw(filename)
   
-  gene_ascii <- matrix(0L, nrow = gene_len, ncol = ngenes)
+  gene_raw <- matrix(raw(1), nrow = gene_len + 1, ncol = ngenes)  # +1 for null terminator
   ierr <- integer(1)
   
   out <- .Fortran("read_gene_ids_from_file_R",
-    filename_ascii = as.integer(filename_ascii),
-    fn_len = as.integer(length(filename_ascii)),  # Fixed length of 256
-    gene_ids_ascii = as.integer(gene_ascii),
-    gene_ids_len = as.integer(gene_len),
+    filename_raw = filename_raw,              # Pass raw bytes directly
+    fn_len = as.integer(length(filename_raw)),
+    gene_ids_raw = gene_raw,                  # Pass raw bytes directly
+    gene_ids_len = as.integer(gene_len + 1),  # +1 for null terminator
     n_genes = as.integer(ngenes),
     n_header_rows = as.integer(n_header_rows),
     gene_col = as.integer(gene_col),
@@ -177,7 +234,7 @@ read_gene_ids_from_file <- function(filename, ngenes, gene_len, n_header_rows = 
   tox_errors(out$ierr)
   
   list(
-    gene_ids = ascii_matrix_to_strings(out$gene_ids_ascii, gene_len),
+    gene_ids = raw_matrix_to_strings(out$gene_ids_raw, gene_len + 1),
     ierr = out$ierr
   )
 }
@@ -194,31 +251,31 @@ read_gene_ids_from_file <- function(filename, ngenes, gene_len, n_header_rows = 
 #' Note: If genes are not found in the gene IDs list a message will be printed but NO error code is thrown
 read_family_file <- function(filename, gene_ids, n_families, family_len) {
   ngenes <- length(gene_ids)
-  gene_len <- max(nchar(gene_ids))
+  gene_len <- max(nchar(gene_ids)) + 1  # +1 for null terminator
   
-  # Convert filename to ASCII integers
-  filename_ascii <- utf8ToInt(filename)
+  # Convert filename to raw bytes
+  filename_raw <- charToRaw(filename)
   
-  gene_ascii <- strings_to_ascii_matrix(gene_ids, gene_len)
-  family_ascii <- matrix(0L, nrow = family_len, ncol = n_families)
+  gene_raw <- strings_to_raw_matrix(gene_ids, gene_len)
+  family_raw <- matrix(raw(1), nrow = family_len + 1, ncol = n_families)  # +1 for null terminator
   gene_to_fam <- integer(ngenes)
   ierr <- integer(1)
   
   out <- .Fortran("read_family_file_R",
-    filename_ascii = as.integer(filename_ascii),
-    fn_len = as.integer(length(filename_ascii)),  # Fixed length of 256
-    gene_ids_ascii = as.integer(gene_ascii),
+    filename_raw = filename_raw,              # Pass raw bytes directly
+    fn_len = as.integer(length(filename_raw)),
+    gene_ids_raw = gene_raw,                  # Pass raw bytes directly
     gene_ids_len = as.integer(gene_len),
     n_genes = as.integer(ngenes),
-    family_ids_ascii = as.integer(family_ascii),
-    family_ids_len = as.integer(family_len),
+    family_ids_raw = family_raw,              # Pass raw bytes directly
+    family_ids_len = as.integer(family_len + 1),  # +1 for null terminator
     n_families = as.integer(n_families),
     gene_to_fam = as.integer(gene_to_fam),
     ierr = 0
   )
   tox_errors(out$ierr)
   list(
-    family_ids = ascii_matrix_to_strings(matrix(out$family_ids_ascii, nrow = family_len, ncol = n_families)),
+    family_ids = raw_matrix_to_strings(matrix(out$family_ids_raw, nrow = family_len + 1, ncol = n_families)),
     gene_to_fam = out$gene_to_fam,
     ierr = out$ierr
   )
@@ -236,14 +293,14 @@ read_family_file <- function(filename, gene_ids, n_families, family_len) {
 #'   - ierr: Integer error code (0 if successful)
 filter_unassigned_genes <- function(gene_ids, expression_vectors, gene_to_fam) {
   ngenes <- length(gene_ids)
-  gene_len <- max(nchar(gene_ids))
+  gene_len <- max(nchar(gene_ids)) + 1  # +1 for null terminator
   n_samples <- nrow(expression_vectors)
   ierr <- integer(1)
 
-  gene_ascii <- strings_to_ascii_matrix(gene_ids, gene_len)
+  gene_raw <- strings_to_raw_matrix(gene_ids, gene_len)
   
   out <- .Fortran("filter_unassigned_genes_R",
-    gene_ids_ascii = as.integer(gene_ascii),
+    gene_ids_raw = gene_raw,                  # Pass raw bytes directly
     gene_ids_len = as.integer(gene_len),
     n_genes = as.integer(ngenes),
     expression_vectors_flat = as.double(as.vector(expression_vectors)),
@@ -268,28 +325,26 @@ filter_unassigned_genes <- function(gene_ids, expression_vectors, gene_to_fam) {
   )
 }
 
-# tox_data_validation.R
 # R wrappers for Fortran validation routines
-# Uses ASCII conversion helpers: strings_to_ascii_matrix, ascii_matrix_to_strings
+# Uses raw conversion helpers: strings_to_raw_matrix, raw_matrix_to_strings
 
 validate_data_structure <- function(n_genes, n_families, n_samples, d,
                                     gene_ids, gene_family_ids,
                                     gene_to_fam, expression_vectors,
                                     family_centroids, shift_vectors) {
-  gene_len <- max(nchar(gene_ids))
-  fam_len  <- max(nchar(gene_family_ids))
-  gene_ascii <- strings_to_ascii_matrix(gene_ids, gene_len)
-  fam_ascii  <- strings_to_ascii_matrix(gene_family_ids, fam_len)
+  gene_len <- max(nchar(gene_ids)) + 1  # +1 for null terminator
+  fam_len  <- max(nchar(gene_family_ids)) + 1  # +1 for null terminator
+  gene_raw <- strings_to_raw_matrix(gene_ids, gene_len)
+  fam_raw  <- strings_to_raw_matrix(gene_family_ids, fam_len)
   ierr <- integer(1)
 
   out <- .Fortran("validate_data_structure_R",
                   as.integer(n_genes),
                   as.integer(n_families),
                   as.integer(n_samples),
-                  as.integer(d),
-                  as.integer(gene_ascii),
+                  gene_raw,                    # Pass raw bytes directly
                   as.integer(gene_len),
-                  as.integer(fam_ascii),
+                  fam_raw,                     # Pass raw bytes directly
                   as.integer(fam_len),
                   as.integer(gene_to_fam),
                   as.double(expression_vectors),
@@ -334,7 +389,6 @@ validate_family_centroids <- function(family_centroids, n_families, n_samples) {
   list(ierr = out$ierr)
 }
 
-# Update the validate_shift_vectors function to match Fortran signature
 validate_shift_vectors <- function(shift_vectors, expression_vectors, family_centroids, gene_to_fam, n_samples) {
   ierr <- integer(1)
   
@@ -356,11 +410,11 @@ validate_shift_vectors <- function(shift_vectors, expression_vectors, family_cen
 }
 
 validate_gene_ids_uniqueness <- function(gene_ids, n_genes) {
-  gene_len <- max(nchar(gene_ids))
-  gene_ascii <- strings_to_ascii_matrix(gene_ids, gene_len)
+  gene_len <- max(nchar(gene_ids)) + 1  # +1 for null terminator
+  gene_raw <- strings_to_raw_matrix(gene_ids, gene_len)
   ierr <- integer(1)
   out <- .Fortran("validate_gene_ids_uniqueness_R",
-                  as.integer(gene_ascii),
+                  gene_raw,                    # Pass raw bytes directly
                   as.integer(gene_len),
                   as.integer(n_genes),
                   ierr = ierr)
@@ -369,11 +423,11 @@ validate_gene_ids_uniqueness <- function(gene_ids, n_genes) {
 }
 
 validate_family_ids_uniqueness <- function(family_ids, n_families) {
-  fam_len <- max(nchar(family_ids))
-  fam_ascii <- strings_to_ascii_matrix(family_ids, fam_len)
+  fam_len <- max(nchar(family_ids)) + 1  # +1 for null terminator
+  fam_raw <- strings_to_raw_matrix(family_ids, fam_len)
   ierr <- integer(1)
   out <- .Fortran("validate_family_ids_uniqueness_R",
-                  as.integer(fam_ascii),
+                  fam_raw,                     # Pass raw bytes directly
                   as.integer(fam_len),
                   as.integer(n_families),
                   ierr = ierr)
@@ -385,13 +439,13 @@ validate_all_data <- function(n_genes, n_families, n_samples,
                               gene_ids, gene_family_ids,
                               gene_to_fam, expression_vectors,
                               family_centroids, shift_vectors) {
-  # Determine max lengths for string encoding
-  gene_len <- max(nchar(gene_ids))
-  fam_len  <- max(nchar(gene_family_ids))
+  # Determine max lengths for string encoding (+1 for null terminator)
+  gene_len <- max(nchar(gene_ids)) + 1
+  fam_len  <- max(nchar(gene_family_ids)) + 1
 
-  # Convert to ASCII matrices
-  gene_ascii <- strings_to_ascii_matrix(gene_ids, gene_len)
-  fam_ascii  <- strings_to_ascii_matrix(gene_family_ids, fam_len)
+  # Convert to raw matrices
+  gene_raw <- strings_to_raw_matrix(gene_ids, gene_len)
+  fam_raw  <- strings_to_raw_matrix(gene_family_ids, fam_len)
 
   ierr <- integer(1)
 
@@ -399,9 +453,9 @@ validate_all_data <- function(n_genes, n_families, n_samples,
                   as.integer(n_genes),
                   as.integer(n_families),
                   as.integer(n_samples),
-                  as.integer(gene_ascii),
+                  gene_raw,                    # Pass raw bytes directly
                   as.integer(gene_len),
-                  as.integer(fam_ascii),
+                  fam_raw,                     # Pass raw bytes directly
                   as.integer(fam_len),
                   as.integer(gene_to_fam),
                   as.double(expression_vectors),
