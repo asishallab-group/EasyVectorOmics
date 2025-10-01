@@ -1,70 +1,138 @@
 module tox_conversions
     use iso_fortran_env, only: int32, real64
-    use iso_c_binding, only: c_int, c_double, c_null_char, c_double_complex, c_char
-    use tox_errors, only: ERR_ALLOC_FAIL, is_err, set_ok, set_err
+    use iso_c_binding, only: c_int, c_double, c_null_char, c_double_complex, c_char, c_ptr, c_associated, c_f_pointer
+    use tox_errors, only: ERR_ALLOC_FAIL, is_err, set_ok, set_err, set_err_once, ERR_POINTER_NULL, ERR_INVALID_INPUT
     implicit none
+
+    ! type guards to guarantee kind identity between fortran and c for correct interop in the c wrapper routines
+    logical, parameter :: c_int_matches_int32 = 1 == 1 / merge(1, 0, c_int == int32)
+    logical, parameter :: c_double_matches_real64 = 1 == 1 / merge(1, 0, c_double == real64)
+    logical, parameter :: c_double_complex_matches_real64 = 1 == 1 / merge(1, 0, c_double_complex == real64)
 
 contains
 
-    !> Converts a c_double value to real64, elemental -> any shape
-    elemental subroutine c_double_as_real64(c_val, f_val)
-        real(c_double), intent(in) :: c_val
-         !! the element containing the c variant of the number
-        real(real64), intent(out) :: f_val
-         !! the element that will hold the real64 representation of the c_double
+    subroutine check_fortran_pointer_inputs(c_pointer, dims, ierr)
+        type(c_ptr), intent(in) :: c_pointer
+            !! C pointer to be converted
+        integer(int32), dimension(:), intent(in) :: dims
+            !! dimensions as array
+        integer(int32), intent(inout) :: ierr
+            !! Error code
 
-        f_val = real(c_val, kind=real64)
-    end subroutine c_double_as_real64
+        if (.not. c_associated(c_pointer)) then
+            call set_err_once(ierr, ERR_POINTER_NULL)
+        else if (any(dims <= 0)) then
+            call set_err_once(ierr, ERR_INVALID_INPUT)
+        end if
+    end subroutine check_fortran_pointer_inputs
 
-    !> Converts a real64 value to c_double, elemental -> any shape
-    elemental subroutine real64_as_c_double(f_val, c_val)
-        real(real64), intent(in) :: f_val
-         !! the element containing the fortran variant of the number
-        real(c_double), intent(out) :: c_val
-         !! the element that will hold the c_double representation of the real64
+    subroutine fortran_pointer_int_1d(c_pointer, f_pointer, dims, ierr)
+        type(c_ptr), intent(in) :: c_pointer
+            !! C pointer to be converted
+        integer(int32), dimension(:), pointer, intent(out) :: f_pointer
+            !! Resulting fortran pointer
+        integer(int32), dimension(1), intent(in) :: dims
+            !! dimensions as array
+        integer(int32), intent(inout) :: ierr
+            !! Error code
 
-        c_val = real(f_val, kind=c_double)
-    end subroutine real64_as_c_double
+        call check_fortran_pointer_inputs(c_pointer, dims, ierr)
+        if (is_err(ierr)) then
+            nullify(f_pointer)
+        else
+            call c_f_pointer(c_pointer, f_pointer, dims)
+        end if
+    end subroutine fortran_pointer_int_1d
 
-    !> Converts a c_double_complex value to fortran complex(real64), elemental -> any shape
-    elemental subroutine c_complex_as_complex(c_val, f_val)
-        complex(c_double_complex), intent(in) :: c_val
-         !! the element containing the c variant of the number
-        complex(real64), intent(out) :: f_val
-         !! the element that will hold the complex(real64) representation of the c_double_complex
+    subroutine fortran_pointer_int_2d(c_pointer, f_pointer, dims, ierr)
+        type(c_ptr), intent(in) :: c_pointer
+            !! C pointer to be converted
+        integer(int32), dimension(:, :), pointer, intent(out) :: f_pointer
+            !! Resulting fortran pointer
+        integer(int32), dimension(2), intent(in) :: dims
+            !! dimensions as array
+        integer(int32), intent(inout) :: ierr
+            !! Error code
 
-        f_val = cmplx(real(c_val), aimag(c_val), kind=real64)
-    end subroutine c_complex_as_complex
+        call check_fortran_pointer_inputs(c_pointer, dims, ierr)
+        if (is_err(ierr)) then
+            nullify(f_pointer)
+        else
+            call c_f_pointer(c_pointer, f_pointer, dims)
+        end if
+    end subroutine fortran_pointer_int_2d
 
-    !> Converts a fortran complex(real64) value to c_double_complex, elemental -> any shape
-    elemental subroutine complex_as_c_complex(f_val, c_val)
-        complex(real64), intent(in) :: f_val
-         !! the element containing the fortran variant of the number
-        complex(c_double_complex), intent(out) :: c_val
-         !! the element that will hold the c_double_complex representation of the complex(real64)
+    subroutine fortran_pointer_real_1d(c_pointer, f_pointer, dims, ierr)
+        type(c_ptr), intent(in) :: c_pointer
+            !! C pointer to be converted
+        real(real64), dimension(:), pointer, intent(out) :: f_pointer
+            !! Resulting fortran pointer
+        integer(int32), dimension(1), intent(in) :: dims
+            !! dimensions as array
+        integer(int32), intent(inout) :: ierr
+            !! Error code
 
-        c_val = cmplx(real(f_val), aimag(f_val), kind=c_double_complex)
-    end subroutine complex_as_c_complex
+        call check_fortran_pointer_inputs(c_pointer, dims, ierr)
+        if (is_err(ierr)) then
+            nullify(f_pointer)
+        else
+            call c_f_pointer(c_pointer, f_pointer, dims)
+        end if
+    end subroutine fortran_pointer_real_1d
 
-    !> Converts a c_int value to int32, elemental -> any shape
-    elemental subroutine c_int_as_int32(c_val, f_val)
-        integer(c_int), intent(in) :: c_val
-         !! the element containing the c variant of the number
-        integer(int32), intent(out) :: f_val
-         !! the element that will hold the int32 representation of the c_int
+    subroutine fortran_pointer_real_2d(c_pointer, f_pointer, dims, ierr)
+        type(c_ptr), intent(in) :: c_pointer
+            !! C pointer to be converted
+        real(real64), dimension(:, :), pointer, intent(out) :: f_pointer
+            !! Resulting fortran pointer
+        integer(int32), dimension(2), intent(in) :: dims
+            !! dimensions as array
+        integer(int32), intent(inout) :: ierr
+            !! Error code
 
-        f_val = int(c_val, kind=int32)
-    end subroutine c_int_as_int32
+        call check_fortran_pointer_inputs(c_pointer, dims, ierr)
+        if (is_err(ierr)) then
+            nullify(f_pointer)
+        else
+            call c_f_pointer(c_pointer, f_pointer, dims)
+        end if
+    end subroutine fortran_pointer_real_2d
 
-    !> Converts a int32 value to c_int, elemental -> any shape
-    elemental subroutine int32_as_c_int(f_val, c_val)
-        integer(int32), intent(in) :: f_val
-         !! the element containing the fortran variant of the number
-        integer(c_int), intent(out) :: c_val
-         !! the element that will hold the c_int representation of the int32
+    subroutine fortran_pointer_complex_1d(c_pointer, f_pointer, dims, ierr)
+        type(c_ptr), intent(in) :: c_pointer
+            !! C pointer to be converted
+        complex(real64), dimension(:), pointer, intent(out) :: f_pointer
+            !! Resulting fortran pointer
+        integer(int32), dimension(1), intent(in) :: dims
+            !! dimensions as array
+        integer(int32), intent(inout) :: ierr
+            !! Error code
 
-        c_val = int(f_val, kind=c_int)
-    end subroutine int32_as_c_int
+        call check_fortran_pointer_inputs(c_pointer, dims, ierr)
+        if (is_err(ierr)) then
+            nullify(f_pointer)
+        else
+            call c_f_pointer(c_pointer, f_pointer, dims)
+        end if
+    end subroutine fortran_pointer_complex_1d
+
+    subroutine fortran_pointer_complex_2d(c_pointer, f_pointer, dims, ierr)
+        type(c_ptr), intent(in) :: c_pointer
+            !! C pointer to be converted
+        complex(real64), dimension(:, :), pointer, intent(out) :: f_pointer
+            !! Resulting fortran pointer
+        integer(int32), dimension(2), intent(in) :: dims
+            !! dimensions as array
+        integer(int32), intent(inout) :: ierr
+            !! Error code
+
+        call check_fortran_pointer_inputs(c_pointer, dims, ierr)
+        if (is_err(ierr)) then
+            nullify(f_pointer)
+        else
+            call c_f_pointer(c_pointer, f_pointer, dims)
+        end if
+    end subroutine fortran_pointer_complex_2d
 
     !> Converts a c_int value to logical, elemental -> any shape
     elemental subroutine c_int_as_logical(c_val, f_val)

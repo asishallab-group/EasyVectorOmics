@@ -19,7 +19,7 @@ module mod_test_tox_conversions
         procedure(test_interface), pointer, nopass :: test_proc => null()
     end type test_case
 
-    integer(int32), parameter :: TEST_COUNT = 14
+    integer(int32), parameter :: TEST_COUNT = 15
     real(real64), parameter :: TOL = 0
 
 contains
@@ -28,74 +28,146 @@ contains
     function get_all_tests() result(all_tests)
         type(test_case) :: all_tests(TEST_COUNT)
 
-        all_tests(1) = test_case("test_tox_conversions_c_double_as_real64", test_tox_conversions_c_double_as_real64)
-        all_tests(2) = test_case("test_tox_conversions_c_int_as_int32", test_tox_conversions_c_int_as_int32)
-        all_tests(3) = test_case("test_tox_conversions_c_char_as_char", test_tox_conversions_c_char_as_char)
-        all_tests(4) = test_case("test_tox_conversions_c_char_1d_as_string", test_tox_conversions_c_char_1d_as_string)
-        all_tests(5) = test_case("test_tox_conversions_c_char_2d_as_string", test_tox_conversions_c_char_2d_as_string)
-        all_tests(6) = test_case("test_tox_conversions_c_complex_as_complex", test_tox_conversions_c_complex_as_complex)
-        all_tests(7) = test_case("test_tox_conversions_c_int_as_logical", test_tox_conversions_c_int_as_logical)
-        all_tests(8) = test_case("test_tox_conversions_real64_as_c_double", test_tox_conversions_real64_as_c_double)
-        all_tests(9) = test_case("test_tox_conversions_int32_as_c_int", test_tox_conversions_int32_as_c_int)
-        all_tests(10) = test_case("test_tox_conversions_char_as_c_char", test_tox_conversions_char_as_c_char)
-        all_tests(11) = test_case("test_tox_conversions_string_as_c_char_1d", test_tox_conversions_string_as_c_char_1d)
-        all_tests(12) = test_case("test_tox_conversions_string_as_c_char_2d", test_tox_conversions_string_as_c_char_2d)
-        all_tests(13) = test_case("test_tox_conversions_complex_as_c_complex", test_tox_conversions_complex_as_c_complex)
-        all_tests(14) = test_case("test_tox_conversions_logical_as_c_int", test_tox_conversions_logical_as_c_int)
+        all_tests(1) = test_case("test_tox_conversions_test_check_fortran_pointer_inputs", test_check_fortran_pointer_inputs)
+        all_tests(2) = test_case("test_tox_conversions_test_fortran_pointer_int_1d", test_fortran_pointer_int_1d)
+        all_tests(3) = test_case("test_tox_conversions_test_fortran_pointer_int_2d", test_fortran_pointer_int_2d)
+        all_tests(4) = test_case("test_tox_conversions_test_fortran_pointer_real_1d", test_fortran_pointer_real_1d)
+        all_tests(5) = test_case("test_tox_conversions_test_fortran_pointer_real_2d", test_fortran_pointer_real_2d)
+        all_tests(6) = test_case("test_tox_conversions_test_fortran_pointer_real_1d", test_fortran_pointer_complex_1d)
+        all_tests(7) = test_case("test_tox_conversions_test_fortran_pointer_real_2d", test_fortran_pointer_complex_2d)
+        all_tests(8) = test_case("test_tox_conversions_c_char_as_char", test_c_char_as_char)
+        all_tests(9) = test_case("test_tox_conversions_c_char_1d_as_string", test_c_char_1d_as_string)
+        all_tests(10) = test_case("test_tox_conversions_c_char_2d_as_string", test_c_char_2d_as_string)
+        all_tests(11) = test_case("test_tox_conversions_c_int_as_logical", test_c_int_as_logical)
+        all_tests(12) = test_case("test_tox_conversions_char_as_c_char", test_char_as_c_char)
+        all_tests(13) = test_case("test_tox_conversions_string_as_c_char_1d", test_string_as_c_char_1d)
+        all_tests(14) = test_case("test_tox_conversions_string_as_c_char_2d", test_string_as_c_char_2d)
+        all_tests(15) = test_case("test_tox_conversions_logical_as_c_int", test_logical_as_c_int)
     end function get_all_tests
 
-    subroutine test_tox_conversions_c_double_as_real64
-        real(c_double) :: c_val
-        real(real64) :: casted_fortran
-        real(real64) :: expected_fortran
-        real(c_double) :: c_val_array(1)
-        real(real64) :: casted_array(1)
+    subroutine test_check_fortran_pointer_inputs
+        type(c_ptr) :: cptr
+        integer(int32), target :: ierr
+        integer(int32), dimension(2) :: dims
 
-        c_val = 3.141592653589793_c_double
-        expected_fortran = 3.141592653589793_real64
-        call c_double_as_real64(c_val, casted_fortran)
-        call assert_equal_real(casted_fortran, expected_fortran, TOL, "test_tox_conversions_c_double_as_real64: value mismatch")
+        ! Case 1: Null pointer, valid dims
+        call set_ok(ierr)
+        cptr = c_null_ptr
+        dims = [2, 3]
+        call check_fortran_pointer_inputs(cptr, dims, ierr)
+        call assert_equal_int(ierr, ERR_POINTER_NULL, "test_check_fortran_pointer_inputs: Expected ERR_POINTER_NULL")
 
-        c_val_array = [c_val]
-        call c_double_as_real64(c_val_array, casted_array)
-        call assert_equal_array_real(casted_array, [expected_fortran], 1, TOL, "test_tox_conversions_c_double_as_real64: value mismatch")
-    end subroutine test_tox_conversions_c_double_as_real64
+        ! Case 2: Valid pointer, invalid dims
+        call set_ok(ierr)
+        cptr = c_loc(ierr)  ! dummy non-null
+        dims = [2, -1]
+        call check_fortran_pointer_inputs(cptr, dims, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_check_fortran_pointer_inputs: Expected ERR_INVALID_INPUT")
+    end subroutine test_check_fortran_pointer_inputs
 
-    subroutine test_tox_conversions_c_complex_as_complex
-        complex(c_double_complex) :: c_val
-        complex(real64) :: casted_fortran
-        complex(real64) :: expected_fortran
-        complex(c_double_complex) :: c_val_array(1)
-        complex(real64) :: casted_array(1)
+    subroutine test_fortran_pointer_int_1d()
+        integer(int32), target :: arr(3)
+        integer(int32), pointer :: fptr(:)
+        type(c_ptr) :: cptr
+        integer(int32) :: ierr
+        integer(int32), dimension(1) :: dims
 
-        c_val = (3.141592653589793_c_double_complex, 3.141592653589793_c_double_complex)
-        expected_fortran = (3.141592653589793_real64, 3.141592653589793_real64)
-        call c_complex_as_complex(c_val, casted_fortran)
-        call assert_equal_complex(casted_fortran, expected_fortran, TOL, "test_tox_conversions_c_complex_as_complex: value mismatch")
+        call set_ok(ierr)
+        arr = [1, 2, 3]
+        cptr = c_loc(arr)
+        dims = [3]
+        call fortran_pointer_int_1d(cptr, fptr, dims, ierr)
+        call assert_true(is_ok(ierr), "test_fortran_pointer_int_2d: unexpected error when creating pointer")
+        call assert_true(associated(fptr), "test_fortran_pointer_int_1d: fptr not associated")
+        call assert_true(all(fptr == arr), "test_fortran_pointer_int_1d: fptr contents mismatch")
+    end subroutine test_fortran_pointer_int_1d
 
-        c_val_array = [c_val]
-        call c_complex_as_complex(c_val_array, casted_array)
-        call assert_equal_array_complex(casted_array, [expected_fortran], 1, TOL, "test_tox_conversions_c_complex_as_complex: value mismatch")
-    end subroutine test_tox_conversions_c_complex_as_complex
+    subroutine test_fortran_pointer_int_2d()
+        integer(int32), target :: arr(2,2)
+        integer(int32), pointer :: fptr(:, :)
+        type(c_ptr) :: cptr
+        integer(int32) :: ierr
+        integer(int32), dimension(2) :: dims
 
-    subroutine test_tox_conversions_c_int_as_int32
-        integer(c_int) :: c_val
-        integer(int32) :: casted_fortran
-        integer(c_int) :: c_val_array(1)
-        integer(int32) :: casted_array(1)
-        integer(int32) :: expected_fortran
+        call set_ok(ierr)
+        arr = reshape([1,2,3,4], [2,2])
+        cptr = c_loc(arr)
+        dims = [2, 2]
+        call fortran_pointer_int_2d(cptr, fptr, dims, ierr)
+        call assert_true(is_ok(ierr), "test_fortran_pointer_int_2d: unexpected error when creating pointer")
+        call assert_true(associated(fptr), "test_fortran_pointer_int_2d: fptr not associated")
+        call assert_true(all(fptr == arr), "test_fortran_pointer_int_2d: fptr contents mismatch")
+    end subroutine test_fortran_pointer_int_2d
 
-        c_val = 42_c_int
-        expected_fortran = 42_int32
-        call c_int_as_int32(c_val, casted_fortran)
-        call assert_equal_int(casted_fortran, expected_fortran, "test_tox_conversions_c_int_as_int32: value mismatch")
+    subroutine test_fortran_pointer_real_1d()
+        real(real64), target :: arr(3)
+        real(real64), pointer :: fptr(:)
+        type(c_ptr) :: cptr
+        integer(int32) :: ierr
+        integer(int32), dimension(1) :: dims
 
-        c_val_array = [c_val]
-        call c_int_as_int32(c_val_array, casted_array)
-        call assert_equal_array_int(casted_array, [expected_fortran], 1, "test_tox_conversions_c_int_as_int32: value mismatch")
-    end subroutine test_tox_conversions_c_int_as_int32
+        call set_ok(ierr)
+        arr = [1e-12_real64, 2e-12_real64, 3e-12_real64]
+        cptr = c_loc(arr)
+        dims = [3]
+        call fortran_pointer_real_1d(cptr, fptr, dims, ierr)
+        call assert_true(is_ok(ierr), "test_fortran_pointer_real_1d: unexpected error when creating pointer")
+        call assert_true(associated(fptr), "test_fortran_pointer_real_1d: fptr not associated")
+        call assert_true(all(fptr == arr), "test_fortran_pointer_real_1d: fptr contents mismatch")
+    end subroutine test_fortran_pointer_real_1d
 
-    subroutine test_tox_conversions_c_int_as_logical
+    subroutine test_fortran_pointer_real_2d()
+        real(real64), target :: arr(2, 2)
+        real(real64), pointer :: fptr(:, :)
+        type(c_ptr) :: cptr
+        integer(int32) :: ierr
+        integer(int32), dimension(2) :: dims
+
+        call set_ok(ierr)
+        arr = reshape([1e-12_real64, 2e-12_real64, 3e-12_real64, 4e-12_real64], [2, 2])
+        cptr = c_loc(arr)
+        dims = [2, 2]
+        call fortran_pointer_real_2d(cptr, fptr, dims, ierr)
+        call assert_true(is_ok(ierr), "test_fortran_pointer_real_2d: unexpected error when creating pointer")
+        call assert_true(associated(fptr), "test_fortran_pointer_real_2d: fptr not associated")
+        call assert_true(all(fptr == arr), "test_fortran_pointer_real_2d: fptr contents mismatch")
+    end subroutine test_fortran_pointer_real_2d
+
+    subroutine test_fortran_pointer_complex_1d()
+        complex(real64), target :: arr(3)
+        complex(real64), pointer :: fptr(:)
+        type(c_ptr) :: cptr
+        integer(int32) :: ierr
+        integer(int32), dimension(1) :: dims
+
+        call set_ok(ierr)
+        arr = [(1e-12_real64, 3e-12_real64), (2e-12_real64, 6e-12_real64), (3e-12_real64, 9e-12_real64)]
+        cptr = c_loc(arr)
+        dims = [3]
+        call fortran_pointer_complex_1d(cptr, fptr, dims, ierr)
+        call assert_true(is_ok(ierr), "test_fortran_pointer_complex_1d: unexpected error when creating pointer")
+        call assert_true(associated(fptr), "test_fortran_pointer_complex_1d: fptr not associated")
+        call assert_true(all(fptr == arr), "test_fortran_pointer_complex_1d: fptr contents mismatch")
+    end subroutine test_fortran_pointer_complex_1d
+
+    subroutine test_fortran_pointer_complex_2d()
+        complex(real64), target :: arr(2, 2)
+        complex(real64), pointer :: fptr(:, :)
+        type(c_ptr) :: cptr
+        integer(int32) :: ierr
+        integer(int32), dimension(2) :: dims
+
+        call set_ok(ierr)
+        arr = reshape([(1e-12_real64, 3e-12_real64), (2e-12_real64, 6e-12_real64), (3e-12_real64, 9e-12_real64)], [2, 2])
+        cptr = c_loc(arr)
+        dims = [2, 2]
+        call fortran_pointer_complex_2d(cptr, fptr, dims, ierr)
+        call assert_true(is_ok(ierr), "test_fortran_pointer_complex_2d: unexpected error when creating pointer")
+        call assert_true(associated(fptr), "test_fortran_pointer_complex_2d: fptr not associated")
+        call assert_true(all(fptr == arr), "test_fortran_pointer_complex_2d: fptr contents mismatch")
+    end subroutine test_fortran_pointer_complex_2d
+
+    subroutine test_c_int_as_logical
         integer(c_int) :: c_val
         logical :: casted_fortran
         integer(c_int) :: c_val_array(1)
@@ -116,9 +188,9 @@ contains
         c_val_array = [c_val]
         call c_int_as_logical(c_val_array, casted_array)
         call assert_false(casted_array(1), "test_tox_conversions_c_int_as_logical: value mismatch")
-    end subroutine test_tox_conversions_c_int_as_logical
+    end subroutine test_c_int_as_logical
 
-    subroutine test_tox_conversions_c_char_as_char
+    subroutine test_c_char_as_char
         character(c_char) :: c_val
         character(len=1) :: casted_fortran
         character(len=1) :: casted_array(1)
@@ -137,9 +209,9 @@ contains
         expected_fortran = achar(0)
         call c_char_as_char(c_null_char, casted_fortran)
         call assert_true(casted_fortran == expected_fortran, "test_tox_conversions_c_char_as_char: value mismatch for null char")
-    end subroutine test_tox_conversions_c_char_as_char
+    end subroutine test_c_char_as_char
 
-    subroutine test_tox_conversions_c_char_1d_as_string
+    subroutine test_c_char_1d_as_string
         character(c_char) :: c_char_array(5)
         character(len=:), allocatable :: f_char
         integer(int32) :: ierr
@@ -156,9 +228,9 @@ contains
         call c_char_1d_as_string(c_char_array, f_char, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_tox_conversions_c_char_1d_as_string: Unexpected Error Code")
         call assert_true(f_char == "", "test_tox_conversions_c_char_1d_as_string: value mismatch")
-    end subroutine test_tox_conversions_c_char_1d_as_string
+    end subroutine test_c_char_1d_as_string
 
-    subroutine test_tox_conversions_c_char_2d_as_string
+    subroutine test_c_char_2d_as_string
         character(c_char) :: c_char_array(5, 2)
         character(len=:), allocatable :: f_char(:)
         integer(int32) :: ierr
@@ -172,60 +244,9 @@ contains
         call assert_equal_int(ierr, ERR_OK, "test_tox_conversions_c_char_1d_as_string: Unexpected Error Code")
         call assert_equal_int(size(f_char, 1), 2, "test_tox_conversions_c_char_2d_as_string: Did not get two strings")
         call assert_true(f_char(1) == "Hello" .and. f_char(2) == "", "test_tox_conversions_c_char_2d_as_string: value mismatch")
-    end subroutine test_tox_conversions_c_char_2d_as_string
+    end subroutine test_c_char_2d_as_string
 
-    subroutine test_tox_conversions_real64_as_c_double
-        real(real64) :: f_val
-        real(c_double) :: casted_c
-        real(c_double) :: expected_c
-        real(real64) :: f_val_array(1)
-        real(c_double) :: casted_array(1)
-
-        f_val = 3.141592653589793_real64
-        expected_c = 3.141592653589793_c_double
-        call real64_as_c_double(f_val, casted_c)
-        call assert_equal_real(casted_c, expected_c, TOL, "test_tox_conversions_real64_as_c_double: value mismatch")
-
-        f_val_array = [f_val]
-        call real64_as_c_double(f_val_array, casted_array)
-        call assert_equal_array_real(casted_array, [expected_c], 1, TOL, "test_tox_conversions_real64_as_c_double: value mismatch")
-    end subroutine test_tox_conversions_real64_as_c_double
-
-    subroutine test_tox_conversions_complex_as_c_complex
-        complex(real64) :: f_val
-        complex(c_double_complex) :: casted_c
-        complex(c_double_complex) :: expected_c
-        complex(real64) :: f_val_array(1)
-        complex(c_double_complex) :: casted_array(1)
-
-        f_val = (3.141592653589793_real64, 3.141592653589793_real64)
-        expected_c = (3.141592653589793_c_double_complex, 3.141592653589793_c_double_complex)
-        call complex_as_c_complex(f_val, casted_c)
-        call assert_equal_complex(casted_c, expected_c, TOL, "test_tox_conversions_complex_as_c_complex: value mismatch")
-
-        f_val_array = [f_val]
-        call complex_as_c_complex(f_val_array, casted_array)
-        call assert_equal_array_complex(casted_array, [expected_c], 1, TOL, "test_tox_conversions_complex_as_c_complex: value mismatch")
-    end subroutine test_tox_conversions_complex_as_c_complex
-
-    subroutine test_tox_conversions_int32_as_c_int
-        integer(int32) :: f_val
-        integer(c_int) :: casted_c
-        integer(c_int) :: expected_c
-        integer(int32) :: f_val_array(1)
-        integer(c_int) :: casted_array(1)
-
-        f_val = 42_int32
-        expected_c = 42_c_int
-        call int32_as_c_int(f_val, casted_c)
-        call assert_equal_int(casted_c, expected_c, "test_tox_conversions_int32_as_c_int: value mismatch")
-
-        f_val_array = [f_val]
-        call int32_as_c_int(f_val_array, casted_array)
-        call assert_equal_array_int(casted_array, [expected_c], 1, "test_tox_conversions_int32_as_c_int: value mismatch")
-    end subroutine test_tox_conversions_int32_as_c_int
-
-    subroutine test_tox_conversions_logical_as_c_int
+    subroutine test_logical_as_c_int
         logical :: f_val
         integer(c_int) :: casted_c
         logical :: f_val_array(1)
@@ -242,9 +263,9 @@ contains
         f_val_array = [.false.]
         call logical_as_c_int(f_val_array, casted_array)
         call assert_true(casted_array(1) == 0_c_int, "test_tox_conversions_logical_as_c_int: array value mismatch")
-    end subroutine test_tox_conversions_logical_as_c_int
+    end subroutine test_logical_as_c_int
 
-    subroutine test_tox_conversions_char_as_c_char
+    subroutine test_char_as_c_char
         character(len=1) :: f_val
         character(c_char) :: casted_c
         character(len=1) :: f_val_array(1)
@@ -261,9 +282,9 @@ contains
         f_val = achar(0)
         call char_as_c_char(f_val, casted_c)
         call assert_true(casted_c == c_null_char, "test_tox_conversions_char_as_c_char: null char mismatch")
-    end subroutine test_tox_conversions_char_as_c_char
+    end subroutine test_char_as_c_char
 
-    subroutine test_tox_conversions_string_as_c_char_1d
+    subroutine test_string_as_c_char_1d
         character(len=5) :: f_str
         character(c_char), allocatable :: c_array(:)
 
@@ -283,9 +304,9 @@ contains
         deallocate(c_array)
         allocate(c_array(0))
         call string_as_c_char_1d(f_str, c_array)
-    end subroutine test_tox_conversions_string_as_c_char_1d
+    end subroutine test_string_as_c_char_1d
 
-    subroutine test_tox_conversions_string_as_c_char_2d
+    subroutine test_string_as_c_char_2d
         character(len=5) :: f_str(2)
         character(c_char) :: c_array(6, 2)
 
@@ -294,7 +315,7 @@ contains
         call string_as_c_char_2d(f_str, c_array)
         call assert_true(all(c_array(:, 1) == ["H", "e", "l", "l", "o", c_null_char]), "test_tox_conversions_string_as_c_char_2d: mismatch in first string")
         call assert_true(c_array(1, 2) == c_null_char, "test_tox_conversions_string_as_c_char_2d: mismatch in second string")
-    end subroutine test_tox_conversions_string_as_c_char_2d
+    end subroutine test_string_as_c_char_2d
 
     !> Run all tox_conversions tests.
     subroutine run_all_tests_tox_conversions
