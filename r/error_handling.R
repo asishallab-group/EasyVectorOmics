@@ -1,10 +1,7 @@
-#' Check error code and throw informative error if needed
-#' 
-#' @param ierr Error code from Fortran routine
-tox_errors <- function(ierr) {
-  msg <- switch(
-    as.character(ierr),
-    "0" = NULL,
+check_err_code <- function(ierr) {
+  if (ierr == 0) return(invisible(NULL))
+  msg <- switch(as.character(ierr),
+    # I/O errors
     '101' = "Could not open file.",
     '102' = "Could not read magic number.",
     '103' = "Could not read type code.",
@@ -39,10 +36,7 @@ tox_errors <- function(ierr) {
     # Internal errors
     '9001' = "Internal error: unexpected state.",
     '9999' = "Unknown error.",
-    paste("Unknown Fortran error code:", ierr)
+    paste("Unmapped error code:", ierr)
   )
-  
-  if (!is.null(msg)) {
-    stop(msg)
-  }
+  stop(msg)
 }

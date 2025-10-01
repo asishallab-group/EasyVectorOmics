@@ -53,3 +53,6 @@ check_exit_code "Executable compilation failed"
 echo "Running tests..."
 # Run the executable
 $EXECUTABLE $ARGS
+
+rm -f test_*.bin
+rm -f test_*.zip
