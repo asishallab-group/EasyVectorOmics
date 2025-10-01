@@ -15,21 +15,21 @@ contains
   !> The sorted array is returned via the perm array, which contains the indices of the original array in sorted order.
   pure subroutine sort_real(array, perm)
     real(real64), intent(in) ::array(:)
-    integer(int32), intent(inout) ::perm(size(array))
+    integer(int32), intent(inout) ::perm(:)
     call heapsort_real(array, perm)
   end subroutine sort_real  
   !> Sort an integer array indirectly using heapsort.  
    !| Similar to `sort_real`, but for integer input.
    pure subroutine sort_integer(array, perm)
    integer(int32), intent(in) ::array(:)
-   integer(int32), intent(inout) ::perm(size(array))
+   integer(int32), intent(inout) ::perm(:)
    call heapsort_integer(array, perm)
   end subroutine sort_integer  
   !> Sort a character array indirectly using heapsort.  
   !| Similar to `sort_real`, but for character input.     
   pure subroutine sort_character(array, perm)
     character(len=*), intent(in) ::array(:)
-    integer(int32), intent(inout) ::perm(size(array))
+    integer(int32), intent(inout) ::perm(:)
     call heapsort_character(array, perm)
   end subroutine sort_character  
 
@@ -38,7 +38,7 @@ contains
 pure subroutine heapsort_real(array, perm)
   use iso_fortran_env, only: real64, int32
   implicit none
-  real(real64), intent(in)    :: array(:)
+  real(real64), intent(in) :: array(:)
   integer(int32), intent(inout) :: perm(:)
   integer :: n, i, temp
 
@@ -67,9 +67,9 @@ contains
   pure subroutine heapify_real(array, perm, heap_size, root)
     use iso_fortran_env, only: real64, int32
     implicit none
-    real(real64), intent(in)    :: array(:)
+    real(real64), intent(in) :: array(:)
     integer(int32), intent(inout) :: perm(:)
-    integer, intent(in)         :: heap_size, root
+    integer, intent(in) :: heap_size, root
     integer :: largest, left, right, k, temp
     logical :: done
 
@@ -102,7 +102,7 @@ end subroutine heapsort_real
 pure subroutine heapsort_integer(array, perm)
   use iso_fortran_env, only: int32
   implicit none
-  integer(int32), intent(in)    :: array(:)
+  integer(int32), intent(in) :: array(:)
   integer(int32), intent(inout) :: perm(:)
   integer :: n, i, temp
 
@@ -138,7 +138,7 @@ contains
     integer :: largest, left, right, k, temp
     logical :: done
 
-    k    = root
+    k = root
     done = .false.
 
     do while (.not. done)
@@ -192,8 +192,7 @@ pure subroutine heapsort_character(array, perm)
   end do
 
 contains
-
-  !> Iterative heapify (non-recursive, pure)
+!> Iterative heapify 
   pure subroutine heapify_character(array, perm, heap_size, root)
     use iso_fortran_env, only: int32
     implicit none
@@ -228,14 +227,6 @@ contains
 end subroutine heapsort_character
 
  
-  !> Swap two integer values in-place.
-    pure subroutine swap_int(a, b)
-        integer(int32), intent(inout) ::a, b
-        integer(int32) ::temp
-        temp = a
-        a = b
-        b = temp
-    end subroutine swap_int
 
       !> Finds the indices of the true values in a logical mask.
     pure subroutine which(mask, n, idx_out, m_max, m_out, ierr)
