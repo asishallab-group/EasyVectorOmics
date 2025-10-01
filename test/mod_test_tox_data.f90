@@ -118,7 +118,7 @@ contains
     call assert_equal_int(ierr, 0, "Reading 7-replicate file should succeed")
 
     call read_expression_vectors([files_5_replicates], gene_ids, kallisto_expr, &
-                          1, 1, [2, 3, 4, 5, 6], 69, ierr)
+                          1, 1, [2, 3, 4, 5, 6], 68, ierr)
     call assert_equal_int(ierr, 0, "Reading 5-replicate file should succeed")
 
     call read_expression_vectors([files_4_replicates], gene_ids, kallisto_expr, &
@@ -724,6 +724,32 @@ contains
       write(*,*) 'Error reading R archive: ', ierr 
       call set_ok(ierr)
     end if
+
+    ! Verify the data
+    if (allocated(gene_ids_verify)) then
+        if (any(gene_ids /= gene_ids_verify)) error stop "R Gene IDs don't match"
+        !print *, "Gene IDs verified, count: ", size(gene_ids_verify)
+    end if
+    if (allocated(kallisto_verify)) then
+        if (any(kallisto_expr /= kallisto_verify)) error stop "R Expression data doesn't match"
+        !print *, "Expression data verified, shape: ", shape(kallisto_verify)
+    end if
+    if (allocated(gene_to_fam_verify)) then
+        if (any(gene_to_fam /= gene_to_fam_verify)) error stop "R Gene to family mapping doesn't match"
+        !print *, "Gene to family mapping verified, count: ", size(gene_to_fam_verify)
+    end if
+    if (allocated(gene_family_ids_verify)) then
+        if (any(gene_family_ids /= gene_family_ids_verify)) error stop "R Family IDs don't match"
+        !print *, "Family IDs verified, count: ", size(gene_family_ids_verify)
+    end if
+    if (allocated(family_centroids_verify)) then
+        if (any(family_centroids /= family_centroids_verify)) error stop "R Family centroids don't match"
+        !print *, "Family centroids verified, shape: ", shape(family_centroids_verify)
+    end if
+    if (allocated(shift_vectors_verify)) then
+        if (any(shift_vectors /= shift_vectors_verify)) error stop "R Shift vectors don't match"
+        !print *, "Shift vectors verified, shape: ", shape(shift_vectors_verify)
+    end if
     
     if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
     if (allocated(kallisto_verify)) deallocate(kallisto_verify)
@@ -740,6 +766,13 @@ contains
       call set_ok(ierr)
     end if
 
+    if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
+    if (allocated(kallisto_verify)) deallocate(kallisto_verify)
+    if (allocated(gene_to_fam_verify)) deallocate(gene_to_fam_verify)
+    if (allocated(gene_family_ids_verify)) deallocate(gene_family_ids_verify)
+    if (allocated(family_centroids_verify)) deallocate(family_centroids_verify)
+    if (allocated(shift_vectors_verify)) deallocate(shift_vectors_verify)
+
     ! print *, "Reading python archive"
     call read_tox_data("test_archive_1_py.zip", ierr, &
                       gene_ids=gene_ids_verify, &
@@ -751,6 +784,34 @@ contains
     if(.not. is_ok(ierr)) then
       write(*,*) 'Error reading python archive: ', ierr 
       call set_ok(ierr)
+    end if
+
+    ! Verify the data
+    if (allocated(gene_ids_verify)) then
+        print *, 'Original: ', size(gene_ids)
+        print *, 'Python: ', size(gene_ids_verify)
+        if (any(gene_ids /= gene_ids_verify)) error stop "Python Gene IDs don't match"
+        !print *, "Gene IDs verified, count: ", size(gene_ids_verify)
+    end if
+    if (allocated(kallisto_verify)) then
+        if (any(kallisto_expr /= kallisto_verify)) error stop "Python Expression data doesn't match"
+        !print *, "Expression data verified, shape: ", shape(kallisto_verify)
+    end if
+    if (allocated(gene_to_fam_verify)) then
+        if (any(gene_to_fam /= gene_to_fam_verify)) error stop "Python Gene to family mapping doesn't match"
+        !print *, "Gene to family mapping verified, count: ", size(gene_to_fam_verify)
+    end if
+    if (allocated(gene_family_ids_verify)) then
+        if (any(gene_family_ids /= gene_family_ids_verify)) error stop "Python Family IDs don't match"
+        !print *, "Family IDs verified, count: ", size(gene_family_ids_verify)
+    end if
+    if (allocated(family_centroids_verify)) then
+        if (any(family_centroids /= family_centroids_verify)) error stop "Python Family centroids don't match"
+        !print *, "Family centroids verified, shape: ", shape(family_centroids_verify)
+    end if
+    if (allocated(shift_vectors_verify)) then
+        if (any(shift_vectors /= shift_vectors_verify)) error stop "Python Shift vectors don't match"
+        !print *, "Shift vectors verified, shape: ", shape(shift_vectors_verify)
     end if
 
     if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)

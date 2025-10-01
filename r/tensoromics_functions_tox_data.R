@@ -695,10 +695,10 @@ tox_save_data_archive <- function(zip_filename,
     # Write manifest file
     writeLines(manifest_lines, file.path(temp_dir, "manifest.txt"))
     
-    # Create zip archive with same compression level as Python (level 6)
+    # Create zip archive with same compression level as Python (level 0)
     files_to_zip <- list.files(temp_dir, full.names = TRUE)
     zip::zip(zip_filename, files = files_to_zip, mode = "cherry-pick", 
-             include_directories = FALSE, compression_level = 6)
+             include_directories = FALSE, compression_level = 0)
     
   }, finally = {
     # Clean up temporary directory

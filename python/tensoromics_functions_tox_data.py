@@ -664,7 +664,7 @@ def tox_save_data_archive(zip_filename,
     # Manifest als Liste
     manifest_lines = []
 
-    with zipfile.ZipFile(zip_filename, mode="x") as archive:
+    with zipfile.ZipFile(zip_filename, mode="x", compression=0) as archive:
         if gene_ids_array_valid and gene_ids_name_valid:
             tox_serialize_char_nd(gene_ids, gene_ids_name)
             archive.write(gene_ids_name)
@@ -730,7 +730,7 @@ def tox_read_data_archive(zip_filename,
         "shift_vectors": None
     }
 
-    with zipfile.ZipFile(zip_filename, mode="r") as archive:
+    with zipfile.ZipFile(zip_filename, mode="r", compression=0) as archive:
         with archive.open("manifest.txt") as manifest:
             content = manifest.read().decode("utf-8").splitlines()
 

@@ -185,8 +185,8 @@ validate_all_data(n_genes_kept, n_families, n_samples, filtered_gene_ids, family
 print("All data validated")
 
 print("Testing save function...")
-tox_save_data_archive("test_archive_1_py.zip", gene_ids=gene_ids, gene_ids_name="gene_ids_v1.bin",
-                      expression_vectors=kallisto_expr, expression_vectors_name="kallisto_data_v1.bin")
+tox_save_data_archive("test_archive_1_py.zip", gene_ids=filtered_gene_ids, gene_ids_name="gene_ids_v1.bin",
+                      expression_vectors=filtered_kallisto_expr, expression_vectors_name="kallisto_data_v1.bin")
 
 tox_save_data_archive("test_archive_2_py.zip", family_centroids=centroids, family_centroids_name="centroids.bin")
 try:
@@ -194,9 +194,9 @@ try:
 except:
     print("Successfully threw exception")
 
-tox_save_data_archive("test_archive_4_py.zip", gene_ids=gene_ids, gene_ids_name="gene_ids_v1.bin",
-                      expression_vectors=kallisto_expr, expression_vectors_name="kallisto_data_v1.bin",
-                      gene_to_fam=gene_to_fam, gene_to_fam_name="gene_to_fam_v1.bin",
+tox_save_data_archive("test_archive_4_py.zip", gene_ids=filtered_gene_ids, gene_ids_name="gene_ids_v1.bin",
+                      expression_vectors=filtered_kallisto_expr, expression_vectors_name="kallisto_data_v1.bin",
+                      gene_to_fam=filtered_gene_to_fam, gene_to_fam_name="gene_to_fam_v1.bin",
                       family_ids=family_ids, family_ids_name="family_ids_v1.bin",
                       family_centroids=centroids, family_centroids_name="family_centroids_v1.bin",
                       shift_vectors=shift_vectors, shift_vectors_name="shift_vectors_v1.bin")
