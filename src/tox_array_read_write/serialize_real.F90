@@ -29,7 +29,7 @@ contains
     call set_ok(ierr)
     call set_ok(ioerror)
 
-    call write_file_header(filename, unit, ARRAY_TYPE_REAL, 1, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_REAL, 1_int32, dims, ierr)
     if (.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) arr
@@ -57,7 +57,7 @@ contains
     call set_ok(ioerror)
 
     dims = shape(arr)
-    call write_file_header(filename, unit, ARRAY_TYPE_REAL, 2, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_REAL, 2_int32, dims, ierr)
     if(.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) arr
@@ -85,7 +85,7 @@ contains
     call set_ok(ioerror)
 
     dims = shape(arr)
-    call write_file_header(filename, unit, ARRAY_TYPE_REAL, 3, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_REAL, 3_int32, dims, ierr)
     if(.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) arr
@@ -113,7 +113,7 @@ contains
     call set_ok(ioerror)
     dims = shape(arr)
 
-    call write_file_header(filename, unit, ARRAY_TYPE_REAL, 4, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_REAL, 4_int32, dims, ierr)
     if(.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) arr
@@ -141,7 +141,7 @@ contains
     call set_ok(ioerror)
 
     dims = shape(arr)
-    call write_file_header(filename, unit, ARRAY_TYPE_REAL, 5, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_REAL, 5_int32, dims, ierr)
     if(.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) arr

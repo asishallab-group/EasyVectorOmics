@@ -25,7 +25,7 @@ contains
     integer(int32), intent(inout) :: stack_left(:)
     !| Manual stack of right indices for quicksort recursion
     integer(int32), intent(inout) :: stack_right(:)
-    call quicksort_real(array, perm, size(array), stack_left, stack_right)
+    call quicksort_real(array, perm, int(size(array), int32), stack_left, stack_right)
   end subroutine sort_real
 
   !> Sort an integer array indirectly using quicksort.
@@ -39,7 +39,7 @@ contains
     integer(int32), intent(inout) :: stack_left(:)
     !| Manual stack of right indices for quicksort recursion
     integer(int32), intent(inout) :: stack_right(:)
-    call quicksort_int(array, perm, size(array), stack_left, stack_right)
+    call quicksort_int(array, perm, int(size(array), int32), stack_left, stack_right)
   end subroutine sort_integer
 
   !> Sort a character array indirectly using quicksort.
@@ -53,7 +53,7 @@ contains
     integer(int32), intent(inout) :: stack_left(:)
     !| Manual stack of right indices for quicksort recursion
     integer(int32), intent(inout) :: stack_right(:)
-    call quicksort_char(array, perm, size(array), stack_left, stack_right)
+    call quicksort_char(array, perm, int(size(array), int32), stack_left, stack_right)
   end subroutine sort_character
 
   !> Internal quicksort implementation for real arrays.

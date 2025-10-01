@@ -30,7 +30,7 @@ contains
     call set_ok(ierr)
     call set_ok(ioerror)
 
-    call write_file_header(filename, unit, ARRAY_TYPE_INT, 1, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, 1_int32, dims, ierr)
     if (.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) arr
@@ -57,7 +57,7 @@ contains
     call set_ok(ierr)
     call set_ok(ioerror)
 
-    call write_file_header(filename, unit, ARRAY_TYPE_INT, 2, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, 2_int32, dims, ierr)
     if (.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) arr
@@ -83,7 +83,7 @@ contains
 
     call set_ok(ierr)
     call set_ok(ioerror)
-    call write_file_header(filename, unit, ARRAY_TYPE_INT, 3, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, 3_int32, dims, ierr)
     if (.not. is_ok(ierr)) return 
 
     write(unit, iostat=ioerror) arr
@@ -111,7 +111,7 @@ contains
     call set_ok(ierr)
     call set_ok(ioerror)
 
-    call write_file_header(filename, unit, ARRAY_TYPE_INT, 4, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, 4_int32, dims, ierr)
     if (.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) arr
@@ -139,7 +139,7 @@ contains
 
     call set_ok(ierr)
     call set_ok(ioerror)
-    call write_file_header(filename, unit, ARRAY_TYPE_INT, 5, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, 5_int32, dims, ierr)
     if (.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) arr

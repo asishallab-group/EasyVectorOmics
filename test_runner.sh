@@ -25,7 +25,7 @@ if [[ "$FC" == "ifx" || "$FC" == "ifort" ]]; then
   MODULE_FLAG="-module $BUILD_DIR"
   COMPILER="ifx"
 else
-  FLAGS="-O3 -march=native -mtune=native -fopenmp -funroll-loops -ftree-vectorize -fPIC"
+  FLAGS="-O3 -march=native -mtune=native -fopenmp -funroll-loops -ftree-vectorize -fPIC -fdefault-integer-8"
   MODULE_FLAG="-J$BUILD_DIR"
   COMPILER="gfortran"
 fi

@@ -32,7 +32,7 @@ contains
     call set_ok(ierr)
     call set_ok(ioerror)
 
-    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 1, dims, ierr, clen)
+    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 1_int32, dims, ierr, clen)
     if (.not. is_ok(ierr)) return
 
     ! Write the entire array as a contiguous block
@@ -60,7 +60,7 @@ contains
     clen = len(arr)
 
     call set_ok(ierr)
-    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 2, dims, ierr, clen)
+    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 2_int32, dims, ierr, clen)
 
     if (.not. is_ok(ierr)) return
 
@@ -91,7 +91,7 @@ contains
     
     call set_ok(ierr)
     call set_ok(ioerror)
-    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 3, dims, ierr, clen)
+    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 3_int32, dims, ierr, clen)
     if (.not. is_ok(ierr)) return
 
     ! Write the entire array as a contiguous block
@@ -122,7 +122,7 @@ contains
     call set_ok(ierr)
     call set_ok(ioerror)
 
-    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 4, dims, ierr, clen)
+    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 4_int32, dims, ierr, clen)
     if (.not. is_ok(ierr)) return
 
     ! Write the entire array as a contiguous block
@@ -152,7 +152,7 @@ contains
     call set_ok(ierr)
     call set_ok(ioerror)
 
-    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 5, dims, ierr, clen)
+    call write_file_header(filename, unit, ARRAY_TYPE_CHAR, 5_int32, dims, ierr, clen)
 
     if (.not. is_ok(ierr)) return
 
