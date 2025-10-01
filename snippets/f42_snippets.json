@@ -126,55 +126,60 @@
     ],
     "description": "Call loess_smooth_2d_c from Python using ctypes"
   },
-
-  "Convert c_double to real64": {
-    "prefix": "f42:c_double_as_real64",
-    "body":  [
-      "! Convert to fortran type",
-      "call c_double_as_real64(${1:c_val}, ${2:f_val})"
+  
+  "Create Fortran pointer for 1D int array": {
+    "prefix": "f42:fortran_pointer_int_1d",
+    "body": [
+      "call set_ok(ierr)",
+      "call fortran_pointer_int_1d(${1:c_pointer}, ${2:f_pointer}, ${3:dims}, ${4:ierr})",
+      "if (is_err(ierr)) return"
     ]
   },
-
-  "Convert real64 to c_double": {
-    "prefix": "f42:real64_as_c_double",
-    "body":  [
-      "! Convert to fortran type",
-      "call real64_as_c_double(${1:f_val}, ${2:c_val})"
+  
+  "Create Fortran pointer for 2D int array": {
+    "prefix": "f42:fortran_pointer_int_2d",
+    "body": [
+      "call set_ok(ierr)",
+      "call fortran_pointer_int_2d(${1:c_pointer}, ${2:f_pointer}, ${3:dims}, ${4:ierr})",
+      "if (is_err(ierr)) return"
     ]
   },
-
-  "Convert c_complex to complex": {
-    "prefix": "f42:c_complex_as_complex",
-    "body":  [
-      "! Convert to fortran type",
-      "call c_complex_as_complex(${1:c_val}, ${2:f_val})"
+  
+  "Create Fortran pointer for 1D real array": {
+    "prefix": "f42:fortran_pointer_real_1d",
+    "body": [
+      "call set_ok(ierr)",
+      "call fortran_pointer_real_1d(${1:c_pointer}, ${2:f_pointer}, ${3:dims}, ${4:ierr})",
+      "if (is_err(ierr)) return"
     ]
   },
-
-  "Convert complex to c_complex": {
-    "prefix": "f42:complex_as_c_complex",
-    "body":  [
-      "! Convert to fortran type",
-      "call complex_as_c_complex(${1:f_val}, ${2:c_val})"
+  
+  "Create Fortran pointer for 2D real array": {
+    "prefix": "f42:fortran_pointer_real_2d",
+    "body": [
+      "call set_ok(ierr)",
+      "call fortran_pointer_real_2d(${1:c_pointer}, ${2:f_pointer}, ${3:dims}, ${4:ierr})",
+      "if (is_err(ierr)) return"
     ]
   },
-
-  "Convert c_int to int32": {
-    "prefix": "f42:c_int_as_int32",
-    "body":  [
-      "! Convert to fortran type",
-      "call c_int_as_int32(${1:c_val}, ${2:f_val})"
+  
+  "Create Fortran pointer for 1D complex array": {
+    "prefix": "f42:fortran_pointer_complex_1d",
+    "body": [
+      "call set_ok(ierr)",
+      "call fortran_pointer_complex_1d(${1:c_pointer}, ${2:f_pointer}, ${3:dims}, ${4:ierr})",
+      "if (is_err(ierr)) return"
     ]
   },
-
-  "Convert int32 to c_int": {
-    "prefix": "f42:int32_as_c_int",
-    "body":  [
-      "! Convert to fortran type",
-      "call int32_as_c_int(${1:f_val}, ${2:c_val})"
+  
+  "Create Fortran pointer for 2D complex array": {
+    "prefix": "f42:fortran_pointer_complex_2d",
+    "body": [
+      "call set_ok(ierr)",
+      "call fortran_pointer_complex_2d(${1:c_pointer}, ${2:f_pointer}, ${3:dims}, ${4:ierr})",
+      "if (is_err(ierr)) return"
     ]
   },
-
   "Convert c_int to logical": {
     "prefix": "f42:c_int_as_logical",
     "body":  [
