@@ -708,10 +708,12 @@ contains
     end subroutine angle_between
 end module tox_paralog_analysis
 
-subroutine angle_between_c(v1, v2, n_dims, angle) bind(C, name="angle_between_c")
+subroutine angle_between_c(v1, v2, n_dims, angle, ierr) bind(C, name="angle_between_c")
     use tox_paralog_analysis, only: angle_between
-    use, intrinsic :: iso_c_binding, only: c_double, c_int, c_ptr, c_f_pointer
-    use, intrinsic :: iso_fortran_env, only: real64
+    use tox_conversions, only: fortran_pointer_real_1d
+    use, intrinsic :: iso_c_binding, only: c_double, c_int, c_ptr
+    use, intrinsic :: iso_fortran_env, only: real64, int32
+    use tox_errors, only: is_err, set_ok
     implicit none
 
     integer(c_int), intent(in), value :: n_dims
@@ -722,11 +724,15 @@ subroutine angle_between_c(v1, v2, n_dims, angle) bind(C, name="angle_between_c"
         !! first vector for angle calculation
     real(c_double), intent(out) :: angle
         !! will hold calculated angle
+    integer(int32), intent(out) :: ierr
+        !! Error code
 
     real(real64), pointer :: v1_f(:), v2_f(:)
 
-    call c_f_pointer(v1, v1_f, [n_dims])
-    call c_f_pointer(v2, v2_f, [n_dims])
+    call set_ok(ierr)
+    call fortran_pointer_real_1d(v1, v1_f, [n_dims], ierr)
+    call fortran_pointer_real_1d(v2, v2_f, [n_dims], ierr)
+    if (is_err(ierr)) return
 
     call angle_between(v1_f, v2_f, n_dims, angle)
 end subroutine angle_between_c
@@ -753,8 +759,10 @@ subroutine detect_dosage_effect_c(ancestor, paralogs, n_paralogs, n_dims, filter
                                 active_mask, temp_paralog_vector, ierr, max_angle, gain_gamma) bind(C, name="detect_dosage_effect_c")
 
     use tox_paralog_analysis, only: detect_dosage_effect
-    use, intrinsic :: iso_c_binding, only: c_double, c_int, c_ptr, c_f_pointer
+    use tox_conversions, only: fortran_pointer_real_1d, fortran_pointer_real_2d, fortran_pointer_int_1d, fortran_pointer_int_2d
+    use, intrinsic :: iso_c_binding, only: c_double, c_int, c_ptr
     use, intrinsic :: iso_fortran_env, only: real64, int32
+    use tox_errors, only: is_err, set_ok
     implicit none
 
     ! Inputs from C
@@ -796,13 +804,14 @@ subroutine detect_dosage_effect_c(ancestor, paralogs, n_paralogs, n_dims, filter
     integer(int32), dimension(:), pointer :: filtered_paralogs_mask_f, active_mask_f
     integer(int32), dimension(:,:), pointer :: work_arr_paralog_subsets_f
 
-    ! Allocate shaped arrays using converted dimensions
-    call c_f_pointer(ancestor, ancestor_f, [n_dims])
-    call c_f_pointer(temp_paralog_vector, temp_paralog_vector_f, [n_dims])
-    call c_f_pointer(paralogs, paralogs_f, [n_dims, n_paralogs])
-    call c_f_pointer(filtered_paralogs_mask, filtered_paralogs_mask_f, [n_mask_chunks])
-    call c_f_pointer(active_mask, active_mask_f, [n_mask_chunks])
-    call c_f_pointer(work_arr_paralog_subsets, work_arr_paralog_subsets_f, [n_mask_chunks, n_paralog_subsets])
+    call set_ok(ierr)
+    call fortran_pointer_real_1d(ancestor, ancestor_f, [n_dims], ierr)
+    call fortran_pointer_real_1d(temp_paralog_vector, temp_paralog_vector_f, [n_dims], ierr)
+    call fortran_pointer_real_2d(paralogs, paralogs_f, [n_dims, n_paralogs], ierr)
+    call fortran_pointer_int_1d(filtered_paralogs_mask, filtered_paralogs_mask_f, [n_mask_chunks], ierr)
+    call fortran_pointer_int_1d(active_mask, active_mask_f, [n_mask_chunks], ierr)
+    call fortran_pointer_int_2d(work_arr_paralog_subsets, work_arr_paralog_subsets_f, [n_mask_chunks, n_paralog_subsets], ierr)
+    if (is_err(ierr)) return
 
     ! Call original routine
     call detect_dosage_effect(ancestor_f, paralogs_f, n_paralogs, n_dims, filtered_paralogs_mask_f, n_mask_chunks, &
@@ -861,8 +870,10 @@ subroutine detect_subfunctionalization_c(ancestor, paralogs, n_paralogs, n_dims,
                                        active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr) &
                                        bind(C, name="detect_subfunctionalization_c")
     use tox_paralog_analysis, only: detect_subfunctionalization
-    use, intrinsic :: iso_c_binding, only: c_double, c_int, c_ptr, c_f_pointer
+    use tox_conversions, only: fortran_pointer_real_1d, fortran_pointer_real_2d, fortran_pointer_int_1d, fortran_pointer_int_2d
+    use, intrinsic :: iso_c_binding, only: c_double, c_int, c_ptr
     use, intrinsic :: iso_fortran_env, only: real64, int32
+    use tox_errors, only: is_err, set_ok
     implicit none
 
     ! Inputs from C
@@ -910,16 +921,17 @@ subroutine detect_subfunctionalization_c(ancestor, paralogs, n_paralogs, n_dims,
     real(real64), pointer :: paralog_norms_f(:), temp_work_array_f(:)
     integer(int32), pointer :: sorted_paralog_norms_perm_f(:)
 
-    ! Allocate shaped arrays using converted dimensions
-    call c_f_pointer(ancestor, ancestor_f, [n_dims])
-    call c_f_pointer(temp_paralog_vector, temp_paralog_vector_f, [n_dims])
-    call c_f_pointer(paralogs, paralogs_f, [n_dims, n_paralogs])
-    call c_f_pointer(filtered_paralogs_mask, filtered_paralogs_mask_f, [n_mask_chunks])
-    call c_f_pointer(active_mask, active_mask_f, [n_mask_chunks])
-    call c_f_pointer(work_arr_paralog_subsets, work_arr_paralog_subsets_f, [n_mask_chunks, n_paralog_subsets])
-    call c_f_pointer(paralog_norms, paralog_norms_f, [n_paralogs])
-    call c_f_pointer(temp_work_array, temp_work_array_f, [n_paralogs])
-    call c_f_pointer(sorted_paralog_norms_perm, sorted_paralog_norms_perm_f, [n_paralogs])
+    call set_ok(ierr)
+    call fortran_pointer_real_1d(ancestor, ancestor_f, [n_dims], ierr)
+    call fortran_pointer_real_1d(temp_paralog_vector, temp_paralog_vector_f, [n_dims], ierr)
+    call fortran_pointer_real_2d(paralogs, paralogs_f, [n_dims, n_paralogs], ierr)
+    call fortran_pointer_int_1d(filtered_paralogs_mask, filtered_paralogs_mask_f, [n_mask_chunks], ierr)
+    call fortran_pointer_int_1d(active_mask, active_mask_f, [n_mask_chunks], ierr)
+    call fortran_pointer_int_2d(work_arr_paralog_subsets, work_arr_paralog_subsets_f, [n_mask_chunks, n_paralog_subsets], ierr)
+    call fortran_pointer_real_1d(paralog_norms, paralog_norms_f, [n_paralogs], ierr)
+    call fortran_pointer_real_1d(temp_work_array, temp_work_array_f, [n_paralogs], ierr)
+    call fortran_pointer_int_1d(sorted_paralog_norms_perm, sorted_paralog_norms_perm_f, [n_paralogs], ierr)
+    if (is_err(ierr)) return
 
     ! Call original routine
     call detect_subfunctionalization(ancestor_f, paralogs_f, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask_f, &
@@ -980,8 +992,10 @@ end subroutine detect_subfunctionalization_r
 
 subroutine filter_paralogs_by_pattern_subfunctionalization_c(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr) bind(C, name="filter_paralogs_by_pattern_subfunctionalization_c")
     use tox_paralog_analysis, only: filter_paralogs_by_pattern_subfunctionalization
-    use, intrinsic :: iso_c_binding, only: c_double, c_int, c_ptr, c_f_pointer
+    use tox_conversions, only: fortran_pointer_real_1d, fortran_pointer_int_1d
+    use, intrinsic :: iso_c_binding, only: c_double, c_int, c_ptr
     use, intrinsic :: iso_fortran_env, only: real64, int32
+    use tox_errors, only: is_err, set_ok
     implicit none
 
     integer(c_int), intent(in), value :: n_paralogs
@@ -1000,8 +1014,10 @@ subroutine filter_paralogs_by_pattern_subfunctionalization_c(paralog_angles, thr
     real(real64), dimension(:), pointer :: paralog_angles_f
     integer(int32), dimension(:), pointer :: mask_f
 
-    call c_f_pointer(paralog_angles, paralog_angles_f, [n_paralogs])
-    call c_f_pointer(mask, mask_f, [n_mask_chunks])
+    call set_ok(ierr)
+    call fortran_pointer_real_1d(paralog_angles, paralog_angles_f, [n_paralogs], ierr)
+    call fortran_pointer_int_1d(mask, mask_f, [n_mask_chunks], ierr)
+    if (is_err(ierr)) return
 
     call filter_paralogs_by_pattern_subfunctionalization(paralog_angles_f, threshold, n_paralogs, mask_f, n_mask_chunks, ierr)
 end subroutine filter_paralogs_by_pattern_subfunctionalization_c
@@ -1029,8 +1045,10 @@ end subroutine filter_paralogs_by_pattern_subfunctionalization_r
 
 subroutine filter_paralogs_by_pattern_dosage_effect_c(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr) bind(C, name="filter_paralogs_by_pattern_dosage_effect")
     use tox_paralog_analysis, only: filter_paralogs_by_pattern_dosage_effect
-    use, intrinsic :: iso_c_binding, only: c_double, c_int, c_ptr, c_f_pointer
+    use tox_conversions, only: fortran_pointer_real_1d, fortran_pointer_int_1d
+    use, intrinsic :: iso_c_binding, only: c_double, c_int, c_ptr
     use, intrinsic :: iso_fortran_env, only: real64, int32
+    use tox_errors, only: is_err, set_ok
     implicit none
 
     integer(c_int), intent(in), value :: n_paralogs
@@ -1049,8 +1067,10 @@ subroutine filter_paralogs_by_pattern_dosage_effect_c(paralog_angles, threshold,
     real(real64), dimension(:), pointer :: paralog_angles_f
     integer(int32), dimension(:), pointer :: mask_f
 
-    call c_f_pointer(paralog_angles, paralog_angles_f, [n_paralogs])
-    call c_f_pointer(mask, mask_f, [n_mask_chunks])
+    call set_ok(ierr)
+    call fortran_pointer_real_1d(paralog_angles, paralog_angles_f, [n_paralogs], ierr)
+    call fortran_pointer_int_1d(mask, mask_f, [n_mask_chunks], ierr)
+    if (is_err(ierr)) return
 
     call filter_paralogs_by_pattern_dosage_effect(paralog_angles_f, threshold, n_paralogs, mask_f, n_mask_chunks, ierr)
 end subroutine filter_paralogs_by_pattern_dosage_effect_c
@@ -1078,8 +1098,10 @@ end subroutine filter_paralogs_by_pattern_dosage_effect_r
 
 subroutine calc_work_arr_paralog_subsets_size_c(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr) bind(C, name="calc_work_arr_paralog_subsets_size")
     use tox_paralog_analysis, only: calc_work_arr_paralog_subsets_size
-    use, intrinsic :: iso_c_binding, only: c_int, c_ptr, c_f_pointer
+    use tox_conversions, only: fortran_pointer_int_1d
+    use, intrinsic :: iso_c_binding, only: c_int, c_ptr
     use, intrinsic :: iso_fortran_env, only: int32
+    use tox_errors, only: is_err, set_ok
     implicit none
 
     integer(c_int), intent(in), value :: n_paralogs
@@ -1091,7 +1113,11 @@ subroutine calc_work_arr_paralog_subsets_size_c(max_subset_size, n_paralogs, wor
     integer(c_int), intent(out) :: ierr
 
     integer(int32), dimension(:), pointer :: filtered_paralogs_mask_f
-    call c_f_pointer(filtered_paralogs_mask, filtered_paralogs_mask_f, [n_mask_chunks])
+
+    call set_ok(ierr)
+    call fortran_pointer_int_1d(filtered_paralogs_mask, filtered_paralogs_mask_f, [n_mask_chunks], ierr)
+    if (is_err(ierr)) return
+
     call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask_f, n_mask_chunks, ierr)
 end subroutine calc_work_arr_paralog_subsets_size_c
 
@@ -1113,15 +1139,13 @@ end subroutine calc_work_arr_paralog_subsets_size_r
 
 subroutine mask_chunk_count_c(n_paralogs, count) bind(C, name="mask_chunk_count_c")
     use tox_paralog_analysis, only: mask_chunk_count
-    use, intrinsic :: iso_c_binding, only: c_int, c_ptr, c_f_pointer
-    use, intrinsic :: iso_fortran_env, only: int32
+    use, intrinsic :: iso_c_binding, only: c_int
     implicit none
 
     integer(c_int), intent(in), value :: n_paralogs
         !! number of vectors in `paralogs`
     integer(c_int), intent(out) :: count
         !! number of 32 bit chunks a mask needs to encode `n_paralogs` paralogs
-
 
     call mask_chunk_count(n_paralogs, count)
 end subroutine mask_chunk_count_c
@@ -1141,9 +1165,10 @@ end subroutine mask_chunk_count_r
 
 subroutine mask_check_state_c(bit_mask, n_mask_chunks, i_paralog, state, ierr) bind(C, name="mask_check_state_c")
     use tox_paralog_analysis, only: mask_check_state
-    use tox_conversions, only: logical_as_c_int
-    use, intrinsic :: iso_c_binding, only: c_int, c_ptr, c_f_pointer
+    use tox_conversions, only: logical_as_c_int, fortran_pointer_int_1d
+    use, intrinsic :: iso_c_binding, only: c_int, c_ptr
     use, intrinsic :: iso_fortran_env, only: int32
+    use tox_errors, only: is_err, set_ok
     implicit none
 
     integer(c_int), intent(in), value :: n_mask_chunks
@@ -1159,7 +1184,10 @@ subroutine mask_check_state_c(bit_mask, n_mask_chunks, i_paralog, state, ierr) b
 
     integer(int32), dimension(:), pointer :: bit_mask_f
 
-    call c_f_pointer(bit_mask, bit_mask_f, [n_mask_chunks])
+    call set_ok(ierr)
+    call fortran_pointer_int_1d(bit_mask, bit_mask_f, [n_mask_chunks], ierr)
+    if (is_err(ierr)) return
+
     call logical_as_c_int(mask_check_state(bit_mask_f, i_paralog), state)
 end subroutine mask_check_state_c
 
