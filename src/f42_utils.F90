@@ -22,81 +22,40 @@ contains
       rad = modulo(degrees, 360.0_real64) * PI / 180 
   end function radians
 
-  pure real(real64) function norm(vector, n_dims) result(euclidean_norm)
-    integer(int32), intent(in) :: n_dims
-    real(real64), dimension(n_dims), intent(in) :: vector
+  pure real(real64) function norm(vector) result(euclidean_norm)
+    real(real64), dimension(:), intent(in) :: vector
 
     integer(int32) :: i_dim
 
     euclidean_norm = 0
-    do i_dim = 1, n_dims
+    do i_dim = 1, size(vector)
       euclidean_norm = euclidean_norm + vector(i_dim) ** 2
     end do
     euclidean_norm = sqrt(euclidean_norm)
   end function norm
 
-  pure subroutine add_vector(vector, n_dims, to_be_added)
-    integer(int32), intent(in) :: n_dims
-    real(real64), dimension(n_dims), intent(inout) :: vector
-    real(real64), dimension(n_dims), intent(in) :: to_be_added
+  pure subroutine add_vector(vector, to_be_added)
+    real(real64), dimension(:), intent(inout) :: vector
+    real(real64), dimension(:), intent(in) :: to_be_added
 
     integer(int32) :: i_dim
 
-    do i_dim = 1, n_dims
+    do i_dim = 1, size(vector)
       vector(i_dim) = vector(i_dim) + to_be_added(i_dim)
     end do
   end subroutine add_vector
 
-  pure subroutine subtract_vector(vector, n_dims, to_be_subtracted)
-    integer(int32), intent(in) :: n_dims
-    real(real64), dimension(n_dims), intent(inout) :: vector
-    real(real64), dimension(n_dims), intent(in) :: to_be_subtracted
+  pure subroutine subtract_vector(vector, to_be_subtracted)
+    real(real64), dimension(:), intent(inout) :: vector
+    real(real64), dimension(:), intent(in) :: to_be_subtracted
 
     integer(int32) :: i_dim
 
-    do i_dim = 1, n_dims
+    do i_dim = 1, size(vector)
       vector(i_dim) = vector(i_dim) - to_be_subtracted(i_dim)
     end do
   end subroutine subtract_vector
   
-  !> Calculate the percentile of an array
-  pure subroutine calc_percentile(percent, array, perm, percentile_value, ierr)
-    real(real64), intent(in) :: percent
-      !! value between 0.0-1.0 defining the percentage of the percentile
-    real(real64), dimension(:), intent(in) :: array
-      !! array holding the data values
-    integer(int32), dimension(size(array)), intent(in) :: perm
-      !! array holding the indices for `array` for ascending sorted order
-    real(real64), intent(out) :: percentile_value
-      !! calculated percentile value
-    integer(int32), intent(out) :: ierr
-      !! error code
-
-    integer(int32) :: index
-    real(real64) :: rank
-
-    call set_ok(ierr)
-
-    if (percent > 1 .or. percent < 0) then
-        call set_err(ierr, ERR_INVALID_INPUT)
-        return
-    end if
-
-    if (size(array) == 0) then
-        call set_err(ierr, ERR_EMPTY_INPUT)
-        return
-    end if
-
-    rank = percent * (size(array) - 1) + 1
-    index = max(1, floor(rank))
-    index = min(index, size(array))
-
-    percentile_value = array(perm(index))
-    if (index < size(array)) then
-      percentile_value = percentile_value + (rank - index) * (array(perm(index + 1)) - percentile_value)
-    end if
-  end subroutine calc_percentile
-
   !> Sort a real array indirectly using quicksort.
   !| Creates a sorted version of the array by reordering the `perm` vector. The original data in `array` remains unchanged.
   pure subroutine sort_real(array, perm, stack_left, stack_right)
