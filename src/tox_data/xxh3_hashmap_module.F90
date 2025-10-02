@@ -165,7 +165,7 @@ subroutine hashmap_put(map, key, value)
     map%buckets(hash_idx)%next => new_node
     map%count = map%count + 1
     
-    if (DEBUG) print *, "  Added new key, count:", map%count
+    if (debug_hashing) print *, "  Added new key, count:", map%count
 end subroutine hashmap_put
 
 !> Lookup a key

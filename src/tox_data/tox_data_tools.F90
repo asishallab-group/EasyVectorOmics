@@ -21,6 +21,7 @@ contains
 subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
                              n_header_rows, gene_col, value_cols, start_row, ierr, delimiter)
     use xxh3_hashmap_module
+    use ieee_arithmetic, only: ieee_is_finite
     character(len=*), intent(in) :: file_list(:)
     !! List of files to read from
     character(len=*), intent(in) :: gene_ids(:)
@@ -167,7 +168,13 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
             end if
 
             call split_string(line, fields, ierr, actual_delimiter)
-            if (size(fields) < max(gene_col, maxval(valid_cols(1:n_valid_cols)))) cycle
+            if (size(fields) < max(gene_col, maxval(valid_cols(1:n_valid_cols)))) then
+                print *, 'size: ', size(fields)
+                print *, 'row: ', current_row
+                call set_err_once(ierr, ERR_INVALID_INPUT)
+                call hashmap_destroy(gene_map)
+                return 
+            end if
 
             gene = trim(adjustl(fields(gene_col)))
 
@@ -182,10 +189,19 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
             do k = 1, n_valid_cols
                 read(fields(valid_cols(k)), *, iostat=ios) value
                 if (ios == 0) then
-                    expression_vectors(current_sample + k, idx) = value
+                    if(ieee_is_finite(value)) then
+                        expression_vectors(current_sample + k, idx) = value
+                    else
+                        call set_err_once(ierr, ERR_INVALID_INPUT)
+                        call hashmap_destroy(gene_map)
+                        close(unit)
+                        return
+                    end if
                 else
-                    if(DEBUG) write(*,*) 'Missing values in row: ', k
-                    expression_vectors(current_sample + k, idx) = 0.0_real64
+                    call set_err_once(ierr, ERR_READ_DATA)
+                    call hashmap_destroy(gene_map)
+                    close(unit)
+                    return
                 end if
             end do
         end do
@@ -240,6 +256,8 @@ subroutine read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, 
         
         row_count = row_count + 1
         if (row_count > size(gene_ids)) then
+            print *, 'Row: ', row_count
+            print *, 'Size: ', size(gene_ids)
             call set_err_once(ierr, ERR_SIZE_MISMATCH)  ! More genes than allocated space
             close(unit)
             return

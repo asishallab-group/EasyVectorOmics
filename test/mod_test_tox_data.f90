@@ -220,10 +220,46 @@ contains
 
   !> Test reading expression data
   subroutine test_read_expression_data()
+    character(len=256), allocatable :: gene_ids_false_inputs(:)
+    real(real64), allocatable :: expr_vecs_false_inputs(:,:)
+    character(len=64), allocatable :: inf_file(:), nan_file(:), missing_col_file(:)
+    integer(int32) :: ierr
+
+    call set_ok(ierr)
+
+    allocate(inf_file(1))
+    allocate(nan_file(1))
+    allocate(missing_col_file(1))
+    allocate(gene_ids_false_inputs(88328))
+    allocate(expr_vecs_false_inputs(6, n_genes))
+
     call assert_true(allocated(kallisto_expr), "Expression data should be allocated")
     call assert_equal_int(size(kallisto_expr, 1), total_samples, "Number of samples should match")
     call assert_equal_int(size(kallisto_expr, 2), n_genes, "Number of genes should match")
     call assert_true(all(kallisto_expr >= 0.0_real64), "All expression values should be non-negative")
+
+    call read_gene_ids_from_file('material/kallisto_dup_gene_ids.tsv', gene_ids_false_inputs, 1, 1, ierr)
+    call assert_equal_int(ierr, 0, "Error while reading duplicate gene ids")
+
+    inf_file = [ &
+      'material/kallisto_Inf.tsv']
+
+    nan_file = [ &
+      'material/kallisto_NaN.tsv']
+
+    missing_col_file = [ &
+      'material/kallisto_missing_value.tsv']
+
+    call read_expression_vectors(inf_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
+    call assert_equal_int(ierr, 201, "Error while reading expression vectors, should get invalid input for Inf in expression data")
+
+    call set_ok(ierr)
+    call read_expression_vectors(nan_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
+    call assert_equal_int(ierr, 201, "Error while reading expression vectors, should get invalid input for NaN in expression data")
+
+    call set_ok(ierr)
+    call read_expression_vectors(missing_col_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
+    call assert_equal_int(ierr, 0, "Error while reading missing column. Should only print warning")
   end subroutine test_read_expression_data
 
   !> Test reading family mapping
@@ -237,9 +273,23 @@ contains
   !> Test data validation
   subroutine test_validate_data()
     integer(int32) :: ierr
-    
+
+    call validate_data_structure(n_genes, n_families, total_samples, gene_ids, gene_family_ids, gene_to_fam, &
+                                kallisto_expr, family_centroids, shift_vectors, ierr)
+    call assert_equal_int(ierr, 0, "Data structure could not be validated")
+
+    call validate_empty_strings(gene_ids, "Gene IDs", ierr)
+    call assert_equal_int(ierr, 0, "Gene IDs could not be validated - contains empty strings")
+
+    call validate_empty_strings(gene_family_ids, "Family IDs", ierr)
+    call assert_equal_int(ierr, 0, "Family Ids contain empty entries")
+
+    call validate_expression_data(kallisto_expr, .true., ierr)
+    call assert_equal_int(ierr, 0, "Expression data could not be validated")
+
     call validate_all_data(n_genes, n_families, total_samples, gene_ids, gene_family_ids, &
                            gene_to_fam, kallisto_expr, family_centroids, shift_vectors, ierr, .true., .true.)
+    call assert_equal_int(ierr, 0, "Data could not be validated")
   end subroutine test_validate_data
 
   !> Test centroid computation
