@@ -805,7 +805,7 @@ subroutine read_expression_vectors_C(file_list_raw, file_list_len, n_files, &
                                  gene_ids_raw, gene_ids_len, n_genes, &
                                  expression_vectors, n_samples, &
                                  n_header_rows, gene_col, value_cols, &
-                                 n_value_cols, ierr, delimiter_raw, dlen) bind(C, name="read_expression_vectors_C")
+                                 n_value_cols, ierr, delimiter_raw) bind(C, name="read_expression_vectors_C")
     use iso_c_binding, only: c_int, c_double, c_char
     use tox_data_tools, only: read_expression_vectors
     use tox_errors, only: set_ok, is_err, check_io_stat
@@ -838,9 +838,7 @@ subroutine read_expression_vectors_C(file_list_raw, file_list_len, n_files, &
         !! Pointer to value_cols array
     integer(c_int), intent(out) :: ierr
         !! Error code
-    integer(c_int), intent(in), value :: dlen   
-        !! Length of the delimiter
-    character(kind=c_char, len=1), intent(in) :: delimiter_raw(dlen)
+    character(kind=c_char, len=1), intent(in) :: delimiter_raw(1)
         !! Delimiter
     integer(c_int) :: start_row
     
@@ -871,13 +869,6 @@ subroutine read_expression_vectors_C(file_list_raw, file_list_len, n_files, &
       if(is_err(ierr)) return
       gene_ids(i) = trim(tmp_str)
     end do
-
-    if (dlen > 0) then
-      call c_char_1d_as_string(delimiter_raw, delimiter, ierr)
-      if(is_err(ierr)) return
-    else
-      delimiter = char(9)
-    end if
 
     call read_expression_vectors(file_list, gene_ids, expression_vectors, &
                                 n_header_rows, gene_col, value_cols, &

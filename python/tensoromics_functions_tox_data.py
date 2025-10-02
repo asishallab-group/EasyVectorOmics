@@ -2,7 +2,7 @@
 TensorOmics Functions Module
 Python wrapper functions for Fortran routines via C interface
 """
-
+from error_handling import check_err_code
 import numpy as np
 import ctypes
 import os
@@ -49,7 +49,6 @@ lib.read_expression_vectors_C.argtypes = [
     ctypes.c_int,                  # n_value_cols
     ctypes.POINTER(ctypes.c_int),  # ierr
     ctypes.POINTER(ctypes.c_char),  # delimiter_raw
-    ctypes.c_int                   # dlen
 ]
 lib.read_expression_vectors_C.restype = None
 
@@ -251,8 +250,7 @@ def read_gene_ids_from_file(filename, n_genes, gene_ids_len, n_header_rows, gene
         ctypes.byref(ierr)
     )
     
-    if ierr.value != 0:
-        raise Exception(f"Error reading gene IDs: {ierr.value}")
+    check_err_code(ierr.value)
     
     # Convert result back to strings and return as numpy array
     gene_ids = raw_matrix_to_strings(gene_ids_raw, gene_ids_len)
@@ -301,12 +299,10 @@ def read_expression_vectors(file_list, gene_ids, n_samples, n_header_rows,
         value_cols_ct,
         ctypes.c_int(len(value_cols)),
         ctypes.byref(ierr),
-        delimiter_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
-        ctypes.c_int(len(delimiter))
+        delimiter_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char))
     )
     
-    if ierr.value != 0:
-        raise Exception(f"Error reading expression vectors: {ierr.value}")
+    check_err_code(ierr.value)
         
     return expression_vectors
 
@@ -343,8 +339,7 @@ def read_family_file(filename, gene_ids, family_ids_len, n_families):
         ctypes.byref(ierr)
     )
     
-    if ierr.value != 0:
-        raise Exception(f"Error reading family file: {ierr.value}")
+    check_err_code(ierr.value)
     
     # Convert result back to strings as numpy array
     family_ids = raw_matrix_to_strings(family_ids_raw, family_ids_len)
@@ -384,8 +379,7 @@ def filter_unassigned_genes(gene_ids, gene_to_fam):
         ctypes.byref(ierr)
     )
     
-    if ierr.value != 0:
-        raise Exception(f"Error filtering unassigned genes: {ierr.value}")
+    check_err_code(ierr.value)
     
     return {
         'mask': mask,
@@ -404,8 +398,7 @@ def validate_gene_to_family_mapping(gene_to_fam, n_families):
         ctypes.c_int(n_families),
         ctypes.byref(ierr)
     )
-    if ierr.value != 0:
-        raise Exception(f"Validation failed: gene_to_fam (error {ierr.value})")
+    check_err_code(ierr.value)
 
 def validate_expression_data(expression_vectors, check_non_negative=True):
     arr = _ensure_float_array(expression_vectors)
@@ -419,8 +412,7 @@ def validate_expression_data(expression_vectors, check_non_negative=True):
         ctypes.c_int(1 if check_non_negative else 0),
         ctypes.byref(ierr)
     )
-    if ierr.value != 0:
-        raise Exception(f"Validation failed: expression_vectors (error {ierr.value})")
+    check_err_code(ierr.value)
 
 def validate_family_centroids(family_centroids):
     arr = _ensure_float_array(family_centroids)
@@ -433,8 +425,7 @@ def validate_family_centroids(family_centroids):
         ctypes.c_int(n_samples),
         ctypes.byref(ierr)
     )
-    if ierr.value != 0:
-        raise Exception(f"Validation failed: family_centroids (error {ierr.value})")
+    check_err_code(ierr.value)
 
 def validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, gene_to_fam, n_genes, n_samples, n_families):
     shift_vectors = _ensure_float_array(shift_vectors)
@@ -457,8 +448,7 @@ def validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, 
         ctypes.c_int(n_families),
         ctypes.byref(ierr)
     )
-    if ierr.value != 0:
-        raise Exception(f"Validation failed: shift_vectors (error {ierr.value})")
+    check_err_code(ierr.value)
 
 def validate_gene_ids_uniqueness(gene_ids):
     gene_ids = _ensure_string_array(gene_ids)
@@ -472,8 +462,7 @@ def validate_gene_ids_uniqueness(gene_ids):
         ctypes.c_int(n_genes),
         ctypes.byref(ierr)
     )
-    if ierr.value != 0:
-        raise Exception(f"Validation failed: gene_ids uniqueness (error {ierr.value})")
+    check_err_code(ierr.value)
 
 def validate_family_ids_uniqueness(family_ids):
     family_ids = _ensure_string_array(family_ids)
@@ -487,8 +476,7 @@ def validate_family_ids_uniqueness(family_ids):
         ctypes.c_int(n_families),
         ctypes.byref(ierr)
     )
-    if ierr.value != 0:
-        raise Exception(f"Validation failed: family_ids uniqueness (error {ierr.value})")
+    check_err_code(ierr.value)
 
 def validate_data_structure(n_genes, n_families, n_samples, gene_ids, gene_family_ids, gene_to_fam, expression_vectors, family_centroids, shift_vectors):
     gene_ids = _ensure_string_array(gene_ids)
@@ -523,8 +511,7 @@ def validate_data_structure(n_genes, n_families, n_samples, gene_ids, gene_famil
         shift_vectors.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         ctypes.byref(ierr)
     )
-    if ierr.value != 0:
-        raise Exception(f"Validation failed: data structure (error {ierr.value})")
+    check_err_code(ierr.value)
 
 def validate_all_data(n_genes, n_families, n_samples, gene_ids, gene_family_ids, gene_to_fam, expression_vectors, family_centroids, shift_vectors):
     gene_ids = _ensure_string_array(gene_ids)
@@ -559,8 +546,7 @@ def validate_all_data(n_genes, n_families, n_samples, gene_ids, gene_family_ids,
         shift_vectors.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
         ctypes.byref(ierr)
     )
-    if ierr.value != 0:
-        raise Exception(f"Validation failed: all data (error {ierr.value})")
+    check_err_code(ierr.value)
     
 def tox_save_data_archive(zip_filename,
                           gene_ids=None, gene_ids_name=None,
