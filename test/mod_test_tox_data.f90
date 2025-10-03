@@ -36,7 +36,7 @@ contains
 
   !> Get array of all available tests.
   function get_all_tests() result(all_tests)
-    type(test_case) :: all_tests(14)  ! Increased from 6 to 8
+    type(test_case) :: all_tests(15)
     all_tests(1) = test_case("test_read_gene_ids", test_read_gene_ids)
     all_tests(2) = test_case("test_read_expression_data", test_read_expression_data)
     all_tests(3) = test_case("test_read_family_mapping", test_read_family_mapping)
@@ -51,6 +51,7 @@ contains
     all_tests(12) = test_case("test_read_write_family_centroids", test_read_write_centroids)
     all_tests(13) = test_case("test_data_accessors", test_data_accessors)
     all_tests(14) = test_case("test_archive", test_archive)
+    all_tests(15) = test_case("test_hashing", test_hashing)
   end function get_all_tests
 
   !> Setup global test data
@@ -170,7 +171,7 @@ contains
 
   !> Run all expression reader tests.
   subroutine run_all_tests_tox_data()
-    type(test_case) :: all_tests(14)  ! Updated
+    type(test_case) :: all_tests(15)  ! Updated
     integer(int32) :: i
     
     ! Setup global data first
@@ -187,12 +188,12 @@ contains
   !> Run specific expression reader tests by name.
   subroutine run_named_tests_tox_data(test_names)
     character(len=*), intent(in) :: test_names(:)
-    type(test_case) :: all_tests(14)  ! Updated
+    type(test_case) :: all_tests(15)  ! Updated
     integer(int32) :: i, j
     logical :: found
     
     ! Setup global data first
-    call setup_global_data()
+    ! call setup_global_data()
     
     all_tests = get_all_tests()
     do i = 1, size(test_names)
@@ -873,4 +874,64 @@ contains
 
     ! print *, "All archive tests completed successfully!"
   end subroutine test_archive
+
+  subroutine test_hashing()
+    use xxh3_hashmap_module
+    type(hashmap_type) :: test_hashmap
+    type(hashset_type) :: test_hashset
+    character(len=6), allocatable :: keys(:)
+    integer(int32), allocatable :: values(:)
+    integer(int32) :: value, i
+    logical :: in_hashset
+
+    allocate(keys(5))
+    allocate(values(5))
+
+    keys = [ &
+      'First ', &
+      'Second', &
+      'Foo   ', &
+      'Bar   ', &
+      'First ' &
+    ]
+
+    values = [1,2,3,4,5]
+
+    call hashmap_create(test_hashmap)
+
+    do i = 1, 4
+      call hashmap_put(test_hashmap, keys(i), values(i))
+    end do 
+    value = hashmap_get(test_hashmap, 'First')
+    call assert_equal_int(value, 1, 'Wrong return value for key First')
+
+    value = hashmap_get(test_hashmap, 'Second')
+    call assert_equal_int(value, 2, 'Wrong return value for key Second')
+
+    value = hashmap_get(test_hashmap, 'Foo')
+    call assert_equal_int(value, 3, 'Wrong return value for key Foo')
+
+    value = hashmap_get(test_hashmap, 'Bar')
+    call assert_equal_int(value, 4, 'Wrong return value for key Bar')
+
+    call hashmap_put(test_hashmap, 'First', 5)
+    value = hashmap_get(test_hashmap, 'First')
+    call assert_equal_int(value, 5, 'Wrong return for updated key First')
+
+    call hashset_create(test_hashset)
+    do i = 1, 5
+      call hashset_put(test_hashset, keys(i))
+    end do
+
+    do i = 1, 5
+      in_hashset = is_in_hashset(test_hashset, keys(i))
+      call assert_true(in_hashset, 'Key should be in hashset')
+    end do
+
+    in_hashset = is_in_hashset(test_hashset, 'Dummy')
+    call assert_false(in_hashset, 'Dummy should not be in hashset')
+
+    call hashset_destroy(test_hashset)
+    call hashmap_destroy(test_hashmap)
+  end subroutine test_hashing
 end module mod_test_tox_data

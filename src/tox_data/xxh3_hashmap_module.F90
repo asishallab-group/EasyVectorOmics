@@ -7,6 +7,7 @@ module xxh3_hashmap_module
     private
     
     public :: hashmap_type, hashmap_create, hashmap_destroy, hashmap_get, hashmap_put
+    public :: hashset_type, hashset_create, hashset_destroy, hashset_put, is_in_hashset
     
     ! C interface for XXH3 hashing
     interface
