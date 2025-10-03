@@ -23,8 +23,8 @@ contains
 
   !> Get array of all available tests.
   function get_all_tests() result(all_tests)
-    type(test_case) :: all_tests(9)
-    
+    type(test_case) :: all_tests(12)
+
     all_tests(1) = test_case("test_sort_real", test_sort_real)
     all_tests(2) = test_case("test_sort_integer", test_sort_integer)
     all_tests(3) = test_case("test_sort_character", test_sort_character)
@@ -34,15 +34,19 @@ contains
     all_tests(7) = test_case("test_sort_sorted_stability", test_sort_sorted_stability)
     all_tests(8) = test_case("test_sort_empty_array", test_sort_empty_array)
     all_tests(9) = test_case("test_sort_large_random", test_sort_large_random)
+    ! Heapsort tests (exercise heapsort implementations in f42_utils)
+    all_tests(10) = test_case("test_heapsort_real", test_heapsort_real)
+    all_tests(11) = test_case("test_heapsort_integer", test_heapsort_integer)
+    all_tests(12) = test_case("test_heapsort_character", test_heapsort_character)
   end function get_all_tests
 
   !> Run all sorting tests.
   subroutine run_all_tests_sorting()
-    type(test_case) :: all_tests(9)
+    type(test_case) :: all_tests(12)
     integer(int32) :: i
-    
+
     all_tests = get_all_tests()
-    
+
     do i = 1, size(all_tests)
       call all_tests(i)%test_proc()
       print *, trim(all_tests(i)%name), " passed."
@@ -53,7 +57,7 @@ contains
   !> Run specific sorting tests by name.
   subroutine run_named_tests_sorting(test_names)
     character(len=*), intent(in) :: test_names(:)
-    type(test_case) :: all_tests(9)
+  type(test_case) :: all_tests(12)
     integer(int32) :: i, j
     logical :: found
     
@@ -213,5 +217,41 @@ contains
     call assert_equal_array_int(data(perm), sorted, n, "test_sort_large_random: sorted values mismatch")
     deallocate(rdata, data, perm, sorted, stack_left, stack_right, dummy_perm)
   end subroutine test_sort_large_random
+
+
+  !> Test heapsort implementation for real arrays (uses f42_utils heapsort)
+  subroutine test_heapsort_real()
+    real(real64), dimension(5) :: data = [5.0d0, 3.0d0, 4.0d0, 1.0d0, 2.0d0]
+    integer(int32), dimension(5) :: perm
+    real(real64), dimension(5) :: expected = [1.0d0,2.0d0,3.0d0,4.0d0,5.0d0]
+    integer(int32) :: i
+
+    perm = [(i, i = 1, 5)]
+    call sort_real_heapsort(data, perm)
+    call assert_equal_array_real(data(perm), expected, 5, 1d-12, "test_heapsort_real: values not sorted")
+  end subroutine test_heapsort_real
+
+  !> Test heapsort implementation for integer arrays
+  subroutine test_heapsort_integer()
+    integer(int32), dimension(5) :: data = [5, 3, 4, 1, 2]
+    integer(int32), dimension(5) :: perm, expected = [1,2,3,4,5]
+    integer(int32) :: i
+
+    perm = [(i, i = 1, 5)]
+    call sort_integer_heapsort(data, perm)
+    call assert_equal_array_int(data(perm), expected, 5, "test_heapsort_integer: values not sorted")
+  end subroutine test_heapsort_integer
+
+  !> Test heapsort implementation for character arrays
+  subroutine test_heapsort_character()
+    character(len=1), dimension(5) :: data = ["d","b","c","a","e"]
+    integer(int32), dimension(5) :: perm
+    character(len=1), dimension(5) :: expected = ["a","b","c","d","e"]
+    integer(int32) :: i
+
+    perm = [(i, i = 1, 5)]
+    call sort_character_heapsort(data, perm)
+    call assert_equal_array_char(data(perm), expected, 1, 5, "test_heapsort_character: values not sorted")
+  end subroutine test_heapsort_character
 
 end module mod_test_sorting
