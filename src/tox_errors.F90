@@ -55,6 +55,8 @@ module tox_errors
     !! unsupported data type encountered
   integer(int32), parameter :: ERR_SIZE_MISMATCH      = 206
     !! Array size mismatch
+  integer(int32), parameter :: ERR_TYPE_MISMATCH       = 207
+    !! Array type read does not match expected type
 
   !------------------------------
   ! 3xx: Memory

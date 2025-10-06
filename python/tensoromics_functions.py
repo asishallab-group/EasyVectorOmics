@@ -316,6 +316,149 @@ def tox_deserialize_char_nd(filename: str, ndim_max=5):
     result = strings_1d.reshape(tuple(dims), order='F')
     return result
 
+def tox_serialize_logical_nd(arr: np.ndarray, filename: str):
+    """
+    Serializes an n-dimensional logical array to a binary file
+    Converts Python booleans to C integers (1 for True, 0 for False)
+    """
+    if not isinstance(arr, np.ndarray) or arr.dtype != np.bool_:
+        raise ValueError("arr must be a numpy array of bool")
+
+    # Make sure layout is fortran compatible
+    arr_f = np.asfortranarray(arr)
+
+    # dimensions
+    dims = np.array(arr.shape, dtype=np.int32)
+    ndim = arr.ndim
+    ierr = ctypes.c_int()
+
+    # Convert boolean array to integer array (1 for True, 0 for False)
+    flat_bool = arr_f.ravel(order='F')
+    flat_int = np.where(flat_bool, 1, 0).astype(np.int32)
+
+    # prepare filename
+    filename_ascii, fn_len = _filename_to_ascii_array(filename)
+
+    lib.serialize_logical_nd_C.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # arr (as int32)
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims
+        ctypes.c_int,  # ndim
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
+        ctypes.c_int,  # fn_len
+        ctypes.POINTER(ctypes.c_int) 
+    ]
+    lib.serialize_logical_nd_C.restype = None
+
+    # call function
+    lib.serialize_logical_nd_C(
+        flat_int,
+        dims,
+        ndim,
+        filename_ascii,
+        fn_len,
+        ctypes.byref(ierr)
+    )
+
+    check_err_code(ierr.value)
+
+def tox_deserialize_logical_nd(filename):
+    """
+    Deserializes an n-dimensional logical array.
+    Converts C integers (1 for True, 0 for False) back to Python booleans
+    """
+    # read size of the array
+    dims = tox_get_array_metadata(filename)
+    print(f"Deserializing logical array with dimensions: {dims}")
+    # create array with the proper size (as integers first)
+    total_size = np.prod(dims)
+    arr_int = np.zeros(total_size, dtype=np.int32, order='F')  # gets a 1D integer array
+    ascii_arr, fn_len = _filename_to_ascii_array(filename)
+    ierr = ctypes.c_int()
+
+    lib.deserialize_logical_C.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # arr (as int32)
+        ctypes.c_int,                                                          # total size
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
+        ctypes.c_int,                                                          # fn_len
+        ctypes.POINTER(ctypes.c_int)                                           # ierr
+    ]
+    lib.deserialize_logical_C.restype = None
+
+    lib.deserialize_logical_C(arr_int, total_size, ascii_arr, fn_len, ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    # Convert integer array back to boolean array (non-zero = True)
+    arr_bool = (arr_int != 0)
+    return arr_bool.reshape(dims, order='F')  # Reshape to original dimensions
+
+def tox_serialize_complex_nd(arr: np.ndarray, filename: str):
+    """
+    Serializes an n-dimensional complex128 array to a binary file
+    """
+    if not isinstance(arr, np.ndarray) or arr.dtype != np.complex128:
+        raise ValueError("arr must be a numpy array of complex128")
+
+    # make sure layout is fortran compatible
+    arr_f = np.asfortranarray(arr)
+
+    # dimensions
+    dims = np.array(arr.shape, dtype=np.int32)
+    ndim = arr.ndim
+    ierr = ctypes.c_int()
+
+    # flat array with fortran order
+    flat = arr_f.ravel(order='F')
+
+    # ASCII-Filename preparation
+    filename_ascii, fn_len = _filename_to_ascii_array(filename)
+
+    # declare args
+    lib.serialize_complex_nd_C.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.complex128, ndim=1, flags="C_CONTIGUOUS"), # arr
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims
+        ctypes.c_int,  # ndim
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
+        ctypes.c_int,  # fn_len
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    lib.serialize_complex_nd_C.restype = None
+
+    # call function
+    lib.serialize_complex_nd_C(
+        flat,
+        dims,
+        ndim,
+        filename_ascii,
+        fn_len,
+        ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+
+def tox_deserialize_complex_nd(filename):
+    """
+    Deserializes an n-dimensional array of type complex128
+    """
+    # read dimensions
+    dims = tox_get_array_metadata(filename)
+    print(f"Deserializing complex array with dimensions: {dims}")
+    # create array with correct size
+    total_size = np.prod(dims)
+    arr = np.zeros(total_size, dtype=np.complex128, order='F')  # accept flat array
+    ascii_arr, fn_len = _filename_to_ascii_array(filename)
+    ierr = ctypes.c_int()
+
+    lib.deserialize_complex_C.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.complex128, ndim=1, flags="C_CONTIGUOUS"),  # arr
+        ctypes.c_int,                                                          # total size
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
+        ctypes.c_int,                                                           # fn_len
+        ctypes.POINTER(ctypes.c_int)                                           # ierr
+    ]
+    lib.deserialize_complex_C.restype = None
+
+    lib.deserialize_complex_C(arr, total_size, ascii_arr, fn_len, ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    return arr.reshape(dims, order='F')  # Reshape
 
 # Configure BST argument types
 lib.build_bst_index_C.argtypes = [

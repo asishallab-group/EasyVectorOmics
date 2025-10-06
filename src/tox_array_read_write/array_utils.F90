@@ -124,7 +124,7 @@ module array_utils
     integer(int32), intent(out) :: unit
     !! Fortran unit number for the file
     integer(int32), intent(out) :: type_code
-    !! type code of the array (1=int, 2=real, 3=char)
+    !! type code of the array (1=int, 2=real, 3=char, 4=logical, 5=complex)
     integer(int32), INTENT(out) :: ndims
     !! number of dimensions
     integer(int32), intent(out) :: clen

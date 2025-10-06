@@ -13,12 +13,26 @@ module asserts
   public :: assert_sorted_real, assert_same_shape, assert_string_equal
   public :: assert_string_contains, assert_allclose_array_real
   public :: assert_sum_equal, assert_unique_int, assert_permutation
-  public :: assert_equal_array_char
+  public :: assert_equal_array_char, assert_equal_array_logical
   public :: assert_equal_complex, assert_not_equal_complex, assert_equal_array_complex
 
 
 contains
-  
+
+  subroutine assert_equal_array_logical(arr1, arr2, n, message)
+    logical, intent(in) :: arr1(n), arr2(n)
+    integer, intent(in) :: n
+    character(len=*), intent(in) :: message
+    integer :: i
+    do i = 1, n
+      if (arr1(i) .neqv. arr2(i)) then
+        print *, "Assertion failed: ", message
+        print *, "At index ", i, ": expected ", arr1(i), " but got ", arr2(i)
+        error stop
+      end if
+    end do
+  end subroutine assert_equal_array_logical
+    
   !> Asserts that two character arrays are equal
   subroutine assert_equal_array_char(a, b, clen, n, msg)
     integer(int32), INTENT(IN) :: clen

@@ -350,6 +350,100 @@ tox_serialize_char_array <- function(arr, filename) {
   check_err_code(res$ierr)
 }
 
+# Deserializes a logical array from a file, reads array dimensions first and then creates a proper array
+# That is then being filled by fortran
+tox_deserialize_logical_array <- function(filename, max_dims = 5) {
+    ascii <- utf8ToInt(filename)
+
+    meta <- tox_get_array_metadata(filename, max_dims)
+    total_size <- prod(meta$dims)
+
+    flat <- logical(total_size)
+    ierr <- integer(1)
+
+    res <- .Fortran("deserialize_logical_r",
+                flat_arr = flat,
+                arr_size = as.integer(total_size),
+                filename_ascii = as.integer(ascii),
+                fn_len = as.integer(length(ascii)),
+                ierr = ierr)
+    check_err_code(res$ierr)
+
+    array(res$flat_arr[1:prod(meta$dims)], dim = meta$dims)
+}
+
+# Deserializes a complex array from a file, reads array dimensions first and then creates a proper array
+# That is then being filled by fortran
+tox_deserialize_complex_array <- function(filename, max_dims = 5) {
+    ascii <- utf8ToInt(filename)
+
+    meta <- tox_get_array_metadata(filename, max_dims)
+    total_size <- prod(meta$dims)
+
+    flat <- complex(total_size)
+    ierr <- integer(1)
+
+    res <- .Fortran("deserialize_complex_r",
+                flat_arr = flat,
+                arr_size = as.integer(total_size),
+                filename_ascii = as.integer(ascii),
+                fn_len = as.integer(length(ascii)),
+                ierr = ierr)
+    check_err_code(res$ierr)
+
+    array(res$flat_arr[1:prod(meta$dims)], dim = meta$dims)
+}
+
+# Serializes a logical array to a file
+# BASE R arrays are column-major just like fortran, so no serialization is needed for the array structure.
+# Array can simply be passed as logical()
+tox_serialize_logical_array <- function(arr, filename) {
+  flat <- as.logical(arr)
+  dims <- if (is.null(dim(arr))) {
+    as.integer(length(arr))  # 1D-Vector
+  } else {
+    as.integer(dim(arr))
+  }
+  ndim <- as.integer(length(dims))
+  ascii <- utf8ToInt(filename)
+  ierr <- integer(1)
+
+  res <- .Fortran("serialize_logical_flat_r",
+           arr = flat,
+           array_size = length(flat),
+           dims = dims,
+           ndim = ndim,
+           filename_ascii = as.integer(ascii),
+           fn_len = as.integer(length(ascii)),
+           ierr = ierr)
+  check_err_code(res$ierr)
+}
+
+# Serializes a complex array to a file
+# BASE R arrays are column-major just like fortran, so no serialization is needed for the array structure.
+# Array can simply be passed as complex()
+tox_serialize_complex_array <- function(arr, filename) {
+  flat <- as.complex(arr)
+  dims <- if (is.null(dim(arr))) {
+    as.integer(length(arr))  # 1D-Vector
+  } else {
+    as.integer(dim(arr))
+  }
+  ndim <- as.integer(length(dims))
+  ascii <- utf8ToInt(filename)
+  ierr <- integer(1)
+
+  res <- .Fortran("serialize_complex_flat_r",
+           arr = flat,
+           array_size = length(flat),
+           dims = dims,
+           ndim = ndim,
+           filename_ascii = as.integer(ascii),
+           fn_len = as.integer(length(ascii)),
+           ierr = ierr)
+  check_err_code(res$ierr)
+}
+
 #' Normalize gene expression values by standard deviation
 #'
 #' This function wraps the Fortran subroutine `normalize_by_std_dev`
