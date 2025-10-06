@@ -1,7 +1,7 @@
 module tox_paralog_analysis
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use tox_errors, only: set_ok, set_err, is_err, ERR_INVALID_INPUT, ERR_SIZE_MISMATCH
-    use f42_utils, only: add_vector, subtract_vector, norm
+    use f42_utils, only: add_vector, subtract_vector, norm, angle_between
     implicit none
 
     integer(int32), parameter :: DOSAGE_PATTERN = 0
@@ -680,79 +680,7 @@ contains
         end if
 
     end function mask_check_state
-
-    pure subroutine angle_between(v1, v2, n_dims, angle)
-        integer(int32), intent(in) :: n_dims
-            !! number of elements in `v1` and `v2`
-        real(real64), dimension(n_dims), intent(in) :: v1
-            !! first vector for angle calculation
-        real(real64), dimension(n_dims), intent(in) :: v2
-            !! second vector for angle calculation
-        real(real64), intent(out) :: angle
-            !! will hold calculated angle
-
-        integer(int32) :: i
-        real(real64) :: theta, dot_product, norm1, norm2
-
-        dot_product = 0
-        norm1 = 0
-        norm2 = 0
-        do i = 1, size(v1)
-            dot_product = dot_product + v1(i) * v2(i)
-            norm1 = norm1 + v1(i) ** 2
-            norm2 = norm2 + v2(i) ** 2
-        end do
-        theta = dot_product / (sqrt(norm1) * sqrt(norm2))
-        theta = max(-1.0_real64, min(1.0_real64, theta))
-        angle = acos(theta)
-    end subroutine angle_between
 end module tox_paralog_analysis
-
-subroutine angle_between_c(v1, v2, n_dims, angle, ierr) bind(C, name="angle_between_c")
-    use tox_paralog_analysis, only: angle_between
-    use tox_conversions, only: fortran_pointer_real_1d
-    use, intrinsic :: iso_c_binding, only: c_double, c_int, c_ptr
-    use, intrinsic :: iso_fortran_env, only: real64, int32
-    use tox_errors, only: is_err, set_ok
-    implicit none
-
-    integer(c_int), intent(in), value :: n_dims
-        !! second vector for angle calculation
-    type(c_ptr), intent(in) :: v1
-        !! number of elements in `v1` and `v2`
-    type(c_ptr), intent(in) :: v2
-        !! first vector for angle calculation
-    real(c_double), intent(out) :: angle
-        !! will hold calculated angle
-    integer(int32), intent(out) :: ierr
-        !! Error code
-
-    real(real64), pointer :: v1_f(:), v2_f(:)
-
-    call set_ok(ierr)
-    call fortran_pointer_real_1d(v1, v1_f, [n_dims], ierr)
-    call fortran_pointer_real_1d(v2, v2_f, [n_dims], ierr)
-    if (is_err(ierr)) return
-
-    call angle_between(v1_f, v2_f, n_dims, angle)
-end subroutine angle_between_c
-
-subroutine angle_between_r(v1, v2, n_dims, angle)
-    use tox_paralog_analysis, only: angle_between
-    use, intrinsic :: iso_fortran_env, only: real64, int32
-    implicit none
-
-    integer(int32), intent(in) :: n_dims
-        !! number of elements in `v1` and `v2`
-    real(real64), dimension(n_dims), intent(in) :: v1
-        !! first vector for angle calculation
-    real(real64), dimension(n_dims), intent(in) :: v2
-        !! second vector for angle calculation
-    real(real64), intent(out) :: angle
-        !! will hold calculated angle
-
-    call angle_between(v1, v2, n_dims, angle)
-end subroutine angle_between_r
 
 subroutine detect_dosage_effect_c(ancestor, paralogs, n_paralogs, n_dims, filtered_paralogs_mask, n_mask_chunks, &
                                 n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, &

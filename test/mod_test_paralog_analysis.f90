@@ -751,7 +751,7 @@ contains
 
         do i = 1, size(all_tests)
             call all_tests(i)%test_proc()
-            print *, trim(all_tests(i)%name), " passed."
+            print "(A,A)", trim(all_tests(i)%name), " passed."
         end do
         print *, "All tox_paralog_analysis tests passed successfully."
     end subroutine run_all_tests_tox_paralog_analysis
@@ -770,7 +770,7 @@ contains
             do j = 1, size(all_tests)
                 if (trim(test_names(i)) == trim(all_tests(j)%name)) then
                     call all_tests(j)%test_proc()
-                    print *, trim(test_names(i)), " passed."
+                    print "(A,A)", trim(test_names(i)), " passed."
                     found = .true.
                     exit
                 end if

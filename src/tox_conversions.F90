@@ -14,7 +14,7 @@ contains
         integer(int32), intent(inout) :: ierr
             !! Error code
 
-        if (c_associated(c_pointer)) then
+        if (.not. c_associated(c_pointer)) then
             call set_err_once(ierr, ERR_POINTER_NULL)
         else if (any(dims <= 0)) then
             call set_err_once(ierr, ERR_INVALID_INPUT)

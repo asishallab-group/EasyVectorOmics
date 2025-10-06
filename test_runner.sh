@@ -54,5 +54,7 @@ echo "Running tests..."
 # Run the executable
 $EXECUTABLE $ARGS
 
+check_exit_code "Tests failed"
+
 rm -f test_*.bin
 rm -f test_*.zip

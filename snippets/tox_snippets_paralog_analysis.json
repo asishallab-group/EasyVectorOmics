@@ -1,0 +1,65 @@
+{
+    "Call to detect_dosage_effect": {
+        "prefix": "tox:detect_dosage_effect",
+        "body": [
+            "call detect_dosage_effect(ancestor, paralogs, n_paralogs, n_dims, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, ierr, max_angle, gain_gamma)"
+        ],
+        "description": "Detects dosage effect of subsets of paralogs"
+    },
+
+    "Call to detect_subfunctionalization": {
+        "prefix": "tox:detect_subfunctionalization",
+        "body": [
+            "call detect_subfunctionalization(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr)"
+        ],
+        "description": "Detects subfunctionalization of subsets of paralogs"
+    },
+
+    "Call to mask_chunk_count": {
+        "prefix": "tox:mask_chunk_count",
+        "body": [
+            "call mask_chunk_count(n_paralogs, count)"
+        ],
+        "description": "Calculates the number of 32-bit chunks needed for bit mask encoding of subsets"
+    },
+
+    "Call to filter_paralogs_by_pattern_subfunctionalization": {
+        "prefix": "tox:filter_paralogs_by_pattern_subfunctionalization",
+        "body": [
+            "call filter_paralogs_by_pattern_subfunctionalization(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)"
+        ],
+        "description": "Prefilter the paralogs to reduce number of combinations in pattern detection"
+    },
+
+    "Call to filter_paralogs_by_pattern_dosage_effect": {
+        "prefix": "tox:filter_paralogs_by_pattern_dosage_effect",
+        "body": [
+            "call filter_paralogs_by_pattern_dosage_effect(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)"
+        ],
+        "description": "Prefilter the paralogs to reduce number of combinations in pattern detection"
+    },
+
+    "Call to calc_work_arr_paralog_subsets_size": {
+        "prefix": "tox:calc_work_arr_paralog_subsets_size",
+        "body": [
+            "call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)"
+        ],
+        "description": "Having the prefiltered bit mask for the paralogs, this routine calculates the needed work array size in pattern detection"
+    },
+
+    "Call to mask_set_state": {
+        "prefix": "tox:mask_set_state",
+        "body": [
+            "call mask_set_state(bit_mask, i_paralog, state, ierr)"
+        ],
+        "description": "Sets the state of a paralog in the bit mask to enabled or disabled"
+    },
+
+    "Call to mask_check_state": {
+        "prefix": "tox:mask_check_state",
+        "body": [
+            "mask_check_state(bit_mask, i_paralog)"
+        ],
+        "description": "Tells if a paralog is enabled or disabled in the bit mask"
+    }
+}
