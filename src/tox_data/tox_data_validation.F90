@@ -58,28 +58,28 @@ contains
         ! Check gene_ids array
         if (size(gene_ids) /= n_genes) then
             call set_err_once(ierr, ERR_SIZE_MISMATCH)
-            write(*,*) 'Error: gene_ids size mismatch. Expected:', n_genes, ' Actual:', size(gene_ids)
+            if(DEBUG) write(*,*) 'Error: gene_ids size mismatch. Expected:', n_genes, ' Actual:', size(gene_ids)
             return
         end if
         
         ! Check gene_family_ids array
         if (size(gene_family_ids) /= n_families) then
             call set_err_once(ierr, ERR_SIZE_MISMATCH)
-            write(*,*) 'Error: gene_family_ids size mismatch. Expected:', n_families, ' Actual:', size(gene_family_ids)
+            if(DEBUG) write(*,*) 'Error: gene_family_ids size mismatch. Expected:', n_families, ' Actual:', size(gene_family_ids)
             return
         end if
         
         ! Check gene_to_fam array
         if (size(gene_to_fam) /= n_genes) then
             call set_err_once(ierr, ERR_SIZE_MISMATCH)
-            write(*,*) 'Error: gene_to_fam size mismatch. Expected:', n_genes, ' Actual:', size(gene_to_fam)
+            if(DEBUG) write(*,*) 'Error: gene_to_fam size mismatch. Expected:', n_genes, ' Actual:', size(gene_to_fam)
             return
         end if
         
         ! Check expression_vectors array
         if (size(expression_vectors, 1) /= n_samples .or. size(expression_vectors, 2) /= n_genes) then
             call set_err_once(ierr, ERR_SIZE_MISMATCH)
-            write(*,*) 'Error: expression_vectors size mismatch. Expected: (', n_samples, ',', n_genes, &
+            if(DEBUG) write(*,*) 'Error: expression_vectors size mismatch. Expected: (', n_samples, ',', n_genes, &
                        ') Actual: (', size(expression_vectors, 1), ',', size(expression_vectors, 2), ')'
             return
         end if
@@ -88,7 +88,7 @@ contains
         if (n_families > 0) then
             if (size(family_centroids, 1) /= n_samples .or. size(family_centroids, 2) /= n_families) then
                 call set_err_once(ierr, ERR_SIZE_MISMATCH)
-                write(*,*) 'Error: family_centroids size mismatch. Expected: (', n_samples, ',', n_families, &
+                if(DEBUG) write(*,*) 'Error: family_centroids size mismatch. Expected: (', n_samples, ',', n_families, &
                            ') Actual: (', size(family_centroids, 1), ',', size(family_centroids, 2), ')'
                 return
             end if
@@ -100,7 +100,7 @@ contains
         ! Check shift_vectors array
         if (size(shift_vectors, 1) /= 2*n_samples .or. size(shift_vectors, 2) /= n_genes) then
             call set_err_once(ierr, ERR_SIZE_MISMATCH)
-            write(*,*) 'Error: shift_vectors size mismatch. Expected: (', 2*n_samples, ',', n_genes, &
+            if(DEBUG) write(*,*) 'Error: shift_vectors size mismatch. Expected: (', 2*n_samples, ',', n_genes, &
                        ') Actual: (', size(shift_vectors, 1), ',', size(shift_vectors, 2), ')'
             return
         end if
@@ -140,7 +140,7 @@ contains
             end do
             if (invalid_count > 0) then
                 call set_err_once(ierr, ERR_INVALID_INPUT)
-                write(*,*) 'Error: gene_to_fam should be all zeros when no families are defined'
+                if(DEBUG) write(*,*) 'Error: gene_to_fam should be all zeros when no families are defined'
                 RETURN
             end if
         else 
@@ -149,7 +149,7 @@ contains
                 if (gene_to_fam(i) < 0 .or. gene_to_fam(i) > n_families) then
                     invalid_count = invalid_count + 1
                     if(invalid_count > 0) then
-                        write(*,*) 'Error: gene_to_fam(', i, ') = ', gene_to_fam(i), &
+                        if(DEBUG) write(*,*) 'Error: gene_to_fam(', i, ') = ', gene_to_fam(i), &
                                    ' but valid range is 0 to ', n_families
                         call set_err_once(ierr, ERR_INVALID_INPUT)
                         return
@@ -179,7 +179,7 @@ contains
         if (check_non_negative) then
             if (any(expression_vectors < 0.0_real64)) then
                 call set_err_once(ierr, ERR_INVALID_INPUT)
-                write(*,*) 'Error: Negative values found in expression data'
+                if(DEBUG) write(*,*) 'Error: Negative values found in expression data'
                 return
             end if
         end if
@@ -244,7 +244,7 @@ contains
                     error_count = error_count + 1
                     if (error_count <= 10) then
                         call set_err_once(ierr, ERR_INVALID_INPUT)
-                        write(*,*) 'Error: Centroid mismatch for gene ', i, &
+                        if(DEBUG) write(*,*) 'Error: Centroid mismatch for gene ', i, &
                                 ' dimension ', j, ' expected ', family_centroids(j, fam_idx), &
                                 ' got ', shift_vectors(j, i)
                     end if
@@ -262,7 +262,7 @@ contains
                     error_count = error_count + 1
                     if (error_count <= 10) then
                         call set_err_once(ierr, ERR_INVALID_INPUT)
-                        write(*,*) 'Error: Shift mismatch for gene ', i, &
+                        if(DEBUG) write(*,*) 'Error: Shift mismatch for gene ', i, &
                                 ' dimension ', j, ' expected ', expected_shift, &
                                 ' got ', shift_vectors(n_samples+j, i)
                     end if
@@ -291,7 +291,7 @@ contains
                     nan_inf_count = nan_inf_count + 1
                     if (nan_inf_count <= 10) then
                         call set_err_once(ierr, ERR_INVALID_INPUT)
-                        write(*,*) 'Error: NaN/Inf found at position (', i, ',', j, ')'
+                        if(DEBUG) write(*,*) 'Error: NaN/Inf found at position (', i, ',', j, ')'
                     end if
                 end if
             end do
@@ -324,12 +324,7 @@ contains
         integer(int32) :: i, j, duplicate_count
         integer(int32), allocatable :: perm(:), stack_left(:), stack_right(:)
         
-        allocate(perm(size(gene_ids)))
-        perm = [(i, i=1, size(gene_ids))]
-
-        allocate(stack_left(size(gene_ids)))
-        allocate(stack_right(size(gene_ids)))
-
+        call allocate_sorting(perm, stack_left, stack_right, size(gene_ids))
         call quicksort_char(gene_ids, perm, size(gene_ids), stack_left, stack_right)
 
         call set_ok(ierr)
@@ -340,7 +335,7 @@ contains
                 duplicate_count = duplicate_count + 1
                 if (duplicate_count <= 10) then
                     call set_err_once(ierr, ERR_INVALID_INPUT)
-                    write(*,*) 'Error: Duplicate gene ID found: "', trim(gene_ids(perm(i))), '"'
+                    if(DEBUG) write(*,*) 'Error: Duplicate gene ID found: "', trim(gene_ids(perm(i))), '"'
                 end if
             end if
         end do
@@ -357,12 +352,8 @@ contains
         
         integer(int32) :: i, j, duplicate_count
         integer(int32), allocatable :: perm(:), stack_left(:), stack_right(:)
-        
-        allocate(perm(size(gene_family_ids)))
-        perm = [(i, i=1, size(gene_family_ids))]
 
-        allocate(stack_left(size(gene_family_ids)))
-        allocate(stack_right(size(gene_family_ids)))
+        call allocate_sorting(perm, stack_left, stack_right, size(gene_family_ids))
 
         call quicksort_char(gene_family_ids, perm, size(gene_family_ids), stack_left, stack_right)
         
@@ -374,12 +365,30 @@ contains
                 duplicate_count = duplicate_count + 1
                 if (duplicate_count <= 10) then
                     call set_err_once(ierr, ERR_INVALID_INPUT)
-                    write(*,*) 'Error: Duplicate family ID found: "', gene_family_ids(perm(i)), '"'
+                    if(DEBUG) write(*,*) 'Error: Duplicate family ID found: "', gene_family_ids(perm(i)), '"'
                 end if
             end if
         end do
         
     end subroutine validate_family_ids_uniqueness
+
+    subroutine allocate_sorting(perm, stack_left, stack_right, array_size)
+        integer(int32), intent(out), allocatable :: perm(:)
+            !! permutation array
+        integer(int32), intent(out), allocatable :: stack_left(:)
+            !! Left stack for sorting
+        integer(int32), intent(out), allocatable :: stack_right(:)
+            !! Right stack for sorting
+        integer(int32), intent(in) :: array_size
+            !! size of the array to sort
+        integer(int32) :: i
+
+        allocate(perm(array_size))
+        perm = [(i, i=1, array_size)]
+
+        allocate(stack_left(array_size))
+        allocate(stack_right(array_size))
+    end subroutine allocate_sorting
 
     !> Validate that strings in an array are not empty
     subroutine validate_empty_strings(string_array, array_name, ierr)
@@ -400,7 +409,7 @@ contains
                 empty_count = empty_count + 1
                 if (empty_count <= 10) then
                     call set_err_once(ierr, ERR_INVALID_INPUT)
-                    write(*,*) 'Error: Empty string found in ', array_name, ' at index ', i
+                    if(DEBUG) write(*,*) 'Error: Empty string found in ', array_name, ' at index ', i
                 end if
             end if
         end do
@@ -466,7 +475,7 @@ contains
             call validate_family_centroids(family_centroids, ierr)
             if (.not. is_ok(ierr)) return
         else 
-            write(*,*) 'Warning: No families defined, skipping family centroid checks.'
+            if(DEBUG) write(*,*) 'Warning: No families defined, skipping family centroid checks.'
         end if
         
         ! 5. Check shift vectors
