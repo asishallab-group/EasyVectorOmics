@@ -15,6 +15,10 @@ module tox_archive
     integer(c_int), parameter :: ZIP_FILE_OVERWRITE = 8192
     integer(c_int), parameter :: ZIP_COMPRESSION_STORE = 0
     integer(c_int), parameter :: ZIP_COMPRESSION_DEFLATE = 8
+    
+    ! Constants for data types
+    integer(int32), parameter :: DATA_TYPE_FILE   = 1
+    integer(int32), parameter :: DATA_TYPE_STRING = 2
 
     ! libzip interface definitions
     interface
@@ -457,10 +461,6 @@ contains
             !! Type of input
         integer(int32), intent(out) :: ierr            
             !! Error code
-
-        ! Constants for data types
-        integer(int32), parameter :: DATA_TYPE_FILE   = 1
-        integer(int32), parameter :: DATA_TYPE_STRING = 2
 
         ! Locals
         integer(c_int) :: error
