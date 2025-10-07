@@ -300,9 +300,7 @@ contains
                 error = zip_close(zip_handle)
                 return 
             end if 
-            
-            if (filename == "manifest.txt") cycle  ! Handle manifest separately
-            
+                        
             call extract_file_from_zip(zip_handle, filename, ierr)
             if (is_err(ierr)) then
                 error = zip_close(zip_handle)
@@ -782,12 +780,6 @@ contains
                 return
             end if
             
-            ! Delete the temporary manifest file
-            call delete_file("manifest.txt", ierr)
-            if (is_err(ierr)) then
-                if(DEBUG) print *, "Warning: Could not delete temporary manifest file"
-                call set_ok(ierr)  ! Not critical
-            end if
         else
             if(DEBUG) print *, "No manifest file found in ZIP archive"
             call set_err_once(ierr, ERR_MISSING_MANIFEST)
@@ -1080,6 +1072,112 @@ contains
         if(len_trim(extracted_family_ids_file) > 0) call delete_file(extracted_family_ids_file, ierr)
         if(len_trim(extracted_family_centroids_file) > 0) call delete_file(extracted_family_centroids_file, ierr)
         if(len_trim(extracted_shift_vectors_file) > 0) call delete_file(extracted_shift_vectors_file, ierr)
+        call delete_file("manifest.txt", ierr)
     end subroutine read_tox_data
 
 end module tox_archive
+
+subroutine create_zip_archive_R(zip_filename, zip_len, gene_ids_file, gene_ids_file_len, &
+                            expression_file, expression_file_len, gene_to_family_file, gene_to_family_file_len,&
+                            family_ids_file, family_ids_file_len, family_centroids_file, &
+                            family_centroids_file_len, shift_vectors_file, shift_vectors_file_len, ierr)
+    use tox_conversions, only: c_char_1d_as_string
+    use tox_archive, only: create_zip_archive
+    use tox_errors, only: set_ok, is_err
+    use iso_fortran_env, only: int32 
+    use iso_c_binding, only: c_char
+    implicit none
+    integer(int32), intent(in) :: zip_len
+        !! Length of the zip filename
+    character(kind=c_char, len=1), intent(in) :: zip_filename(zip_len)
+        !! Name of the zipfile
+    integer(int32), intent(in) :: gene_ids_file_len 
+        !! Length of the gene ids filename
+    character(kind=c_char, len=1), intent(in) :: gene_ids_file(gene_ids_file_len)
+        !! gene ids filename
+    integer(int32), intent(in) :: expression_file_len
+        !! Length of the expression filename
+    character(kind=c_char, len=1), intent(in) :: expression_file(expression_file_len)
+        !! expression vectors filename
+    integer(int32), intent(in) :: gene_to_family_file_len 
+        !! Length of the gene to family filename
+    character(kind=c_char, len=1), intent(in) :: gene_to_family_file(gene_to_family_file_len)
+        !! Gene to family mapping filename
+    integer(int32), intent(in) :: family_ids_file_len
+        !! Length of the family ids filename
+    character(kind=c_char, len=1), intent(in) :: family_ids_file(family_ids_file_len)
+        !! Family ids filename
+    integer(int32), intent(in) :: family_centroids_file_len 
+        !! Length of the family centroids filename
+    character(kind=c_char, len=1), intent(in) :: family_centroids_file(family_centroids_file_len)
+        !! Family centroids filename
+    integer(int32), intent(in) :: shift_vectors_file_len
+        !! Length of the shift vectors filename
+    character(kind=c_char, len=1), intent(in) :: shift_vectors_file(shift_vectors_file_len)
+        !! shift vectors filename
+    integer(int32), intent(out) :: ierr
+        !! Error code
+
+    character(len=:), allocatable :: zip_filename_f
+    character(len=:), allocatable :: gene_ids_file_f
+    character(len=:), allocatable :: expression_file_f 
+    character(len=:), allocatable :: gene_to_family_file_f 
+    character(len=:), allocatable :: family_ids_file_f
+    character(len=:), allocatable :: family_centroids_file_f
+    character(len=:), allocatable :: shift_vectors_file_f
+
+    call set_ok(ierr)
+
+    call c_char_1d_as_string(zip_filename, zip_filename_f, ierr)
+    if(is_err(ierr)) return
+
+    call c_char_1d_as_string(gene_ids_file, gene_ids_file_f, ierr)
+    if(is_err(ierr)) return
+
+    call c_char_1d_as_string(expression_file, expression_file_f, ierr)
+    if(is_err(ierr)) return
+
+    call c_char_1d_as_string(gene_to_family_file, gene_to_family_file_f, ierr)
+    if(is_err(ierr)) return
+
+    call c_char_1d_as_string(family_ids_file, family_ids_file_f, ierr)
+    if(is_err(ierr)) return
+
+    call c_char_1d_as_string(family_centroids_file, family_centroids_file_f, ierr)
+    if(is_err(ierr)) return
+
+    call c_char_1d_as_string(shift_vectors_file, shift_vectors_file_f, ierr)
+    if(is_err(ierr)) return 
+    
+    call create_zip_archive(zip_filename_f, gene_ids_file_f, expression_file_f, gene_to_family_file_f, family_ids_file_f, family_centroids_file_f, shift_vectors_file_f, ierr)
+end subroutine create_zip_archive_R
+
+subroutine extract_zip_archive_R(zip_filename, filename_len, ierr)
+    use iso_c_binding, only: c_char, c_null_char
+    use iso_fortran_env, only: int32
+    use tox_conversions, only: c_char_1d_as_string
+    use tox_archive, only: extract_zip_archive
+    use tox_errors, only: set_ok, is_err
+    implicit none
+
+    integer(int32), intent(in) :: filename_len
+    character(kind=c_char, len=1), intent(in) :: zip_filename(filename_len)
+    integer(int32), intent(out) :: ierr
+    
+    ! Local variables
+    character(len=:), allocatable :: f_zip_filename
+    character(len=:), allocatable :: gene_ids_file, expression_file, gene_to_family_file, &
+                                   family_ids_file, family_centroids_file, shift_vectors_file
+    
+    call set_ok(ierr)
+    
+    ! Convert C string to Fortran string
+    call c_char_1d_as_string(zip_filename, f_zip_filename, ierr)
+    if(is_err(ierr)) return
+    
+    ! Extract the archive - this will put all files in current directory
+    call extract_zip_archive(f_zip_filename, gene_ids_file, expression_file, &
+                           gene_to_family_file, family_ids_file, &
+                           family_centroids_file, shift_vectors_file, ierr)
+    
+end subroutine extract_zip_archive_R
