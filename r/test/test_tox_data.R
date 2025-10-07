@@ -3,106 +3,46 @@ source("r/tensoromics_functions_tox_data.R")
 # ---- Example: replicate Fortran test logic in R ----
 
 # Define your file lists (replace with your actual file paths)
-files_6_replicates <- c(
-  "material/kallisto_sex_data_Adipose.tsv",
-  "material/kallisto_sex_data_Adrenal.tsv",
-  "material/kallisto_sex_data_Colon.tsv",
-  "material/kallisto_sex_data_Heart.tsv",
-  "material/kallisto_sex_data_Liver.tsv",
-  "material/kallisto_sex_data_Lung.tsv",
-  "material/kallisto_sex_data_Muscle.tsv",
-  "material/kallisto_sex_data_Skin.tsv",
-  "material/kallisto_sex_data_Spleen.tsv",
-  "material/kallisto_sex_data_Thyroid.tsv"
-)
-files_7_replicates <- c("material/kallisto_sex_data_Testis.tsv")
-files_5_replicates <- c("material/kallisto_sex_data_Brain.tsv")
-files_4_replicates <- c("material/kallisto_sex_data_Pituitary.tsv")
+file <- c("material/kallisto_sex_data_no_na.tsv")
 
 # Parameters
 n_genes <- 88327
 n_families <- 15512
 gene_len <- 32
 family_len <- 32
-n_samples <- 10*6 + 7 + 5 + 4
-value_cols_6 <- 2:7
-value_cols_7 <- 2:8
-value_cols_5 <- 2:6
-value_cols_4 <- 2:5
+n_samples <- 67
+value_cols <- 2:68
 
 # Allocate result matrices
 kallisto_expr <- matrix(0, nrow = n_samples, ncol = n_genes)
 
 # Read gene IDs from first file
 cat("Reading gene IDs...\n")
-res_gene <- read_gene_ids_from_file(files_6_replicates[1], n_genes, gene_len, n_header_rows = 1, gene_col = 1)
+res_gene <- read_gene_ids_from_file(file, n_genes, gene_len, n_header_rows = 1, gene_col = 1)
 gene_ids <- res_gene$gene_ids
 cat("ierr (gene ids):", res_gene$ierr, "\n")
 
 # Read 6-replicate files
-cat("Reading 6-replicate files...\n")
+cat("Reading expression file...\n")
 res_expr_6 <- read_expression_vectors(
-  file_list = files_6_replicates,
+  file_list = file,
   gene_ids = gene_ids,
   n_header_rows = 1,
   gene_col = 1,
-  value_cols = value_cols_6,
+  value_cols = value_cols,
   delimiter = "\t",
-  n_samples = 60
+  n_samples = 67
 )
-cat("ierr (6-replicates):", res_expr_6$ierr, "\n")
-kallisto_expr[1:60, ] <- res_expr_6$expression_vectors
+cat("ierr :", res_expr_6$ierr, "\n")
+kallisto_expr[1:67, ] <- res_expr_6$expression_vectors
 
 # Debug: Check dimensions and types before calling Fortran
-cat("DEBUG: files_6_replicates length:", length(files_6_replicates), "\n")
 cat("DEBUG: gene_ids length:", length(gene_ids), "\n")
 cat("DEBUG: kallisto_expr dim:", dim(kallisto_expr), "\n")
-cat("DEBUG: value_cols_6:", value_cols_6, "\n")
-cat("DEBUG: n_samples for 6-replicates:", 60, "\n")
+cat("DEBUG: value_cols:", value_cols, "\n")
+cat("DEBUG: n_samples:", 67, "\n")
 cat("DEBUG: gene_len:", gene_len, "\n")
-cat("DEBUG: file_len:", max(nchar(files_6_replicates)), "\n")
-
-# Read 7-replicate file
-cat("Reading 7-replicate file...\n")
-res_expr_7 <- read_expression_vectors(
-  file_list = files_7_replicates,
-  gene_ids = gene_ids,
-  n_header_rows = 1,
-  gene_col = 1,
-  value_cols = value_cols_7,
-  delimiter = "\t",
-  n_samples = 7
-)
-cat("ierr (7-replicates):", res_expr_7$ierr, "\n")
-kallisto_expr[61:67, ] <- res_expr_7$expression_vectors
-
-# Read 5-replicate file
-cat("Reading 5-replicate file...\n")
-res_expr_5 <- read_expression_vectors(
-  file_list = files_5_replicates,
-  gene_ids = gene_ids,
-  n_header_rows = 1,
-  gene_col = 1,
-  value_cols = value_cols_5,
-  delimiter = "\t",
-  n_samples = 5
-)
-cat("ierr (5-replicates):", res_expr_5$ierr, "\n")
-kallisto_expr[68:72, ] <- res_expr_5$expression_vectors
-
-# Read 4-replicate file
-cat("Reading 4-replicate file...\n")
-res_expr_4 <- read_expression_vectors(
-  file_list = files_4_replicates,
-  gene_ids = gene_ids,
-  n_header_rows = 1,
-  gene_col = 1,
-  value_cols = value_cols_4,
-  delimiter = "\t",
-  n_samples = 4
-)
-cat("ierr (4-replicates):", res_expr_4$ierr, "\n")
-kallisto_expr[73:76, ] <- res_expr_4$expression_vectors
+cat("DEBUG: file_len:", max(nchar(file)), "\n")
 
 # Read family mapping
 cat("Reading family file...\n")
@@ -178,25 +118,25 @@ cat("Family ID examples:", head(gene_family_ids), "\n")
 cat("Gene-to-family mapping examples:", head(gene_to_fam), "\n")
 
 cat("===Archive tests===\n")
-tox_save_data_archive(zip_filename="test_archive_1_R.zip", gene_ids=gene_ids, gene_ids_name="gene_ids_v1_R.bin",
+save_tox_data(zip_filename="test_archive_1_R.zip", gene_ids=gene_ids, gene_ids_name="gene_ids_v1_R.bin",
                       expression_vectors=kallisto_expr, expression_vectors_name="expr_vecs_v1_R.bin", 
                       gene_to_fam=gene_to_fam, gene_to_fam_name="gene_to_fam_v1_R.bin",
                       family_ids=gene_family_ids, family_ids_name="family_ids_v1_R.bin", 
                       family_centroids=family_centroids, family_centroids_name="family_centroids_v1_R.bin",
                       shift_vectors=shift_vectors, shift_vectors_name="shift_vectors_v1_R.bin")
 
-tox_save_data_archive(zip_filename="test_archive_2_R.zip", gene_ids=gene_ids, gene_ids_name="gene_ids_v2_R.bin",
+save_tox_data(zip_filename="test_archive_2_R.zip", gene_ids=gene_ids, gene_ids_name="gene_ids_v2_R.bin",
                       expression_vectors=kallisto_expr, expression_vectors_name="expr_vecs_v2_R.bin")
 
-tox_save_data_archive(zip_filename="test_archive_3_R.zip", gene_ids=gene_ids, gene_ids_name="gene_ids_v3_R.bin",
+save_tox_data(zip_filename="test_archive_3_R.zip", gene_ids=gene_ids, gene_ids_name="gene_ids_v3_R.bin",
                       expression_vectors=kallisto_expr, expression_vectors_name="expr_vecs_v3_R.bin", gene_to_fam=gene_to_fam)
 
-tox_save_data_archive(zip_filename="test_archive_4_R.zip", family_centroids=family_centroids, family_centroids_name="family_centroids_v1_R.bin",
+save_tox_data(zip_filename="test_archive_4_R.zip", family_centroids=family_centroids, family_centroids_name="family_centroids_v1_R.bin",
                       shift_vectors=shift_vectors, shift_vectors_name="shift_vectors_v1_R.bin")
 
-tox_save_data_archive(zip_filename="test_archive_5_R.zip")
+save_tox_data(zip_filename="test_archive_5_R.zip")
 
-result_1 <- tox_read_data_archive(zip_filename="test_archive_1_R.zip", 
+result_1 <- read_tox_data(zip_filename="test_archive_1_R.zip", 
                                   gene_ids=TRUE,
                                   expression_vectors=TRUE,
                                   gene_to_fam=TRUE,
@@ -204,16 +144,16 @@ result_1 <- tox_read_data_archive(zip_filename="test_archive_1_R.zip",
                                   family_centroids=TRUE,
                                   shift_vectors=TRUE)
 
-result_2 <- tox_read_data_archive(zip_filename="test_archive_1_R.zip",
+result_2 <- read_tox_data(zip_filename="test_archive_1_R.zip",
                                   family_centroids=TRUE,
                                   shift_vectors=TRUE)
 
-result_3 <- tox_read_data_archive(zip_filename="test_archive_2_R.zip",
+result_3 <- read_tox_data(zip_filename="test_archive_2_R.zip",
                                   gene_ids=TRUE,
                                   expression_vectors=TRUE,
                                   shift_vectors=TRUE)
 tryCatch({
-  result_py <- tox_read_data_archive(zip_filename="test_archive_1_py.zip", 
+  result_py <- read_tox_data(zip_filename="test_archive_1_py.zip", 
                                   gene_ids=TRUE,
                                   expression_vectors=TRUE,
                                   gene_to_fam=TRUE,
@@ -222,7 +162,7 @@ tryCatch({
                                   shift_vectors=TRUE)
   cat("Successfully read from python archive")
 
-  result_f <- tox_read_data_archive(zip_filename="test_archive_1_f.zip", 
+  result_f <- read_tox_data(zip_filename="test_archive_1_f.zip", 
                                   gene_ids=TRUE,
                                   expression_vectors=TRUE,
                                   gene_to_fam=TRUE,

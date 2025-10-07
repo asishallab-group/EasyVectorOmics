@@ -548,219 +548,207 @@ def validate_all_data(n_genes, n_families, n_samples, gene_ids, gene_family_ids,
     )
     check_err_code(ierr.value)
     
-def tox_save_data_archive(zip_filename,
-                          gene_ids=None, gene_ids_name=None,
-                          expression_vectors=None, expression_vectors_name=None,
-                          gene_to_fam=None, gene_to_fam_name=None,
-                          family_ids=None, family_ids_name=None,
-                          family_centroids=None, family_centroids_name=None,
-                          shift_vectors=None, shift_vectors_name=None):
-    import zipfile
+def _prepare_string(s) -> tuple:
+    """Prepare string for C interface (bytes + length)"""
+    if s is None or s == "":
+        # Return empty string with null terminator
+        return b'\x00', 1
+    # Include null terminator
+    b = s.encode('utf-8') + b'\x00'
+    return b, len(b)
 
-    # Flags initialisieren
-    gene_ids_array_valid = gene_ids_name_valid = False
-    expression_vectors_array_valid = expression_vectors_name_valid = False
-    gene_to_fam_array_valid = gene_to_fam_name_valid = False
-    family_ids_array_valid = family_ids_name_valid = False
-    family_centroids_array_valid = family_centroids_name_valid = False
-    shift_vectors_array_valid = shift_vectors_name_valid = False
+def save_tox_data(zip_filename: str,
+                 gene_ids = None,
+                 expression_vectors = None,
+                 gene_to_fam = None,
+                 family_ids = None,
+                 family_centroids = None,
+                 shift_vectors = None,
+                 gene_ids_name = None,
+                 expression_vectors_name = None,
+                 gene_to_fam_name = None,
+                 family_ids_name = None,
+                 family_centroids_name = None,
+                 shift_vectors_name = None) -> None:
+    """
+    Save data to a zip archive - Python equivalent of R's save_tox_data
+    """
+    
+    # First serialize the arrays to files (using your existing serialization functions)
+    temp_files = []
+    
+    if gene_ids is not None and gene_ids_name:
+        tox_serialize_char_nd(gene_ids, gene_ids_name)
+        temp_files.append(gene_ids_name)
+    
+    if expression_vectors is not None and expression_vectors_name:
+        tox_serialize_real_nd(expression_vectors, expression_vectors_name)
+        temp_files.append(expression_vectors_name)
+    
+    if gene_to_fam is not None and gene_to_fam_name:
+        tox_serialize_int_nd(gene_to_fam, gene_to_fam_name)
+        temp_files.append(gene_to_fam_name)
+    
+    if family_ids is not None and family_ids_name:
+        tox_serialize_char_nd(family_ids, family_ids_name)
+        temp_files.append(family_ids_name)
+    
+    if family_centroids is not None and family_centroids_name:
+        tox_serialize_real_nd(family_centroids, family_centroids_name)
+        temp_files.append(family_centroids_name)
+    
+    if shift_vectors is not None and shift_vectors_name:
+        tox_serialize_real_nd(shift_vectors, shift_vectors_name)
+        temp_files.append(shift_vectors_name)
+    
+    # Prepare all strings with null terminators
+    zip_b, zip_len = _prepare_string(zip_filename)
+    gene_ids_b, gene_ids_len = _prepare_string(gene_ids_name)
+    expr_b, expr_len = _prepare_string(expression_vectors_name)
+    g2f_b, g2f_len = _prepare_string(gene_to_fam_name)
+    fam_b, fam_len = _prepare_string(family_ids_name)
+    centroids_b, centroids_len = _prepare_string(family_centroids_name)
+    shift_b, shift_len = _prepare_string(shift_vectors_name)
+    
+    # Set up argument types for create_zip_archive_c - using c_int
+    lib.create_zip_archive_c.argtypes = [
+        ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # zip_filename, zip_len
+        ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # gene_ids_file, gene_ids_file_len
+        ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # expression_file, expression_file_len
+        ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # gene_to_family_file, gene_to_family_file_len
+        ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # family_ids_file, family_ids_file_len
+        ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # family_centroids_file, family_centroids_file_len
+        ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # shift_vectors_file, shift_vectors_file_len
+        ctypes.POINTER(ctypes.c_int)                  # ierr
+    ]
+    lib.create_zip_archive_c.restype = None
+    
+    ierr = ctypes.c_int()
+    
+    try:
+        # Call the C-bound Fortran subroutine to create the zip archive
+        lib.create_zip_archive_c(
+            zip_b, ctypes.c_int(zip_len),
+            gene_ids_b, ctypes.c_int(gene_ids_len),
+            expr_b, ctypes.c_int(expr_len),
+            g2f_b, ctypes.c_int(g2f_len),
+            fam_b, ctypes.c_int(fam_len),
+            centroids_b, ctypes.c_int(centroids_len),
+            shift_b, ctypes.c_int(shift_len),
+            ctypes.byref(ierr)
+        )
+        
+        check_err_code(ierr.value)
+        print(f"Successfully created archive: {zip_filename}")
+        
+    finally:
+        # Clean up temporary files
+        for temp_file in temp_files:
+            if os.path.exists(temp_file):
+                os.remove(temp_file)
+                print(f"Removed temporary file: {temp_file}")
 
-    if not isinstance(zip_filename, str):
-        raise RuntimeError("Type mismatch: zip_filename must be a string")
-
-    # Validierungen
-    if gene_ids is not None:
-        if len(gene_ids.shape) == 1:
-            gene_ids_array_valid = True
-        else:
-            raise Exception(f"Gene IDs dimensions mismatch: Expected 1 but got {len(gene_ids.shape)}")
-    if gene_ids_name is not None:
-        if isinstance(gene_ids_name, str):
-            gene_ids_name_valid = True
-        else:
-            raise Exception("Gene IDs name must be a string")
-    if gene_ids_array_valid ^ gene_ids_name_valid:
-        print("Gene IDs: Either provide array and filename or none. Skipping.")
-
-    if expression_vectors is not None:
-        if len(expression_vectors.shape) == 2:
-            expression_vectors_array_valid = True
-        else:
-            raise Exception(f"Expression vectors dim mismatch: Expected 2 but got {len(expression_vectors.shape)}")
-    if expression_vectors_name is not None:
-        if isinstance(expression_vectors_name, str):
-            expression_vectors_name_valid = True
-        else:
-            raise Exception("Expression vector name must be a string")
-    if expression_vectors_array_valid ^ expression_vectors_name_valid:
-        print("Expression vectors: Either provide array and filename or none. Skipping.")
-
-    if gene_to_fam is not None:
-        if len(gene_to_fam.shape) == 1:
-            gene_to_fam_array_valid = True
-        else:
-            raise Exception(f"Gene to family dim mismatch: Expected 1 but got {len(gene_to_fam.shape)}")
-    if gene_to_fam_name is not None:
-        if isinstance(gene_to_fam_name, str):
-            gene_to_fam_name_valid = True
-        else:
-            raise Exception("Gene to family name must be a string")
-    if gene_to_fam_array_valid ^ gene_to_fam_name_valid:
-        print("Gene to family: Either provide array and filename or none. Skipping.")
-
-    if family_ids is not None:
-        if len(family_ids.shape) == 1:
-            family_ids_array_valid = True
-        else:
-            raise Exception(f"Family IDs dim mismatch: Expected 1 but got {len(family_ids.shape)}")
-    if family_ids_name is not None:
-        if isinstance(family_ids_name, str):
-            family_ids_name_valid = True
-        else:
-            raise Exception("Family IDs name must be a string")
-    if family_ids_array_valid ^ family_ids_name_valid:
-        print("Family IDs: Either provide array and filename or none. Skipping.")
-
-    if family_centroids is not None:
-        if len(family_centroids.shape) == 2:
-            family_centroids_array_valid = True
-        else:
-            raise Exception(f"Family centroids dim mismatch: Expected 2 but got {len(family_centroids.shape)}")
-    if family_centroids_name is not None:
-        if isinstance(family_centroids_name, str):
-            family_centroids_name_valid = True
-        else:
-            raise Exception("Family centroids name must be a string")
-    if family_centroids_array_valid ^ family_centroids_name_valid:
-        print("Family centroids: Either provide array and filename or none. Skipping.")
-
-    if shift_vectors is not None:
-        if len(shift_vectors.shape) == 2:
-            shift_vectors_array_valid = True
-        else:
-            raise Exception(f"Shift vectors dim mismatch: Expected 2 but got {len(shift_vectors.shape)}")
-    if shift_vectors_name is not None:
-        if isinstance(shift_vectors_name, str):
-            shift_vectors_name_valid = True
-        else:
-            raise Exception("Shift vectors name must be a string")
-    if shift_vectors_array_valid ^ shift_vectors_name_valid:
-        print("Shift vectors: Either provide array and filename or none. Skipping.")
-
-    # Manifest als Liste
-    manifest_lines = []
-
-    with zipfile.ZipFile(zip_filename, mode="x", compression=0) as archive:
-        if gene_ids_array_valid and gene_ids_name_valid:
-            tox_serialize_char_nd(gene_ids, gene_ids_name)
-            archive.write(gene_ids_name)
-            print(f"Wrote gene IDs to {gene_ids_name}")
-            os.remove(gene_ids_name)
-            manifest_lines.append(f"gene_ids={gene_ids_name}")
-
-        if expression_vectors_array_valid and expression_vectors_name_valid:
-            tox_serialize_real_nd(expression_vectors, expression_vectors_name)
-            archive.write(expression_vectors_name)
-            print(f"Wrote expression vectors to {expression_vectors_name}")
-            os.remove(expression_vectors_name)
-            manifest_lines.append(f"expression={expression_vectors_name}")
-
-        if gene_to_fam_array_valid and gene_to_fam_name_valid:
-            tox_serialize_int_nd(gene_to_fam, gene_to_fam_name)
-            archive.write(gene_to_fam_name)
-            print(f"Wrote gene to family to {gene_to_fam_name}")
-            os.remove(gene_to_fam_name)
-            manifest_lines.append(f"gene_to_family={gene_to_fam_name}")
-
-        if family_ids_array_valid and family_ids_name_valid:
-            tox_serialize_char_nd(family_ids, family_ids_name)
-            archive.write(family_ids_name)
-            print(f"Wrote family IDs to {family_ids_name}")
-            os.remove(family_ids_name)
-            manifest_lines.append(f"family_ids={family_ids_name}")
-
-        if family_centroids_array_valid and family_centroids_name_valid:
-            tox_serialize_real_nd(family_centroids, family_centroids_name)
-            archive.write(family_centroids_name)
-            print(f"Wrote family centroids to {family_centroids_name}")
-            os.remove(family_centroids_name)
-            manifest_lines.append(f"family_centroids={family_centroids_name}")
-
-        if shift_vectors_array_valid and shift_vectors_name_valid:
-            tox_serialize_real_nd(shift_vectors, shift_vectors_name)
-            archive.write(shift_vectors_name)
-            print(f"Wrote shift vectors to {shift_vectors_name}")
-            os.remove(shift_vectors_name)
-            manifest_lines.append(f"shift_vectors={shift_vectors_name}")
-
-        # Manifest schreiben
-        archive.writestr("manifest.txt", "\n".join(manifest_lines) + "\n")
-
-def tox_read_data_archive(zip_filename,
-                          gene_ids=None,
-                          expression_vectors=None,
-                          gene_to_fam=None,
-                          family_ids=None,
-                          family_centroids=None,
-                          shift_vectors=None):
-    import zipfile, os
-    if not isinstance(zip_filename, str) or zip_filename == "":
-        raise RuntimeError("Zip name needs to be a non-empty string")
-
+def read_tox_data(zip_filename: str,
+                 load_gene_ids: bool = False,
+                 load_expression_vectors: bool = False,
+                 load_gene_to_fam: bool = False,
+                 load_family_ids: bool = False,
+                 load_family_centroids: bool = False,
+                 load_shift_vectors: bool = False):
+    """
+    Read data from a zip archive - Python equivalent of R's read_tox_data
+    """
+    
+    # Prepare the zip filename
+    zip_b, zip_len = _prepare_string(zip_filename)
+    
+    # Set up argument types for extract_zip_archive_c - using c_int
+    lib.extract_zip_archive_c.argtypes = [
+        ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # zip_filename, filename_len
+        ctypes.POINTER(ctypes.c_int)                  # ierr
+    ]
+    lib.extract_zip_archive_c.restype = None
+    
+    ierr = ctypes.c_int()
+    
+    # Call the C-bound Fortran subroutine to extract the zip archive
+    lib.extract_zip_archive_c(zip_b, ctypes.c_int(zip_len), ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    print(f"Successfully extracted archive: {zip_filename}")
+    
     result = {
-        "gene_ids": None,
-        "expression_vectors": None,
-        "gene_to_fam": None,
-        "family_ids": None,
-        "family_centroids": None,
-        "shift_vectors": None
+        'gene_ids': None,
+        'expression_vectors': None,
+        'gene_to_fam': None,
+        'family_ids': None,
+        'family_centroids': None,
+        'shift_vectors': None
     }
-
-    with zipfile.ZipFile(zip_filename, mode="r", compression=0) as archive:
-        with archive.open("manifest.txt") as manifest:
-            content = manifest.read().decode("utf-8").splitlines()
-
-        gene_ids_filename         = content[0].split('=')[1]
-        expression_vectors_filename = content[1].split('=')[1]
-        gene_to_fam_filename      = content[2].split('=')[1]
-        family_ids_filename       = content[3].split('=')[1]
-        family_centroids_filename = content[4].split('=')[1]
-        shift_vectors_filename    = content[5].split('=')[1]
-
-        if gene_ids is not None and gene_ids_filename:
-            archive.extract(gene_ids_filename)
-            result["gene_ids"] = tox_deserialize_char_nd(gene_ids_filename)
-            print(f"Gene ids extracted from {gene_ids_filename}")
-            os.remove(gene_ids_filename)
-
-        if expression_vectors is not None and expression_vectors_filename:
-            archive.extract(expression_vectors_filename)
-            result["expression_vectors"] = tox_deserialize_real_nd(expression_vectors_filename)
-            print(f"Expression Vectors extracted from {expression_vectors_filename}")
-            os.remove(expression_vectors_filename)
-
-        if gene_to_fam is not None and gene_to_fam_filename:
-            archive.extract(gene_to_fam_filename)
-            result["gene_to_fam"] = tox_deserialize_int_nd(gene_to_fam_filename)
-            print(f"Gene to family mapping extracted from {gene_to_fam_filename}")
-            os.remove(gene_to_fam_filename)
-
-        if family_ids is not None and family_ids_filename:
-            archive.extract(family_ids_filename)
-            result["family_ids"] = tox_deserialize_char_nd(family_ids_filename)
-            print(f"Extracted family IDs from {family_ids_filename}")
-            os.remove(family_ids_filename)
-
-        if family_centroids is not None and family_centroids_filename:
-            archive.extract(family_centroids_filename)
-            result["family_centroids"] = tox_deserialize_real_nd(family_centroids_filename)
-            print(f"Extracted family centroids from {family_centroids_filename}")
-            os.remove(family_centroids_filename)
-
-        if shift_vectors is not None and shift_vectors_filename:
-            archive.extract(shift_vectors_filename)
-            result["shift_vectors"] = tox_deserialize_real_nd(shift_vectors_filename)
-            print(f"Extracted shift vectors from {shift_vectors_filename}")
-            os.remove(shift_vectors_filename)
-
+    
+    # Read manifest file
+    manifest_path = "manifest.txt"
+    if not os.path.exists(manifest_path):
+        raise FileNotFoundError("Manifest file not found in archive")
+    
+    # Parse manifest
+    file_mapping = {}
+    with open(manifest_path, 'r') as f:
+        for line in f:
+            parts = line.strip().split('=')
+            if len(parts) == 2:
+                file_mapping[parts[0]] = parts[1]
+    
+    print("Files found in archive:", file_mapping)
+    
+    # Load requested data using your existing deserialization functions
+    try:
+        if load_gene_ids and "gene_ids" in file_mapping:
+            filename = file_mapping["gene_ids"]
+            if os.path.exists(filename):
+                result['gene_ids'] = tox_deserialize_char_nd(filename)
+                print(f"Gene ids extracted from {filename}")
+        
+        if load_expression_vectors and "expression" in file_mapping:
+            filename = file_mapping["expression"]
+            if os.path.exists(filename):
+                result['expression_vectors'] = tox_deserialize_real_nd(filename)
+                print(f"Expression vectors extracted from {filename}")
+        
+        if load_gene_to_fam and "gene_to_family" in file_mapping:
+            filename = file_mapping["gene_to_family"]
+            if os.path.exists(filename):
+                result['gene_to_fam'] = tox_deserialize_int_nd(filename)
+                print(f"Gene to family mapping extracted from {filename}")
+        
+        if load_family_ids and "family_ids" in file_mapping:
+            filename = file_mapping["family_ids"]
+            if os.path.exists(filename):
+                result['family_ids'] = tox_deserialize_char_nd(filename)
+                print(f"Family IDs extracted from {filename}")
+        
+        if load_family_centroids and "family_centroids" in file_mapping:
+            filename = file_mapping["family_centroids"]
+            if os.path.exists(filename):
+                result['family_centroids'] = tox_deserialize_real_nd(filename)
+                print(f"Family centroids extracted from {filename}")
+        
+        if load_shift_vectors and "shift_vectors" in file_mapping:
+            filename = file_mapping["shift_vectors"]
+            if os.path.exists(filename):
+                result['shift_vectors'] = tox_deserialize_real_nd(filename)
+                print(f"Shift vectors extracted from {filename}")
+                
+    finally:
+        # Cleanup extracted files
+        files_to_remove = [manifest_path]
+        for filename in file_mapping.values():
+            if os.path.exists(filename):
+                files_to_remove.append(filename)
+        
+        for file in files_to_remove:
+            if os.path.exists(file):
+                os.remove(file)
+                print(f"Cleaned up: {file}")
+    
     return result

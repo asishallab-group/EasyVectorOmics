@@ -1181,3 +1181,103 @@ subroutine extract_zip_archive_R(zip_filename, filename_len, ierr)
                            family_centroids_file, shift_vectors_file, ierr)
     
 end subroutine extract_zip_archive_R
+
+subroutine create_zip_archive_c(zip_filename, zip_len, &
+                                gene_ids_file, gene_ids_file_len, &
+                                expression_file, expression_file_len, &
+                                gene_to_family_file, gene_to_family_file_len, &
+                                family_ids_file, family_ids_file_len, &
+                                family_centroids_file, family_centroids_file_len, &
+                                shift_vectors_file, shift_vectors_file_len, &
+                                ierr) bind(C, name="create_zip_archive_c")
+    use tox_archive, only: create_zip_archive
+    use tox_conversions, only: c_char_1d_as_string
+    use iso_c_binding, only: c_int, c_char
+    use tox_errors, only: is_err, set_ok
+    ! Input arguments
+    integer(c_int), intent(in), value :: zip_len
+    character(kind=c_char, len=1), intent(in) :: zip_filename(zip_len)
+    integer(c_int), intent(in), value :: gene_ids_file_len
+    character(kind=c_char, len=1), intent(in) :: gene_ids_file(gene_ids_file_len)
+    integer(c_int), intent(in), value :: expression_file_len
+    character(kind=c_char, len=1), intent(in) :: expression_file(expression_file_len)
+    integer(c_int), intent(in), value :: gene_to_family_file_len
+    character(kind=c_char, len=1), intent(in) :: gene_to_family_file(gene_to_family_file_len)
+    integer(c_int), intent(in), value :: family_ids_file_len
+    character(kind=c_char, len=1), intent(in) :: family_ids_file(family_ids_file_len)
+    integer(c_int), intent(in), value :: family_centroids_file_len
+    character(kind=c_char, len=1), intent(in) :: family_centroids_file(family_centroids_file_len)
+    integer(c_int), intent(in), value :: shift_vectors_file_len
+    character(kind=c_char, len=1), intent(in) :: shift_vectors_file(shift_vectors_file_len)
+    integer(c_int), intent(out) :: ierr
+    
+    ! Local variables (Fortran strings)
+    character(len=:), allocatable :: f_zip_filename
+    character(len=:), allocatable :: f_gene_ids_file
+    character(len=:), allocatable :: f_expression_file
+    character(len=:), allocatable :: f_gene_to_family_file
+    character(len=:), allocatable :: f_family_ids_file
+    character(len=:), allocatable :: f_family_centroids_file
+    character(len=:), allocatable :: f_shift_vectors_file
+    
+    call set_ok(ierr)
+    
+    ! Convert C strings to Fortran strings
+    call c_char_1d_as_string(zip_filename, f_zip_filename, ierr)
+    if(is_err(ierr)) return
+    
+    call c_char_1d_as_string(gene_ids_file, f_gene_ids_file, ierr)
+    if(is_err(ierr)) return
+    
+    call c_char_1d_as_string(expression_file, f_expression_file, ierr)
+    if(is_err(ierr)) return
+    
+    call c_char_1d_as_string(gene_to_family_file, f_gene_to_family_file, ierr)
+    if(is_err(ierr)) return
+    
+    call c_char_1d_as_string(family_ids_file, f_family_ids_file, ierr)
+    if(is_err(ierr)) return
+    
+    call c_char_1d_as_string(family_centroids_file, f_family_centroids_file, ierr)
+    if(is_err(ierr)) return
+    
+    call c_char_1d_as_string(shift_vectors_file, f_shift_vectors_file, ierr)
+    if(is_err(ierr)) return
+    
+    ! Call the actual Fortran implementation
+    call create_zip_archive(f_zip_filename, f_gene_ids_file, f_expression_file, &
+                            f_gene_to_family_file, f_family_ids_file, &
+                            f_family_centroids_file, f_shift_vectors_file, ierr)
+    
+end subroutine create_zip_archive_c
+
+!> C binding for extract_zip_archive - can be called directly from Python via ctypes
+subroutine extract_zip_archive_c(zip_filename, filename_len, ierr) &
+                                bind(C, name="extract_zip_archive_c")
+    use tox_archive, only: extract_zip_archive
+    use tox_conversions, only: c_char_1d_as_string
+    use tox_errors, only: set_ok, is_err
+    use iso_c_binding, only: c_int, c_char
+
+    ! Input arguments
+    integer(c_int), intent(in), value :: filename_len
+    character(kind=c_char, len=1), intent(in) :: zip_filename(filename_len)
+    integer(c_int), intent(out) :: ierr
+    
+    ! Local variables
+    character(len=:), allocatable :: f_zip_filename
+    character(len=:), allocatable :: gene_ids_file, expression_file, gene_to_family_file
+    character(len=:), allocatable :: family_ids_file, family_centroids_file, shift_vectors_file
+    
+    call set_ok(ierr)
+    
+    ! Convert C string to Fortran string
+    call c_char_1d_as_string(zip_filename, f_zip_filename, ierr)
+    if(is_err(ierr)) return
+    
+    ! Call the actual Fortran implementation
+    call extract_zip_archive(f_zip_filename, gene_ids_file, expression_file, &
+                            gene_to_family_file, family_ids_file, &
+                            family_centroids_file, shift_vectors_file, ierr)
+    
+end subroutine extract_zip_archive_c

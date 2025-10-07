@@ -7,5 +7,5 @@ module config
 #else
   integer, parameter :: alignment = 32  ! fallback
 #endif
-  logical, parameter :: DEBUG = .true.
+  logical, parameter :: DEBUG = .false.
 end module config

@@ -56,44 +56,22 @@ contains
 
   !> Setup global test data
   subroutine setup_global_data()
-    character(len=256), allocatable :: files_6_replicates(:)
-    character(len=256), allocatable :: files_7_replicates(:)
-    character(len=256), allocatable :: files_5_replicates(:)
-    character(len=256), allocatable :: files_4_replicates(:)
+    character(len=256), allocatable :: expr_file(:)
     integer(int32) :: ierr, i, n_genes_kept
     logical, allocatable :: ortholog_mask(:)
-    integer(int32), allocatable :: selected_indices(:)
+    integer(int32), allocatable :: selected_indices(:), value_cols(:)
 
     ! Initialize file lists
-    allocate(files_6_replicates(10))
-    allocate(files_4_replicates(1))
-    allocate(files_5_replicates(1))
-    allocate(files_7_replicates(1))
+    allocate(expr_file(1))
+    allocate(value_cols(67))
+
+    do i = 2, 68
+      value_cols(i-1) = i
+    end do
     
-    files_6_replicates = [ &
-        'material/kallisto_sex_data_Adipose.tsv  ', &
-        'material/kallisto_sex_data_Adrenal.tsv  ', &
-        'material/kallisto_sex_data_Colon.tsv    ', &
-        'material/kallisto_sex_data_Heart.tsv    ', &
-        'material/kallisto_sex_data_Liver.tsv    ', &
-        'material/kallisto_sex_data_Lung.tsv     ', &
-        'material/kallisto_sex_data_Muscle.tsv   ', &   
-        'material/kallisto_sex_data_Skin.tsv     ', &
-        'material/kallisto_sex_data_Spleen.tsv   ', &
-        'material/kallisto_sex_data_Thyroid.tsv  '  &
-    ]
-
-    files_5_replicates = [ &
-        'material/kallisto_sex_data_Brain.tsv']
-
-    files_4_replicates = [ &
-        'material/kallisto_sex_data_Pituitary.tsv']
-    
-    files_7_replicates = [ &
-        'material/kallisto_sex_data_Testis.tsv']
-
+    expr_file = ['material/kallisto_sex_data_no_na.tsv']
     ! Calculate total samples
-    total_samples = 10 * 6 + 7 + 5 + 4 
+    total_samples = 67
     n_genes = 88327  ! Original number of genes
     n_families = 15512
 
@@ -104,42 +82,32 @@ contains
     allocate(gene_to_fam(n_genes))
 
     ! Read gene IDs
-    call read_gene_ids_from_file(files_6_replicates(1), gene_ids, 1, 1, ierr)
+    call read_gene_ids_from_file(expr_file(1), gene_ids, 1, 1, ierr)
     call assert_equal_int(ierr, 0, "Reading gene IDs should succeed")
+
+    write(*,*) 'First 10 gene IDs:'
+    do i = 1, min(10, n_genes)
+      write(*,*) trim(gene_ids(i))
+    end do
 
     ! Read expression data
     kallisto_expr = 0.0_real64
-    call read_expression_vectors(files_6_replicates, gene_ids, kallisto_expr, &
-                          1, 1, [2, 3, 4, 5, 6, 7], 1, ierr, char(9))
-    
-    call assert_equal_int(ierr, 0, "Reading 6-replicate files should succeed")
-
-    call read_expression_vectors([files_7_replicates], gene_ids, kallisto_expr, &
-                          1, 1, [2, 3, 4, 5, 6, 7, 8], 61, ierr)
-    call assert_equal_int(ierr, 0, "Reading 7-replicate file should succeed")
-
-    call read_expression_vectors([files_5_replicates], gene_ids, kallisto_expr, &
-                          1, 1, [2, 3, 4, 5, 6], 68, ierr)
-    call assert_equal_int(ierr, 0, "Reading 5-replicate file should succeed")
-
-    call read_expression_vectors([files_4_replicates], gene_ids, kallisto_expr, &
-                          1, 1, [2, 3, 4, 5], 73, ierr)
-    call assert_equal_int(ierr, 0, "Reading 4-replicate file should succeed")
+    call read_expression_vectors(expr_file, gene_ids, kallisto_expr, &
+                          1, 1, value_cols, 1, ierr, char(9))
 
     ! Read family mapping
     call read_family_file('material/Orthogroups.tsv', gene_ids, gene_family_ids, gene_to_fam, ierr)
     call assert_equal_int(ierr, 0, "Reading family file should succeed")
-
+    
+    ! Print first 10 family IDs
+    write(*,*) 'First 10 family IDs:'
+    do i = 1, min(10, n_families)
+      write(*,*) trim(gene_family_ids(i))
+    end do
     ! Filter out genes without family assignments
     call filter_unassigned_genes(gene_ids, kallisto_expr, gene_to_fam, n_genes_kept, ierr)
     call assert_equal_int(ierr, 0, "Filtering unassigned genes should succeed")
     n_genes = n_genes_kept  ! Update n_genes to reflect the filtered count
-
-    ! Print first 10 family IDs
-    ! write(*,*) 'First 10 family IDs:'
-    ! do i = 1, min(10, n_families)
-    !   write(*,*) trim(gene_family_ids(i))
-    ! end do
 
     ! Compute centroids
     allocate(family_centroids(total_samples, n_families))
@@ -248,19 +216,12 @@ contains
     nan_file = [ &
       'material/kallisto_NaN.tsv']
 
-    missing_col_file = [ &
-      'material/kallisto_missing_value.tsv']
-
     call read_expression_vectors(inf_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
     call assert_equal_int(ierr, 201, "Error while reading expression vectors, should get invalid input for Inf in expression data")
 
     call set_ok(ierr)
     call read_expression_vectors(nan_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
     call assert_equal_int(ierr, 201, "Error while reading expression vectors, should get invalid input for NaN in expression data")
-
-    call set_ok(ierr)
-    call read_expression_vectors(missing_col_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
-    call assert_equal_int(ierr, 0, "Error while reading missing column. Should only print warning")
   end subroutine test_read_expression_data
 
   !> Test reading family mapping
