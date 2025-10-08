@@ -28,7 +28,7 @@ from tensoromics_functions import (
 # ---- Example: replicate Fortran test logic in Python ----
 
 # Define your file lists (replace with your actual file paths)
-file = ["material/kallisto_ex_data_no_na.tsv"]
+file = ["material/kallisto_sex_data_no_na.tsv"]
 # Parameters
 n_genes = 88327
 n_families = 15512
@@ -140,11 +140,11 @@ save_tox_data("test_archive_4_py.zip", gene_ids=filtered_gene_ids, gene_ids_name
                       family_centroids=centroids, family_centroids_name="family_centroids_v1.bin",
                       shift_vectors=shift_vectors, shift_vectors_name="shift_vectors_v1.bin")
 
-result_1 = read_tox_data("test_archive_4_py.zip", gene_ids=True, expression_vectors=True, 
-                                 gene_to_fam=True, family_ids=True, family_centroids=True, shift_vectors=True)
-result_2 = read_tox_data("test_archive_4_py.zip", gene_ids=True, gene_to_fam=True)
+result_1 = read_tox_data("test_archive_4_py.zip", load_gene_ids=True, load_expression_vectors=True, 
+                                 load_gene_to_fam=True, load_family_ids=True, load_family_centroids=True, load_shift_vectors=True)
+result_2 = read_tox_data("test_archive_4_py.zip", load_gene_ids=True, load_gene_to_fam=True)
 try:
-    result_3 = read_tox_data("test_archive_3_py.zip", gene_ids=True)
+    result_3 = read_tox_data("test_archive_3_py.zip", load_gene_ids=True)
 except:
     result_3 = None
     print("Successfully threw exception")
