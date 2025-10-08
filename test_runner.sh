@@ -30,7 +30,6 @@ exit $failed
 EOF
 check_exit_code "Kind Mismatch Test failed"
 
-
 echo "Compiling src/"
 bash build.sh $@
 check_exit_code "Build failed"

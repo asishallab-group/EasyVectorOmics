@@ -31,7 +31,7 @@ function get_flags() {
   elif [[ "$FC" == "nvfortran" ]]; then
     echo "-O2 -Mconcur -fPIC -fopenmp -stdpar=multicore"
   else
-    echo "-O2 -march=native -mtune=native -fopenmp -funroll-loops -ftree-vectorize -fPIC"
+    echo "-O2 -ffree-line-length-none -march=native -mtune=native -fopenmp -funroll-loops -ftree-vectorize -fPIC"
   fi
 }
 
