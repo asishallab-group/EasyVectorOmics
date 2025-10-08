@@ -5,7 +5,7 @@
 library(readr)
 
 # Source the main functions
-source("rcpp/load_tensoromics.R")
+source("rcpp/tensoromics_functions.R")
 
 # Function to generate gene_to_family mapping from Orthogroups.tsv file
 generate_gene_to_family_mapping <- function(orthogroups_file, centroids_file, gene_expression_file, 

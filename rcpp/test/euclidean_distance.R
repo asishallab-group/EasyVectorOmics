@@ -2,7 +2,7 @@
 library(Rcpp)
 
 # Set library path and compile
-source("rcpp/load_tensoromics.R")
+source("rcpp/tensoromics_functions.R")
 
 cat("=== Testing euclidean distance R wrapper functions ===\n")
 cat("Based on Fortran test suite with comprehensive test coverage\n")

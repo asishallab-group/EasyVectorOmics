@@ -1,6 +1,6 @@
 # Comprehensive R test suite for tissue versatility (mirrors Fortran unit tests)
 # Source the main functions
-source("rcpp/load_tensoromics.R")
+source("rcpp/tensoromics_functions.R")
 
 # 1. Uniform expression (should yield TV=0)
 test_uniform_expression <- function() {
