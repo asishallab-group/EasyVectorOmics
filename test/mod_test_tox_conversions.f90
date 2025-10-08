@@ -19,7 +19,7 @@ module mod_test_tox_conversions
         procedure(test_interface), pointer, nopass :: test_proc => null()
     end type test_case
 
-    integer(int32), parameter :: TEST_COUNT = 15
+    integer(int32), parameter :: TEST_COUNT = 8
     real(real64), parameter :: TOL = 0
 
 contains
@@ -28,144 +28,15 @@ contains
     function get_all_tests() result(all_tests)
         type(test_case) :: all_tests(TEST_COUNT)
 
-        all_tests(1) = test_case("test_tox_conversions_test_check_fortran_pointer_inputs", test_check_fortran_pointer_inputs)
-        all_tests(2) = test_case("test_tox_conversions_test_fortran_pointer_int_1d", test_fortran_pointer_int_1d)
-        all_tests(3) = test_case("test_tox_conversions_test_fortran_pointer_int_2d", test_fortran_pointer_int_2d)
-        all_tests(4) = test_case("test_tox_conversions_test_fortran_pointer_real_1d", test_fortran_pointer_real_1d)
-        all_tests(5) = test_case("test_tox_conversions_test_fortran_pointer_real_2d", test_fortran_pointer_real_2d)
-        all_tests(6) = test_case("test_tox_conversions_test_fortran_pointer_real_1d", test_fortran_pointer_complex_1d)
-        all_tests(7) = test_case("test_tox_conversions_test_fortran_pointer_real_2d", test_fortran_pointer_complex_2d)
-        all_tests(8) = test_case("test_tox_conversions_c_char_as_char", test_c_char_as_char)
-        all_tests(9) = test_case("test_tox_conversions_c_char_1d_as_string", test_c_char_1d_as_string)
-        all_tests(10) = test_case("test_tox_conversions_c_char_2d_as_string", test_c_char_2d_as_string)
-        all_tests(11) = test_case("test_tox_conversions_c_int_as_logical", test_c_int_as_logical)
-        all_tests(12) = test_case("test_tox_conversions_char_as_c_char", test_char_as_c_char)
-        all_tests(13) = test_case("test_tox_conversions_string_as_c_char_1d", test_string_as_c_char_1d)
-        all_tests(14) = test_case("test_tox_conversions_string_as_c_char_2d", test_string_as_c_char_2d)
-        all_tests(15) = test_case("test_tox_conversions_logical_as_c_int", test_logical_as_c_int)
+        all_tests(1) = test_case("test_tox_conversions_c_char_as_char", test_c_char_as_char)
+        all_tests(2) = test_case("test_tox_conversions_c_char_1d_as_string", test_c_char_1d_as_string)
+        all_tests(3) = test_case("test_tox_conversions_c_char_2d_as_string", test_c_char_2d_as_string)
+        all_tests(4) = test_case("test_tox_conversions_c_int_as_logical", test_c_int_as_logical)
+        all_tests(5) = test_case("test_tox_conversions_char_as_c_char", test_char_as_c_char)
+        all_tests(6) = test_case("test_tox_conversions_string_as_c_char_1d", test_string_as_c_char_1d)
+        all_tests(7) = test_case("test_tox_conversions_string_as_c_char_2d", test_string_as_c_char_2d)
+        all_tests(8) = test_case("test_tox_conversions_logical_as_c_int", test_logical_as_c_int)
     end function get_all_tests
-
-    subroutine test_check_fortran_pointer_inputs
-        type(c_ptr) :: cptr
-        integer(int32), target :: ierr
-        integer(int32), dimension(2) :: dims
-
-        ! Case 1: Null pointer, valid dims
-        call set_ok(ierr)
-        cptr = c_null_ptr
-        dims = [2, 3]
-        call check_fortran_pointer_inputs(cptr, dims, ierr)
-        call assert_equal_int(ierr, ERR_POINTER_NULL, "test_check_fortran_pointer_inputs: Expected ERR_POINTER_NULL")
-
-        ! Case 2: Valid pointer, invalid dims
-        call set_ok(ierr)
-        cptr = c_loc(ierr)  ! dummy non-null
-        dims = [2, -1]
-        call check_fortran_pointer_inputs(cptr, dims, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_check_fortran_pointer_inputs: Expected ERR_INVALID_INPUT")
-    end subroutine test_check_fortran_pointer_inputs
-
-    subroutine test_fortran_pointer_int_1d()
-        integer(int32), target :: arr(3)
-        integer(int32), pointer :: fptr(:)
-        type(c_ptr) :: cptr
-        integer(int32) :: ierr
-        integer(int32), dimension(1) :: dims
-
-        call set_ok(ierr)
-        arr = [1, 2, 3]
-        cptr = c_loc(arr)
-        dims = [3]
-        call fortran_pointer_int_1d(cptr, fptr, dims, ierr)
-        call assert_true(is_ok(ierr), "test_fortran_pointer_int_2d: unexpected error when creating pointer")
-        call assert_true(associated(fptr), "test_fortran_pointer_int_1d: fptr not associated")
-        call assert_true(all(fptr == arr), "test_fortran_pointer_int_1d: fptr contents mismatch")
-    end subroutine test_fortran_pointer_int_1d
-
-    subroutine test_fortran_pointer_int_2d()
-        integer(int32), target :: arr(2,2)
-        integer(int32), pointer :: fptr(:, :)
-        type(c_ptr) :: cptr
-        integer(int32) :: ierr
-        integer(int32), dimension(2) :: dims
-
-        call set_ok(ierr)
-        arr = reshape([1,2,3,4], [2,2])
-        cptr = c_loc(arr)
-        dims = [2, 2]
-        call fortran_pointer_int_2d(cptr, fptr, dims, ierr)
-        call assert_true(is_ok(ierr), "test_fortran_pointer_int_2d: unexpected error when creating pointer")
-        call assert_true(associated(fptr), "test_fortran_pointer_int_2d: fptr not associated")
-        call assert_true(all(fptr == arr), "test_fortran_pointer_int_2d: fptr contents mismatch")
-    end subroutine test_fortran_pointer_int_2d
-
-    subroutine test_fortran_pointer_real_1d()
-        real(real64), target :: arr(3)
-        real(real64), pointer :: fptr(:)
-        type(c_ptr) :: cptr
-        integer(int32) :: ierr
-        integer(int32), dimension(1) :: dims
-
-        call set_ok(ierr)
-        arr = [1e-12_real64, 2e-12_real64, 3e-12_real64]
-        cptr = c_loc(arr)
-        dims = [3]
-        call fortran_pointer_real_1d(cptr, fptr, dims, ierr)
-        call assert_true(is_ok(ierr), "test_fortran_pointer_real_1d: unexpected error when creating pointer")
-        call assert_true(associated(fptr), "test_fortran_pointer_real_1d: fptr not associated")
-        call assert_true(all(fptr == arr), "test_fortran_pointer_real_1d: fptr contents mismatch")
-    end subroutine test_fortran_pointer_real_1d
-
-    subroutine test_fortran_pointer_real_2d()
-        real(real64), target :: arr(2, 2)
-        real(real64), pointer :: fptr(:, :)
-        type(c_ptr) :: cptr
-        integer(int32) :: ierr
-        integer(int32), dimension(2) :: dims
-
-        call set_ok(ierr)
-        arr = reshape([1e-12_real64, 2e-12_real64, 3e-12_real64, 4e-12_real64], [2, 2])
-        cptr = c_loc(arr)
-        dims = [2, 2]
-        call fortran_pointer_real_2d(cptr, fptr, dims, ierr)
-        call assert_true(is_ok(ierr), "test_fortran_pointer_real_2d: unexpected error when creating pointer")
-        call assert_true(associated(fptr), "test_fortran_pointer_real_2d: fptr not associated")
-        call assert_true(all(fptr == arr), "test_fortran_pointer_real_2d: fptr contents mismatch")
-    end subroutine test_fortran_pointer_real_2d
-
-    subroutine test_fortran_pointer_complex_1d()
-        complex(real64), target :: arr(3)
-        complex(real64), pointer :: fptr(:)
-        type(c_ptr) :: cptr
-        integer(int32) :: ierr
-        integer(int32), dimension(1) :: dims
-
-        call set_ok(ierr)
-        arr = [(1e-12_real64, 3e-12_real64), (2e-12_real64, 6e-12_real64), (3e-12_real64, 9e-12_real64)]
-        cptr = c_loc(arr)
-        dims = [3]
-        call fortran_pointer_complex_1d(cptr, fptr, dims, ierr)
-        call assert_true(is_ok(ierr), "test_fortran_pointer_complex_1d: unexpected error when creating pointer")
-        call assert_true(associated(fptr), "test_fortran_pointer_complex_1d: fptr not associated")
-        call assert_true(all(fptr == arr), "test_fortran_pointer_complex_1d: fptr contents mismatch")
-    end subroutine test_fortran_pointer_complex_1d
-
-    subroutine test_fortran_pointer_complex_2d()
-        complex(real64), target :: arr(2, 2)
-        complex(real64), pointer :: fptr(:, :)
-        type(c_ptr) :: cptr
-        integer(int32) :: ierr
-        integer(int32), dimension(2) :: dims
-
-        call set_ok(ierr)
-        arr = reshape([(1e-12_real64, 3e-12_real64), (2e-12_real64, 6e-12_real64), (3e-12_real64, 9e-12_real64)], [2, 2])
-        cptr = c_loc(arr)
-        dims = [2, 2]
-        call fortran_pointer_complex_2d(cptr, fptr, dims, ierr)
-        call assert_true(is_ok(ierr), "test_fortran_pointer_complex_2d: unexpected error when creating pointer")
-        call assert_true(associated(fptr), "test_fortran_pointer_complex_2d: fptr not associated")
-        call assert_true(all(fptr == arr), "test_fortran_pointer_complex_2d: fptr contents mismatch")
-    end subroutine test_fortran_pointer_complex_2d
 
     subroutine test_c_int_as_logical
         integer(c_int) :: c_val

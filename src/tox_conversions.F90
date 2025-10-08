@@ -1,138 +1,38 @@
 module tox_conversions
     use iso_fortran_env, only: int32, real64
-    use iso_c_binding, only: c_int, c_double, c_null_char, c_double_complex, c_char, c_ptr, c_associated, c_f_pointer
-    use tox_errors, only: ERR_ALLOC_FAIL, is_err, set_ok, set_err, set_err_once, ERR_POINTER_NULL, ERR_INVALID_INPUT
-    implicit none
+    use tox_errors, only: ERR_ALLOC_FAIL, is_err, set_ok, set_err
+
+    ! safeguard to guarantee identity of c kinds and fortran kinds
+    ! The preprocessor directives enforce a mismatch by overriding the C kinds
+    ! Thus, in the final else-block all are used from iso_c_binding
+    #ifdef TEST_KIND_MISMATCH_C_INT
+        use iso_c_binding, only: c_double, c_null_char, c_double_complex, c_char, c_ptr
+        implicit none
+        integer(int32), parameter :: c_int = int32 * 2
+    #else
+        #ifdef TEST_KIND_MISMATCH_C_DOUBLE
+            use iso_c_binding, only: c_int, c_null_char, c_double_complex, c_char, c_ptr
+            implicit none
+            integer(int32), parameter ::  c_double = real64 * 2
+        #else
+            #ifdef TEST_KIND_MISMATCH_C_DOUBLE_COMPLEX
+                use iso_c_binding, only: c_int, c_double, c_null_char, c_char, c_ptr
+                implicit none
+                integer(int32), parameter ::  c_double_complex = real64 * 2
+            #else
+                use iso_c_binding, only: c_int, c_double, c_null_char, c_double_complex, c_char, c_ptr
+                implicit none
+            #endif
+        #endif
+    #endif
+
 
     ! type guards to guarantee kind identity between fortran and c for correct interop in the c wrapper routines
-    logical, parameter :: c_int_matches_int32 = 1 == 1 / merge(1, 0, c_int == int32)
-    logical, parameter :: c_double_matches_real64 = 1 == 1 / merge(1, 0, c_double == real64)
-    logical, parameter :: c_double_complex_matches_real64 = 1 == 1 / merge(1, 0, c_double_complex == real64)
+    logical, parameter :: THIS_FAILS_IF_C_INT_DOES_NOT_MATCH_INT32 = 1 == 1 / merge(1, 0, c_int == int32)
+    logical, parameter :: THIS_FAILS_IF_C_DOUBLE_DOES_NOT_MATCH_REAL64 = 1 == 1 / merge(1, 0, c_double == real64)
+    logical, parameter :: THIS_FAILS_IF_C_DOUBLE_COMPLEX_DOES_NOT_MATCH_REAL64 = 1 == 1 / merge(1, 0, c_double_complex == real64)
 
 contains
-
-    subroutine check_fortran_pointer_inputs(c_pointer, dims, ierr)
-        type(c_ptr), intent(in) :: c_pointer
-            !! C pointer to be converted
-        integer(int32), dimension(:), intent(in) :: dims
-            !! dimensions as array
-        integer(int32), intent(inout) :: ierr
-            !! Error code
-
-        if (.not. c_associated(c_pointer)) then
-            call set_err_once(ierr, ERR_POINTER_NULL)
-        else if (any(dims <= 0)) then
-            call set_err_once(ierr, ERR_INVALID_INPUT)
-        end if
-    end subroutine check_fortran_pointer_inputs
-
-    subroutine fortran_pointer_int_1d(c_pointer, f_pointer, dims, ierr)
-        type(c_ptr), intent(in) :: c_pointer
-            !! C pointer to be converted
-        integer(int32), dimension(:), pointer, intent(out) :: f_pointer
-            !! Resulting fortran pointer
-        integer(int32), dimension(1), intent(in) :: dims
-            !! dimensions as array
-        integer(int32), intent(inout) :: ierr
-            !! Error code
-
-        call check_fortran_pointer_inputs(c_pointer, dims, ierr)
-        if (is_err(ierr)) then
-            nullify(f_pointer)
-        else
-            call c_f_pointer(c_pointer, f_pointer, dims)
-        end if
-    end subroutine fortran_pointer_int_1d
-
-    subroutine fortran_pointer_int_2d(c_pointer, f_pointer, dims, ierr)
-        type(c_ptr), intent(in) :: c_pointer
-            !! C pointer to be converted
-        integer(int32), dimension(:, :), pointer, intent(out) :: f_pointer
-            !! Resulting fortran pointer
-        integer(int32), dimension(2), intent(in) :: dims
-            !! dimensions as array
-        integer(int32), intent(inout) :: ierr
-            !! Error code
-
-        call check_fortran_pointer_inputs(c_pointer, dims, ierr)
-        if (is_err(ierr)) then
-            nullify(f_pointer)
-        else
-            call c_f_pointer(c_pointer, f_pointer, dims)
-        end if
-    end subroutine fortran_pointer_int_2d
-
-    subroutine fortran_pointer_real_1d(c_pointer, f_pointer, dims, ierr)
-        type(c_ptr), intent(in) :: c_pointer
-            !! C pointer to be converted
-        real(real64), dimension(:), pointer, intent(out) :: f_pointer
-            !! Resulting fortran pointer
-        integer(int32), dimension(1), intent(in) :: dims
-            !! dimensions as array
-        integer(int32), intent(inout) :: ierr
-            !! Error code
-
-        call check_fortran_pointer_inputs(c_pointer, dims, ierr)
-        if (is_err(ierr)) then
-            nullify(f_pointer)
-        else
-            call c_f_pointer(c_pointer, f_pointer, dims)
-        end if
-    end subroutine fortran_pointer_real_1d
-
-    subroutine fortran_pointer_real_2d(c_pointer, f_pointer, dims, ierr)
-        type(c_ptr), intent(in) :: c_pointer
-            !! C pointer to be converted
-        real(real64), dimension(:, :), pointer, intent(out) :: f_pointer
-            !! Resulting fortran pointer
-        integer(int32), dimension(2), intent(in) :: dims
-            !! dimensions as array
-        integer(int32), intent(inout) :: ierr
-            !! Error code
-
-        call check_fortran_pointer_inputs(c_pointer, dims, ierr)
-        if (is_err(ierr)) then
-            nullify(f_pointer)
-        else
-            call c_f_pointer(c_pointer, f_pointer, dims)
-        end if
-    end subroutine fortran_pointer_real_2d
-
-    subroutine fortran_pointer_complex_1d(c_pointer, f_pointer, dims, ierr)
-        type(c_ptr), intent(in) :: c_pointer
-            !! C pointer to be converted
-        complex(real64), dimension(:), pointer, intent(out) :: f_pointer
-            !! Resulting fortran pointer
-        integer(int32), dimension(1), intent(in) :: dims
-            !! dimensions as array
-        integer(int32), intent(inout) :: ierr
-            !! Error code
-
-        call check_fortran_pointer_inputs(c_pointer, dims, ierr)
-        if (is_err(ierr)) then
-            nullify(f_pointer)
-        else
-            call c_f_pointer(c_pointer, f_pointer, dims)
-        end if
-    end subroutine fortran_pointer_complex_1d
-
-    subroutine fortran_pointer_complex_2d(c_pointer, f_pointer, dims, ierr)
-        type(c_ptr), intent(in) :: c_pointer
-            !! C pointer to be converted
-        complex(real64), dimension(:, :), pointer, intent(out) :: f_pointer
-            !! Resulting fortran pointer
-        integer(int32), dimension(2), intent(in) :: dims
-            !! dimensions as array
-        integer(int32), intent(inout) :: ierr
-            !! Error code
-
-        call check_fortran_pointer_inputs(c_pointer, dims, ierr)
-        if (is_err(ierr)) then
-            nullify(f_pointer)
-        else
-            call c_f_pointer(c_pointer, f_pointer, dims)
-        end if
-    end subroutine fortran_pointer_complex_2d
 
     !> Converts a c_int value to logical, elemental -> any shape
     elemental subroutine c_int_as_logical(c_val, f_val)
@@ -273,7 +173,7 @@ contains
         character(kind=c_char, len=1), dimension(:, :), intent(out) :: c_char_array
          !! c int array, columns as ascii arrays
 
-        integer(int32) :: i_str, n_strings
+        integer(int32) :: i_str
 
         do i_str = 1, size(strings, 1)
            call string_as_c_char_1d(strings(i_str), c_char_array(:, i_str))
