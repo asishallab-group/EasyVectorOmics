@@ -16,7 +16,7 @@ echo "Detected alignment: $ALIGN"
 
 bash <<'EOF'
 function get_directives() {
-  echo "-D'OPEN_PAREN=(' -D'CLOSE_PAREN=)' -D'$1(KIND)=KIND(KIND)' -D'$2(KIND)=$1 OPEN_PAREN KIND CLOSE_PAREN' -D'$3(KIND)=$1 OPEN_PAREN 16 CLOSE_PAREN'"
+  echo "-D'OPEN_PAREN=(' -D'CLOSE_PAREN=)' -D'$1(KIND)=KIND(KIND)' -D'$2(KIND)=$1 OPEN_PAREN KIND CLOSE_PAREN' -D'$3(KIND)=$1 OPEN_PAREN 2 CLOSE_PAREN'"
 }
 
 failed=0
@@ -28,6 +28,7 @@ for d in "${directives[@]}"; do
   test_directive=${d%% *}
   test_directive=${test_directive#-DTEST_KIND_MISMATCH_}
   echo -en "Testing safeguard for mismatch for $test_directive: "
+  echo "$(bash build.sh "$@" "${directives}" 2>&1)"
   if [[ $(bash build.sh "$@" "${directives}" 2>&1 | grep "Divi.*zero") ]]; then
     echo "success"
   else
