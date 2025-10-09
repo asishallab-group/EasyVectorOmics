@@ -16,7 +16,7 @@ echo "Detected alignment: $ALIGN"
 
 bash <<'EOF'
 function get_directives() {
-  echo "-D'OPEN_PAREN=(' -D'CLOSE_PAREN=)' -D'$1(KIND)=KIND(KIND)' -D'$2(KIND)=$1 OPEN_PAREN KIND CLOSE_PAREN' -D'$3(KIND)=$1 OPEN_PAREN 4 CLOSE_PAREN'"
+  echo "-D'OPEN_PAREN=(' -D'CLOSE_PAREN=)' -D'$1(KIND)=KIND(KIND)' -D'$2(KIND)=$1 OPEN_PAREN KIND CLOSE_PAREN' -D'$3(KIND)=$1 OPEN_PAREN 16 CLOSE_PAREN'"
 }
 
 failed=0

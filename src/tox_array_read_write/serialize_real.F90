@@ -1,4 +1,5 @@
 module serialize_real
+  use safeguard
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only: c_loc
   use array_utils, only: write_file_header

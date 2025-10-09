@@ -1,5 +1,6 @@
 !> Module for deserializing character arrays from files
 module char_deserialize_mod
+  use safeguard
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use array_utils, only : ascii_to_string, read_file_header, check_okay_ioerror, check_okay_ndims
   use tox_errors

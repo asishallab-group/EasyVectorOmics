@@ -2,6 +2,7 @@
 !! of up to 5 dimensions, arrays are serialized to a custom binary format with a magic number and type/dimension metadata.
 
 module serialize_char
+  use safeguard
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use array_utils, only: write_file_header
   use tox_errors

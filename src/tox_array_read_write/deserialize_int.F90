@@ -1,5 +1,6 @@
 !> Module for deserializing integer arrays from files
 module int_deserialize_mod
+  use safeguard
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only : c_loc, c_f_pointer
   use array_utils, only: ascii_to_string, read_file_header, check_okay_dims, check_okay_ndims
