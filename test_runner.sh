@@ -28,7 +28,6 @@ for d in "${directives[@]}"; do
   test_directive=${d%% *}
   test_directive=${test_directive#-DTEST_KIND_MISMATCH_}
   echo -en "Testing safeguard for mismatch for $test_directive: "
-  echo "$(bash build.sh "$@" "${directives}" 2>&1)"
   if [[ $(bash build.sh "$@" "${directives}" 2>&1 | grep "Divi.*zero") ]]; then
     echo "success"
   else
