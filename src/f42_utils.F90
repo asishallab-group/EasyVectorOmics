@@ -77,7 +77,7 @@ contains
         call heapsort_integer(array, perm)
         end subroutine sort_integer_heapsort  
         !> Sort a character array indirectly using heapsort.  
-        !| Similar to `sort_real`, but for character input.     
+        !| Similar to `sort_real_heapsort`, but for character input.     
         pure subroutine sort_character_heapsort(array, perm)
           character(len=*), intent(in) ::array(:)
           integer(int32), intent(inout) ::perm(:)
@@ -272,8 +272,6 @@ contains
   end subroutine quicksort_char
 
         !heapsort subroutines
-        
-
         !> Heapsort implementation for real arrays.
       
       pure subroutine heapsort_real(array, perm)
@@ -322,8 +320,12 @@ contains
             right   = 2 * k + 1
             largest = k
 
-            if (left <= heap_size .and. array(perm(left)) > array(perm(largest))) largest = left
-            if (right <= heap_size .and. array(perm(right)) > array(perm(largest))) largest = right
+            if (left <= heap_size) then
+              if (array(perm(left)) > array(perm(largest))) largest = left
+            end if
+            if (right <= heap_size) then
+              if (array(perm(right)) > array(perm(largest))) largest = right
+            end if
 
             if (largest /= k) then
               temp        = perm(k)
@@ -387,8 +389,12 @@ contains
             right   = 2 * k + 1
             largest = k
 
-            if (left <= heap_size .and. array(perm(left)) > array(perm(largest))) largest = left
-            if (right <= heap_size .and. array(perm(right)) > array(perm(largest))) largest = right
+            if (left <= heap_size) then
+              if (array(perm(left)) > array(perm(largest))) largest = left
+            end if
+            if (right <= heap_size) then
+              if (array(perm(right)) > array(perm(largest))) largest = right
+            end if
 
             if (largest /= k) then
               temp        = perm(k)
@@ -451,8 +457,12 @@ contains
             right   = 2 * k + 1
             largest = k
 
-            if (left <= heap_size .and. array(perm(left)) > array(perm(largest))) largest = left
-            if (right <= heap_size .and. array(perm(right)) > array(perm(largest))) largest = right
+            if (left <= heap_size) then
+              if (array(perm(left)) > array(perm(largest))) largest = left
+            end if
+            if (right <= heap_size) then
+              if (array(perm(right)) > array(perm(largest))) largest = right
+            end if
 
             if (largest /= k) then
               temp        = perm(k)
@@ -491,12 +501,12 @@ contains
     integer(int32), intent(out) :: m_out
     !| Error code: 0=ok, 201=invalid input, 202=empty input
     integer(int32), intent(out) :: ierr
-    
+
     integer(int32) :: i, count
-    
+
     ! Initialize error code
     call set_ok(ierr)
-    
+
     ! Validate inputs
     if (n <= 0 .or. m_max <= 0) then
       call set_err_once(ierr, ERR_INVALID_INPUT)
@@ -504,14 +514,14 @@ contains
       idx_out = 0
       return
     end if
-    
+
     if (size(mask) < n .or. size(idx_out) < m_max) then
       call set_err_once(ierr, ERR_INVALID_INPUT)
       m_out = 0
       idx_out = 0
       return
     end if
-    
+
     count = 0
     idx_out = 0  ! Initialize to avoid garbage values
     do i = 1, n
