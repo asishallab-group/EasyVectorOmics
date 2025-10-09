@@ -4,6 +4,7 @@
 ! wrappers are defined outside the module for compatibility.
 
 module tox_gene_centroids
+  use safeguard
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, set_ok, set_err_once, is_ok
   implicit none

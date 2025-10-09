@@ -2,6 +2,7 @@
 !| This module provides general-purpose utility functions for data analysis, to be used as needed.
 
 module f42_utils
+  use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
   use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, ERR_EMPTY_INPUT, set_ok, set_err_once
   implicit none

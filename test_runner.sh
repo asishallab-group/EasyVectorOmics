@@ -14,16 +14,25 @@ MODULE_FLAG=$(get_module_flag $BUILD_DIR)
 
 echo "Detected alignment: $ALIGN"
 
-echo "Testing safeguard for C kind mismatches:"
 bash <<'EOF'
+function get_directives() {
+  echo "-D'OPEN_PAREN=(' -D'CLOSE_PAREN=)' -D'$1(KIND)=KIND(KIND)' -D'$2(KIND)=$1 OPEN_PAREN KIND CLOSE_PAREN' -D'$3(KIND)=$1 OPEN_PAREN 4 CLOSE_PAREN'"
+}
+
 failed=0
-for flag in TEST_KIND_MISMATCH_C_INT TEST_KIND_MISMATCH_C_DOUBLE TEST_KIND_MISMATCH_C_DOUBLE_COMPLEX; do
-  echo -en "$flag: "
-  if bash build.sh "$@" -D${flag} 1>/dev/null 2>/dev/null; then
+directives=()
+directives+=("-DTEST_KIND_MISMATCH_C_INT $(get_directives integer int32 c_int)")
+directives+=("-DTEST_KIND_MISMATCH_C_DOUBLE $(get_directives real real64 c_double)")
+directives+=("-DTEST_KIND_MISMATCH_C_DOUBLE_COMPLEX $(get_directives complex real64 c_double_complex)")
+for d in "${directives[@]}"; do
+  test_directive=${d%% *}
+  test_directive=${test_directive#-DTEST_KIND_MISMATCH_}
+  echo -en "Testing safeguard for mismatch for $test_directive: "
+  if [[ $(bash build.sh "$@" "${directives}" 2>&1 | grep "Divi.*zero") ]]; then
+    echo "success"
+  else
     echo "failure"
     failed=1
-  else
-    echo "success"
   fi
 done
 exit $failed
