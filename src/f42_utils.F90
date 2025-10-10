@@ -12,11 +12,6 @@ module f42_utils
   interface sort_array
     module procedure sort_real, sort_integer, sort_character
   end interface sort_array
-
-  interface sort_array_heapsort
-    module procedure sort_real_heapsort, sort_integer_heapsort, sort_character_heapsort
-end interface sort_array_heapsort
-
 contains
 
   !> Sort a real array indirectly using quicksort.
@@ -60,29 +55,6 @@ contains
     integer(int32), intent(inout) :: stack_right(:)
     call quicksort_char(array, perm, size(array), stack_left, stack_right)
   end subroutine sort_character
-
-
-  !> Sort a real array indirectly using heapsort.  
-        !> The sorted array is returned via the perm array, which contains the indices of the original array in sorted order.
-        pure subroutine sort_real_heapsort(array, perm)
-          real(real64), intent(in) ::array(:)
-          integer(int32), intent(inout) ::perm(:)
-          call heapsort_real(array, perm)
-        end subroutine sort_real_heapsort  
-        !> Sort an integer array indirectly using heapsort.  
-        !| Similar to `sort_real_heapsort`, but for integer input.
-        pure subroutine sort_integer_heapsort(array, perm)
-        integer(int32), intent(in) ::array(:)
-        integer(int32), intent(inout) ::perm(:)
-        call heapsort_integer(array, perm)
-        end subroutine sort_integer_heapsort  
-        !> Sort a character array indirectly using heapsort.  
-        !| Similar to `sort_real_heapsort`, but for character input.     
-        pure subroutine sort_character_heapsort(array, perm)
-          character(len=*), intent(in) ::array(:)
-          integer(int32), intent(inout) ::perm(:)
-          call heapsort_character(array, perm)
-        end subroutine sort_character_heapsort  
 
   !> Internal quicksort implementation for real arrays.
   !| Sorts indirectly using the permutation vector `perm`. Manual stack replaces recursion.
@@ -271,212 +243,6 @@ contains
     end do
   end subroutine quicksort_char
 
-        !heapsort subroutines
-        !> Heapsort implementation for real arrays.
-      
-      pure subroutine heapsort_real(array, perm)
-        use iso_fortran_env, only: real64, int32
-        implicit none
-        real(real64), intent(in) :: array(:)
-        integer(int32), intent(inout) :: perm(:)
-        integer :: n, i, temp
-
-        n = size(array)
-
-        ! Initialize permutation vector
-        do i = 1, n
-          perm(i) = i
-        end do
-
-        ! Build max heap
-        do i = n / 2, 1, -1
-          call heapify_real(array, perm, n, i)
-        end do
-
-        ! Heap sort
-        do i = n, 2, -1
-          temp     = perm(1)
-          perm(1)  = perm(i)
-          perm(i)  = temp
-          call heapify_real(array, perm, i - 1, 1)
-        end do
-
-      contains
-
-        pure subroutine heapify_real(array, perm, heap_size, root)
-          use iso_fortran_env, only: real64, int32
-          implicit none
-          real(real64), intent(in) :: array(:)
-          integer(int32), intent(inout) :: perm(:)
-          integer, intent(in) :: heap_size, root
-          integer :: largest, left, right, k, temp
-          logical :: done
-
-          k    = root
-          done = .false.
-
-          do while (.not. done)
-            left    = 2 * k
-            right   = 2 * k + 1
-            largest = k
-
-            if (left <= heap_size) then
-              if (array(perm(left)) > array(perm(largest))) largest = left
-            end if
-            if (right <= heap_size) then
-              if (array(perm(right)) > array(perm(largest))) largest = right
-            end if
-
-            if (largest /= k) then
-              temp        = perm(k)
-              perm(k)     = perm(largest)
-              perm(largest) = temp
-              k = largest
-            else
-              done = .true.
-            end if
-          end do
-        end subroutine heapify_real
-
-      end subroutine heapsort_real
-
-
-      !> Heapsort implementation for integer arrays with permutation table
-      pure subroutine heapsort_integer(array, perm)
-        use iso_fortran_env, only: int32
-        implicit none
-        integer(int32), intent(in) :: array(:)
-        integer(int32), intent(inout) :: perm(:)
-        integer :: n, i, temp
-
-        n = size(array)
-
-        ! Initialize permutation vector
-        do i = 1, n
-          perm(i) = i
-        end do
-
-        ! Build max-heap
-        do i = n / 2, 1, -1
-          call heapify_integer(array, perm, n, i)
-        end do
-
-        ! Heap sort
-        do i = n, 2, -1
-          temp     = perm(1)
-          perm(1)  = perm(i)
-          perm(i)  = temp
-          call heapify_integer(array, perm, i - 1, 1)
-        end do
-
-      contains
-
-        !> Iterative heapify (non-recursive, pure)
-        pure subroutine heapify_integer(array, perm, heap_size, root)
-          use iso_fortran_env, only: int32
-          implicit none
-          integer(int32), intent(in)    :: array(:)
-          integer(int32), intent(inout) :: perm(:)
-          integer, intent(in)           :: heap_size, root
-          integer :: largest, left, right, k, temp
-          logical :: done
-
-          k = root
-          done = .false.
-
-          do while (.not. done)
-            left    = 2 * k
-            right   = 2 * k + 1
-            largest = k
-
-            if (left <= heap_size) then
-              if (array(perm(left)) > array(perm(largest))) largest = left
-            end if
-            if (right <= heap_size) then
-              if (array(perm(right)) > array(perm(largest))) largest = right
-            end if
-
-            if (largest /= k) then
-              temp        = perm(k)
-              perm(k)     = perm(largest)
-              perm(largest) = temp
-              k = largest
-            else
-              done = .true.
-            end if
-          end do
-        end subroutine heapify_integer
-
-      end subroutine heapsort_integer
-
-
-      !> Heapsort implementation for character arrays with permutation table
-      pure subroutine heapsort_character(array, perm)
-        use iso_fortran_env, only: int32
-        implicit none
-        character(len=*), intent(in)    :: array(:)
-        integer(int32),   intent(inout) :: perm(:)
-        integer :: n, i, temp
-
-        n = size(array)
-
-        ! Initialize permutation vector
-        do i = 1, n
-          perm(i) = i
-        end do
-
-        ! Build max-heap
-        do i = n / 2, 1, -1
-          call heapify_character(array, perm, n, i)
-        end do
-
-        ! Heap sort
-        do i = n, 2, -1
-          temp     = perm(1)
-          perm(1)  = perm(i)
-          perm(i)  = temp
-          call heapify_character(array, perm, i - 1, 1)
-        end do
-
-      contains
-      !> Iterative heapify 
-        pure subroutine heapify_character(array, perm, heap_size, root)
-          use iso_fortran_env, only: int32
-          implicit none
-          character(len=*), intent(in)    :: array(:)
-          integer(int32),   intent(inout) :: perm(:)
-          integer, intent(in)             :: heap_size, root
-          integer :: largest, left, right, k, temp
-          logical :: done
-
-          k    = root
-          done = .false.
-
-          do while (.not. done)
-            left    = 2 * k
-            right   = 2 * k + 1
-            largest = k
-
-            if (left <= heap_size) then
-              if (array(perm(left)) > array(perm(largest))) largest = left
-            end if
-            if (right <= heap_size) then
-              if (array(perm(right)) > array(perm(largest))) largest = right
-            end if
-
-            if (largest /= k) then
-              temp        = perm(k)
-              perm(k)     = perm(largest)
-              perm(largest) = temp
-              k = largest
-            else
-              done = .true.
-            end if
-          end do
-        end subroutine heapify_character
-
-      end subroutine heapsort_character
-
   !> Swap two integer values in-place.
   pure subroutine swap_int(a, b)
     !| First integer to swap
@@ -501,12 +267,12 @@ contains
     integer(int32), intent(out) :: m_out
     !| Error code: 0=ok, 201=invalid input, 202=empty input
     integer(int32), intent(out) :: ierr
-
+    
     integer(int32) :: i, count
-
+    
     ! Initialize error code
     call set_ok(ierr)
-
+    
     ! Validate inputs
     if (n <= 0 .or. m_max <= 0) then
       call set_err_once(ierr, ERR_INVALID_INPUT)
@@ -514,14 +280,14 @@ contains
       idx_out = 0
       return
     end if
-
+    
     if (size(mask) < n .or. size(idx_out) < m_max) then
       call set_err_once(ierr, ERR_INVALID_INPUT)
       m_out = 0
       idx_out = 0
       return
     end if
-
+    
     count = 0
     idx_out = 0  ! Initialize to avoid garbage values
     do i = 1, n

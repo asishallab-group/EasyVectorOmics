@@ -53,16 +53,8 @@
       "! Fortran sort - automatically selects implementation based on data type",
       "call sort_array(array, perm, stack_left, stack_right)"
     ],
-    "description": "Generic interface that resolves to appropriate sort function"    
+    "description": "Generic interface that resolves to appropriate sort function"
   },
-  "Fortran call to sort_array_heapsort": {
-    "prefix":"f42:sort_array_heapsort",
-    "body": [
-      "! Fortran sort - automatically selects implementation based on data type",
-      "call sort_array_heapsort(array, perm)"
-    ], 
-    "description": "Generic interface that resolves to appropriate heapsort function"
-    },
   "Fortran call to which": {
     "prefix": "f42:which",
     "body": [
