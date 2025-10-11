@@ -16,40 +16,45 @@ module f42_utils
   real(real64), parameter :: PI = 4.0_real64 * atan(1.0_real64)
 contains
 
+  !> Computes the radian angle between two vectors
   pure subroutine angle_between(v1, v2, n_dims, angle)
-      integer(int32), intent(in) :: n_dims
-          !! number of elements in `v1` and `v2`
-      real(real64), dimension(n_dims), intent(in) :: v1
-          !! first vector for angle calculation
-      real(real64), dimension(n_dims), intent(in) :: v2
-          !! second vector for angle calculation
-      real(real64), intent(out) :: angle
-          !! will hold calculated angle
+    integer(int32), intent(in) :: n_dims
+        !! number of elements in `v1` and `v2`
+    real(real64), dimension(n_dims), intent(in) :: v1
+        !! first vector for angle calculation
+    real(real64), dimension(n_dims), intent(in) :: v2
+        !! second vector for angle calculation
+    real(real64), intent(out) :: angle
+        !! will hold calculated angle
 
-      integer(int32) :: i
-      real(real64) :: theta, dot_product, norm1, norm2
+    integer(int32) :: i
+    real(real64) :: theta, dot_product, norm1, norm2
 
-      dot_product = 0
-      norm1 = 0
-      norm2 = 0
-      do i = 1, size(v1)
-          dot_product = dot_product + v1(i) * v2(i)
-          norm1 = norm1 + v1(i) ** 2
-          norm2 = norm2 + v2(i) ** 2
-      end do
-      theta = dot_product / (sqrt(norm1) * sqrt(norm2))
-      theta = max(-1.0_real64, min(1.0_real64, theta))
-      angle = acos(theta)
+    dot_product = 0
+    norm1 = 0
+    norm2 = 0
+    do i = 1, size(v1)
+      dot_product = dot_product + v1(i) * v2(i)
+      norm1 = norm1 + v1(i) ** 2
+      norm2 = norm2 + v2(i) ** 2
+    end do
+    theta = dot_product / (sqrt(norm1) * sqrt(norm2))
+    theta = max(-1.0_real64, min(1.0_real64, theta))
+    angle = acos(theta)
   end subroutine angle_between
 
+  !> Returns the given degrees in positive radian value (-90deg -> 3*PI/2, not -PI/2)
   pure real(real64) function radians(degrees) result(rad)
-      real(real64), intent(in) :: degrees
+    real(real64), intent(in) :: degrees
+        !! degrees to be converted
 
-      rad = modulo(degrees, 360.0_real64) * PI / 180 
+    rad = modulo(degrees, 360.0_real64) * PI / 180 
   end function radians
 
+  !> Calculates the euclidean norm of a vector
   pure real(real64) function norm(vector) result(euclidean_norm)
     real(real64), dimension(:), intent(in) :: vector
+        !! Input vector the norm will be calcuated for
 
     integer(int32) :: i_dim
 
@@ -60,9 +65,12 @@ contains
     euclidean_norm = sqrt(euclidean_norm)
   end function norm
 
+  !> Adds two vectors in-place
   pure subroutine add_vector(vector, to_be_added)
     real(real64), dimension(:), intent(inout) :: vector
+        !! First vector, it will be modified in-place
     real(real64), dimension(:), intent(in) :: to_be_added
+        !! Vector that should be added to `vector`
 
     integer(int32) :: i_dim
 
@@ -71,9 +79,12 @@ contains
     end do
   end subroutine add_vector
 
+  !> Subtracts two vectors in-place
   pure subroutine subtract_vector(vector, to_be_subtracted)
     real(real64), dimension(:), intent(inout) :: vector
+        !! First vector, it will be modified in-place
     real(real64), dimension(:), intent(in) :: to_be_subtracted
+        !! Vector that should be subtracted from `vector`
 
     integer(int32) :: i_dim
 

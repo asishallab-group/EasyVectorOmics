@@ -11,6 +11,7 @@ module tox_paralog_analysis
 
 contains
 
+    !> Identifies subsets of paralogs with small angle to the `ancestor` (max_angle) and sum to a magnitude significantly exceeding `norm(ancestor)` (gain)
     pure subroutine detect_dosage_effect(ancestor, paralogs, n_paralogs, n_dims, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, ierr, max_angle, gain_gamma)
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
@@ -39,13 +40,14 @@ contains
         integer(int32), intent(out) :: ierr
             !! error code
         real(real64), intent(in), optional :: gain_gamma
-            !! in dosage mode required true positive magnitude gain for dosage, default 0.1
+            !! true positive magnitude gain for dosage effect, default 0.1
         real(real64), intent(in), optional :: max_angle
-            !! in dosage mode maximum angle in radians that a subset candidate must not exceed, otherwise pruned, default is Pi
+            !! maximum angle in radians that a subset candidate must not exceed, otherwise pruned, default is Pi
 
         call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, DOSAGE_PATTERN, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, dosage_max_angle=max_angle, dosage_gain_gamma=gain_gamma, ierr=ierr)
     end subroutine detect_dosage_effect
 
+    !> Identifies subsets of paralogs exhibiting significant angles to the `ancestor`
     pure subroutine detect_subfunctionalization(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr)
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
@@ -76,15 +78,16 @@ contains
         integer(int32), intent(out) :: ierr
             !! error code
         real(real64), dimension(n_paralogs), intent(in) :: paralog_norms
-            !! in subfunctionalization mode needed for subset pruning, holds the euclidean norms of paralogs (you can use the `norm` function from `f42_utils` function for this)
+            !! needed for subset pruning, holds the euclidean norms of paralogs (you can use the `norm` function from `f42_utils` function for this)
         integer(int32), dimension(n_paralogs), intent(in) :: sorted_paralog_norms_perm
-            !! in subfunctionalization mode needed for subset pruning, as the minimum norm of the paralogs that could extend a subset should not be lower than the subset angle to the ancestor
+            !! needed for subset pruning, as the minimum norm of the paralogs that could extend a subset should not be lower than the subset angle to the ancestor
         real(real64), dimension(n_paralogs), intent(out) :: temp_work_array
-            !! in subfunctionalization mode needed for efficient check of minimum value after a certain index
+            !! needed for efficient check of minimum value after a certain index
 
         call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, SUBFUNC_PATTERN, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, subfunc_rdi_threshold=rdi_threshold, subfunc_paralog_norms=paralog_norms, subfunc_sorted_paralog_norms_perm=sorted_paralog_norms_perm, subfunc_temp_work_array=temp_work_array, ierr=ierr)
     end subroutine detect_subfunctionalization
 
+    !> Identifies subsets of paralogs where dosage effect or subfunctionalization applies, depending on `pattern`
     pure subroutine detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
@@ -144,9 +147,9 @@ contains
         work_arr_paralog_subsets = 0_int32
         n_active_masks = 0_int32
 
-        ! initialize first `n_paralogs - 1` subsets of size 1 to be extended
-        ! -1 because the subset with last paralog set cannot be extended, as it doesn't have successors
-        do i_paralog = 1, n_paralogs - 1
+        ! initialize first subsets of size 1 to be extended.
+        ! The subset with last paralog cannot be extended -> won't be created, thus first_succ_idx-2
+        do i_paralog = 1, mask_get_first_successor_idx(filtered_paralogs_mask) - 2
             if (mask_check_state(filtered_paralogs_mask, i_paralog)) then
                 n_active_masks = n_active_masks + 1
                 call mask_set_state(work_arr_paralog_subsets(:, n_active_masks), i_paralog, .true., ierr)
@@ -169,6 +172,9 @@ contains
         end do
     end subroutine detect_patterns
 
+    !> Generates subsets for `candidate_mask` by extending it with one valid paralog.
+    !| Subsets with bad paralog constellation will be pruned,
+    !| others will be added to the work array, either as new active subset that will be extended in coming iterations or as result.
     pure subroutine generate_subsets(candidate_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
@@ -230,7 +236,7 @@ contains
                 gain = merge(dosage_gain_gamma, 0.1_real64, present(dosage_gain_gamma))
                 max_angle = merge(dosage_max_angle, PI, present(dosage_max_angle))
 
-                !! prepare residual, so the extending paralog just needs to be included in one operation and excluded after calculation
+                !! prepare sum vector, so the extending paralog just needs to be included in one operation and excluded after calculation
                 temp_paralog_vector = 0
                 do i_paralog = 1, n_paralogs
                     if (mask_check_state(candidate_mask, i_paralog)) then
@@ -239,16 +245,21 @@ contains
                     if (is_err(ierr)) return
                 end do
 
-                ! generate extended subsets by adding successing paralogs of the first active paralog if suitable.
+                ! generate extended subsets by adding succeeding paralogs of the first active paralog if suitable.
                 do i_paralog = mask_get_first_successor_idx(candidate_mask), n_paralogs
                     if (mask_check_state(filtered_paralogs_mask, i_paralog) .and. .not. mask_check_state(candidate_mask, i_paralog)) then
+                        ! extend subset by current paralog
                         call mask_set_state(candidate_mask, i_paralog, .true., ierr)
                         if (is_err(ierr)) return
 
+                        ! compute sum vector of all subset's paralogs
                         call add_vector(temp_paralog_vector, paralogs(:, i_paralog))
 
                         call angle_between(temp_paralog_vector, ancestor, n_dims, subset_angle)
+
+                        ! If angle of the subset vector is close enough, there may be dosage effect
                         if (subset_angle <= max_angle) then
+                            ! If norm exceeds ancestor's norm significantly, subset is a result
                             if (norm(temp_paralog_vector) >= (1 + gain) * norm(ancestor)) then
                                 call add_to_results(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
                             else
@@ -257,6 +268,7 @@ contains
                             if (is_err(ierr)) return
                         end if
 
+                        ! revert extension with current paralog to efficiently reuse the variables for next paralog
                         call subtract_vector(temp_paralog_vector, paralogs(:, i_paralog))
                         call mask_set_state(candidate_mask, i_paralog, .false., ierr)
                         if (is_err(ierr)) return
@@ -287,12 +299,14 @@ contains
 
                 end do
 
-                ! generate extended subsets by adding successing paralogs of the first active paralog if suitable.
+                ! generate extended subsets by adding succeeding paralogs of the first active paralog if suitable.
                 do i_paralog = mask_get_first_successor_idx(candidate_mask), n_paralogs
                     if (mask_check_state(filtered_paralogs_mask, i_paralog) .and. .not. mask_check_state(candidate_mask, i_paralog)) then
+                        ! extend subset by current paralog
                         call mask_set_state(candidate_mask, i_paralog, .true., ierr)
                         if (is_err(ierr)) return
 
+                        ! compute residual of current subset
                         call subtract_vector(temp_paralog_vector, paralogs(:, i_paralog))
 
                         residual_norm = norm(temp_paralog_vector)
@@ -307,6 +321,7 @@ contains
                         end if
                         if (is_err(ierr)) return
 
+                        ! revert extension with current paralog to efficiently reuse the variables for next paralog
                         call add_vector(temp_paralog_vector, paralogs(:, i_paralog))
                         call mask_set_state(candidate_mask, i_paralog, .false., ierr)
                         if (is_err(ierr)) return
@@ -339,11 +354,19 @@ contains
 
         last_min_index = 0
         do i_perm = 1, src_arr_len
+            ! Take next higher value index
             current_min_idx = sorted_src_arr_perm(i_perm)
             if (current_min_idx > src_arr_len) then
                 call set_err(ierr, ERR_INVALID_INPUT)
                 exit
             end if
+
+            ! If the current value comes after the previous iterated values y in original array,
+            ! fill the indices after the already filled ones upto the current value's index with current value.
+            ! Example: sorted_perm=[2, 1, 3]
+            !   1. iteration fills indices 1-2
+            !   2. iteration skips because value of index 2 is lower than of index 1
+            !   3. iteration fills to the end
             if (current_min_idx > last_min_index) then
                 do i_out = last_min_index + 1, current_min_idx
                     out_arr(i_out) = src_arr(current_min_idx)
@@ -355,6 +378,9 @@ contains
         end do
     end subroutine fill_array_with_minvals_for_each_idx
 
+    !> For memory efficiency this subroutine helps holding different kinds of masks in a single array.
+    !| To achieve this, `subsets` has this structure: [...results, ...active_masks, ...new_active_masks]
+    !| This routine removes an active mask from the `subsets` array and returns it in `active_mask`.
     pure subroutine take_active_mask(subsets, n_mask_chunks, n_subsets, n_results, n_active_masks, n_new_active_masks, active_mask, ierr)
         integer(int32), intent(in) :: n_mask_chunks
             !! number of 32 bit chunks in a mask
@@ -369,7 +395,7 @@ contains
         integer(int32), dimension(n_mask_chunks, n_subsets), intent(inout) :: subsets
             !! working array to hold bitmask encoded subsets for detection.
         integer(int32), dimension(n_mask_chunks), intent(out) :: active_mask
-            !! taken active mask
+            !! taken active mask from `subsets`, will be remove from `subsets`
         integer(int32), intent(out) :: ierr
             !! error code
 
@@ -385,14 +411,19 @@ contains
             return
         end if
 
-        ! take handled mask, always the first one after results
+        ! take one active mask, always the last of all available actives
         active_mask = subsets(:, n_results + n_active_masks)
 
-        ! replace taken mask by last new active mask
+        ! in `subsets`, replace taken mask by last new active mask
         subsets(:, n_results + n_active_masks) = subsets(:, n_results + n_active_masks + n_new_active_masks)
+
+        ! update count
         n_active_masks = n_active_masks - 1
     end subroutine take_active_mask
 
+    !> For memory efficiency this subroutine helps holding different kinds of masks in a single array.
+    !| To achieve this, `subsets` has this structure: [...results, ...active_masks, ...new_active_masks]
+    !| This routine adds a result mask to `subsets` array.
     pure subroutine add_to_results(subsets, n_mask_chunks, n_subsets, n_results, n_active_masks, n_new_active_masks, result, ierr)
         integer(int32), intent(in) :: n_mask_chunks
             !! number of 32 bit chunks in a mask
@@ -407,7 +438,7 @@ contains
         integer(int32), dimension(n_mask_chunks, n_subsets), intent(inout) :: subsets
             !! working array to hold bitmask encoded subsets for detection.
         integer(int32), dimension(n_mask_chunks), intent(in) :: result
-            !! result to add
+            !! result to add to `subsets`
         integer(int32), intent(out) :: ierr
             !! error code
 
@@ -423,7 +454,8 @@ contains
             return
         end if
 
-        ! move first new active mask to end
+        ! free the index after results to hold a new result
+        ! Thus, move first new active mask to end
         subsets(:, n_results + n_active_masks + n_new_active_masks + 1) = subsets(:, n_results + n_active_masks + 1)
         ! move first active mask before new active masks
         subsets(:, n_results + n_active_masks + 1) = subsets(:, n_results + 1)
@@ -432,6 +464,9 @@ contains
         subsets(:, n_results) = result
     end subroutine add_to_results
 
+    !> For memory efficiency this subroutine helps holding different kinds of masks in a single array.
+    !| To achieve this, `subsets` has this structure: [...results, ...active_masks, ...new_active_masks]
+    !| This routine adds a new active mask to the `subsets` array.
     pure subroutine add_new_active_mask(subsets, n_mask_chunks, n_subsets, n_results, n_active_masks, n_new_active_masks, new_active_mask, ierr)
         integer(int32), intent(in) :: n_mask_chunks
             !! number of 32 bit chunks in a mask
@@ -446,7 +481,7 @@ contains
         integer(int32), dimension(n_mask_chunks, n_subsets), intent(out) :: subsets
             !! working array to hold bitmask encoded subsets for detection.
         integer(int32), dimension(n_mask_chunks), intent(in) :: new_active_mask
-            !! new active mask to add
+            !! new active mask to add to `subsets`
         integer(int32), intent(out) :: ierr
             !! error code
 
@@ -462,13 +497,15 @@ contains
             return
         end if
 
+        ! simply append the new active mask to the end
         n_new_active_masks = n_new_active_masks + 1
         subsets(:, n_results + n_active_masks + n_new_active_masks) = new_active_mask
     end subroutine add_new_active_mask
 
+    !> This subroutine easily determines the needed chunk count for subset bit masks, as an integer has only 32 bits.
     pure subroutine mask_chunk_count(n_paralogs, count)
         integer(int32), intent(in) :: n_paralogs
-            !! number of vectors in `paralogs`
+            !! number of paralogs
         integer(int32), intent(out) :: count
             !! number of 32 bit chunks a mask needs to encode `n_paralogs` paralogs
 
@@ -476,9 +513,11 @@ contains
         count = (n_paralogs + 31) / 32
     end subroutine mask_chunk_count
 
+    !> This subroutine prefilters the paralogs for subfunctionalization,
+    !| as paralogs that are already too close in angle to the ancestor don't match the pattern and don't need to be tried as subset extensions.
     pure subroutine filter_paralogs_by_pattern_subfunctionalization(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
         integer(int32), intent(in) :: n_paralogs
-            !! number of vectors in `paralogs`
+            !! number of paralogs
         integer(int32), intent(in) :: n_mask_chunks
             !! number of 32 bit chunks a mask needs to encode `n_paralogs` paralogs
         real(real64), dimension(n_paralogs), intent(in) :: paralog_angles
@@ -493,9 +532,11 @@ contains
         call filter_paralogs_by_pattern(SUBFUNC_PATTERN, paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
     end subroutine filter_paralogs_by_pattern_subfunctionalization
 
+    !> This subroutine prefilters the paralogs for dosage effect,
+    !| as paralogs that are already too distant in angle to the ancestor don't match the pattern and don't need to be tried as subset extensions.
     pure subroutine filter_paralogs_by_pattern_dosage_effect(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
         integer(int32), intent(in) :: n_paralogs
-            !! number of vectors in `paralogs`
+            !! number of paralogs
         integer(int32), intent(in) :: n_mask_chunks
             !! number of 32 bit chunks a mask needs to encode `n_paralogs` paralogs
         real(real64), dimension(n_paralogs), intent(in) :: paralog_angles
@@ -510,9 +551,10 @@ contains
         call filter_paralogs_by_pattern(DOSAGE_PATTERN, paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
     end subroutine filter_paralogs_by_pattern_dosage_effect
 
+    !> This subroutine prefilters the paralogs for a specific pattern to reduce detection overhead, as less subsets need to be tried.
     pure subroutine filter_paralogs_by_pattern(pattern, paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
         integer(int32), intent(in) :: n_paralogs
-            !! number of vectors in `paralogs`
+            !! number of paralogs
         integer(int32), intent(in) :: n_mask_chunks
             !! number of 32 bit chunks a mask needs to encode `n_paralogs` paralogs
         integer(int32), intent(in) :: pattern
@@ -561,31 +603,47 @@ contains
         end select
     end subroutine filter_paralogs_by_pattern
 
+    !> The `detect_*` subroutines need a work array for the to be tested subsets.
+    !| In worst case, all need to be tried and subsets that cannot be extended will be kept as results.
+    !| This is the reason why the work array holds the results as well, as all subsets that are stored in the array can be results as well.
     pure subroutine calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
         integer(int32), intent(in) :: n_paralogs
+            !! number of paralogs
         integer(int32), intent(in) :: n_mask_chunks
             !! number of 32 bit chunks a mask needs to encode `n_paralogs` paralogs
         integer(int32), intent(inout) :: max_subset_size
+            !! maximum size that a subset must not exceed.
+            !! @warning
+            !! If the desired size is too large and leads to an integer overflow, `max_subset_size` will be set to the maximum valid size.
+            !!
+            !! Also, size will be set to number of paralogs in `filtered_paralogs_mask` if larger.
+            !! @endwarning
         integer(int32), intent(out) :: work_array_size
+            !! The calculated needed work array size in absolute worst case scenario. Look into source for details.
         integer(int32), dimension(n_mask_chunks), intent(in) :: filtered_paralogs_mask
+            !! Output mask with all paralogs disabled that did not pass the filter
         integer(int32), intent(inout) :: ierr
+            !! Error code
 
         integer(int32), parameter :: max_int32 = huge(0_int32)
-        integer(int32) :: i_paralog, subset_size, extensions_count, results, previous_results, n_paralogsiltered
+        integer(int32) :: i_paralog, subset_size, extensions_count, results, previous_results, n_paralogs_filtered
 
-        n_paralogsiltered = 0
+        call set_ok(ierr)
+
+        n_paralogs_filtered = 0
         do i_paralog = 1, n_paralogs
             if (mask_check_state(filtered_paralogs_mask, i_paralog)) then
-                n_paralogsiltered = n_paralogsiltered + 1
+                n_paralogs_filtered = n_paralogs_filtered + 1
             end if
         end do
 
-        work_array_size = 0
+        max_subset_size = min(n_paralogs_filtered, max_subset_size)
+        work_array_size = 1
         extensions_count = 1
         previous_results = 0
         results = 0
         do subset_size = 1, max_subset_size
-            ! results holds the number of subsets of current subset size that don't have any successing paralogs to be extended with -> result in worst case
+            ! results holds the number of subsets of current subset size that don't have any succeeding paralogs to be extended with -> result in worst case
             ! previous_results holds the number of results that come from previous subset sizes
             if (previous_results > max_int32 - results) then
                 max_subset_size = subset_size - 1
@@ -596,11 +654,11 @@ contains
 
             ! calculate the number of extensions of current subsets
             ! overflow check
-            if (extensions_count > max_int32 / (n_paralogs - subset_size + 1)) then
+            if (extensions_count > max_int32 / (n_paralogs_filtered - subset_size + 1)) then
                 max_subset_size = subset_size - 1
                 exit
             end if
-            extensions_count = extensions_count * (n_paralogs - subset_size + 1)
+            extensions_count = extensions_count * (n_paralogs_filtered - subset_size + 1)
             extensions_count = extensions_count / subset_size
 
             ! The current subsets will be replaced by their extensions.
@@ -621,6 +679,7 @@ contains
         work_array_size = work_array_size - 1
     end subroutine calc_work_arr_paralog_subsets_size
 
+    !> Helper function that returns the index after the last active paralog in `bit_mask`, so the first succeeding paralog.
     pure function mask_get_first_successor_idx(bit_mask) result(idx)
         integer(int32), dimension(:), intent(in) :: bit_mask
             !! chunked mask to mark active paralogs
@@ -637,6 +696,7 @@ contains
         idx = idx + 1
     end function mask_get_first_successor_idx
 
+    !> Sets the state of a bit/paralog in `bit_mask`
     pure subroutine mask_set_state(bit_mask, i_paralog, state, ierr)
         integer(int32), dimension(:), intent(out) :: bit_mask
             !! chunked mask to mark active paralogs
@@ -664,6 +724,7 @@ contains
         end if
     end subroutine mask_set_state
 
+    !> Checks the state of a bit/paralog in `bit_mask` -> .true. if 1 else .false.
     pure function mask_check_state(bit_mask, i_paralog) result(state)
         integer(int32), dimension(:), intent(in) :: bit_mask
             !! chunked mask to mark active paralogs
@@ -684,7 +745,7 @@ contains
     end function mask_check_state
 end module tox_paralog_analysis
 
-subroutine detect_dosage_effect_c(ancestor, paralogs, n_paralogs, n_dims, filtered_paralogs_mask, n_mask_chunks, &
+pure subroutine detect_dosage_effect_c(ancestor, paralogs, n_paralogs, n_dims, filtered_paralogs_mask, n_mask_chunks, &
                                 n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, &
                                 active_mask, temp_paralog_vector, ierr, max_angle, gain_gamma) bind(C, name="detect_dosage_effect_c")
 
@@ -748,7 +809,7 @@ subroutine detect_dosage_effect_c(ancestor, paralogs, n_paralogs, n_dims, filter
                               active_mask, temp_paralog_vector, ierr, max_angle=max_angle, gain_gamma=gain_gamma)
 end subroutine detect_dosage_effect_c
 
-subroutine detect_dosage_effect_r(ancestor, paralogs, n_paralogs, n_dims, filtered_paralogs_mask, n_mask_chunks, &
+pure subroutine detect_dosage_effect_r(ancestor, paralogs, n_paralogs, n_dims, filtered_paralogs_mask, n_mask_chunks, &
                                 n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, &
                                 active_mask, temp_paralog_vector, ierr, max_angle, gain_gamma)
     use tox_paralog_analysis, only: detect_dosage_effect
@@ -794,7 +855,7 @@ subroutine detect_dosage_effect_r(ancestor, paralogs, n_paralogs, n_dims, filter
                               active_mask, temp_paralog_vector, ierr, max_angle=max_angle, gain_gamma=gain_gamma)
 end subroutine detect_dosage_effect_r
 
-subroutine detect_subfunctionalization_c(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, &
+pure subroutine detect_subfunctionalization_c(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, &
                                        n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, &
                                        active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr) &
                                        bind(C, name="detect_subfunctionalization_c")
@@ -864,7 +925,7 @@ subroutine detect_subfunctionalization_c(ancestor, paralogs, n_paralogs, n_dims,
                                    active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr)
 end subroutine detect_subfunctionalization_c
 
-subroutine detect_subfunctionalization_r(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, &
+pure subroutine detect_subfunctionalization_r(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, &
                                          n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, &
                                          active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr)
 
@@ -915,7 +976,7 @@ subroutine detect_subfunctionalization_r(ancestor, paralogs, n_paralogs, n_dims,
                                    active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr)
 end subroutine detect_subfunctionalization_r
 
-subroutine filter_paralogs_by_pattern_subfunctionalization_c(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr) bind(C, name="filter_paralogs_by_pattern_subfunctionalization_c")
+pure subroutine filter_paralogs_by_pattern_subfunctionalization_c(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr) bind(C, name="filter_paralogs_by_pattern_subfunctionalization_c")
     use tox_paralog_analysis, only: filter_paralogs_by_pattern_subfunctionalization
     use, intrinsic :: iso_c_binding, only: c_double, c_int
     M_USE_NULL_VALIDATION
@@ -944,7 +1005,7 @@ subroutine filter_paralogs_by_pattern_subfunctionalization_c(paralog_angles, thr
     call filter_paralogs_by_pattern_subfunctionalization(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
 end subroutine filter_paralogs_by_pattern_subfunctionalization_c
 
-subroutine filter_paralogs_by_pattern_subfunctionalization_r(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
+pure subroutine filter_paralogs_by_pattern_subfunctionalization_r(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
     use tox_paralog_analysis, only: filter_paralogs_by_pattern_subfunctionalization
     use, intrinsic :: iso_fortran_env, only: real64, int32
     implicit none
@@ -965,7 +1026,7 @@ subroutine filter_paralogs_by_pattern_subfunctionalization_r(paralog_angles, thr
     call filter_paralogs_by_pattern_subfunctionalization(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
 end subroutine filter_paralogs_by_pattern_subfunctionalization_r
 
-subroutine filter_paralogs_by_pattern_dosage_effect_c(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr) bind(C, name="filter_paralogs_by_pattern_dosage_effect")
+pure subroutine filter_paralogs_by_pattern_dosage_effect_c(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr) bind(C, name="filter_paralogs_by_pattern_dosage_effect")
     use tox_paralog_analysis, only: filter_paralogs_by_pattern_dosage_effect
     use, intrinsic :: iso_c_binding, only: c_double, c_int
     M_USE_NULL_VALIDATION
@@ -994,7 +1055,7 @@ subroutine filter_paralogs_by_pattern_dosage_effect_c(paralog_angles, threshold,
     call filter_paralogs_by_pattern_dosage_effect(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
 end subroutine filter_paralogs_by_pattern_dosage_effect_c
 
-subroutine filter_paralogs_by_pattern_dosage_effect_r(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
+pure subroutine filter_paralogs_by_pattern_dosage_effect_r(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
     use tox_paralog_analysis, only: filter_paralogs_by_pattern_dosage_effect
     use, intrinsic :: iso_fortran_env, only: real64, int32
     implicit none
@@ -1015,7 +1076,7 @@ subroutine filter_paralogs_by_pattern_dosage_effect_r(paralog_angles, threshold,
     call filter_paralogs_by_pattern_dosage_effect(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
 end subroutine filter_paralogs_by_pattern_dosage_effect_r
 
-subroutine calc_work_arr_paralog_subsets_size_c(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr) bind(C, name="calc_work_arr_paralog_subsets_size")
+pure subroutine calc_work_arr_paralog_subsets_size_c(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr) bind(C, name="calc_work_arr_paralog_subsets_size")
     use tox_paralog_analysis, only: calc_work_arr_paralog_subsets_size
     use, intrinsic :: iso_c_binding, only: c_int
     M_USE_NULL_VALIDATION
@@ -1039,7 +1100,7 @@ subroutine calc_work_arr_paralog_subsets_size_c(max_subset_size, n_paralogs, wor
     call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
 end subroutine calc_work_arr_paralog_subsets_size_c
 
-subroutine calc_work_arr_paralog_subsets_size_r(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
+pure subroutine calc_work_arr_paralog_subsets_size_r(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
     use tox_paralog_analysis, only: calc_work_arr_paralog_subsets_size
     use, intrinsic :: iso_fortran_env, only: real64, int32
     implicit none
@@ -1055,7 +1116,7 @@ subroutine calc_work_arr_paralog_subsets_size_r(max_subset_size, n_paralogs, wor
     call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
 end subroutine calc_work_arr_paralog_subsets_size_r
 
-subroutine mask_chunk_count_c(n_paralogs, count, ierr) bind(C, name="mask_chunk_count_c")
+pure subroutine mask_chunk_count_c(n_paralogs, count, ierr) bind(C, name="mask_chunk_count_c")
     use tox_paralog_analysis, only: mask_chunk_count
     use, intrinsic :: iso_c_binding, only: c_int
     M_USE_NULL_VALIDATION
@@ -1074,7 +1135,7 @@ subroutine mask_chunk_count_c(n_paralogs, count, ierr) bind(C, name="mask_chunk_
     call mask_chunk_count(n_paralogs, count)
 end subroutine mask_chunk_count_c
 
-subroutine mask_chunk_count_r(n_paralogs, count)
+pure subroutine mask_chunk_count_r(n_paralogs, count)
     use tox_paralog_analysis, only: mask_chunk_count
     use, intrinsic :: iso_fortran_env, only: int32
     implicit none
@@ -1087,7 +1148,7 @@ subroutine mask_chunk_count_r(n_paralogs, count)
     call mask_chunk_count(n_paralogs, count)
 end subroutine mask_chunk_count_r
 
-subroutine mask_check_state_c(bit_mask, n_mask_chunks, i_paralog, state, ierr) bind(C, name="mask_check_state_c")
+pure subroutine mask_check_state_c(bit_mask, n_mask_chunks, i_paralog, state, ierr) bind(C, name="mask_check_state_c")
     use tox_paralog_analysis, only: mask_check_state
     use tox_conversions, only: logical_as_c_int
     use, intrinsic :: iso_c_binding, only: c_int
@@ -1113,7 +1174,7 @@ subroutine mask_check_state_c(bit_mask, n_mask_chunks, i_paralog, state, ierr) b
     call logical_as_c_int(mask_check_state(bit_mask, i_paralog), state)
 end subroutine mask_check_state_c
 
-subroutine mask_check_state_r(bit_mask, n_mask_chunks, i_paralog, state)
+pure subroutine mask_check_state_r(bit_mask, n_mask_chunks, i_paralog, state)
     use tox_paralog_analysis, only: mask_check_state
     use, intrinsic :: iso_fortran_env, only: int32
     implicit none

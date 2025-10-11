@@ -62,7 +62,6 @@ contains
 
         call set_ok(ierr)
 
-        max_subset_size = n_paralogs
         ancestor = [ 1, 1, 1 ]
         paralogs(:, 1) = [ 1, 0, 0 ]
         paralogs(:, 2) = [ 0, 1, 0 ]
@@ -75,6 +74,7 @@ contains
             call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
         end do
 
+        max_subset_size = n_paralogs
         call filter_paralogs_by_pattern(SUBFUNC_PATTERN, paralog_angles, prefilter_threshold, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
         call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_floating_point_epsilon: unexpected error when filtering paralogs for subfunctionalization")
         call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
@@ -105,7 +105,6 @@ contains
 
         call set_ok(ierr)
 
-        max_subset_size = n_paralogs
         ancestor = [ 1, 1, 0 ]
         paralogs(:, 1) = [ 1, 0, 0 ]
         paralogs(:, 2) = [ 0, 1, 0 ]
@@ -122,6 +121,7 @@ contains
             call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
         end do
 
+        max_subset_size = n_paralogs
         call filter_paralogs_by_pattern(SUBFUNC_PATTERN, paralog_angles, subf_min_angle, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
         call assert_true(is_ok(ierr), "test_detect_patterns_mixed_results: unexpected error when filtering paralogs for subfunctionalization")
         call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
@@ -133,6 +133,7 @@ contains
         call assert_equal_int(work_arr_paralog_subsets(1, 1), 3_int32, "test_detect_patterns_mixed_results: expected result mask to be 3=0b0011 for subfunctionalization")
 
         deallocate(work_arr_paralog_subsets)
+        max_subset_size = n_paralogs
         call filter_paralogs_by_pattern(DOSAGE_PATTERN, paralog_angles, 2 * dos_max_angle, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
         call assert_true(is_ok(ierr), "test_detect_patterns_mixed_results: unexpected error when filtering paralogs for dosage effect")
         call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
@@ -162,7 +163,6 @@ contains
 
         call set_ok(ierr)
 
-        max_subset_size = n_paralogs
         ancestor = [ 1, 0, 0 ]
         paralogs(:, 1) = [ 0.4_real64, -0.01_real64, 0.0_real64 ]
         paralogs(:, 2) = [ 0.7_real64, 0.01_real64, 0.0_real64 ]
@@ -176,6 +176,7 @@ contains
             call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
         end do
 
+        max_subset_size = n_paralogs
         call filter_paralogs_by_pattern(SUBFUNC_PATTERN, paralog_angles, prefilter_threshold, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
         call assert_true(is_ok(ierr), "test_detect_patterns_dosage_effect_near_angle_margin: unexpected error when filtering paralogs for subfunctionalization")
         call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
@@ -187,6 +188,7 @@ contains
         call assert_equal_int(n_results, 0_int32, "test_detect_patterns_dosage_effect_near_angle_margin: expected no results for subfunctionalization")
 
         deallocate(work_arr_paralog_subsets)
+        max_subset_size = n_paralogs
         call filter_paralogs_by_pattern(DOSAGE_PATTERN, paralog_angles, prefilter_threshold, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
         call assert_true(is_ok(ierr), "test_detect_patterns_dosage_effect_near_angle_margin: unexpected error when filtering paralogs for dosage effect")
         call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
@@ -217,7 +219,6 @@ contains
 
         call set_ok(ierr)
 
-        max_subset_size = n_paralogs
         ancestor = [ 1, 0, 0 ]
         paralogs(:, 1) = [ 0.6_real64, 0.0_real64, 0.0_real64 ]
         paralogs(:, 2) = [ 0.7_real64, 0.0_real64, 0.0_real64 ]
@@ -231,6 +232,7 @@ contains
             call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
         end do
 
+        max_subset_size = n_paralogs
         call filter_paralogs_by_pattern(SUBFUNC_PATTERN, paralog_angles, prefilter_threshold, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
         call assert_true(is_ok(ierr), "test_detect_patterns_dosage_effect: unexpected error when filtering paralogs for subfunctionalization")
         call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
@@ -242,6 +244,7 @@ contains
         call assert_equal_int(n_results, 0_int32, "test_detect_patterns_dosage_effect: expected no results for subfunctionalization")
 
         deallocate(work_arr_paralog_subsets)
+        max_subset_size = n_paralogs
         call filter_paralogs_by_pattern(DOSAGE_PATTERN, paralog_angles, prefilter_threshold, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
         call assert_true(is_ok(ierr), "test_detect_patterns_dosage_effect: unexpected error when filtering paralogs for dosage effect")
         call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
@@ -272,7 +275,6 @@ contains
 
         call set_ok(ierr)
 
-        max_subset_size = n_paralogs
         ancestor = [ 1, 1, 0 ]
         paralogs(:, 1) = [ 1, 0, 0 ]
         paralogs(:, 2) = [ 0, 1, 0 ]
@@ -285,6 +287,7 @@ contains
             call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
         end do
 
+        max_subset_size = n_paralogs
         call filter_paralogs_by_pattern(SUBFUNC_PATTERN, paralog_angles, prefilter_threshold, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
         call assert_true(is_ok(ierr), "test_detect_patterns_perfect_subfunc_split: unexpected error when filtering paralogs for subfunctionalization")
         call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
@@ -297,6 +300,7 @@ contains
         call assert_equal_int(work_arr_paralog_subsets(1, 1), 3_int32, "test_detect_patterns_perfect_subfunc_split: expected result mask to be 3=0b011 for subfunctionalization")
 
         deallocate(work_arr_paralog_subsets)
+        max_subset_size = n_paralogs
         call filter_paralogs_by_pattern(DOSAGE_PATTERN, paralog_angles, prefilter_threshold, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
         call assert_true(is_ok(ierr), "test_detect_patterns_perfect_subfunc_split: unexpected error when filtering paralogs for dosage effect")
         call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
@@ -327,7 +331,6 @@ contains
         call set_ok(ierr)
 
         ! should not pass
-        max_subset_size = n_paralogs
         ancestor = [ 1, 1, 0 ]
         paralogs(:, 1) = [ 1.0_real64, 0.0_real64, 0.001_real64 ]
         paralogs(:, 2) = [ 0.0_real64, 1.0_real64, 0.001_real64 ]
@@ -339,6 +342,7 @@ contains
             call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
         end do
 
+        max_subset_size = n_paralogs
         call filter_paralogs_by_pattern(SUBFUNC_PATTERN, paralog_angles, prefilter_threshold, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
         call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when filtering paralogs for subfunctionalization")
         call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
@@ -350,6 +354,7 @@ contains
         call assert_equal_int(n_results, 0_int32, "test_detect_patterns_subfunc_at_angle_margin: expected no results for subfunctionalization")
 
         deallocate(work_arr_paralog_subsets)
+        max_subset_size = n_paralogs
         call filter_paralogs_by_pattern(DOSAGE_PATTERN, paralog_angles, prefilter_threshold, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
         call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when filtering paralogs for dosage effect")
         call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
@@ -362,7 +367,6 @@ contains
         deallocate(work_arr_paralog_subsets)
 
         ! should pass
-        max_subset_size = n_paralogs
         ancestor = [ 1, 1, 0 ]
         paralogs(:, 1) = [ 1.0_real64, 0.0_real64, 0.0004_real64 ]
         paralogs(:, 2) = [ 0.0_real64, 1.0_real64, 0.0004_real64 ]
@@ -374,6 +378,7 @@ contains
             call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
         end do
 
+        max_subset_size = n_paralogs
         call filter_paralogs_by_pattern(SUBFUNC_PATTERN, paralog_angles, prefilter_threshold, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
         call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when filtering paralogs for subfunctionalization")
         call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
@@ -386,6 +391,7 @@ contains
         call assert_equal_int(work_arr_paralog_subsets(1, 1), 3_int32, "test_detect_patterns_subfunc_at_angle_margin: expected result mask to be 3=0b011 for subfunctionalization")
 
         deallocate(work_arr_paralog_subsets)
+        max_subset_size = n_paralogs
         call filter_paralogs_by_pattern(DOSAGE_PATTERN, paralog_angles, prefilter_threshold, n_paralogs, filtered_paralogs_mask, n_mask_chunks, ierr)
         call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when filtering paralogs for dosage effect")
         call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
@@ -579,6 +585,7 @@ contains
             end if
         end do
         call assert_equal_int(n_in_filtered, count(paralog_angles >= threshold), "test_filter_paralogs_by_pattern: wrong filtering for subfunctionalization")
+
         call filter_paralogs_by_pattern(DOSAGE_PATTERN, paralog_angles, threshold, n_paralogs, mask, size(mask), ierr)
         n_in_filtered = 0
         do i_paralog = 1, n_paralogs
