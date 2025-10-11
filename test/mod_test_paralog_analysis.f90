@@ -607,13 +607,13 @@ contains
         real(real64), dimension(n_dims, n_paralogs) :: paralogs
         real(real64), dimension(n_paralogs) :: temp_paralog_vector, subfunc_paralog_norms, subfunc_temp_work_array
         integer(int32), dimension(n_paralogs) :: subfunc_sorted_paralog_norms_perm
-        real(real64), parameter :: rdi_threshold = 0.5
+        real(real64), parameter :: rdi_threshold = 0.5_real64
 
 
         call set_ok(ierr)
 
         ! stress the detect_patterns: Exploit an edge case where the whole working array is in use at some point to ensure correct size calculation
-
+        mask_all_active = 0
         do i_paralog = 1, n_paralogs
             call mask_set_state(mask_all_active, i_paralog, .true., ierr)
             call assert_true(is_ok(ierr), "test_calc_work_arr_paralog_subsets_size: unexpected error when enabling paralog in mask")
@@ -621,15 +621,16 @@ contains
             subfunc_sorted_paralog_norms_perm(i_paralog) = n_paralogs - i_paralog + 1
         end do
 
-        ancestor = 1.0
-        paralogs = 0.0
-        paralogs(:, n_paralogs) = 1.0 ! residual with last paralog active will produce a norm below rdi_threshold -> only subsets with last paralog included (cannot be extended) will be results
-        subfunc_paralog_norms = 1.0
-        subfunc_paralog_norms(n_paralogs) = 0.0 ! last paralog norm is lower residual -> no subset candidate will be pruned
+        ancestor = 1.0_real64
+        paralogs = 0.0_real64
+        paralogs(:, n_paralogs) = 1.0_real64 ! residual with last paralog active will produce a norm below rdi_threshold -> only subsets with last paralog included (cannot be extended) will be results
+        subfunc_paralog_norms = 1.0_real64
+        subfunc_paralog_norms(n_paralogs) = 0.0_real64 ! last paralog norm is lower residual -> no subset candidate will be pruned
 
         do i_paralog = 1, n_paralogs
             max_subset_size_all_active = i_paralog
             call calc_work_arr_paralog_subsets_size(max_subset_size_all_active, n_paralogs, work_array_size, mask_all_active, size(mask_all_active), ierr)
+            call assert_true(is_ok(ierr), "test_calc_work_arr_paralog_subsets_size: unexpected error when calculating work array size")
 
             allocate(work_arr_paralog_subsets(1, work_array_size + 1))
             work_arr_paralog_subsets = 0
@@ -638,8 +639,8 @@ contains
             ! masks have at least one active bit -> non-zero
             ! masks also won't be reset to zero, as new added masks overwrite them anyway.
             ! Thus, all calculated needed space should be used during detection -> non-zero
-            call assert_equal_int(count(work_arr_paralog_subsets /= 0), work_array_size, "test_calc_work_arr_paralog_subsets_size: different count of subsets used than expected")
             call assert_true(is_ok(ierr), "test_calc_work_arr_paralog_subsets_size: unexpected error when detecting patterns")
+            call assert_equal_int(count(work_arr_paralog_subsets /= 0), work_array_size, "test_calc_work_arr_paralog_subsets_size: different count of subsets used than expected")
             deallocate(work_arr_paralog_subsets)
         end do
 

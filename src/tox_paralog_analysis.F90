@@ -140,16 +140,22 @@ contains
             !! max allowed residual distance from `ancestor`
 
         ! Locals
-        integer(int32) :: i_paralog, subset_size, n_active_masks, n_new_active_masks
+        integer(int32) :: i_paralog, subset_size, n_active_masks, n_new_active_masks, last_paralog_idx
 
         call set_ok(ierr)
 
         work_arr_paralog_subsets = 0_int32
         n_active_masks = 0_int32
+        last_paralog_idx = mask_get_first_successor_idx(filtered_paralogs_mask) - 1
+
+        if (last_paralog_idx > n_paralogs) then
+            call set_err(ierr, ERR_INVALID_INPUT)
+            return
+        end if
 
         ! initialize first subsets of size 1 to be extended.
-        ! The subset with last paralog cannot be extended -> won't be created, thus first_succ_idx-2
-        do i_paralog = 1, mask_get_first_successor_idx(filtered_paralogs_mask) - 2
+        ! The subset with last paralog cannot be extended
+        do i_paralog = 1, last_paralog_idx - 1
             if (mask_check_state(filtered_paralogs_mask, i_paralog)) then
                 n_active_masks = n_active_masks + 1
                 call mask_set_state(work_arr_paralog_subsets(:, n_active_masks), i_paralog, .true., ierr)
