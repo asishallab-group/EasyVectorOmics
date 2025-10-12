@@ -3,7 +3,7 @@
 
 module f42_utils
   use, intrinsic :: iso_fortran_env, only: real64, int32
-  use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_INTERNAL, set_ok, set_err_once, set_err, is_err
+  use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_INTERNAL, set_ok, set_err_once, set_err
   implicit none
 
   public :: sort_real, sort_integer, sort_character
@@ -14,21 +14,35 @@ module f42_utils
   end interface sort_array
 
   real(real64), parameter :: PI = 4.0_real64 * atan(1.0_real64)
+  real(real64), parameter :: EPS = epsilon(1.0_real64)
 contains
 
+  pure logical function is_close(a, b)
+    real(real64), intent(in) :: a
+      !! First variable of comparison a==b
+    real(real64), intent(in) :: b
+      !! Second variable of comparison a==b
+
+    is_close = abs(a - b) < EPS * max(abs(a), abs(b))
+  end function is_close
+
   !> Computes the radian angle between two vectors
-  pure subroutine angle_between(v1, v2, n_dims, angle)
+  pure subroutine angle_between(v1, v2, n_dims, angle, ierr)
     integer(int32), intent(in) :: n_dims
-        !! number of elements in `v1` and `v2`
+      !! number of elements in `v1` and `v2`
     real(real64), dimension(n_dims), intent(in) :: v1
-        !! first vector for angle calculation
+      !! first vector for angle calculation
     real(real64), dimension(n_dims), intent(in) :: v2
-        !! second vector for angle calculation
+      !! second vector for angle calculation
     real(real64), intent(out) :: angle
-        !! will hold calculated angle
+      !! will hold calculated angle
+    integer(int32), intent(out) :: ierr
+      !! Error code
 
     integer(int32) :: i
-    real(real64) :: theta, dot_product, norm1, norm2
+    real(real64) :: theta, dot_product, norm1, norm2, norm_product
+
+    call set_ok(ierr)
 
     dot_product = 0
     norm1 = 0
@@ -38,31 +52,37 @@ contains
       norm1 = norm1 + v1(i) ** 2
       norm2 = norm2 + v2(i) ** 2
     end do
-    theta = dot_product / (sqrt(norm1) * sqrt(norm2))
+    norm_product = sqrt(norm1) * sqrt(norm2)
+    if (is_close(norm_product, 0.0_real64)) then
+        call set_err(ierr, ERR_INVALID_INPUT)
+        return
+    end if
+
+    theta = dot_product / norm_product
     theta = max(-1.0_real64, min(1.0_real64, theta))
     angle = acos(theta)
   end subroutine angle_between
 
   !> Returns the given degrees in positive radian value (-90deg -> 3*PI/2, not -PI/2)
-  pure real(real64) function radians(degrees) result(rad)
+  pure real(real64) function radians(degrees)
     real(real64), intent(in) :: degrees
         !! degrees to be converted
 
-    rad = modulo(degrees, 360.0_real64) * PI / 180 
+    radians = modulo(degrees, 360.0_real64) * PI / 180 
   end function radians
 
   !> Calculates the euclidean norm of a vector
-  pure real(real64) function norm(vector) result(euclidean_norm)
+  pure real(real64) function norm(vector)
     real(real64), dimension(:), intent(in) :: vector
         !! Input vector the norm will be calcuated for
 
     integer(int32) :: i_dim
 
-    euclidean_norm = 0
+    norm = 0
     do i_dim = 1, size(vector)
-      euclidean_norm = euclidean_norm + vector(i_dim) ** 2
+      norm = norm + vector(i_dim) ** 2
     end do
-    euclidean_norm = sqrt(euclidean_norm)
+    norm = sqrt(norm)
   end function norm
 
   !> Adds two vectors in-place

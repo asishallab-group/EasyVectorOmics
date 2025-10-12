@@ -71,7 +71,8 @@ contains
         prefilter_threshold = 0
 
         do i_paralog = 1, n_paralogs
-            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
+            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog), ierr)
+            call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_floating_point_epsilon: unexpected error when calculating angles")
         end do
 
         max_subset_size = n_paralogs
@@ -118,7 +119,8 @@ contains
 
 
         do i_paralog = 1, n_paralogs
-            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
+            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog), ierr)
+            call assert_true(is_ok(ierr), "test_detect_patterns_mixed_results: unexpected error when calculating angles")
         end do
 
         max_subset_size = n_paralogs
@@ -173,7 +175,8 @@ contains
         max_angle = prefilter_threshold
 
         do i_paralog = 1, n_paralogs
-            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
+            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog), ierr)
+            call assert_true(is_ok(ierr), "test_detect_patterns_dosage_effect_near_angle_margin: unexpected error when calculating angles")
         end do
 
         max_subset_size = n_paralogs
@@ -229,7 +232,8 @@ contains
         max_angle = prefilter_threshold
 
         do i_paralog = 1, n_paralogs
-            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
+            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog), ierr)
+            call assert_true(is_ok(ierr), "test_detect_patterns_dosage_effect: unexpected error when calculating angles")
         end do
 
         max_subset_size = n_paralogs
@@ -284,7 +288,8 @@ contains
         prefilter_threshold = radians(30.0_real64)
 
         do i_paralog = 1, n_paralogs
-            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
+            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog), ierr)
+            call assert_true(is_ok(ierr), "test_detect_patterns_perfect_subfunc_split: unexpected error when calculating angles")
         end do
 
         max_subset_size = n_paralogs
@@ -339,7 +344,8 @@ contains
         prefilter_threshold = radians(44.9_real64)
 
         do i_paralog = 1, n_paralogs
-            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
+            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog), ierr)
+            call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when calculating angles")
         end do
 
         max_subset_size = n_paralogs
@@ -375,7 +381,8 @@ contains
         prefilter_threshold = radians(44.9_real64)
 
         do i_paralog = 1, n_paralogs
-            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog))
+            call angle_between(paralogs(:, i_paralog), ancestor, n_dims, paralog_angles(i_paralog), ierr)
+            call assert_true(is_ok(ierr), "test_detect_patterns_subfunc_at_angle_margin: unexpected error when calculating angles")
         end do
 
         max_subset_size = n_paralogs
@@ -409,31 +416,37 @@ contains
         integer(int32), parameter :: n_dims = 5
         real(real64), dimension(n_dims) :: v1, v2
         real(real64) :: angle
+        integer(int32) :: ierr
 
         ! test v2 == v1
         v1 = [1, 2, 3, 4, 5]
         v2 = v1
-        call angle_between(v1, v2, n_dims, angle)
+        call angle_between(v1, v2, n_dims, angle, ierr)
+        call assert_true(is_ok(ierr), "test_angle_between: unexpected error when calculating angle between identical vectors")
         call assert_equal_real(angle, 0.0_real64, TOL, "test_angle_between: vector should have zero angle to itself")
         v2 = v1 / 2
-        call angle_between(v1, v2, n_dims, angle)
+        call angle_between(v1, v2, n_dims, angle, ierr)
+        call assert_true(is_ok(ierr), "test_angle_between: unexpected error when calculating angle between equal, but scaled vectors")
         call assert_equal_real(angle, 0.0_real64, TOL, "test_angle_between: vector should have zero angle to itself")
 
         ! test v2 points in opposite direction
         v2 = -v1
-        call angle_between(v1, v2, n_dims, angle)
+        call angle_between(v1, v2, n_dims, angle, ierr)
+        call assert_true(is_ok(ierr), "test_angle_between: unexpected error when calculating angle between opposite vectors")
         call assert_equal_real(angle, PI, TOL, "test_angle_between: opposite vector should have 180 deg angle")
 
         ! test v2 perpendicular to v1
         v1 = [1, 0, 0, 0, 0]
         v2 = [0, 1, 0, 0, 0]
-        call angle_between(v1, v2, n_dims, angle)
+        call angle_between(v1, v2, n_dims, angle, ierr)
+        call assert_true(is_ok(ierr), "test_angle_between: unexpected error when calculating angle between perpendicular vectors")
         call assert_equal_real(angle, PI / 2, TOL, "test_angle_between: opposite vector should have 90 deg angle")
 
         ! test v2 45 deg to v1
         v1 = [1, 0, 0, 0, 0]
         v2 = [0.7071, 0.7071, 0.0, 0.0, 0.0]
-        call angle_between(v1, v2, n_dims, angle)
+        call angle_between(v1, v2, n_dims, angle, ierr)
+        call assert_true(is_ok(ierr), "test_angle_between: unexpected error when calculating angle between 45 deg vectors")
         call assert_equal_real(angle, PI / 4, TOL, "test_angle_between: opposite vector should have 90 deg angle")
     end subroutine test_angle_between
 
@@ -759,7 +772,7 @@ contains
 
         do i = 1, size(all_tests)
             call all_tests(i)%test_proc()
-            print "(A,A)", trim(all_tests(i)%name), " passed."
+            print "(' ',A,' passed.')", trim(all_tests(i)%name)
         end do
         print *, "All tox_paralog_analysis tests passed successfully."
     end subroutine run_all_tests_tox_paralog_analysis
@@ -778,7 +791,7 @@ contains
             do j = 1, size(all_tests)
                 if (trim(test_names(i)) == trim(all_tests(j)%name)) then
                     call all_tests(j)%test_proc()
-                    print "(A,A)", trim(test_names(i)), " passed."
+                    print "(' ',A,' passed.')", trim(test_names(i))
                     found = .true.
                     exit
                 end if

@@ -261,7 +261,8 @@ contains
                         ! compute sum vector of all subset's paralogs
                         call add_vector(temp_paralog_vector, paralogs(:, i_paralog))
 
-                        call angle_between(temp_paralog_vector, ancestor, n_dims, subset_angle)
+                        call angle_between(temp_paralog_vector, ancestor, n_dims, subset_angle, ierr)
+                        if (is_err(ierr)) return
 
                         ! If angle of the subset vector is close enough, there may be dosage effect
                         if (subset_angle <= max_angle) then
