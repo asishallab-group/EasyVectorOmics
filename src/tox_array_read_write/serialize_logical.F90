@@ -225,7 +225,7 @@ end subroutine
 
 !> C binding for the subroutine to serialize a flat logical array to a binary file.
 subroutine serialize_logical_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bind(C, name="serialize_logical_nd_C")
-  use iso_c_binding, only: c_ptr, c_int, c_f_pointer
+  use iso_c_binding, only: c_int, c_f_pointer
   use array_utils, only: ascii_to_string
   use tox_conversions, only: c_int_as_logical
   use serialize_logical, only: serialize_logical_nd
@@ -234,12 +234,13 @@ subroutine serialize_logical_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr)
   implicit none
 
   ! input
-  type(c_ptr), value :: arr
-    !! Pointer to the flat logical array
+
   integer(c_int), value :: ndim
     !! Number of dimensions
   integer(c_int), intent(in) :: dims(ndim)
-    !! Dimensions of the array
+    !! Dimensions of the array  
+  integer(c_int) :: arr(product(dims))
+    !! Pointer to the flat logical array    
   integer(c_int), value :: fn_len
     !! Length of the filename array
   integer(c_int), intent(in) :: filename_ascii(fn_len)
@@ -249,7 +250,6 @@ subroutine serialize_logical_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr)
 
   ! Local
   character(len=:), allocatable :: filename
-  integer(c_int), pointer :: arr_f(:)
   logical, allocatable :: tmp_arr(:)
 
   allocate(tmp_arr(product(dims(1:ndim))))
@@ -258,9 +258,7 @@ subroutine serialize_logical_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr)
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 
-  call c_f_pointer(arr, arr_f, [product(dims(1:ndim))])
-
-  call c_int_as_logical(arr_f, tmp_arr)
+  call c_int_as_logical(arr, tmp_arr)
 
   ! save
   call serialize_logical_nd(tmp_arr, dims, ndim, filename, ierr)

@@ -233,12 +233,12 @@ subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bin
   implicit none
 
   ! input
-  type(c_ptr), value :: arr
-    !! Pointer to the flat integer array
   integer(c_int), value :: ndim
     !! Number of dimensions
   integer(c_int), intent(in) :: dims(ndim)
     !! Dimensions of the array
+  integer(c_int) :: arr(product(dims))
+    !! Pointer to the flat integer array  
   integer(c_int), value :: fn_len
     !! Length of the filename array
   integer(c_int), intent(in) :: filename_ascii(fn_len)
@@ -248,14 +248,11 @@ subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bin
 
   ! Local
   character(len=:), allocatable :: filename
-  integer(c_int), pointer :: arr_f(:)
 
   call set_ok(ierr)
 
   call ascii_to_string(filename_ascii, fn_len, filename)
 
-  call c_f_pointer(arr, arr_f, [product(dims(1:ndim))])
-
   ! save
-  call serialize_int_nd(arr_f, dims, ndim, filename, ierr)
+  call serialize_int_nd(arr, dims, ndim, filename, ierr)
 end subroutine

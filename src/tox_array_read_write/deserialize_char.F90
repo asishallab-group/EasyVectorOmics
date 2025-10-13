@@ -247,36 +247,39 @@ end subroutine deserialize_char_flat_r
 
 !> C binding for the subroutine to deserialize a flat character array from a file
 !> @note The array is returned flat and needs to be reshaped in C/python
-subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, &
-                                   filename_ascii, fn_len, ierr) bind(C, name="deserialize_char_flat_C")
-  use iso_c_binding, only: c_int
+subroutine deserialize_char_flat_C(raw_chars, clen, total_array_size, &
+                                   filename_c, fn_len, ierr) bind(C, name="deserialize_char_flat_C")
+  use iso_c_binding, only: c_char, c_int, c_null_char
   use iso_fortran_env, only: int32
   use char_deserialize_mod, only: deserialize_char_flat
-  use array_utils, only : ascii_to_string, string_to_ascii_arr
-  use tox_errors, only : is_ok, set_ok
+  use tox_conversions, only: c_char_1d_as_string, string_as_c_char_1d
+  use tox_errors, only : is_ok, set_ok, set_err_once, ERR_ALLOC_FAIL
   implicit none
 
   ! Arguments
   integer(c_int), value       :: clen
   !! Length of each character string
   integer(c_int), value       :: total_array_size
-  !! Total size of the ASCII array
-  integer(c_int), intent(out) :: ascii_arr(clen*total_array_size)
-  !! Output array of ASCII characters, preallocated by C/Python (flat)
+  !! Total size of the array
+  character(kind=c_char, len=1), intent(out) :: raw_chars(clen, total_array_size)
+  !! Output array of c_chars, preallocated by C/Python (2D: clen x total_array_size)
   integer(c_int), value       :: fn_len
   !! Length of the filename array
-  integer(c_int), intent(in)  :: filename_ascii(fn_len)
-  !! Array of ASCII characters representing the filename
+  character(kind=c_char, len=1), intent(in)  :: filename_c(fn_len)
+  !! c_char array representing the filename
   integer(c_int), intent(out) :: ierr
   !! error code
 
   character(len=:), allocatable :: filename
   character(len=:), pointer     :: flat(:)
   integer(c_int), allocatable   :: dims(:)
-  integer(int32) :: i, j, actual_clen
+  integer(int32) :: i, j, actual_clen, ioerror
 
   call set_ok(ierr)
-  call ascii_to_string(filename_ascii, fn_len, filename)
+  
+  ! Convert filename from c_char array to Fortran string
+  call c_char_1d_as_string(filename_c, filename, ierr)
+  if (.not. is_ok(ierr)) return
 
   ! Deserialize
   call deserialize_char_flat(flat, dims, actual_clen, filename, ierr)
@@ -285,8 +288,23 @@ subroutine deserialize_char_flat_C(ascii_arr, clen, total_array_size, &
     return
   end if
 
-  ! Convert to ASCII (null-padding), flatten manually
-  call string_to_ascii_arr(flat, total_array_size, ascii_arr, clen)
+  ! Check if allocated flat array matches expected size
+  if (size(flat) /= total_array_size) then
+    call set_err_once(ierr, ERR_ALLOC_FAIL)
+    if (associated(flat)) deallocate(flat)
+    return
+  end if
+
+  ! Convert Fortran strings to c_char array (2D: clen x total_array_size)
+  do i = 1, total_array_size
+    do j = 1, clen
+      if (j <= len(flat(i)) .and. j <= actual_clen) then
+        raw_chars(j, i) = flat(i)(j:j)
+      else
+        raw_chars(j, i) = c_null_char
+      end if
+    end do
+  end do
 
   deallocate(flat)
-end subroutine
+end subroutine deserialize_char_flat_C

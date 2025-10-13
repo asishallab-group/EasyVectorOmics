@@ -210,7 +210,7 @@ def tox_deserialize_real_nd(filename):
     ierr = ctypes.c_int()
 
     lib.deserialize_real_C.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS"),  # arr
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="F_CONTIGUOUS"),  # arr
         ctypes.c_int,                                                          # total size
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
         ctypes.c_int,                                                           # fn_len
@@ -233,88 +233,153 @@ def tox_serialize_char_nd(arr: np.ndarray, filename: str):
     ndim = arr.ndim
     ierr = ctypes.c_int()
 
-    ascii_mat, clen = _string_array_to_ascii_matrix(arr)
-    ascii_ptr = np.ascontiguousarray(ascii_mat.ravel(order='F'))
+    # Use c_char matrix instead of ASCII matrix
+    clen = max(len(s) for s in arr.flat) if arr.size > 0 else 1
+    c_char_matrix = _string_array_to_c_char_matrix(arr, clen)
+    
+    # Flatten the matrix in Fortran order
+    raw_chars = np.array(c_char_matrix.ravel(), dtype=np.byte, order='F')
+    
+    # Convert filename to c_char array
+    filename_c = string_to_c_char_array(filename, len(filename) + 1)
+    fn_len = len(filename_c)
 
-    filename_ascii, fn_len = _filename_to_ascii_array(filename)
-
+    # Update argument types
     lib.serialize_char_flat_C.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),  # ascii_ptr
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags='F_CONTIGUOUS'),  # raw_chars
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),  # dims
         ctypes.c_int,                                                          # ndim
         ctypes.c_int,                                                          # clen
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),  # filename_ascii
-        ctypes.c_int,                                                           # fn_len
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags='C_CONTIGUOUS'),   # filename_c
+        ctypes.c_int,                                                          # fn_len
         ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
     lib.serialize_char_flat_C.restype = None
 
     lib.serialize_char_flat_C(
-        ascii_ptr,
+        raw_chars,
         dims,
         ndim,
         clen,
-        filename_ascii,
+        np.asarray(filename_c, dtype=np.byte),
         fn_len,
         ctypes.byref(ierr)
     )
     check_err_code(ierr.value)
 
+def _string_array_to_c_char_matrix(string_array, max_length):
+    """Convert numpy string array to c_char matrix"""
+    import numpy as np
+    
+    # Flatten the array and convert to list of strings
+    flat_strings = string_array.ravel(order='F').tolist()
+    n_strings = len(flat_strings)
+    
+    # Create numpy array with byte dtype for c_chars
+    matrix = np.zeros((n_strings, max_length), dtype=np.byte)
+    
+    for i, s in enumerate(flat_strings):
+        encoded = s.encode('ascii')
+        for j in range(min(max_length, len(encoded))):
+            matrix[i, j] = encoded[j]
+        # Add null terminator if there's space
+        if len(encoded) < max_length:
+            matrix[i, len(encoded)] = 0
+            
+    return matrix
 
-def tox_deserialize_char_nd(filename: str, ndim_max=5):
-    """
-    Deserializes an n-dimensional character array from a file
-    """
-    # convert filename to ASCII array
-    filename_ascii, fn_len = _filename_to_ascii_array(filename)
+def string_to_c_char_array(s, length):
+    """Convert string to c_char array with null termination"""
+    if s is None:
+        s = ""
+    
+    # Create numpy array of bytes
+    arr = np.zeros(length, dtype=np.byte)
+    encoded = s.encode('ascii')
+    
+    # Copy characters
+    for i in range(min(length, len(encoded))):
+        arr[i] = encoded[i]
+    
+    # Ensure null termination if there's space
+    if len(encoded) < length:
+        arr[len(encoded)] = 0
+        
+    return arr
 
-    # Get metadata (dimensions + string length)
-    dims, clen = tox_get_array_metadata(filename, max_dims=ndim_max, with_clen=True)
+def tox_deserialize_char_nd(filename):
+    """
+    Deserializes an n-dimensional character array from a binary file
+    """
+    # Read dimensions and clen from file metadata
+    dims, clen = tox_get_array_metadata(filename, with_clen=True)  # Sie müssen diese Funktion anpassen oder erstellen
+    print(f"Deserializing char array with dimensions: {dims}, clen: {clen}")
+    
+    total_size = np.prod(dims)
+    
+    # Create 2D array for c_chars: (clen, total_size)
+    raw_chars = np.zeros((clen, total_size), dtype=np.byte, order='F')
+    
+    # Convert filename to c_char array
+    filename_c = string_to_c_char_array(filename, len(filename) + 1)
+    fn_len = len(filename_c)
+    
     ierr = ctypes.c_int()
 
-    print(f"Deserializing char array with dimensions: {dims}, clen: {clen}")
-    total = int(np.prod(dims))  # Anzahl Elemente
-
-    # allocate flat ASCII array (1D buffer from Fortran)
-    ascii_arr = np.zeros(total * clen, dtype=np.int32)
-
-    # declare arguments for the flat Fortran routine
     lib.deserialize_char_flat_C.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # ascii_arr
-        ctypes.c_int,           # clen
-        ctypes.c_int,           # total
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
-        ctypes.c_int,           # fn_len
-        ctypes.POINTER(ctypes.c_int)                                           # ierr
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=2, flags="F_CONTIGUOUS"),  # raw_chars (2D!)
+        ctypes.c_int,                                                         # clen
+        ctypes.c_int,                                                         # total_array_size
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"),  # filename_c
+        ctypes.c_int,                                                         # fn_len
+        ctypes.POINTER(ctypes.c_int)                                          # ierr
     ]
     lib.deserialize_char_flat_C.restype = None
 
     lib.deserialize_char_flat_C(
-        ascii_arr,
+        raw_chars,
         clen,
-        total,
-        filename_ascii,
+        total_size,
+        np.asarray(filename_c, dtype=np.byte),
         fn_len,
         ctypes.byref(ierr)
     )
     check_err_code(ierr.value)
+    
+    # Convert back to string array
+    strings = _c_char_matrix_to_strings(raw_chars, clen, total_size)
+    
+    # Reshape to original dimensions
+    return np.array(strings, dtype=f'U{clen}').reshape(dims, order='F')
 
-    # empty array
-    if total == 0:
-        return np.empty(tuple(dims), dtype=f'U{clen}')
-
-    # 1) per elemnt one block of "clen" codes
-    codes_2d = ascii_arr.reshape((total, clen), order='C')
-
-    # 2) ASCII -> Strings per Element
-    strings_1d = np.array(
-        [''.join(chr(c) for c in row if c > 0) for row in codes_2d],
-        dtype=f'U{clen}'
-    )
-
-    # 3) reshape to target
-    result = strings_1d.reshape(tuple(dims), order='F')
-    return result
+def _c_char_matrix_to_strings(matrix, max_length, n_strings):
+    """Faster version using bytes operations"""
+    import numpy as np
+    
+    strings = []
+    for i in range(n_strings):
+        # Extract the column as bytes
+        column_bytes = bytes(matrix[:, i])
+        
+        # Find null terminator
+        null_pos = column_bytes.find(b'\x00')
+        if null_pos != -1:
+            # Truncate at null terminator
+            effective_bytes = column_bytes[:null_pos]
+        else:
+            # Use entire column
+            effective_bytes = column_bytes
+        
+        # Decode and strip trailing spaces
+        try:
+            string = effective_bytes.decode('ascii').rstrip()
+        except UnicodeDecodeError:
+            # Fallback: use raw bytes and replace errors
+            string = effective_bytes.decode('ascii', errors='replace').rstrip()
+        
+        strings.append(string)
+    
+    return strings
 
 def tox_serialize_logical_nd(arr: np.ndarray, filename: str):
     """

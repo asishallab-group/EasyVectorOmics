@@ -227,7 +227,7 @@ subroutine serialize_real_flat_r(arr, array_size, dims, ndim, filename_ascii, fn
 end subroutine
 
 subroutine serialize_real_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bind(C, name="serialize_real_nd_C")
-  use iso_c_binding, only: c_ptr, c_int, c_f_pointer, c_double
+  use iso_c_binding, only: c_int, c_double
   use array_utils, only: ascii_to_string
   use serialize_real, only: serialize_real_nd
   use tox_errors, only : set_ok
@@ -235,12 +235,12 @@ subroutine serialize_real_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bi
   implicit none
 
   ! Input parameters
-  type(c_ptr), value :: arr
-    !! Pointer to the flat real array
   integer(c_int), value :: ndim
     !! Number of dimensions
   integer(c_int), intent(in) :: dims(ndim)
     !! Dimensions of the array
+  real(c_double) :: arr(product(dims))
+    !! Pointer to the flat real array  
   integer(c_int), value :: fn_len
     !! Length of the filename array
   integer(c_int), intent(in) :: filename_ascii(fn_len)
@@ -249,14 +249,8 @@ subroutine serialize_real_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bi
 
   ! Local
   character(len=:), allocatable :: filename
-  real(c_double), pointer :: arr_f(:)
-  integer(int32) :: i
 
   call ascii_to_string(filename_ascii, fn_len, filename)
-
-  ! 1D-Array from C pointer
-  call c_f_pointer(arr, arr_f, [product(dims(1:ndim))])
-
   ! save
-  call serialize_real_nd(arr_f, dims, ndim, filename, ierr)
+  call serialize_real_nd(arr, dims, ndim, filename, ierr)
 end subroutine
