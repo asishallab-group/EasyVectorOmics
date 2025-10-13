@@ -90,8 +90,12 @@ echo "Running tests..."
 # Run the executable with filtered arguments (excluding --max-performance)
 $EXECUTABLE "${TEST_ARGS[@]}"
 
-# Clean up test files if they exist
-rm -f test_*.bin
-if [[ "$KEEP_ZIP" == "false" ]]; then
-  rm -f test_archive_*_*.zip
+test_code=$?
+
+if [[ $test_code -eq 0 ]]; then
+  rm -f test_*.bin
+  if [[ "$KEEP_ZIP" == "false" ]]; then
+    rm -f test_archive_*_*.zip
+  fi
 fi
+exit $test_code
