@@ -3,7 +3,7 @@ dyn.load("./build/libtensor-omics.so")
 source("r/error_handling.R")
 
 tox_get_array_metadata <- function(filename, max_dims = 5, with_clen = FALSE) {
-  ascii <- utf8ToInt(filename)
+  filename_raw <- charToRaw(filename)
   dims <- integer(max_dims)
   ndims <- integer(1)
   ierr <- integer(1)
@@ -12,8 +12,8 @@ tox_get_array_metadata <- function(filename, max_dims = 5, with_clen = FALSE) {
   clen <- integer(1)
   
   res <- .Fortran("get_array_metadata_r",
-                  as.integer(ascii),                          # filename_ascii
-                  as.integer(length(ascii)),                  # fn_len
+                  filename_raw,                          # filename_raw
+                  as.integer(length(filename_raw)),                  # fn_len
                   dims,                                        # dims_out
                   as.integer(dims_out_capacity),
                   ndims,                                        # ndims
@@ -190,7 +190,7 @@ get_kd_point <- function(X, kd_ix, position) {
 # deserializes an integer array from a file, reads array dimensions first and then creates a proper array
 # That is then being filled by fortran
 tox_deserialize_int_array <- function(filename, max_dims = 5) {
-    ascii <- utf8ToInt(filename)
+    filename_raw <- charToRaw(filename)
 
     meta <- tox_get_array_metadata(filename, max_dims)
     total_size <- prod(meta$dims)
@@ -202,8 +202,8 @@ tox_deserialize_int_array <- function(filename, max_dims = 5) {
     res <- .Fortran("deserialize_int_r",
                 flat_arr = flat,
                 arr_size = as.integer(total_size),
-                filename_ascii = as.integer(ascii),
-                fn_len = as.integer(length(ascii)),
+                filename_raw = filename_raw,
+                fn_len = as.integer(length(filename_raw)),
                 ierr = ierr)
     check_err_code(res$ierr)
 
@@ -213,7 +213,7 @@ tox_deserialize_int_array <- function(filename, max_dims = 5) {
 # Deserializes a real array from a file, reads array dimensions first and then creates a proper array
 # That is then being filled by fortran
 tox_deserialize_real_array <- function(filename, max_dims = 5) {
-    ascii <- utf8ToInt(filename)
+    filename_raw <- charToRaw(filename)
 
     meta <- tox_get_array_metadata(filename, max_dims)
     total_size <- prod(meta$dims)
@@ -226,7 +226,7 @@ tox_deserialize_real_array <- function(filename, max_dims = 5) {
     res <- .Fortran("deserialize_real_flat_r",
                 flat_arr = flat,
                 arr_size = as.integer(total_size),
-                filename_ascii = as.integer(ascii),
+                filename_raw = as.integer(filename_raw),
                 fn_len = as.integer(length(ascii)),
                 ierr = ierr)
     check_err_code(res$ierr)
@@ -237,7 +237,7 @@ tox_deserialize_real_array <- function(filename, max_dims = 5) {
 # Then creates a proper array that is then being filled by fortran
 # Note that the array needs to be translated back to characters
 tox_deserialize_char_array <- function(filename, max_dims = 5) {
-  ascii <- utf8ToInt(filename)
+  filename_raw <- charToRaw(filename)
   dims <- integer(max_dims)
   ndim <- integer(1)
   clen <- integer(1)
@@ -255,8 +255,8 @@ tox_deserialize_char_array <- function(filename, max_dims = 5) {
   res <- .Fortran("deserialize_char_flat_r",
     ascii_arr = ascii_arr,
     arr_size = as.integer(clen * total_array_size),
-    filename_ascii = ascii,
-    fn_len = as.integer(length(ascii)),
+    filename_raw = filename_raw,
+    fn_len = as.integer(length(filename_raw)),
     ierr = ierr
   )
   check_err_code(res$ierr)
@@ -278,7 +278,7 @@ tox_serialize_int_array <- function(arr, filename) {
     as.integer(dim(arr))
   }
   ndim <- as.integer(length(dims))
-  ascii <- utf8ToInt(filename)
+  filename_raw <- charToRaw(filename)
   ierr <- integer(1)
 
   res <- .Fortran("serialize_int_flat_r",
@@ -286,8 +286,8 @@ tox_serialize_int_array <- function(arr, filename) {
            array_size = length(flat),
            dims = dims,
            ndim = ndim,
-           filename_ascii = as.integer(ascii),
-           fn_len = as.integer(length(ascii)),
+           filename_raw = filename_raw,
+           fn_len = as.integer(length(filename_raw)),
            ierr = ierr)
   check_err_code(res$ierr)
 }
@@ -304,7 +304,7 @@ tox_serialize_real_array <- function(arr, filename) {
   }
 
   ndim <- as.integer(length(dims))
-  ascii <- utf8ToInt(filename)
+  filename_raw <- charToRaw(filename)
   ierr <- integer(1)
 
   res <- .Fortran("serialize_real_flat_r",
@@ -312,8 +312,8 @@ tox_serialize_real_array <- function(arr, filename) {
            array_size = length(flat),
            dims = dims,
            ndim = ndim,
-           filename_ascii = as.integer(ascii),
-           fn_len = as.integer(length(ascii)),
+           filename_raw = filename_raw,
+           fn_len = as.integer(length(filename_raw)),
            ierr = ierr)
   check_err_code(res$ierr)
 }
@@ -333,7 +333,7 @@ tox_serialize_char_array <- function(arr, filename) {
   # Chars can not be passed via .Fortran directly
   mat <- matrix(0L, nrow = clen, ncol = length(arr))
   for (i in seq_along(arr)) {
-    chars <- utf8ToInt(substr(arr[i], 1, clen))
+    chars <- charToRaw(substr(arr[i], 1, clen))
     mat[seq_along(chars), i] <- chars
   }
 
@@ -343,7 +343,7 @@ tox_serialize_char_array <- function(arr, filename) {
     dims = as.integer(dims),
     ndim = as.integer(length(dims)),
     clen = as.integer(clen),
-    filename_ascii = utf8ToInt(filename),
+    filename_raw = charToRaw(filename),
     fn_len = nchar(filename),
     ierr = ierr
   )
@@ -353,7 +353,7 @@ tox_serialize_char_array <- function(arr, filename) {
 # Deserializes a logical array from a file, reads array dimensions first and then creates a proper array
 # That is then being filled by fortran
 tox_deserialize_logical_array <- function(filename, max_dims = 5) {
-    ascii <- utf8ToInt(filename)
+    filename_raw <- charToRaw(filename)
 
     meta <- tox_get_array_metadata(filename, max_dims)
     total_size <- prod(meta$dims)
@@ -364,8 +364,8 @@ tox_deserialize_logical_array <- function(filename, max_dims = 5) {
     res <- .Fortran("deserialize_logical_r",
                 flat_arr = flat,
                 arr_size = as.integer(total_size),
-                filename_ascii = as.integer(ascii),
-                fn_len = as.integer(length(ascii)),
+                filename_raw = filename_raw,
+                fn_len = as.integer(length(filename_raw)),
                 ierr = ierr)
     check_err_code(res$ierr)
 
@@ -375,7 +375,7 @@ tox_deserialize_logical_array <- function(filename, max_dims = 5) {
 # Deserializes a complex array from a file, reads array dimensions first and then creates a proper array
 # That is then being filled by fortran
 tox_deserialize_complex_array <- function(filename, max_dims = 5) {
-    ascii <- utf8ToInt(filename)
+    filename_raw <- charToRaw(filename)
 
     meta <- tox_get_array_metadata(filename, max_dims)
     total_size <- prod(meta$dims)
@@ -386,8 +386,8 @@ tox_deserialize_complex_array <- function(filename, max_dims = 5) {
     res <- .Fortran("deserialize_complex_r",
                 flat_arr = flat,
                 arr_size = as.integer(total_size),
-                filename_ascii = as.integer(ascii),
-                fn_len = as.integer(length(ascii)),
+                filename_raw = filename_raw,
+                fn_len = as.integer(length(filename_raw)),
                 ierr = ierr)
     check_err_code(res$ierr)
 
@@ -405,7 +405,7 @@ tox_serialize_logical_array <- function(arr, filename) {
     as.integer(dim(arr))
   }
   ndim <- as.integer(length(dims))
-  ascii <- utf8ToInt(filename)
+  filename_raw <- charToRaw(filename)
   ierr <- integer(1)
 
   res <- .Fortran("serialize_logical_flat_r",
@@ -413,8 +413,8 @@ tox_serialize_logical_array <- function(arr, filename) {
            array_size = length(flat),
            dims = dims,
            ndim = ndim,
-           filename_ascii = as.integer(ascii),
-           fn_len = as.integer(length(ascii)),
+           filename_raw = filename_raw,
+           fn_len = as.integer(length(filename_raw)),
            ierr = ierr)
   check_err_code(res$ierr)
 }
@@ -430,7 +430,7 @@ tox_serialize_complex_array <- function(arr, filename) {
     as.integer(dim(arr))
   }
   ndim <- as.integer(length(dims))
-  ascii <- utf8ToInt(filename)
+  filename_raw <- charToRaw(filename)
   ierr <- integer(1)
 
   res <- .Fortran("serialize_complex_flat_r",
@@ -438,8 +438,8 @@ tox_serialize_complex_array <- function(arr, filename) {
            array_size = length(flat),
            dims = dims,
            ndim = ndim,
-           filename_ascii = as.integer(ascii),
-           fn_len = as.integer(length(ascii)),
+           filename_raw = filename_raw,
+           fn_len = as.integer(length(filename_raw)),
            ierr = ierr)
   check_err_code(res$ierr)
 }

@@ -160,9 +160,11 @@ end module real_deserialize_mod
 
 !> R binding for the subroutine to deserialize a flat real array from a file
 !> @note It is assumed that the array is already allocated and passed together with its size
-subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
+subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
   use iso_fortran_env, only: real64, int32
-  use array_utils, only : ascii_to_string, read_file_header
+  use iso_c_binding, only : c_char
+  use array_utils, only : read_file_header
+  use tox_conversions, only : c_char_1d_as_string
   use tox_errors, only : set_ok, set_err_once, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA
   implicit none
 
@@ -172,7 +174,7 @@ subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_ascii, fn_len, i
   !! size of the array
   real(real64), intent(out) :: flat_arr(arr_size)
   !! array provided by R
-  integer(int32), intent(in) :: filename_ascii(fn_len)
+  character(kind=c_char, len=1), intent(in) :: filename_raw(fn_len)
   !! filename in ascii
   integer(int32), intent(out) :: ierr
   !! error code
@@ -187,8 +189,10 @@ subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_ascii, fn_len, i
 
   call set_ok(ierr)
   call set_ok(ioerror)
-  call ascii_to_string(filename_ascii, fn_len, filename)
 
+  call c_char_1d_as_string(filename_raw, filename, ierr)
+  if (.not. is_ok(ierr)) return
+    
   call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
   if(.not. is_ok(ierr)) return
 

@@ -204,11 +204,12 @@ contains
 end module serialize_char
 
 !> serializes a flat character array to a binary file.
-subroutine serialize_char_flat_r(ascii_arr, array_size, dims, ndim, clen, filename_ascii, fn_len, ierr)
+subroutine serialize_char_flat_r(raw_arr, array_size, dims, ndim, clen, filename_raw, fn_len, ierr)
   use iso_fortran_env, only: int32
+  use iso_c_binding, only: c_char
   use serialize_char, only: serialize_char_nd
-  use array_utils, only: ascii_to_string
-  use tox_errors
+  use tox_errors, only: set_err_once, set_ok, is_ok, ERR_ALLOC_FAIL
+  use tox_conversions, only: c_char_1d_as_string, c_char_2d_as_string
   implicit none
 
   integer(int32), intent(in) :: ndim
@@ -217,13 +218,13 @@ subroutine serialize_char_flat_r(ascii_arr, array_size, dims, ndim, clen, filena
   !! size of the input array
   integer(int32), intent(in) :: clen
   !! character length
-  integer(int32), intent(in) :: ascii_arr(clen, array_size)
+  character(kind=c_char, len=1), intent(in) :: raw_arr(clen, array_size)
   !! Flat character array in ASCII format
   integer(int32), intent(in) :: dims(ndim)
   !! Dimensions of the array
   integer(int32), intent(in) :: fn_len
   !! length of the filename
-  integer(int32), intent(in) :: filename_ascii(fn_len)
+  character(kind=c_char, len=1), intent(in) :: filename_raw(fn_len)
   !! filename in ascii
   integer(int32), intent(out) :: ierr
   !! error code
@@ -245,18 +246,11 @@ subroutine serialize_char_flat_r(ascii_arr, array_size, dims, ndim, clen, filena
   end if  
 
   ! ASCII to character conversion
-  do i = 1, total
-    flat(i) = ""
-    do j = 1, clen
-      if (ascii_arr(j, i) > 0) then
-        flat(i)(j:j) = char(ascii_arr(j, i))
-      else
-        exit
-      end if
-    end do
-  end do
+  call c_char_2d_as_string(raw_arr, flat, ierr)
+  if (.not. is_ok(ierr)) return
 
-  call ascii_to_string(filename_ascii, fn_len, filename)
+  call c_char_1d_as_string(filename_raw, filename, ierr)
+  if (.not. is_ok(ierr)) return
 
   call serialize_char_nd(flat, dims, ndim, clen, filename, ierr)
 

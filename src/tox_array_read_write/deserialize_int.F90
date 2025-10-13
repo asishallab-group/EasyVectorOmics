@@ -151,9 +151,11 @@ end module int_deserialize_mod
 
 !> R interface for deserializing an integer array from a file
 !> @note The output array is handled and preallocated by R
-subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
+subroutine deserialize_int_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
   use iso_fortran_env, only: int32
-  use array_utils, only : ascii_to_string, read_file_header
+  use iso_c_binding, only : c_char
+  use array_utils, only : read_file_header
+  use tox_conversions, only : c_char_1d_as_string
   use tox_errors, only : set_err_once, set_ok, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA
   implicit none
 
@@ -163,7 +165,7 @@ subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
   !! array passed by R
   integer(int32), intent(in)  :: fn_len
   !! length of the filename
-  integer(int32), intent(in)  :: filename_ascii(fn_len)
+  character(kind=c_char, len=1), intent(in)  :: filename_raw(fn_len)
   !! filename to read from
   integer(int32), intent(out) :: ierr
   !! error code
@@ -178,7 +180,7 @@ subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
   call set_ok(ierr)
   call set_ok(ioerror)
 
-  call ascii_to_string(filename_ascii, fn_len, filename)
+  call c_char_1d_as_string(filename_raw, filename, ierr)
 
   call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
   if (.not. is_ok(ierr)) return
@@ -196,7 +198,6 @@ subroutine deserialize_int_r(flat_arr, arr_size, filename_ascii, fn_len, ierr)
     RETURN
   end if
 end subroutine
-
 
 !> C binding for the subroutine to deserialize an integer array from a file
 !>@note It is assumed that the array is already allocated and passed together with its size

@@ -186,11 +186,12 @@ end module serialize_complex
 
 !> Serialize a flat complex array with specified dimensions and number of dimensions to a binary file.
 !! R can not pass a multidimensional array directly, so we use a flat array and dimensions. Therefore, exposing serialize_complex_*d to R is not needed.
-subroutine serialize_complex_flat_r(arr, array_size, dims, ndim, filename_ascii, fn_len, ierr)
-  use iso_fortran_env, only: int32
-  use array_utils
+subroutine serialize_complex_flat_r(arr, array_size, dims, ndim, filename_raw, fn_len, ierr)
+  use iso_fortran_env, only: int32, real64
   use serialize_complex, only: serialize_complex_nd
-  use tox_errors, only : set_ok
+  use tox_conversions, only : c_char_1d_as_string
+  use iso_c_binding, only: c_char
+  use tox_errors, only : set_ok, is_ok
   implicit none
 
   integer(int32), intent(in) :: ndim 
@@ -203,7 +204,7 @@ subroutine serialize_complex_flat_r(arr, array_size, dims, ndim, filename_ascii,
   !! Dimensions of the array
   integer(int32), intent(in) :: fn_len
   !! Length of the filename array
-  integer(int32), intent(in) :: filename_ascii(fn_len)
+  character(kind=c_char, len=1), intent(in) :: filename_raw(fn_len)
   !! Array of ASCII characters representing the filename
   integer(int32), intent(out) :: ierr
   !! Error code
@@ -213,7 +214,8 @@ subroutine serialize_complex_flat_r(arr, array_size, dims, ndim, filename_ascii,
 
   call set_ok(ierr)
 
-  call ascii_to_string(filename_ascii, fn_len, filename)
+  call c_char_1d_as_string(filename_raw, filename, ierr)
+  if (.not. is_ok(ierr)) return
 
   total_len = 1
   do i = 1, ndim
