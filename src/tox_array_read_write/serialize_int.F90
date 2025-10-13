@@ -224,24 +224,24 @@ subroutine serialize_int_flat_r(arr, array_size, dims, ndim, filename_ascii, fn_
 end subroutine
 
 !> C binding for the subroutine to serialize a flat integer array to a binary file.
-subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bind(C, name="serialize_int_nd_C")
-  use iso_c_binding, only: c_ptr, c_int, c_f_pointer
-  use array_utils, only: ascii_to_string
+subroutine serialize_int_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) bind(C, name="serialize_int_nd_C")
+  use iso_c_binding, only: c_int, c_char
   use serialize_int, only: serialize_int_nd
-  use tox_errors, only : set_ok
+  use tox_errors, only : set_ok, is_ok
   use iso_fortran_env, only : int32
+  use tox_conversions, only : c_char_1d_as_string
   implicit none
 
   ! input
-  integer(c_int), value :: ndim
+  integer(c_int), intent(in), value :: ndim
     !! Number of dimensions
   integer(c_int), intent(in) :: dims(ndim)
     !! Dimensions of the array
-  integer(c_int) :: arr(product(dims))
+  integer(c_int), intent(in) :: arr(product(dims))
     !! Pointer to the flat integer array  
-  integer(c_int), value :: fn_len
+  integer(c_int), intent(in), value :: fn_len
     !! Length of the filename array
-  integer(c_int), intent(in) :: filename_ascii(fn_len)
+  character(kind=c_char, len=1), intent(in) :: filename_raw(fn_len)
     !! Array of ASCII characters representing the filename
   integer(c_int), intent(out) :: ierr
     !! Error code
@@ -251,8 +251,8 @@ subroutine serialize_int_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bin
 
   call set_ok(ierr)
 
-  call ascii_to_string(filename_ascii, fn_len, filename)
-
+  call c_char_1d_as_string(filename_raw, filename, ierr)
+  if (.not. is_ok(ierr)) return
   ! save
   call serialize_int_nd(arr, dims, ndim, filename, ierr)
 end subroutine

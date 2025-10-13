@@ -236,11 +236,12 @@ end subroutine
 
 !> C binding for the subroutine to deserialize a complex array from a file
 !>@note It is assumed that the array is already allocated and passed together with its size
-subroutine deserialize_complex_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C, name="deserialize_complex_C")
-    use iso_c_binding, only: c_int
+subroutine deserialize_complex_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, name="deserialize_complex_C")
+    use iso_c_binding, only: c_int, c_char
     use iso_fortran_env, only: int32, real64
-    use array_utils, only: ascii_to_string, read_file_header
+    use array_utils, only: read_file_header
     use tox_errors, only : set_err_once, set_ok, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH
+    use tox_conversions, only : c_char_1d_as_string
     implicit none
 
     ! Inputs / Outputs
@@ -250,7 +251,7 @@ subroutine deserialize_complex_C(arr, arr_size, filename_ascii, fn_len, ierr) bi
     !! preallocated array
     integer(c_int), value         :: fn_len
     !! length of the filename
-    integer(c_int), intent(in)    :: filename_ascii(fn_len)
+    character(kind=c_char, len=1), intent(in)    :: filename_raw(fn_len)
     !! Filename in ascii
     integer(c_int), intent(out)   :: ierr
     !! Error code
@@ -266,7 +267,8 @@ subroutine deserialize_complex_C(arr, arr_size, filename_ascii, fn_len, ierr) bi
     call set_ok(ioerror)
 
     ! ASCII → String
-    call ascii_to_string(filename_ascii, fn_len, filename)
+    call c_char_1d_as_string(filename_raw, filename, ierr)
+    if (.not. is_ok(ierr)) return
 
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return

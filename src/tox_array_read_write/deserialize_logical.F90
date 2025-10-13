@@ -236,24 +236,25 @@ end subroutine
 
 !> C binding for the subroutine to deserialize a logical array from a file
 !>@note It is assumed that the array is already allocated and passed together with its size
-subroutine deserialize_logical_C(arr, arr_size, filename_ascii, fn_len, ierr) bind(C, name="deserialize_logical_C")
-    use iso_c_binding, only: c_int
+subroutine deserialize_logical_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, name="deserialize_logical_C")
+    use iso_c_binding, only: c_int, c_char
     use tox_conversions, only: logical_as_c_int
     use iso_fortran_env, only: int32
-    use array_utils, only: ascii_to_string, read_file_header
+    use array_utils, only: read_file_header
     use tox_errors, only : set_err_once, set_ok, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH
+    use tox_conversions, only : c_char_1d_as_string
     implicit none
 
     ! Inputs / Outputs
-    integer(c_int), value         :: arr_size           ! Buffer length
+    integer(c_int), intent(in), value   :: arr_size           ! Buffer length
     !! Size of the array
-    integer(c_int), intent(out)          :: arr(arr_size)      ! Preallocated buffer from C/Python
+    integer(c_int), intent(out)         :: arr(arr_size)      ! Preallocated buffer from C/Python
     !! preallocated array
-    integer(c_int), value         :: fn_len
+    integer(c_int), intent(in), value   :: fn_len
     !! length of the filename
-    integer(c_int), intent(in)    :: filename_ascii(fn_len)
+    character(kind=c_char, len=1), intent(in)          :: filename_raw(fn_len)
     !! Filename in ascii
-    integer(c_int), intent(out)   :: ierr
+    integer(c_int), intent(out)         :: ierr
     !! Error code
 
     ! Locals
@@ -270,7 +271,8 @@ subroutine deserialize_logical_C(arr, arr_size, filename_ascii, fn_len, ierr) bi
     allocate(temp_arr(arr_size))
 
     ! ASCII → String
-    call ascii_to_string(filename_ascii, fn_len, filename)
+    call c_char_1d_as_string(filename_raw, filename, ierr)
+    if (.not. is_ok(ierr)) return
 
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return

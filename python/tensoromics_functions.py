@@ -18,25 +18,6 @@ def _filename_to_ascii_array(filename):
     ascii_arr = np.array([ord(c) for c in filename], dtype=np.int32)
     return ascii_arr, np.int32(len(ascii_arr))
 
-# Function to convert array of strings to integer ASCII array
-def _string_array_to_ascii_matrix(strings: np.ndarray) -> tuple[np.ndarray, int]:
-    """
-    Transforms a char array to integer
-    """
-    if not isinstance(strings, np.ndarray) or strings.dtype.kind != 'U':
-        raise ValueError("Input must be a numpy array of strings (dtype='U')")
-    
-    flat = strings.flatten(order='F')  # important: Fortran-order
-    clen = max(len(s) for s in flat)
-    total = flat.size
-
-    mat = np.zeros((clen, total), dtype=np.int32, order='F')
-    for i, s in enumerate(flat):
-        codes = [ord(c) for c in s]
-        mat[:len(codes), i] = codes
-
-    return mat, clen
-
 # Helper function to read dimensions of integer/real array
 def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
     """
@@ -44,7 +25,8 @@ def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
     with_clen=True -> returns (dims, clen)
     with_clen=False -> returns dims only
     """
-    filename_ascii, fn_len = _filename_to_ascii_array(filename)
+    filename_c = string_to_c_char_array(filename, len(filename) + 1)
+    fn_len = len(filename_c)
 
     dims_out = np.zeros(max_dims, dtype=np.int32)
     ndims = ctypes.c_int()
@@ -54,7 +36,7 @@ def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
 
     # shared function
     lib.get_array_metadata_C.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"), # filename_ascii
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"), # filename_c
         ctypes.c_int,                                                         # fn_len
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"), # dims_out
         ctypes.POINTER(ctypes.c_int),                                         # dims_out_capacity
@@ -66,7 +48,7 @@ def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
 
     # call
     lib.get_array_metadata_C(
-        filename_ascii,
+        filename_c,
         fn_len,
         dims_out,
         ctypes.byref(dims_out_capacity),
@@ -102,13 +84,14 @@ def tox_serialize_int_nd(arr: np.ndarray, filename: str):
     flat = arr_f.ravel(order='F')
 
     # prepare filename
-    filename_ascii, fn_len = _filename_to_ascii_array(filename)
+    filename_c = string_to_c_char_array(filename, len(filename) + 1)
+    fn_len = len(filename_c)
 
     lib.serialize_int_nd_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # arr
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims
         ctypes.c_int,  # ndim
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"),  # filename_c
         ctypes.c_int,  # fn_len
         ctypes.POINTER(ctypes.c_int) 
     ]
@@ -119,7 +102,7 @@ def tox_serialize_int_nd(arr: np.ndarray, filename: str):
         flat,
         dims,
         ndim,
-        filename_ascii,
+        filename_c,
         fn_len,
         ctypes.byref(ierr)
     )
@@ -137,19 +120,20 @@ def tox_deserialize_int_nd(filename):
     # create array with the proper size
     total_size = np.prod(dims)
     arr = np.zeros(total_size, dtype=np.int32, order='F')  # gets a 1D array
-    ascii_arr, fn_len = _filename_to_ascii_array(filename)
+    filename_c = string_to_c_char_array(filename, len(filename) + 1)
+    fn_len = len(filename_c)
     ierr = ctypes.c_int()
 
     lib.deserialize_int_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="F_CONTIGUOUS"),  # arr
         ctypes.c_int,                                                          # total size
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"),  # filename_c
         ctypes.c_int,                                                          # fn_len
         ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
     lib.deserialize_int_C.restype = None
 
-    lib.deserialize_int_C(arr, total_size, ascii_arr, fn_len, ctypes.byref(ierr))
+    lib.deserialize_int_C(arr, total_size, filename_c, fn_len, ctypes.byref(ierr))
     check_err_code(ierr.value)
     return arr.reshape(dims, order='F')  # Reshape to original dimensions
 
@@ -172,14 +156,15 @@ def tox_serialize_real_nd(arr: np.ndarray, filename: str):
     flat = arr_f.ravel(order='F')
 
     # ASCII-Filename preparation
-    filename_ascii, fn_len = _filename_to_ascii_array(filename)
+    filename_c = string_to_c_char_array(filename, len(filename) + 1)
+    fn_len = len(filename_c)
 
     # declare args
     lib.serialize_real_nd_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="C_CONTIGUOUS"), # arr
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims
         ctypes.c_int,  # ndim
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"),  # filename_c
         ctypes.c_int,  # fn_len
         ctypes.POINTER(ctypes.c_int)  # ierr
     ]
@@ -190,7 +175,7 @@ def tox_serialize_real_nd(arr: np.ndarray, filename: str):
         flat,
         dims,
         ndim,
-        filename_ascii,
+        filename_c,
         fn_len,
         ctypes.byref(ierr)
     )
@@ -206,19 +191,20 @@ def tox_deserialize_real_nd(filename):
     # create array with correct size
     total_size = np.prod(dims)
     arr = np.zeros(total_size, dtype=np.float64, order='F')  # accept flat array
-    ascii_arr, fn_len = _filename_to_ascii_array(filename)
+    filename_c = string_to_c_char_array(filename, len(filename) + 1)
+    fn_len = len(filename_c)
     ierr = ctypes.c_int()
 
     lib.deserialize_real_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="F_CONTIGUOUS"),  # arr
         ctypes.c_int,                                                          # total size
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"),  # filename_c
         ctypes.c_int,                                                           # fn_len
         ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
     lib.deserialize_real_C.restype = None
 
-    lib.deserialize_real_C(arr, total_size, ascii_arr, fn_len, ctypes.byref(ierr))
+    lib.deserialize_real_C(arr, total_size, filename_c, fn_len, ctypes.byref(ierr))
     check_err_code(ierr.value)
     return arr.reshape(dims, order='F')  # Reshape
 
@@ -347,12 +333,12 @@ def tox_deserialize_char_nd(filename):
     check_err_code(ierr.value)
     
     # Convert back to string array
-    strings = _c_char_matrix_to_strings(raw_chars, clen, total_size)
+    strings = _c_char_matrix_to_strings(raw_chars, total_size)
     
     # Reshape to original dimensions
     return np.array(strings, dtype=f'U{clen}').reshape(dims, order='F')
 
-def _c_char_matrix_to_strings(matrix, max_length, n_strings):
+def _c_char_matrix_to_strings(matrix, n_strings):
     """Faster version using bytes operations"""
     import numpy as np
     
@@ -402,13 +388,14 @@ def tox_serialize_logical_nd(arr: np.ndarray, filename: str):
     flat_int = np.where(flat_bool, 1, 0).astype(np.int32)
 
     # prepare filename
-    filename_ascii, fn_len = _filename_to_ascii_array(filename)
+    filename_c = string_to_c_char_array(filename, len(filename) + 1)
+    fn_len = len(filename_c)
 
     lib.serialize_logical_nd_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # arr (as int32)
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims
         ctypes.c_int,  # ndim
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"),  # filename_c
         ctypes.c_int,  # fn_len
         ctypes.POINTER(ctypes.c_int) 
     ]
@@ -419,7 +406,7 @@ def tox_serialize_logical_nd(arr: np.ndarray, filename: str):
         flat_int,
         dims,
         ndim,
-        filename_ascii,
+        filename_c,
         fn_len,
         ctypes.byref(ierr)
     )
@@ -437,19 +424,20 @@ def tox_deserialize_logical_nd(filename):
     # create array with the proper size (as integers first)
     total_size = np.prod(dims)
     arr_int = np.zeros(total_size, dtype=np.int32, order='F')  # gets a 1D integer array
-    ascii_arr, fn_len = _filename_to_ascii_array(filename)
+    filename_c = string_to_c_char_array(filename, len(filename) + 1)
+    fn_len = len(filename_c)
     ierr = ctypes.c_int()
 
     lib.deserialize_logical_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # arr (as int32)
         ctypes.c_int,                                                          # total size
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"),  # filename_c
         ctypes.c_int,                                                          # fn_len
         ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
     lib.deserialize_logical_C.restype = None
 
-    lib.deserialize_logical_C(arr_int, total_size, ascii_arr, fn_len, ctypes.byref(ierr))
+    lib.deserialize_logical_C(arr_int, total_size, filename_c, fn_len, ctypes.byref(ierr))
     check_err_code(ierr.value)
     
     # Convert integer array back to boolean array (non-zero = True)
@@ -475,14 +463,15 @@ def tox_serialize_complex_nd(arr: np.ndarray, filename: str):
     flat = arr_f.ravel(order='F')
 
     # ASCII-Filename preparation
-    filename_ascii, fn_len = _filename_to_ascii_array(filename)
+    filename_c = string_to_c_char_array(filename, len(filename) + 1)
+    fn_len = len(filename_c)
 
     # declare args
     lib.serialize_complex_nd_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.complex128, ndim=1, flags="C_CONTIGUOUS"), # arr
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # dims
         ctypes.c_int,  # ndim
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"),  # filename_c
         ctypes.c_int,  # fn_len
         ctypes.POINTER(ctypes.c_int)  # ierr
     ]
@@ -493,7 +482,7 @@ def tox_serialize_complex_nd(arr: np.ndarray, filename: str):
         flat,
         dims,
         ndim,
-        filename_ascii,
+        filename_c,
         fn_len,
         ctypes.byref(ierr)
     )
@@ -509,19 +498,20 @@ def tox_deserialize_complex_nd(filename):
     # create array with correct size
     total_size = np.prod(dims)
     arr = np.zeros(total_size, dtype=np.complex128, order='F')  # accept flat array
-    ascii_arr, fn_len = _filename_to_ascii_array(filename)
+    filename_c = string_to_c_char_array(filename, len(filename) + 1)
+    fn_len = len(filename_c)
     ierr = ctypes.c_int()
 
     lib.deserialize_complex_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.complex128, ndim=1, flags="C_CONTIGUOUS"),  # arr
         ctypes.c_int,                                                          # total size
-        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # filename_ascii
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"),  # filename_c
         ctypes.c_int,                                                           # fn_len
         ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
     lib.deserialize_complex_C.restype = None
 
-    lib.deserialize_complex_C(arr, total_size, ascii_arr, fn_len, ctypes.byref(ierr))
+    lib.deserialize_complex_C(arr, total_size, filename_c, fn_len, ctypes.byref(ierr))
     check_err_code(ierr.value)
     return arr.reshape(dims, order='F')  # Reshape
 

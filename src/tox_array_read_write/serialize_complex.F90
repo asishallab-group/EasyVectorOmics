@@ -224,12 +224,12 @@ subroutine serialize_complex_flat_r(arr, array_size, dims, ndim, filename_ascii,
 end subroutine
 
 !> C binding for the subroutine to serialize a flat complex array to a binary file.
-subroutine serialize_complex_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr) bind(C, name="serialize_complex_nd_C")
-  use iso_c_binding, only: c_ptr, c_int, c_f_pointer, c_double_complex
-  use array_utils, only: ascii_to_string
+subroutine serialize_complex_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) bind(C, name="serialize_complex_nd_C")
+  use iso_c_binding, only: c_int, c_double_complex, c_char
   use serialize_complex, only: serialize_complex_nd
-  use tox_errors, only : set_ok
+  use tox_errors, only : set_ok, is_ok
   use iso_fortran_env, only : int32, real64
+  use tox_conversions, only : c_char_1d_as_string
   implicit none
 
   ! input
@@ -241,7 +241,7 @@ subroutine serialize_complex_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr)
     !! Pointer to the flat complex array
   integer(c_int), value :: fn_len
     !! Length of the filename array
-  integer(c_int), intent(in) :: filename_ascii(fn_len)
+  character(kind=c_char, len=1), intent(in) :: filename_raw(fn_len)
     !! Array of ASCII characters representing the filename
   integer(c_int), intent(out) :: ierr
     !! Error code
@@ -251,7 +251,8 @@ subroutine serialize_complex_nd_C(arr, dims, ndim, filename_ascii, fn_len, ierr)
 
   call set_ok(ierr)
 
-  call ascii_to_string(filename_ascii, fn_len, filename)
+  call c_char_1d_as_string(filename_raw, filename, ierr)
+  if (.not. is_ok(ierr)) return
 
   ! save
   call serialize_complex_nd(arr, dims, ndim, filename, ierr)

@@ -300,16 +300,18 @@ subroutine get_array_metadata_r(filename_ascii, fn_len, dims_out, dims_out_capac
 end subroutine get_array_metadata_r
 
 !> C binding for the subroutine to get the dimensions of an array file
-subroutine get_array_metadata_C(filename_ascii, fn_len, dims_out, dims_out_capacity, ndims, ierr, clen) bind(C, name="get_array_metadata_C")
-  use iso_c_binding, only: c_int
+subroutine get_array_metadata_C(filename_raw, fn_len, dims_out, dims_out_capacity, ndims, ierr, clen) bind(C, name="get_array_metadata_C")
+  use iso_c_binding, only: c_int, c_char
   use iso_fortran_env, only : int32
-  use array_utils, only : ascii_to_string, get_array_metadata
+  use array_utils, only : get_array_metadata
+  use tox_conversions, only : c_char_1d_as_string
+  use tox_errors, only : set_ok, is_ok
   implicit none
 
   ! Input
   integer(c_int), value :: fn_len
     !! Length of the filename array
-  integer(c_int), intent(in) :: filename_ascii(fn_len)
+  character(kind=c_char, len=1), intent(in) :: filename_raw(fn_len)
     !! Array of ASCII characters representing the filename
   integer(c_int), intent(in) :: dims_out_capacity
   
@@ -328,7 +330,8 @@ subroutine get_array_metadata_C(filename_ascii, fn_len, dims_out, dims_out_capac
    !! Filename as a string
   
 
-  call ascii_to_string(filename_ascii, fn_len, filename)
+  call c_char_1d_as_string(filename_raw, filename, ierr)
+  if( .not. is_ok(ierr)) return
 
   call get_array_metadata(filename, dims_out, dims_out_capacity, ndims, ierr, clen)
 end subroutine get_array_metadata_C
