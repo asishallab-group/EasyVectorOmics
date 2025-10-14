@@ -19,14 +19,14 @@ def test_paralog_functions():
     print("=== Testing Mask Logic ===")
 
     n_paralogs = 5
-    i_paralog = 3
+    i_paralog = 2
     chunk_count = tox_mask_chunk_count(n_paralogs)
     print(f"Chunk count for {n_paralogs} paralogs: {chunk_count}")
 
     bit_mask = np.zeros(chunk_count, dtype=np.int32)
-    bit_mask[i_paralog // 32] = 1 << (i_paralog % 32 - 1)  # -1 because 1 obtains one bit already
+    bit_mask[i_paralog // 32] = 1 << (i_paralog % 32)
     state = tox_mask_check_state(bit_mask, i_paralog)
-    print(f"Paralog {i_paralog} active in mask: {state}")
+    print(f"Paralog {i_paralog + 1} active in mask: {state}")
 
     print("\n=== Testing Pattern Filtering ===")
 

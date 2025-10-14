@@ -10,7 +10,7 @@ test_paralog_functions <- function() {
   cat("Chunk count for", n_paralogs, "paralogs:", chunk_count, "\n")
 
   bit_mask <- integer(chunk_count)
-  bit_mask[i_paralog %/% 32 + 1L] <- bitwShiftL(1L, i_paralog %% 32)
+  bit_mask[i_paralog %/% 32 + 1L] <- bitwShiftL(1L, i_paralog %% 32 - 1)  # -1 because 1 obtains one bit already
   state <- mask_check_state(bit_mask, i_paralog)
   cat("Paralog", i_paralog, "active in mask:", state, "\n")
 

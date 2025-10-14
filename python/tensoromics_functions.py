@@ -2273,7 +2273,7 @@ def tox_detect_subfunctionalization(ancestor, paralogs, rdi_threshold, filtered_
     results = work_arr_paralog_subsets[:, :n_results.value].copy()
     _readonly(results)
     return {
-        "n_results": n_results,
+        "n_results": n_results.value,
         "results": results
     }
 
@@ -2353,6 +2353,6 @@ def tox_detect_dosage_effect(ancestor, paralogs, filtered_paralogs_mask, max_sub
     results = work_arr_paralog_subsets[:, :n_results.value].copy()
     _readonly(results)
     return {
-        "n_results": n_results,
+        "n_results": n_results.value,
         "results": results
     }

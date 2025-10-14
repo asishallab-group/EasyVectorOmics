@@ -708,7 +708,7 @@ contains
         integer(int32), dimension(:), intent(out) :: bit_mask
             !! chunked mask to mark active paralogs
         integer(int32), intent(in) :: i_paralog
-            !! index of paralog top be marked active
+            !! index of paralog to be marked active
         logical, intent(in) :: state
             !! state the bit should be set to
         integer(int32), intent(out) :: ierr
@@ -736,7 +736,7 @@ contains
         integer(int32), dimension(:), intent(in) :: bit_mask
             !! chunked mask to mark active paralogs
         integer(int32), intent(in) :: i_paralog
-            !! index of paralog top be marked active
+            !! index of paralog to be marked active
         logical :: state
             !! check result
 
@@ -1167,7 +1167,7 @@ pure subroutine mask_check_state_c(bit_mask, n_mask_chunks, i_paralog, state, ie
     integer(c_int), dimension(n_mask_chunks), intent(in), target :: bit_mask
         !! chunked mask to mark active paralogs
     integer(c_int), intent(in), target :: i_paralog
-        !! index of paralog top be marked active
+        !! index of paralog to be checked, starting with 0
     integer(c_int), intent(out), target :: state
         !! check result
     integer(c_int), intent(out), target :: ierr
@@ -1178,7 +1178,7 @@ pure subroutine mask_check_state_c(bit_mask, n_mask_chunks, i_paralog, state, ie
     M_CHECK_NON_NULL(i_paralog)
     M_CHECK_NON_NULL(state)
 
-    call logical_as_c_int(mask_check_state(bit_mask, i_paralog), state)
+    call logical_as_c_int(mask_check_state(bit_mask, i_paralog + 1), state)
 end subroutine mask_check_state_c
 
 pure subroutine mask_check_state_r(bit_mask, n_mask_chunks, i_paralog, state)
@@ -1191,7 +1191,7 @@ pure subroutine mask_check_state_r(bit_mask, n_mask_chunks, i_paralog, state)
     integer(int32), dimension(n_mask_chunks), intent(in) :: bit_mask
         !! chunked mask to mark active paralogs
     integer(int32), intent(in) :: i_paralog
-        !! index of paralog top be marked active
+        !! index of paralog to be checked, starting with 1
     logical, intent(out) :: state
         !! check result
 
