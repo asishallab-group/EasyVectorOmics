@@ -36,13 +36,11 @@ test_paralog_functions <- function() {
 
   ancestor <- c(1.0, 1.0)
   paralogs <- matrix(c(1.1, 0.9, 1.2, 0.8, 1.3, 0.7, 1.4, 0.6, 1.5, 0.5), nrow = 2)
-  n_subsets <- work_size_info$work_array_size
   dosage_result <- detect_dosage_effect(
     ancestor = ancestor,
     paralogs = paralogs,
     filtered_paralogs_mask = dosage_mask,
     max_subset_size = work_size_info$max_subset_size,
-    n_paralog_subsets = n_subsets,
     gain_gamma = 0.1,
     max_angle = pi
   )

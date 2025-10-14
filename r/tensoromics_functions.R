@@ -2085,19 +2085,19 @@ detect_subfunctionalization <- function(ancestor, paralogs, rdi_threshold,
     work_arr_paralog_subsets = res$work_arr_paralog_subsets[, seq_len(res$n_results)],
     active_mask = res$active_mask,
     temp_paralog_vector = res$temp_paralog_vector,
-    temp_work_array = res$temp_work_array
+    temp_work_array = res$temp_work_array,
+    actual_max_subset_size = work_array_size_data$work_array_size
   )
 }
 
 #' Detect dosage effect among paralogs
 detect_dosage_effect <- function(ancestor, paralogs, filtered_paralogs_mask,
-                                 max_subset_size, n_paralog_subsets,
-                                 gain_gamma = 0.1, max_angle = pi) {
+                                 max_subset_size, gain_gamma = 0.1, max_angle = pi) {
   if (!is.numeric(ancestor)) stop("ancestor must be a numeric vector")
   if (!is.matrix(paralogs)) stop("paralogs must be a numeric matrix")
   if (!is.integer(filtered_paralogs_mask)) stop("filtered_paralogs_mask must be an integer vector")
   if (!is.integer(max_subset_size) || length(max_subset_size) != 1) stop("max_subset_size must be a single integer")
-  if (!is.integer(n_paralog_subsets) || length(n_paralog_subsets) != 1) stop("n_paralog_subsets must be a single integer")
+  if (!is.integer(max_subset_size) || length(max_subset_size) != 1) stop("max_subset_size must be a single integer")
   if (!is.numeric(gain_gamma) || length(gain_gamma) != 1) stop("gain_gamma must be a single numeric value")
   if (!is.numeric(max_angle) || length(max_angle) != 1) stop("max_angle must be a single numeric value")
 
@@ -2105,7 +2105,10 @@ detect_dosage_effect <- function(ancestor, paralogs, filtered_paralogs_mask,
   n_paralogs <- as.integer(ncol(paralogs))
   n_mask_chunks <- as.integer(length(filtered_paralogs_mask))
 
-  work_arr_paralog_subsets <- matrix(0L, nrow = n_mask_chunks, ncol = n_paralog_subsets)
+  # Estimate number of subsets and allocate work array
+  work_array_size_data <- calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, filtered_paralogs_mask)
+
+  work_arr_paralog_subsets <- matrix(0L, nrow = n_mask_chunks, ncol = work_array_size_data$work_array_size)
   active_mask <- integer(n_mask_chunks)
   temp_paralog_vector <- numeric(n_dims)
   n_results <- integer(1)
@@ -2119,9 +2122,9 @@ detect_dosage_effect <- function(ancestor, paralogs, filtered_paralogs_mask,
                   filtered_paralogs_mask = filtered_paralogs_mask,
                   n_mask_chunks = n_mask_chunks,
                   n_results = n_results,
-                  max_subset_size = max_subset_size,
+                  max_subset_size = work_array_size_data$max_subset_size,
                   work_arr_paralog_subsets = work_arr_paralog_subsets,
-                  n_paralog_subsets = n_paralog_subsets,
+                  n_paralog_subsets = work_array_size_data$work_array_size,
                   active_mask = active_mask,
                   temp_paralog_vector = temp_paralog_vector,
                   ierr = ierr,
@@ -2134,6 +2137,7 @@ detect_dosage_effect <- function(ancestor, paralogs, filtered_paralogs_mask,
     n_results = res$n_results,
     work_arr_paralog_subsets = res$work_arr_paralog_subsets[, seq_len(res$n_results)],
     active_mask = res$active_mask,
-    temp_paralog_vector = res$temp_paralog_vector
+    temp_paralog_vector = res$temp_paralog_vector,
+    actual_max_subset_size = work_array_size_data$work_array_size
   )
 }
