@@ -191,8 +191,9 @@ subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_raw, fn_len, ier
   call set_ok(ioerror)
 
   call c_char_1d_as_string(filename_raw, filename, ierr)
+  write(*,*) 'Filename:', filename
   if (.not. is_ok(ierr)) return
-    
+
   call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
   if(.not. is_ok(ierr)) return
 

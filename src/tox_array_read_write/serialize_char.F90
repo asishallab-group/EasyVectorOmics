@@ -231,14 +231,13 @@ subroutine serialize_char_flat_r(raw_arr, array_size, dims, ndim, clen, filename
   integer(int32) :: ioerror
 
   character(len=:), allocatable :: filename
-  character(len=clen), allocatable :: flat(:)
+  character(len=:), allocatable :: flat(:)
   integer(int32) :: i, j, total
 
   call set_ok(ioerror)
   call set_ok(ierr)
 
   total = product(dims)
-  allocate(flat(total), stat=ioerror)
 
   if(.not. is_ok(ioerror)) then
     call set_err_once(ierr, ERR_ALLOC_FAIL)

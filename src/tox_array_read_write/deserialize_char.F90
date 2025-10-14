@@ -197,12 +197,12 @@ end module char_deserialize_mod
 
 !> Subroutine to deserialize a flat character array from a file and return it as an ASCII array callable by R
 !> @note The array is returned flat and needs to be reshaped in R
-subroutine deserialize_char_flat_r(raw_arr, arr_size, filename_raw, fn_len, ierr)
+subroutine deserialize_char_flat_r(raw_arr, arr_size, filename_raw, fn_len, clen_in, ierr)
   use iso_fortran_env, only: int32
   use char_deserialize_mod, only: deserialize_char_flat
   use array_utils, only: string_to_ascii_arr
   use tox_errors, only : set_ok, is_ok
-  use tox_conversions, only : c_char_1d_as_string, string_as_c_char_2d
+  use tox_conversions, only : string_as_c_char_1d_r, c_char_1d_as_string
   use iso_c_binding, only : c_char
   implicit none
 
@@ -211,7 +211,9 @@ subroutine deserialize_char_flat_r(raw_arr, arr_size, filename_raw, fn_len, ierr
   !! Length of the filename array
   integer(int32), intent(in) :: arr_size
   !! Size of the ASCII array
-  character(kind=c_char, len=1), intent(out) :: raw_arr(arr_size)
+  integer(int32), intent(in) :: clen_in
+  !! Maximum length of character string
+  character(kind=c_char, len=1), intent(out) :: raw_arr(clen_in, arr_size)
   !! Output array of ASCII characters, preallocated by R
   character(kind=c_char, len=1), intent(in) :: filename_raw(fn_len)
   !! Array of ASCII characters representing the filename
@@ -224,8 +226,7 @@ subroutine deserialize_char_flat_r(raw_arr, arr_size, filename_raw, fn_len, ierr
   !! Flat character array
   integer(int32), allocatable :: dims(:)
   !! Output dimensions of the array
-  integer(int32) :: clen
-  !! Maximum length of character string
+  integer(int32) :: clen, i
   integer(int32) :: total_array_size
   !! Total size of the ASCII array
 
@@ -242,8 +243,10 @@ subroutine deserialize_char_flat_r(raw_arr, arr_size, filename_raw, fn_len, ierr
   end if
   total_array_size = product(dims)
 
-  ! Write data to ASCII array
-  call string_as_c_char_2d(flat, raw_arr)
+  ! Write data to raw array
+  do i = 1, size(flat)
+    call string_as_c_char_1d_r(flat(i), raw_arr(:, i))
+  end do
 
   deallocate(flat)
 end subroutine deserialize_char_flat_r

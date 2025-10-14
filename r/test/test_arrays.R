@@ -179,7 +179,8 @@ test_array_wrapper <- function(tmpdir = tempdir()) {
   clen <- 8
   arr1c <- sprintf("%0*d", clen, 1:10)
   tox_serialize_char_array(arr1c, fn("char1d.bin"))
-  stopifnot(all(tox_deserialize_char_array(fn("char1d.bin")) == arr1c))
+  deserialized_arr1c <- tox_deserialize_char_array(fn("char1d.bin"))
+  stopifnot(all(deserialized_arr1c == arr1c))
 
   arr2c <- matrix(sprintf("%0*d", clen, 1:12), nrow=3, ncol=4)
   tox_serialize_char_array(arr2c, fn("char2d.bin"))
