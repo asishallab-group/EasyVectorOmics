@@ -92,10 +92,10 @@ contains
     call read_gene_ids_from_file(expr_file(1), gene_ids, 1, 1, ierr)
     call assert_equal_int(ierr, 0, "Reading gene IDs should succeed")
 
-    write(*,*) 'First 10 gene IDs:'
-    do i = 1, min(10, n_genes)
-      write(*,*) trim(gene_ids(i))
-    end do
+    ! write(*,*) 'First 10 gene IDs:'
+    ! do i = 1, min(10, n_genes)
+    !   write(*,*) trim(gene_ids(i))
+    ! end do
 
     ! Read expression data
     kallisto_expr = 0.0_real64
@@ -107,10 +107,10 @@ contains
     call assert_equal_int(ierr, 0, "Reading family file should succeed")
     
     ! Print first 10 family IDs
-    write(*,*) 'First 10 family IDs:'
-    do i = 1, min(10, n_families)
-      write(*,*) trim(gene_family_ids(i))
-    end do
+    ! write(*,*) 'First 10 family IDs:'
+    ! do i = 1, min(10, n_families)
+    !   write(*,*) trim(gene_family_ids(i))
+    ! end do
     ! Filter out genes without family assignments
     call filter_unassigned_genes(gene_ids, kallisto_expr, gene_to_fam, n_genes_kept, ierr)
     call assert_equal_int(ierr, 0, "Filtering unassigned genes should succeed")
@@ -416,22 +416,13 @@ contains
     integer(int32) :: ierr, n_loaded_genes, ndims, dims(1)
     integer(int32), allocatable :: loaded_gene_to_fam(:)
     call save_gene_to_family(gene_to_fam, 'test_gene_to_fam.bin', ierr)
-    if (.not. is_ok(ierr)) then
-      write(*,*) 'Failed to save gene to family mapping: ', ierr
-      error stop
-    end if
+    call assert_equal_int(ierr, 0, "Saving gene to family mapping should succeed")
     call get_array_metadata('test_gene_to_fam.bin', dims, 1, ndims, ierr)
-    if(.not. is_ok(ierr)) then
-      write(*,*) 'Failed to get metadata: ', ierr
-      error stop
-    end if
+    call assert_equal_int(ierr, 0, "Getting metadata should succeed")
     call assert_equal_int(ndims, 1, "Gene to family mapping should be 1D array")
     allocate(loaded_gene_to_fam(dims(1)))
     call load_gene_to_family(loaded_gene_to_fam, 'test_gene_to_fam.bin', ierr)
-    if(.not. is_ok(ierr)) then
-      write(*,*) 'Failed to load gene to family mapping: ', ierr
-      error stop
-    end if
+    call assert_equal_int(ierr, 0, "Loading gene to family mapping should succeed")
     call assert_equal_array_int(loaded_gene_to_fam, gene_to_fam, dims(1), &
                                "Loaded gene to family mapping should match original")
   end subroutine test_read_write_gene_to_fam
@@ -440,22 +431,13 @@ contains
     integer(int32) :: ierr, n_loaded_families, ndims, dims(1)
     character(len=256), allocatable :: loaded_family_ids(:)
     call save_family_ids(gene_family_ids, 'test_family_ids.bin', ierr)
-    if (.not. is_ok(ierr)) then
-      write(*,*) 'Failed to save family IDs: ', ierr
-      error stop
-    end if
+    call assert_equal_int(ierr, 0, "Saving family IDs should succeed")
     call get_array_metadata('test_family_ids.bin', dims, 1, ndims, ierr)
-    if(.not. is_ok(ierr)) then
-      write(*,*) 'Failed to get metadata: ', ierr
-      error stop
-    end if
+    call assert_equal_int(ierr, 0, "Getting metadata should succeed")
     call assert_equal_int(ndims, 1, "Family IDs should be 1D array")
     allocate(loaded_family_ids(dims(1)))
     call load_family_ids(loaded_family_ids, 'test_family_ids.bin', ierr)
-    if(.not. is_ok(ierr)) then
-      write(*,*) 'Failed to load family IDs: ', ierr
-      error stop
-    end if
+    call assert_equal_int(ierr, 0, "Loading family IDs should succeed")
     call assert_equal_array_char(loaded_family_ids, gene_family_ids, 128, dims(1), &
                                 "Loaded family IDs should match original")
   end subroutine test_read_write_family_ids
@@ -464,22 +446,13 @@ contains
     integer(int32) :: ierr, n_loaded_families, ndims, dims(2)
     real(real64), allocatable :: loaded_centroids(:,:)
     call save_family_centroids(family_centroids, 'test_family_centroids.bin', ierr)
-    if (.not. is_ok(ierr)) then
-      write(*,*) 'Failed to save family centroids: ', ierr
-      error stop
-    end if
+    call assert_equal_int(ierr, 0, "Saving family centroids should succeed")
     call get_array_metadata('test_family_centroids.bin', dims, 2, ndims, ierr)
-    if(.not. is_ok(ierr)) then
-      write(*,*) 'Failed to get metadata: ', ierr
-      error stop
-    end if
+    call assert_equal_int(ierr, 0, "Getting metadata should succeed")
     call assert_equal_int(ndims, 2, "Family centroids should be 2D array")
     allocate(loaded_centroids(dims(1), dims(2)))
     call load_family_centroids(loaded_centroids, 'test_family_centroids.bin', ierr)
-    if(.not. is_ok(ierr)) then
-      write(*,*) 'Failed to load family centroids: ', ierr
-      error stop
-    end if
+    call assert_equal_int(ierr, 0, "Loading family centroids should succeed")
     call assert_equal_array_real(loaded_centroids, &
                                 family_centroids, &
                                 size(family_centroids), 1e-12_real64, &
@@ -495,10 +468,7 @@ contains
     gene_idx = get_gene_index(gene_ids, 'NP_001000001.1')
     call assert_equal_int(gene_idx, 2, "Gene index for NP_001000001.1 should be 2")
     call get_family_for_gene_index(gene_idx, gene_to_fam, family_idx, ierr)
-    if (.not. is_ok(ierr)) then
-      write(*,*) 'Failed to get family for gene index: ', ierr
-      error stop
-    end if
+    call assert_equal_int(ierr, 0, "Getting family index should succeed")
     call assert_equal_int(family_idx, 48, "Family index for gene index 2")
     call assert_string_equal(gene_family_ids(family_idx), 'OG0000047', &
                         "Family ID for family index 48 should be OG0000047")
@@ -507,10 +477,7 @@ contains
     call assert_equal_int(family_idx, 2, "Family index for OG0000001 should be 2")
     call get_family_centroid(family_idx, family_centroids, returned_centroid, ierr)
 
-    if (.not. is_ok(ierr)) then
-      write(*,*) 'Failed to get family centroid: ', ierr
-      error stop
-    end if
+    call assert_equal_int(ierr, 0, "Getting family centroid should succeed")
     call assert_equal_array_real(returned_centroid, family_centroids(:, family_idx), &
                                size(family_centroids, 1), 1e-12_real64, &
                                "Retrieved centroid should match original")
@@ -541,10 +508,7 @@ contains
                       family_centroids=family_centroids, family_centroids_file="family_centroids.bin", &
                       shift_vectors=shift_vectors, shift_vectors_file="shift_vectors.bin")
     
-    if (is_err(ierr)) then
-        print *, "Error saving archive: ", ierr
-        return
-    end if
+    call assert_equal_int(ierr, 0, "Error saving archive")
     
     call read_tox_data("test_archive_1_f.zip", ierr, &
                       gene_ids=gene_ids_verify, &
@@ -554,36 +518,25 @@ contains
                       family_centroids=family_centroids_verify, &
                       shift_vectors=shift_vectors_verify)
     
-    if (is_err(ierr)) then
-        print *, "Error reading archive: ", ierr
-        return
-    end if
+    call assert_equal_int(ierr, 0, "Error reading archive")
     
-    ! Verify the data
-    if (allocated(gene_ids_verify)) then
-        if (any(gene_ids /= gene_ids_verify)) error stop "Gene IDs don't match"
-        !print *, "Gene IDs verified, count: ", size(gene_ids_verify)
-    end if
-    if (allocated(kallisto_verify)) then
-        if (any(kallisto_expr /= kallisto_verify)) error stop "Expression data doesn't match"
-        !print *, "Expression data verified, shape: ", shape(kallisto_verify)
-    end if
-    if (allocated(gene_to_fam_verify)) then
-        if (any(gene_to_fam /= gene_to_fam_verify)) error stop "Gene to family mapping doesn't match"
-        !print *, "Gene to family mapping verified, count: ", size(gene_to_fam_verify)
-    end if
-    if (allocated(gene_family_ids_verify)) then
-        if (any(gene_family_ids /= gene_family_ids_verify)) error stop "Family IDs don't match"
-        !print *, "Family IDs verified, count: ", size(gene_family_ids_verify)
-    end if
-    if (allocated(family_centroids_verify)) then
-        if (any(family_centroids /= family_centroids_verify)) error stop "Family centroids don't match"
-        !print *, "Family centroids verified, shape: ", shape(family_centroids_verify)
-    end if
-    if (allocated(shift_vectors_verify)) then
-        if (any(shift_vectors /= shift_vectors_verify)) error stop "Shift vectors don't match"
-        !print *, "Shift vectors verified, shape: ", shape(shift_vectors_verify)
-    end if
+    call assert_allocated_char_array(gene_ids_verify, "Gene IDs should be allocated")
+    call assert_equal_array_char(gene_ids, gene_ids_verify, 128, size(gene_ids), "Gene IDs should match")
+
+    call assert_allocated_real_array_2d(kallisto_verify, "Expression data should be allocated")
+    call assert_equal_array_real(kallisto_expr, kallisto_verify, size(kallisto_expr), 1e-12_real64, "Expression data should match")
+
+    call assert_allocated_int_array(gene_to_fam_verify, "Gene to family mapping should be allocated")
+    call assert_equal_array_int(gene_to_fam, gene_to_fam_verify, size(gene_to_fam), "Gene to family mapping should match")
+
+    call assert_allocated_char_array(gene_family_ids_verify, "Family IDs should be allocated")
+    call assert_equal_array_char(gene_family_ids, gene_family_ids_verify, 128, size(gene_family_ids), "Family IDs should match")
+
+    call assert_allocated_real_array_2d(family_centroids_verify, "Family centroids should be allocated")
+    call assert_equal_array_real(family_centroids, family_centroids_verify, size(family_centroids), 1e-12_real64, "Family centroids should match")
+
+    call assert_allocated_real_array_2d(shift_vectors_verify, "Shift vectors should be allocated")
+    call assert_equal_array_real(shift_vectors, shift_vectors_verify, size(shift_vectors), 1e-12_real64, "Shift vectors should match")
     
     ! Clean up
     if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
@@ -599,29 +552,20 @@ contains
                       gene_ids=gene_ids, gene_ids_file="gene_ids_v2.bin", &
                       expression=kallisto_expr, expression_file="kallisto_v2.bin")
     
-    if (is_err(ierr)) then
-        print *, "Error saving archive: ", ierr
-        return
-    end if
+    call assert_equal_int(ierr, 0, "Error saving archive")
     
     call read_tox_data("test_archive_2_f.zip", ierr, &
                       gene_ids=gene_ids_verify, &
                       expression=kallisto_verify)
     
-    if (is_err(ierr)) then
-        print *, "Error reading archive: ", ierr
-        return
-    end if
+    call assert_equal_int(ierr, 0, "Error reading archive")
     
     ! Verify the data
-    if (allocated(gene_ids_verify)) then
-        if (any(gene_ids /= gene_ids_verify)) error stop "Gene IDs don't match"
-        !print *, "Gene IDs verified, count: ", size(gene_ids_verify)
-    end if
-    if (allocated(kallisto_verify)) then
-        if (any(kallisto_expr /= kallisto_verify)) error stop "Expression data doesn't match"
-        !print *, "Expression data verified, shape: ", shape(kallisto_verify)
-    end if
+    call assert_allocated_char_array(gene_ids_verify, "Gene IDs should be allocated")
+    call assert_equal_array_char(gene_ids, gene_ids_verify, 128, size(gene_ids), "Gene IDs should match")
+
+    call assert_allocated_real_array_2d(kallisto_verify, "Expression data should be allocated")
+    call assert_equal_array_real(kallisto_expr, kallisto_verify, size(kallisto_expr), 1e-12_real64, "Expression data should match")
     
     ! Try to read arrays that weren't saved (should not be allocated)
     call read_tox_data("test_archive_2_f.zip", ierr, &
@@ -630,38 +574,18 @@ contains
                       family_centroids=family_centroids_verify, &
                       shift_vectors=shift_vectors_verify)
     
-    if (is_err(ierr)) then
-        print *, "Error reading archive: ", ierr
-        return
-    end if
+    call assert_equal_int(ierr, 0, "Error reading archive for missing arrays")
+
+    call assert_allocated_char_array(gene_ids_verify, "gene_ids_verify should be allocated")
+    call assert_allocated_real_array_2d(kallisto_verify, "kallisto_verify should be allocated")
     
-    if (allocated(gene_to_fam_verify)) then
-        print *, "ERROR: gene_to_fam_verify should not be allocated"
-        error stop
-    else
-        ! print *, "Correctly did not allocate gene_to_fam_verify"
-    end if
+    call assert_not_allocated_int(gene_to_fam_verify, "gene_to_fam_verify should not be allocated")
+
+    call assert_not_allocated_char(gene_family_ids_verify, "gene_family_ids_verify should not be allocated")
     
-    if (allocated(gene_family_ids_verify)) then
-        print *, "ERROR: gene_family_ids_verify should not be allocated"
-        error stop
-    else
-        ! print *, "Correctly did not allocate gene_family_ids_verify"
-    end if
+    call assert_not_allocated_real_2d(family_centroids_verify, "family_centroids_verify should not be allocated")
     
-    if (allocated(family_centroids_verify)) then
-        print *, "ERROR: family_centroids_verify should not be allocated"
-        error stop
-    else
-        ! print *, "Correctly did not allocate family_centroids_verify"
-    end if
-    
-    if (allocated(shift_vectors_verify)) then
-        print *, "ERROR: shift_vectors_verify should not be allocated"
-        error stop
-    else
-        !print *, "Correctly did not allocate shift_vectors_verify"
-    end if
+    call assert_not_allocated_real_2d(shift_vectors_verify, "shift_vectors_verify should not be allocated")
     
     ! Clean up
     if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
@@ -673,29 +597,19 @@ contains
                       family_ids=gene_family_ids, family_ids_file="family_ids_v3.bin", &
                       family_centroids=family_centroids, family_centroids_file="family_centroids_v3.bin")
     
-    if (is_err(ierr)) then
-        print *, "Error saving archive: ", ierr
-        return
-    end if
+    call assert_equal_int(ierr, 0, "Error saving archive")
     
     call read_tox_data("test_archive_3_f.zip", ierr, &
                       family_ids=gene_family_ids_verify, &
                       family_centroids=family_centroids_verify)
     
-    if (is_err(ierr)) then
-        print *, "Error reading archive: ", ierr
-        return
-    end if
+    call assert_equal_int(ierr, 0, "Error reading archive")
     
-    ! Verify the data
-    if (allocated(gene_family_ids_verify)) then
-        if (any(gene_family_ids /= gene_family_ids_verify)) error stop "Family IDs don't match"
-        !print *, "Family IDs verified, count: ", size(gene_family_ids_verify)
-    end if
-    if (allocated(family_centroids_verify)) then
-        if (any(family_centroids /= family_centroids_verify)) error stop "Family centroids don't match"
-        !print *, "Family centroids verified, shape: ", shape(family_centroids_verify)
-    end if
+    call assert_allocated_char_array(gene_family_ids_verify, "Family IDs should be allocated")
+    call assert_equal_array_char(gene_family_ids, gene_family_ids_verify, 128, size(gene_family_ids), "Family IDs should match")
+
+    call assert_allocated_real_array_2d(family_centroids_verify, "Family centroids should be allocated")
+    call assert_equal_array_real(family_centroids, family_centroids_verify, size(family_centroids), 1e-12_real64, "Family centroids should match")
     
     ! Clean up
     if (allocated(gene_family_ids_verify)) deallocate(gene_family_ids_verify)
@@ -705,18 +619,11 @@ contains
     ! print *, "Test 4: Saving empty archive"
     call save_tox_data("test_archive_4_f.zip", ierr)
     
-    if (is_err(ierr)) then
-        print *, "Error saving empty archive: ", ierr
-        return
-    end if
+    call assert_equal_int(ierr, 0, "Error saving empty archive")
     
     call read_tox_data("test_archive_4_f.zip", ierr)
     
-    if (is_err(ierr)) then
-        print *, "Error reading empty archive: ", ierr
-        error stop
-    end if
-    call set_ok(ierr)
+    call assert_equal_int(ierr, 0, "Error reading empty archive")
     
     ! print *, "Empty archive test passed"
     
@@ -724,12 +631,7 @@ contains
     ! print *, "Test 5: Trying to read non-existent archive"
     call read_tox_data("non_existent.zip", ierr)
     
-    if (ierr == 0) then
-        print *, "ERROR: Should have failed to read non-existent archive"
-        error stop
-    else
-        ! print *, "Correctly failed to read non-existent archive, error code: ", ierr
-    end if
+    call assert_not_equal_int(ierr, 0, "Reading non-existent archive should fail")
 
     ! print *, "Reading R archive"
     call read_tox_data("test_archive_1_R.zip", ierr, &
@@ -739,35 +641,27 @@ contains
                       family_ids=gene_family_ids_verify, &
                       family_centroids=family_centroids_verify, &
                       shift_vectors=shift_vectors_verify)
-    if(.not. is_ok(ierr)) then
+    if(is_ok(ierr)) then
+      call assert_allocated_char_array(gene_ids_verify, "Gene IDs should be allocated from R archive")
+      call assert_equal_array_char(gene_ids, gene_ids_verify, 128, size(gene_ids), "R Gene IDs should match")
+
+      call assert_allocated_real_array_2d(kallisto_verify, "Expression data should be allocated from R archive")
+      call assert_equal_array_real(kallisto_expr, kallisto_verify, size(kallisto_expr), 1e-12_real64, "R Expression data should match")
+
+      call assert_allocated_int_array(gene_to_fam_verify, "Gene to family mapping should be allocated from R archive")
+      call assert_equal_array_int(gene_to_fam, gene_to_fam_verify, size(gene_to_fam), "R Gene to family mapping should match")
+
+      call assert_allocated_char_array(gene_family_ids_verify, "Family IDs should be allocated from R archive")
+      call assert_equal_array_char(gene_family_ids, gene_family_ids_verify, 128, size(gene_family_ids), "R Family IDs should match")
+
+      call assert_allocated_real_array_2d(family_centroids_verify, "Family centroids should be allocated from R archive")
+      call assert_equal_array_real(family_centroids, family_centroids_verify, size(family_centroids), 1e-12_real64, "R Family centroids should match")
+
+      call assert_allocated_real_array_2d(shift_vectors_verify, "Shift vectors should be allocated from R archive")
+      call assert_equal_array_real(shift_vectors, shift_vectors_verify, size(shift_vectors), 1e-12_real64, "R Shift vectors should match")
+    else
       write(*,*) 'Error reading R archive: ', ierr 
       call set_ok(ierr)
-    end if
-
-    ! Verify the data
-    if (allocated(gene_ids_verify)) then
-        if (any(gene_ids /= gene_ids_verify)) error stop "R Gene IDs don't match"
-        !print *, "Gene IDs verified, count: ", size(gene_ids_verify)
-    end if
-    if (allocated(kallisto_verify)) then
-        if (any(kallisto_expr /= kallisto_verify)) error stop "R Expression data doesn't match"
-        !print *, "Expression data verified, shape: ", shape(kallisto_verify)
-    end if
-    if (allocated(gene_to_fam_verify)) then
-        if (any(gene_to_fam /= gene_to_fam_verify)) error stop "R Gene to family mapping doesn't match"
-        !print *, "Gene to family mapping verified, count: ", size(gene_to_fam_verify)
-    end if
-    if (allocated(gene_family_ids_verify)) then
-        if (any(gene_family_ids /= gene_family_ids_verify)) error stop "R Family IDs don't match"
-        !print *, "Family IDs verified, count: ", size(gene_family_ids_verify)
-    end if
-    if (allocated(family_centroids_verify)) then
-        if (any(family_centroids /= family_centroids_verify)) error stop "R Family centroids don't match"
-        !print *, "Family centroids verified, shape: ", shape(family_centroids_verify)
-    end if
-    if (allocated(shift_vectors_verify)) then
-        if (any(shift_vectors /= shift_vectors_verify)) error stop "R Shift vectors don't match"
-        !print *, "Shift vectors verified, shape: ", shape(shift_vectors_verify)
     end if
     
     if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
@@ -780,8 +674,22 @@ contains
     call read_tox_data("test_archive_1_R.zip", ierr, &
                       gene_ids=gene_ids_verify, &
                       expression=kallisto_verify)
-    if(.not. is_ok(ierr)) then
-      write(*,*) 'Error reading R archive: ', ierr
+    if(is_ok(ierr)) then
+      call assert_allocated_char_array(gene_ids_verify, "Gene IDs should be allocated from R archive")
+      call assert_equal_array_char(gene_ids, gene_ids_verify, 128, size(gene_ids), "R Gene IDs should match")
+
+      call assert_allocated_real_array_2d(kallisto_verify, "Expression data should be allocated from R archive")
+      call assert_equal_array_real(kallisto_expr, kallisto_verify, size(kallisto_expr), 1e-12_real64, "R Expression data should match")
+
+      call assert_not_allocated_int(gene_to_fam_verify, "Gene to family mapping should not be allocated from R archive")
+
+      call assert_not_allocated_char(gene_family_ids_verify, "Family IDs should not be allocated from R archive")
+
+      call assert_not_allocated_real_2d(family_centroids_verify, "Family centroids should not be allocated from R archive")
+
+      call assert_not_allocated_real_2d(shift_vectors_verify, "Shift vectors should not be allocated from R archive")
+    else
+      write(*,*) 'Error reading R archive: ', ierr 
       call set_ok(ierr)
     end if
 
@@ -800,37 +708,27 @@ contains
                       family_ids=gene_family_ids_verify, &
                       family_centroids=family_centroids_verify, &
                       shift_vectors=shift_vectors_verify)
-    if(.not. is_ok(ierr)) then
-      write(*,*) 'Error reading python archive: ', ierr 
-      call set_ok(ierr)
-    end if
+    if(is_ok(ierr)) then
+      call assert_allocated_char_array(gene_ids_verify, "Gene IDs should be allocated from python archive")
+      call assert_equal_array_char(gene_ids, gene_ids_verify, 128, size(gene_ids), "python Gene IDs should match")
 
-    ! Verify the data
-    if (allocated(gene_ids_verify)) then
-        print *, 'Original: ', size(gene_ids)
-        print *, 'Python: ', size(gene_ids_verify)
-        if (any(gene_ids /= gene_ids_verify)) error stop "Python Gene IDs don't match"
-        !print *, "Gene IDs verified, count: ", size(gene_ids_verify)
-    end if
-    if (allocated(kallisto_verify)) then
-        if (any(kallisto_expr /= kallisto_verify)) error stop "Python Expression data doesn't match"
-        !print *, "Expression data verified, shape: ", shape(kallisto_verify)
-    end if
-    if (allocated(gene_to_fam_verify)) then
-        if (any(gene_to_fam /= gene_to_fam_verify)) error stop "Python Gene to family mapping doesn't match"
-        !print *, "Gene to family mapping verified, count: ", size(gene_to_fam_verify)
-    end if
-    if (allocated(gene_family_ids_verify)) then
-        if (any(gene_family_ids /= gene_family_ids_verify)) error stop "Python Family IDs don't match"
-        !print *, "Family IDs verified, count: ", size(gene_family_ids_verify)
-    end if
-    if (allocated(family_centroids_verify)) then
-        if (any(family_centroids /= family_centroids_verify)) error stop "Python Family centroids don't match"
-        !print *, "Family centroids verified, shape: ", shape(family_centroids_verify)
-    end if
-    if (allocated(shift_vectors_verify)) then
-        if (any(shift_vectors /= shift_vectors_verify)) error stop "Python Shift vectors don't match"
-        !print *, "Shift vectors verified, shape: ", shape(shift_vectors_verify)
+      call assert_allocated_real_array_2d(kallisto_verify, "Expression data should be allocated from python archive")
+      call assert_equal_array_real(kallisto_expr, kallisto_verify, size(kallisto_expr), 1e-12_real64, "python Expression data should match")
+
+      call assert_allocated_int_array(gene_to_fam_verify, "Gene to family mapping should be allocated from python archive")
+      call assert_equal_array_int(gene_to_fam, gene_to_fam_verify, size(gene_to_fam), "python Gene to family mapping should match")
+
+      call assert_allocated_char_array(gene_family_ids_verify, "Family IDs should be allocated from python archive")
+      call assert_equal_array_char(gene_family_ids, gene_family_ids_verify, 128, size(gene_family_ids), "python Family IDs should match")
+
+      call assert_allocated_real_array_2d(family_centroids_verify, "Family centroids should be allocated from python archive")
+      call assert_equal_array_real(family_centroids, family_centroids_verify, size(family_centroids), 1e-12_real64, "python Family centroids should match")
+
+      call assert_allocated_real_array_2d(shift_vectors_verify, "Shift vectors should be allocated from python archive")
+      call assert_equal_array_real(shift_vectors, shift_vectors_verify, size(shift_vectors), 1e-12_real64, "python Shift vectors should match")
+    else
+      write(*,*) 'Error reading Python archive: ', ierr 
+      call set_ok(ierr)
     end if
 
     if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
