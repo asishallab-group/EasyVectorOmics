@@ -207,14 +207,14 @@ contains
     call assert_equal_int(size(kallisto_expr, 2), n_genes, "Number of genes should match")
     call assert_true(all(kallisto_expr >= 0.0_real64), "All expression values should be non-negative")
 
-    call read_gene_ids_from_file('material/kallisto_dup_gene_ids.tsv', gene_ids_false_inputs, 1, 1, ierr)
+    call read_gene_ids_from_file('test/test_files/kallisto_dup_gene_ids.tsv', gene_ids_false_inputs, 1, 1, ierr)
     call assert_equal_int(ierr, 0, "Error while reading duplicate gene ids")
 
     inf_file = [ &
-      'material/kallisto_Inf.tsv']
+      'test/test_files/kallisto_Inf.tsv']
 
     nan_file = [ &
-      'material/kallisto_NaN.tsv']
+      'test/test_files/kallisto_NaN.tsv']
 
     call read_expression_vectors(inf_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
     call assert_equal_int(ierr, 201, "Error while reading expression vectors, should get invalid input for Inf in expression data")
