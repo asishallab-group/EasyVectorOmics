@@ -36,7 +36,7 @@ contains
 
   !> Get array of all available tests.
   function get_all_tests() result(all_tests)
-    type(test_case) :: all_tests(15)
+    type(test_case) :: all_tests(22)
     all_tests(1) = test_case("test_read_gene_ids", test_read_gene_ids)
     all_tests(2) = test_case("test_read_expression_data", test_read_expression_data)
     all_tests(3) = test_case("test_read_family_mapping", test_read_family_mapping)
@@ -52,6 +52,13 @@ contains
     all_tests(13) = test_case("test_data_accessors", test_data_accessors)
     all_tests(14) = test_case("test_archive", test_archive)
     all_tests(15) = test_case("test_hashing", test_hashing)
+    all_tests(16) = test_case("test_validate_duplicate_gene_ids", test_validate_duplicate_gene_ids)
+    all_tests(17) = test_case("test_validate_nan_direct", test_validate_nan_direct)
+    all_tests(18) = test_case("test_validate_inf_direct", test_validate_inf_direct)
+    all_tests(19) = test_case("test_validate_negative_expression", test_validate_negative_expression)
+    all_tests(20) = test_case("test_validate_invalid_gene_to_fam", test_validate_invalid_gene_to_fam)
+    all_tests(21) = test_case("test_validate_empty_strings", test_validate_empty_strings)
+    all_tests(22) = test_case("test_validate_dimension_mismatch", test_validate_dimension_mismatch)
   end function get_all_tests
 
   !> Setup global test data
@@ -139,7 +146,7 @@ contains
 
   !> Run all expression reader tests.
   subroutine run_all_tests_tox_data()
-    type(test_case) :: all_tests(15)  ! Updated
+    type(test_case) :: all_tests(22)  ! Updated
     integer(int32) :: i
     
     ! Setup global data first
@@ -156,7 +163,7 @@ contains
   !> Run specific expression reader tests by name.
   subroutine run_named_tests_tox_data(test_names)
     character(len=*), intent(in) :: test_names(:)
-    type(test_case) :: all_tests(15)  ! Updated
+    type(test_case) :: all_tests(22)  ! Updated
     integer(int32) :: i, j
     logical :: found
     
@@ -895,4 +902,131 @@ contains
     call hashset_destroy(test_hashset)
     call hashmap_destroy(test_hashmap)
   end subroutine test_hashing
+
+  !> Test duplicate gene IDs detection
+  subroutine test_validate_duplicate_gene_ids()
+      character(len=20), allocatable :: test_gene_ids(:)
+      integer(int32) :: ierr
+      
+      allocate(test_gene_ids(3))
+      test_gene_ids = ['NP_001000001.1', 'NP_001000002.1', 'NP_001000001.1']  ! Duplicate
+      
+      call validate_gene_ids_uniqueness(test_gene_ids, ierr)
+      call assert_equal_int(ierr, ERR_INVALID_INPUT, "Should detect duplicate gene IDs")
+      
+      deallocate(test_gene_ids)
+  end subroutine test_validate_duplicate_gene_ids
+
+  !> Test NaN/Inf detection in expression data
+  !> Test NaN detection in validation (bypassing file reading checks)
+  subroutine test_validate_nan_direct()
+    use, intrinsic :: ieee_arithmetic
+    real(real64), allocatable :: test_expr(:,:)
+    integer(int32) :: ierr
+    
+    allocate(test_expr(2, 3))
+    
+    ! Fill with normal data first
+    test_expr = reshape([1.0_real64, 2.0_real64, 3.0_real64, &
+                        4.0_real64, 5.0_real64, 6.0_real64], [2, 3])
+    
+    ! Inject NaN directly into the array (simulating computational error)
+    test_expr(2, 2) = ieee_value(1.0_real64, ieee_quiet_nan)
+    
+    ! Test the validation routine directly
+    call validate_expression_data(test_expr, .false., ierr)
+    call assert_equal_int(ierr, ERR_INVALID_INPUT, "Validation should detect computational NaN")
+    
+    deallocate(test_expr)
+  end subroutine test_validate_nan_direct
+
+  !> Test Inf detection in validation  
+  subroutine test_validate_inf_direct()
+    use, intrinsic :: ieee_arithmetic
+    real(real64), allocatable :: test_expr(:,:)
+    integer(int32) :: ierr
+    
+    allocate(test_expr(2, 3))
+    
+    test_expr = reshape([1.0_real64, 2.0_real64, 3.0_real64, &
+                        4.0_real64, 5.0_real64, 6.0_real64], [2, 3])
+    
+    ! Inject Inf directly
+    test_expr(1, 3) = ieee_value(1.0_real64, ieee_positive_inf)
+    
+    call validate_expression_data(test_expr, .false., ierr)
+    call assert_equal_int(ierr, ERR_INVALID_INPUT, "Validation should detect computational Inf")
+    
+    deallocate(test_expr)
+  end subroutine test_validate_inf_direct
+
+  !> Test negative expression values
+  subroutine test_validate_negative_expression()
+      real(real64), allocatable :: test_expr(:,:)
+      integer(int32) :: ierr
+      
+      allocate(test_expr(2, 2))
+      test_expr = reshape([1.0_real64, -2.0_real64, 3.0_real64, 4.0_real64], [2,2])  ! Negative value
+      
+      call validate_expression_data(test_expr, .true., ierr)
+      call assert_equal_int(ierr, ERR_INVALID_INPUT, "Should detect negative expression values")
+      
+      deallocate(test_expr)
+  end subroutine test_validate_negative_expression
+
+  !> Test invalid gene-to-family mapping
+  subroutine test_validate_invalid_gene_to_fam()
+      integer(int32), allocatable :: test_gene_to_fam(:)
+      integer(int32) :: ierr, n_families
+      
+      allocate(test_gene_to_fam(3))
+      test_gene_to_fam = [1, 2, 5]  ! Family 5 doesn't exist
+      n_families = 3  ! Only families 1,2,3 exist
+      
+      call validate_gene_to_family_mapping(test_gene_to_fam, n_families, ierr)
+      call assert_equal_int(ierr, ERR_INVALID_INPUT, "Should detect invalid family indices")
+      
+      deallocate(test_gene_to_fam)
+  end subroutine test_validate_invalid_gene_to_fam
+
+  !> Test empty strings validation
+  subroutine test_validate_empty_strings()
+      character(len=20), allocatable :: test_strings(:)
+      integer(int32) :: ierr
+      
+      allocate(test_strings(3))
+      test_strings = ['NP_001000001.1', '              ', 'NP_001000003.1']  ! Empty string
+      
+      call validate_empty_strings(test_strings, "test_array", ierr)
+      call assert_equal_int(ierr, ERR_INVALID_INPUT, "Should detect empty strings")
+      
+      deallocate(test_strings)
+  end subroutine test_validate_empty_strings
+
+  !> Test dimension mismatch validation
+  subroutine test_validate_dimension_mismatch()
+      integer(int32) :: ierr
+      integer(int32) :: n_genes, n_families, n_samples
+      character(len=20), allocatable :: gene_ids(:), gene_family_ids(:)
+      integer(int32), allocatable :: gene_to_fam(:)
+      real(real64), allocatable :: expression_vectors(:,:), family_centroids(:,:), shift_vectors(:,:)
+      
+      ! Setup with intentional mismatch
+      n_genes = 2
+      n_families = 1
+      n_samples = 2
+      
+      allocate(gene_ids(3))  ! Wrong size - should be n_genes=2
+      allocate(gene_family_ids(n_families))
+      allocate(gene_to_fam(n_genes))
+      allocate(expression_vectors(n_samples, n_genes))
+      allocate(family_centroids(n_samples, n_families))
+      allocate(shift_vectors(2*n_samples, n_genes))
+      
+      call validate_data_structure(n_genes, n_families, n_samples, gene_ids, gene_family_ids, &
+                                gene_to_fam, expression_vectors, family_centroids, shift_vectors, ierr)
+      call assert_equal_int(ierr, ERR_SIZE_MISMATCH, "Should detect dimension mismatch")
+      
+      deallocate(gene_ids, gene_family_ids, gene_to_fam, expression_vectors, family_centroids, shift_vectors)
+  end subroutine test_validate_dimension_mismatch
 end module mod_test_tox_data
