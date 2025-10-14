@@ -119,7 +119,7 @@ subroutine get_shift_components(gene_idx, shift_vectors, d, out_start, out_shift
 end subroutine get_shift_components
 
 !> Helper function to find gene index
-integer function get_gene_index(gene_ids, gene) result(idx)
+integer(int32) function get_gene_index(gene_ids, gene) result(idx)
     character(len=*), intent(in) :: gene_ids(:)
         !! gene ids array
     character(len=*), intent(in) :: gene
@@ -140,7 +140,7 @@ integer function get_gene_index(gene_ids, gene) result(idx)
 end function get_gene_index
 
 !> Helper function to find family index
-integer function get_family_index(family_ids, family) result(idx)
+integer(int32) function get_family_index(family_ids, family) result(idx)
     character(len=*), intent(in) :: family_ids(:)
         !! family ids array
     character(len=*), intent(in) :: family
