@@ -519,23 +519,23 @@ contains
                       shift_vectors=shift_vectors_verify)
     
     call assert_equal_int(ierr, 0, "Error reading archive")
-    
-    call assert_allocated_char_array(gene_ids_verify, "Gene IDs should be allocated")
+
+    call assert_true(allocated(gene_ids_verify), "gene_ids_verify should be allocated")
     call assert_equal_array_char(gene_ids, gene_ids_verify, 128, size(gene_ids), "Gene IDs should match")
 
-    call assert_allocated_real_array_2d(kallisto_verify, "Expression data should be allocated")
+    call assert_true(allocated(kallisto_verify), "kallisto_verify should be allocated")
     call assert_equal_array_real(kallisto_expr, kallisto_verify, size(kallisto_expr), 1e-12_real64, "Expression data should match")
 
-    call assert_allocated_int_array(gene_to_fam_verify, "Gene to family mapping should be allocated")
+    call assert_true(allocated(gene_to_fam_verify), "Gene to family mapping should be allocated")
     call assert_equal_array_int(gene_to_fam, gene_to_fam_verify, size(gene_to_fam), "Gene to family mapping should match")
 
-    call assert_allocated_char_array(gene_family_ids_verify, "Family IDs should be allocated")
+    call assert_true(allocated(gene_family_ids_verify), "Family IDs should be allocated")
     call assert_equal_array_char(gene_family_ids, gene_family_ids_verify, 128, size(gene_family_ids), "Family IDs should match")
 
-    call assert_allocated_real_array_2d(family_centroids_verify, "Family centroids should be allocated")
+    call assert_true(allocated(family_centroids_verify), "Family centroids should be allocated")
     call assert_equal_array_real(family_centroids, family_centroids_verify, size(family_centroids), 1e-12_real64, "Family centroids should match")
 
-    call assert_allocated_real_array_2d(shift_vectors_verify, "Shift vectors should be allocated")
+    call assert_true(allocated(shift_vectors_verify), "Shift vectors should be allocated")
     call assert_equal_array_real(shift_vectors, shift_vectors_verify, size(shift_vectors), 1e-12_real64, "Shift vectors should match")
     
     ! Clean up
@@ -561,10 +561,10 @@ contains
     call assert_equal_int(ierr, 0, "Error reading archive")
     
     ! Verify the data
-    call assert_allocated_char_array(gene_ids_verify, "Gene IDs should be allocated")
+    call assert_true(allocated(gene_ids_verify), "Gene IDs should be allocated")
     call assert_equal_array_char(gene_ids, gene_ids_verify, 128, size(gene_ids), "Gene IDs should match")
 
-    call assert_allocated_real_array_2d(kallisto_verify, "Expression data should be allocated")
+    call assert_true(allocated(kallisto_verify), "Expression data should be allocated")
     call assert_equal_array_real(kallisto_expr, kallisto_verify, size(kallisto_expr), 1e-12_real64, "Expression data should match")
     
     ! Try to read arrays that weren't saved (should not be allocated)
@@ -576,16 +576,16 @@ contains
     
     call assert_equal_int(ierr, 0, "Error reading archive for missing arrays")
 
-    call assert_allocated_char_array(gene_ids_verify, "gene_ids_verify should be allocated")
-    call assert_allocated_real_array_2d(kallisto_verify, "kallisto_verify should be allocated")
+    call assert_true(allocated(gene_ids_verify), "gene_ids_verify should be allocated")
+    call assert_true(allocated(kallisto_verify), "kallisto_verify should be allocated")
     
-    call assert_not_allocated_int(gene_to_fam_verify, "gene_to_fam_verify should not be allocated")
+    call assert_false(allocated(gene_to_fam_verify), "gene_to_fam_verify should not be allocated")
 
-    call assert_not_allocated_char(gene_family_ids_verify, "gene_family_ids_verify should not be allocated")
+    call assert_false(allocated(gene_family_ids_verify), "gene_family_ids_verify should not be allocated")
     
-    call assert_not_allocated_real_2d(family_centroids_verify, "family_centroids_verify should not be allocated")
+    call assert_false(allocated(family_centroids_verify), "family_centroids_verify should not be allocated")
     
-    call assert_not_allocated_real_2d(shift_vectors_verify, "shift_vectors_verify should not be allocated")
+    call assert_false(allocated(shift_vectors_verify), "shift_vectors_verify should not be allocated")
     
     ! Clean up
     if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
@@ -605,10 +605,10 @@ contains
     
     call assert_equal_int(ierr, 0, "Error reading archive")
     
-    call assert_allocated_char_array(gene_family_ids_verify, "Family IDs should be allocated")
+    call assert_true(allocated(gene_family_ids_verify), "Family IDs should be allocated")
     call assert_equal_array_char(gene_family_ids, gene_family_ids_verify, 128, size(gene_family_ids), "Family IDs should match")
 
-    call assert_allocated_real_array_2d(family_centroids_verify, "Family centroids should be allocated")
+    call assert_true(allocated(family_centroids_verify), "Family centroids should be allocated")
     call assert_equal_array_real(family_centroids, family_centroids_verify, size(family_centroids), 1e-12_real64, "Family centroids should match")
     
     ! Clean up
@@ -642,22 +642,22 @@ contains
                       family_centroids=family_centroids_verify, &
                       shift_vectors=shift_vectors_verify)
     if(is_ok(ierr)) then
-      call assert_allocated_char_array(gene_ids_verify, "Gene IDs should be allocated from R archive")
+      call assert_true(allocated(gene_ids_verify), "Gene IDs should be allocated from R archive")
       call assert_equal_array_char(gene_ids, gene_ids_verify, 128, size(gene_ids), "R Gene IDs should match")
 
-      call assert_allocated_real_array_2d(kallisto_verify, "Expression data should be allocated from R archive")
+      call assert_true(allocated(kallisto_verify), "Expression data should be allocated from R archive")
       call assert_equal_array_real(kallisto_expr, kallisto_verify, size(kallisto_expr), 1e-12_real64, "R Expression data should match")
 
-      call assert_allocated_int_array(gene_to_fam_verify, "Gene to family mapping should be allocated from R archive")
+      call assert_true(allocated(gene_to_fam_verify), "Gene to family mapping should be allocated from R archive")
       call assert_equal_array_int(gene_to_fam, gene_to_fam_verify, size(gene_to_fam), "R Gene to family mapping should match")
 
-      call assert_allocated_char_array(gene_family_ids_verify, "Family IDs should be allocated from R archive")
+      call assert_true(allocated(gene_family_ids_verify), "Family IDs should be allocated from R archive")
       call assert_equal_array_char(gene_family_ids, gene_family_ids_verify, 128, size(gene_family_ids), "R Family IDs should match")
 
-      call assert_allocated_real_array_2d(family_centroids_verify, "Family centroids should be allocated from R archive")
+      call assert_true(allocated(family_centroids_verify), "Family centroids should be allocated from R archive")
       call assert_equal_array_real(family_centroids, family_centroids_verify, size(family_centroids), 1e-12_real64, "R Family centroids should match")
 
-      call assert_allocated_real_array_2d(shift_vectors_verify, "Shift vectors should be allocated from R archive")
+      call assert_true(allocated(shift_vectors_verify), "Shift vectors should be allocated from R archive")
       call assert_equal_array_real(shift_vectors, shift_vectors_verify, size(shift_vectors), 1e-12_real64, "R Shift vectors should match")
     else
       write(*,*) 'Error reading R archive: ', ierr 
@@ -675,19 +675,19 @@ contains
                       gene_ids=gene_ids_verify, &
                       expression=kallisto_verify)
     if(is_ok(ierr)) then
-      call assert_allocated_char_array(gene_ids_verify, "Gene IDs should be allocated from R archive")
+      call assert_true(allocated(gene_ids_verify), "Gene IDs should be allocated from R archive")
       call assert_equal_array_char(gene_ids, gene_ids_verify, 128, size(gene_ids), "R Gene IDs should match")
 
-      call assert_allocated_real_array_2d(kallisto_verify, "Expression data should be allocated from R archive")
+      call assert_true(allocated(kallisto_verify), "Expression data should be allocated from R archive")
       call assert_equal_array_real(kallisto_expr, kallisto_verify, size(kallisto_expr), 1e-12_real64, "R Expression data should match")
 
-      call assert_not_allocated_int(gene_to_fam_verify, "Gene to family mapping should not be allocated from R archive")
+      call assert_false(allocated(gene_to_fam_verify), "Gene to family mapping should not be allocated from R archive")
 
-      call assert_not_allocated_char(gene_family_ids_verify, "Family IDs should not be allocated from R archive")
+      call assert_false(allocated(gene_family_ids_verify), "Family IDs should not be allocated from R archive")
 
-      call assert_not_allocated_real_2d(family_centroids_verify, "Family centroids should not be allocated from R archive")
+      call assert_false(allocated(family_centroids_verify), "Family centroids should not be allocated from R archive")
 
-      call assert_not_allocated_real_2d(shift_vectors_verify, "Shift vectors should not be allocated from R archive")
+      call assert_false(allocated(shift_vectors_verify), "Shift vectors should not be allocated from R archive")
     else
       write(*,*) 'Error reading R archive: ', ierr 
       call set_ok(ierr)
@@ -709,22 +709,22 @@ contains
                       family_centroids=family_centroids_verify, &
                       shift_vectors=shift_vectors_verify)
     if(is_ok(ierr)) then
-      call assert_allocated_char_array(gene_ids_verify, "Gene IDs should be allocated from python archive")
+      call assert_true(allocated(gene_ids_verify), "Gene IDs should be allocated from python archive")
       call assert_equal_array_char(gene_ids, gene_ids_verify, 128, size(gene_ids), "python Gene IDs should match")
 
-      call assert_allocated_real_array_2d(kallisto_verify, "Expression data should be allocated from python archive")
+      call assert_true(allocated(kallisto_verify), "Expression data should be allocated from python archive")
       call assert_equal_array_real(kallisto_expr, kallisto_verify, size(kallisto_expr), 1e-12_real64, "python Expression data should match")
 
-      call assert_allocated_int_array(gene_to_fam_verify, "Gene to family mapping should be allocated from python archive")
+      call assert_true(allocated(gene_to_fam_verify), "Gene to family mapping should be allocated from python archive")
       call assert_equal_array_int(gene_to_fam, gene_to_fam_verify, size(gene_to_fam), "python Gene to family mapping should match")
 
-      call assert_allocated_char_array(gene_family_ids_verify, "Family IDs should be allocated from python archive")
+      call assert_true(allocated(gene_family_ids_verify), "Family IDs should be allocated from python archive")
       call assert_equal_array_char(gene_family_ids, gene_family_ids_verify, 128, size(gene_family_ids), "python Family IDs should match")
 
-      call assert_allocated_real_array_2d(family_centroids_verify, "Family centroids should be allocated from python archive")
+      call assert_true(allocated(family_centroids_verify), "Family centroids should be allocated from python archive")
       call assert_equal_array_real(family_centroids, family_centroids_verify, size(family_centroids), 1e-12_real64, "python Family centroids should match")
 
-      call assert_allocated_real_array_2d(shift_vectors_verify, "Shift vectors should be allocated from python archive")
+      call assert_true(allocated(shift_vectors_verify), "Shift vectors should be allocated from python archive")
       call assert_equal_array_real(shift_vectors, shift_vectors_verify, size(shift_vectors), 1e-12_real64, "python Shift vectors should match")
     else
       write(*,*) 'Error reading Python archive: ', ierr 

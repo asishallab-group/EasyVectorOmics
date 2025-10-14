@@ -14,81 +14,8 @@ module asserts
   public :: assert_string_contains, assert_allclose_array_real, assert_equal_array_char
   public :: assert_sum_equal, assert_unique_int, assert_permutation
   public :: assert_equal_complex, assert_not_equal_complex, assert_equal_array_complex
-  public :: assert_allocated_real_array_2d, assert_allocated_real_array_1d, assert_allocated_int_array, assert_allocated_char_array
-  public :: assert_not_allocated_real_2d, assert_not_allocated_int, assert_not_allocated_char
-
 
 contains
-
-  !> Assert that a 2D real array is not allocated.
-  subroutine assert_not_allocated_real_2d(arr, msg)
-    real(real64), intent(in), allocatable :: arr(:,:)
-    character(*), intent(in) :: msg
-    if (allocated(arr)) then
-      write(error_unit,*) "ASSERTION FAILED (should not be allocated): ", trim(msg)
-      stop 1
-    end if
-  end subroutine
-
-  !> Assert that a 1D real array is not allocated.
-  subroutine assert_not_allocated_int(arr, msg)
-    integer(int32), intent(in), allocatable :: arr(:)
-    character(*), intent(in) :: msg
-    if (allocated(arr)) then
-      write(error_unit,*) "ASSERTION FAILED (should not be allocated): ", trim(msg)
-      stop 1
-    end if
-  end subroutine
-
-  !> Assert that a 1D real array is not allocated.
-  subroutine assert_not_allocated_char(arr, msg)
-    character(len=:), intent(in), allocatable :: arr(:)
-    character(*), intent(in) :: msg
-    if (allocated(arr)) then
-      write(error_unit,*) "ASSERTION FAILED (should not be allocated): ", trim(msg)
-      stop 1
-    end if
-  end subroutine
-
-  !> Assert that a 1D real array is allocated.
-  subroutine assert_allocated_real_array_1d(arr, msg)
-    real(real64), intent(in), allocatable :: arr(:)
-    character(*), intent(in) :: msg
-    if (.not. allocated(arr)) then
-      write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (array not allocated)"
-      stop 1
-    end if
-  end subroutine
-
-  !> Assert that a 2D real array is allocated.
-  subroutine assert_allocated_real_array_2d(arr, msg)
-    real(real64), intent(in), allocatable :: arr(:,:)
-    character(*), intent(in) :: msg
-    if (.not. allocated(arr)) then
-      write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (array not allocated)"
-      stop 1
-    end if
-  end subroutine
-
-  !> Assert that an integer array is allocated.
-  subroutine assert_allocated_int_array(arr, msg)
-    integer(int32), intent(in), allocatable :: arr(:)
-    character(*), intent(in) :: msg
-    if (.not. allocated(arr)) then
-      write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (array not allocated)"
-      stop 1
-    end if
-  end subroutine
-
-  !> Assert that a character array is allocated.
-  subroutine assert_allocated_char_array(arr, msg)
-    character(len=:), intent(in), allocatable :: arr(:)
-    character(*), intent(in) :: msg
-    if (.not. allocated(arr)) then
-      write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (array not allocated)"
-      stop 1
-    end if
-  end subroutine
 
   !> Assert that two complex numbers are equal within a tolerance.
   subroutine assert_equal_complex(a, b, tol, msg)
