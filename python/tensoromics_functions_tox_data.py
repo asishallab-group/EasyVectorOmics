@@ -198,15 +198,14 @@ def strings_to_c_char_matrix(strings, max_length):
     n_strings = len(strings)
     total_size = n_strings * max_length
     
-    # Flaches ctypes-Array erzeugen
+    # create flat c-types array
     matrix_type = ctypes.c_char * total_size
     matrix = matrix_type()
 
-    # Initialisiere alles mit Nullbytes
+    # Initialize with all null bytes
     for i in range(total_size):
         matrix[i] = b'\x00'
 
-    # Strings einfüllen (Fortran order)
     for i, s in enumerate(strings):
         encoded = s.encode('ascii')
         for j in range(min(max_length, len(encoded))):
@@ -223,8 +222,7 @@ def strings_to_c_char_matrix(strings, max_length):
 def c_char_matrix_to_strings(matrix, max_length, n_strings):
     """Convert 2D c_char matrix or NumPy array back to list of strings (Fortran order)"""
     import numpy as np
-    
-    # Falls NumPy-Array: flach als 1D betrachten (Fortran order)
+
     if isinstance(matrix, np.ndarray):
         flat = matrix.ravel(order='F')
     else:
@@ -240,11 +238,9 @@ def c_char_matrix_to_strings(matrix, max_length, n_strings):
 
             char = flat[index]
 
-            # 🔧 Fix: sicherstellen, dass 'char' ein einzelnes Byte ist
             if isinstance(char, np.ndarray):
-                char = char.item()  # extrahiere den 0D-Wert
+                char = char.item()
             
-            # in Bytes umwandeln, falls es ein int ist
             if isinstance(char, (np.integer, int)):
                 char = bytes([char])
             elif isinstance(char, (bytes, bytearray)):
