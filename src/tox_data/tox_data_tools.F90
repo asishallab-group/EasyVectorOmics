@@ -773,7 +773,7 @@ subroutine filter_unassigned_genes_R(gene_ids_raw, gene_ids_len, n_genes, &
     end if
 end subroutine filter_unassigned_genes_R
 
-!> C binding for reading gene IDs from a file
+!> C binding for reading gene IDs from a gene expression tsv file
 subroutine read_gene_ids_from_file_C(filename_raw, fn_len, gene_ids_raw, gene_ids_len, n_genes, &
                                  n_header_rows, gene_col, ierr) bind(C, name="read_gene_ids_from_file_C")
     use iso_c_binding, only: c_int, c_char
