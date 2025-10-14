@@ -45,7 +45,7 @@ test_paralog_functions <- function() {
     max_angle = pi
   )
   cat("Dosage effect results:", dosage_result$n_results, "subsets\n")
-  print(dosage_result$work_arr_paralog_subsets)
+  print(dosage_result$results)
 
   cat("\n=== Testing Subfunctionalization Detection ===\n")
 
@@ -61,7 +61,7 @@ test_paralog_functions <- function() {
     sorted_paralog_norms_perm = sorted_perm
   )
   cat("Subfunctionalization results:", subfunc_result$n_results, "subsets\n")
-  print(subfunc_result$work_arr_paralog_subsets)
+  print(subfunc_result$results)
 
   cat("\n=== Testing Edge Cases ===\n")
 

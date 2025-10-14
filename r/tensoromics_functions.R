@@ -2082,11 +2082,7 @@ detect_subfunctionalization <- function(ancestor, paralogs, rdi_threshold,
 
   list(
     n_results = res$n_results,
-    work_arr_paralog_subsets = res$work_arr_paralog_subsets[, seq_len(res$n_results)],
-    active_mask = res$active_mask,
-    temp_paralog_vector = res$temp_paralog_vector,
-    temp_work_array = res$temp_work_array,
-    actual_max_subset_size = work_array_size_data$work_array_size
+    results = res$work_arr_paralog_subsets[, seq_len(res$n_results)]
   )
 }
 
@@ -2135,9 +2131,6 @@ detect_dosage_effect <- function(ancestor, paralogs, filtered_paralogs_mask,
 
   list(
     n_results = res$n_results,
-    work_arr_paralog_subsets = res$work_arr_paralog_subsets[, seq_len(res$n_results)],
-    active_mask = res$active_mask,
-    temp_paralog_vector = res$temp_paralog_vector,
-    actual_max_subset_size = work_array_size_data$work_array_size
+    results = res$work_arr_paralog_subsets[, seq_len(res$n_results)]
   )
 }
