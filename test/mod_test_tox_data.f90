@@ -10,7 +10,13 @@ module mod_test_tox_data
   use tox_gene_centroids
   use tox_shift_vectors
   use tox_errors
-  use tox_archive, only: save_tox_data, read_tox_data
+  use tox_archive_generic, only: save_tox_data, read_tox_data, create_zip_archive, extract_zip_archive, delete_file
+  use int_deserialize_mod
+  use real_deserialize_mod
+  use char_deserialize_mod
+  use serialize_char
+  use serialize_int
+  use serialize_real
   implicit none
   public
 
@@ -36,7 +42,7 @@ contains
 
   !> Get array of all available tests.
   function get_all_tests() result(all_tests)
-    type(test_case) :: all_tests(22)
+    type(test_case) :: all_tests(23)
     all_tests(1) = test_case("test_read_gene_ids", test_read_gene_ids)
     all_tests(2) = test_case("test_read_expression_data", test_read_expression_data)
     all_tests(3) = test_case("test_read_family_mapping", test_read_family_mapping)
@@ -59,6 +65,7 @@ contains
     all_tests(20) = test_case("test_validate_invalid_gene_to_fam", test_validate_invalid_gene_to_fam)
     all_tests(21) = test_case("test_validate_empty_strings", test_validate_empty_strings)
     all_tests(22) = test_case("test_validate_dimension_mismatch", test_validate_dimension_mismatch)
+    all_tests(23) = test_case("test_manual_archive", test_manual_archive)
   end function get_all_tests
 
   !> Setup global test data
@@ -146,7 +153,7 @@ contains
 
   !> Run all expression reader tests.
   subroutine run_all_tests_tox_data()
-    type(test_case) :: all_tests(22)  ! Updated
+    type(test_case) :: all_tests(23)  ! Updated
     integer(int32) :: i
     
     ! Setup global data first
@@ -163,7 +170,7 @@ contains
   !> Run specific expression reader tests by name.
   subroutine run_named_tests_tox_data(test_names)
     character(len=*), intent(in) :: test_names(:)
-    type(test_case) :: all_tests(22)  ! Updated
+    type(test_case) :: all_tests(23)  ! Updated
     integer(int32) :: i, j
     logical :: found
     
@@ -206,7 +213,7 @@ contains
     allocate(inf_file(1))
     allocate(nan_file(1))
     allocate(missing_col_file(1))
-    allocate(gene_ids_false_inputs(88328))
+    allocate(gene_ids_false_inputs(10))
     allocate(expr_vecs_false_inputs(6, n_genes))
 
     call assert_true(allocated(kallisto_expr), "Expression data should be allocated")
@@ -740,6 +747,226 @@ contains
 
     ! print *, "All archive tests completed successfully!"
   end subroutine test_archive
+
+  subroutine test_manual_archive()
+    integer(int32) :: ierr
+    integer(int32) :: i, j
+    integer(int32) :: dims(5)
+    integer(int32) :: ndims, clen
+    
+    ! Test arrays
+    integer(int32) :: int_1d(5)
+    integer(int32) :: int_2d(3, 4)
+    real(real64) :: real_1d(6)
+    real(real64) :: real_2d(2, 3)
+    character(len=20) :: char_1d(4)
+    
+    ! Filenames
+    character(len=32) :: keys(5)
+    character(len=256) :: filenames(5)
+    
+    ! For extraction
+    character(len=:), allocatable :: extracted_keys(:)
+    character(len=:), allocatable :: extracted_filenames(:)
+    
+    ! Arrays for verification
+    integer(int32), allocatable :: read_int_1d(:)
+    integer(int32), allocatable :: read_int_2d(:,:)
+    real(real64), allocatable :: read_real_1d(:)
+    real(real64), allocatable :: read_real_2d(:,:)
+    character(len=20), allocatable :: read_char_1d(:)
+    
+    call set_ok(ierr)
+    
+    print *, "=== Starting manual archive test ==="
+    
+    ! Initialize test arrays
+    print *, "Initializing test arrays..."
+    
+    ! 1D integer array
+    do i = 1, 5
+        int_1d(i) = i * 10
+    end do
+    
+    ! 2D integer array
+    do j = 1, 4
+        do i = 1, 3
+            int_2d(i, j) = i * 100 + j
+        end do
+    end do
+    
+    ! 1D real array
+    do i = 1, 6
+        real_1d(i) = i * 1.5_real64
+    end do
+    
+    ! 2D real array
+    do j = 1, 3
+        do i = 1, 2
+            real_2d(i, j) = i * 2.5_real64 + j * 0.1_real64
+        end do
+    end do
+    
+    ! 1D character array
+    char_1d(1) = "Hello"
+    char_1d(2) = "World"
+    char_1d(3) = "Fortran"
+    char_1d(4) = "Testing"
+    
+    ! Serialize arrays to files
+    print *, "Serializing arrays to files..."
+    
+    call serialize_int_1d(int_1d, "test_int_1d.bin", ierr)
+    if (is_err(ierr)) then
+        print *, "Error serializing int_1d"
+        return
+    end if
+    
+    call serialize_int_2d(int_2d, "test_int_2d.bin", ierr)
+    if (is_err(ierr)) then
+        print *, "Error serializing int_2d"
+        return
+    end if
+    
+    call serialize_real_1d(real_1d, "test_real_1d.bin", ierr)
+    if (is_err(ierr)) then
+        print *, "Error serializing real_1d"
+        return
+    end if
+    
+    call serialize_real_2d(real_2d, "test_real_2d.bin", ierr)
+    if (is_err(ierr)) then
+        print *, "Error serializing real_2d"
+        return
+    end if
+    
+    call serialize_char_1d(char_1d, "test_char_1d.bin", ierr)
+    if (is_err(ierr)) then
+        print *, "Error serializing char_1d"
+        return
+    end if
+    
+    ! Set up keys and filenames for ZIP archive
+    keys(1) = 'integer_1d'
+    filenames(1) = 'test_int_1d.bin'
+    
+    keys(2) = 'integer_2d'
+    filenames(2) = 'test_int_2d.bin'
+    
+    keys(3) = 'real_1d'
+    filenames(3) = 'test_real_1d.bin'
+    
+    keys(4) = 'real_2d'
+    filenames(4) = 'test_real_2d.bin'
+    
+    keys(5) = 'character_1d'
+    filenames(5) = 'test_char_1d.bin'
+    
+    ! Create ZIP archive
+    print *, "Creating ZIP archive..."
+    call create_zip_archive("test_manual_archive.zip", keys, filenames, ierr)
+    if (is_err(ierr)) then
+        print *, "Error creating ZIP archive", ierr
+        return
+    end if
+    
+    print *, "ZIP archive created successfully"
+    
+    ! Delete original files to test extraction
+    ! print *, "Deleting original files..."
+    ! call delete_file("test_int_1d.bin", ierr)
+    ! call delete_file("test_int_2d.bin", ierr)
+    ! call delete_file("test_real_1d.bin", ierr)
+    ! call delete_file("test_real_2d.bin", ierr)
+    ! call delete_file("test_char_1d.bin", ierr)
+    
+    ! Extract ZIP archive
+    print *, "Extracting ZIP archive..."
+    call extract_zip_archive("test_manual_archive.zip", extracted_keys, extracted_filenames, ierr)
+    if (is_err(ierr)) then
+        print *, "Error extracting ZIP archive"
+        return
+    end if
+    
+    print *, "ZIP archive extracted successfully"
+    
+    ! Print extracted keys and filenames
+    print *, "Extracted files:"
+    do i = 1, size(extracted_keys)
+        print *, "  Key: ", trim(extracted_keys(i)), " -> File: ", trim(extracted_filenames(i))
+    end do
+    
+    ! Verify that files exist and can be read
+    print *, "Verifying extracted files..."
+    
+    ! Read and verify 1D integer array
+    call get_array_metadata('test_int_1d.bin', dims, 1, ndims, ierr)
+    allocate(read_int_1d(dims(1)))
+    call deserialize_int_1d(read_int_1d, "test_int_1d.bin", ierr)
+    if (is_ok(ierr)) then
+        print *, "1D integer array verification: ", all(read_int_1d == int_1d)
+    else
+        print *, "Error reading 1D integer array"
+    end if
+    
+    ! Read and verify 2D integer array
+    call get_array_metadata('test_int_2d.bin', dims, 2, ndims, ierr)
+    allocate(read_int_2d(dims(1), dims(2)))
+    call deserialize_int_2d(read_int_2d, "test_int_2d.bin", ierr)
+    if (is_ok(ierr)) then
+        print *, "2D integer array verification: ", all(read_int_2d == int_2d)
+    else
+        print *, "Error reading 2D integer array"
+    end if
+    
+    ! Read and verify 1D real array
+    call get_array_metadata('test_real_1d.bin', dims, 1, ndims, ierr)
+    allocate(read_real_1d(dims(1)))
+    call deserialize_real_1d(read_real_1d, "test_real_1d.bin", ierr)
+    if (is_ok(ierr)) then
+        print *, "1D real array verification: ", all(read_real_1d == real_1d)
+    else
+        print *, "Error reading 1D real array"
+    end if
+    
+    ! Read and verify 2D real array
+    call get_array_metadata('test_real_2d.bin', dims, 2, ndims, ierr)
+    allocate(read_real_2d(dims(1), dims(2)))
+    call deserialize_real_2d(read_real_2d, "test_real_2d.bin", ierr)
+    if (is_ok(ierr)) then
+        print *, "2D real array verification: ", all(read_real_2d == real_2d)
+    else
+        print *, "Error reading 2D real array"
+    end if
+    
+    ! Read and verify 1D character array
+    call get_array_metadata('test_char_1d.bin', dims, 1, ndims, ierr, clen)
+    allocate(character(len=clen) :: read_char_1d(dims(1)))
+    call deserialize_char_1d(read_char_1d, "test_char_1d.bin", ierr)
+    if (is_ok(ierr)) then
+        print *, "1D character array verification: ", all(read_char_1d == char_1d)
+    else
+        print *, "Error reading 1D character array"
+    end if
+    
+    ! Clean up extracted files
+    ! call delete_file("test_int_1d.bin", ierr)
+    ! call delete_file("test_int_2d.bin", ierr)
+    ! call delete_file("test_real_1d.bin", ierr)
+    ! call delete_file("test_real_2d.bin", ierr)
+    ! call delete_file("test_char_1d.bin", ierr)
+    ! call delete_file("test_manual_archive.zip", ierr)
+    ! call delete_file("manifest.txt", ierr)
+    
+    ! Clean up allocated arrays
+    if (allocated(read_int_1d)) deallocate(read_int_1d)
+    if (allocated(read_int_2d)) deallocate(read_int_2d)
+    if (allocated(read_real_1d)) deallocate(read_real_1d)
+    if (allocated(read_real_2d)) deallocate(read_real_2d)
+    if (allocated(read_char_1d)) deallocate(read_char_1d)
+    if (allocated(extracted_keys)) deallocate(extracted_keys)
+    if (allocated(extracted_filenames)) deallocate(extracted_filenames)
+  end subroutine test_manual_archive
 
   subroutine test_hashing()
     use xxh3_hashmap_module

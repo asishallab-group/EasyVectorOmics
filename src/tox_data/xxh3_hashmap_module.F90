@@ -222,7 +222,7 @@ subroutine hashmap_put(map, key, value)
         if (current%key == normalized_key) then
             ! Key exists - update value
             current%value = value
-            if(DEBUG) print *, "Warning: Duplicate key updated value"
+            if(DEBUG) print *, "Warning: Duplicate key updated value: ", normalized_key
             return
         end if
         current => current%next
