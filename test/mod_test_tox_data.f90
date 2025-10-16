@@ -533,7 +533,6 @@ contains
   end subroutine test_data_accessors
 
   subroutine test_archive()
-    use tox_archive
     use iso_fortran_env, only: real64, int32
     implicit none
     
@@ -672,7 +671,7 @@ contains
     
     call read_tox_data("test_archive_4_f.zip", ierr)
     
-    call assert_equal_int(ierr, 0, "Error reading empty archive")
+    call assert_equal_int(ierr, 201, "Reading empty archive should throw error 201")
     
     ! print *, "Empty archive test passed"
     

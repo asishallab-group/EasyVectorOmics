@@ -685,6 +685,11 @@ contains
             if (allocated(buffer)) deallocate(buffer)
             close(unit)
             error = zip_fclose(file_handle)
+            if(is_err(error)) then
+                if(DEBUG) print *, "Error closing manifest file in ZIP"
+                call set_err_once(ierr, ERR_FILE_CLOSE)
+                return
+            end if
 
             ! Parse the manifest file
             call read_manifest_generic("manifest.txt", keys, filenames, ierr)
@@ -933,7 +938,7 @@ contains
                 case ('shift_vectors')
                     extracted_shift_vectors_file = trim(filenames(i))
                 case default
-                    if(DEBUG) print *, "Found non-standard key in archive: ", trim(keys(i)), " in file: ", trim(filenames(i))
+                    print *, "Found non-standard key in archive: ", trim(keys(i)), " in file: ", trim(filenames(i))
             end select
         end do
         
@@ -945,10 +950,96 @@ contains
         if (present(family_centroids_file)) family_centroids_file = extracted_family_centroids_file
         if (present(shift_vectors_file)) shift_vectors_file = extracted_shift_vectors_file
         
-        ! Load arrays that are requested and available
-        ! [Rest of the loading logic remains the same as before...]
+        ! Load the arrays that are requested and available
+        gene_ids_requested = present(gene_ids) .and. len_trim(extracted_gene_ids_file) > 0
+        if (gene_ids_requested) then
+            ! Get array metadata to determine size and character length
+            call get_array_metadata(extracted_gene_ids_file, dims, max_dims, ndims, ierr, char_len)
+            if (is_ok(ierr) .and. ndims == 1) then
+                ! Allocate array based on metadata with proper character length
+                allocate(character(len=char_len) :: gene_ids(dims(1)))
+                call load_gene_ids(gene_ids, extracted_gene_ids_file, ierr)
+                if(is_err(ierr)) return
+            else
+                if(DEBUG) print *, "Error getting metadata for gene_ids file"
+                return
+            end if
+        end if
         
-        ! Clean up extracted files
+        expression_requested = present(expression) .and. len_trim(extracted_expression_file) > 0
+        if (expression_requested) then
+            ! Get array metadata to determine size
+            call get_array_metadata(extracted_expression_file, dims, max_dims, ndims, ierr)
+            if (is_ok(ierr) .and. ndims == 2) then
+                ! Allocate array based on metadata
+                allocate(expression(dims(1), dims(2)))
+                call load_expression_vectors(expression, extracted_expression_file, ierr)
+                if(is_err(ierr)) return
+            else
+                if(DEBUG) print *, "Error getting metadata for expression file"
+                return
+            end if
+        end if
+        
+        gene_to_family_requested = present(gene_to_family) .and. len_trim(extracted_gene_to_family_file) > 0
+        if (gene_to_family_requested) then
+            ! Get array metadata to determine size
+            call get_array_metadata(extracted_gene_to_family_file, dims, max_dims, ndims, ierr)
+            if (is_ok(ierr) .and. ndims == 1) then
+                ! Allocate array based on metadata
+                allocate(gene_to_family(dims(1)))
+                call load_gene_to_family(gene_to_family, extracted_gene_to_family_file, ierr)
+                if(is_err(ierr)) return
+            else
+                if(DEBUG) print *, "Error getting metadata for gene_to_family file"
+                return
+            end if
+        end if
+        
+        family_ids_requested = present(family_ids) .and. len_trim(extracted_family_ids_file) > 0
+        if (family_ids_requested) then
+            ! Get array metadata to determine size and character length
+            call get_array_metadata(extracted_family_ids_file, dims, max_dims, ndims, ierr, char_len)
+            if (is_ok(ierr) .and. ndims == 1) then
+                ! Allocate array based on metadata with proper character length
+                allocate(character(len=char_len) :: family_ids(dims(1)))
+                call load_family_ids(family_ids, extracted_family_ids_file, ierr)
+            else
+                if(DEBUG) print *, "Error getting metadata for family_ids file"
+                return
+            end if
+        end if
+        
+        family_centroids_requested = present(family_centroids) .and. len_trim(extracted_family_centroids_file) > 0
+        if (family_centroids_requested) then
+            ! Get array metadata to determine size
+            call get_array_metadata(extracted_family_centroids_file, dims, max_dims, ndims, ierr)
+            if (is_ok(ierr) .and. ndims == 2) then
+                ! Allocate array based on metadata
+                allocate(family_centroids(dims(1), dims(2)))
+                call load_family_centroids(family_centroids, extracted_family_centroids_file, ierr)
+                if(is_err(ierr)) return
+            else
+                if(DEBUG) print *, "Error getting metadata for family_centroids file"
+                return
+            end if
+        end if
+        
+        shift_vectors_requested = present(shift_vectors) .and. len_trim(extracted_shift_vectors_file) > 0
+        if (shift_vectors_requested) then
+            ! Get array metadata to determine size
+            call get_array_metadata(extracted_shift_vectors_file, dims, max_dims, ndims, ierr)
+            if (is_ok(ierr).and. ndims == 2) then
+                ! Allocate array based on metadata
+                allocate(shift_vectors(dims(1), dims(2)))
+                call load_shift_vectors(shift_vectors, extracted_shift_vectors_file, ierr)
+                if(is_err(ierr)) return
+            else
+                if(DEBUG) print *, "Error getting metadata for shift_vectors file"
+                return
+            end if
+        end if
+
         if(len_trim(extracted_gene_ids_file) > 0) call delete_file(extracted_gene_ids_file, ierr)
         if(len_trim(extracted_expression_file) > 0) call delete_file(extracted_expression_file, ierr)
         if(len_trim(extracted_gene_to_family_file) > 0) call delete_file(extracted_gene_to_family_file, ierr)
