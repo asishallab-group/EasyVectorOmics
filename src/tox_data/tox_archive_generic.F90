@@ -1,7 +1,7 @@
 module tox_archive_generic
     use iso_c_binding, only: c_ptr, c_char, c_int, c_int64_t, c_size_t, c_signed_char, c_f_pointer, c_loc, c_associated, c_null_char, c_null_ptr
     use tox_data_read_write
-    use tox_errors, only: set_ok, set_err_once, is_err, ERR_FILE_OPEN, ERR_STRING_TOO_LONG, ERR_ALLOC_FAIL, ERR_FILE_ADD
+    use tox_errors, only: set_ok, set_err_once, is_err, ERR_FILE_OPEN, ERR_ALLOC_FAIL, ERR_FILE_ADD
     use tox_errors, only: ERR_FILE_CLOSE, ERR_FILE_EXTRACT, ERR_INVALID_INPUT
     use tox_errors, only: ERR_POINTER_NULL, ERR_WRITE_DATA, ERR_READ_DATA, ERR_MISSING_MANIFEST
     use iso_fortran_env, only: real64, int32

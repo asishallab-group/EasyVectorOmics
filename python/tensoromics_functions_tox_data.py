@@ -52,8 +52,8 @@ lib.read_expression_vectors_C.argtypes = [
 ]
 lib.read_expression_vectors_C.restype = None
 
-# read_family_file_C
-lib.read_family_file_C.argtypes = [
+# read_orthofinder_file_C
+lib.read_orthofinder_file_C.argtypes = [
     ctypes.POINTER(ctypes.c_char),  # filename_raw
     ctypes.c_int,                  # fn_len
     ctypes.POINTER(ctypes.c_char),  # gene_ids_raw
@@ -65,7 +65,7 @@ lib.read_family_file_C.argtypes = [
     ctypes.POINTER(ctypes.c_int),  # gene_to_fam
     ctypes.POINTER(ctypes.c_int)   # ierr
 ]
-lib.read_family_file_C.restype = None
+lib.read_orthofinder_file_C.restype = None
 
 # filter_unassigned_genes_C
 lib.filter_unassigned_genes_C.argtypes = [
@@ -166,6 +166,7 @@ lib.validate_all_data_C.argtypes = [
 ]
 lib.validate_all_data_C.restype = None
 
+# converts a given string to a c_char array of given length
 def string_to_c_char_array(s, length):
     """Convert string to c_char array with null termination"""
     if s is None:
@@ -181,6 +182,7 @@ def string_to_c_char_array(s, length):
         arr[len(encoded)] = b'\x00'
     return arr
 
+# converts a c_char array back to a string
 def c_char_array_to_string(c_array):
     """Convert c_char array back to string"""
     # Find null terminator or use full length
@@ -250,7 +252,6 @@ def c_char_matrix_to_strings(matrix, max_length, n_strings):
             else:
                 char = bytes([int(char)])
 
-            # Null-Terminator prüfen
             if char == b'\x00':
                 break
 
@@ -280,7 +281,18 @@ def _ensure_int_array(arr):
         arr = np.array(arr, dtype=np.int32)
     return arr
 
+#' Function for read_gene_ids_from_tsv_file_C
 def read_gene_ids_from_tsv_file(filename, n_genes, gene_ids_len, n_header_rows, gene_col):
+    """
+    Read gene ids from a tsv file
+
+    Args:
+        filename: Name of the TSV file
+        n_genes: Number of genes to read
+        gene_ids_len: Maximum length of each gene ID
+        n_header_rows: Number of header rows to skip
+        gene_col: Column index (1-based) for gene IDs
+    """
     # Ensure filename is a string (single file)
     if isinstance(filename, list):
         if len(filename) > 0:
@@ -321,6 +333,17 @@ def read_gene_ids_from_tsv_file(filename, n_genes, gene_ids_len, n_header_rows, 
 # Function for read_expression_vectors_C
 def read_expression_vectors(file_list, gene_ids, n_samples, n_header_rows, 
                            gene_col, value_cols, delimiter='\t'):
+    """
+    Read expression vectors from given tabular (csv/tsv) files
+    Args:
+        file_list: List of filenames to read
+        gene_ids: List of gene IDs to extract
+        n_samples: Number of samples (files)
+        n_header_rows: Number of header rows to skip in each file
+        gene_col: Column index (1-based) for gene IDs
+        value_cols: List of column indices (1-based) for expression values
+        delimiter: Delimiter used in the files (default: tab)
+    """
     # Ensure file_list is a list (multiple files)
     if not isinstance(file_list, list):
         file_list = [file_list]  # Convert single file to list
@@ -365,14 +388,17 @@ def read_expression_vectors(file_list, gene_ids, n_samples, n_header_rows,
         
     return expression_vectors
 
-# Function for read_family_file_C
-def read_family_file(filename, gene_ids, family_ids_len, n_families):
+# Function for read_orthofinder_file_C
+def read_orthofinder_file(filename, gene_ids, family_ids_len, n_families):
+    """
+    
+    """
     # Ensure filename is a string (single file)
     if isinstance(filename, list):
         if len(filename) > 0:
             filename = filename[0]  # Take first element if it's a list
         else:
-            raise ValueError("filename cannot be an empty list for read_family_file")
+            raise ValueError("filename cannot be an empty list for read_orthofinder_file")
     
     # Ensure inputs are numpy arrays
     gene_ids = _ensure_string_array(gene_ids)
@@ -389,7 +415,7 @@ def read_family_file(filename, gene_ids, family_ids_len, n_families):
     ierr = ctypes.c_int()
     
     # Call C function
-    lib.read_family_file_C(
+    lib.read_orthofinder_file_C(
         ctypes.cast(ctypes.byref(fn_array), ctypes.POINTER(ctypes.c_char)),
         ctypes.c_int(len(filename)),
         gene_ids_matrix.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),

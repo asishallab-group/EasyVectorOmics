@@ -12,7 +12,7 @@ lib = ctypes.CDLL(dll_path)
 
 from tensoromics_functions_tox_data import (
     read_expression_vectors,
-    read_family_file,
+    read_orthofinder_file,
     filter_unassigned_genes,
     read_gene_ids_from_tsv_file,
     validate_all_data,
@@ -74,7 +74,7 @@ print("expression shape:", kallisto_expr.shape)
 
 # Read family mapping
 print("Reading family file...")
-family_result = read_family_file("material/Orthogroups.tsv", gene_ids, family_len, n_families)
+family_result = read_orthofinder_file("material/Orthogroups.tsv", gene_ids, family_len, n_families)
 family_ids = family_result['family_ids']
 gene_to_fam = family_result['gene_to_fam']
 print("family_ids sample:", family_ids[:5])

@@ -110,7 +110,7 @@ contains
                           1, 1, value_cols, 1, ierr, char(9))
 
     ! Read family mapping
-    call read_family_file('material/Orthogroups.tsv', gene_ids, gene_family_ids, gene_to_fam, ierr)
+    call read_orthofinder_file('material/Orthogroups.tsv', gene_ids, gene_family_ids, gene_to_fam, ierr)
     call assert_equal_int(ierr, 0, "Reading family file should succeed")
     
     ! Print first 10 family IDs

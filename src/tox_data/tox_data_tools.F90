@@ -9,7 +9,7 @@ module tox_data_tools
 
     public :: read_gene_ids_from_tsv_file
     public :: read_expression_vectors
-    public :: read_family_file
+    public :: read_orthofinder_file
     public :: split_string
     public :: filter_unassigned_genes, get_unassigned_mask
 
@@ -274,7 +274,7 @@ subroutine read_gene_ids_from_tsv_file(filename, gene_ids, n_header_rows, gene_c
 end subroutine read_gene_ids_from_tsv_file
 
 !> Read a family file (Orthofinder)
-subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
+subroutine read_orthofinder_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     use xxh3_hashmap_module
     character(len=*), intent(in) :: filename
         !! Name of the file
@@ -368,7 +368,7 @@ subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     close(unit)
     
     call hashmap_destroy(gene_map)
-end subroutine read_family_file
+end subroutine read_orthofinder_file
 
 !> Filter out genes that are not assigned to any family.
 subroutine filter_unassigned_genes(gene_ids, expression_vectors, gene_to_fam, n_genes_kept, ierr)
@@ -675,13 +675,13 @@ subroutine read_expression_vectors_R(file_list_raw, file_list_len, n_files, &
 end subroutine read_expression_vectors_R
 
 !> R Binding to read a family file
-subroutine read_family_file_R(filename_raw, fn_len, gene_ids_raw, gene_ids_len, n_genes, &
+subroutine read_orthofinder_file_R(filename_raw, fn_len, gene_ids_raw, gene_ids_len, n_genes, &
                              family_ids_raw, family_ids_len, n_families, gene_to_fam, ierr)
     use iso_fortran_env, only: int32
     use iso_c_binding, only: c_char
     use tox_errors, only: set_ok, is_err
     use tox_conversions, only: c_char_1d_as_string, string_as_c_char_1d
-    use tox_data_tools, only: read_family_file
+    use tox_data_tools, only: read_orthofinder_file
     implicit none
     
     integer(int32), intent(in) :: fn_len
@@ -727,14 +727,14 @@ subroutine read_family_file_R(filename_raw, fn_len, gene_ids_raw, gene_ids_len, 
         gene_ids(i) = trim(adjustl(temp_str))
     end do
     
-    call read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
+    call read_orthofinder_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     if(is_err(ierr)) return
     
     ! Convert family IDs to raw bytes
     do i = 1, n_families
         call string_as_c_char_1d(trim(adjustl(family_ids(i))), family_ids_raw(:, i))
     end do
-end subroutine read_family_file_R
+end subroutine read_orthofinder_file_R
 
 !> R binding to filter unassigned genes
 subroutine filter_unassigned_genes_R(gene_ids_raw, gene_ids_len, n_genes, &
@@ -898,11 +898,11 @@ subroutine read_expression_vectors_C(file_list_raw, file_list_len, n_files, &
 end subroutine read_expression_vectors_C
 
 !> C binding for reading family file
-subroutine read_family_file_C(filename_raw, fn_len, gene_ids_raw, gene_ids_len, n_genes, &
-                             family_ids_raw, family_ids_len, n_families, gene_to_fam, ierr) bind(C, name="read_family_file_C")
+subroutine read_orthofinder_file_C(filename_raw, fn_len, gene_ids_raw, gene_ids_len, n_genes, &
+                             family_ids_raw, family_ids_len, n_families, gene_to_fam, ierr) bind(C, name="read_orthofinder_file_C")
     use iso_c_binding, only: c_int, c_char
     use tox_errors, only: set_ok, is_err
-    use tox_data_tools, only: read_family_file
+    use tox_data_tools, only: read_orthofinder_file
     use tox_conversions, only: c_char_1d_as_string, string_as_c_char_1d
     implicit none
     integer(c_int), intent(in), value :: fn_len            
@@ -948,14 +948,14 @@ subroutine read_family_file_C(filename_raw, fn_len, gene_ids_raw, gene_ids_len, 
         gene_ids(i) = trim(adjustl(temp_str))
     end do
     
-    call read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
+    call read_orthofinder_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
     if(is_err(ierr)) return
     
     ! Convert family IDs to raw bytes
     do i = 1, n_families
         call string_as_c_char_1d(trim(adjustl(family_ids(i))), family_ids_raw(:, i))
     end do
-end subroutine read_family_file_C
+end subroutine read_orthofinder_file_C
 
 !> C binding for filtering unassigned genes
 subroutine filter_unassigned_genes_C(gene_ids_raw, gene_ids_len, n_genes, &

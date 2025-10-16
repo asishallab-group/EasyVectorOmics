@@ -46,7 +46,7 @@ cat("DEBUG: file_len:", max(nchar(file)), "\n")
 
 # Read family mapping
 cat("Reading family file...\n")
-res_family <- read_family_file("material/Orthogroups.tsv", gene_ids, n_families, family_len)
+res_family <- read_orthofinder_file("material/Orthogroups.tsv", gene_ids, n_families, family_len)
 gene_family_ids <- res_family$family_ids
 gene_to_fam <- res_family$gene_to_fam
 cat("ierr (family):", res_family$ierr, "\n")

@@ -206,7 +206,7 @@ read_gene_ids_from_tsv_file <- function(filename, ngenes, gene_len, n_header_row
 #'   - gene_to_fam: Integer vector mapping each gene to its family index
 #'   - ierr: Integer error code (0 if successful)
 #' Note: If genes are not found in the gene IDs list a message will be printed but NO error code is thrown
-read_family_file <- function(filename, gene_ids, n_families, family_len) {
+read_orthofinder_file <- function(filename, gene_ids, n_families, family_len) {
   ngenes <- length(gene_ids)
   gene_len <- max(nchar(gene_ids)) + 1  # +1 for null terminator
   
@@ -218,7 +218,7 @@ read_family_file <- function(filename, gene_ids, n_families, family_len) {
   gene_to_fam <- integer(ngenes)
   ierr <- integer(1)
   
-  out <- .Fortran("read_family_file_R",
+  out <- .Fortran("read_orthofinder_file_R",
     filename_raw = filename_raw,              # Pass raw bytes directly
     fn_len = as.integer(length(filename_raw)),
     gene_ids_raw = gene_raw,                  # Pass raw bytes directly
