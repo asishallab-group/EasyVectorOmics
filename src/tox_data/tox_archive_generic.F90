@@ -144,6 +144,12 @@ contains
             if(DEBUG) print *, "Error: keys and filenames arrays must have same size"
             return
         end if
+
+        if (len_trim(zip_filename) == 0) then
+            call set_err_once(ierr, ERR_INVALID_INPUT)
+            if(DEBUG) print *, "Error: zip_filename cannot be empty"
+            return
+        end if
         
         ! Open ZIP archive
         zip_handle = zip_open(trim(zip_filename)//c_null_char, ZIP_EXCLUSIVE, error)
