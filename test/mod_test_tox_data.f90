@@ -205,7 +205,7 @@ contains
   subroutine test_read_expression_data()
     character(len=256), allocatable :: gene_ids_false_inputs(:)
     real(real64), allocatable :: expr_vecs_false_inputs(:,:)
-    character(len=64), allocatable :: inf_file(:), nan_file(:), missing_col_file(:)
+    character(len=64), allocatable :: inf_file(:), nan_file(:), missing_col_file(:), invalid_struct_file(:), no_genes_file(:), empty_file(:), mixed_seperators(:)
     integer(int32) :: ierr
 
     call set_ok(ierr)
@@ -215,6 +215,10 @@ contains
     allocate(missing_col_file(1))
     allocate(gene_ids_false_inputs(10))
     allocate(expr_vecs_false_inputs(6, n_genes))
+    allocate(invalid_struct_file(1))
+    allocate(no_genes_file(1))
+    allocate(empty_file(1))
+    allocate(mixed_seperators(1))
 
     call assert_true(allocated(kallisto_expr), "Expression data should be allocated")
     call assert_equal_int(size(kallisto_expr, 1), total_samples, "Number of samples should match")
@@ -229,13 +233,43 @@ contains
 
     nan_file = [ &
       'test/test_files/kallisto_NaN.tsv']
+    
+    invalid_struct_file = [ &
+      'test/test_files/kallisto_invalid_strucutre.tsv']
+
+    no_genes_file = [ &
+      'test/test_files/kallisto_no_gene_ids.tsv']
+    
+    empty_file = [ &
+      'test/test_files/kallisto_empty_file.tsv']
+
+    mixed_seperators = [ &
+      'test/test_files/kallisto_mixed_seperators.tsv']
 
     call read_expression_vectors(inf_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
     call assert_equal_int(ierr, 201, "Error while reading expression vectors, should get invalid input for Inf in expression data")
-
     call set_ok(ierr)
+
     call read_expression_vectors(nan_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
     call assert_equal_int(ierr, 201, "Error while reading expression vectors, should get invalid input for NaN in expression data")
+    call set_ok(ierr)
+
+    call read_expression_vectors(invalid_struct_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
+    call assert_equal_int(ierr, 107, "Should throw error for invalid structure")
+    call set_ok(ierr)
+
+    call read_expression_vectors(no_genes_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [1,2,3,4,5,6], 1, ierr)
+    call assert_equal_int(ierr, 0, "Should print warnings for missing genes")
+    call set_ok(ierr)
+
+    call read_expression_vectors(empty_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [1,2,3,4,5,6], 1, ierr)
+    call assert_equal_int(ierr, 107, "should throw error for empty file")
+    call set_ok(ierr)
+
+    call read_expression_vectors(mixed_seperators, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
+    call assert_equal_int(ierr, 201, "Should throw error for file with mixed seperators")
+    call set_ok(ierr)
+
   end subroutine test_read_expression_data
 
   !> Test reading family mapping
