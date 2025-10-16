@@ -96,7 +96,7 @@ contains
     allocate(gene_to_fam(n_genes))
 
     ! Read gene IDs
-    call read_gene_ids_from_file(expr_file(1), gene_ids, 1, 1, ierr)
+    call read_gene_ids_from_tsv_file(expr_file(1), gene_ids, 1, 1, ierr)
     call assert_equal_int(ierr, 0, "Reading gene IDs should succeed")
 
     ! write(*,*) 'First 10 gene IDs:'
@@ -225,7 +225,7 @@ contains
     call assert_equal_int(size(kallisto_expr, 2), n_genes, "Number of genes should match")
     call assert_true(all(kallisto_expr >= 0.0_real64), "All expression values should be non-negative")
 
-    call read_gene_ids_from_file('test/test_files/kallisto_dup_gene_ids.tsv', gene_ids_false_inputs, 1, 1, ierr)
+    call read_gene_ids_from_tsv_file('test/test_files/kallisto_dup_gene_ids.tsv', gene_ids_false_inputs, 1, 1, ierr)
     call assert_equal_int(ierr, 0, "Error while reading duplicate gene ids")
 
     inf_file = [ &

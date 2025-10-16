@@ -18,7 +18,7 @@ kallisto_expr <- matrix(0, nrow = n_samples, ncol = n_genes)
 
 # Read gene IDs from first file
 cat("Reading gene IDs...\n")
-res_gene <- read_gene_ids_from_file(file, n_genes, gene_len, n_header_rows = 1, gene_col = 1)
+res_gene <- read_gene_ids_from_tsv_file(file, n_genes, gene_len, n_header_rows = 1, gene_col = 1)
 gene_ids <- res_gene$gene_ids
 cat("ierr (gene ids):", res_gene$ierr, "\n")
 

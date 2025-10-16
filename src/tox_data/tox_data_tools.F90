@@ -7,7 +7,7 @@ module tox_data_tools
     implicit none
     private
 
-    public :: read_gene_ids_from_file
+    public :: read_gene_ids_from_tsv_file
     public :: read_expression_vectors
     public :: read_family_file
     public :: split_string
@@ -216,8 +216,8 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
     deallocate(valid_cols)
 end subroutine read_expression_vectors
 
-!> Only read the gene ids from a file
-subroutine read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, ierr)
+!> Only read the gene ids from a tsv file
+subroutine read_gene_ids_from_tsv_file(filename, gene_ids, n_header_rows, gene_col, ierr)
     character(len=*), intent(in) :: filename
         !! Name of the file
     character(len=*), intent(out) :: gene_ids(:)
@@ -271,7 +271,7 @@ subroutine read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, 
     end do
 
     close(unit)
-end subroutine read_gene_ids_from_file
+end subroutine read_gene_ids_from_tsv_file
 
 !> Read a family file (Orthofinder)
 subroutine read_family_file(filename, gene_ids, family_ids, gene_to_fam, ierr)
@@ -528,12 +528,12 @@ end subroutine get_unassigned_mask
 end module tox_data_tools
 
 !> R binding to read gene IDs from a file.
-subroutine read_gene_ids_from_file_R(filename_raw, fn_len, gene_ids_raw, gene_ids_len, n_genes, &
+subroutine read_gene_ids_from_tsv_file_R(filename_raw, fn_len, gene_ids_raw, gene_ids_len, n_genes, &
                                  n_header_rows, gene_col, ierr)
     use iso_fortran_env, only: int32
     use iso_c_binding, only: c_char
     use tox_errors, only: set_ok, is_err
-    use tox_data_tools, only: read_gene_ids_from_file
+    use tox_data_tools, only: read_gene_ids_from_tsv_file
     use tox_conversions, only: c_char_1d_as_string, string_as_c_char_1d
     implicit none
     integer(int32), intent(in) :: fn_len
@@ -564,14 +564,14 @@ subroutine read_gene_ids_from_file_R(filename_raw, fn_len, gene_ids_raw, gene_id
     call c_char_1d_as_string(filename_raw, filename, ierr)
     if(is_err(ierr)) return
 
-    call read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, ierr)
+    call read_gene_ids_from_tsv_file(filename, gene_ids, n_header_rows, gene_col, ierr)
     if(is_err(ierr)) return
 
     ! Convert gene IDs back to raw bytes for output
     do i = 1, n_genes
         call string_as_c_char_1d(trim(gene_ids(i)), gene_ids_raw(:, i))
     end do
-end subroutine read_gene_ids_from_file_R
+end subroutine read_gene_ids_from_tsv_file_R
 
 !> R binding to read expression vectors from files.
 subroutine read_expression_vectors_R(file_list_raw, file_list_len, n_files, &
@@ -775,12 +775,12 @@ subroutine filter_unassigned_genes_R(gene_ids_raw, gene_ids_len, n_genes, &
 end subroutine filter_unassigned_genes_R
 
 !> C binding for reading gene IDs from a gene expression tsv file
-subroutine read_gene_ids_from_file_C(filename_raw, fn_len, gene_ids_raw, gene_ids_len, n_genes, &
-                                 n_header_rows, gene_col, ierr) bind(C, name="read_gene_ids_from_file_C")
+subroutine read_gene_ids_from_tsv_file_C(filename_raw, fn_len, gene_ids_raw, gene_ids_len, n_genes, &
+                                 n_header_rows, gene_col, ierr) bind(C, name="read_gene_ids_from_tsv_file_C")
     use iso_c_binding, only: c_int, c_char
     use tox_errors, only: set_ok, is_err
     use tox_conversions, only: c_char_1d_as_string, string_as_c_char_1d
-    use tox_data_tools, only: read_gene_ids_from_file
+    use tox_data_tools, only: read_gene_ids_from_tsv_file
     implicit none
 
     integer(c_int), intent(in), value :: fn_len       
@@ -810,14 +810,14 @@ subroutine read_gene_ids_from_file_C(filename_raw, fn_len, gene_ids_raw, gene_id
     call c_char_1d_as_string(filename_raw, filename, ierr)
     if(is_err(ierr)) return
 
-    call read_gene_ids_from_file(filename, gene_ids, n_header_rows, gene_col, ierr)
+    call read_gene_ids_from_tsv_file(filename, gene_ids, n_header_rows, gene_col, ierr)
     if(is_err(ierr)) return
 
     ! Convert gene IDs back to raw bytes for output
     do i = 1, n_genes
         call string_as_c_char_1d(trim(gene_ids(i)), gene_ids_raw(:, i))
     end do
-end subroutine read_gene_ids_from_file_C
+end subroutine read_gene_ids_from_tsv_file_C
 
 !> C binding for reading expression vectors from files
 subroutine read_expression_vectors_C(file_list_raw, file_list_len, n_files, &

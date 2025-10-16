@@ -14,7 +14,7 @@ from tensoromics_functions_tox_data import (
     read_expression_vectors,
     read_family_file,
     filter_unassigned_genes,
-    read_gene_ids_from_file,
+    read_gene_ids_from_tsv_file,
     validate_all_data,
     validate_data_structure,
     validate_expression_data,
@@ -55,7 +55,7 @@ kallisto_expr = np.zeros((n_samples, n_genes), dtype=np.float64, order='F')
 
 # Read gene IDs from first file
 print("Reading gene IDs...")
-gene_ids = read_gene_ids_from_file(file, n_genes, gene_len, n_header_rows=1, gene_col=1)
+gene_ids = read_gene_ids_from_tsv_file(file, n_genes, gene_len, n_header_rows=1, gene_col=1)
 print("gene_ids sample:", gene_ids[:5])
 print("gene_ids type:", type(gene_ids))
 

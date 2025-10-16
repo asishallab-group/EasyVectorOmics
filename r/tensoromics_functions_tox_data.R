@@ -171,14 +171,14 @@ read_expression_vectors <- function(file_list, gene_ids,
 #' @return A list with elements:
 #'   - gene_ids: Character vector of gene IDs read from the file
 #'   - ierr: Integer error code (0 if successful)
-read_gene_ids_from_file <- function(filename, ngenes, gene_len, n_header_rows = 1, gene_col = 1) {
+read_gene_ids_from_tsv_file <- function(filename, ngenes, gene_len, n_header_rows = 1, gene_col = 1) {
   # Convert filename to raw bytes
   filename_raw <- charToRaw(filename)
   
   gene_raw <- matrix(raw(1), nrow = gene_len + 1, ncol = ngenes)  # +1 for null terminator
   ierr <- integer(1)
   
-  out <- .Fortran("read_gene_ids_from_file_R",
+  out <- .Fortran("read_gene_ids_from_tsv_file_R",
     filename_raw = filename_raw,              # Pass raw bytes directly
     fn_len = as.integer(length(filename_raw)),
     gene_ids_raw = gene_raw,                  # Pass raw bytes directly

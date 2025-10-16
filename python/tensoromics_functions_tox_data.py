@@ -20,8 +20,8 @@ dll_path = os.path.abspath("build/libtensor-omics.so")
 ctypes.CDLL("libgomp.so.1", mode=ctypes.RTLD_GLOBAL)
 lib = ctypes.CDLL(dll_path)
 
-# Example for read_gene_ids_from_file_C
-lib.read_gene_ids_from_file_C.argtypes = [
+# Example for read_gene_ids_from_tsv_file_C
+lib.read_gene_ids_from_tsv_file_C.argtypes = [
     ctypes.POINTER(ctypes.c_char),  # filename_raw
     ctypes.c_int,                  # fn_len
     ctypes.POINTER(ctypes.c_char),  # gene_ids_raw
@@ -31,7 +31,7 @@ lib.read_gene_ids_from_file_C.argtypes = [
     ctypes.c_int,                  # gene_col
     ctypes.POINTER(ctypes.c_int)   # ierr
 ]
-lib.read_gene_ids_from_file_C.restype = None
+lib.read_gene_ids_from_tsv_file_C.restype = None
 
 # read_expression_vectors_C
 lib.read_expression_vectors_C.argtypes = [
@@ -280,13 +280,13 @@ def _ensure_int_array(arr):
         arr = np.array(arr, dtype=np.int32)
     return arr
 
-def read_gene_ids_from_file(filename, n_genes, gene_ids_len, n_header_rows, gene_col):
+def read_gene_ids_from_tsv_file(filename, n_genes, gene_ids_len, n_header_rows, gene_col):
     # Ensure filename is a string (single file)
     if isinstance(filename, list):
         if len(filename) > 0:
             filename = filename[0]
         else:
-            raise ValueError("filename cannot be an empty list for read_gene_ids_from_file")
+            raise ValueError("filename cannot be an empty list for read_gene_ids_from_tsv_file")
     
     # Convert filename to c_char array
     fn_array = string_to_c_char_array(filename, len(filename))
@@ -300,7 +300,7 @@ def read_gene_ids_from_file(filename, n_genes, gene_ids_len, n_header_rows, gene
     print(f"Debug: Creating gene_ids_array with size {matrix_size} = {gene_ids_len} * {n_genes}")
     
     # Call C function
-    lib.read_gene_ids_from_file_C(
+    lib.read_gene_ids_from_tsv_file_C(
         ctypes.cast(ctypes.byref(fn_array), ctypes.POINTER(ctypes.c_char)),
         ctypes.c_int(len(filename)),
         ctypes.cast(ctypes.byref(gene_ids_array), ctypes.POINTER(ctypes.c_char)),
