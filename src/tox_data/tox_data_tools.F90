@@ -17,7 +17,7 @@ module tox_data_tools
 
 contains
 
-!> Read tabular expression files
+!> Read expression vectors from csv/tsv files
 subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
                              n_header_rows, gene_col, value_cols, start_row, ierr, delimiter)
     use xxh3_hashmap_module
@@ -160,7 +160,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
             end if
             current_row = current_row + 1
             read(unit, '(A)', iostat=ios) line
-            if(ios = iostat_end) exit !End of file
+            if(ios == iostat_end) exit !End of file
             call check_okay_ioerror(ios, ierr, ERR_READ_DATA, unit)
             if(is_err(ierr)) then
                 call hashmap_destroy(gene_map)

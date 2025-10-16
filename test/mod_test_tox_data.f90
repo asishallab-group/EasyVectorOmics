@@ -206,6 +206,7 @@ contains
     character(len=256), allocatable :: gene_ids_false_inputs(:)
     real(real64), allocatable :: expr_vecs_false_inputs(:,:)
     character(len=64), allocatable :: inf_file(:), nan_file(:), missing_col_file(:), invalid_struct_file(:), no_genes_file(:), empty_file(:), mixed_seperators(:)
+    character(len=64), allocatable :: csv_file(:)
     integer(int32) :: ierr
 
     call set_ok(ierr)
@@ -219,6 +220,7 @@ contains
     allocate(no_genes_file(1))
     allocate(empty_file(1))
     allocate(mixed_seperators(1))
+    allocate(csv_file(1))
 
     call assert_true(allocated(kallisto_expr), "Expression data should be allocated")
     call assert_equal_int(size(kallisto_expr, 1), total_samples, "Number of samples should match")
@@ -245,6 +247,9 @@ contains
 
     mixed_seperators = [ &
       'test/test_files/kallisto_mixed_seperators.tsv']
+    
+    csv_file = [ &
+      'test/test_files/kallisto_csv_values.csv']
 
     call read_expression_vectors(inf_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
     call assert_equal_int(ierr, 201, "Error while reading expression vectors, should get invalid input for Inf in expression data")
@@ -269,6 +274,9 @@ contains
     call read_expression_vectors(mixed_seperators, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
     call assert_equal_int(ierr, 201, "Should throw error for file with mixed seperators")
     call set_ok(ierr)
+
+    call read_expression_vectors(csv_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr, ',')
+    call assert_equal_int(ierr, 0, "Should read csv file without error")
 
   end subroutine test_read_expression_data
 
