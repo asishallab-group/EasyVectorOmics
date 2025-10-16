@@ -1,5 +1,5 @@
 module tox_data_tools
-    use iso_fortran_env, only: real64, int32
+    use iso_fortran_env, only: real64, int32, iostat_end
     use tox_errors, only: set_ok, set_err_once, is_err, check_io_stat
     use tox_errors, only: ERR_INVALID_INPUT, ERR_FILE_OPEN, ERR_READ_DATA
     use array_utils, only :check_okay_ioerror, ERR_SIZE_MISMATCH
@@ -160,7 +160,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
             end if
             current_row = current_row + 1
             read(unit, '(A)', iostat=ios) line
-            if(ios < 0) exit !End of file
+            if(ios = iostat_end) exit !End of file
             call check_okay_ioerror(ios, ierr, ERR_READ_DATA, unit)
             if(is_err(ierr)) then
                 call hashmap_destroy(gene_map)
@@ -169,8 +169,9 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
 
             call split_string(line, fields, ierr, actual_delimiter)
             if (size(fields) < max(gene_col, maxval(valid_cols(1:n_valid_cols)))) then
-                print *, 'size: ', size(fields)
-                print *, 'row: ', current_row
+                if(DEBUG) print *, 'Invalid input:'
+                if(DEBUG) print *, 'size: ', size(fields)
+                if(DEBUG) print *, 'row: ', current_row
                 call set_err_once(ierr, ERR_INVALID_INPUT)
                 call hashmap_destroy(gene_map)
                 return 
