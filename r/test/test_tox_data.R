@@ -173,64 +173,298 @@ tryCatch({
 }, error = function(e) {
   cat("Cross-platform test skipped:", e$message, "\n")
 })
+
 cat("=== Testing create_zip_archive directly with dummy arrays ===\n")
 
-# Erstelle Dummy-Daten
-dummy_int_1d <- 1:10
-dummy_int_2d <- matrix(1:12, nrow=3, ncol=4)
-dummy_real_1d <- c(1.5, 2.5, 3.5, 4.5, 5.5)
-dummy_real_2d <- matrix(rnorm(12), nrow=3, ncol=4)
-dummy_char_1d <- c("apple", "banana", "cherry", "date", "elderberry")
+# Create dummy arrays
+cat("Creating non-standard arrays...\n")
 
-# Serialisiere Dummy-Daten zu Dateien
-cat("Serializing dummy arrays...\n")
-tox_serialize_int_array(dummy_int_1d, "dummy_int_1d.bin")
-tox_serialize_int_array(as.vector(dummy_int_2d), "dummy_int_2d.bin")  # Matrix zu Vektor
-tox_serialize_real_array(dummy_real_1d, "dummy_real_1d.bin")
-tox_serialize_real_array(dummy_real_2d, "dummy_real_2d.bin")
-tox_serialize_char_array(dummy_char_1d, "dummy_char_1d.bin")
+array_3d_int <- 1:60
+cat("3D int array length:", length(array_3d_int), "\n")
 
-# Test 1: Erstelle Archiv mit allen Dummy-Dateien
-cat("Test 1: Creating archive with all dummy files...\n")
-create_zip_archive("test_dummy_all.zip",
-                  keys = c("int_1d", "int_2d", "real_1d", "real_2d", "char_1d"),
-                  filenames = c("dummy_int_1d.bin", "dummy_int_2d.bin", 
-                                "dummy_real_1d.bin", "dummy_real_2d.bin", 
-                                "dummy_char_1d.bin"))
+array_1d_float <- c(0.0, 1.5, -2.3)
+cat("1D float array:", array_1d_float, "\n")
 
-# Test 2: Erstelle Archiv mit gemischten echten und Dummy-Daten
-cat("Test 2: Creating archive with mixed real and dummy data...\n")
-# Serialisiere einige echte Daten für diesen Test
-tox_serialize_char_array(gene_ids[1:5], "sample_gene_ids.bin")
-create_zip_archive("test_mixed_data.zip",
-                  keys = c("sample_genes", "dummy_int", "dummy_real"),
-                  filenames = c("sample_gene_ids.bin", "dummy_int_1d.bin", "dummy_real_1d.bin"))
+array_2d_char <- c("short", "medium_length", "very_long_string_here", "a", "bb", "ccc", "test1", "test2", "test3")
+cat("2D char array length:", length(array_2d_char), "\n")
 
-# Test 3: Erstelle Archiv mit benutzerdefinierten Keys
-cat("Test 3: Creating archive with custom keys...\n")
+array_1d_bool <- sample(c(TRUE, FALSE), 1000, replace = TRUE)
+cat("1D bool array length:", length(array_1d_bool), "\n")
+
+array_complex_real <- matrix(rnorm(16), nrow=4, ncol=4)
+array_complex_imag <- matrix(rnorm(16), nrow=4, ncol=4)
+cat("Complex real part shape: 4x4\n")
+cat("Complex imag part shape: 4x4\n")
+
+cat("Serializing arrays to temporary files...\n")
+
+tox_serialize_int_array(array_3d_int, "temp_3d_int.bin")
+tox_serialize_real_array(array_1d_float, "temp_1d_float.bin")
+tox_serialize_char_array(array_2d_char, "temp_2d_char.bin")
+
+array_1d_bool_int <- as.integer(array_1d_bool)
+tox_serialize_int_array(array_1d_bool_int, "temp_1d_bool.bin")
+
+tox_serialize_real_array(array_complex_real, "temp_complex_real.bin")
+tox_serialize_real_array(array_complex_imag, "temp_complex_imag.bin")
+
+cat("Test 1: Direct create_zip_archive call with non-standard arrays\n")
+keys <- c(
+  "custom_3d_int_data",
+  "special_float_array", 
+  "string_matrix",
+  "boolean_mask",
+  "complex_real_part",
+  "complex_imag_part"
+)
+
+filenames <- c(
+  "temp_3d_int.bin",
+  "temp_1d_float.bin", 
+  "temp_2d_char.bin",
+  "temp_1d_bool.bin",
+  "temp_complex_real.bin",
+  "temp_complex_imag.bin"
+)
+
+create_zip_archive("test_non_standard_1.zip", keys, filenames)
+cat("Successfully created archive with non-standard arrays\n")
+
+cat("Test 2: Mixed standard and non-standard arrays\n")
+
+tox_serialize_char_array(gene_ids[1:5], "temp_standard_gene_ids.bin")
+tox_serialize_real_array(kallisto_expr[1:3, 1:5], "temp_standard_expr.bin")
+
+keys_mixed <- c(keys, "standard_gene_ids", "standard_expression")
+filenames_mixed <- c(filenames, "temp_standard_gene_ids.bin", "temp_standard_expr.bin")
+
+create_zip_archive("test_mixed_arrays.zip", keys_mixed, filenames_mixed)
+cat("Successfully created archive with mixed standard and non-standard arrays\n")
+
+cat("Test 3: Creating archive with custom keys\n")
 create_zip_archive("test_custom_keys.zip",
                   keys = c("experiment_config", "results_summary", "raw_data"),
-                  filenames = c("dummy_char_1d.bin", "dummy_real_2d.bin", "dummy_int_2d.bin"))
+                  filenames = c("temp_2d_char.bin", "temp_complex_real.bin", "temp_3d_int.bin"))
 
-# Test 4: Erstelle Archiv mit nur einer Datei
-cat("Test 4: Creating archive with single file...\n")
+cat("Test 4: Creating archive with single file\n")
 create_zip_archive("test_single_file.zip",
                   keys = c("single_data"),
-                  filenames = c("dummy_int_1d.bin"))
+                  filenames = c("temp_1d_float.bin"))
 
-# Test 5: Teste Fehlerbehandlung mit ungleichen Arrays
-cat("Test 5: Testing error handling with mismatched arrays...\n")
+cat("Test 5: Testing error handling with mismatched arrays\n")
 tryCatch({
   create_zip_archive("test_error.zip",
                     keys = c("key1", "key2"),
-                    filenames = c("file1.bin"))  # Fehler: ungleiche Länge
+                    filenames = c("file1.bin"))
 }, error = function(e) {
   cat("Expected error caught:", e$message, "\n")
 })
 
-# Überprüfe ob Archive erstellt wurden
+cat("\n=== Testing reading and comparing non-standard arrays ===\n")
+
+cat("Test 6a: Reading and verifying test_non_standard_1.zip\n")
+
+ierr <- integer(1)
+res <- .Fortran("extract_zip_archive_R", charToRaw("test_non_standard_1.zip"), 
+                nchar("test_non_standard_1.zip"), ierr)
+if (ierr != 0) {
+  stop("Failed to extract archive")
+}
+
+manifest_path <- "manifest.txt"
+if (!file.exists(manifest_path)) {
+  stop("Manifest file not found in archive")
+}
+
+manifest_lines <- readLines(manifest_path)
+file_mapping <- list()
+for (line in manifest_lines) {
+  parts <- strsplit(line, "=")[[1]]
+  if (length(parts) == 2) {
+    file_mapping[[parts[1]]] <- parts[2]
+  }
+}
+
+cat("Files in archive:\n")
+for (key in names(file_mapping)) {
+  cat("  ", key, "->", file_mapping[[key]], "\n")
+}
+
+all_correct <- TRUE
+
+# Integer 3D Array
+if (!is.null(file_mapping[["custom_3d_int_data"]])) {
+  filename <- file_mapping[["custom_3d_int_data"]]
+  if (file.exists(filename)) {
+    loaded_3d_int <- tox_deserialize_int_array(filename)
+    int_3d_match <- all(loaded_3d_int == array_3d_int)
+    cat("custom_3d_int_data arrays match:", int_3d_match, "\n")
+    if (!int_3d_match) {
+      cat("  Original length:", length(array_3d_int), "Loaded length:", length(loaded_3d_int), "\n")
+      all_correct <- FALSE
+    }
+    file.remove(filename)
+  }
+} else {
+  cat("custom_3d_int_data not found in archive\n")
+  all_correct <- FALSE
+}
+
+# Float 1D Array
+if (!is.null(file_mapping[["special_float_array"]])) {
+  filename <- file_mapping[["special_float_array"]]
+  if (file.exists(filename)) {
+    loaded_1d_float <- tox_deserialize_real_array(filename)
+    float_match <- TRUE
+    for (i in 1:length(array_1d_float)) {
+      if (is.nan(array_1d_float[i])) {
+        if (!is.nan(loaded_1d_float[i])) float_match <- FALSE
+      } else if (is.infinite(array_1d_float[i])) {
+        if (!is.infinite(loaded_1d_float[i]) || array_1d_float[i] != loaded_1d_float[i]) float_match <- FALSE
+      } else {
+        if (abs(array_1d_float[i] - loaded_1d_float[i]) > 1e-10) float_match <- FALSE
+      }
+    }
+    cat("special_float_array arrays match:", float_match, "\n")
+    if (!float_match) {
+      cat("  Original:", array_1d_float, "\n")
+      cat("  Loaded:  ", loaded_1d_float, "\n")
+      all_correct <- FALSE
+    }
+    file.remove(filename)
+  }
+} else {
+  cat("special_float_array not found in archive\n")
+  all_correct <- FALSE
+}
+
+# Character 2D Array
+if (!is.null(file_mapping[["string_matrix"]])) {
+  filename <- file_mapping[["string_matrix"]]
+  if (file.exists(filename)) {
+    loaded_2d_char <- tox_deserialize_char_array(filename)
+    char_match <- all(loaded_2d_char == array_2d_char)
+    cat("string_matrix arrays match:", char_match, "\n")
+    if (!char_match) {
+      cat("  Original:", array_2d_char, "\n")
+      cat("  Loaded:  ", loaded_2d_char, "\n")
+      all_correct <- FALSE
+    }
+    file.remove(filename)
+  }
+} else {
+  cat("string_matrix not found in archive\n")
+  all_correct <- FALSE
+}
+
+# Boolean Array
+if (!is.null(file_mapping[["boolean_mask"]])) {
+  filename <- file_mapping[["boolean_mask"]]
+  if (file.exists(filename)) {
+    loaded_bool_int <- tox_deserialize_int_array(filename)
+    loaded_bool <- as.logical(loaded_bool_int)
+    bool_match <- all(loaded_bool == array_1d_bool)
+    cat("boolean_mask arrays match:", bool_match, "\n")
+    if (!bool_match) {
+      cat("  Original length:", length(array_1d_bool), "Loaded length:", length(loaded_bool), "\n")
+      # Zeige nur die ersten 10 Unterschiede
+      differences <- which(array_1d_bool != loaded_bool)
+      if (length(differences) > 0) {
+        cat("  First 10 differences at positions:", head(differences, 10), "\n")
+      }
+      all_correct <- FALSE
+    }
+    file.remove(filename)
+  }
+} else {
+  cat("boolean_mask not found in archive\n")
+  all_correct <- FALSE
+}
+
+# Complex Arrays
+if (!is.null(file_mapping[["complex_real_part"]])) {
+  filename <- file_mapping[["complex_real_part"]]
+  if (file.exists(filename)) {
+    loaded_complex_real <- tox_deserialize_real_array(filename)
+
+    loaded_complex_real_matrix <- matrix(loaded_complex_real, nrow=4, ncol=4)
+    complex_real_match <- all.equal(loaded_complex_real_matrix, array_complex_real, tolerance = 1e-10)
+    cat("complex_real_part arrays match:", isTRUE(complex_real_match), "\n")
+    if (!isTRUE(complex_real_match)) {
+      cat("  Difference:", complex_real_match, "\n")
+      all_correct <- FALSE
+    }
+    file.remove(filename)
+  }
+} else {
+  cat("complex_real_part not found in archive\n")
+  all_correct <- FALSE
+}
+
+if (!is.null(file_mapping[["complex_imag_part"]])) {
+  filename <- file_mapping[["complex_imag_part"]]
+  if (file.exists(filename)) {
+    loaded_complex_imag <- tox_deserialize_real_array(filename)
+    loaded_complex_imag_matrix <- matrix(loaded_complex_imag, nrow=4, ncol=4)
+    complex_imag_match <- all.equal(loaded_complex_imag_matrix, array_complex_imag, tolerance = 1e-10)
+    cat("complex_imag_part arrays match:", isTRUE(complex_imag_match), "\n")
+    if (!isTRUE(complex_imag_match)) {
+      cat("  Difference:", complex_imag_match, "\n")
+      all_correct <- FALSE
+    }
+    file.remove(filename)
+  }
+} else {
+  cat("complex_imag_part not found in archive\n")
+  all_correct <- FALSE
+}
+
+file.remove(manifest_path)
+
+cat("Test 6a result: All arrays match =", all_correct, "\n")
+
+cat("Test 6b: Reading and verifying test_mixed_arrays.zip\n")
+
+ierr <- integer(1)
+res <- .Fortran("extract_zip_archive_R", charToRaw("test_mixed_arrays.zip"), 
+                nchar("test_mixed_arrays.zip"), ierr)
+
+if (ierr == 0) {
+  manifest_lines <- readLines("manifest.txt")
+  file_mapping <- list()
+  for (line in manifest_lines) {
+    parts <- strsplit(line, "=")[[1]]
+    if (length(parts) == 2) {
+      file_mapping[[parts[1]]] <- parts[2]
+    }
+  }
+  
+  if (!is.null(file_mapping[["standard_gene_ids"]])) {
+    filename <- file_mapping[["standard_gene_ids"]]
+    if (file.exists(filename)) {
+      loaded_genes <- tox_deserialize_char_array(filename)
+      genes_match <- all(loaded_genes == gene_ids[1:5])
+      cat("standard_gene_ids arrays match:", genes_match, "\n")
+      file.remove(filename)
+    }
+  }
+  
+  if (!is.null(file_mapping[["standard_expression"]])) {
+    filename <- file_mapping[["standard_expression"]]
+    if (file.exists(filename)) {
+      loaded_expr <- tox_deserialize_real_array(filename)
+      loaded_expr_matrix <- matrix(loaded_expr, nrow=3, ncol=5)
+      expr_match <- all.equal(loaded_expr_matrix, kallisto_expr[1:3, 1:5], tolerance = 1e-10)
+      cat("standard_expression arrays match:", isTRUE(expr_match), "\n")
+      file.remove(filename)
+    }
+  }
+  
+  file.remove("manifest.txt")
+}
+
 cat("Checking created archives...\n")
-archives <- c("test_dummy_all.zip", "test_mixed_data.zip", 
+archives <- c("test_non_standard_1.zip", "test_mixed_arrays.zip", 
               "test_custom_keys.zip", "test_single_file.zip")
 
 for (archive in archives) {
@@ -241,10 +475,10 @@ for (archive in archives) {
   }
 }
 
-# Räume temporäre Dateien auf
 cat("Cleaning up temporary files...\n")
-temp_files <- c("dummy_int_1d.bin", "dummy_int_2d.bin", "dummy_real_1d.bin", 
-                "dummy_real_2d.bin", "dummy_char_1d.bin", "sample_gene_ids.bin")
+temp_files <- c("temp_3d_int.bin", "temp_1d_float.bin", "temp_2d_char.bin",
+                "temp_1d_bool.bin", "temp_complex_real.bin", "temp_complex_imag.bin",
+                "temp_standard_gene_ids.bin", "temp_standard_expr.bin")
 
 for (temp_file in temp_files) {
   if (file.exists(temp_file)) {
@@ -253,8 +487,9 @@ for (temp_file in temp_files) {
   }
 }
 
-# 3. Lesen der Archive (bestehende Tests)
-cat("=== Reading archives ===\n")
+cat("=== All non-standard array tests completed! ===\n")
+
+cat("=== Reading standard archives ===\n")
 result_1 <- read_tox_data(zip_filename="test_archive_1_R.zip", 
                                   gene_ids=TRUE,
                                   expression_vectors=TRUE,
@@ -272,17 +507,7 @@ result_3 <- read_tox_data(zip_filename="test_archive_2_R.zip",
                                   expression_vectors=TRUE,
                                   shift_vectors=TRUE)
 
-# 4. Teste Lesen der Dummy-Archive (falls read_tox_data generisch genug ist)
-cat("=== Testing read of dummy archives ===\n")
-tryCatch({
-  # Versuche die Dummy-Archive zu lesen
-  dummy_result <- read_tox_data(zip_filename="test_dummy_all.zip")
-  cat("Successfully read dummy archive (structure only)\n")
-}, error = function(e) {
-  cat("Note: read_tox_data may not handle non-standard keys:", e$message, "\n")
-})
-
-# 5. Cross-platform Tests (bestehende Tests)
+# Cross-platform Tests
 tryCatch({
   result_py <- read_tox_data(zip_filename="test_archive_1_py.zip", 
                                   gene_ids=TRUE,
@@ -307,27 +532,12 @@ tryCatch({
 
 cat("=== All tests completed! ===\n")
 
-# Zusätzliche Validierung: Prüfe Archiv-Inhalte
 cat("=== Archive content validation ===\n")
-library(utils)
 
-# Liste alle erstellten Archive auf
+# List all created archives
 archive_files <- list.files(pattern = "\\.zip$")
 cat("Created archives:\n")
 for (arch in archive_files) {
   file_info <- file.info(arch)
   cat(sprintf("  %s (%.2f KB)\n", arch, file_info$size/1024))
-  
-  # Versuche Archiv-Inhalt anzuzeigen (nur falls unzip verfügbar)
-  tryCatch({
-    content <- system(paste("unzip -l", arch), intern = TRUE)
-    cat("    Contents:\n")
-    for (line in tail(content, 5)) {  # Zeige letzte 5 Zeilen (ohne Header)
-      if (grepl("\\.bin$|manifest\\.txt$", line)) {
-        cat("     ", line, "\n")
-      }
-    }
-  }, error = function(e) {
-    # Ignoriere Fehler falls unzip nicht verfügbar
-  })
 }

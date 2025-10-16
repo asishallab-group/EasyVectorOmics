@@ -584,7 +584,20 @@ create_zip_archive <- function(zip_filename, keys, filenames) {
   message("Successfully created archive: ", zip_filename)
 }
 
-
+#' Save standard conform tox data directly to zip archive
+#' @param zip_filename Name of the zip file to create
+#' @param gene_ids Character vector of gene IDs
+#' @param gene_ids_name Filename for gene IDs in the archive
+#' @param expression_vectors Numeric matrix of expression values (n_samples x n_genes)
+#' @param expression_vectors_name Filename for expression vectors in the archive
+#' @param gene_to_fam Integer vector mapping each gene to its family index (0 if unassigned)
+#' @param gene_to_fam_name Filename for gene to family mapping in the archive
+#' @param family_ids Character vector of family IDs
+#' @param family_ids_name Filename for family IDs in the archive
+#' @param family_centroids Numeric matrix of family centroids (n_samples x n_families)
+#' @param family_centroids_name Filename for family centroids in the archive
+#' @param shift_vectors Numeric matrix of shift vectors (2*n_samples x n_genes)
+#' @param shift_vectors_name Filename for shift vectors in the archive
 save_tox_data <- function(zip_filename,
                                  gene_ids = NULL, gene_ids_name = NULL,
                                  expression_vectors = NULL, expression_vectors_name = NULL,
@@ -795,6 +808,14 @@ save_tox_data <- function(zip_filename,
   }
 }
 
+#' Load standard conform tox data directly from zip archive
+#' @param zip_filename Name of the zip file to read from
+#' @param gene_ids If not NULL, will attempt to read gene IDs from archive
+#' @param expression_vectors If not NULL, will attempt to read expression vectors from archive
+#' @param gene_to_fam If not NULL, will attempt to read gene to family mapping from archive
+#' @param family_ids If not NULL, will attempt to read family IDs from archive
+#' @param family_centroids If not NULL, will attempt to read family centroids from archive
+#' @param shift_vectors If not NULL, will attempt to read shift vectors from archive
 read_tox_data <- function(zip_filename,
                           gene_ids = NULL,
                           expression_vectors = NULL,
