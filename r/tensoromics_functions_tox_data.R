@@ -838,7 +838,7 @@ read_tox_data <- function(zip_filename,
     shift_vectors = NULL
   )
 
-  res <- .Fortran("extract_zip_archive_R", charToRaw(zip_filename), nchar(zip_filename), ierr)
+  res <- .Fortran("extract_zip_archive_generic_R", charToRaw(zip_filename), nchar(zip_filename), ierr)
 
   # Read manifest file
   manifest_path <- "manifest.txt"

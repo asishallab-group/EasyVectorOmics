@@ -265,7 +265,7 @@ cat("\n=== Testing reading and comparing non-standard arrays ===\n")
 cat("Test 6a: Reading and verifying test_non_standard_1.zip\n")
 
 ierr <- integer(1)
-res <- .Fortran("extract_zip_archive_R", charToRaw("test_non_standard_1.zip"), 
+res <- .Fortran("extract_zip_archive_generic_R", charToRaw("test_non_standard_1.zip"), 
                 nchar("test_non_standard_1.zip"), ierr)
 if (ierr != 0) {
   stop("Failed to extract archive")
@@ -426,7 +426,7 @@ cat("Test 6a result: All arrays match =", all_correct, "\n")
 cat("Test 6b: Reading and verifying test_mixed_arrays.zip\n")
 
 ierr <- integer(1)
-res <- .Fortran("extract_zip_archive_R", charToRaw("test_mixed_arrays.zip"), 
+res <- .Fortran("extract_zip_archive_generic_R", charToRaw("test_mixed_arrays.zip"), 
                 nchar("test_mixed_arrays.zip"), ierr)
 
 if (ierr == 0) {
@@ -469,9 +469,9 @@ archives <- c("test_non_standard_1.zip", "test_mixed_arrays.zip",
 
 for (archive in archives) {
   if (file.exists(archive)) {
-    cat("✓ Archive created:", archive, "\n")
+    cat("Archive created:", archive, "\n")
   } else {
-    cat("✗ Archive missing:", archive, "\n")
+    cat("Archive missing:", archive, "\n")
   }
 }
 

@@ -266,7 +266,7 @@ def test_non_standard_arrays():
     print("\nTest 3: Reading back non-standard arrays")
     
     # Extract the archive we just created
-    lib.extract_zip_archive_c.argtypes = [
+    lib.extract_zip_archive_generic_c.argtypes = [
         ctypes.POINTER(ctypes.c_char), ctypes.c_int,
         ctypes.POINTER(ctypes.c_int)
     ]
@@ -275,7 +275,7 @@ def test_non_standard_arrays():
     zip_b = (ctypes.c_char * len(zip_filename))(*zip_filename.encode('utf-8'))
     ierr = ctypes.c_int()
     
-    lib.extract_zip_archive_c(
+    lib.extract_zip_archive_generic_c(
         ctypes.cast(zip_b, ctypes.POINTER(ctypes.c_char)),
         ctypes.c_int(len(zip_filename)),
         ctypes.byref(ierr)

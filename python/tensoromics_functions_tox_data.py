@@ -794,16 +794,16 @@ def read_tox_data(zip_filename: str,
 
     
     # Set up argument types for extract_zip_archive_c - using c_int
-    lib.extract_zip_archive_c.argtypes = [
+    lib.extract_zip_archive_generic_c.argtypes = [
         ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # zip_filename, filename_len
         ctypes.POINTER(ctypes.c_int)                  # ierr
     ]
-    lib.extract_zip_archive_c.restype = None
+    lib.extract_zip_archive_generic_c.restype = None
     
     ierr = ctypes.c_int()
     
     # Call the C-bound Fortran subroutine to extract the zip archive
-    lib.extract_zip_archive_c(
+    lib.extract_zip_archive_generic_c(
         ctypes.cast(ctypes.byref(zip_b), ctypes.POINTER(ctypes.c_char)),
         ctypes.c_int(zip_len),
         ctypes.byref(ierr)
