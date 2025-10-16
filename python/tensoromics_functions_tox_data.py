@@ -391,7 +391,12 @@ def read_expression_vectors(file_list, gene_ids, n_samples, n_header_rows,
 # Function for read_orthofinder_file_C
 def read_orthofinder_file(filename, gene_ids, family_ids_len, n_families):
     """
-    
+    Read an orthofinder family file and map genes to families
+    Args:
+        filename: Name of the orthofinder TSV file
+        gene_ids: List of gene IDs to map
+        family_ids_len: Maximum length of each family ID
+        n_families: Number of families to read
     """
     # Ensure filename is a string (single file)
     if isinstance(filename, list):
@@ -441,6 +446,17 @@ def read_orthofinder_file(filename, gene_ids, family_ids_len, n_families):
 
 # Function for filter_unassigned_genes_C
 def filter_unassigned_genes(gene_ids, gene_to_fam):
+    """
+    Filter out genes that are not assigned to any family
+    Args:
+        gene_ids: List of gene IDs
+        gene_to_fam: Array mapping each gene to a family index (0 if unassigned)
+
+    Returns:
+        Dictionary with keys:
+            'mask': Array indicating which genes are kept (1) or filtered out (0)
+            'n_genes_kept': Number of genes kept after filtering
+    """
     # Ensure inputs are numpy arrays
     gene_ids = _ensure_string_array(gene_ids)
     gene_to_fam = _ensure_int_array(gene_to_fam)
@@ -476,6 +492,12 @@ def filter_unassigned_genes(gene_ids, gene_to_fam):
 # --- Python wrappers for validation ---
 
 def validate_gene_to_family_mapping(gene_to_fam, n_families):
+    """
+    Validate gene to family mapping
+    Args:
+        gene_to_fam: Array mapping each gene to a family index (0 if unassigned)
+        n_families: Total number of families
+    """
     gene_to_fam = _ensure_int_array(gene_to_fam)
     n_genes = gene_to_fam.size
     ierr = ctypes.c_int()
@@ -488,6 +510,12 @@ def validate_gene_to_family_mapping(gene_to_fam, n_families):
     check_err_code(ierr.value)
 
 def validate_expression_data(expression_vectors, check_non_negative=True):
+    """
+    Validate expression data
+    Args:
+        expression_vectors: 2D array of expression data (genes x samples)
+        check_non_negative: Whether to check for non-negative values
+    """
     arr = _ensure_float_array(expression_vectors)
     arr = np.asfortranarray(arr, dtype=np.float64)
     n_genes, n_samples = arr.shape
@@ -502,6 +530,11 @@ def validate_expression_data(expression_vectors, check_non_negative=True):
     check_err_code(ierr.value)
 
 def validate_family_centroids(family_centroids):
+    """
+    Validate family centroids
+    Args:
+        family_centroids: 2D array of family centroids (samples x families)
+    """
     arr = _ensure_float_array(family_centroids)
     arr = np.asfortranarray(arr, dtype=np.float64)
     n_samples, n_families = arr.shape
@@ -515,6 +548,17 @@ def validate_family_centroids(family_centroids):
     check_err_code(ierr.value)
 
 def validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, gene_to_fam, n_genes, n_samples, n_families):
+    """
+    Validate shift vectors
+    Args:
+        shift_vectors: 2D array of shift vectors (genes x samples)
+        expression_vectors: 2D array of expression data (genes x samples)
+        family_centroids: 2D array of family centroids (samples x families)
+        gene_to_fam: Array mapping each gene to a family index (0 if unassigned)
+        n_genes: Number of genes
+        n_samples: Number of samples
+        n_families: Number of families
+    """
     shift_vectors = _ensure_float_array(shift_vectors)
     expression_vectors = _ensure_float_array(expression_vectors)
     family_centroids = _ensure_float_array(family_centroids)
@@ -538,6 +582,11 @@ def validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, 
     check_err_code(ierr.value)
 
 def validate_gene_ids_uniqueness(gene_ids):
+    """
+    Validate uniqueness of gene IDs - Note: Uses quicksort internally which may increase memory usage temporarily for large datasets
+    Args:
+        gene_ids: List of gene IDs
+    """
     gene_ids = _ensure_string_array(gene_ids)
     gene_ids_len = max(len(g) for g in gene_ids)
     n_genes = len(gene_ids)
@@ -552,6 +601,11 @@ def validate_gene_ids_uniqueness(gene_ids):
     check_err_code(ierr.value)
 
 def validate_family_ids_uniqueness(family_ids):
+    """
+    Validate uniqueness of family IDs - Note: Uses quicksort internally which may increase memory usage temporarily for large datasets
+    Args:
+        family_ids: List of family IDs
+    """
     family_ids = _ensure_string_array(family_ids)
     fam_len = max(len(f) for f in family_ids)
     n_families = len(family_ids)
@@ -566,6 +620,19 @@ def validate_family_ids_uniqueness(family_ids):
     check_err_code(ierr.value)
 
 def validate_data_structure(n_genes, n_families, n_samples, gene_ids, gene_family_ids, gene_to_fam, expression_vectors, family_centroids, shift_vectors):
+    """
+    Validate overall data structure consistency. Confirms sizes and dependencies as far as possible.
+    Args:
+        n_genes: Number of genes
+        n_families: Number of families
+        n_samples: Number of samples
+        gene_ids: List of gene IDs
+        gene_family_ids: List of family IDs
+        gene_to_fam: Array mapping each gene to a family index (0 if unassigned)
+        expression_vectors: 2D array of expression data (genes x samples)
+        family_centroids: 2D array of family centroids (samples x families)
+        shift_vectors: 2D array of shift vectors (genes x samples)
+    """
     gene_ids = _ensure_string_array(gene_ids)
     gene_family_ids = _ensure_string_array(gene_family_ids)
     expression_vectors = _ensure_float_array(expression_vectors)
@@ -601,6 +668,19 @@ def validate_data_structure(n_genes, n_families, n_samples, gene_ids, gene_famil
     check_err_code(ierr.value)
 
 def validate_all_data(n_genes, n_families, n_samples, gene_ids, gene_family_ids, gene_to_fam, expression_vectors, family_centroids, shift_vectors):
+    """
+    Comprehensive validation of all data components. This function performs all individual validations in one go.
+    Args:
+        n_genes: Number of genes
+        n_families: Number of families
+        n_samples: Number of samples
+        gene_ids: List of gene IDs
+        gene_family_ids: List of family IDs
+        gene_to_fam: Array mapping each gene to a family index (0 if unassigned)
+        expression_vectors: 2D array of expression data (genes x samples)
+        family_centroids: 2D array of family centroids (samples x families)
+        shift_vectors: 2D array of shift vectors (genes x samples)
+    """
     gene_ids = _ensure_string_array(gene_ids)
     gene_family_ids = _ensure_string_array(gene_family_ids)
     expression_vectors = _ensure_float_array(expression_vectors)
@@ -737,6 +817,7 @@ def save_tox_data(zip_filename: str,
     """
     High-level function to save TOX data to zip archive.
     Handles validation, serialization, and calls create_zip_archive.
+    Use for standard conform tox gene data.
     
     Args:
         zip_filename: Name of the zip file to create
@@ -811,7 +892,17 @@ def read_tox_data(zip_filename: str,
                  load_family_centroids: bool = False,
                  load_shift_vectors: bool = False):
     """
-    Read data from a zip archive - Python equivalent of R's read_tox_data
+    Read data from a zip archive created by save_tox_data. Use for standard conform tox gene data.
+    Args:
+        zip_filename: Name of the zip file to read
+        load_gene_ids: Whether to load gene IDs
+        load_expression_vectors: Whether to load expression vectors
+        load_gene_to_fam: Whether to load gene to family mapping
+        load_family_ids: Whether to load family IDs
+        load_family_centroids: Whether to load family centroids
+        load_shift_vectors: Whether to load shift vectors
+    Returns:
+        Dictionary with loaded data arrays
     """
     
     # Prepare the zip filename

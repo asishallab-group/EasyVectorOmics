@@ -4,6 +4,7 @@ source("r/error_handling.R")
 
 debug <- FALSE
 
+# Helper functions for string to raw conversions
 strings_to_raw_matrix <- function(arr, clen) {
   n <- length(arr)
   # Create a matrix of raw bytes with dimensions clen x n
@@ -21,6 +22,7 @@ strings_to_raw_matrix <- function(arr, clen) {
   mat  # Return the raw matrix
 }
 
+# Helper function for raw to string conversion
 raw_matrix_to_strings <- function(raw_mat, clen) {
   # raw_mat: raw matrix with dimensions clen x n
   if (is.null(dim(raw_mat))) {
@@ -47,6 +49,7 @@ raw_matrix_to_strings <- function(raw_mat, clen) {
   strings
 }
 
+# Helper function for string to raw conversion
 string_to_raw <- function(s, len) {
   raw_bytes <- charToRaw(s)
   if (length(raw_bytes) < len) {
@@ -58,47 +61,7 @@ string_to_raw <- function(s, len) {
   raw_bytes[1:len]  # Ensure exact length
 }
 
-# Keep the old integer conversion functions for functions that still need them
-strings_to_ascii_matrix <- function(arr, clen) {
-  n <- length(arr)
-  # Create a matrix of integers with dimensions clen x n
-  mat <- matrix(0L, nrow = clen, ncol = n)
-  for (i in seq_along(arr)) {
-    chars <- utf8ToInt(substr(arr[i], 1, clen))
-    mat[seq_along(chars), i] <- chars
-  }
-  mat  # Return the matrix directly (not as.integer)
-}
-
-ascii_matrix_to_strings <- function(ascii_mat, clen) {
-  # ascii_mat: integer vector or matrix, possibly 1D if only one gene
-  if (is.null(dim(ascii_mat))) {
-    # 1D vector: convert to matrix with one column
-    ascii_mat <- matrix(ascii_mat, nrow = clen)
-  }
-  n <- ncol(ascii_mat)
-  strings <- character(n)
-  for (i in seq_len(n)) {
-    chars <- ascii_mat[, i]
-    non_zero <- which(chars != 0)
-    if (length(non_zero) > 0) {
-      strings[i] <- intToUtf8(chars[1:max(non_zero)])
-    } else {
-      strings[i] <- ""
-    }
-  }
-  strings
-}
-
-string_to_ascii <- function(s, len) {
-  chars <- utf8ToInt(substr(s, 1, len))
-  if (length(chars) < len) {
-    chars <- c(chars, rep(0L, len - length(chars)))
-  }
-  chars
-}
-
-#' Read expression values from multiple files into a numeric matrix
+#' Read expression values from multiple tabular (csv/tsv) files into a numeric matrix
 #' @param file_list Character vector of filenames
 #' @param gene_ids Character vector of gene IDs to match
 #' @param n_header_rows Number of header rows to skip in each file
@@ -285,6 +248,17 @@ filter_unassigned_genes <- function(gene_ids, expression_vectors, gene_to_fam) {
 # R wrappers for Fortran validation routines
 # Uses raw conversion helpers: strings_to_raw_matrix, raw_matrix_to_strings
 
+#' Validate overall data structure
+#' @param n_genes Number of genes
+#' @param n_families Number of gene families
+#' @param n_samples Number of samples
+#' @param d Dimensionality of expression vectors (should be 2 * n_samples)
+#' @param gene_ids Character vector of gene IDs
+#' @param gene_family_ids Character vector of gene family IDs
+#' @param gene_to_fam Integer vector mapping each gene to its family index (0 if unassigned)
+#' @param expression_vectors Numeric matrix of expression values (n_samples x n_genes)
+#' @param family_centroids Numeric matrix of family centroids (n_samples x n_families)
+#' @param shift_vectors Numeric matrix of shift vectors (2*n_samples x n_genes)
 validate_data_structure <- function(n_genes, n_families, n_samples, d,
                                     gene_ids, gene_family_ids,
                                     gene_to_fam, expression_vectors,
@@ -312,6 +286,10 @@ validate_data_structure <- function(n_genes, n_families, n_samples, d,
   list(ierr = out$ierr)
 }
 
+#' Validate gene to family mapping
+#' @param gene_to_fam Integer vector mapping each gene to its family index (0 if unassigned)
+#' @param n_genes Number of genes
+#' @param n_families Number of gene families
 validate_gene_to_family_mapping <- function(gene_to_fam, n_genes, n_families) {
   ierr <- integer(1)
   out <- .Fortran("validate_gene_to_family_mapping_R",
@@ -323,6 +301,11 @@ validate_gene_to_family_mapping <- function(gene_to_fam, n_genes, n_families) {
   list(ierr = out$ierr)
 }
 
+#' Validate expression data
+#' @param expression_vectors Numeric matrix of expression values (n_samples x n_genes)
+#' @param n_genes Number of genes
+#' @param n_samples Number of samples
+#' @param check_non_negative Logical flag to check for non-negative values
 validate_expression_data <- function(expression_vectors, n_genes, n_samples, check_non_negative = TRUE) {
   ierr <- integer(1)
   out <- .Fortran("validate_expression_data_R",
@@ -335,6 +318,10 @@ validate_expression_data <- function(expression_vectors, n_genes, n_samples, che
   list(ierr = out$ierr)
 }
 
+#' Validate family centroids
+#' @param family_centroids Numeric matrix of family centroids (n_samples x n_families)
+#' @param n_families Number of gene families
+#' @param n_samples Number of samples
 validate_family_centroids <- function(family_centroids, n_families, n_samples) {
   ierr <- integer(1)
   out <- .Fortran("validate_family_centroids_R",
@@ -346,6 +333,12 @@ validate_family_centroids <- function(family_centroids, n_families, n_samples) {
   list(ierr = out$ierr)
 }
 
+#' Validate shift vectors
+#' @param shift_vectors Numeric matrix of shift vectors (2*n_samples x n_genes)
+#' @param expression_vectors Numeric matrix of expression values (n_samples x n_genes)
+#' @param family_centroids Numeric matrix of family centroids (n_samples x n_families)
+#' @param gene_to_fam Integer vector mapping each gene to its family index (0 if unassigned)
+#' @param n_samples Number of samples
 validate_shift_vectors <- function(shift_vectors, expression_vectors, family_centroids, gene_to_fam, n_samples) {
   ierr <- integer(1)
   
@@ -366,6 +359,10 @@ validate_shift_vectors <- function(shift_vectors, expression_vectors, family_cen
   list(ierr = out$ierr)
 }
 
+#' Validate uniqueness of gene IDs
+#' @param gene_ids Character vector of gene IDs
+#' @param n_genes Number of genes
+#' Note: Uses quicksort internally which may increase memory usage temporarily for large datasets
 validate_gene_ids_uniqueness <- function(gene_ids, n_genes) {
   gene_len <- max(nchar(gene_ids)) + 1  # +1 for null terminator
   gene_raw <- strings_to_raw_matrix(gene_ids, gene_len)
@@ -379,6 +376,10 @@ validate_gene_ids_uniqueness <- function(gene_ids, n_genes) {
   list(ierr = out$ierr)
 }
 
+#' Validate uniqueness of family IDs
+#' @param family_ids Character vector of family IDs
+#' @param n_families Number of gene families
+#' Note: Uses quicksort internally which may increase memory usage temporarily for large datasets
 validate_family_ids_uniqueness <- function(family_ids, n_families) {
   fam_len <- max(nchar(family_ids)) + 1  # +1 for null terminator
   fam_raw <- strings_to_raw_matrix(family_ids, fam_len)
@@ -392,6 +393,16 @@ validate_family_ids_uniqueness <- function(family_ids, n_families) {
   list(ierr = out$ierr)
 }
 
+#' Validate all data components together
+#' @param n_genes Number of genes
+#' @param n_families Number of gene families
+#' @param n_samples Number of samples
+#' @param gene_ids Character vector of gene IDs
+#' @param gene_family_ids Character vector of gene family IDs
+#' @param gene_to_fam Integer vector mapping each gene to its family index (0 if unassigned)
+#' @param expression_vectors Numeric matrix of expression values (n_samples x n_genes)
+#' @param family_centroids Numeric matrix of family centroids (n_samples x n_families)
+#' @param shift_vectors Numeric matrix of shift vectors (2*n_samples x n_genes)
 validate_all_data <- function(n_genes, n_families, n_samples,
                               gene_ids, gene_family_ids,
                               gene_to_fam, expression_vectors,
@@ -475,6 +486,7 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
   ))
 }
 
+# ONLY FOR TEST PURPOSES
 tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, ortholog_set, mode = 'all') {
   
   # 1) Validate inputs
@@ -519,6 +531,7 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
   # 4) Return the populated output matrix (no ierr since we checked for errors)
   return(result$centroid_matrix)
 }
+
 #' Low-level function to create zip archive from keys and filenames.
 #' Directly calls the Fortran function.
 #'
