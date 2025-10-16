@@ -618,6 +618,83 @@ def _prepare_string(s) -> tuple:
     b = s.encode('utf-8') + b'\x00'
     return b, len(b)
 
+def create_zip_archive(zip_filename: str, keys, filenames) -> None:
+    """
+    Low-level function to create zip archive from keys and filenames.
+    Directly calls the Fortran function.
+    
+    Args:
+        zip_filename: Name of the zip file to create
+        keys: List of keys for the manifest
+        filenames: List of filenames to include in archive
+    """
+    if len(keys) != len(filenames):
+        raise ValueError("Keys and filenames must have the same length")
+    
+    # Prepare arrays for C interface
+    zip_b, zip_len = _prepare_string(zip_filename)
+    
+    # Convert keys and filenames to 2D numpy arrays with Fortran order
+    max_key_len = max(len(key) for key in keys) + 1  # +1 for null terminator
+    max_filename_len = max(len(fname) for fname in filenames) + 1  # +1 for null terminator
+    count = len(keys)
+    
+    # Create numpy arrays with Fortran order (column-major)
+    # Shape: (string_length, string_count) - matching Fortran expectation
+    keys_array = np.zeros((max_key_len, count), dtype=np.byte, order='F')
+    filenames_array = np.zeros((max_filename_len, count), dtype=np.byte, order='F')
+    
+    # Fill arrays in column-major order
+    for i, (key, fname) in enumerate(zip(keys, filenames)):
+        key_bytes = key.encode('utf-8')
+        fname_bytes = fname.encode('utf-8')
+        
+        # Fill keys array - each column is one string
+        for j in range(min(len(key_bytes), max_key_len - 1)):
+            keys_array[j, i] = key_bytes[j]
+        # Add null terminator
+        if len(key_bytes) < max_key_len:
+            keys_array[len(key_bytes), i] = 0  # null terminator
+        else:
+            keys_array[max_key_len - 1, i] = 0  # null terminator at last position
+        
+        # Fill filenames array - each column is one string  
+        for j in range(min(len(fname_bytes), max_filename_len - 1)):
+            filenames_array[j, i] = fname_bytes[j]
+        # Add null terminator
+        if len(fname_bytes) < max_filename_len:
+            filenames_array[len(fname_bytes), i] = 0  # null terminator
+        else:
+            filenames_array[max_filename_len - 1, i] = 0  # null terminator at last position
+    
+    # Set up argument types to match Fortran subroutine
+    lib.create_zip_archive_generic_c.argtypes = [
+        ctypes.POINTER(ctypes.c_char), ctypes.c_int,                    # zip_filename, zip_len
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=2, flags='F_CONTIGUOUS'),  # keys
+        ctypes.c_int, ctypes.c_int,                                     # keys_len, keys_count
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=2, flags='F_CONTIGUOUS'),  # filenames  
+        ctypes.c_int, ctypes.c_int,                                     # filenames_len, filenames_count
+        ctypes.POINTER(ctypes.c_int)                                    # ierr
+    ]
+    
+    ierr = ctypes.c_int()
+    
+    # Call Fortran function - arrays are already in Fortran order
+    lib.create_zip_archive_generic_c(
+        zip_b, 
+        ctypes.c_int(zip_len),
+        keys_array,
+        ctypes.c_int(max_key_len), 
+        ctypes.c_int(count),
+        filenames_array, 
+        ctypes.c_int(max_filename_len), 
+        ctypes.c_int(count),
+        ctypes.byref(ierr)
+    )
+    
+    check_err_code(ierr.value)
+    print(f"Successfully created archive: {zip_filename}")
+
 def save_tox_data(zip_filename: str,
                  gene_ids = None,
                  expression_vectors = None,
@@ -632,82 +709,73 @@ def save_tox_data(zip_filename: str,
                  family_centroids_name = None,
                  shift_vectors_name = None) -> None:
     """
-    Save data to a zip archive - Python equivalent of R's save_tox_data
+    High-level function to save TOX data to zip archive.
+    Handles validation, serialization, and calls create_zip_archive.
+    
+    Args:
+        zip_filename: Name of the zip file to create
+        gene_ids, expression_vectors, etc.: Data arrays
+        gene_ids_name, expression_vectors_name, etc.: Temporary filenames
     """
-    
-    # First serialize the arrays to files (using your existing serialization functions)
+    # First serialize the arrays to files
     temp_files = []
+    keys = []
+    filenames = []
     
+    # Gene IDs
     if gene_ids is not None and gene_ids_name:
         tox_serialize_char_nd(gene_ids, gene_ids_name)
         temp_files.append(gene_ids_name)
+        keys.append("gene_ids")
+        filenames.append(gene_ids_name)
     
+    # Expression vectors
     if expression_vectors is not None and expression_vectors_name:
         tox_serialize_real_nd(expression_vectors, expression_vectors_name)
         temp_files.append(expression_vectors_name)
+        keys.append("expression")
+        filenames.append(expression_vectors_name)
     
+    # Gene to family mapping
     if gene_to_fam is not None and gene_to_fam_name:
         tox_serialize_int_nd(gene_to_fam, gene_to_fam_name)
         temp_files.append(gene_to_fam_name)
+        keys.append("gene_to_family")
+        filenames.append(gene_to_fam_name)
     
+    # Family IDs
     if family_ids is not None and family_ids_name:
         tox_serialize_char_nd(family_ids, family_ids_name)
         temp_files.append(family_ids_name)
+        keys.append("family_ids")
+        filenames.append(family_ids_name)
     
+    # Family centroids
     if family_centroids is not None and family_centroids_name:
         tox_serialize_real_nd(family_centroids, family_centroids_name)
         temp_files.append(family_centroids_name)
+        keys.append("family_centroids")
+        filenames.append(family_centroids_name)
     
+    # Shift vectors
     if shift_vectors is not None and shift_vectors_name:
         tox_serialize_real_nd(shift_vectors, shift_vectors_name)
         temp_files.append(shift_vectors_name)
+        keys.append("shift_vectors")
+        filenames.append(shift_vectors_name)
     
-    # Prepare all strings with null terminators
-    zip_b, zip_len = _prepare_string(zip_filename)
-    gene_ids_b, gene_ids_len = _prepare_string(gene_ids_name)
-    expr_b, expr_len = _prepare_string(expression_vectors_name)
-    g2f_b, g2f_len = _prepare_string(gene_to_fam_name)
-    fam_b, fam_len = _prepare_string(family_ids_name)
-    centroids_b, centroids_len = _prepare_string(family_centroids_name)
-    shift_b, shift_len = _prepare_string(shift_vectors_name)
+    # Call the low-level function
+    if keys:
+        create_zip_archive(zip_filename, keys, filenames)
+    else:
+        print("No valid data provided to save - skipping archive creation")
+        return
     
-    # Set up argument types for create_zip_archive_c - using c_int
-    lib.create_zip_archive_c.argtypes = [
-        ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # zip_filename, zip_len
-        ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # gene_ids_file, gene_ids_file_len
-        ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # expression_file, expression_file_len
-        ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # gene_to_family_file, gene_to_family_file_len
-        ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # family_ids_file, family_ids_file_len
-        ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # family_centroids_file, family_centroids_file_len
-        ctypes.POINTER(ctypes.c_char), ctypes.c_int,  # shift_vectors_file, shift_vectors_file_len
-        ctypes.POINTER(ctypes.c_int)                  # ierr
-    ]
-    lib.create_zip_archive_c.restype = None
-    
-    ierr = ctypes.c_int()
-    
-    try:
-        # Call the C-bound Fortran subroutine to create the zip archive
-        lib.create_zip_archive_c(
-            zip_b, ctypes.c_int(zip_len),
-            gene_ids_b, ctypes.c_int(gene_ids_len),
-            expr_b, ctypes.c_int(expr_len),
-            g2f_b, ctypes.c_int(g2f_len),
-            fam_b, ctypes.c_int(fam_len),
-            centroids_b, ctypes.c_int(centroids_len),
-            shift_b, ctypes.c_int(shift_len),
-            ctypes.byref(ierr)
-        )
-        
-        check_err_code(ierr.value)
-        print(f"Successfully created archive: {zip_filename}")
-        
-    finally:
-        # Clean up temporary files
-        for temp_file in temp_files:
-            if os.path.exists(temp_file):
-                os.remove(temp_file)
-                print(f"Removed temporary file: {temp_file}")
+    # Clean up temporary files
+    for temp_file in temp_files:
+        if os.path.exists(temp_file):
+            os.remove(temp_file)
+            print(f"Removed temporary file: {temp_file}")
 
 def read_tox_data(zip_filename: str,
                  load_gene_ids: bool = False,

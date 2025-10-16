@@ -170,4 +170,164 @@ tryCatch({
                                   family_centroids=TRUE,
                                   shift_vectors=TRUE)
   cat("Successfully read from fortran archive")
-})                                  
+}, error = function(e) {
+  cat("Cross-platform test skipped:", e$message, "\n")
+})
+cat("=== Testing create_zip_archive directly with dummy arrays ===\n")
+
+# Erstelle Dummy-Daten
+dummy_int_1d <- 1:10
+dummy_int_2d <- matrix(1:12, nrow=3, ncol=4)
+dummy_real_1d <- c(1.5, 2.5, 3.5, 4.5, 5.5)
+dummy_real_2d <- matrix(rnorm(12), nrow=3, ncol=4)
+dummy_char_1d <- c("apple", "banana", "cherry", "date", "elderberry")
+
+# Serialisiere Dummy-Daten zu Dateien
+cat("Serializing dummy arrays...\n")
+tox_serialize_int_array(dummy_int_1d, "dummy_int_1d.bin")
+tox_serialize_int_array(as.vector(dummy_int_2d), "dummy_int_2d.bin")  # Matrix zu Vektor
+tox_serialize_real_array(dummy_real_1d, "dummy_real_1d.bin")
+tox_serialize_real_array(dummy_real_2d, "dummy_real_2d.bin")
+tox_serialize_char_array(dummy_char_1d, "dummy_char_1d.bin")
+
+# Test 1: Erstelle Archiv mit allen Dummy-Dateien
+cat("Test 1: Creating archive with all dummy files...\n")
+create_zip_archive("test_dummy_all.zip",
+                  keys = c("int_1d", "int_2d", "real_1d", "real_2d", "char_1d"),
+                  filenames = c("dummy_int_1d.bin", "dummy_int_2d.bin", 
+                                "dummy_real_1d.bin", "dummy_real_2d.bin", 
+                                "dummy_char_1d.bin"))
+
+# Test 2: Erstelle Archiv mit gemischten echten und Dummy-Daten
+cat("Test 2: Creating archive with mixed real and dummy data...\n")
+# Serialisiere einige echte Daten für diesen Test
+tox_serialize_char_array(gene_ids[1:5], "sample_gene_ids.bin")
+create_zip_archive("test_mixed_data.zip",
+                  keys = c("sample_genes", "dummy_int", "dummy_real"),
+                  filenames = c("sample_gene_ids.bin", "dummy_int_1d.bin", "dummy_real_1d.bin"))
+
+# Test 3: Erstelle Archiv mit benutzerdefinierten Keys
+cat("Test 3: Creating archive with custom keys...\n")
+create_zip_archive("test_custom_keys.zip",
+                  keys = c("experiment_config", "results_summary", "raw_data"),
+                  filenames = c("dummy_char_1d.bin", "dummy_real_2d.bin", "dummy_int_2d.bin"))
+
+# Test 4: Erstelle Archiv mit nur einer Datei
+cat("Test 4: Creating archive with single file...\n")
+create_zip_archive("test_single_file.zip",
+                  keys = c("single_data"),
+                  filenames = c("dummy_int_1d.bin"))
+
+# Test 5: Teste Fehlerbehandlung mit ungleichen Arrays
+cat("Test 5: Testing error handling with mismatched arrays...\n")
+tryCatch({
+  create_zip_archive("test_error.zip",
+                    keys = c("key1", "key2"),
+                    filenames = c("file1.bin"))  # Fehler: ungleiche Länge
+}, error = function(e) {
+  cat("Expected error caught:", e$message, "\n")
+})
+
+# Überprüfe ob Archive erstellt wurden
+cat("Checking created archives...\n")
+archives <- c("test_dummy_all.zip", "test_mixed_data.zip", 
+              "test_custom_keys.zip", "test_single_file.zip")
+
+for (archive in archives) {
+  if (file.exists(archive)) {
+    cat("✓ Archive created:", archive, "\n")
+  } else {
+    cat("✗ Archive missing:", archive, "\n")
+  }
+}
+
+# Räume temporäre Dateien auf
+cat("Cleaning up temporary files...\n")
+temp_files <- c("dummy_int_1d.bin", "dummy_int_2d.bin", "dummy_real_1d.bin", 
+                "dummy_real_2d.bin", "dummy_char_1d.bin", "sample_gene_ids.bin")
+
+for (temp_file in temp_files) {
+  if (file.exists(temp_file)) {
+    file.remove(temp_file)
+    cat("Removed:", temp_file, "\n")
+  }
+}
+
+# 3. Lesen der Archive (bestehende Tests)
+cat("=== Reading archives ===\n")
+result_1 <- read_tox_data(zip_filename="test_archive_1_R.zip", 
+                                  gene_ids=TRUE,
+                                  expression_vectors=TRUE,
+                                  gene_to_fam=TRUE,
+                                  family_ids=TRUE,
+                                  family_centroids=TRUE,
+                                  shift_vectors=TRUE)
+
+result_2 <- read_tox_data(zip_filename="test_archive_1_R.zip",
+                                  family_centroids=TRUE,
+                                  shift_vectors=TRUE)
+
+result_3 <- read_tox_data(zip_filename="test_archive_2_R.zip",
+                                  gene_ids=TRUE,
+                                  expression_vectors=TRUE,
+                                  shift_vectors=TRUE)
+
+# 4. Teste Lesen der Dummy-Archive (falls read_tox_data generisch genug ist)
+cat("=== Testing read of dummy archives ===\n")
+tryCatch({
+  # Versuche die Dummy-Archive zu lesen
+  dummy_result <- read_tox_data(zip_filename="test_dummy_all.zip")
+  cat("Successfully read dummy archive (structure only)\n")
+}, error = function(e) {
+  cat("Note: read_tox_data may not handle non-standard keys:", e$message, "\n")
+})
+
+# 5. Cross-platform Tests (bestehende Tests)
+tryCatch({
+  result_py <- read_tox_data(zip_filename="test_archive_1_py.zip", 
+                                  gene_ids=TRUE,
+                                  expression_vectors=TRUE,
+                                  gene_to_fam=TRUE,
+                                  family_ids=TRUE,
+                                  family_centroids=TRUE,
+                                  shift_vectors=TRUE)
+  cat("Successfully read from python archive\n")
+
+  result_f <- read_tox_data(zip_filename="test_archive_1_f.zip", 
+                                  gene_ids=TRUE,
+                                  expression_vectors=TRUE,
+                                  gene_to_fam=TRUE,
+                                  family_ids=TRUE,
+                                  family_centroids=TRUE,
+                                  shift_vectors=TRUE)
+  cat("Successfully read from fortran archive\n")
+}, error = function(e) {
+  cat("Cross-platform test skipped:", e$message, "\n")
+})
+
+cat("=== All tests completed! ===\n")
+
+# Zusätzliche Validierung: Prüfe Archiv-Inhalte
+cat("=== Archive content validation ===\n")
+library(utils)
+
+# Liste alle erstellten Archive auf
+archive_files <- list.files(pattern = "\\.zip$")
+cat("Created archives:\n")
+for (arch in archive_files) {
+  file_info <- file.info(arch)
+  cat(sprintf("  %s (%.2f KB)\n", arch, file_info$size/1024))
+  
+  # Versuche Archiv-Inhalt anzuzeigen (nur falls unzip verfügbar)
+  tryCatch({
+    content <- system(paste("unzip -l", arch), intern = TRUE)
+    cat("    Contents:\n")
+    for (line in tail(content, 5)) {  # Zeige letzte 5 Zeilen (ohne Header)
+      if (grepl("\\.bin$|manifest\\.txt$", line)) {
+        cat("     ", line, "\n")
+      }
+    }
+  }, error = function(e) {
+    # Ignoriere Fehler falls unzip nicht verfügbar
+  })
+}

@@ -519,6 +519,71 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
   # 4) Return the populated output matrix (no ierr since we checked for errors)
   return(result$centroid_matrix)
 }
+#' Low-level function to create zip archive from keys and filenames.
+#' Directly calls the Fortran function.
+#'
+#' @param zip_filename Name of the zip file to create
+#' @param keys Vector of keys for the manifest
+#' @param filenames Vector of filenames to include in archive
+create_zip_archive <- function(zip_filename, keys, filenames) {
+  if (length(keys) != length(filenames)) {
+    stop("Keys and filenames must have the same length")
+  }
+  
+  # Convert to raw arrays for .Fortran call
+  zip_raw <- charToRaw(zip_filename)
+  zip_len <- length(zip_raw)
+  
+  # Calculate maximum lengths including null terminators
+  max_key_len <- max(nchar(keys, type = "bytes")) + 1  # +1 for null terminator
+  max_filename_len <- max(nchar(filenames, type = "bytes")) + 1
+  count <- length(keys)
+  
+  # Create matrices initialized with null bytes
+  keys_array <- matrix(as.raw(0), nrow = max_key_len, ncol = count)
+  filenames_array <- matrix(as.raw(0), nrow = max_filename_len, ncol = count)
+  
+  # Fill arrays with proper null termination
+  for (i in 1:count) {
+    # Convert to raw and ensure null termination
+    key_raw <- charToRaw(substr(keys[i], 1, max_key_len))
+    filename_raw <- charToRaw(substr(filenames[i], 1, max_filename_len))
+    
+    # Check bounds and copy
+    if (length(key_raw) > max_key_len) {
+      stop("Key '", keys[i], "' is too long. Maximum length is ", max_key_len - 1, " bytes")
+    }
+    if (length(filename_raw) > max_filename_len) {
+      stop("Filename '", filenames[i], "' is too long. Maximum length is ", max_filename_len - 1, " bytes")
+    }
+    
+    # Copy data to matrices
+    keys_array[1:length(key_raw), i] <- key_raw
+    filenames_array[1:length(filename_raw), i] <- filename_raw
+  }
+  
+  ierr <- integer(1)
+  
+  # Debug output
+  message("Calling Fortran with:")
+  message("  zip_len: ", zip_len)
+  message("  max_key_len: ", max_key_len)
+  message("  max_filename_len: ", max_filename_len)
+  message("  count: ", count)
+  message("  keys: ", paste(keys, collapse = ", "))
+  message("  filenames: ", paste(filenames, collapse = ", "))
+  
+  # Call the generic Fortran subroutine
+  result <- .Fortran("create_zip_archive_generic_R",
+               zip_raw, as.integer(zip_len),
+               as.raw(keys_array), as.integer(max_key_len), as.integer(count),
+               as.raw(filenames_array), as.integer(max_filename_len), as.integer(count),
+               ierr = ierr)
+  
+  check_err_code(result$ierr)
+  message("Successfully created archive: ", zip_filename)
+}
+
 
 save_tox_data <- function(zip_filename,
                                  gene_ids = NULL, gene_ids_name = NULL,
@@ -662,78 +727,71 @@ save_tox_data <- function(zip_filename,
     if(debug) {message("Shift vectors: Either provide array and filename or none. Skipping.")}
   }
     
-  # Write files to temporary directory
+    # Write files to temporary directory
+  temp_files <- character(0)
+  keys <- character(0)
+  filenames <- character(0)
+  
   if (gene_ids_array_valid && gene_ids_name_valid) {
     tox_serialize_char_array(gene_ids, gene_ids_name)
     if(debug) {message(paste("Wrote gene IDs to", gene_ids_name))}
+    temp_files <- c(temp_files, gene_ids_name)
+    keys <- c(keys, "gene_ids")
+    filenames <- c(filenames, gene_ids_name)
   }
 
   if (expression_vectors_array_valid && expression_vectors_name_valid) {
     tox_serialize_real_array(expression_vectors, expression_vectors_name)
     if(debug) {message(paste("Wrote expression vectors to", expression_vectors_name))}
+    temp_files <- c(temp_files, expression_vectors_name)
+    keys <- c(keys, "expression")
+    filenames <- c(filenames, expression_vectors_name)
   }
   
   if (gene_to_fam_array_valid && gene_to_fam_name_valid) {
     tox_serialize_int_array(gene_to_fam, gene_to_fam_name)
     if(debug) {message(paste("Wrote gene to family to", gene_to_fam_name))}
+    temp_files <- c(temp_files, gene_to_fam_name)
+    keys <- c(keys, "gene_to_family")
+    filenames <- c(filenames, gene_to_fam_name)
   }
   
   if (family_ids_array_valid && family_ids_name_valid) {
     tox_serialize_char_array(family_ids, family_ids_name)
     if(debug) {message(paste("Wrote family IDs to", family_ids_name))}
+    temp_files <- c(temp_files, family_ids_name)
+    keys <- c(keys, "family_ids")
+    filenames <- c(filenames, family_ids_name)
   }
   
   if (family_centroids_array_valid && family_centroids_name_valid) {
     tox_serialize_real_array(family_centroids, family_centroids_name)
     if(debug){ message(paste("Wrote family centroids to", family_centroids_name))}
+    temp_files <- c(temp_files, family_centroids_name)
+    keys <- c(keys, "family_centroids")
+    filenames <- c(filenames, family_centroids_name)
   }
   
   if (shift_vectors_array_valid && shift_vectors_name_valid) {
     tox_serialize_real_array(shift_vectors, shift_vectors_name)
     if(debug) { message(paste("Wrote shift vectors to", shift_vectors_name))}
+    temp_files <- c(temp_files, shift_vectors_name)
+    keys <- c(keys, "shift_vectors")
+    filenames <- c(filenames, shift_vectors_name)
   }
 
-  res <- .Fortran("create_zip_archive_R",
-    charToRaw(zip_filename),
-    as.integer(nchar(zip_filename)),
-    charToRaw(gene_ids_name),
-    as.integer(nchar(gene_ids_name)),
-    charToRaw(expression_vectors_name),
-    as.integer(nchar(expression_vectors_name)),
-    charToRaw(gene_to_fam_name),
-    as.integer(nchar(gene_to_fam_name)),
-    charToRaw(family_ids_name),
-    as.integer(nchar(family_ids_name)),
-    charToRaw(family_centroids_name),
-    as.integer(nchar(family_centroids_name)),
-    charToRaw(shift_vectors_name),
-    as.integer(nchar(shift_vectors_name)),
-    ierr = ierr)
-
-  check_err_code(res$ierr)
-
-  if (gene_ids_array_valid && gene_ids_name_valid) {
-    file.remove(gene_ids_name)
+  # Call the low-level function
+  if (length(keys) > 0) {
+    create_zip_archive(zip_filename, keys, filenames)
+  } else {
+    warning("No valid data provided to save - skipping archive creation")
   }
 
-  if (expression_vectors_array_valid && expression_vectors_name_valid) {
-    file.remove(expression_vectors_name)
-  }
-  
-  if (gene_to_fam_array_valid && gene_to_fam_name_valid) {
-    file.remove(gene_to_fam_name)
-  }
-  
-  if (family_ids_array_valid && family_ids_name_valid) {
-    file.remove(family_ids_name)
-  }
-  
-  if (family_centroids_array_valid && family_centroids_name_valid) {
-    file.remove(family_centroids_name)
-  }
-  
-  if (shift_vectors_array_valid && shift_vectors_name_valid) {
-    file.remove(shift_vectors_name)
+  # Clean up temporary files
+  for (temp_file in temp_files) {
+    if (file.exists(temp_file)) {
+      file.remove(temp_file)
+    }
   }
 }
 

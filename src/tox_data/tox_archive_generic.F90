@@ -963,12 +963,12 @@ contains
 end module tox_archive_generic
 
 !> R-callable generic archive creation with arrays of keys and filenames
-subroutine create_zip_archive_generic_array_R(zip_filename, zip_len, &
+subroutine create_zip_archive_generic_R(zip_filename, zip_len, &
                                              keys, keys_len, keys_count, &
                                              filenames, filenames_len, filenames_count, &
                                              ierr)
     use tox_archive_generic, only: create_zip_archive
-    use tox_conversions, only: c_char_2d_as_string
+    use tox_conversions, only: c_char_2d_as_string, c_char_1d_as_string
     use iso_c_binding, only: c_char
     use tox_errors, only: is_err, set_ok, set_err_once, ERR_INVALID_INPUT
     use iso_fortran_env, only: int32
@@ -1011,7 +1011,7 @@ subroutine create_zip_archive_generic_array_R(zip_filename, zip_len, &
     ! Call the actual Fortran implementation
     call create_zip_archive(f_zip_filename, f_keys, f_filenames, ierr)
     
-end subroutine create_zip_archive_generic_array_R
+end subroutine create_zip_archive_generic_R
 
 subroutine extract_zip_archive_generic_R(zip_filename, filename_len, ierr)
     use iso_c_binding, only: c_char, c_null_char
@@ -1044,12 +1044,12 @@ subroutine extract_zip_archive_generic_R(zip_filename, filename_len, ierr)
 end subroutine extract_zip_archive_generic_R
 
 !> C binding for generic archive creation with arrays of keys and filenames
-subroutine create_zip_archive_generic_array_c(zip_filename, zip_len, &
+subroutine create_zip_archive_generic_c(zip_filename, zip_len, &
                                              keys, keys_len, keys_count, &
                                              filenames, filenames_len, filenames_count, &
-                                             ierr) bind(C, name="create_zip_archive_generic_array_c")
+                                             ierr) bind(C, name="create_zip_archive_generic_c")
     use tox_archive_generic, only: create_zip_archive
-    use tox_conversions, only: c_char_2d_as_string
+    use tox_conversions, only: c_char_2d_as_string, c_char_1d_as_string
     use iso_c_binding, only: c_int, c_char
     use tox_errors, only: is_err, set_ok, set_err_once, ERR_INVALID_INPUT
     use iso_fortran_env, only: int32
@@ -1092,7 +1092,7 @@ subroutine create_zip_archive_generic_array_c(zip_filename, zip_len, &
     ! Call the actual Fortran implementation
     call create_zip_archive(f_zip_filename, f_keys, f_filenames, ierr)
     
-end subroutine create_zip_archive_generic_array_c
+end subroutine create_zip_archive_generic_c
 
 !> C binding for extract_zip_archive - can be called directly from Python via ctypes
 subroutine extract_zip_archive_generic_c(zip_filename, filename_len, ierr) &
