@@ -209,41 +209,29 @@ read_orthofinder_file <- function(filename, gene_ids, n_families, family_len) {
 #'   - gene_ids: Filtered character vector of gene IDs
 #'   - expression_vectors: Filtered numeric matrix of expression values
 #'   - gene_to_fam: Filtered integer vector mapping each gene to its family index
-#'   - n_genes_kept: Number of genes kept after filtering
-#'   - ierr: Integer error code (0 if successful)
 filter_unassigned_genes <- function(gene_ids, expression_vectors, gene_to_fam) {
-  ngenes <- length(gene_ids)
-  gene_len <- max(nchar(gene_ids)) + 1  # +1 for null terminator
-  n_samples <- nrow(expression_vectors)
-  ierr <- integer(1)
+  # Erzeuge logische Maske: TRUE = behalten, FALSE = verwerfen
+  mask <- gene_to_fam != 0L
 
-  gene_raw <- strings_to_raw_matrix(gene_ids, gene_len)
+  if(length(gene_ids) != ncol(expression_vectors) || length(gene_ids) != length(gene_to_fam)) {
+    stop("Dimension mismatch: gene_ids, expression_vectors, and gene_to_fam must have compatible lengths")
+  }
   
-  out <- .Fortran("filter_unassigned_genes_R",
-    gene_ids_raw = gene_raw,                  # Pass raw bytes directly
-    gene_ids_len = as.integer(gene_len),
-    n_genes = as.integer(ngenes),
-    expression_vectors_flat = as.double(as.vector(expression_vectors)),
-    n_samples = as.integer(n_samples),
-    gene_to_fam = as.integer(gene_to_fam),
-    mask = logical(ngenes),
-    n_genes_kept = integer(1),
-    ierr = 0
-  )
-  check_err_code(out$ierr)
+  # Filtere alle Arrays mit der gleichen Maske
+  gene_ids <- gene_ids[mask]
+  gene_to_fam <- gene_to_fam[mask]
+  expression_vectors <- expression_vectors[, mask, drop = FALSE]
   
-  # Apply the mask on the R side
-  mask <- out$mask
-  n_genes_kept <- out$n_genes_kept
+  n_genes_kept <- sum(mask)
   
   list(
-    gene_ids = gene_ids[mask],
-    expression_vectors = expression_vectors[, mask, drop = FALSE],
-    gene_to_fam = gene_to_fam[mask],
-    n_genes_kept = n_genes_kept,
-    ierr = out$ierr
+    gene_ids = gene_ids,
+    expression_vectors = expression_vectors,
+    gene_to_fam = gene_to_fam,
+    n_genes_kept = n_genes_kept
   )
 }
+
 
 # R wrappers for Fortran validation routines
 # Uses raw conversion helpers: strings_to_raw_matrix, raw_matrix_to_strings

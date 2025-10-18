@@ -736,44 +736,6 @@ subroutine read_orthofinder_file_R(filename_raw, fn_len, gene_ids_raw, gene_ids_
     end do
 end subroutine read_orthofinder_file_R
 
-!> R binding to filter unassigned genes
-subroutine filter_unassigned_genes_R(gene_ids_raw, gene_ids_len, n_genes, &
-                                    expression_vectors_flat, n_samples, &
-                                    gene_to_fam, mask, n_genes_kept, ierr)
-    use iso_fortran_env, only: real64, int32
-    use iso_c_binding, only: c_char
-    use tox_errors, only: set_ok, set_err_once, ERR_INVALID_INPUT
-    use tox_data_tools, only: get_unassigned_mask
-    implicit none
-    
-    integer(int32), intent(in) :: gene_ids_len
-        !! Length of the gene ids
-    integer(int32), intent(in) :: n_genes
-        !! Number of genes
-    character(kind=c_char, len=1), intent(in) :: gene_ids_raw(gene_ids_len, n_genes)
-        !! Gene ids array
-    integer(int32), intent(in) :: n_samples
-        !! Number of samples
-    real(real64), intent(in) :: expression_vectors_flat(n_samples * n_genes)
-        !! Expression vectors
-    integer(int32), intent(in) :: gene_to_fam(n_genes)
-        !! gene to family mapping
-    logical, intent(out) :: mask(n_genes)
-        !! mask for unassigned genes
-    integer(int32), intent(out) :: n_genes_kept
-        !! Number of genes that are kept
-    integer(int32), intent(out) :: ierr
-        !! Error code
-    
-    call set_ok(ierr)
-
-    call get_unassigned_mask(gene_to_fam, mask, n_genes_kept)
-    if (n_genes_kept == 0) then
-        call set_err_once(ierr, ERR_INVALID_INPUT)
-        return
-    end if
-end subroutine filter_unassigned_genes_R
-
 !> C binding for reading gene IDs from a gene expression tsv file
 subroutine read_gene_ids_from_tsv_file_C(filename_raw, fn_len, gene_ids_raw, gene_ids_len, n_genes, &
                                  n_header_rows, gene_col, ierr) bind(C, name="read_gene_ids_from_tsv_file_C")
