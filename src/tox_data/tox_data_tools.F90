@@ -11,7 +11,7 @@ module tox_data_tools
     public :: read_expression_vectors
     public :: read_orthofinder_file
     public :: split_string
-    public :: filter_unassigned_genes, get_unassigned_mask
+    public :: get_unassigned_mask, apply_unassigned_mask
 
     character(len=*), parameter :: DELIMS = ', ' // char(9)
 
@@ -370,76 +370,6 @@ subroutine read_orthofinder_file(filename, gene_ids, family_ids, gene_to_fam, ie
     call hashmap_destroy(gene_map)
 end subroutine read_orthofinder_file
 
-!> Filter out genes that are not assigned to any family.
-subroutine filter_unassigned_genes(gene_ids, expression_vectors, gene_to_fam, n_genes_kept, ierr)
-    character(len=*), allocatable, intent(inout) :: gene_ids(:)
-        !! gene ids array
-    real(real64), allocatable, intent(inout) :: expression_vectors(:,:)
-        !! expression vectors array
-    integer(int32), allocatable, intent(inout) :: gene_to_fam(:)
-        !! gene to family mapping
-    integer(int32), intent(out) :: n_genes_kept
-        !! number of genes kept after filtering
-    integer(int32), intent(out) :: ierr
-        !! Error code
-    
-    integer(int32) :: i, j, n_genes_total, n_samples, ios
-    integer(int32), allocatable :: valid_indices(:)
-    character(len=len(gene_ids)), allocatable :: temp_gene_ids(:)
-    real(real64), allocatable :: temp_expression_vectors(:,:)
-    integer(int32), allocatable :: temp_gene_to_fam(:)
-    
-    call set_ok(ierr)
-    call set_ok(ios)
-    n_genes_total = size(gene_ids)
-    n_samples = size(expression_vectors, 1)
-    
-    ! Count genes with valid family assignments
-    n_genes_kept = count(gene_to_fam >= 1)
-    
-    if (n_genes_kept == 0) then
-        call set_err_once(ierr, ERR_INVALID_INPUT)
-        return
-    end if
-    
-    ! Allocate temporary arrays for valid genes
-    allocate(valid_indices(n_genes_kept), stat = ios)
-    call check_io_stat(ios, ierr)
-    allocate(temp_gene_ids(n_genes_kept), stat = ios)
-    call check_io_stat(ios, ierr)
-    allocate(temp_expression_vectors(n_samples, n_genes_kept), stat = ios)
-    call check_io_stat(ios, ierr)
-    allocate(temp_gene_to_fam(n_genes_kept), stat = ios)
-    call check_io_stat(ios, ierr)
-    if(is_err(ierr)) return
-    
-    ! Collect indices of genes with valid family assignments
-    j = 1
-    do i = 1, n_genes_total
-        if (gene_to_fam(i) >= 1) then
-            valid_indices(j) = i
-            j = j + 1
-        end if
-    end do
-    
-    ! Copy valid genes to temporary arrays
-    do i = 1, n_genes_kept
-        temp_gene_ids(i) = gene_ids(valid_indices(i))
-        temp_expression_vectors(:, i) = expression_vectors(:, valid_indices(i))
-        temp_gene_to_fam(i) = gene_to_fam(valid_indices(i))
-    end do
-    
-    ! Deallocate original arrays and replace with filtered ones
-    deallocate(gene_ids, expression_vectors, gene_to_fam)
-    
-    call move_alloc(temp_gene_ids, gene_ids)
-    call move_alloc(temp_expression_vectors, expression_vectors)
-    call move_alloc(temp_gene_to_fam, gene_to_fam)
-    
-    if(DEBUG) write(*,*) 'Filtered out ', n_genes_total - n_genes_kept, ' unassigned genes'
-    if(DEBUG) write(*,*) 'Kept ', n_genes_kept, ' genes with valid family assignments'
-end subroutine filter_unassigned_genes
-
 !> Helper subroutine to split strings
 subroutine split_string(input, output, ierr, delimiter)
     character(len=*), intent(in) :: input
@@ -524,6 +454,62 @@ subroutine get_unassigned_mask(gene_to_fam, mask, n_genes_kept)
         if (mask(i)) n_genes_kept = n_genes_kept + 1
     end do
 end subroutine get_unassigned_mask
+
+!> Applies a precomputed mask to filter out unassigned genes
+subroutine apply_unassigned_mask(gene_ids, expression_vectors, gene_to_fam, mask, n_genes_kept, ierr)
+
+    character(len=*), allocatable, intent(inout) :: gene_ids(:)
+    !! gene ids array
+    real(real64), allocatable, intent(inout) :: expression_vectors(:,:)
+    !! expression vectors array
+    integer(int32), allocatable, intent(inout) :: gene_to_fam(:)
+    !! gene to family mapping
+    logical, intent(in) :: mask(:)
+    !! mask for mapping
+    integer(int32), intent(out) :: n_genes_kept
+    !! number of genes kept
+    integer(int32), intent(out) :: ierr
+    !! Error code
+
+    integer(int32) :: i, j, n_genes_total, n_samples, ios
+    character(len=len(gene_ids)), allocatable :: temp_gene_ids(:)
+    real(real64), allocatable :: temp_expression_vectors(:,:)
+    integer(int32), allocatable :: temp_gene_to_fam(:)
+
+    call set_ok(ierr)
+    n_genes_total = size(gene_to_fam)
+    n_samples = size(expression_vectors, 1)
+    n_genes_kept = count(mask)
+
+    if (n_genes_kept == 0) then
+        call set_err_once(ierr, ERR_INVALID_INPUT)
+        return
+    end if
+
+    allocate(temp_gene_ids(n_genes_kept), stat=ios)
+    allocate(temp_expression_vectors(n_samples, n_genes_kept), stat=ios)
+    allocate(temp_gene_to_fam(n_genes_kept), stat=ios)
+    if (ios /= 0) then
+        ierr = ios
+        return
+    end if
+
+    j = 1
+    do i = 1, n_genes_total
+        if (mask(i)) then
+            temp_gene_ids(j) = gene_ids(i)
+            temp_expression_vectors(:, j) = expression_vectors(:, i)
+            temp_gene_to_fam(j) = gene_to_fam(i)
+            j = j + 1
+        end if
+    end do
+
+    deallocate(gene_ids, expression_vectors, gene_to_fam)
+    call move_alloc(temp_gene_ids, gene_ids)
+    call move_alloc(temp_expression_vectors, expression_vectors)
+    call move_alloc(temp_gene_to_fam, gene_to_fam)
+end subroutine
+
 
 end module tox_data_tools
 

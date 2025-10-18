@@ -967,7 +967,7 @@ contains
                 call load_gene_ids(gene_ids, extracted_gene_ids_file, ierr)
                 if(is_err(ierr)) return
             else
-                if(DEBUG) print *, "Error getting metadata for gene_ids file"
+                print *, "Error getting metadata for gene_ids file"
                 return
             end if
         end if
@@ -982,7 +982,7 @@ contains
                 call load_expression_vectors(expression, extracted_expression_file, ierr)
                 if(is_err(ierr)) return
             else
-                if(DEBUG) print *, "Error getting metadata for expression file"
+                print *, "Error getting metadata for expression file"
                 return
             end if
         end if
@@ -997,7 +997,7 @@ contains
                 call load_gene_to_family(gene_to_family, extracted_gene_to_family_file, ierr)
                 if(is_err(ierr)) return
             else
-                if(DEBUG) print *, "Error getting metadata for gene_to_family file"
+                print *, "Error getting metadata for gene_to_family file"
                 return
             end if
         end if
@@ -1011,7 +1011,7 @@ contains
                 allocate(character(len=char_len) :: family_ids(dims(1)))
                 call load_family_ids(family_ids, extracted_family_ids_file, ierr)
             else
-                if(DEBUG) print *, "Error getting metadata for family_ids file"
+                print *, "Error getting metadata for family_ids file"
                 return
             end if
         end if
@@ -1026,7 +1026,7 @@ contains
                 call load_family_centroids(family_centroids, extracted_family_centroids_file, ierr)
                 if(is_err(ierr)) return
             else
-                if(DEBUG) print *, "Error getting metadata for family_centroids file"
+                print *, "Error getting metadata for family_centroids file"
                 return
             end if
         end if
@@ -1041,7 +1041,7 @@ contains
                 call load_shift_vectors(shift_vectors, extracted_shift_vectors_file, ierr)
                 if(is_err(ierr)) return
             else
-                if(DEBUG) print *, "Error getting metadata for shift_vectors file"
+                print *, "Error getting metadata for shift_vectors file"
                 return
             end if
         end if

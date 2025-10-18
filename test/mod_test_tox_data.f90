@@ -72,7 +72,7 @@ contains
   subroutine setup_global_data()
     character(len=256), allocatable :: expr_file(:)
     integer(int32) :: ierr, i, n_genes_kept
-    logical, allocatable :: ortholog_mask(:)
+    logical, allocatable :: ortholog_mask(:), unassigned_mask(:)
     integer(int32), allocatable :: selected_indices(:), value_cols(:)
 
     ! Initialize file lists
@@ -94,6 +94,7 @@ contains
     allocate(kallisto_expr(total_samples, n_genes))
     allocate(gene_family_ids(n_families))
     allocate(gene_to_fam(n_genes))
+    allocate(unassigned_mask(n_genes))
 
     ! Read gene IDs
     call read_gene_ids_from_tsv_file(expr_file(1), gene_ids, 1, 1, ierr)
@@ -119,7 +120,9 @@ contains
     !   write(*,*) trim(gene_family_ids(i))
     ! end do
     ! Filter out genes without family assignments
-    call filter_unassigned_genes(gene_ids, kallisto_expr, gene_to_fam, n_genes_kept, ierr)
+    call get_unassigned_mask(gene_to_fam, unassigned_mask, n_genes_kept)
+    call apply_unassigned_mask(gene_ids, kallisto_expr, gene_to_fam, unassigned_mask, n_genes_kept, ierr)
+
     call assert_equal_int(ierr, 0, "Filtering unassigned genes should succeed")
     n_genes = n_genes_kept  ! Update n_genes to reflect the filtered count
 
