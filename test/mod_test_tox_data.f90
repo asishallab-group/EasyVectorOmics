@@ -1015,11 +1015,12 @@ contains
     type(hashset_type) :: test_hashset
     character(len=6), allocatable :: keys(:)
     integer(int32), allocatable :: values(:)
-    integer(int32) :: value, i
+    integer(int32) :: value, i, ierr
     logical :: in_hashset
 
     allocate(keys(5))
     allocate(values(5))
+    call set_ok(ierr)
 
     keys = [ &
       'First ', &
@@ -1054,8 +1055,10 @@ contains
 
     call hashset_create(test_hashset)
     do i = 1, 5
-      call hashset_put(test_hashset, keys(i))
+      call hashset_put(test_hashset, keys(i), ierr)
     end do
+    call assert_equal_int(ierr, ERR_INVALID_INPUT, 'Inserting duplicate key should return error')
+    call set_ok(ierr)
 
     do i = 1, 5
       in_hashset = is_in_hashset(test_hashset, keys(i))
@@ -1077,7 +1080,7 @@ contains
       allocate(test_gene_ids(3))
       test_gene_ids = ['NP_001000001.1', 'NP_001000002.1', 'NP_001000001.1']  ! Duplicate
       
-      call validate_gene_ids_uniqueness(test_gene_ids, ierr)
+      call validate_string_array_uniqueness(test_gene_ids, ierr)
       call assert_equal_int(ierr, ERR_INVALID_INPUT, "Should detect duplicate gene IDs")
       
       deallocate(test_gene_ids)

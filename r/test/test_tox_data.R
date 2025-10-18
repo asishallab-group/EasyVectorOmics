@@ -71,10 +71,10 @@ n_samples <- nrow(kallisto_expr)
 
 # Validate individual components
 cat("Validating gene IDs uniqueness...\n")
-validate_gene_ids_uniqueness(gene_ids, n_genes)
+validate_string_array_uniqueness(gene_ids, n_genes)
 
 cat("Validating family IDs uniqueness...\n")
-validate_family_ids_uniqueness(gene_family_ids, n_families)
+validate_string_array_uniqueness(gene_family_ids, n_families)
 
 cat("Validating gene-to-family mapping...\n")
 validate_gene_to_family_mapping(gene_to_fam, n_genes, n_families)

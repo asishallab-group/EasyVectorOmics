@@ -12,8 +12,7 @@ module tox_data_validation
     public :: validate_family_centroids
     public :: validate_shift_vectors
     public :: check_for_nan_inf
-    public :: validate_gene_ids_uniqueness
-    public :: validate_family_ids_uniqueness
+    public :: validate_string_array_uniqueness
     public :: validate_empty_strings
     public :: validate_all_data
     
@@ -315,80 +314,29 @@ contains
     end subroutine check_for_nan_inf
 
     !> Validate that no gene ids appears more than once
-    subroutine validate_gene_ids_uniqueness(gene_ids, ierr)
-        use f42_utils, only: quicksort_char
-        character(len=*), intent(in) :: gene_ids(:)
+    subroutine validate_string_array_uniqueness(str_arr, ierr)
+        use xxh3_hashmap_module, only: hashset_type, hashset_create, hashset_put, hashset_destroy
+        character(len=*), intent(in) :: str_arr(:)
             !! gene ids array
         integer(int32), intent(out) :: ierr
             !! Error code 
-        integer(int32) :: i, j, duplicate_count
-        integer(int32), allocatable :: perm(:), stack_left(:), stack_right(:)
-        
-        call allocate_sorting(perm, stack_left, stack_right, size(gene_ids))
-        call quicksort_char(gene_ids, perm, size(gene_ids), stack_left, stack_right)
-
-        call set_ok(ierr)
-        duplicate_count = 0
-        
-        do i = 1, size(gene_ids) - 1
-            if(trim(gene_ids(perm(i))) == trim(gene_ids(perm(i+1)))) then
-                duplicate_count = duplicate_count + 1
-                if (duplicate_count <= 10) then
-                    call set_err_once(ierr, ERR_INVALID_INPUT)
-                    if(DEBUG) write(*,*) 'Error: Duplicate gene ID found: "', trim(gene_ids(perm(i))), '"'
-                end if
-            end if
-        end do
-        
-    end subroutine validate_gene_ids_uniqueness
-
-    !> Validate family ids uniqueness
-    subroutine validate_family_ids_uniqueness(gene_family_ids, ierr)
-        use f42_utils, only: quicksort_char
-        character(len=*), intent(in) :: gene_family_ids(:)
-            !! gene to family mapping
-        integer(int32), intent(out) :: ierr
-            !! Error code
-        
-        integer(int32) :: i, j, duplicate_count
-        integer(int32), allocatable :: perm(:), stack_left(:), stack_right(:)
-
-        call allocate_sorting(perm, stack_left, stack_right, size(gene_family_ids))
-
-        call quicksort_char(gene_family_ids, perm, size(gene_family_ids), stack_left, stack_right)
-        
-        call set_ok(ierr)
-        duplicate_count = 0
-        
-        do i = 1, size(gene_family_ids) - 1 
-            if (trim(gene_family_ids(perm(i))) == trim(gene_family_ids(perm(i+1)))) then
-                duplicate_count = duplicate_count + 1
-                if (duplicate_count <= 10) then
-                    call set_err_once(ierr, ERR_INVALID_INPUT)
-                    if(DEBUG) write(*,*) 'Error: Duplicate family ID found: "', gene_family_ids(perm(i)), '"'
-                end if
-            end if
-        end do
-        
-    end subroutine validate_family_ids_uniqueness
-
-    subroutine allocate_sorting(perm, stack_left, stack_right, array_size)
-        integer(int32), intent(out), allocatable :: perm(:)
-            !! permutation array
-        integer(int32), intent(out), allocatable :: stack_left(:)
-            !! Left stack for sorting
-        integer(int32), intent(out), allocatable :: stack_right(:)
-            !! Right stack for sorting
-        integer(int32), intent(in) :: array_size
-            !! size of the array to sort
         integer(int32) :: i
+        type(hashset_type) :: temp_set
 
-        allocate(perm(array_size))
-        perm = [(i, i=1, array_size)]
-
-        allocate(stack_left(array_size))
-        allocate(stack_right(array_size))
-    end subroutine allocate_sorting
+        call set_ok(ierr)   
+        call hashset_create(temp_set, initial_size=size(str_arr))     
+        
+        do i = 1, size(str_arr)
+            call hashset_put(temp_set, str_arr(i), ierr)
+            if (.not. is_ok(ierr)) then
+                if(DEBUG) write(*,*) 'Error: Duplicate string found: ', str_arr(i)
+                call hashset_destroy(temp_set)
+                return
+            end if
+        end do
+        call hashset_destroy(temp_set)
+        
+    end subroutine validate_string_array_uniqueness
 
     !> Validate that strings in an array are not empty
     subroutine validate_empty_strings(string_array, array_name, ierr)
@@ -487,11 +435,11 @@ contains
 
         ! 6. Check uniqueness (optional, can be slow for large datasets)
         if (do_check_uniqueness) then
-            call validate_gene_ids_uniqueness(gene_ids, ierr)
+            call validate_string_array_uniqueness(gene_ids, ierr)
             if (.not. is_ok(ierr)) return
             
             if (n_families > 0) then
-                call validate_family_ids_uniqueness(gene_family_ids, ierr)
+                call validate_string_array_uniqueness(gene_family_ids, ierr)
                 if (.not. is_ok(ierr)) return
             end if
         end if
@@ -583,80 +531,42 @@ subroutine validate_shift_vectors_R(shift_vectors, expression_vectors, family_ce
 end subroutine validate_shift_vectors_R
 
 !> R Binding to validate gene ids uniqueness
-subroutine validate_gene_ids_uniqueness_R(gene_ids_raw, gene_ids_len, n_genes, ierr)
-    use tox_data_validation, only: validate_gene_ids_uniqueness
+subroutine validate_string_array_uniqueness_R(str_arr, str_len, n_strings, ierr)
+    use tox_data_validation, only: validate_string_array_uniqueness
     use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
     use tox_conversions, only: c_char_1d_as_string
     use iso_c_binding, only: c_char
     use iso_fortran_env, only: int32
-    integer(int32), intent(in) :: gene_ids_len
+    integer(int32), intent(in) :: str_len
         !! Length of the gene ids
-    integer(int32), intent(in) :: n_genes
+    integer(int32), intent(in) :: n_strings
         !! Number of genes
-    character(kind=c_char, len=1), intent(in) :: gene_ids_raw(gene_ids_len, n_genes)
+    character(kind=c_char, len=1), intent(in) :: str_arr(str_len, n_strings)
         !! Gene ids array
     integer(int32), intent(out) :: ierr
         !! Error code
 
-    character(len=:), allocatable :: gene_ids(:)
+    character(len=:), allocatable :: temp_str_arr(:)
     character(len=:), allocatable :: temp_str
     integer(int32) :: i, ios
 
     call set_ok(ierr)
     call set_ok(ios)
 
-    allocate(character(len=gene_ids_len) :: gene_ids(n_genes), stat=ios)
+    allocate(character(len=str_len) :: temp_str_arr(n_strings), stat=ios)
     if(.not. is_ok(ios)) then
         call set_err_once(ierr, ERR_ALLOC_FAIL)
         return
     end if
 
-    do i = 1, n_genes
-        call c_char_1d_as_string(gene_ids_raw(:,i), temp_str, ierr)
+    do i = 1, n_strings
+        call c_char_1d_as_string(str_arr(:,i), temp_str, ierr)
         if (.not. is_ok(ierr)) return
-        gene_ids(i) = temp_str
+        temp_str_arr(i) = temp_str
     end do
 
-    call validate_gene_ids_uniqueness(gene_ids, ierr)
-end subroutine validate_gene_ids_uniqueness_R
-
-!> R Binding to validate family ids uniqueness
-subroutine validate_family_ids_uniqueness_R(family_ids_raw, fam_len, n_families, ierr)
-    use tox_data_validation, only: validate_family_ids_uniqueness
-    use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
-    use tox_conversions, only: c_char_1d_as_string
-    use iso_c_binding, only: c_char
-    use iso_fortran_env, only: int32
-    integer(int32), intent(in) :: fam_len
-        !! Length of the families names
-    integer(int32), intent(in) :: n_families
-        !! Number of families
-    character(kind=c_char, len=1), intent(in) :: family_ids_raw(fam_len, n_families)
-        !! Familiy ids array
-    integer(int32), intent(out) :: ierr
-        !! Error code
-
-    character(len=:), allocatable :: family_ids(:)
-    character(len=:), ALLOCATABLE :: temp_str
-    integer(int32) :: i, ios
-
-    call set_ok(ierr)
-    call set_ok(ios)
-
-    allocate(character(len=fam_len) :: family_ids(n_families), stat=ios)
-    if(.not. is_ok(ios)) then
-        call set_err_once(ierr, ERR_ALLOC_FAIL)
-        return
-    end if
-
-    do i = 1, n_families
-        call c_char_1d_as_string(family_ids_raw(:,i), temp_str, ierr)
-        if (.not. is_ok(ierr)) return
-        family_ids(i) = temp_str
-    end do
-
-    call validate_family_ids_uniqueness(family_ids, ierr)
-end subroutine validate_family_ids_uniqueness_R
+    call validate_string_array_uniqueness(temp_str_arr, ierr)
+end subroutine validate_string_array_uniqueness_R
 
 !> R Binding to validate data structure
 subroutine validate_data_structure_R(n_genes, n_families, n_samples, &
@@ -875,71 +785,38 @@ subroutine validate_shift_vectors_C(shift_vectors, expression_vectors, family_ce
 end subroutine validate_shift_vectors_C
 
 !> C Binding to validate gene ids uniqueness
-subroutine validate_gene_ids_uniqueness_C(gene_ids_raw, gene_ids_len, n_genes, ierr) bind(C, name="validate_gene_ids_uniqueness_C")
+subroutine validate_string_array_uniqueness_C(str_arr, str_len, n_strings, ierr) bind(C, name="validate_string_array_uniqueness_C")
     use iso_c_binding, only: c_int, c_char
-    use tox_data_validation, only: validate_gene_ids_uniqueness
+    use tox_data_validation, only: validate_string_array_uniqueness
     use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
     use tox_conversions, only: c_char_1d_as_string
     implicit none
-    integer(c_int), intent(in), value :: gene_ids_len
+    integer(c_int), intent(in), value :: str_len
         !! Length of gene ids 
-    integer(c_int), intent(in), value :: n_genes
+    integer(c_int), intent(in), value :: n_strings
         !! Number of genes
-    character(kind=c_char, len=1), intent(in) :: gene_ids_raw(gene_ids_len, n_genes)
+    character(kind=c_char, len=1), intent(in) :: str_arr(str_len, n_strings)
         !! Pointer to gene ids array
     integer(c_int), intent(out) :: ierr 
         !! Error code
 
-    character(len=:), allocatable :: gene_ids(:)
+    character(len=:), allocatable :: temp_str_arr(:)
     character(len=:), allocatable :: temp_str
     integer :: i, ios
     
     call set_ok(ierr)
-    allocate(character(len=gene_ids_len) :: gene_ids(n_genes), stat=ios)
+    allocate(character(len=str_len) :: temp_str_arr(n_strings), stat=ios)
     if(.not. is_ok(ios)) then
         call set_err_once(ierr, ERR_ALLOC_FAIL)
         return
     end if
-    do i = 1, n_genes
-        call c_char_1d_as_string(gene_ids_raw(:,i), temp_str, ierr)
+    do i = 1, n_strings
+        call c_char_1d_as_string(str_arr(:,i), temp_str, ierr)
         if (.not. is_ok(ierr)) return
-        gene_ids(i) = temp_str
+        temp_str_arr(i) = temp_str
     end do
-    call validate_gene_ids_uniqueness(gene_ids, ierr)
-end subroutine validate_gene_ids_uniqueness_C
-
-!> C Binding to validate family ids uniqueness
-subroutine validate_family_ids_uniqueness_C(family_ids_raw, fam_len, n_families, ierr) bind(C, name="validate_family_ids_uniqueness_C")
-    use iso_c_binding, only: c_int, c_char
-    use tox_data_validation, only: validate_family_ids_uniqueness
-    use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
-    use tox_conversions, only: c_char_1d_as_string
-    implicit none
-    integer(c_int), intent(in), value :: fam_len
-        !! length of family ids
-    integer(c_int), intent(in), value :: n_families
-        !! Number of families
-    character(kind=c_char, len=1), intent(in) :: family_ids_raw(fam_len, n_families)
-        !! Pointer to family ids array
-    integer(c_int), intent(out) :: ierr
-        !! Error code
-    character(len=:), allocatable :: family_ids(:)
-    character(len=:), allocatable :: temp_str
-    integer :: i, ios
-
-    call set_ok(ierr)
-    allocate(character(len=fam_len) :: family_ids(n_families), stat=ios)
-    if(.not. is_ok(ios)) then
-        call set_err_once(ierr, ERR_ALLOC_FAIL)
-        return
-    end if
-    do i = 1, n_families
-        call c_char_1d_as_string(family_ids_raw(:,i), temp_str, ierr)
-        if (.not. is_ok(ierr)) return
-        family_ids(i) = temp_str
-    end do
-    call validate_family_ids_uniqueness(family_ids, ierr)
-end subroutine validate_family_ids_uniqueness_C
+    call validate_string_array_uniqueness(temp_str_arr, ierr)
+end subroutine validate_string_array_uniqueness_C
 
 !> C Binding to validate data structure
 subroutine validate_data_structure_C(n_genes, n_families, n_samples, &

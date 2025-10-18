@@ -3,6 +3,7 @@ module xxh3_hashmap_module
     use iso_fortran_env, only: int32, int64
     use f42_utils, only: next_power_of_two
     use config, only: DEBUG
+    use tox_errors, only: set_ok, set_err, ERR_INVALID_INPUT
     implicit none
     private
     
@@ -240,14 +241,17 @@ subroutine hashmap_put(map, key, value)
 end subroutine hashmap_put
 
 !> Insert a key-value pair
-subroutine hashset_put(set, key)
+subroutine hashset_put(set, key, ierr)
     type(hashset_type), intent(inout) :: set
         !! hashmap to insert into
     character(len=*), intent(in) :: key
         !! Key to store
+    integer(int32), intent(out) :: ierr
+        !! Error code
     
     integer(int32) :: hash_idx
     type(hashset_node_type), pointer :: new_node, current
+    call set_ok(ierr)
     
     if (debug_hashing) print *, "PUT: ", trim(key)
     
@@ -265,6 +269,7 @@ subroutine hashset_put(set, key)
     current => set%buckets(hash_idx)%next
     do while (associated(current))
         if (current%key == key) then
+            call set_err(ierr, ERR_INVALID_INPUT)
             if(DEBUG) print *, "Warning: Duplicate key"
             return
         end if
@@ -382,8 +387,9 @@ subroutine resize_hashset(set)
         !! set to resize
     
     type(hashset_type) :: new_set
-    integer(int32) :: i, new_size
+    integer(int32) :: i, new_size, ierr
     type(hashset_node_type), pointer :: current, next
+    call set_ok(ierr)
     
     if (DEBUG) print *, "Resizing hashmap from ", set%size, " to ", set%size * 2
     
@@ -395,7 +401,7 @@ subroutine resize_hashset(set)
     do i = 1, set%size
         current => set%buckets(i)%next
         do while (associated(current))
-            call hashset_put(new_set, current%key)
+            call hashset_put(new_set, current%key, ierr)
             next => current%next
             deallocate(current)
             current => next

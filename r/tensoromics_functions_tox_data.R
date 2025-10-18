@@ -359,35 +359,18 @@ validate_shift_vectors <- function(shift_vectors, expression_vectors, family_cen
   list(ierr = out$ierr)
 }
 
-#' Validate uniqueness of gene IDs
-#' @param gene_ids Character vector of gene IDs
-#' @param n_genes Number of genes
-#' Note: Uses quicksort internally which may increase memory usage temporarily for large datasets
-validate_gene_ids_uniqueness <- function(gene_ids, n_genes) {
-  gene_len <- max(nchar(gene_ids)) + 1  # +1 for null terminator
-  gene_raw <- strings_to_raw_matrix(gene_ids, gene_len)
+#' Validate uniqueness of string array
+#' @param string_arr Character vector of gene IDs
+#' @param n_strings Number of genes
+#' Note: Uses hashset internally which may increase memory usage temporarily for large datasets
+validate_string_array_uniqueness <- function(string_arr, n_strings) {
+  str_len <- max(nchar(string_arr)) + 1  # +1 for null terminator
+  str_raw <- strings_to_raw_matrix(string_arr, str_len)
   ierr <- integer(1)
-  out <- .Fortran("validate_gene_ids_uniqueness_R",
-                  gene_raw,                    # Pass raw bytes directly
-                  as.integer(gene_len),
-                  as.integer(n_genes),
-                  ierr = ierr)
-  check_err_code(out$ierr)
-  list(ierr = out$ierr)
-}
-
-#' Validate uniqueness of family IDs
-#' @param family_ids Character vector of family IDs
-#' @param n_families Number of gene families
-#' Note: Uses quicksort internally which may increase memory usage temporarily for large datasets
-validate_family_ids_uniqueness <- function(family_ids, n_families) {
-  fam_len <- max(nchar(family_ids)) + 1  # +1 for null terminator
-  fam_raw <- strings_to_raw_matrix(family_ids, fam_len)
-  ierr <- integer(1)
-  out <- .Fortran("validate_family_ids_uniqueness_R",
-                  fam_raw,                     # Pass raw bytes directly
-                  as.integer(fam_len),
-                  as.integer(n_families),
+  out <- .Fortran("validate_string_array_uniqueness_R",
+                  str_raw,                    # Pass raw bytes directly
+                  as.integer(str_len),
+                  as.integer(n_strings),
                   ierr = ierr)
   check_err_code(out$ierr)
   list(ierr = out$ierr)

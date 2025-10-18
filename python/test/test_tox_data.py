@@ -19,8 +19,7 @@ from tensoromics_functions_tox_data import (
     validate_data_structure,
     validate_expression_data,
     validate_family_centroids,
-    validate_gene_ids_uniqueness,
-    validate_family_ids_uniqueness,
+    validate_string_array_uniqueness,
     validate_gene_to_family_mapping,
     validate_shift_vectors,
     save_tox_data,
@@ -100,8 +99,8 @@ print("filtered_gene_ids sample:", filtered_gene_ids[:5])
 print("filtered_kallisto_expr shape:", filtered_kallisto_expr.shape)
 print("filtered_gene_to_fam sample:", filtered_gene_to_fam[:10])
 
-validate_gene_ids_uniqueness(gene_ids)
-validate_family_ids_uniqueness(family_ids)
+validate_string_array_uniqueness(gene_ids)
+validate_string_array_uniqueness(family_ids)
 validate_expression_data(kallisto_expr, True)
 
 ortholog_set = np.array([True for i in range(n_genes_kept)])

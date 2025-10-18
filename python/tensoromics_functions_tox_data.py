@@ -118,21 +118,13 @@ lib.validate_shift_vectors_C.argtypes = [
 ]
 lib.validate_shift_vectors_C.restype = None
 
-lib.validate_gene_ids_uniqueness_C.argtypes = [
+lib.validate_string_array_uniqueness_C.argtypes = [
     ctypes.POINTER(ctypes.c_char), # gene_ids_raw
     ctypes.c_int,                 # gene_ids_len
     ctypes.c_int,                 # n_genes
     ctypes.POINTER(ctypes.c_int)  # ierr
 ]
-lib.validate_gene_ids_uniqueness_C.restype = None
-
-lib.validate_family_ids_uniqueness_C.argtypes = [
-    ctypes.POINTER(ctypes.c_char), # family_ids_raw
-    ctypes.c_int,                 # fam_len
-    ctypes.c_int,                 # n_families
-    ctypes.POINTER(ctypes.c_int)  # ierr
-]
-lib.validate_family_ids_uniqueness_C.restype = None
+lib.validate_string_array_uniqueness_C.restype = None
 
 lib.validate_data_structure_C.argtypes = [
     ctypes.c_int,                 # n_genes
@@ -581,40 +573,21 @@ def validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, 
     )
     check_err_code(ierr.value)
 
-def validate_gene_ids_uniqueness(gene_ids):
+def validate_string_array_uniqueness(strings):
     """
-    Validate uniqueness of gene IDs - Note: Uses quicksort internally which may increase memory usage temporarily for large datasets
+    Validate uniqueness of strings - Note: Uses hashset internally which may increase memory usage temporarily for large datasets
     Args:
-        gene_ids: List of gene IDs
+        strings: List of strings
     """
-    gene_ids = _ensure_string_array(gene_ids)
-    gene_ids_len = max(len(g) for g in gene_ids)
-    n_genes = len(gene_ids)
-    gene_ids_raw = strings_to_c_char_matrix(gene_ids, gene_ids_len)
+    strings = _ensure_string_array(strings)
+    string_len = max(len(g) for g in strings)
+    n_strings = len(strings)
+    gene_ids_raw = strings_to_c_char_matrix(strings, string_len)
     ierr = ctypes.c_int()
-    lib.validate_gene_ids_uniqueness_C(
+    lib.validate_string_array_uniqueness_C(
         gene_ids_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
-        ctypes.c_int(gene_ids_len),
-        ctypes.c_int(n_genes),
-        ctypes.byref(ierr)
-    )
-    check_err_code(ierr.value)
-
-def validate_family_ids_uniqueness(family_ids):
-    """
-    Validate uniqueness of family IDs - Note: Uses quicksort internally which may increase memory usage temporarily for large datasets
-    Args:
-        family_ids: List of family IDs
-    """
-    family_ids = _ensure_string_array(family_ids)
-    fam_len = max(len(f) for f in family_ids)
-    n_families = len(family_ids)
-    family_ids_raw = strings_to_c_char_matrix(family_ids, fam_len)
-    ierr = ctypes.c_int()
-    lib.validate_family_ids_uniqueness_C(
-        family_ids_raw.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
-        ctypes.c_int(fam_len),
-        ctypes.c_int(n_families),
+        ctypes.c_int(string_len),
+        ctypes.c_int(n_strings),
         ctypes.byref(ierr)
     )
     check_err_code(ierr.value)
