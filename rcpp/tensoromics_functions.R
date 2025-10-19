@@ -50,7 +50,7 @@ tox_compute_family_scaling <- function(distances, gene_to_fam, n_families, exper
   n_genes <- as.integer(length(distances))
 
   if (n_genes == 0) {
-    check_err_code(202)
+    check_err_code(212)
   }
   if (length(gene_to_fam) != n_genes) {
     check_err_code(206) 
@@ -238,7 +238,7 @@ tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile =
 
   n_genes <- as.integer(length(distances))
   if (n_genes == 0) {
-    check_err_code(202)
+    check_err_code(212)
   }
   if (length(gene_to_fam) != n_genes) {
     check_err_code(206)
