@@ -29,6 +29,7 @@ source("r/error_handling.R")
 #'
 #' @return A list of computed scaling and LOESS arrays (structure as returned by the Rcpp implementation).
 tox_compute_family_scaling <- function(distances, gene_to_fam, n_families, expert = FALSE) {
+ 
   # Input validation
   if (!is.numeric(distances)) {
     check_err_code(207)
@@ -42,7 +43,7 @@ tox_compute_family_scaling <- function(distances, gene_to_fam, n_families, exper
   if (!is.logical(expert)) {
      check_err_code(201) 
   }
-
+# Type conversion
   distances <- as.numeric(distances)
   gene_to_fam <- as.integer(gene_to_fam)
   n_families <- as.integer(n_families)
@@ -60,7 +61,7 @@ tox_compute_family_scaling <- function(distances, gene_to_fam, n_families, exper
   if (any(gene_to_fam < 1) || any(gene_to_fam > n_families)) {
     check_err_code(209)
   }
-  
+
   # Allocate outputs
   dscale <- numeric(n_families)
   loess_x <- numeric(n_families)
@@ -73,6 +74,7 @@ tox_compute_family_scaling <- function(distances, gene_to_fam, n_families, exper
     stack_right_tmp <- integer(n_genes)
     family_distances <- numeric(n_genes)
 
+# Call appropriate Rcpp wrapper
     result <- tox_compute_family_scaling_expert_rcpp(
       n_genes, n_families,
       distances, gene_to_fam,
@@ -104,6 +106,7 @@ tox_compute_family_scaling <- function(distances, gene_to_fam, n_families, exper
 #'
 #' @return A list with RDI outputs (e.g., rdi, sorted_rdi, permutation), as returned by the Rcpp implementation.
 tox_compute_rdi <- function(distances, gene_to_fam, dscale) {
+  # Input validation
   if (!is.numeric(distances)) {
     check_err_code(207)
   }
@@ -113,7 +116,7 @@ tox_compute_rdi <- function(distances, gene_to_fam, dscale) {
   if (!is.numeric(dscale)) {
     check_err_code(207) 
   }
-
+# Type conversion
   distances <- as.numeric(distances)
   gene_to_fam <- as.integer(gene_to_fam)
   dscale <- as.numeric(dscale)
@@ -133,7 +136,7 @@ tox_compute_rdi <- function(distances, gene_to_fam, dscale) {
   if (any(gene_to_fam < 1) || any(gene_to_fam > n_families)) {
     check_err_code(209)
   }
-
+# Allocate outputs
   rdi <- numeric(n_genes)
   sorted_rdi <- numeric(n_genes)
   perm <- integer(n_genes)
@@ -157,6 +160,7 @@ tox_compute_rdi <- function(distances, gene_to_fam, dscale) {
 #'
 #' @return Integer vector of 0/1 flags (or equivalent structure) indicating outliers, as returned by the Rcpp implementation.
 tox_identify_outliers <- function(rdi, sorted_rdi, percentile = 95.0) {
+  # Input validation
   if (!is.numeric(rdi)) {
      check_err_code(207) 
   }
@@ -166,7 +170,7 @@ tox_identify_outliers <- function(rdi, sorted_rdi, percentile = 95.0) {
   if (!is.numeric(percentile)) {
     check_err_code(207)
   }
-
+# Type conversion
   rdi <- as.numeric(rdi)
   sorted_rdi <- as.numeric(sorted_rdi)
   percentile <- as.numeric(percentile)
@@ -186,7 +190,7 @@ tox_identify_outliers <- function(rdi, sorted_rdi, percentile = 95.0) {
   }
 
   is_outlier_int <- integer(n_genes)
-
+# Call Rcpp wrapper
   result <- tox_identify_outliers_rcpp(
     n_genes,
     rdi, sorted_rdi,
@@ -213,6 +217,7 @@ tox_identify_outliers <- function(rdi, sorted_rdi, percentile = 95.0) {
 #'
 #' @return A list with pipeline outputs (e.g., RDI values, sorted RDI, and outlier flags), as returned by the Rcpp implementation.
 tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile = 95.0) {
+  # Input validation
   if (!is.numeric(distances)) {
      check_err_code(207) 
   }
@@ -225,7 +230,7 @@ tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile =
   if (!is.numeric(percentile)) {
     check_err_code(207)
   }
-
+# Type conversion
   distances <- as.numeric(distances)
   gene_to_fam <- as.integer(gene_to_fam)
   n_families <- as.integer(n_families)
@@ -250,7 +255,7 @@ tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile =
   if (percentile < 0 || percentile > 100) {
     check_err_code(210)
   }
-
+# Allocate outputs and work arrays
   work_array <- numeric(n_genes)
   perm <- integer(n_genes)
   stack_left <- integer(n_genes)
@@ -259,7 +264,7 @@ tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile =
   loess_x <- numeric(n_families)
   loess_y <- numeric(n_families)
   loess_n <- integer(n_families)
-
+# Call Rcpp wrapper
   result <- tox_detect_outliers_rcpp(
     n_genes, n_families,
     distances, gene_to_fam,
