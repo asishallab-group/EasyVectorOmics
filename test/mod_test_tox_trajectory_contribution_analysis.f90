@@ -2,6 +2,7 @@
 module mod_test_tox_trajectory_contribution_analysis
     use asserts
     use, intrinsic :: iso_fortran_env, only: real64, int32
+    use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan
     use tox_trajectory_contribution_analysis
     use tox_errors
     implicit none
@@ -76,7 +77,7 @@ contains
         call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_trajectory_contribution: Invalid mode")
 
         ! Case 5: NaN
-        factor = [1.0_real64, 0.0_real64 / 0.0_real64, 3.0_real64]
+        factor = [1.0_real64, ieee_value(0.0_real64, ieee_quiet_nan), 3.0_real64]
         dependent = [1.0_real64, 2.0_real64, 3.0_real64]
 
         call trajectory_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
@@ -131,7 +132,7 @@ contains
         call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_spike_contribution: Invalid mode")
 
         ! Case 5: NaN
-        factor = [1.0_real64, 0.0_real64 / 0.0_real64, 3.0_real64]
+        factor = [1.0_real64, ieee_value(0.0_real64, ieee_quiet_nan), 3.0_real64]
         dependent = [1.0_real64, 2.0_real64, 3.0_real64]
 
         call spike_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
