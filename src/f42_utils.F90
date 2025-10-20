@@ -442,19 +442,19 @@ contains
     ! Input validation
     n = size(data)
     if (n == 0) then
-      call set_err_once(ierr, ERROR_EMPTY_INPUT)
+      call set_err_once(ierr, ERR_EMPTY_INPUT)
       value = 0.0_real64
       return
     end if
     
     if (size(permutation) /= n) then
-      call set_err_once(ierr, ERROR_INVALID_INPUT)
+      call set_err_once(ierr, ERR_INVALID_INPUT)
       value = 0.0_real64
       return
     end if
     
     if (percentile < 0.0_real64 .or. percentile > 100.0_real64) then
-      call set_err_once(ierr, ERROR_INVALID_INPUT)
+      call set_err_once(ierr, ERR_INVALID_INPUT)
       value = 0.0_real64
       return
     end if
@@ -486,13 +486,13 @@ contains
   end subroutine calc_percentile
 
   subroutine calc_percentile_alloc(array, percentile, value, ierr)
-    use tox_errors, only: ERROR_EMPTY_INPUT, ERR_ALLOC_FAIL, set_ok, set_err, is_err
+    use tox_errors, only: ERR_EMPTY_INPUT, ERR_ALLOC_FAIL, set_ok, set_err, is_err
     real(real64), intent(in) :: array(:)
     real(real64), intent(in) :: percentile
     real(real64), intent(out) :: value
     integer(int32), intent(out) :: ierr
 
-    integer(int32) :: n
+    integer(int32) :: n, i
     integer(int32), allocatable :: perm(:)
     integer(int32), allocatable :: stack_left(:), stack_right(:)
 
@@ -501,7 +501,7 @@ contains
     call set_ok(ierr)
 
     if (n == 0) then
-      call set_err_once(ierr, ERROR_EMPTY_INPUT)
+      call set_err_once(ierr, ERR_EMPTY_INPUT)
       value = 0.0_real64
       return
     end if

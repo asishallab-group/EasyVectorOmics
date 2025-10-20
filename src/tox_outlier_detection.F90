@@ -2,9 +2,9 @@
 !! Provides functionality for detecting outliers in trajectory and spike contributions
 module tox_trajectory_contribution_analysis
     use, intrinsic :: iso_fortran_env, only: real64, int32
-    use tox_errors, only: ERROR_OK, ERROR_INVALID_INPUT, ERROR_EMPTY_INPUT, &
-                         ERROR_ALLOC_FAIL, set_ok, set_err_once, is_err
-    use f42_utils, only: calc_percentile
+    use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, &
+                         ERR_ALLOC_FAIL, set_ok, set_err, is_err
+    use f42_utils, only: calc_percentile, calc_percentile_alloc, sort_real
     
     implicit none
     
@@ -48,22 +48,22 @@ contains
         n_samples = size(spike_contribs, 2)
         
         if (n_timepoints == 0 .or. n_samples == 0) then
-            call set_err_once(ierr, ERR_EMPTY_INPUT)
+            call set_err(ierr, ERR_EMPTY_INPUT)
             return
         end if
         
         if (size(thresholds) /= n_timepoints) then
-            call set_err_once(ierr, ERR_INVALID_INPUT)
+            call set_err(ierr, ERR_INVALID_INPUT)
             return
         end if
         
         if (size(permutation, 1) /= n_timepoints .or. size(permutation, 2) /= n_samples) then
-            call set_err_once(ierr, ERR_INVALID_INPUT)
+            call set_err(ierr, ERR_INVALID_INPUT)
             return
         end if
         
         if (percentile_val < 0.0_real64 .or. percentile_val > 100.0_real64) then
-            call set_err_once(ierr, ERR_INVALID_INPUT)
+            call set_err(ierr, ERR_INVALID_INPUT)
             return
         end if
         
@@ -85,7 +85,7 @@ contains
     !!
     !! Convenience version that handles workspace allocation and sorting internally.
     !! For performance-critical code, use calc_spike_thresholds with pre-computed permutations.
-    pure subroutine calc_spike_thresholds_alloc(spike_contribs, percentile_val, thresholds, ierr)
+    subroutine calc_spike_thresholds_alloc(spike_contribs, percentile_val, thresholds, ierr)
         real(real64), intent(in) :: spike_contribs(:, :)
         !! 2D array of spike contributions [n_timepoints, n_samples]
         real(real64), intent(in) :: percentile_val
@@ -96,7 +96,7 @@ contains
         !! Error code
         
         integer(int32) :: n_timepoints, n_samples, i
-        integer(int32), allocatable :: permutation(:, :)
+        integer(int32), allocatable :: permutation(:, :), stack_left(:), stack_right(:)
         real(real64), allocatable :: timepoint_data(:)
         
         ! Initialize error
@@ -107,17 +107,19 @@ contains
         n_samples = size(spike_contribs, 2)
         
         if (n_timepoints == 0 .or. n_samples == 0) then
-            call set_err_once(ierr, ERR_EMPTY_INPUT)
+            call set_err(ierr, ERR_EMPTY_INPUT)
             return
         end if
         
         if (size(thresholds) /= n_timepoints) then
-            call set_err_once(ierr, ERR_INVALID_INPUT)
+            call set_err(ierr, ERR_INVALID_INPUT)
             return
         end if
         
         ! Allocate 2D permutation array and workspace
         allocate(permutation(n_timepoints, n_samples), stat=ierr)
+        allocate(stack_left(n_samples), stat=ierr)
+        allocate(stack_right(n_samples), stat=ierr)
         if (is_err(ierr)) then
             call set_err(ierr, ERR_ALLOC_FAIL)
             return
@@ -126,7 +128,6 @@ contains
         allocate(timepoint_data(n_samples), stat=ierr)
         if (is_err(ierr)) then
             call set_err(ierr, ERR_ALLOC_FAIL)
-            deallocate(permutation)
             return
         end if
         
@@ -134,14 +135,11 @@ contains
         do i = 1, n_timepoints
             ! Extract and sort data for this timepoint
             timepoint_data = spike_contribs(i, :)
-            call sort_array(timepoint_data, permutation(i, :))
+            call sort_real(timepoint_data, permutation(i, :), stack_left, stack_right)
         end do
         
         ! Now call the main subroutine with pre-computed permutations
         call calc_spike_thresholds(spike_contribs, percentile_val, thresholds, permutation, ierr)
-        
-        ! Clean up
-        deallocate(permutation, timepoint_data)
         
     end subroutine calc_spike_thresholds_alloc
 
@@ -176,17 +174,17 @@ contains
         n_samples = size(contributions)
         
         if (n_samples == 0) then
-            call set_err_once(ierr, ERR_EMPTY_INPUT)
+            call set_err(ierr, ERR_EMPTY_INPUT)
             return
         end if
         
         if (size(permutation) /= n_samples) then
-            call set_err_once(ierr, ERR_INVALID_INPUT)
+            call set_err(ierr, ERR_INVALID_INPUT)
             return
         end if
         
         if (percentile_val < 0.0_real64 .or. percentile_val > 100.0_real64) then
-            call set_err_once(ierr, ERR_INVALID_INPUT)
+            call set_err(ierr, ERR_INVALID_INPUT)
             return
         end if
         
@@ -202,7 +200,7 @@ contains
     !!
     !! Convenience version that handles workspace allocation and sorting internally.
     !! For performance-critical code, use calc_integrated_threshold with pre-computed permutation.
-    pure subroutine calc_integrated_threshold_alloc(contributions, percentile_val, threshold, ierr)
+    subroutine calc_integrated_threshold_alloc(contributions, percentile_val, threshold, ierr)
         real(real64), intent(in) :: contributions(:)
         !! 1D array of integrated contributions [n_samples]
         real(real64), intent(in) :: percentile_val
@@ -213,7 +211,7 @@ contains
         !! Error code
         
         integer(int32) :: n_samples
-        integer(int32), allocatable :: permutation(:)
+        integer(int32), allocatable :: permutation(:), stack_left(:), stack_right(:)
         real(real64), allocatable :: sorted_contributions(:)
         
         ! Initialize error
@@ -223,12 +221,14 @@ contains
         n_samples = size(contributions)
         
         if (n_samples == 0) then
-            call set_err_once(ierr, ERR_EMPTY_INPUT)
+            call set_err(ierr, ERR_EMPTY_INPUT)
             return
         end if
         
         ! Allocate workspace
         allocate(permutation(n_samples), stat=ierr)
+        allocate(stack_left(n_samples), stat=ierr)
+        allocate(stack_right(n_samples), stat=ierr)
         if (is_err(ierr)) then
             call set_err(ierr, ERR_ALLOC_FAIL)
             return
@@ -237,13 +237,12 @@ contains
         allocate(sorted_contributions(n_samples), stat=ierr)
         if (is_err(ierr)) then
             call set_err(ierr, ERR_ALLOC_FAIL)
-            deallocate(permutation)
             return
         end if
         
         ! Pre-compute permutation by sorting
         sorted_contributions = contributions
-        call sort_array(sorted_contributions, permutation)
+        call sort_real(sorted_contributions, permutation, stack_left, stack_right)
         
         ! Now call the main subroutine with pre-computed permutation
         call calc_integrated_threshold(contributions, percentile_val, threshold, permutation, ierr)
@@ -277,12 +276,12 @@ contains
         n_samples = size(contributions)
         
         if (n_samples == 0) then
-            call set_err_once(ierr, ERR_EMPTY_INPUT)
+            call set_err(ierr, ERR_EMPTY_INPUT)
             return
         end if
         
         if (size(outlier_mask) /= n_samples) then
-            call set_err_once(ierr, ERR_INVALID_INPUT)
+            call set_err(ierr, ERR_INVALID_INPUT)
             return
         end if
         
@@ -318,18 +317,18 @@ contains
         n_samples = size(spike_contribs, 2)
         
         if (n_timepoints == 0 .or. n_samples == 0) then
-            call set_err_once(ierr, ERR_EMPTY_INPUT)
+            call set_err(ierr, ERR_EMPTY_INPUT)
             return
         end if
         
         if (size(thresholds) /= n_timepoints) then
-            call set_err_once(ierr, ERR_INVALID_INPUT)
+            call set_err(ierr, ERR_INVALID_INPUT)
             return
         end if
         
         if (size(outlier_mask, 1) /= n_timepoints .or. &
             size(outlier_mask, 2) /= n_samples) then
-            call set_err_once(ierr, ERR_INVALID_INPUT)
+            call set_err(ierr, ERR_INVALID_INPUT)
             return
         end if
         
