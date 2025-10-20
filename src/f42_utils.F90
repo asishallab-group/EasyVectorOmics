@@ -12,7 +12,18 @@ module f42_utils
   interface sort_array
     module procedure sort_real, sort_integer, sort_character
   end interface sort_array
+
+  real(real64), parameter :: EPS = epsilon(1.0_real64)
 contains
+
+  pure logical function is_close(a, b)
+    real(real64), intent(in) :: a
+      !! First variable of comparison a==b
+    real(real64), intent(in) :: b
+      !! Second variable of comparison a==b
+
+    is_close = abs(a - b) <= EPS * max(abs(a), abs(b))
+  end function is_close
 
   !> Sort a real array indirectly using quicksort.
   !| Creates a sorted version of the array by reordering the `perm` vector. The original data in `array` remains unchanged.
