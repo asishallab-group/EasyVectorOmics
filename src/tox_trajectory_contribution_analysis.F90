@@ -2,8 +2,9 @@
 
 module tox_trajectory_contribution_analysis
     use, intrinsic :: iso_fortran_env, only: int32, real64
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
     use f42_utils, only: is_close
-    use tox_errors, only: set_ok, set_err, is_err, ERR_IDX_OUT_OF_BOUNDS, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, ERR_INVALID_INPUT
+    use tox_errors, only: set_ok, set_err, is_err, ERR_IDX_OUT_OF_BOUNDS, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, ERR_INVALID_INPUT, ERR_NAN_INF
     implicit none
 
     integer(int32), parameter :: MODE_NORMAL = 1
@@ -46,6 +47,12 @@ contains
             norm_dependent = norm_dependent + dependent(i_timepoint) ** 2
             dot_prod = dot_prod + factor(i_timepoint) * dependent(i_timepoint)
         end do
+
+        if (ieee_is_nan(magnitude) .or. ieee_is_nan(dot_prod)) then
+            call set_err(ierr, ERR_NAN_INF)
+            return
+        end if
+
         magnitude = sqrt(norm_factor) * sqrt(norm_dependent)
         if (is_close(magnitude, 0.0_real64)) then
             call set_err(ierr, ERR_DIVISION_BY_ZERO)
@@ -103,6 +110,12 @@ contains
             norm_dependent = norm_dependent + dependent(i_timepoint) ** 2
         end do
         magnitude = sqrt(norm_factor) * sqrt(norm_dependent)
+
+        if (ieee_is_nan(magnitude)) then
+            call set_err(ierr, ERR_NAN_INF)
+            return
+        end if
+
         if (is_close(magnitude, 0.0_real64)) then
             call set_err(ierr, ERR_DIVISION_BY_ZERO)
             return

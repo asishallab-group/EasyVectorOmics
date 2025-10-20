@@ -2026,49 +2026,6 @@ def tox_trajectory_contribution(factor, dependent, mode):
     return contribution.value
 
 
-def tox_trajectory_contribution(factor, dependent, mode):
-    """
-    Compute trajectory-level contribution between two vectors.
-
-    Args:
-        factor (np.ndarray): 1D array of shape (n_timepoints,) — independent variable
-        dependent (np.ndarray): 1D array of shape (n_timepoints,) — dependent variable
-        mode (int): 1 for cosine similarity, 2 for angle (acos)
-
-    Returns:
-        float: contribution value
-    """
-    factor = np.ascontiguousarray(factor, dtype=np.float64)
-    dependent = np.ascontiguousarray(dependent, dtype=np.float64)
-    assert factor.shape == dependent.shape, "Shape mismatch"
-
-    n_timepoints = ctypes.c_int(len(factor))
-    mode_c = ctypes.c_int(mode)
-    contribution = ctypes.c_double(0.0)
-    ierr = ctypes.c_int(0)
-
-    trajectory_contribution_c = lib.trajectory_contribution_c
-    trajectory_contribution_c.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
-        ctypes.POINTER(ctypes.c_int),
-        ctypes.POINTER(ctypes.c_int),
-        ctypes.POINTER(ctypes.c_double),
-        ctypes.POINTER(ctypes.c_int)
-    ]
-    trajectory_contribution_c.restype = None
-
-    trajectory_contribution_c(
-        factor, dependent,
-        ctypes.byref(n_timepoints),
-        ctypes.byref(mode_c),
-        ctypes.byref(contribution),
-        ctypes.byref(ierr)
-    )
-    check_err_code(ierr.value)
-    return contribution.value
-
-
 def tox_spike_contribution(factor, dependent, mode):
     """
     Compute spike-wise contribution between two vectors using directional or angular mode.

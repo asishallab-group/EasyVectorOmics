@@ -74,6 +74,13 @@ contains
 
         call trajectory_contribution(factor, dependent, n_timepoints, 99_int32, contribution, ierr)
         call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_trajectory_contribution: Invalid mode")
+
+        ! Case 5: NaN
+        factor = [1.0_real64, 0.0_real64 / 0.0_real64, 3.0_real64]
+        dependent = [1.0_real64, 2.0_real64, 3.0_real64]
+
+        call trajectory_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
+        call assert_equal_int(ierr, ERR_NAN_INF, "test_spike_contribution: NaN")
     end subroutine test_trajectory_contribution
 
     subroutine test_spike_contribution()
@@ -123,6 +130,12 @@ contains
         call spike_contribution(factor, dependent, n_timepoints, 99_int32, contribution, ierr)
         call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_spike_contribution: Invalid mode")
 
+        ! Case 5: NaN
+        factor = [1.0_real64, 0.0_real64 / 0.0_real64, 3.0_real64]
+        dependent = [1.0_real64, 2.0_real64, 3.0_real64]
+
+        call spike_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
+        call assert_equal_int(ierr, ERR_NAN_INF, "test_spike_contribution: NaN")
     end subroutine test_spike_contribution
 
     subroutine test_get_vec_across_samples()
