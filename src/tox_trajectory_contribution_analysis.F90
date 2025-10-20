@@ -296,6 +296,8 @@ pure subroutine trajectory_contribution_c(factor, dependent, n_timepoints, mode,
     use tox_trajectory_contribution_analysis, only: trajectory_contribution
     use, intrinsic :: iso_c_binding, only: c_int, c_double
     M_USE_NULL_VALIDATION
+    implicit none
+
     integer(c_int), intent(in), target :: n_timepoints
         !! Number of timepoints included in `factor` and `dependent`
     real(c_double), dimension(n_timepoints), intent(in), target :: factor
@@ -335,6 +337,8 @@ pure subroutine spike_contribution_c(factor, dependent, n_timepoints, mode, cont
     use tox_trajectory_contribution_analysis, only: spike_contribution
     use, intrinsic :: iso_c_binding, only: c_int, c_double
     M_USE_NULL_VALIDATION
+    implicit none
+
     integer(c_int), intent(in), target :: n_timepoints
         !! Number of timepoints included in `factor` and `dependent`
     real(c_double), dimension(n_timepoints), intent(in), target :: factor
@@ -366,6 +370,8 @@ pure subroutine calc_contributions_expert_c(trajectories, n_factors, n_samples, 
     use tox_trajectory_contribution_analysis, only: calc_contributions
     use, intrinsic :: iso_c_binding, only: c_int, c_double
     M_USE_NULL_VALIDATION
+    implicit none
+
     integer(c_int), intent(in), target :: n_factors
         !! Number of factors in `trajectories`
     integer(c_int), intent(in), target :: n_samples
@@ -413,6 +419,8 @@ pure subroutine calc_contributions_c(trajectories, n_factors, n_samples, n_timep
     use tox_trajectory_contribution_analysis, only: calc_contributions_alloc
     use, intrinsic :: iso_c_binding, only: c_int, c_double
     M_USE_NULL_VALIDATION
+    implicit none
+
     integer(c_int), intent(in), target :: n_factors
         !! Number of factors in `trajectories`
     integer(c_int), intent(in), target :: n_samples
