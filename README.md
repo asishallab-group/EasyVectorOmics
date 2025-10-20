@@ -1,127 +1,218 @@
+
 # Tensor Omics
 
-## General Information
+Tensor Omics is a high-performance framework for explainable, geometry-based analysis of multimodal omics and related high-dimensional datasets. Instead of relying on black-box models, it treats expression profiles, clinical measures, or socioeconomic indicators as vectors in semantically meaningful spaces (e.g. tissues, disease stages, conditions). By measuring distances, angles, projections, and trajectories in these spaces, Tensor Omics enables direct comparison of activity across genes, paralogs, sexes, species, or patient groups. This geometric approach makes complex multivariate patterns interpretable and reproducible while remaining robust to sparsity and noise.
 
-Tensor Omics is a project currently funded by the Carl-Zeiss-Stiftung ("EasyVectorOmics") and aims at Multi Omics, and textual knowledge integration for high performance computing geometric Biomarker learning. Interactive scientific visualization for expert data exploration and hypothesis generation is supported by an graphical user user interface in the web-browser. 
+Designed for distributed high-performance computing, Tensor Omics is implemented in Fortran and C with OpenMP parallelisation, SIMD optimisation, and Fortran Coarrays, making the algorithms embarrassingly parallel and suitable for federated datasets where privacy and efficiency are critical. Scientific use cases include: detecting disease biomarkers and subtype-specific trajectories in medical data; quantifying divergence and neofunctionalization of gene duplicates in plant and animal transcriptomes; and reconstructing global gender-equality trajectories from socioeconomic indicators. Across these domains, Tensor Omics provides a unified, geometry-driven methodology for discovering explanatory patterns in heterogeneous, high-dimensional data.
 
-## Abstract
 
-Transcriptomics is the science of change in gene expression. Current methods provide key insights in a vast variety of life-science disciplines by robust identification of genes whose expression changes significantly between experimental conditions, like e.g. healthy versus wounded tissue. However, no tools yet exist to do comparisons between related genes or to efficiently analyze time series data. 
-Tensor Omics is a new framework in applied bioinformatics for analyzing transcriptome data by projecting it into semantically meaningful vector spaces—where each axis represents a biological context such as tissue, dietary regimen, disease state, or developmental stage. Gene families are explored through expression shifts from ancestral centroids, enabling geometric insights into divergence, specificity, and adaptation. Through robust empirical outlier detection the method reliably captures biological signals like genes significantly contributing to wound healing or gut microbial response to protein based dietary regimens.
+## Key Features
 
-## Description
-EasyVectorOmics is a pipeline designed to analyze gene expression data and evolutionary relationships between genes. This pipeline combines tools for phylogenetic analysis, gene classification, and expression calculations to generate processed results ready for interpretation.
+* **Geometry-based analysis**: distances, angles, projections, and trajectory shifts are used as primary primitives.
+* **Explainable outputs**: results are interpretable in terms of vector geometry rather than opaque model coefficients.
+* **Multi-modal integration**: unifies transcriptomics, proteomics, metabolomics, clinical, or socioeconomic data within one framework.
+* **Parallel and federated**: implemented in Fortran/C with OpenMP, SIMD, and coarrays for efficient large-scale computation on distributed datasets.
+* **Robust to sparsity and noise**: percentile-based empirical thresholds and local geometric measures enable stability.
+* **Broad applications**: demonstrated on medical biomarker discovery, gene duplication outcomes, developmental trajectories, and socioeconomic indicators.
 
-The pipeline includes steps for data normalization, protein similarity calculations, phylogenetic classification, synteny analysis, and evolutionary distance and angle calculations.
 
-### Analysis as a pipeline
+*Tensor Omics shows that geometry, when treated not as preprocessing but as the central instrument of analysis, can open entirely new ways to read complex biological and social data — simple, transparent, and surprisingly powerful.*
 
-Find below the summarized steps of the geometric biomarker detection implemented in Tensor Omics.
+---
 
-1. **Execute [BLAST](https://blast.ncbi.nlm.nih.gov/Blast.cgi)**
+# TOX Project Structure
 
-1. **Execute [Orthofinder](https://github.com/davidemms/OrthoFinder)**
+This repository contains the source code, methods, snippets and tests for the **Tensor Omics (TOX)** project.
 
-1. **Gene expression values (TPM)**
-   - TSV file in the format:  
-   gene_id | Tissue_X | Tissue_Y | Tissue_Z | ...  
+## Folder Overview
 
-1. **Data Normalization**  
-   - Script: `methods/normalization.R`  
-   - Input: TPM expression file
-   - Output: A normalized TPM expression matrix
+```
+/build
+  └── ...       # Compiled Fortran binaries and intermediate build files
 
-2. **Protein Similarity Calculation**  
-   - Script: `methods/harmonic_mean_calc.py`  
-   - Input: The combined BLAST output file from OrthoFinder2 substitude back with original protein ids.
-   - Output: A BLAST file with an added column containing the harmonic mean similarity between protein pairs.
+/doc
+  └── ...       # Documentation generated automatically using FORD (Fortran documentation tool)
 
-3. **Gene Classification via Phylogeny**  
-   - Scripts: `orthofinder_extensions/phylogeny/process_tree.py`, `orthofinder_extensions/phylogeny/tree_rest.py`  
-   - Inputs for `process_tree.py`:  
-        - Orthologues folder  (From orthofinder)
-        - `harmonic_mean.pkl`  
-        - `Duplications.tsv`  (From orthofinder)
-        - Resolved gene trees folder  (From orthofinder)
-        - `Orthogroups.tsv`  (From orthofinder)
+/misc
+  └── ...       # Tensor Omics documentation, coding guides and helper dockerfile to compile the project
 
-   - `process_tree.py` analyzes resolved gene trees to classify gene relationships into conserved orthologs, inparalogs, outparalogs, source copy  inparalogs, and source copy outparalogs.  
-   - `tree_rest.py` handles orthogroups not represented in the resolved trees and assigns classifications using remaining input data.
+/python
+  └── ...       # Python scripts that execute pipeline logic and invoke subroutines
 
-4. **Tandem Gene Classification for Synteny Analysis**  
-   - Script: `methods/get_tandems.py`  
-   - Input:  
-        - All-vs-all BLASTn results  
-        - Combined species GTF file   
-   - Output: A TSV file listing tandem gene clusters, their species, and the best representative gene for each cluster.
+/r
+  └── ...       # R scripts that execute pipeline logic and invoke subroutines
 
-5. **Neighborhood-Based Synteny Classification**  
-   - Script: `orthofinder_extensions/synteny/synteny.py`  
-   - Input:  
-        - Species-specific GTF files  
-        - Tandems file from `get_tandems.py`  
-        - All-vs-all BLASTn results  
-   - Output: A TSV file listing only source-to-source gene relationships.
+/snippets
+└── ...         #Code templates or reusable short logic blocks 
 
-6. **Gene Relationship Completion Based on Synteny**  
-   - Script: `orthofinder_extensions/synteny/classify_genes.py`  
-   - Input:  
-        - `Orthogroups.tsv` from OrthoFinder  
-        - Results from the neighborhood synteny classification  
-   - Output: TSV files classifying remaining genes into conserved orthologs, inparalogs, outparalogs, special inparalogs, and special outparalogs.
+/src
+  └── ...       # Fortran backend
 
-7. **Filtering of Gene Families**  
-   - Script: `methods/filter_orthogroups.py`  
-   - Input:  
-        - All output TSV files from `classify_genes.py`, or `process_tree.py`  
-        - Orthogroups (From orthofinder)
-   - Output: Filtered TSV files including only gene families with at least four unique conserved orthologs and copy gene relationships.
+/test
+  └── ...       # Fortran testing
 
-8. **Centroid Calculation for Expression Vectors**  
-   - Script: `methods/get_centroids.R`  
-   - Input:  
-        - Normalized TPM value file  
-        - Conserved orthologs TSV file  (filtered_orthologs.tsv from step 7)
-   - Output: A TSV file containing orthogroup IDs and their expression centroids.
+/helper
+  └── helper_c_wrapper.py       #  helper script to generate c wrappers subroutines
 
-9. **Distance Calculation to Centroid**  
-   - Script: `methods/calculate_distances.R`  
-   - Input:  
-        - Orthogroup centroids tsv file
-        - Normalized TPM value file  
-        - Conserved orthologs TSV file  (filtered_orthologs.tsv from step 7)
-        - Conserved paralogs TSV file  (filtered_paralogs.tsv from step 7)
-   - Output:  
-        - `all_distances.tsv`: Euclidean distance of each gene to its group's centroid  
-        - Source-copy pairwise distance TSV  
-        - Outlier classification (top 5%)
+build.sh        # Compile and generate shared libraries
+ford.yml        # Generates documentation
+fpm.toml        # Defines compilation options
+test_runner.sh  # Compile and generate unit test
 
-10. **Tandem Annotation for Expression Analysis**  
-    - Script: `methods/distances_add_tandems.py`  
-    - Input:  
-        - `Tandems.tsv` from `get_tandems.py`  
-        - `distances.tsv` from `calculate_distances.R`  
-        - `map.tsv` mapping Gene to Protein IDs  
-    - Output: Updated `distances.tsv` annotated with tandem gene information.
+```
 
-11. **Evolutionary Angle Calculations**  
-    - Script: `methods/calculate_angles_optimized.py`  
-    - Input:  
-        - Modified `distances.tsv` with tandem annotations  
-        - Orthogroup centroids tsv file
-        - Pairwise distance TSV  
-    - Output: The input TSV files updated with angle calculations
+## Notes
 
-12. **Functional Annotation and Word Cloud Generation (optional)**  
-    - Script: `methods/word_cloud.R`  
-    - Input:  
-        - Outlier gene table (from `calculate_distances.R`)  
-        - Functional annotations generated by [prot-scriber](https://github.com/usadellab/prot-scriber)  
-    - Output:  
-        - A word cloud image summarizing the most frequent terms in outlier gene annotations  
-        - A TSV file with word frequencies and statistical enrichment results  
+* **`/build`** is used to store shared libraries, compiled and binary files resulting from Fortran compilation. It keeps the repo clean by separating source and compiled code.
+* **`/doc`** contains the auto-generated documentation, which is built using [FORD](https://github.com/Fortran-FOSS-Programmers/ford) from annotated Fortran source files.
+* **`/misc`** contains the team's coding guidelines at [Fortran_Coding_Guides.pdf](https://gitlab.rlp.net/a.hallab/tensor-omics/-/blob/main/misc/Fortran_Coding_Guides.pdf?ref_type=heads), the detailed description of Tensor Omics at [Tensor_Omics_Methods.pdf](https://gitlab.rlp.net/a.hallab/tensor-omics/-/blob/main/misc/Tensor_Omics_Methods.pdf?ref_type=heads), and a [Dockerfile](https://gitlab.rlp.net/a.hallab/tensor-omics/-/blob/main/misc/gfortran.docker?ref_type=heads) to compile the project without needing to install anything except Docker.
 
-    - Description:  
-        - [prot-scriber](https://github.com/usadellab/prot-scriber) assigns short human-readable descriptions (HRDs) to query biological sequences based on sequence similarity search results (e.g., BLAST or DIAMOND).  
-        - The script generates a word cloud to visualize the most frequent terms associated with outlier genes, providing insights into their biological relevance.  
-        - Statistical enrichment analysis is performed to identify terms significantly overrepresented in outlier genes compared to non-outliers.  
+* **`/python`** includes python scripts that coordinate analysis workflows
+* **`/r`** includes R scripts that coordinate analysis workflows
+* **`/snippets/`** includes frequently used or testable units of logic reused across development stages. 
+  - Snippets should be easy to create and use. The goal is to give the user access to the subroutine names along with their respective arguments, and nothing more. Example:
+  ```
+    {
+        "Call to subroutine_name": {
+          "prefix": "tox|f42:subroutine_name",
+          "body": [
+            "! Brief explanation on what the subroutine does",
+            "call subroutine_name(arg1, arg2, arg3, arg4)"
+          ],
+          "description": "Insert a call to subroutine_name with brief explanation"
+        }
+    }
+  ```
+* **`/src`** contains performance-critical Fortran code. These are compiled during the build process.
+  - All `.f90` files should include `precompiler_constants.f90`
+  - Subroutines that do not perform `input/output` operations or memory allocations must be declared as `pure`.
+* **`/test`** contains the unit tests for the Fortran subroutines.
+
+  * The file `asserts.f90` must exist and can be modified if additional assert functions are needed.
+  * There must be a central program called `run_tests.f90` which contains all the test calls defined in the modules.
+  * Each subroutine's tests should be placed in independent modules (one file per tested subroutine). 
+  * All test modules must be named `mod_<subroutine_name>.f90` to ensure they are compiled before `run_tests.f90`. Otherwise, compilation errors may occur.
+  * Check details in `test/readme.md`
+
+* **`/helper`** this folder will not be included in the final version of TOX. For now, it serves to help us create the C wrapper for the subroutines more quickly and easily. See details in `helper/readme.md`.
+
+---
+
+### FORD (Fortran Online Reference Documentation)
+
+[FORD](https://github.com/Fortran-FOSS-Programmers/ford) is a documentation generator specifically designed for Fortran projects. It allows developers to create clean, structured, and navigable HTML documentation from source code using lightweight markup embedded in comments.
+
+* Designed specifically for Fortran (unlike Doxygen which is general-purpose).
+* Supports documentation of modules, subroutines, functions, derived types, and more.
+* Uses `!!!` or `!>` comment syntax to annotate code.
+* Ideal for scientific and engineering projects using modern Fortran.
+* Easy to integrate into Git-based workflows.
+
+Example usage:
+
+```bash
+ford ford.yml
+```
+
+This generates an HTML site you can explore in a browser (`doc/index.html` by default).
+
+
+### Tensor Omics Snippets
+
+Organize and place the snippets inside the appropriate snippet folders according to their functionality:
+
+- Use the `f42:` prefix for F42-compliant infrastructure.
+- Use the `tox:` prefix for application-specific Tensor Omics subroutines.
+
+See `snippets/readme.md` for details.
+
+---
+
+
+### Compilation
+
+The `build.sh` script will compile all the files located in the `src/` directory.
+
+It creates a directory for the compiled objects under `/build/<compiler>/`, and the resulting shared library will be named `libtensor-omics.so`.
+
+This `.so` file is the one that must be loaded from R or Python.
+
+Every time the code is compiled, a new `/build/<compiler>/` directory is created. To simplify access, the script creates a symbolic link to the latest compiled shared library so that R and Python can always load the same file consistently.
+
+Usage:
+
+→ Uses the `gfortran` compiler without performance optimizations.
+
+```bash
+./build.sh
+```
+
+→ Uses the `gfortran` compiler with maximum performance flags.
+
+```bash
+./build.sh --max-performance
+```
+
+→ Uses the `ifx` compiler with maximum performance flags.
+
+```bash
+./build.sh --max-performance FC=ifx
+```
+
+Keep in mind that files are compiled in alphabetical order, please name your files accordingly.
+
+---
+
+
+### Testing
+
+The test suite framework provides a robust and scalable system for organizing and executing unit tests in Fortran. It allows running individual tests, complete test suites, or all project tests with simple and clear syntax.
+
+#### Architecture
+
+1. **`run_tests.f90`** - Main program that handles command line arguments
+2. **Test Modules** - Each module (suite) contains tests for a specific functionality
+3. **`asserts.f90`** - Assertion function library for validating results
+
+#### System Usage
+
+```bash
+# Run all tests from all suites
+./test_runner.sh
+
+# Run all tests from a specific suite
+./test_runner.sh <suite_name>
+
+# Run specific tests from a suite
+./test_runner.sh <suite_name> <test1,test2,test3>
+```
+
+Keep in mind that files are compiled in alphabetical order, please name your files accordingly.
+
+See `test/readme.md` for details.
+
+---
+
+## Get latest gfortran with Docker
+
+Install and setup Docker as explained for your operating system in the Docker
+documentation.
+
+Use our Dockerfile `gfortran.docker` in `misc` directory:
+```bash
+docker build -t arch-gfortran -f gfortran.docker .
+```
+
+Then build the project with:
+```bash
+docker run -it -v `pwd`:/opt arch-gfortran ./build.sh
+```
+
+Use `./test_runner.sh` if you want to run the unit tests for the modules. In case you want to test only one module, use `./test_runner.sh <test suite name>`, e.g. `./test_runner.sh get_outliers`
+
+---
+
+## Getting started
+
+- Please refer to `misc/tox_manual.pdf` to learn how to use TensorOmics in Fortran, Python, and R. 
+- Check `doc/index.html` for details.
