@@ -50,7 +50,7 @@ run-tests:
       when: always
 
     # trigger only when a MR to 'main' is created and src/ or test/ changed
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:
         - src/**
         - test/**
