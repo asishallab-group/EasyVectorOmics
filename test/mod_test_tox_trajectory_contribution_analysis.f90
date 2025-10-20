@@ -24,11 +24,106 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(2)
+        type(test_case) :: all_tests(4)
 
         all_tests(1) = test_case("test_tox_trajectory_contribution_analysis_get_vec_across_samples", test_get_vec_across_samples)
         all_tests(2) = test_case("test_tox_trajectory_contribution_analysis_get_vec_across_timepoints", test_get_vec_across_timepoints)
+        all_tests(3) = test_case("test_tox_trajectory_contribution_analysis_trajectory_contribution", test_trajectory_contribution)
+        all_tests(4) = test_case("test_tox_trajectory_contribution_analysis_spike_contribution", test_spike_contribution)
     end function get_all_tests
+
+    subroutine test_trajectory_contribution()
+        integer(int32), parameter :: n_timepoints = 3
+        real(real64) :: factor(n_timepoints), dependent(n_timepoints)
+        real(real64) :: contribution, expected
+        integer(int32) :: ierr
+
+        ! Case 1: perfectly aligned vectors
+        factor = [1.0_real64, 2.0_real64, 3.0_real64]
+        dependent = [2.0_real64, 4.0_real64, 6.0_real64]
+        expected = 1.0_real64
+
+        call trajectory_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
+        call assert_true(is_ok(ierr), "test_trajectory_contribution: MODE_NORMAL: expected OK status")
+        call assert_equal_real(contribution, expected, TOL, "test_trajectory_contribution: MODE_NORMAL")
+
+        expected = 0.0_real64  ! acos(1.0) = 0.0
+        call trajectory_contribution(factor, dependent, n_timepoints, MODE_RAP, contribution, ierr)
+        call assert_true(is_ok(ierr), "test_trajectory_contribution: MODE_RAP: expected OK status")
+        call assert_equal_real(contribution, expected, TOL, "test_trajectory_contribution: MODE_RAP")
+
+        ! Case 2: orthogonal vectors
+        factor = [1.0_real64, 0.0_real64, 0.0_real64]
+        dependent = [0.0_real64, 1.0_real64, 0.0_real64]
+        expected = 0.0_real64
+
+        call trajectory_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
+        call assert_true(is_ok(ierr), "test_trajectory_contribution: Orthogonal MODE_NORMAL: expected OK status")
+        call assert_equal_real(contribution, expected, TOL, "test_trajectory_contribution: Orthogonal MODE_NORMAL")
+
+        ! Case 3: zero vector input
+        factor = [0.0_real64, 0.0_real64, 0.0_real64]
+        dependent = [1.0_real64, 2.0_real64, 3.0_real64]
+
+        call trajectory_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
+        call assert_equal_int(ierr, ERR_DIVISION_BY_ZERO, "test_trajectory_contribution: Zero vector")
+
+        ! Case 4: invalid mode
+        factor = [1.0_real64, 2.0_real64, 3.0_real64]
+        dependent = [1.0_real64, 2.0_real64, 3.0_real64]
+
+        call trajectory_contribution(factor, dependent, n_timepoints, 99_int32, contribution, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_trajectory_contribution: Invalid mode")
+    end subroutine test_trajectory_contribution
+
+    subroutine test_spike_contribution()
+        integer(int32), parameter :: n_timepoints = 3
+        real(real64) :: factor(n_timepoints), dependent(n_timepoints), contribution(n_timepoints), expected(n_timepoints)
+        integer(int32) :: ierr
+
+        ! Case 1: perfectly aligned vectors
+        factor = [1.0_real64, 2.0_real64, 3.0_real64]
+        dependent = [2.0_real64, 4.0_real64, 6.0_real64]
+        expected = [2.0_real64, 8.0_real64, 18.0_real64] / sqrt(14.0_real64) / sqrt(56.0_real64)  ! dot products normalized by magnitude
+
+        call spike_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
+        call assert_true(is_ok(ierr), "test_spike_contribution: MODE_NORMAL aligned")
+        call assert_equal_array_real(contribution, expected, n_timepoints, TOL, "test_spike_contribution: MODE_NORMAL aligned")
+
+        expected = acos(expected)  ! element-wise acos
+        call spike_contribution(factor, dependent, n_timepoints, MODE_RAP, contribution, ierr)
+        call assert_true(is_ok(ierr), "test_spike_contribution: MODE_RAP aligned")
+        call assert_equal_array_real(contribution, expected, n_timepoints, TOL, "test_spike_contribution: MODE_RAP aligned")
+
+        ! Case 2: orthogonal vectors
+        factor = [1.0_real64, 0.0_real64, 0.0_real64]
+        dependent = [0.0_real64, 1.0_real64, 0.0_real64]
+        expected = [0.0, 0.0, 0.0]  ! dot products all zero
+
+        call spike_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
+        call assert_true(is_ok(ierr), "test_spike_contribution: Orthogonal MODE_NORMAL")
+        call assert_equal_array_real(contribution, expected, n_timepoints, TOL, "test_spike_contribution: Orthogonal MODE_NORMAL")
+
+        expected = acos(expected)  ! acos(0.0) = π/2
+        call spike_contribution(factor, dependent, n_timepoints, MODE_RAP, contribution, ierr)
+        call assert_true(is_ok(ierr), "test_spike_contribution: Orthogonal MODE_RAP")
+        call assert_equal_array_real(contribution, expected, n_timepoints, TOL, "test_spike_contribution: Orthogonal MODE_RAP")
+
+        ! Case 3: zero vector input
+        factor = [0.0_real64, 0.0_real64, 0.0_real64]
+        dependent = [1.0_real64, 2.0_real64, 3.0_real64]
+
+        call spike_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
+        call assert_equal_int(ierr, ERR_DIVISION_BY_ZERO, "test_spike_contribution: Zero vector")
+
+        ! Case 4: invalid mode
+        factor = [1.0_real64, 2.0_real64, 3.0_real64]
+        dependent = [1.0_real64, 2.0_real64, 3.0_real64]
+
+        call spike_contribution(factor, dependent, n_timepoints, 99_int32, contribution, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_spike_contribution: Invalid mode")
+
+    end subroutine test_spike_contribution
 
     subroutine test_get_vec_across_samples()
         integer(int32), parameter :: n_factors = 2, n_samples = 3, n_timepoints = 4

@@ -1981,3 +1981,136 @@ def tox_mean_vector(expression_vectors, gene_indices):
     # Mark output as read-only
     _readonly(centroid_col)
     return centroid_col
+
+
+def tox_trajectory_contribution(factor, dependent, mode):
+    """
+    Compute trajectory-level contribution between two vectors.
+
+    Args:
+        factor (np.ndarray): 1D array of shape (n_timepoints,) — independent variable
+        dependent (np.ndarray): 1D array of shape (n_timepoints,) — dependent variable
+        mode (int): 1 for cosine similarity, 2 for angle (acos)
+
+    Returns:
+        float: contribution value
+    """
+    factor = np.ascontiguousarray(factor, dtype=np.float64)
+    dependent = np.ascontiguousarray(dependent, dtype=np.float64)
+    assert factor.shape == dependent.shape, "Shape mismatch"
+
+    n_timepoints = ctypes.c_int(len(factor))
+    mode_c = ctypes.c_int(mode)
+    contribution = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+
+    trajectory_contribution_c = lib.trajectory_contribution_c
+    trajectory_contribution_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_int)
+    ]
+    trajectory_contribution_c.restype = None
+
+    trajectory_contribution_c(
+        factor, dependent,
+        ctypes.byref(n_timepoints),
+        ctypes.byref(mode_c),
+        ctypes.byref(contribution),
+        ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+    return contribution.value
+
+
+def tox_trajectory_contribution(factor, dependent, mode):
+    """
+    Compute trajectory-level contribution between two vectors.
+
+    Args:
+        factor (np.ndarray): 1D array of shape (n_timepoints,) — independent variable
+        dependent (np.ndarray): 1D array of shape (n_timepoints,) — dependent variable
+        mode (int): 1 for cosine similarity, 2 for angle (acos)
+
+    Returns:
+        float: contribution value
+    """
+    factor = np.ascontiguousarray(factor, dtype=np.float64)
+    dependent = np.ascontiguousarray(dependent, dtype=np.float64)
+    assert factor.shape == dependent.shape, "Shape mismatch"
+
+    n_timepoints = ctypes.c_int(len(factor))
+    mode_c = ctypes.c_int(mode)
+    contribution = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+
+    trajectory_contribution_c = lib.trajectory_contribution_c
+    trajectory_contribution_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_int)
+    ]
+    trajectory_contribution_c.restype = None
+
+    trajectory_contribution_c(
+        factor, dependent,
+        ctypes.byref(n_timepoints),
+        ctypes.byref(mode_c),
+        ctypes.byref(contribution),
+        ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+    return contribution.value
+
+
+def tox_spike_contribution(factor, dependent, mode):
+    """
+    Compute spike-wise contribution between two vectors using directional or angular mode.
+
+    Args:
+        factor (np.ndarray): 1D array of shape (n_timepoints,) representing the independent variable.
+        dependent (np.ndarray): 1D array of shape (n_timepoints,) representing the dependent variable.
+        mode (int): Mode of contribution (1 = Normal, 2 = RAP).
+
+    Returns:
+        np.ndarray: 1D array of shape (n_timepoints,) with contribution values per timepoint.
+    """
+    factor = np.ascontiguousarray(factor, dtype=np.float64)
+    dependent = np.ascontiguousarray(dependent, dtype=np.float64)
+
+    if factor.shape != dependent.shape:
+        raise ValueError("factor and dependent must have the same shape")
+
+    n_timepoints = ctypes.c_int(factor.shape[0])
+    mode_c = ctypes.c_int(mode)
+
+    contribution = np.empty(n_timepoints.value, dtype=np.float64)
+    ierr = ctypes.c_int(0)
+
+    spike_contribution_c = lib.spike_contribution_c
+    spike_contribution_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # factor
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # dependent
+        ctypes.POINTER(ctypes.c_int),                                     # n_timepoints
+        ctypes.POINTER(ctypes.c_int),                                     # mode
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # contribution
+        ctypes.POINTER(ctypes.c_int)                                      # ierr
+    ]
+    spike_contribution_c.restype = None
+
+    spike_contribution_c(
+        factor,
+        dependent,
+        ctypes.byref(n_timepoints),
+        ctypes.byref(mode_c),
+        contribution,
+        ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+    return contribution
