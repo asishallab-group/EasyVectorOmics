@@ -49,7 +49,7 @@ run-tests:
         - test_runner.sh
       when: always
 
-    # trigger only when a MR to 'main' is created and src/ or test/ changed
+    # trigger when a MR is created and src/ or test/ changed
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:
         - src/**
