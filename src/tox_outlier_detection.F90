@@ -19,12 +19,6 @@ contains
     !!
     !! Performance version that uses pre-computed permutation arrays to avoid internal sorting.
     !! Each row of permutation contains sorted indices for that timepoint.
-    !!
-    !! @param[in] spike_contribs 2D array of spike contributions [n_timepoints, n_samples]
-    !! @param[in] percentile_val Percentile value for threshold (0.0-100.0)
-    !! @param[out] thresholds 1D array of thresholds for each timepoint [n_timepoints]
-    !! @param[in] permutation 2D workspace array of pre-sorted permutation indices [n_timepoints, n_samples]
-    !! @param[out] ierr Error code (0 = success, >0 = error)
     pure subroutine calc_spike_thresholds(spike_contribs, percentile_val, thresholds, permutation, ierr)
         real(real64), intent(in) :: spike_contribs(:, :)
         !! 2D array of spike contributions [n_timepoints, n_samples]
@@ -146,12 +140,6 @@ contains
     !> Calculate empirical threshold for integrated contributions (using pre-sorted permutation)
     !!
     !! Performance version that uses pre-computed permutation array to avoid internal sorting.
-    !!
-    !! @param[in] contributions 1D array of integrated contributions [n_samples]
-    !! @param[in] percentile_val Percentile value for threshold (0.0-100.0)
-    !! @param[out] threshold Scalar threshold value
-    !! @param[in] permutation Pre-computed permutation indices for sorted contributions [n_samples]
-    !! @param[out] ierr Error code (0 = success, >0 = error)
     pure subroutine calc_integrated_threshold(contributions, percentile_val, threshold, permutation, ierr)
         real(real64), intent(in) :: contributions(:)
         !! 1D array of integrated contributions [n_samples]
@@ -244,29 +232,23 @@ contains
         sorted_contributions = contributions
         call sort_real(sorted_contributions, permutation, stack_left, stack_right)
         
-        ! Now call the main subroutine with pre-computed permutation
-        call calc_integrated_threshold(contributions, percentile_val, threshold, permutation, ierr)
-        
-        ! Clean up
-        deallocate(permutation, sorted_contributions)
-        
+        ! call the main subroutine with pre-computed permutation
+        call calc_integrated_threshold(contributions, percentile_val, threshold, permutation, ierr)        
     end subroutine calc_integrated_threshold_alloc
 
     !> Detect outliers in integrated (trajectory-level) contributions
     !!
     !! Identifies samples where the integrated contribution exceeds the empirical threshold.
     !! Used to find trajectories with significant overall explanatory contributions.
-    !!
-    !! @param[in] contributions 1D array of integrated contributions [n_samples]
-    !! @param[in] threshold Scalar threshold value for outlier detection
-    !! @param[out] outlier_mask 1D logical array indicating outliers [n_samples]
-    !! @param[out] ierr Error code (0 = success, >0 = error)
     pure subroutine detect_outliers_integrated(contributions, threshold, outlier_mask, ierr)
         real(real64), intent(in) :: contributions(:)
+        !! Array of integrated contributions [n_samples]
         real(real64), intent(in) :: threshold
+        !! Scalar threshold value for outlier detection
         logical, intent(out) :: outlier_mask(:)
+        !! 1D logical array indicating outliers [n_samples]
         integer(int32), intent(out) :: ierr
-        
+        !! Error code
         integer(int32) :: n_samples, i
         
         ! Initialize error
@@ -296,16 +278,15 @@ contains
     !!
     !! Identifies timepoint-sample pairs where spike contributions exceed their
     !! timepoint-specific empirical thresholds. Used to find local significant events.
-    !!
-    !! @param[in] spike_contribs 2D array of spike contributions [n_timepoints, n_samples]
-    !! @param[in] thresholds 1D array of thresholds for each timepoint [n_timepoints]
-    !! @param[out] outlier_mask 2D logical array indicating outliers [n_timepoints, n_samples]
-    !! @param[out] ierr Error code (0 = success, >0 = error)
     pure subroutine detect_outliers_spike(spike_contribs, thresholds, outlier_mask, ierr)
         real(real64), intent(in) :: spike_contribs(:, :)
+        !! Array of spike contributions [n_timepoints, n_samples]
         real(real64), intent(in) :: thresholds(:)
+        !! Array of thresholds for each timepoint [n_timepoints]
         logical, intent(out) :: outlier_mask(:, :)
+        !! Logical array indicating outliers [n_timepoints, n_samples]
         integer(int32), intent(out) :: ierr
+        !! Error code
         
         integer(int32) :: n_timepoints, n_samples, i, j
         
@@ -340,5 +321,335 @@ contains
         end do
         
     end subroutine detect_outliers_spike
-
 end module tox_trajectory_contribution_analysis
+
+!> C wrapper for calc_spike_thresholds (with pre-computed 2D permutations)
+subroutine calc_spike_thresholds_C(spike_contribs, n_timepoints, n_samples, &
+                                    percentile_val, thresholds, permutation, ierr) &
+                                    bind(C, name="calc_spike_thresholds_C")
+    use iso_c_binding, only: c_double, c_int
+    use iso_fortran_env, only: real64, int32
+    use tox_errors, only: set_ok, set_err, is_err, ERR_EMPTY_INPUT
+    real(c_double), intent(in) :: spike_contribs(n_timepoints, n_samples)
+    !! 2D array of spike contributions [n_timepoints, n_samples]
+    integer(c_int), intent(in), value :: n_timepoints
+    !! Number of timepoints
+    integer(c_int), intent(in), value :: n_samples
+    !! Number of samples
+    real(c_double), intent(in), value :: percentile_val
+    !! Percentile value for threshold (0.0-100.0)
+    real(c_double), intent(out) :: thresholds(n_timepoints)
+    !! 1D array of thresholds for each timepoint [n_timepoints]
+    integer(c_int), intent(in) :: permutation(n_timepoints, n_samples)
+    !! Pre-computed permutation indices for each timepoint [n_timepoints, n_samples]
+    integer(c_int), intent(out) :: ierr
+    !! Error code
+    
+    real(real64) :: contribs_2d(n_timepoints, n_samples)
+    real(real64) :: thresh_1d(n_timepoints)
+    integer(int32) :: perm_2d(n_timepoints, n_samples)
+    integer :: i, j
+    
+    ! Initialize error
+    call set_ok(ierr)
+    
+    ! Check for valid dimensions
+    if (n_timepoints <= 0 .or. n_samples <= 0) then
+        call set_err(ierr, ERR_EMPTY_INPUT)  ! ERR_EMPTY_INPUT
+        return
+    end if
+    
+    ! Convert input arrays (ORDER='F' in Python so same memory layout as Fortran)
+    do j = 1, n_samples
+        do i = 1, n_timepoints
+            contribs_2d(i, j) = real(spike_contribs(i, j), real64)
+            perm_2d(i, j) = int(permutation(i, j), int32)
+        end do
+    end do
+    
+    ! Call Fortran subroutine
+    call calc_spike_thresholds(contribs_2d, real(percentile_val, real64), &
+                                thresh_1d, perm_2d, ierr)
+    
+    ! Convert output back to C
+    if (.not. is_err(ierr)) then
+        do i = 1, n_timepoints
+            thresholds(i) = real(thresh_1d(i), c_double)
+        end do
+    end if
+    
+end subroutine calc_spike_thresholds_c
+
+!> C wrapper for calc_spike_thresholds_alloc (with internal allocations)
+subroutine calc_spike_thresholds_alloc_C(spike_contribs, n_timepoints, n_samples, &
+                                        percentile_val, thresholds, ierr) &
+                                        bind(C, name="calc_spike_thresholds_alloc_C")
+    real(c_double), intent(in) :: spike_contribs(n_timepoints, n_samples)
+    !! Array of spike contributions [n_timepoints, n_samples]
+    integer(c_int), intent(in), value :: n_timepoints, n_samples
+    !! Number of timepoints and samples
+    real(c_double), intent(in), value :: percentile_val
+    !! Percentile value for threshold (0.0-100.0)
+    real(c_double), intent(out) :: thresholds(n_timepoints)
+    !! 1D array of thresholds for each timepoint [n_timepoints]
+    integer(c_int), intent(out) :: ierr
+    !! Error code
+    
+    real(real64) :: contribs_2d(n_timepoints, n_samples)
+    !! 2D array for Fortran spike contributions
+    real(real64) :: thresh_1d(n_timepoints)
+    !! 1D array for Fortran thresholds
+
+    integer :: i, j
+    
+    ! Initialize error
+    call set_ok(ierr)
+    
+    ! Check for valid dimensions
+    if (n_timepoints <= 0 .or. n_samples <= 0) then
+        call set_err(fortran_ierr, ERR_EMPTY_INPUT)
+        return
+    end if
+    
+    ! Convert input array (ORDER='F' in Python so same memory layout as Fortran)
+    do j = 1, n_samples
+        do i = 1, n_timepoints
+            contribs_2d(i, j) = real(spike_contribs(i, j), real64)
+        end do
+    end do
+    
+    ! Call Fortran subroutine
+    call calc_spike_thresholds_alloc(contribs_2d, real(percentile_val, real64), &
+                                    thresh_1d, fortran_ierr)
+    
+    ! Convert output back to C
+    if (.not. is_err(fortran_ierr)) then
+        do i = 1, n_timepoints
+            thresholds(i) = real(thresh_1d(i), c_double)
+        end do
+    end if
+    
+    ! Set error code for C
+    ierr = fortran_ierr
+    
+end subroutine calc_spike_thresholds_alloc_c
+
+!> C wrapper for calc_integrated_threshold (with pre-computed permutation)
+subroutine calc_integrated_threshold_C(contributions, n_samples, percentile_val, &
+                                        threshold, permutation, ierr) &
+                                        bind(C, name="calc_integrated_threshold_C")
+    real(c_double), intent(in) :: contributions(n_samples)
+    !! 1D array of integrated contributions [n_samples]
+    integer(c_int), intent(in), value :: n_samples
+    !! Number of samples
+    real(c_double), intent(in), value :: percentile_val
+    !! Percentile value for threshold (0.0-100.0)
+    real(c_double), intent(out) :: threshold
+    !! Scalar threshold value
+    integer(c_int), intent(in) :: permutation(n_samples)
+    !! Pre-computed permutation indices for sorted contributions [n_samples]
+    integer(c_int), intent(out) :: ierr
+    !! Error code
+    
+    real(real64) :: contribs_1d(n_samples)
+    integer(int32) :: perm_1d(n_samples)
+    real(real64) :: threshold_f
+    integer :: i
+    
+    ! Initialize error
+    call set_ok(ierr)
+    
+    ! Check for valid dimensions
+    if (n_samples <= 0) then
+        call set_err(fortran_ierr, ERR_EMPTY_INPUT)  ! ERR_EMPTY_INPUT
+        return
+    end if
+    
+    ! Convert input arrays
+    do i = 1, n_samples
+        contribs_1d(i) = real(contributions(i), real64)
+        perm_1d(i) = int(permutation(i), int32)
+    end do
+    
+    ! Call Fortran subroutine
+    call calc_integrated_threshold(contribs_1d, real(percentile_val, real64), &
+                                threshold_f, perm_1d, ierr)
+    
+    ! Convert output back to C
+    if (.not. is_err(ierr)) then
+        threshold = real(threshold_f, c_double)
+    else
+        threshold = 0.0_c_double
+    end if
+    
+end subroutine calc_integrated_threshold_c
+
+!> C wrapper for calc_integrated_threshold_alloc (with internal allocations)
+subroutine calc_integrated_threshold_alloc_c(contributions, n_samples, percentile_val, &
+                                            threshold, ierr) &
+    bind(c, name="calc_integrated_threshold_alloc")
+    real(c_double), intent(in) :: contributions(n_samples)
+    integer(c_int), intent(in), value :: n_samples
+    real(c_double), intent(in), value :: percentile_val
+    real(c_double), intent(out) :: threshold
+    integer(c_int), intent(out) :: ierr
+    
+    real(real64) :: contribs_1d(n_samples)
+    real(real64) :: threshold_f
+    integer(int32) :: fortran_ierr
+    integer :: i
+    
+    ! Initialize error
+    call set_ok(fortran_ierr)
+    ierr = ERR_OK
+    
+    ! Check for valid dimensions
+    if (n_samples <= 0) then
+        call set_err(fortran_ierr, 202)  ! ERR_EMPTY_INPUT
+        ierr = fortran_ierr
+        return
+    end if
+    
+    ! Convert input array
+    do i = 1, n_samples
+        contribs_1d(i) = real(contributions(i), real64)
+    end do
+    
+    ! Call Fortran subroutine
+    call calc_integrated_threshold_alloc(contribs_1d, real(percentile_val, real64), &
+                                        threshold_f, fortran_ierr)
+    
+    ! Convert output back to C
+    if (.not. is_err(fortran_ierr)) then
+        threshold = real(threshold_f, c_double)
+    else
+        threshold = 0.0_c_double
+    end if
+    
+    ! Set error code for C
+    ierr = fortran_ierr
+    
+end subroutine calc_integrated_threshold_alloc_c
+
+!> C wrapper for detect_outliers_integrated
+subroutine detect_outliers_integrated_c(contributions, n_samples, threshold, &
+                                        outlier_mask, ierr) &
+    bind(c, name="detect_outliers_integrated")
+    real(c_double), intent(in) :: contributions(n_samples)
+    integer(c_int), intent(in), value :: n_samples
+    real(c_double), intent(in), value :: threshold
+    integer(c_int), intent(out) :: outlier_mask(n_samples)  ! c_int for logical
+    integer(c_int), intent(out) :: ierr
+    
+    real(real64) :: contribs_1d(n_samples)
+    logical :: mask_1d(n_samples)
+    integer(int32) :: fortran_ierr
+    integer :: i
+    
+    ! Initialize error
+    call set_ok(fortran_ierr)
+    ierr = ERR_OK
+    
+    ! Check for valid dimensions
+    if (n_samples <= 0) then
+        call set_err(fortran_ierr, 202)  ! ERR_EMPTY_INPUT
+        ierr = fortran_ierr
+        return
+    end if
+    
+    ! Convert input array
+    do i = 1, n_samples
+        contribs_1d(i) = real(contributions(i), real64)
+    end do
+    
+    ! Call Fortran subroutine
+    call detect_outliers_integrated(contribs_1d, real(threshold, real64), &
+                                    mask_1d, fortran_ierr)
+    
+    ! Convert Fortran logical to C int (0=false, 1=true)
+    if (.not. is_err(fortran_ierr)) then
+        do i = 1, n_samples
+            if (mask_1d(i)) then
+                outlier_mask(i) = 1_c_int
+            else
+                outlier_mask(i) = 0_c_int
+            end if
+        end do
+    else
+        ! Initialize output to false on error
+        do i = 1, n_samples
+            outlier_mask(i) = 0_c_int
+        end do
+    end if
+    
+    ! Set error code for C
+    ierr = fortran_ierr
+    
+end subroutine detect_outliers_integrated_c
+
+!> C wrapper for detect_outliers_spike
+subroutine detect_outliers_spike_c(spike_contribs, n_timepoints, n_samples, thresholds, &
+                                    outlier_mask, ierr) &
+    bind(c, name="detect_outliers_spike")
+    real(c_double), intent(in) :: spike_contribs(n_timepoints, n_samples)
+    integer(c_int), intent(in), value :: n_timepoints, n_samples
+    real(c_double), intent(in) :: thresholds(n_timepoints)
+    integer(c_int), intent(out) :: outlier_mask(n_timepoints, n_samples)  ! c_int for logical
+    integer(c_int), intent(out) :: ierr
+    
+    real(real64) :: contribs_2d(n_timepoints, n_samples)
+    real(real64) :: thresh_1d(n_timepoints)
+    logical :: mask_2d(n_timepoints, n_samples)
+    integer(int32) :: fortran_ierr
+    integer :: i, j
+    
+    ! Initialize error
+    call set_ok(fortran_ierr)
+    ierr = ERR_OK
+    
+    ! Check for valid dimensions
+    if (n_timepoints <= 0 .or. n_samples <= 0) then
+        call set_err(fortran_ierr, 202)  ! ERR_EMPTY_INPUT
+        ierr = fortran_ierr
+        return
+    end if
+    
+    ! Convert input arrays (ORDER='F' in Python so same memory layout as Fortran)
+    do j = 1, n_samples
+        do i = 1, n_timepoints
+            contribs_2d(i, j) = real(spike_contribs(i, j), real64)
+        end do
+    end do
+    
+    ! Convert thresholds array
+    do i = 1, n_timepoints
+        thresh_1d(i) = real(thresholds(i), real64)
+    end do
+    
+    ! Call Fortran subroutine
+    call detect_outliers_spike(contribs_2d, thresh_1d, mask_2d, fortran_ierr)
+    
+    ! Convert Fortran logical to C int (0=false, 1=true)
+    if (.not. is_err(fortran_ierr)) then
+        do j = 1, n_samples
+            do i = 1, n_timepoints
+                if (mask_2d(i, j)) then
+                    outlier_mask(i, j) = 1_c_int
+                else
+                    outlier_mask(i, j) = 0_c_int
+                end if
+            end do
+        end do
+    else
+        ! Initialize output to false on error
+        do j = 1, n_samples
+            do i = 1, n_timepoints
+                outlier_mask(i, j) = 0_c_int
+            end do
+        end do
+    end if
+    
+    ! Set error code for C
+    ierr = fortran_ierr
+    
+end subroutine detect_outliers_spike_c
