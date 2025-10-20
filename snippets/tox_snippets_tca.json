@@ -1,0 +1,17 @@
+{
+    "Call to get_vec_across_samples": {
+        "prefix": "tox:get_vec_across_samples",
+        "body": [
+            "call get_vec_across_samples(trajectories, n_factors, n_samples, n_timepoints, i_factor, i_timepoint, result_vector, ierr)"
+        ],
+        "description": "Get trajectories(i_factor, :, i_timepoint)"
+    },
+
+    "Call to get_vec_across_timepoints": {
+        "prefix": "tox:get_vec_across_timepoints",
+        "body": [
+            "call get_vec_across_timepoints(trajectories, n_factors, n_samples, n_timepoints, i_factor, i_sample, result_vector, ierr)"
+        ],
+        "description": "Get trajectories(i_factor, i_sample, :)"
+    }
+}

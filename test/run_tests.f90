@@ -20,13 +20,13 @@ program main
   use mod_test_gene_centroids
   use mod_test_tox_conversions
   use mod_test_arrays
-
+  use mod_test_tox_trajectory_contribution_analysis
 
   implicit none
 
   ! Type for suite registry
   type :: suite_entry
-    character(len=64) :: name
+    character(len=128) :: name
     procedure(run_all_interface), pointer, nopass :: run_all => null()
     procedure(run_named_interface), pointer, nopass :: run_named => null()
   end type suite_entry
@@ -45,7 +45,7 @@ program main
   type(suite_entry), allocatable :: available_suites(:)
 
   integer :: nargs
-  character(len=64) :: requested_suite, test_list
+  character(len=128) :: requested_suite, test_list
 
   ! Initialize the suite registry
   call initialize_suites()
@@ -101,7 +101,7 @@ contains
     call add_suite("arrays", run_all_tests_array, run_named_tests_array)
     call add_suite("gene_centroids", run_all_tests_gene_centroids, run_named_tests_gene_centroids)
     call add_suite("tox_conversions", run_all_tests_tox_conversions, run_named_tests_tox_conversions)
-    
+    call add_suite("tox_trajectory_contribution_analysis", run_all_tests_tox_trajectory_contribution_analysis, run_named_tests_tox_trajectory_contribution_analysis)
   end subroutine initialize_suites
   
 
@@ -177,8 +177,8 @@ contains
   subroutine run_tests_from_list(test_list, run_named_proc)
     character(len=*), intent(in) :: test_list
     procedure(run_named_interface) :: run_named_proc
-    character(len=64) :: test_name
-    character(len=64) :: single_test_array(1)
+    character(len=128) :: test_name
+    character(len=128) :: single_test_array(1)
     integer :: start, end, pos
     
     start = 1
