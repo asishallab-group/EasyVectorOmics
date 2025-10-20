@@ -4,7 +4,7 @@ module tox_trajectory_contribution_analysis
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
     use f42_utils, only: is_close
-    use tox_errors, only: set_ok, set_err, is_err, ERR_IDX_OUT_OF_BOUNDS, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, ERR_INVALID_INPUT, ERR_NAN_INF
+    use tox_errors, only: set_ok, set_err, is_err, ERR_IDX_OUT_OF_BOUNDS, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, ERR_INVALID_INPUT, ERR_NAN_INF, ERR_ALLOC_FAIL
     implicit none
 
     integer(int32), parameter :: MODE_NORMAL = 1
@@ -209,7 +209,14 @@ contains
         integer(int32), intent(out) :: ierr
             !! Error code
 
-        real(real64), dimension(n_timepoints) :: temp_factor_vector, temp_dependent_vector
+        real(real64), dimension(:), allocatable :: temp_factor_vector, temp_dependent_vector
+
+        call set_ok(ierr)
+        allocate(temp_factor_vector(n_timepoints), temp_dependent_vector(n_timepoints), stat=ierr)
+        if (is_err(ierr)) then
+            call set_err(ierr, ERR_ALLOC_FAIL)
+            return
+        end if
 
         call calc_contributions(trajectories, n_factors, n_samples, n_timepoints, i_factor, dependent_idx, mode, spike_contribs, integrated_contribs, temp_factor_vector, temp_dependent_vector, ierr)
     end subroutine calc_contributions_alloc
