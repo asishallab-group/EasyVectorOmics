@@ -426,6 +426,104 @@ contains
     end do
   end subroutine loess_smooth_2d
 
+  pure subroutine calc_percentile(data, permutation, percentile, value, ierr)
+    real(real64), intent(in) :: data(:)
+    integer(int32), intent(in) :: permutation(:)  ! Already contains sorted indices
+    real(real64), intent(in) :: percentile
+    real(real64), intent(out) :: value
+    integer(int32), intent(out) :: ierr
+    
+    integer(int32) :: n, lower_index
+    real(real64) :: index, fraction, lower_value, upper_value
+    
+    ! Initialize error
+    call set_ok(ierr)
+    
+    ! Input validation
+    n = size(data)
+    if (n == 0) then
+      call set_err_once(ierr, ERROR_EMPTY_INPUT)
+      value = 0.0_real64
+      return
+    end if
+    
+    if (size(permutation) /= n) then
+      call set_err_once(ierr, ERROR_INVALID_INPUT)
+      value = 0.0_real64
+      return
+    end if
+    
+    if (percentile < 0.0_real64 .or. percentile > 100.0_real64) then
+      call set_err_once(ierr, ERROR_INVALID_INPUT)
+      value = 0.0_real64
+      return
+    end if
+    
+    ! Handle single element case
+    if (n == 1) then
+      value = data(1)
+      return
+    end if
+    
+    ! Calculate the fractional index using linear interpolation method
+    ! This follows the method used in numpy.percentile with interpolation='linear'
+    index = (percentile / 100.0_real64) * real(n - 1, real64) + 1.0_real64
+    
+    lower_index = floor(index)
+    fraction = index - real(lower_index, real64)
+    
+    ! Handle edge cases for indices
+    if (lower_index < 1) then
+      value = data(permutation(1))  ! Smallest value in sorted order
+    else if (lower_index >= n) then
+      value = data(permutation(n))  ! Largest value in sorted order
+    else
+      ! Linear interpolation between adjacent values using permuted indices
+      lower_value = data(permutation(lower_index))
+      upper_value = data(permutation(lower_index + 1))
+      value = lower_value + fraction * (upper_value - lower_value)
+    end if
+  end subroutine calc_percentile
+
+  subroutine calc_percentile_alloc(array, percentile, value, ierr)
+    use tox_errors, only: ERROR_EMPTY_INPUT, ERR_ALLOC_FAIL, set_ok, set_err, is_err
+    real(real64), intent(in) :: array(:)
+    real(real64), intent(in) :: percentile
+    real(real64), intent(out) :: value
+    integer(int32), intent(out) :: ierr
+
+    integer(int32) :: n
+    integer(int32), allocatable :: perm(:)
+    integer(int32), allocatable :: stack_left(:), stack_right(:)
+
+    n = size(array)
+    ! Initialize error
+    call set_ok(ierr)
+
+    if (n == 0) then
+      call set_err_once(ierr, ERROR_EMPTY_INPUT)
+      value = 0.0_real64
+      return
+    end if
+
+    ! Allocate permutation and stacks
+    allocate(perm(n), stack_left(n), stack_right(n), stat=ierr)
+    if (is_err(ierr)) then
+      call set_err(ierr, ERR_ALLOC_FAIL)
+      value = 0.0_real64
+      return
+    end if
+
+    ! Initialize permutation to identity
+    perm = [(i, i=1,n)]
+
+    ! Sort the array indirectly
+    call sort_real(array, perm, stack_left, stack_right)
+
+    ! Calculate percentile using sorted permutation
+    call calc_percentile(array, perm, percentile, value, ierr)
+  end subroutine calc_percentile_alloc
+
 end module f42_utils
 
 
