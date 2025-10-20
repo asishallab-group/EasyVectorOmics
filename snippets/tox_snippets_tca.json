@@ -127,6 +127,7 @@
                 "        ctypes.byref(ierr)",
                 "    )",
                 "    check_err_code(ierr.value)",
+                "    _readonly(contribution)",
                 "    return contribution",
                 ""
             ],

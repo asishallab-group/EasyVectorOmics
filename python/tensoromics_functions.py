@@ -2113,4 +2113,5 @@ def tox_spike_contribution(factor, dependent, mode):
         ctypes.byref(ierr)
     )
     check_err_code(ierr.value)
+    _readonly(contribution)
     return contribution
