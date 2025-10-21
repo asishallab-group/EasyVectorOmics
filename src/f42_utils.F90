@@ -1,4 +1,6 @@
 !> Utility module for data analysis.
+!| This module provides general-purpose utility functions for data analysis, including
+!| indirect sorting, index selection (which), LOESS smoothing, and EDF computation.
 
 module f42_utils
   use, intrinsic :: iso_fortran_env, only: real64, int32
@@ -427,6 +429,9 @@ contains
   end subroutine loess_smooth_2d
 
   !> Compute the Empirical Distribution Function (EDF).
+  !| Returns the sorted unique values and their cumulative frequencies in [0,1].
+  !| Uses indirect sorting via permutation vector; original input is unchanged.
+  !| Allocates/deallocates internal work stacks for iterative quicksort.
   subroutine compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
     !| Array of observed data values (e.g., contributions or spikes).
     real(real64), intent(in) :: values(:)
@@ -631,6 +636,8 @@ subroutine loess_smooth_2d_c(n_total, n_target, x_ref, y_ref, indices_used, n_us
 end subroutine loess_smooth_2d_c
 
 !> C wrapper for compute_edf.
+!| Allocates permutation workspace internally and exposes a simple interface with C types.
+!| The EDF is computed on the first n_values elements; outputs are filled for n_unique elements.
 subroutine compute_edf_c(values, n_values, unique_values, cdf_values, max_unique, n_unique, ierr) &
     bind(C, name="compute_edf_c")
   use iso_c_binding, only: c_int, c_double
