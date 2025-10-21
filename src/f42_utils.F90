@@ -426,8 +426,8 @@ contains
     end do
   end subroutine loess_smooth_2d
 
-  pure subroutine calc_percentile(data, permutation, percentile, value, ierr)
-    real(real64), intent(in) :: data(:)
+  pure subroutine calc_percentile(array, permutation, percentile, value, ierr)
+    real(real64), intent(in) :: array(:)
     integer(int32), intent(in) :: permutation(:)  ! Already contains sorted indices
     real(real64), intent(in) :: percentile
     real(real64), intent(out) :: value
@@ -440,7 +440,7 @@ contains
     call set_ok(ierr)
     
     ! Input validation
-    n = size(data)
+    n = size(array)
     if (n == 0) then
       call set_err_once(ierr, ERR_EMPTY_INPUT)
       value = 0.0_real64
@@ -461,7 +461,7 @@ contains
     
     ! Handle single element case
     if (n == 1) then
-      value = data(1)
+      value = array(1)
       return
     end if
     
@@ -474,13 +474,13 @@ contains
     
     ! Handle edge cases for indices
     if (lower_index < 1) then
-      value = data(permutation(1))  ! Smallest value in sorted order
+      value = array(permutation(1))  ! Smallest value in sorted order
     else if (lower_index >= n) then
-      value = data(permutation(n))  ! Largest value in sorted order
+      value = array(permutation(n))  ! Largest value in sorted order
     else
       ! Linear interpolation between adjacent values using permuted indices
-      lower_value = data(permutation(lower_index))
-      upper_value = data(permutation(lower_index + 1))
+      lower_value = array(permutation(lower_index))
+      upper_value = array(permutation(lower_index + 1))
       value = lower_value + fraction * (upper_value - lower_value)
     end if
   end subroutine calc_percentile
