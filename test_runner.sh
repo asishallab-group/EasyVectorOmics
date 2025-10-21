@@ -56,10 +56,31 @@ if [ -e "$EXECUTABLE" ]; then
 fi
 
 echo "Compiling test modules..."
-# Then compile test/ modules using .mod files from build/
+# First compile asserts.f90 (needed by all other tests)
+echo "Compiling asserts module..."
 $COMPILER $FLAGS $MODULE_FLAG -DDEFAULT_ALIGNMENT=$ALIGN $MAX_PERF_FLAG \
   -I$BUILD_DIR -I$SOURCE_DIR -I$TEST_DIR \
-  -c $TEST_DIR/*.f90
+  -c $TEST_DIR/asserts.f90
+
+# Move .mod files to build immediately so they're available for next compilation
+mv *.mod $BUILD_DIR/ 2>/dev/null || true
+
+# Then compile all test modules
+echo "Compiling test modules..."
+for test_file in $TEST_DIR/mod_test_*.f90; do
+  echo "Compiling $(basename $test_file)..."
+  $COMPILER $FLAGS $MODULE_FLAG -DDEFAULT_ALIGNMENT=$ALIGN $MAX_PERF_FLAG \
+    -I$BUILD_DIR -I$SOURCE_DIR -I$TEST_DIR \
+    -c "$test_file"
+  # Move .mod files incrementally
+  mv *.mod $BUILD_DIR/ 2>/dev/null || true
+done
+
+# Finally compile run_tests.f90
+echo "Compiling run_tests.f90..."
+$COMPILER $FLAGS $MODULE_FLAG -DDEFAULT_ALIGNMENT=$ALIGN $MAX_PERF_FLAG \
+  -I$BUILD_DIR -I$SOURCE_DIR -I$TEST_DIR \
+  -c $TEST_DIR/run_tests.f90
 
 compilation_result=$?
 echo "Test compilation exit code: $compilation_result"
