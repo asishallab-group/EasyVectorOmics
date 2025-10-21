@@ -400,9 +400,9 @@ pure subroutine calc_contributions_expert_c(trajectories, n_factors, n_samples, 
         !! Output array to hold the contribution per sample
     real(c_double), dimension(n_timepoints, n_samples), intent(out), target :: spike_contribs
         !! Output array to hold the timpoint-wise contributions per sample
-    real(c_double), dimension(n_timepoints), intent(out) :: temp_factor_vector
+    real(c_double), dimension(n_timepoints), intent(out), target :: temp_factor_vector
         !! Work array to hold the vector of `i_factor` per sample
-    real(c_double), dimension(n_timepoints), intent(out) :: temp_dependent_vector
+    real(c_double), dimension(n_timepoints), intent(out), target :: temp_dependent_vector
         !! Work array to hold the vector of `dependent_idx` per sample
     integer(c_int), intent(out), target :: ierr
         !! Error code
@@ -417,6 +417,8 @@ pure subroutine calc_contributions_expert_c(trajectories, n_factors, n_samples, 
     M_CHECK_NON_NULL(mode)
     M_CHECK_NON_NULL(integrated_contribs)
     M_CHECK_NON_NULL(spike_contribs)
+    M_CHECK_NON_NULL(temp_factor_vector)
+    M_CHECK_NON_NULL(temp_dependent_vector)
 
     call calc_contributions(trajectories, n_factors, n_samples, n_timepoints, i_factor + 1, dependent_idx + 1, mode, spike_contribs, integrated_contribs, temp_factor_vector, temp_dependent_vector, ierr)
 end subroutine calc_contributions_expert_c
