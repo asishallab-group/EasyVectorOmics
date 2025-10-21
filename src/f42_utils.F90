@@ -431,14 +431,18 @@ contains
   !> Compute the Empirical Distribution Function (EDF).
   !| Returns the sorted unique values and their cumulative frequencies in [0,1].
   !| Uses indirect sorting via permutation vector; original input is unchanged.
-  !| Allocates/deallocates internal work stacks for iterative quicksort.
-  subroutine compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
+  pure subroutine compute_edf(values, n_values, perm, stack_left, stack_right, &
+                               unique_values, cdf_values, n_unique, ierr)
     !| Array of observed data values (e.g., contributions or spikes).
     real(real64), intent(in) :: values(:)
     !| Number of values in the input array.
     integer(int32), intent(in) :: n_values
     !| Permutation vector that will be sorted (workspace).
     integer(int32), intent(inout) :: perm(:)
+    !| Stack workspace for sorting (left indices).
+    integer(int32), intent(inout) :: stack_left(:)
+    !| Stack workspace for sorting (right indices).
+    integer(int32), intent(inout) :: stack_right(:)
     !| Sorted unique data values.
     real(real64), intent(out) :: unique_values(:)
     !| Corresponding cumulative frequencies between 0 and 1.
@@ -451,8 +455,6 @@ contains
     integer(int32) :: i, j, count
     real(real64) :: current_val, cumulative_count
     real(real64) :: tolerance
-    ! Internal workspace arrays for sorting
-    integer(int32), allocatable :: stack_left(:), stack_right(:)
 
     ! Initialize error code
     call set_ok(ierr)
@@ -466,13 +468,11 @@ contains
       return
     end if
 
-    if (size(values) < n_values .or. size(perm) < n_values) then
+    if (size(values) < n_values .or. size(perm) < n_values .or. &
+        size(stack_left) < n_values .or. size(stack_right) < n_values) then
       call set_err_once(ierr, ERR_INVALID_INPUT)
       return
     end if
-
-    ! Allocate workspace arrays for sorting
-    allocate(stack_left(n_values), stack_right(n_values))
 
     ! Initialize permutation vector to [1, 2, 3, ..., n_values]
     do i = 1, n_values
@@ -481,9 +481,6 @@ contains
 
     ! Sort values using the permutation vector
     call sort_real(values, perm, stack_left, stack_right)
-    
-    ! Deallocate workspace
-    deallocate(stack_left, stack_right)
 
     ! Set tolerance for floating-point comparison (relative to value magnitude)
     tolerance = 1.0e-12_real64
@@ -636,7 +633,7 @@ subroutine loess_smooth_2d_c(n_total, n_target, x_ref, y_ref, indices_used, n_us
 end subroutine loess_smooth_2d_c
 
 !> C wrapper for compute_edf.
-!| Allocates permutation workspace internally and exposes a simple interface with C types.
+!| Allocates workspace internally and exposes a simple interface with C types.
 !| The EDF is computed on the first n_values elements; outputs are filled for n_unique elements.
 subroutine compute_edf_c(values, n_values, unique_values, cdf_values, max_unique, n_unique, ierr) &
     bind(C, name="compute_edf_c")
@@ -659,11 +656,12 @@ subroutine compute_edf_c(values, n_values, unique_values, cdf_values, max_unique
   !| Error code: 0=ok, 201=invalid input, 202=empty input
   integer(c_int), intent(out) :: ierr
 
-  ! Workspace array for permutation
-  integer(int32) :: perm(n_values)
+  ! Workspace arrays for sorting
+  integer(int32) :: perm(n_values), stack_left(n_values), stack_right(n_values)
   integer(int32) :: ierr_f, n_unique_f
 
-  call compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique_f, ierr_f)
+  call compute_edf(values, n_values, perm, stack_left, stack_right, &
+                   unique_values, cdf_values, n_unique_f, ierr_f)
   
   n_unique = n_unique_f
   ierr = ierr_f

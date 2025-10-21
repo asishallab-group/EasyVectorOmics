@@ -275,7 +275,7 @@ contains
     real(real64), dimension(6) :: values = [1.0_real64, 3.0_real64, 1.0_real64, &
                                              2.0_real64, 3.0_real64, 3.0_real64]
     integer(int32) :: n_values = 6
-    integer(int32) :: perm(6)
+    integer(int32) :: perm(6), stack_left(6), stack_right(6)
     real(real64) :: unique_values(6), cdf_values(6)
     real(real64) :: expected_unique(3), expected_cdf(3)
     integer(int32) :: n_unique, ierr
@@ -283,7 +283,8 @@ contains
     expected_unique = [1.0_real64, 2.0_real64, 3.0_real64]
     expected_cdf = [2.0_real64/6.0_real64, 3.0_real64/6.0_real64, 6.0_real64/6.0_real64]
     
-    call compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
+    call compute_edf(values, n_values, perm, stack_left, stack_right, &
+                     unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_OK, "test_edf_simple: error code should be ERR_OK")
     call assert_equal_int(n_unique, 3, "test_edf_simple: should find 3 unique values")
@@ -299,7 +300,7 @@ contains
     real(real64), dimension(5) :: values = [5.0_real64, 1.0_real64, 3.0_real64, &
                                              2.0_real64, 4.0_real64]
     integer(int32) :: n_values = 5
-    integer(int32) :: perm(5)
+    integer(int32) :: perm(5), stack_left(5), stack_right(5)
     real(real64) :: unique_values(5), cdf_values(5)
     real(real64) :: expected_unique(5), expected_cdf(5)
     integer(int32) :: n_unique, ierr, i
@@ -309,7 +310,8 @@ contains
       expected_cdf(i) = real(i, real64) / 5.0_real64
     end do
     
-    call compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
+    call compute_edf(values, n_values, perm, stack_left, stack_right, &
+                     unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_OK, "test_edf_all_unique: error code should be ERR_OK")
     call assert_equal_int(n_unique, 5, "test_edf_all_unique: should find 5 unique values")
@@ -324,11 +326,12 @@ contains
   subroutine test_edf_all_same()
     real(real64), dimension(7) :: values = 2.5_real64
     integer(int32) :: n_values = 7
-    integer(int32) :: perm(7)
+    integer(int32) :: perm(7), stack_left(7), stack_right(7)
     real(real64) :: unique_values(7), cdf_values(7)
     integer(int32) :: n_unique, ierr
     
-    call compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
+    call compute_edf(values, n_values, perm, stack_left, stack_right, &
+                     unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_OK, "test_edf_all_same: error code should be ERR_OK")
     call assert_equal_int(n_unique, 1, "test_edf_all_same: should find 1 unique value")
@@ -343,14 +346,15 @@ contains
     real(real64), dimension(6) :: values = [1.0_real64, 1.0_real64, 2.0_real64, &
                                              2.0_real64, 2.0_real64, 3.0_real64]
     integer(int32) :: n_values = 6
-    integer(int32) :: perm(6)
+    integer(int32) :: perm(6), stack_left(6), stack_right(6)
     real(real64) :: unique_values(6), cdf_values(6)
     real(real64) :: expected_cdf(3)
     integer(int32) :: n_unique, ierr
     
     expected_cdf = [2.0_real64/6.0_real64, 5.0_real64/6.0_real64, 1.0_real64]
     
-    call compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
+    call compute_edf(values, n_values, perm, stack_left, stack_right, &
+                     unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_OK, "test_edf_duplicates: error code should be ERR_OK")
     call assert_equal_int(n_unique, 3, "test_edf_duplicates: should find 3 unique values")
@@ -362,11 +366,12 @@ contains
   subroutine test_edf_single_value()
     real(real64), dimension(1) :: values = [42.0_real64]
     integer(int32) :: n_values = 1
-    integer(int32) :: perm(1)
+    integer(int32) :: perm(1), stack_left(1), stack_right(1)
     real(real64) :: unique_values(1), cdf_values(1)
     integer(int32) :: n_unique, ierr
     
-    call compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
+    call compute_edf(values, n_values, perm, stack_left, stack_right, &
+                     unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_OK, "test_edf_single_value: error code should be ERR_OK")
     call assert_equal_int(n_unique, 1, "test_edf_single_value: should find 1 unique value")
@@ -378,11 +383,12 @@ contains
   subroutine test_edf_empty_input()
     real(real64), dimension(5) :: values = 0.0_real64
     integer(int32) :: n_values = 0  ! Empty input
-    integer(int32) :: perm(5)
+    integer(int32) :: perm(5), stack_left(5), stack_right(5)
     real(real64) :: unique_values(5), cdf_values(5)
     integer(int32) :: n_unique, ierr
     
-    call compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
+    call compute_edf(values, n_values, perm, stack_left, stack_right, &
+                     unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_EMPTY_INPUT, "test_edf_empty_input: should return ERR_EMPTY_INPUT")
     call assert_equal_int(n_unique, 0, "test_edf_empty_input: n_unique should be 0")
@@ -392,7 +398,7 @@ contains
   subroutine test_edf_large_dataset()
     integer(int32), parameter :: n = 100
     real(real64), dimension(n) :: values
-    integer(int32) :: perm(n)
+    integer(int32) :: perm(n), stack_left(n), stack_right(n)
     real(real64) :: unique_values(n), cdf_values(n)
     integer(int32) :: n_unique, ierr, i
     
@@ -401,7 +407,8 @@ contains
       values(i) = real((i + 1) / 2, real64)
     end do
     
-    call compute_edf(values, n, perm, unique_values, cdf_values, n_unique, ierr)
+    call compute_edf(values, n, perm, stack_left, stack_right, &
+                     unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_OK, "test_edf_large_dataset: error code should be ERR_OK")
     call assert_equal_int(n_unique, 50, "test_edf_large_dataset: should find 50 unique values")
@@ -418,14 +425,15 @@ contains
     real(real64), dimension(7) :: values = [-2.0_real64, 0.0_real64, -1.0_real64, &
                                              1.0_real64, -2.0_real64, 0.0_real64, 2.0_real64]
     integer(int32) :: n_values = 7
-    integer(int32) :: perm(7)
+    integer(int32) :: perm(7), stack_left(7), stack_right(7)
     real(real64) :: unique_values(7), cdf_values(7)
     real(real64) :: expected_unique(5)
     integer(int32) :: n_unique, ierr
     
     expected_unique = [-2.0_real64, -1.0_real64, 0.0_real64, 1.0_real64, 2.0_real64]
     
-    call compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
+    call compute_edf(values, n_values, perm, stack_left, stack_right, &
+                     unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_OK, "test_edf_negative_values: error code should be ERR_OK")
     call assert_equal_int(n_unique, 5, "test_edf_negative_values: should find 5 unique values")
