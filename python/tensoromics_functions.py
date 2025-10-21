@@ -1981,3 +1981,289 @@ def tox_mean_vector(expression_vectors, gene_indices):
     # Mark output as read-only
     _readonly(centroid_col)
     return centroid_col
+
+def calc_spike_thresholds(spike_contribs: np.ndarray, percentile_val: float, permutation: np.ndarray) -> np.ndarray:
+    """
+    Calculate empirical thresholds for spike contributions using pre-sorted permutations
+    
+    Args:
+        spike_contribs: 2D array of spike contributions [n_samples, n_genes] 
+                       (rows=samples, columns=genes) in Fortran order
+        percentile_val: Percentile value for threshold (0.0-100.0)
+        permutation: Pre-computed permutation indices [n_samples, n_genes] 
+                    (each column contains sorted indices for a gene) in Fortran order
+    
+    Returns:
+        thresholds: 1D array of thresholds for each gene [n_genes] (read-only)
+    """
+    # Ensure correct data types and memory layout
+    spike_contribs = np.asarray(spike_contribs, dtype=np.float64, order='F')
+    permutation = np.asarray(permutation, dtype=np.int32, order='F')
+    
+    n_samples, n_genes = spike_contribs.shape
+    
+    # Validate input dimensions
+    if permutation.shape != (n_samples, n_genes):
+        raise ValueError(f"permutation shape {permutation.shape} doesn't match spike_contribs shape {spike_contribs.shape}")
+    
+    if not (0.0 <= percentile_val <= 100.0):
+        raise ValueError("percentile_val must be between 0.0 and 100.0")
+    
+    # Prepare outputs
+    thresholds = np.zeros(n_genes, dtype=np.float64, order='F')
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper
+    calc_spike_thresholds_c = lib.calc_spike_thresholds_C
+    calc_spike_thresholds_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='F_CONTIGUOUS'),  # spike_contribs
+        ctypes.c_int,  # n_samples
+        ctypes.c_int,  # n_genes
+        ctypes.c_double,  # percentile_val
+        np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # thresholds
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags='F_CONTIGUOUS'),  # permutation
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    calc_spike_thresholds_c.restype = None
+    
+    # Call Fortran routine
+    calc_spike_thresholds_c(spike_contribs, n_samples, n_genes, percentile_val, 
+                           thresholds, permutation, ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    # Mark output as read-only
+    _readonly(thresholds)
+    return thresholds
+
+def calc_spike_thresholds_alloc(spike_contribs: np.ndarray, percentile_val: float) -> np.ndarray:
+    """
+    Calculate empirical thresholds for spike contributions with internal allocations and sorting
+    
+    Args:
+        spike_contribs: 2D array of spike contributions [n_samples, n_genes] 
+                       (rows=samples, columns=genes) in Fortran order
+        percentile_val: Percentile value for threshold (0.0-100.0)
+    
+    Returns:
+        thresholds: 1D array of thresholds for each gene [n_genes] (read-only)
+    """
+    # Ensure correct data types and memory layout
+    spike_contribs = np.asarray(spike_contribs, dtype=np.float64, order='F')
+    
+    n_samples, n_genes = spike_contribs.shape
+    
+    if not (0.0 <= percentile_val <= 100.0):
+        raise ValueError("percentile_val must be between 0.0 and 100.0")
+    
+    # Prepare outputs
+    thresholds = np.zeros(n_genes, dtype=np.float64, order='F')
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper
+    calc_spike_thresholds_alloc_c = lib.calc_spike_thresholds_alloc_C
+    calc_spike_thresholds_alloc_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='F_CONTIGUOUS'),  # spike_contribs
+        ctypes.c_int,  # n_samples
+        ctypes.c_int,  # n_genes
+        ctypes.c_double,  # percentile_val
+        np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # thresholds
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    calc_spike_thresholds_alloc_c.restype = None
+    
+    # Call Fortran routine
+    calc_spike_thresholds_alloc_c(spike_contribs, n_samples, n_genes, percentile_val, 
+                                 thresholds, ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    # Mark output as read-only
+    _readonly(thresholds)
+    return thresholds
+
+# ==================== INTEGRATED THRESHOLDS FUNCTIONS ====================
+
+def calc_integrated_threshold(contributions: np.ndarray, percentile_val: float, 
+                            permutation: np.ndarray) -> float:
+    """
+    Calculate empirical threshold for integrated (trajectory-level) contributions
+    
+    Args:
+        contributions: 1D array of integrated contributions [n_samples] in Fortran order
+        percentile_val: Percentile value for threshold (0.0-100.0)
+        permutation: Pre-computed permutation indices for sorted contributions [n_samples] 
+                    in Fortran order
+    
+    Returns:
+        threshold: Scalar threshold value
+    """
+    # Ensure correct data types and memory layout
+    contributions = np.asarray(contributions, dtype=np.float64, order='F')
+    permutation = np.asarray(permutation, dtype=np.int32, order='F')
+    
+    n_samples = contributions.size
+    
+    # Validate input dimensions
+    if permutation.size != n_samples:
+        raise ValueError(f"permutation size {permutation.size} doesn't match contributions size {n_samples}")
+    
+    if not (0.0 <= percentile_val <= 100.0):
+        raise ValueError("percentile_val must be between 0.0 and 100.0")
+    
+    # Prepare outputs
+    threshold = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper
+    calc_integrated_threshold_c = lib.calc_integrated_threshold_C
+    calc_integrated_threshold_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # contributions
+        ctypes.c_int,  # n_samples
+        ctypes.c_double,  # percentile_val
+        ctypes.POINTER(ctypes.c_double),  # threshold
+        np.ctypeslib.ndpointer(dtype=np.int32, flags='F_CONTIGUOUS'),  # permutation
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    calc_integrated_threshold_c.restype = None
+    
+    # Call Fortran routine
+    calc_integrated_threshold_c(contributions, n_samples, percentile_val, 
+                               threshold, permutation, ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    return threshold.value
+
+def calc_integrated_threshold_alloc(contributions: np.ndarray, percentile_val: float) -> float:
+    """
+    Calculate empirical threshold for integrated contributions with internal allocation and sorting
+    
+    Args:
+        contributions: 1D array of integrated contributions [n_samples] in Fortran order
+        percentile_val: Percentile value for threshold (0.0-100.0)
+    
+    Returns:
+        threshold: Scalar threshold value
+    """
+    # Ensure correct data types and memory layout
+    contributions = np.asarray(contributions, dtype=np.float64, order='F')
+    
+    n_samples = contributions.size
+    
+    if not (0.0 <= percentile_val <= 100.0):
+        raise ValueError("percentile_val must be between 0.0 and 100.0")
+    
+    # Prepare outputs
+    threshold = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper
+    calc_integrated_threshold_alloc_c = lib.calc_integrated_threshold_alloc_C
+    calc_integrated_threshold_alloc_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # contributions
+        ctypes.c_int,  # n_samples
+        ctypes.c_double,  # percentile_val
+        ctypes.POINTER(ctypes.c_double),  # threshold
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    calc_integrated_threshold_alloc_c.restype = None
+    
+    # Call Fortran routine
+    calc_integrated_threshold_alloc_c(contributions, n_samples, percentile_val, 
+                                     threshold, ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    return threshold.value
+
+# ==================== OUTLIER DETECTION FUNCTIONS ====================
+
+def detect_outliers_integrated(contributions: np.ndarray, threshold: float) -> np.ndarray:
+    """
+    Detect outliers in integrated (trajectory-level) contributions
+    
+    Args:
+        contributions: 1D array of integrated contributions [n_samples] in Fortran order
+        threshold: Scalar threshold value for outlier detection
+    
+    Returns:
+        outlier_mask: 1D boolean array indicating outlier samples [n_samples] (read-only)
+    """
+    # Ensure correct data types and memory layout
+    contributions = np.asarray(contributions, dtype=np.float64, order='F')
+    
+    n_samples = contributions.size
+    
+    # Prepare outputs
+    outlier_mask = np.zeros(n_samples, dtype=np.int32, order='F')  # C int for logical
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper
+    detect_outliers_integrated_c = lib.detect_outliers_integrated_C
+    detect_outliers_integrated_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # contributions
+        ctypes.c_int,  # n_samples
+        ctypes.c_double,  # threshold
+        np.ctypeslib.ndpointer(dtype=np.int32, flags='F_CONTIGUOUS'),  # outlier_mask
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    detect_outliers_integrated_c.restype = None
+    
+    # Call Fortran routine
+    detect_outliers_integrated_c(contributions, n_samples, threshold, 
+                                outlier_mask, ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    # Convert C int (0/1) to Python boolean
+    outlier_mask_bool = outlier_mask.astype(bool)
+    
+    # Mark output as read-only
+    _readonly(outlier_mask_bool)
+    return outlier_mask_bool
+
+def detect_outliers_spike(spike_contribs: np.ndarray, thresholds: np.ndarray) -> np.ndarray:
+    """
+    Detect outliers in spike contributions
+    
+    Args:
+        spike_contribs: 2D array of spike contributions [n_samples, n_genes] 
+                       (rows=samples, columns=genes) in Fortran order
+        thresholds: 1D array of thresholds for each gene [n_genes] in Fortran order
+    
+    Returns:
+        outlier_mask: 2D boolean array indicating outliers [n_samples, n_genes] (read-only)
+    """
+    # Ensure correct data types and memory layout
+    spike_contribs = np.asarray(spike_contribs, dtype=np.float64, order='F')
+    thresholds = np.asarray(thresholds, dtype=np.float64, order='F')
+    
+    n_samples, n_genes = spike_contribs.shape
+    
+    # Validate input dimensions
+    if thresholds.size != n_genes:
+        raise ValueError(f"thresholds size {thresholds.size} doesn't match n_genes {n_genes}")
+    
+    # Prepare outputs
+    outlier_mask = np.zeros((n_samples, n_genes), dtype=np.int32, order='F')  # C int for logical
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper
+    detect_outliers_spike_c = lib.detect_outliers_spike_C
+    detect_outliers_spike_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='F_CONTIGUOUS'),  # spike_contribs
+        ctypes.c_int,  # n_samples
+        ctypes.c_int,  # n_genes
+        np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # thresholds
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags='F_CONTIGUOUS'),  # outlier_mask
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    detect_outliers_spike_c.restype = None
+    
+    # Call Fortran routine
+    detect_outliers_spike_c(spike_contribs, n_samples, n_genes, thresholds, 
+                           outlier_mask, ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    # Convert C int (0/1) to Python boolean
+    outlier_mask_bool = outlier_mask.astype(bool)
+    
+    # Mark output as read-only
+    _readonly(outlier_mask_bool)
+    return outlier_mask_bool

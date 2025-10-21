@@ -296,8 +296,8 @@ subroutine calc_spike_thresholds_C(spike_contribs, n_samples, n_genes, &
     !! Percentile value for threshold (0.0-100.0)
     real(c_double), intent(out) :: thresholds(n_genes)
     !! 1D array of thresholds for each gene [n_genes]
-    integer(c_int), intent(in) :: permutation(n_genes, n_samples)
-    !! Pre-computed permutation indices for each gene [n_genes, n_samples]
+    integer(c_int), intent(in) :: permutation(n_samples, n_genes)  ! FIXED: [n_samples, n_genes]
+    !! Pre-computed permutation indices [n_samples, n_genes] - each COLUMN for a gene
     integer(c_int), intent(out) :: ierr
     !! Error code
 
@@ -311,7 +311,7 @@ subroutine calc_spike_thresholds_C(spike_contribs, n_samples, n_genes, &
         return
     end if
     
-    ! Call Fortran subroutine
+    ! Call Fortran subroutine - FIXED: Now dimensions match
     call calc_spike_thresholds(spike_contribs, percentile_val, &
                                 thresholds, permutation, ierr)
     
@@ -391,7 +391,7 @@ end subroutine calc_integrated_threshold_C
 !! Input: contributions(n_samples) - one integrated contribution per sample
 subroutine calc_integrated_threshold_alloc_C(contributions, n_samples, percentile_val, &
                                             threshold, ierr) &
-                                            bind(C, name="calc_integrated_threshold_alloc")
+                                            bind(C, name="calc_integrated_threshold_alloc_C")
     use iso_c_binding, only: c_double, c_int
     use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT
     use tox_trajectory_contribution_analysis, only: calc_integrated_threshold_alloc
@@ -425,7 +425,7 @@ end subroutine calc_integrated_threshold_alloc_C
 !! Identifies outlier samples based on integrated contributions
 subroutine detect_outliers_integrated_C(contributions, n_samples, threshold, &
                                         outlier_mask, ierr) &
-                                        bind(C, name="detect_outliers_integrated")
+                                        bind(C, name="detect_outliers_integrated_C")
     use tox_conversions, only: logical_as_c_int
     use iso_c_binding, only: c_double, c_int
     use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL, is_err
@@ -482,7 +482,7 @@ end subroutine detect_outliers_integrated_C
 !! Identifies outlier gene-sample pairs using gene-specific thresholds
 subroutine detect_outliers_spike_C(spike_contribs, n_samples, n_genes, thresholds, &
                                     outlier_mask, ierr) &
-                                    bind(C, name="detect_outliers_spike")
+                                    bind(C, name="detect_outliers_spike_C")
     use tox_conversions, only: logical_as_c_int
     use iso_c_binding, only: c_double, c_int
     use tox_errors, only: set_ok, set_err, is_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL
