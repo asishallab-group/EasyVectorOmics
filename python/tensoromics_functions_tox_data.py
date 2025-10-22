@@ -436,49 +436,38 @@ def read_orthofinder_file(filename, gene_ids, family_ids_len, n_families):
         'gene_to_fam': gene_to_fam
     }
 
-# Function for filter_unassigned_genes_C
 def filter_unassigned_genes(gene_ids, gene_to_fam):
     """
-    Filter out genes that are not assigned to any family
+    Filter out genes that are not assigned to any family (where gene_to_fam == 0).
+
     Args:
-        gene_ids: List of gene IDs
-        gene_to_fam: Array mapping each gene to a family index (0 if unassigned)
+        gene_ids (list[str]): List of gene IDs.
+        gene_to_fam (list[int] or np.ndarray): Family assignment for each gene (0 means unassigned).
 
     Returns:
-        Dictionary with keys:
-            'mask': Array indicating which genes are kept (1) or filtered out (0)
-            'n_genes_kept': Number of genes kept after filtering
+        dict: {
+            'gene_ids': filtered list of gene IDs,
+            'mask': list[int] of 1s (kept) and 0s (removed),
+            'gene_to_fam': filtered list of family assignments,
+            'n_genes_kept': int, number of genes kept
+        }
     """
-    # Ensure inputs are numpy arrays
-    gene_ids = _ensure_string_array(gene_ids)
-    gene_to_fam = _ensure_int_array(gene_to_fam)
-    
-    # Convert inputs to c_char matrix
-    max_gene_len = max(len(g) for g in gene_ids)
-    gene_ids_matrix = strings_to_c_char_matrix(gene_ids, max_gene_len)
-    
-    # Prepare output arrays
-    n_genes = len(gene_ids)
-    mask = np.zeros(n_genes, dtype=ctypes.c_int())
-    n_genes_kept = ctypes.c_int()
-    ierr = ctypes.c_int()
-    
-    # Call C function
-    lib.filter_unassigned_genes_C(
-        gene_ids_matrix.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
-        ctypes.c_int(max_gene_len),
-        ctypes.c_int(n_genes),
-        gene_to_fam.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
-        mask.ctypes.data_as(ctypes.POINTER(ctypes.c_int)),
-        ctypes.byref(n_genes_kept),
-        ctypes.byref(ierr)
-    )
-    
-    check_err_code(ierr.value)
-    
+    # Convert to numpy arrays for convenience
+    gene_ids = np.array(gene_ids, dtype=str)
+    gene_to_fam = np.array(gene_to_fam, dtype=int)
+
+    # Logical mask: 1 if gene_to_fam != 0, else 0
+    mask = (gene_to_fam != 0).astype(int)
+
+    # Apply mask to filter arrays
+    kept_gene_ids = gene_ids[mask == 1].tolist()
+    kept_gene_to_fam = gene_to_fam[mask == 1].tolist()
+
     return {
-        'mask': mask,
-        'n_genes_kept': n_genes_kept.value
+        'gene_ids': kept_gene_ids,
+        'mask': mask.tolist(),
+        'gene_to_fam': kept_gene_to_fam,
+        'n_genes_kept': int(np.sum(mask))
     }
 
 # --- Python wrappers for validation ---
