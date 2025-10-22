@@ -590,12 +590,12 @@ contains
     call assert_equal_array_real(shift_vectors, shift_vectors_verify, size(shift_vectors), 1e-12_real64, "Shift vectors should match")
     
     ! Clean up
-    if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
-    if (allocated(kallisto_verify)) deallocate(kallisto_verify)
-    if (allocated(gene_to_fam_verify)) deallocate(gene_to_fam_verify)
-    if (allocated(gene_family_ids_verify)) deallocate(gene_family_ids_verify)
-    if (allocated(family_centroids_verify)) deallocate(family_centroids_verify)
-    if (allocated(shift_vectors_verify)) deallocate(shift_vectors_verify)
+    deallocate(gene_ids_verify)
+    deallocate(kallisto_verify)
+    deallocate(gene_to_fam_verify)
+    deallocate(gene_family_ids_verify)
+    deallocate(family_centroids_verify)
+    deallocate(shift_vectors_verify)
     
     ! Test 2: Save only gene_ids and expression
     ! print *, "Test 2: Saving only gene_ids and expression"
@@ -639,8 +639,8 @@ contains
     call assert_false(allocated(shift_vectors_verify), "shift_vectors_verify should not be allocated")
     
     ! Clean up
-    if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
-    if (allocated(kallisto_verify)) deallocate(kallisto_verify)
+    deallocate(gene_ids_verify)
+    deallocate(kallisto_verify)
     
     ! Test 3: Save only family data
     ! print *, "Test 3: Saving only family data"
@@ -663,8 +663,8 @@ contains
     call assert_equal_array_real(family_centroids, family_centroids_verify, size(family_centroids), 1e-12_real64, "Family centroids should match")
     
     ! Clean up
-    if (allocated(gene_family_ids_verify)) deallocate(gene_family_ids_verify)
-    if (allocated(family_centroids_verify)) deallocate(family_centroids_verify)
+    deallocate(gene_family_ids_verify)
+    deallocate(family_centroids_verify)
     
     ! Test 4: Save empty archive (should work without error)
     ! print *, "Test 4: Saving empty archive"
@@ -710,17 +710,18 @@ contains
 
       call assert_true(allocated(shift_vectors_verify), "Shift vectors should be allocated from R archive")
       call assert_equal_array_real(shift_vectors, shift_vectors_verify, size(shift_vectors), 1e-12_real64, "R Shift vectors should match")
-    else
+      deallocate(gene_ids_verify)
+      deallocate(kallisto_verify)
+      deallocate(gene_to_fam_verify)
+      deallocate(gene_family_ids_verify)
+      deallocate(family_centroids_verify)
+      deallocate(shift_vectors_verify)
+    
+      else
       write(*,*) 'Error reading R archive: ', ierr 
       call set_ok(ierr)
     end if
     
-    if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
-    if (allocated(kallisto_verify)) deallocate(kallisto_verify)
-    if (allocated(gene_to_fam_verify)) deallocate(gene_to_fam_verify)
-    if (allocated(gene_family_ids_verify)) deallocate(gene_family_ids_verify)
-    if (allocated(family_centroids_verify)) deallocate(family_centroids_verify)
-    if (allocated(shift_vectors_verify)) deallocate(shift_vectors_verify)
 
     call read_tox_data("test_archive_1_R.zip", ierr, &
                       gene_ids=gene_ids_verify, &
@@ -739,17 +740,15 @@ contains
       call assert_false(allocated(family_centroids_verify), "Family centroids should not be allocated from R archive")
 
       call assert_false(allocated(shift_vectors_verify), "Shift vectors should not be allocated from R archive")
+
+      deallocate(gene_ids_verify)
+      deallocate(kallisto_verify)
     else
       write(*,*) 'Error reading R archive: ', ierr 
       call set_ok(ierr)
     end if
 
-    if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
-    if (allocated(kallisto_verify)) deallocate(kallisto_verify)
-    if (allocated(gene_to_fam_verify)) deallocate(gene_to_fam_verify)
-    if (allocated(gene_family_ids_verify)) deallocate(gene_family_ids_verify)
-    if (allocated(family_centroids_verify)) deallocate(family_centroids_verify)
-    if (allocated(shift_vectors_verify)) deallocate(shift_vectors_verify)
+
 
     ! print *, "Reading python archive"
     call read_tox_data("test_archive_1_py.zip", ierr, &
@@ -777,17 +776,18 @@ contains
 
       call assert_true(allocated(shift_vectors_verify), "Shift vectors should be allocated from python archive")
       call assert_equal_array_real(shift_vectors, shift_vectors_verify, size(shift_vectors), 1e-12_real64, "python Shift vectors should match")
+      deallocate(gene_ids_verify)
+      deallocate(kallisto_verify)
+      deallocate(gene_to_fam_verify)
+      deallocate(gene_family_ids_verify)
+      deallocate(family_centroids_verify)
+      deallocate(shift_vectors_verify)
     else
       write(*,*) 'Error reading Python archive: ', ierr 
       call set_ok(ierr)
     end if
 
-    if (allocated(gene_ids_verify)) deallocate(gene_ids_verify)
-    if (allocated(kallisto_verify)) deallocate(kallisto_verify)
-    if (allocated(gene_to_fam_verify)) deallocate(gene_to_fam_verify)
-    if (allocated(gene_family_ids_verify)) deallocate(gene_family_ids_verify)
-    if (allocated(family_centroids_verify)) deallocate(family_centroids_verify)
-    if (allocated(shift_vectors_verify)) deallocate(shift_vectors_verify)
+
 
     ! print *, "All archive tests completed successfully!"
   end subroutine test_archive
@@ -1001,15 +1001,6 @@ contains
     ! call delete_file("test_char_1d.bin", ierr)
     ! call delete_file("test_manual_archive.zip", ierr)
     ! call delete_file("manifest.txt", ierr)
-    
-    ! Clean up allocated arrays
-    if (allocated(read_int_1d)) deallocate(read_int_1d)
-    if (allocated(read_int_2d)) deallocate(read_int_2d)
-    if (allocated(read_real_1d)) deallocate(read_real_1d)
-    if (allocated(read_real_2d)) deallocate(read_real_2d)
-    if (allocated(read_char_1d)) deallocate(read_char_1d)
-    if (allocated(extracted_keys)) deallocate(extracted_keys)
-    if (allocated(extracted_filenames)) deallocate(extracted_filenames)
   end subroutine test_manual_archive
 
   subroutine test_hashing()
