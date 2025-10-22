@@ -82,18 +82,20 @@ print("gene_to_fam sample:", gene_to_fam[:10])
 
 # Filter out genes without family assignments
 print("Filtering unassigned genes...")
-filter_result = filter_unassigned_genes(gene_ids, gene_to_fam)
-mask = filter_result['mask']
+filter_result = filter_unassigned_genes(gene_to_fam)
+mask = np.array(filter_result['mask'], dtype=bool)
 n_genes_kept = filter_result['n_genes_kept']
+
 print("n_genes_kept:", n_genes_kept)
 print("mask sample:", mask[:10])
 
 print("First gene expression: ", kallisto_expr[:, 0])
 
 # Filter arrays using mask
-filtered_gene_ids = gene_ids[mask.astype(bool)]
-filtered_kallisto_expr = kallisto_expr[:, mask.astype(bool)]
-filtered_gene_to_fam = gene_to_fam[mask.astype(bool)]
+filtered_gene_ids = np.array(gene_ids)[mask]
+filtered_kallisto_expr = kallisto_expr[:, mask]
+filtered_gene_to_fam = np.array(gene_to_fam)[mask]
+
 
 print("filtered_gene_ids sample:", filtered_gene_ids[:5])
 print("filtered_kallisto_expr shape:", filtered_kallisto_expr.shape)

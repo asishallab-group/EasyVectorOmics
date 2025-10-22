@@ -436,37 +436,27 @@ def read_orthofinder_file(filename, gene_ids, family_ids_len, n_families):
         'gene_to_fam': gene_to_fam
     }
 
-def filter_unassigned_genes(gene_ids, gene_to_fam):
+def filter_unassigned_genes(gene_to_fam):
     """
     Filter out genes that are not assigned to any family (where gene_to_fam == 0).
 
     Args:
-        gene_ids (list[str]): List of gene IDs.
         gene_to_fam (list[int] or np.ndarray): Family assignment for each gene (0 means unassigned).
 
     Returns:
         dict: {
-            'gene_ids': filtered list of gene IDs,
             'mask': list[int] of 1s (kept) and 0s (removed),
-            'gene_to_fam': filtered list of family assignments,
             'n_genes_kept': int, number of genes kept
         }
     """
     # Convert to numpy arrays for convenience
-    gene_ids = np.array(gene_ids, dtype=str)
     gene_to_fam = np.array(gene_to_fam, dtype=int)
 
     # Logical mask: 1 if gene_to_fam != 0, else 0
     mask = (gene_to_fam != 0).astype(int)
 
-    # Apply mask to filter arrays
-    kept_gene_ids = gene_ids[mask == 1].tolist()
-    kept_gene_to_fam = gene_to_fam[mask == 1].tolist()
-
     return {
-        'gene_ids': kept_gene_ids,
         'mask': mask.tolist(),
-        'gene_to_fam': kept_gene_to_fam,
         'n_genes_kept': int(np.sum(mask))
     }
 
