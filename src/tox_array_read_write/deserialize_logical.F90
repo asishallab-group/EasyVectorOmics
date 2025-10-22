@@ -2,7 +2,7 @@
 module logical_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only : c_loc, c_f_pointer
-  use array_utils, only: ascii_to_string, read_file_header, check_okay_dims, check_okay_ndims
+  use array_utils, only: read_file_header, check_okay_dims, check_okay_ndims
   use tox_errors
   implicit none
 
@@ -256,7 +256,7 @@ subroutine deserialize_logical_C(arr, arr_size, filename_raw, fn_len, ierr) bind
     integer(c_int), intent(in), value   :: fn_len
     !! length of the filename
     character(kind=c_char, len=1), intent(in)          :: filename_raw(fn_len)
-    !! Filename in ascii
+    !! Filename in raw bytes
     integer(c_int), intent(out)         :: ierr
     !! Error code
 
@@ -273,7 +273,7 @@ subroutine deserialize_logical_C(arr, arr_size, filename_raw, fn_len, ierr) bind
 
     allocate(temp_arr(arr_size))
 
-    ! ASCII → String
+    ! raw to String
     call c_char_1d_as_string(filename_raw, filename, ierr)
     if (.not. is_ok(ierr)) return
 

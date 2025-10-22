@@ -205,7 +205,7 @@ subroutine serialize_logical_flat_r(arr, array_size, dims, ndim, filename_raw, f
   integer(int32), intent(in) :: fn_len
   !! Length of the filename array
   character(kind=c_char, len=1), intent(in) :: filename_raw(fn_len)
-  !! Array of ASCII characters representing the filename
+  !! Array of raw bytes characters representing the filename
   integer(int32), intent(out) :: ierr
   !! Error code
 
@@ -245,7 +245,7 @@ subroutine serialize_logical_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) b
   integer(c_int), intent(in), value :: fn_len
     !! Length of the filename array
   character(kind=c_char, len=1), intent(in) :: filename_raw(fn_len)
-    !! Array of ASCII characters representing the filename
+    !! Array of raw bytes characters representing the filename
   integer(c_int), intent(out) :: ierr
     !! Error code
 
