@@ -255,6 +255,4 @@ contains
     call assert_equal_int(ierr, 201, 'Index too low error check')
   end subroutine
 
-  ! (EDF tests moved to mod_test_edf.f90)
-
 end module mod_test_loess_smoothing
