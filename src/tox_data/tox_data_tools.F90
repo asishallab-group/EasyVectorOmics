@@ -257,8 +257,8 @@ subroutine read_gene_ids_from_tsv_file(filename, gene_ids, n_header_rows, gene_c
         
         row_count = row_count + 1
         if (row_count > size(gene_ids)) then
-            print *, 'Row: ', row_count
-            print *, 'Size: ', size(gene_ids)
+            if(DEBUG) print *, 'Row: ', row_count
+            if(DEBUG) print *, 'Size: ', size(gene_ids)
             call set_err_once(ierr, ERR_SIZE_MISMATCH)  ! More genes than allocated space
             close(unit)
             return

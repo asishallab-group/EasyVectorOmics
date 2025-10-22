@@ -4,7 +4,7 @@ module tox_archive_generic
     use tox_errors, only: set_ok, set_err_once, is_err, ERR_FILE_OPEN, ERR_ALLOC_FAIL, ERR_FILE_ADD
     use tox_errors, only: ERR_FILE_CLOSE, ERR_FILE_EXTRACT, ERR_INVALID_INPUT
     use tox_errors, only: ERR_POINTER_NULL, ERR_WRITE_DATA, ERR_READ_DATA, ERR_MISSING_MANIFEST
-    use iso_fortran_env, only: real64, int32
+    use iso_fortran_env, only: real64, int32, iostat_end
     use config, only: DEBUG
     implicit none
 
@@ -590,7 +590,7 @@ contains
         ! Read each line and parse key-value pairs
         do i = 1, MAX_LINES
             read(unit, '(a)', iostat=iostat) line
-            if (iostat < 0) exit  ! End of file
+            if (iostat == iostat_end) exit  ! End of file
             if (is_err(iostat)) then
                 call set_err_once(ierr, ERR_READ_DATA)
                 exit
