@@ -593,6 +593,7 @@ contains
             if (iostat == iostat_end) exit  ! End of file
             if (is_err(iostat)) then
                 call set_err_once(ierr, ERR_READ_DATA)
+                if(DEBUG) print *, "Error reading manifest file: ", trim(manifest_filename)
                 exit
             end if
             
