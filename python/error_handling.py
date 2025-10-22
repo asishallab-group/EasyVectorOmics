@@ -2,6 +2,9 @@ def check_err_code(ierr: int) -> None:
     if ierr == 0:
         return
     msg = {
+        # Success
+        0: "No error, operation successful.",
+        
         # I/O errors
         101: "Could not open file.",
         102: "Could not read magic number.",
@@ -16,6 +19,10 @@ def check_err_code(ierr: int) -> None:
         115: "Could not write dimensions",
         116: "Could not write character length",
         117: "Could not write array data",
+        121: "Could not add file to archive.",
+        122: "Could not extract file from archive.",
+        123: "Manifest in zip file is missing.",
+        124: "Failed to close the file.",
 
         # FORMAT ERRORS
         200: "Invalid format detected.",
@@ -25,6 +32,7 @@ def check_err_code(ierr: int) -> None:
         204: "NaN or Inf found in input data.",
         205: "Unsupported data type encountered.",
         206: "Array size mismatch detected",
+        207: "String exceeds buffer size.",
 
         # MEMORY ERRORS
         301: "Memory allocation failed.",
