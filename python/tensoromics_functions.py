@@ -1981,3 +1981,72 @@ def tox_mean_vector(expression_vectors, gene_indices):
     # Mark output as read-only
     _readonly(centroid_col)
     return centroid_col
+
+
+def compute_edf(values):
+    """
+    Compute Empirical Distribution Function (EDF) for given values.
+    
+    This function computes the empirical cumulative distribution function (EDF)
+    for a set of observed data values. The EDF represents the proportion of values
+    less than or equal to each unique value in the dataset.
+    
+    Args:
+        values: Array of observed data values (e.g., contributions or spikes)
+                Can be list or numpy array
+    
+    Returns:
+        tuple: (unique_values, cdf_values, n_unique)
+            - unique_values: Sorted unique data values (numpy array)
+            - cdf_values: Corresponding cumulative frequencies between 0 and 1
+            - n_unique: Number of unique values found (int)
+    
+    Raises:
+        RuntimeError: If error occurs during computation (invalid input, empty input)
+    
+    Example:
+        >>> values = [1.0, 2.0, 2.0, 3.0, 3.0, 3.0]
+        >>> unique_vals, cdf_vals, n_unique = compute_edf(values)
+        >>> print(unique_vals[:n_unique])  # [1.0, 2.0, 3.0]
+        >>> print(cdf_vals[:n_unique])     # [0.167, 0.5, 1.0]
+    """
+    # Input validation
+    if not isinstance(values, np.ndarray):
+        values = np.asarray(values, dtype=np.float64)
+    else:
+        values = np.asarray(values, dtype=np.float64)
+    
+    n_values = len(values)
+    
+    # Prepare output arrays with explicit sizes (n_values as per C interface)
+    unique_values = np.zeros(n_values, dtype=np.float64, order='F')
+    cdf_values = np.zeros(n_values, dtype=np.float64, order='F')
+    n_unique = ctypes.c_int()
+    ierr = ctypes.c_int()
+    
+    # Define C interface with explicit size arrays
+    lib.compute_edf_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # values(n_values)
+        ctypes.c_int,                                                                                # n_values
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # unique_values(n_values)
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # cdf_values(n_values)
+        ctypes.POINTER(ctypes.c_int),                                                                # n_unique
+        ctypes.POINTER(ctypes.c_int)                                                                 # ierr
+    ]
+    lib.compute_edf_c.restype = None
+    
+    # Call Fortran function via C interface
+    lib.compute_edf_c(
+        values,
+        n_values,
+        unique_values,
+        cdf_values,
+        ctypes.byref(n_unique),
+        ctypes.byref(ierr)
+    )
+    
+    # Error handling
+    check_err_code(ierr.value)
+    
+    # Return only the filled portion of arrays
+    return unique_values, cdf_values, n_unique.value
