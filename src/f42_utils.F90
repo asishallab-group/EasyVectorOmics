@@ -426,12 +426,19 @@ contains
     end do
   end subroutine loess_smooth_2d
 
+  !> Calculate the percentile of an array given a sorted permutation.
+  !! Uses linear interpolation between adjacent values.
   pure subroutine calc_percentile(array, permutation, percentile, value, ierr)
     real(real64), intent(in) :: array(:)
-    integer(int32), intent(in) :: permutation(:)  ! Already contains sorted indices
+    !! input array
+    integer(int32), intent(in) :: permutation(:)
+    !! permutation vector representing sorted order
     real(real64), intent(in) :: percentile
+    !! desired percentile (0-100)
     real(real64), intent(out) :: value
+    !! output percentile value
     integer(int32), intent(out) :: ierr
+    !! Error code
     
     integer(int32) :: n, lower_index
     real(real64) :: index, fraction, lower_value, upper_value
@@ -485,12 +492,18 @@ contains
     end if
   end subroutine calc_percentile
 
+  !> Calculate the percentile of an array, allocating necessary arrays when no sorting permutation is given
+  !! @note This subroutine uses quicksort internally which may cause a spike in memory usage for large arrays.
   subroutine calc_percentile_alloc(array, percentile, value, ierr)
     use tox_errors, only: ERR_EMPTY_INPUT, ERR_ALLOC_FAIL, set_ok, set_err, is_err
     real(real64), intent(in) :: array(:)
+    !! Input array
     real(real64), intent(in) :: percentile
+    !! Desired percentile (0-100)
     real(real64), intent(out) :: value
+    !! Output percentile value
     integer(int32), intent(out) :: ierr
+    !! Error code
 
     integer(int32) :: n, i
     integer(int32), allocatable :: perm(:)
