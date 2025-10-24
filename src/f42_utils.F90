@@ -484,8 +484,8 @@ contains
     current_val = -huge(1.0_real64)  ! Initialize to lowest possible value
 
     do i = 1, n_values
-      ! Check if this is a new unique value (not close to previous)
-      if (.not. is_close(values(perm(i)), current_val)) then
+      ! Check if this is a new unique value (exact comparison)
+      if (values(perm(i)) /= current_val) then
         ! New unique value found
         current_val = values(perm(i))
         n_unique = n_unique + 1

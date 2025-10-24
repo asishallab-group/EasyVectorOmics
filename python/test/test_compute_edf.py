@@ -10,7 +10,7 @@ import os
 
 # Add parent directory to path to import tensoromics_functions
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
-from tensoromics_functions import compute_edf
+from tensoromics_functions import compute_edf, compute_edf_expert
 
 print("=== Testing compute_edf Python wrapper function ===")
 print("Based on Fortran test suite with comprehensive test coverage\n")
@@ -24,7 +24,10 @@ def test_edf_simple():
     
     values = np.array([1.0, 2.0, 2.0, 3.0, 3.0, 3.0])
     
-    unique_vals, cdf_vals, n_unique = compute_edf(values)
+    result = compute_edf(values)
+    unique_vals = result['unique_values']
+    cdf_vals = result['cdf_values']
+    n_unique = result['n_unique']
     
     print(f"  Input values: {values}")
     print(f"  Number of unique values: {n_unique}")
@@ -55,7 +58,10 @@ def test_edf_all_unique():
     
     values = np.array([1.0, 2.0, 3.0, 4.0, 5.0])
     
-    unique_vals, cdf_vals, n_unique = compute_edf(values)
+    result = compute_edf(values)
+    unique_vals = result['unique_values']
+    cdf_vals = result['cdf_values']
+    n_unique = result['n_unique']
     
     print(f"  Input values: {values}")
     print(f"  Number of unique values: {n_unique}")
@@ -86,7 +92,10 @@ def test_edf_all_same():
     
     values = np.array([5.0, 5.0, 5.0, 5.0])
     
-    unique_vals, cdf_vals, n_unique = compute_edf(values)
+    result = compute_edf(values)
+    unique_vals = result['unique_values']
+    cdf_vals = result['cdf_values']
+    n_unique = result['n_unique']
     
     print(f"  Input values: {values}")
     print(f"  Number of unique values: {n_unique}")
@@ -110,7 +119,10 @@ def test_edf_duplicates():
     
     values = np.array([1.0, 1.0, 2.0, 3.0, 3.0, 3.0, 4.0])
     
-    unique_vals, cdf_vals, n_unique = compute_edf(values)
+    result = compute_edf(values)
+    unique_vals = result['unique_values']
+    cdf_vals = result['cdf_values']
+    n_unique = result['n_unique']
     
     print(f"  Input values: {values}")
     print(f"  Number of unique values: {n_unique}")
@@ -141,7 +153,10 @@ def test_edf_single_value():
     
     values = np.array([42.0])
     
-    unique_vals, cdf_vals, n_unique = compute_edf(values)
+    result = compute_edf(values)
+    unique_vals = result['unique_values']
+    cdf_vals = result['cdf_values']
+    n_unique = result['n_unique']
     
     print(f"  Input values: {values}")
     print(f"  Number of unique values: {n_unique}")
@@ -165,7 +180,7 @@ def test_edf_empty_input():
     values = np.array([])
     
     try:
-        unique_vals, cdf_vals, n_unique = compute_edf(values)
+        result = compute_edf(values)
         print("  ✗ ERROR: Should have raised exception for empty input")
         assert False, "Expected RuntimeError for empty input"
     except RuntimeError as e:
@@ -187,7 +202,10 @@ def test_edf_large_dataset():
         np.full(250, 4.0)
     ])
     
-    unique_vals, cdf_vals, n_unique = compute_edf(values)
+    result = compute_edf(values)
+    unique_vals = result['unique_values']
+    cdf_vals = result['cdf_values']
+    n_unique = result['n_unique']
     
     print(f"  Input size: {len(values)}")
     print(f"  Number of unique values: {n_unique}")
@@ -218,7 +236,10 @@ def test_edf_negative_values():
     
     values = np.array([-3.0, -1.0, 0.0, 1.0, 3.0])
     
-    unique_vals, cdf_vals, n_unique = compute_edf(values)
+    result = compute_edf(values)
+    unique_vals = result['unique_values']
+    cdf_vals = result['cdf_values']
+    n_unique = result['n_unique']
     
     print(f"  Input values: {values}")
     print(f"  Number of unique values: {n_unique}")
@@ -249,7 +270,10 @@ def test_edf_unsorted_input():
     
     values = np.array([3.0, 1.0, 4.0, 1.0, 5.0, 9.0, 2.0, 6.0])
     
-    unique_vals, cdf_vals, n_unique = compute_edf(values)
+    result = compute_edf(values)
+    unique_vals = result['unique_values']
+    cdf_vals = result['cdf_values']
+    n_unique = result['n_unique']
     
     print(f"  Input values: {values}")
     print(f"  Number of unique values: {n_unique}")
@@ -281,7 +305,10 @@ def test_edf_list_input():
     
     values = [1.0, 2.0, 2.0, 3.0]
     
-    unique_vals, cdf_vals, n_unique = compute_edf(values)
+    result = compute_edf(values)
+    unique_vals = result['unique_values']
+    cdf_vals = result['cdf_values']
+    n_unique = result['n_unique']
     
     print(f"  Input values: {values}")
     print(f"  Number of unique values: {n_unique}")

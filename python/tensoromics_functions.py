@@ -1992,19 +1992,19 @@ def compute_edf(values):
                 Can be list or numpy array
     
     Returns:
-        tuple: (unique_values, cdf_values, n_unique)
-            - unique_values: Sorted unique data values (numpy array)
-            - cdf_values: Corresponding cumulative frequencies between 0 and 1
-            - n_unique: Number of unique values found (int)
+        dict: Dictionary with keys:
+            - 'unique_values': Sorted unique data values (read-only numpy array)
+            - 'cdf_values': Corresponding cumulative frequencies between 0 and 1 (read-only)
+            - 'n_unique': Number of unique values found (int)
     
     Raises:
         RuntimeError: If error occurs during computation (invalid input, empty input)
     
     Example:
         >>> values = [1.0, 2.0, 2.0, 3.0, 3.0, 3.0]
-        >>> unique_vals, cdf_vals, n_unique = compute_edf(values)
-        >>> print(unique_vals[:n_unique])  # [1.0, 2.0, 3.0]
-        >>> print(cdf_vals[:n_unique])     # [0.167, 0.5, 1.0]
+        >>> result = compute_edf(values)
+        >>> print(result['unique_values'][:result['n_unique']])  # [1.0, 2.0, 3.0]
+        >>> print(result['cdf_values'][:result['n_unique']])     # [0.167, 0.5, 1.0]
     """
     # Input validation and conversion
     values = np.asarray(values, dtype=np.float64)
@@ -2041,5 +2041,93 @@ def compute_edf(values):
     # Error handling
     check_err_code(ierr.value)
     
-    # Return only the filled portion of arrays
-    return unique_values, cdf_values, n_unique.value
+    # Mark arrays as read-only
+    _readonly(unique_values, cdf_values)
+    
+    return {
+        'unique_values': unique_values,
+        'cdf_values': cdf_values,
+        'n_unique': n_unique.value
+    }
+
+
+def compute_edf_expert(values, perm):
+    """
+    Expert interface for Empirical Distribution Function (EDF) with pre-sorted permutation.
+    
+    This function computes the EDF using a pre-sorted permutation array, allowing users
+    to have full control over the sorting algorithm or reuse existing permutations.
+    
+    Args:
+        values: Array of observed data values (e.g., contributions or spikes)
+        perm: Pre-sorted permutation indices (must be sorted by values[perm])
+              Array of 1-based indices in Fortran style
+    
+    Returns:
+        dict: Dictionary with keys:
+            - 'unique_values': Sorted unique data values (read-only numpy array)
+            - 'cdf_values': Corresponding cumulative frequencies between 0 and 1 (read-only)
+            - 'n_unique': Number of unique values found (int)
+    
+    Raises:
+        RuntimeError: If error occurs during computation (invalid input, empty input)
+    
+    Note:
+        The perm array must be sorted such that values[perm[i]] is in ascending order.
+        This function skips the internal sorting step for better performance.
+    
+    Example:
+        >>> values = np.array([3.0, 1.0, 2.0, 2.0])
+        >>> perm = np.array([2, 3, 4, 1], dtype=np.int32)  # 1-based indices
+        >>> result = compute_edf_expert(values, perm)
+        >>> print(result['unique_values'][:result['n_unique']])  # [1.0, 2.0, 3.0]
+    """
+    # Input validation and conversion
+    values = np.asarray(values, dtype=np.float64)
+    perm = np.asarray(perm, dtype=np.int32)
+    
+    n_values = len(values)
+    
+    if len(perm) != n_values:
+        raise ValueError(f"perm length ({len(perm)}) must match values length ({n_values})")
+    
+    # Prepare output arrays with explicit sizes
+    unique_values = np.zeros(n_values, dtype=np.float64, order='F')
+    cdf_values = np.zeros(n_values, dtype=np.float64, order='F')
+    n_unique = ctypes.c_int()
+    ierr = ctypes.c_int()
+    
+    # Define C interface
+    lib.compute_edf_expert_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # values(n_values)
+        ctypes.c_int,                                                                                # n_values
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),    # perm(n_values)
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # unique_values(n_values)
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # cdf_values(n_values)
+        ctypes.POINTER(ctypes.c_int),                                                                # n_unique
+        ctypes.POINTER(ctypes.c_int)                                                                 # ierr
+    ]
+    lib.compute_edf_expert_c.restype = None
+    
+    # Call Fortran function via C interface
+    lib.compute_edf_expert_c(
+        values,
+        n_values,
+        perm,
+        unique_values,
+        cdf_values,
+        ctypes.byref(n_unique),
+        ctypes.byref(ierr)
+    )
+    
+    # Error handling
+    check_err_code(ierr.value)
+    
+    # Mark arrays as read-only
+    _readonly(unique_values, cdf_values)
+    
+    return {
+        'unique_values': unique_values,
+        'cdf_values': cdf_values,
+        'n_unique': n_unique.value
+    }
