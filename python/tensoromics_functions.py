@@ -1,7 +1,3 @@
-"""
-TensorOmics Functions Module
-Python wrapper functions for Fortran routines via C interface
-"""
 
 import numpy as np
 import ctypes
@@ -2010,11 +2006,8 @@ def compute_edf(values):
         >>> print(unique_vals[:n_unique])  # [1.0, 2.0, 3.0]
         >>> print(cdf_vals[:n_unique])     # [0.167, 0.5, 1.0]
     """
-    # Input validation
-    if not isinstance(values, np.ndarray):
-        values = np.asarray(values, dtype=np.float64)
-    else:
-        values = np.asarray(values, dtype=np.float64)
+    # Input validation and conversion
+    values = np.asarray(values, dtype=np.float64)
     
     n_values = len(values)
     
