@@ -26,7 +26,6 @@ contains
     is_close = abs(a - b) <= EPS * max(abs(a), abs(b))
   end function is_close
 
-
   !> Sort a real array indirectly using quicksort.
   !| Creates a sorted version of the array by reordering the `perm` vector. The original data in `array` remains unchanged.
   pure subroutine sort_real(array, perm, stack_left, stack_right)
