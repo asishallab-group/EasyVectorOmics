@@ -284,13 +284,9 @@ contains
     !| Real input array to sort     
     real(real64), intent(in) :: array(:)
     !| Permutation vector that will be sorted
-    integer(int32), intent(out) :: perm(:)
+    integer(int32), intent(inout) :: perm(:)
     integer(int32) :: n, i
     n = size(array)
-    !| Initialize permutation vector
-    do i = 1, n
-      perm(i) = i
-    end do
     ! Build max heap
     do i = n / 2, 1, -1
       call heapify_real(array, perm, n, i)
@@ -352,16 +348,11 @@ contains
     !| Integer input array to sort
     integer(int32), intent(in) :: array(:)
     !| Permutation vector that will be sorted
-    integer(int32), intent(out) :: perm(:)
+    integer(int32), intent(inout) :: perm(:)
     !| Size of the array
     integer(int32) :: n, i
 
     n = size(array)
-
-    ! Initialize permutation vector
-    do i = 1, n
-      perm(i) = i
-    end do
 
     ! Build max-heap
     do i = n / 2, 1, -1
@@ -429,16 +420,11 @@ contains
     !| Character input array to sort
     character(len=*), intent(in)    :: array(:)
     !| Permutation vector that will be sorted
-    integer(int32),   intent(out) :: perm(:)
+    integer(int32),   intent(inout) :: perm(:)
     !| Size of the array
     integer(int32) :: n, i
 
     n = size(array)
-
-    ! Initialize permutation vector
-    do i = 1, n
-      perm(i) = i
-    end do
 
     ! Build max-heap
     do i = n / 2, 1, -1
