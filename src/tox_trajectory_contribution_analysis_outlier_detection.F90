@@ -240,9 +240,9 @@ contains
 end module tox_trajectory_contribution_analysis_outlier_detection
 
 !> C wrapper for calc_spike_thresholds (with pre-computed 2D permutations)
-subroutine calc_spike_thresholds_C(spike_contribs, n_timepoints, n_samples, &
+subroutine calc_spike_thresholds_expert_C(spike_contribs, n_timepoints, n_samples, &
                                     percentile_val, thresholds, permutation, ierr) &
-                                    bind(C, name="calc_spike_thresholds_C")
+                                    bind(C, name="calc_spike_thresholds_expert_C")
     use iso_c_binding, only: c_double, c_int
     use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT
     use tox_trajectory_contribution_analysis_outlier_detection, only: calc_spike_thresholds
@@ -275,13 +275,13 @@ subroutine calc_spike_thresholds_C(spike_contribs, n_timepoints, n_samples, &
     call calc_spike_thresholds(spike_contribs, n_timepoints, n_samples, percentile_val, &
                                 thresholds, permutation, ierr)
     
-end subroutine calc_spike_thresholds_C
+end subroutine calc_spike_thresholds_expert_C
 
 !> C wrapper for calc_spike_thresholds_alloc (with internal allocations)
 !! Data layout: spike_contribs(n_samples, n_genes) - rows=samples, columns=genes
-subroutine calc_spike_thresholds_expert_C(spike_contribs, n_timepoints, n_samples, &
+subroutine calc_spike_thresholds_C(spike_contribs, n_timepoints, n_samples, &
                                         percentile_val, thresholds, ierr) &
-                                        bind(C, name="calc_spike_thresholds_expert_C")
+                                        bind(C, name="calc_spike_thresholds_C")
     use iso_c_binding, only: c_double, c_int
     use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT
     use tox_trajectory_contribution_analysis_outlier_detection, only: calc_spike_thresholds_alloc
@@ -311,13 +311,13 @@ subroutine calc_spike_thresholds_expert_C(spike_contribs, n_timepoints, n_sample
     call calc_spike_thresholds_alloc(spike_contribs, n_timepoints, n_samples, percentile_val, &
                                     thresholds, ierr)
 
-end subroutine calc_spike_thresholds_expert_C
+end subroutine calc_spike_thresholds_C
 
 !> C wrapper for calc_integrated_threshold (with pre-computed permutation)
 !! Input: contributions(n_samples) - one integrated contribution per sample
-subroutine calc_integrated_threshold_C(contributions, n_samples, percentile_val, &
+subroutine calc_integrated_threshold_expert_C(contributions, n_samples, percentile_val, &
                                         threshold, permutation, ierr) &
-                                        bind(C, name="calc_integrated_threshold_C")
+                                        bind(C, name="calc_integrated_threshold_expert_C")
     use iso_c_binding, only: c_double, c_int
     use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT
     use tox_trajectory_contribution_analysis_outlier_detection, only: calc_integrated_threshold
@@ -347,13 +347,13 @@ subroutine calc_integrated_threshold_C(contributions, n_samples, percentile_val,
     call calc_integrated_threshold(contributions, n_samples, percentile_val, &
                                 threshold, permutation, ierr)
     
-end subroutine calc_integrated_threshold_C
+end subroutine calc_integrated_threshold_expert_C
 
 !> C wrapper for calc_integrated_threshold_alloc (with internal allocations)
 !! Input: contributions(n_samples) - one integrated contribution per sample
-subroutine calc_integrated_threshold_expert_C(contributions, n_samples, percentile_val, &
+subroutine calc_integrated_threshold_C(contributions, n_samples, percentile_val, &
                                             threshold, ierr) &
-                                            bind(C, name="calc_integrated_threshold_expert_C")
+                                            bind(C, name="calc_integrated_threshold_C")
     use iso_c_binding, only: c_double, c_int
     use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT
     use tox_trajectory_contribution_analysis_outlier_detection, only: calc_integrated_threshold_alloc
@@ -381,13 +381,13 @@ subroutine calc_integrated_threshold_expert_C(contributions, n_samples, percenti
     call calc_integrated_threshold_alloc(contributions, n_samples, percentile_val, &
                                         threshold, ierr)
     
-end subroutine calc_integrated_threshold_expert_C
+end subroutine calc_integrated_threshold_C
 
 !> C wrapper for detect_outliers_integrated
 !! Identifies outlier samples based on integrated contributions
-subroutine detect_outliers_integrated_C(contributions, n_samples, threshold, &
+subroutine detect_outliers_integrated_expert_C(contributions, n_samples, threshold, &
                                         outlier_mask, ierr) &
-                                        bind(C, name="detect_outliers_integrated_C")
+                                        bind(C, name="detect_outliers_integrated_expert_C")
     use tox_conversions, only: logical_as_c_int
     use iso_c_binding, only: c_double, c_int
     use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL, is_err
@@ -437,12 +437,12 @@ subroutine detect_outliers_integrated_C(contributions, n_samples, threshold, &
     
     deallocate(mask_1d)
     
-end subroutine detect_outliers_integrated_C
+end subroutine detect_outliers_integrated_expert_C
 
 !> C wrapper for detect_outliers_spike
-subroutine detect_outliers_spike_C(spike_contribs, n_timepoints, n_samples, thresholds, &
+subroutine detect_outliers_spike_expert_C(spike_contribs, n_timepoints, n_samples, thresholds, &
                                     outlier_mask, ierr) &
-                                    bind(C, name="detect_outliers_spike_C")
+                                    bind(C, name="detect_outliers_spike_expert_C")
     use tox_conversions, only: logical_as_c_int
     use iso_c_binding, only: c_double, c_int
     use tox_errors, only: set_ok, set_err, is_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL
@@ -488,4 +488,4 @@ subroutine detect_outliers_spike_C(spike_contribs, n_timepoints, n_samples, thre
     
     deallocate(mask_2d)
     
-end subroutine detect_outliers_spike_C
+end subroutine detect_outliers_spike_expert_C
