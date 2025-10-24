@@ -324,13 +324,13 @@ subroutine calc_integrated_threshold_expert_C(contributions, n_samples, percenti
     integer(c_int), intent(in), value :: n_samples
     !! Number of samples
     real(c_double), intent(in) :: contributions(n_samples)
-    !! 1D array of integrated contributions [n_samples] - one value per sample
+    !! 1D array of integrated contributions [n_samples]
     real(c_double), intent(in), value :: percentile_val
     !! Percentile value for threshold (0.0-100.0)
     real(c_double), intent(out) :: threshold
     !! Scalar threshold value
     integer(c_int), intent(in) :: permutation(n_samples)
-    !! Pre-computed permutation indices for sorted contributions [n_samples]
+    !! Pre-computed permutation indices for sorted contributions
     integer(c_int), intent(out) :: ierr
     !! Error code
     
@@ -358,7 +358,7 @@ subroutine calc_integrated_threshold_C(contributions, n_samples, percentile_val,
     use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT
     use tox_trajectory_contribution_analysis_outlier_detection, only: calc_integrated_threshold_alloc
     real(c_double), intent(in) :: contributions(n_samples)
-    !! 1D array of integrated contributions [n_samples] - one value per sample
+    !! 1D array of integrated contributions
     integer(c_int), intent(in), value :: n_samples
     !! Number of samples
     real(c_double), intent(in), value :: percentile_val
@@ -425,7 +425,6 @@ subroutine detect_outliers_integrated_expert_C(contributions, n_samples, thresho
     call detect_outliers_integrated(contributions, n_samples, threshold, &
                                     mask_1d, ierr)
     
-    ! Convert Fortran logical to C int (0=false, 1=true)
     if (.not. is_err(ierr)) then
         call logical_as_c_int(mask_1d, outlier_mask)
     else
@@ -455,7 +454,7 @@ subroutine detect_outliers_spike_expert_C(spike_contribs, n_timepoints, n_sample
     !! 2D array of spike contributions
     real(c_double), intent(in) :: thresholds(n_timepoints)
     !! Array of thresholds for each gene 
-    integer(c_int), intent(out) :: outlier_mask(n_samples, n_timepoints)  ! c_int for logical
+    integer(c_int), intent(out) :: outlier_mask(n_timepoints, n_samples)  ! c_int for logical
     !! 2D array indicating outlier 
     integer(c_int), intent(out) :: ierr
     !! Error code

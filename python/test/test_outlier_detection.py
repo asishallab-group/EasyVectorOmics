@@ -16,22 +16,20 @@ from tensoromics_functions import (
 )
 
 def create_sample_spike_data():
-    """Create sample spike contributions data: 5 samples × 3 genes"""
+    """Create sample spike contributions data: 3 timepoints × 5 samples"""
     data = np.array([
-        [1.0, 2.0, 3.0],  # Sample 1
-        [2.0, 4.0, 6.0],  # Sample 2  
-        [3.0, 6.0, 9.0],  # Sample 3
-        [4.0, 8.0, 12.0], # Sample 4
-        [5.0, 10.0, 15.0] # Sample 5
+        [1.0, 2.0, 3.0, 4.0, 5.0],    # Timepoint 1
+        [2.0, 4.0, 6.0, 8.0, 10.0],   # Timepoint 2  
+        [3.0, 6.0, 9.0, 12.0, 15.0]   # Timepoint 3
     ], dtype=np.float64, order='F')
     return data
 
 def create_sample_permutation():
-    """Create sample permutation array for spike data"""
+    """Create sample permutation array for spike data: 5 samples × 3 timepoints"""
     perm = np.array([
-        [1, 1, 1],  # Gene 1 sorted indices
-        [2, 2, 2],  # Gene 2 sorted indices
-        [3, 3, 3],  # Gene 3 sorted indices
+        [1, 1, 1],  # Timepoint 1 sorted indices
+        [2, 2, 2],  # Timepoint 2 sorted indices
+        [3, 3, 3],  # Timepoint 3 sorted indices
         [4, 4, 4],
         [5, 5, 5]
     ], dtype=np.int32, order='F')
@@ -52,17 +50,20 @@ def test_calc_spike_thresholds_basic():
     """Test basic spike threshold calculation with pre-computed permutation"""
     print("Testing calc_spike_thresholds_basic...")
     
-    spike_data = create_sample_spike_data()
-    permutation = create_sample_permutation()
+    spike_data = create_sample_spike_data()  # 3 timepoints × 5 samples
+    permutation = create_sample_permutation()  # 5 samples × 3 timepoints
     
     thresholds = calc_spike_thresholds(spike_data, 80.0, permutation)
     
-    # Validate output
+    # Validate output - should have 3 thresholds (one per timepoint)
     assert thresholds.shape == (3,), f"Expected shape (3,), got {thresholds.shape}"
     assert thresholds.dtype == np.float64, f"Expected float64, got {thresholds.dtype}"
     assert not thresholds.flags.writeable, "Output should be read-only"
     
-    # Expected 80th percentiles
+    # Expected 80th percentiles for each timepoint
+    # Timepoint 1: [1,2,3,4,5] 80th percentile ≈ 4.2
+    # Timepoint 2: [2,4,6,8,10] 80th percentile ≈ 8.4  
+    # Timepoint 3: [3,6,9,12,15] 80th percentile ≈ 12.6
     expected = np.array([4.2, 8.4, 12.6], dtype=np.float64)
     np.testing.assert_array_almost_equal(thresholds, expected, decimal=10)
     
@@ -72,7 +73,7 @@ def test_calc_spike_thresholds_alloc_basic():
     """Test spike threshold calculation with internal allocation"""
     print("Testing calc_spike_thresholds_alloc_basic...")
     
-    spike_data = create_sample_spike_data()
+    spike_data = create_sample_spike_data()  # 3 timepoints × 5 samples
     thresholds = calc_spike_thresholds_alloc(spike_data, 80.0)
     
     # Validate output
@@ -138,22 +139,23 @@ def test_detect_outliers_spike_basic():
     """Test spike outlier detection"""
     print("Testing detect_outliers_spike_basic...")
     
-    spike_data = create_sample_spike_data()
-    thresholds = np.array([3.5, 7.0, 10.5], dtype=np.float64, order='F')
+    spike_data = create_sample_spike_data()  # 3 timepoints × 5 samples
+    thresholds = np.array([3.5, 7.0, 10.5], dtype=np.float64, order='F')  # 3 timepoint thresholds
     outliers = detect_outliers_spike(spike_data, thresholds)
     
-    # Validate output
-    assert outliers.shape == (5, 3), f"Expected shape (5, 3), got {outliers.shape}"
+    # Validate output - should be 3 timepoints × 5 samples
+    assert outliers.shape == (3, 5), f"Expected shape (3, 5), got {outliers.shape}"
     assert outliers.dtype == bool, f"Expected bool, got {outliers.dtype}"
     assert not outliers.flags.writeable, "Output should be read-only"
     
     # Expected outliers pattern
+    # Timepoint 1 threshold=3.5: [1,2,3,4,5] -> [F,F,F,T,T]
+    # Timepoint 2 threshold=7.0: [2,4,6,8,10] -> [F,F,F,T,T]  
+    # Timepoint 3 threshold=10.5: [3,6,9,12,15] -> [F,F,F,T,T]
     expected = np.array([
-        [False, False, False],
-        [False, False, False], 
-        [False, False, False],
-        [True,  True,  True],
-        [True,  True,  True]
+        [False, False, False, True,  True],   # Timepoint 1
+        [False, False, False, True,  True],   # Timepoint 2
+        [False, False, False, True,  True]    # Timepoint 3
     ])
     np.testing.assert_array_equal(outliers, expected)
     
@@ -163,17 +165,15 @@ def test_spike_thresholds_edge_cases():
     """Test spike thresholds with edge cases like duplicates and unsorted data"""
     print("Testing spike_thresholds_edge_cases...")
     
-    # Data with duplicates and unsorted values
+    # Data with duplicates and unsorted values: 2 timepoints × 4 samples
     spike_data = np.array([
-        [5.0, 2.0],  # Sample 1
-        [1.0, 2.0],  # Sample 2
-        [5.0, 8.0],  # Sample 3  
-        [3.0, 2.0],  # Sample 4
+        [5.0, 1.0, 5.0, 3.0],  # Timepoint 1: [5,1,5,3]
+        [2.0, 2.0, 8.0, 2.0],  # Timepoint 2: [2,2,8,2]
     ], dtype=np.float64, order='F')
     
     thresholds = calc_spike_thresholds_alloc(spike_data, 50.0)  # Median
     
-    # Gene1: [1,3,5,5] median = 4.0, Gene2: [2,2,2,8] median = 2.0
+    # Timepoint1: [1,3,5,5] median = 4.0, Timepoint2: [2,2,2,8] median = 2.0
     expected = np.array([4.0, 2.0], dtype=np.float64)
     np.testing.assert_array_almost_equal(thresholds, expected, decimal=10)
     
@@ -233,8 +233,8 @@ def test_dimension_mismatch_errors():
     """Test error handling for dimension mismatches"""
     print("Testing dimension_mismatch_errors...")
     
-    spike_data = create_sample_spike_data()
-    permutation = create_sample_permutation()
+    spike_data = create_sample_spike_data()  # 3 timepoints × 5 samples
+    permutation = create_sample_permutation()  # 5 samples × 3 timepoints
     
     # Wrong permutation dimensions
     wrong_perm = np.array([[1, 2], [3, 4]], dtype=np.int32, order='F')  # 2×2 vs 5×3
@@ -245,7 +245,7 @@ def test_dimension_mismatch_errors():
         assert "permutation shape" in str(e)
     
     # Wrong thresholds dimensions for spike outliers
-    wrong_thresholds = np.array([1.0, 2.0], dtype=np.float64, order='F')  # 2 vs 3 genes
+    wrong_thresholds = np.array([1.0, 2.0], dtype=np.float64, order='F')  # 2 vs 3 timepoints
     try:
         detect_outliers_spike(spike_data, wrong_thresholds)
         assert False, "Should have raised ValueError for wrong thresholds dimensions"
@@ -258,15 +258,15 @@ def test_memory_layout_handling():
     """Test that functions handle different memory layouts correctly"""
     print("Testing memory_layout_handling...")
     
-    # Create data in C order (row-major)
+    # Create data in C order (row-major) - 2 timepoints × 3 samples
     spike_data_c = np.array([
         [1.0, 2.0, 3.0],
-        [2.0, 4.0, 6.0], 
+        [4.0, 5.0, 6.0], 
     ], dtype=np.float64, order='C')  # C order
     
     # Function should convert to Fortran order internally
     thresholds = calc_spike_thresholds_alloc(spike_data_c, 50.0)
-    assert thresholds.shape == (3,), f"Expected shape (3,), got {thresholds.shape}"
+    assert thresholds.shape == (2,), f"Expected shape (2,), got {thresholds.shape}"
     assert thresholds.dtype == np.float64, f"Expected float64, got {thresholds.dtype}"
     
     print("memory_layout_handling passed")
@@ -279,7 +279,7 @@ def test_data_type_conversion():
     spike_data_float32 = np.array([
         [1.0, 2.0],
         [3.0, 4.0]
-    ], dtype=np.float32, order='F')
+    ], dtype=np.float32, order='F')  # 2 timepoints × 2 samples
     
     thresholds = calc_spike_thresholds_alloc(spike_data_float32, 50.0)
     assert thresholds.dtype == np.float64, f"Expected float64, got {thresholds.dtype}"
@@ -288,7 +288,7 @@ def test_data_type_conversion():
     spike_data_int = np.array([
         [1, 2],
         [3, 4]
-    ], dtype=np.int32, order='F')
+    ], dtype=np.int32, order='F')  # 2 timepoints × 2 samples
     
     thresholds = calc_spike_thresholds_alloc(spike_data_int, 50.0)
     assert thresholds.dtype == np.float64, f"Expected float64, got {thresholds.dtype}"
@@ -300,15 +300,15 @@ def test_large_scale_performance():
     print("Testing large_scale_performance...")
     
     # Use smaller sizes for unit tests, but test the pattern
-    n_samples, n_genes = 100, 50
-    large_data = np.random.rand(n_samples, n_genes).astype(np.float64, order='F')
+    n_timepoints, n_samples = 50, 100  # Note: now timepoints × samples
+    large_data = np.random.rand(n_timepoints, n_samples).astype(np.float64, order='F')
     
     # These should complete without errors
     thresholds = calc_spike_thresholds_alloc(large_data, 95.0)
-    assert thresholds.shape == (n_genes,), f"Expected shape ({n_genes},), got {thresholds.shape}"
+    assert thresholds.shape == (n_timepoints,), f"Expected shape ({n_timepoints},), got {thresholds.shape}"
     
     outliers = detect_outliers_spike(large_data, thresholds)
-    assert outliers.shape == (n_samples, n_genes), f"Expected shape ({n_samples}, {n_genes}), got {outliers.shape}"
+    assert outliers.shape == (n_timepoints, n_samples), f"Expected shape ({n_timepoints}, {n_samples}), got {outliers.shape}"
     
     print("large_scale_performance passed")
 
@@ -316,8 +316,8 @@ def test_consistency_between_versions():
     """Test that alloc and non-alloc versions give consistent results"""
     print("Testing consistency_between_versions...")
     
-    spike_data = create_sample_spike_data()
-    permutation = create_sample_permutation()
+    spike_data = create_sample_spike_data()  # 3 timepoints × 5 samples
+    permutation = create_sample_permutation()  # 5 samples × 3 timepoints
     
     # Test spike thresholds consistency
     thresholds_perf = calc_spike_thresholds(spike_data, 80.0, permutation)
@@ -326,7 +326,7 @@ def test_consistency_between_versions():
     np.testing.assert_array_almost_equal(thresholds_perf, thresholds_alloc, decimal=10)
     
     # Test integrated thresholds consistency
-    integrated_data = np.sum(spike_data, axis=1)
+    integrated_data = np.sum(spike_data, axis=0)  # Sum across timepoints for each sample
     integrated_perm = np.array([1, 2, 3, 4, 5], dtype=np.int32, order='F')
     
     threshold_perf = calc_integrated_threshold(integrated_data, 75.0, integrated_perm)
