@@ -1981,3 +1981,66 @@ def tox_mean_vector(expression_vectors, gene_indices):
     # Mark output as read-only
     _readonly(centroid_col)
     return centroid_col
+
+
+def tox_k_means_clustering(data_points, centroids, max_iter):
+    """
+    Wrapper for k_means_clustering_c: performs full k-means clustering.
+
+    Args:
+        data_points (np.ndarray): 2D array of shape (n_dims, n_points)
+        centroids (np.ndarray): 2D array of shape (n_dims, n_clusters), initial centroids
+        max_iter (int): maximum number of iterations
+
+    Returns:
+        dict: {
+            "centroids": np.ndarray of shape (n_dims, n_clusters),
+            "labels": np.ndarray of shape (n_points),
+            "label_counts": np.ndarray of shape (n_clusters)
+        }
+    """
+
+    data_points = np.asfortranarray(data_points, dtype=np.float64)
+    centroids = np.asfortranarray(centroids, dtype=np.float64)
+
+    n_dims, n_points = data_points.shape
+    _, n_clusters = centroids.shape
+
+    labels = np.empty(n_points, dtype=np.int32)
+    label_counts = np.empty(n_clusters, dtype=np.int32)
+    ierr = ctypes.c_int(0)
+
+    k_means_clustering_c = lib.k_means_clustering_c
+    k_means_clustering_c.argtypes = [
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int)
+    ]
+    k_means_clustering_c.restype = None
+
+    k_means_clustering_c(
+        ctypes.byref(ctypes.c_int(n_clusters)),
+        data_points,
+        ctypes.byref(ctypes.c_int(n_points)),
+        ctypes.byref(ctypes.c_int(n_dims)),
+        centroids,
+        labels,
+        label_counts,
+        ctypes.byref(ierr),
+        ctypes.byref(ctypes.c_int(max_iter))
+    )
+    check_err_code(ierr.value)
+
+    _readonly(centroids, labels, label_counts)
+
+    return {
+        "centroids": centroids,
+        "labels": labels,
+        "label_counts": label_counts
+    }
