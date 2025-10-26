@@ -2120,6 +2120,7 @@ def compute_edf_expert(values, perm):
         'unique_values': unique_values,
         'cdf_values': cdf_values,
         'n_unique': n_unique.value
+    }
 
 def tox_trajectory_contribution(factor, dependent, mode):
     """
