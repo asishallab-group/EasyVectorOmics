@@ -85,14 +85,15 @@ contains
     integer(int32) :: perm(6)
     real(real64) :: unique_values(6), cdf_values(6)
     real(real64) :: expected_unique(3), expected_cdf(3)
-    integer(int32) :: ierr
+    integer(int32) :: ierr, n_unique
     
     expected_unique = [1.0_real64, 2.0_real64, 3.0_real64]
     expected_cdf = [2.0_real64/6.0_real64, 3.0_real64/6.0_real64, 6.0_real64/6.0_real64]
     
-    call compute_edf(values, n_values, perm, unique_values, cdf_values, ierr)
+    call compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_OK, "test_edf_simple: error code should be ERR_OK")
+    call assert_equal_int(n_unique, 3, "test_edf_simple: n_unique should be 3")
     call assert_equal_array_real(unique_values(1:3), expected_unique, 3, &
                                   1d-12, "test_edf_simple: unique values mismatch")
     call assert_equal_array_real(cdf_values(1:3), expected_cdf, 3, &
@@ -107,7 +108,7 @@ contains
     integer(int32) :: perm(5)
     real(real64) :: unique_values(5), cdf_values(5)
     real(real64) :: expected_unique(5), expected_cdf(5)
-    integer(int32) :: ierr, i
+    integer(int32) :: ierr, i, n_unique
     
     expected_unique = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64, 5.0_real64]
     do i = 1, 5
@@ -115,9 +116,10 @@ contains
     end do
     
     call compute_edf(values, n_values, perm, &
-                     unique_values, cdf_values, ierr)
+                     unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_OK, "test_edf_all_unique: error code should be ERR_OK")
+    call assert_equal_int(n_unique, 5, "test_edf_all_unique: n_unique should be 5")
     call assert_equal_array_real(unique_values(1:3), expected_unique, 3, &
                                   1d-12, "test_edf_all_unique: unique values mismatch")
     call assert_equal_array_real(cdf_values(1:3), expected_cdf, 3, &
@@ -130,12 +132,13 @@ contains
     integer(int32) :: n_values = 7
     integer(int32) :: perm(7)
     real(real64) :: unique_values(7), cdf_values(7)
-    integer(int32) :: ierr
+    integer(int32) :: ierr, n_unique
     
     call compute_edf(values, n_values, perm, &
-                     unique_values, cdf_values, ierr)
+                     unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_OK, "test_edf_all_same: error code should be ERR_OK")
+    call assert_equal_int(n_unique, 1, "test_edf_all_same: n_unique should be 1")
     call assert_equal_real(unique_values(1), 2.5_real64, 1d-12, "test_edf_all_same: unique value should be 2.5")
     call assert_equal_real(cdf_values(1), 1.0_real64, 1d-12, "test_edf_all_same: CDF should be 1.0")
   end subroutine
@@ -148,14 +151,15 @@ contains
     integer(int32) :: perm(6)
     real(real64) :: unique_values(6), cdf_values(6)
     real(real64) :: expected_cdf(3)
-    integer(int32) :: ierr
+    integer(int32) :: ierr, n_unique
     
     expected_cdf = [2.0_real64/6.0_real64, 5.0_real64/6.0_real64, 1.0_real64]
     
     call compute_edf(values, n_values, perm, &
-                     unique_values, cdf_values, ierr)
+                     unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_OK, "test_edf_duplicates: error code should be ERR_OK")
+    call assert_equal_int(n_unique, 3, "test_edf_duplicates: n_unique should be 3")
     call assert_equal_array_real(cdf_values(1:3), expected_cdf, 3, &
                                   1d-12, "test_edf_duplicates: CDF values mismatch")
   end subroutine
@@ -166,12 +170,13 @@ contains
     integer(int32) :: n_values = 1
     integer(int32) :: perm(1)
     real(real64) :: unique_values(1), cdf_values(1)
-    integer(int32) :: ierr
+    integer(int32) :: ierr, n_unique
     
     call compute_edf(values, n_values, perm, &
-                     unique_values, cdf_values, ierr)
+                     unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_OK, "test_edf_single_value: error code should be ERR_OK")
+    call assert_equal_int(n_unique, 1, "test_edf_single_value: n_unique should be 1")
     call assert_equal_real(unique_values(1), 42.0_real64, 1d-12, "test_edf_single_value: unique value should be 42.0")
     call assert_equal_real(cdf_values(1), 1.0_real64, 1d-12, "test_edf_single_value: CDF should be 1.0")
   end subroutine
@@ -182,9 +187,9 @@ contains
     integer(int32) :: n_values = 0  ! Empty input
     integer(int32) :: perm(5)
     real(real64) :: unique_values(5), cdf_values(5)
-    integer(int32) :: ierr
+    integer(int32) :: ierr, n_unique
     
-    call compute_edf(values, n_values, perm, unique_values, cdf_values, ierr)
+    call compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_EMPTY_INPUT, "test_edf_empty_input: should return ERR_EMPTY_INPUT")
   end subroutine
@@ -195,7 +200,7 @@ contains
     real(real64), dimension(n) :: values
     integer(int32) :: perm(n)
     real(real64) :: unique_values(n), cdf_values(n)
-    integer(int32) :: ierr, i
+    integer(int32) :: ierr, i, n_unique
     
     ! Create values: [1, 1, 2, 2, 3, 3, ..., 50, 50] (each appears twice)
     do i = 1, n
@@ -203,9 +208,10 @@ contains
     end do
     
     call compute_edf(values, n, perm, &
-                     unique_values, cdf_values, ierr)
+                     unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_OK, "test_edf_large_dataset: error code should be ERR_OK")
+    call assert_equal_int(n_unique, 50, "test_edf_large_dataset: n_unique should be 50")
     call assert_equal_real(cdf_values(50), 1.0_real64, 1d-12, &
                            "test_edf_large_dataset: final CDF should be 1.0")
     call assert_equal_real(unique_values(1), 1.0_real64, 1d-12, &
@@ -222,14 +228,15 @@ contains
     integer(int32) :: perm(7)
     real(real64) :: unique_values(7), cdf_values(7)
     real(real64) :: expected_unique(5)
-    integer(int32) :: ierr
+    integer(int32) :: ierr, n_unique
     
     expected_unique = [-2.0_real64, -1.0_real64, 0.0_real64, 1.0_real64, 2.0_real64]
     
     call compute_edf(values, n_values, perm, &
-                     unique_values, cdf_values, ierr)
+                     unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_OK, "test_edf_negative_values: error code should be ERR_OK")
+    call assert_equal_int(n_unique, 5, "test_edf_negative_values: n_unique should be 5")
     call assert_equal_array_real(unique_values(1:5), expected_unique, 5, &
                                   1d-12, "test_edf_negative_values: unique values mismatch")
     call assert_equal_real(cdf_values(5), 1.0_real64, 1d-12, &
@@ -243,13 +250,13 @@ contains
     real(real64) :: unique_values(5), cdf_values(5)
     real(real64) :: expected_unique(3)
     real(real64) :: expected_cdf(3)
-    integer(int32) :: ierr
+    integer(int32) :: ierr, n_unique
     
     expected_unique = [1.0_real64, 2.0_real64, 3.0_real64]
     expected_cdf = [0.4_real64, 0.8_real64, 1.0_real64]
     
     ! Call the alloc version - no need to manage workspace arrays
-    call compute_edf_alloc(values, n_values, unique_values, cdf_values, ierr)
+    call compute_edf_alloc(values, n_values, unique_values, cdf_values, n_unique, ierr)
     
     call assert_equal_int(ierr, ERR_OK, "test_edf_alloc: error code should be ERR_OK")
     call assert_equal_array_real(unique_values(1:3), expected_unique, 3, &
