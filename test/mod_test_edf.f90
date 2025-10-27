@@ -26,7 +26,7 @@ contains
 
   !> Get array of all available EDF tests.
   function get_all_tests_edf() result(all_tests)
-    type(test_case) :: all_tests(9)
+    type(test_case) :: all_tests(10)
     all_tests(1) = test_case("test_edf_simple", test_edf_simple)
     all_tests(2) = test_case("test_edf_all_unique", test_edf_all_unique)
     all_tests(3) = test_case("test_edf_all_same", test_edf_all_same)
@@ -36,6 +36,7 @@ contains
     all_tests(7) = test_case("test_edf_large_dataset", test_edf_large_dataset)
     all_tests(8) = test_case("test_edf_negative_values", test_edf_negative_values)
     all_tests(9) = test_case("test_edf_alloc", test_edf_alloc)
+    all_tests(10) = test_case("test_edf_with_perm", test_edf_with_perm)
   end function get_all_tests_edf
 
   !> Run all EDF tests.
@@ -250,6 +251,37 @@ contains
                                   1d-12, "test_edf_alloc: unique values mismatch")
     call assert_equal_array_real(cdf_values(1:3), expected_cdf, 3, &
                                   1d-12, "test_edf_alloc: CDF values mismatch")
+  
+    !> Test compute_edf using an explicitly assigned and sorted perm vector.
+    subroutine test_edf_with_perm()
+      real(real64) :: values(5) = [3.0_real64, 1.0_real64, 2.0_real64, 1.0_real64, 2.0_real64]
+      integer(int32) :: n_values = 5
+      integer(int32) :: perm(5)
+      integer(int32) :: stack_left(5), stack_right(5)
+      real(real64) :: unique_values(5), cdf_values(5)
+      real(real64) :: expected_unique(3)
+      real(real64) :: expected_cdf(3)
+      integer(int32) :: ierr, n_unique, i
+  
+      expected_unique = [1.0_real64, 2.0_real64, 3.0_real64]
+      expected_cdf = [0.4_real64, 0.8_real64, 1.0_real64]
+  
+      ! Initialize permutation vector to identity and then sort it explicitly
+      perm = 0
+      do i = 1, n_values
+        perm(i) = i
+      end do
+      call sort_array(values, perm, stack_left, stack_right)
+  
+      ! Now call the expert compute_edf that expects perm to be sorted
+      call compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
+  
+      call assert_equal_int(ierr, ERR_OK, "test_edf_with_perm: error code should be ERR_OK")
+      call assert_equal_array_real(unique_values(1:3), expected_unique, 3, &
+                                    1d-12, "test_edf_with_perm: unique values mismatch")
+      call assert_equal_array_real(cdf_values(1:3), expected_cdf, 3, &
+                                    1d-12, "test_edf_with_perm: CDF values mismatch")
+    end subroutine test_edf_with_perm
   end subroutine
 
 end module mod_test_edf
