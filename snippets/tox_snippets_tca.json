@@ -1,4 +1,6 @@
 {
+    "_comment": "VS Code snippets for Tensor Omics trajectory contribution analysis (TCA) functions",
+    
     "Call to get_vec_across_samples": {
         "prefix": "tox:get_vec_across_samples",
         "body": [
