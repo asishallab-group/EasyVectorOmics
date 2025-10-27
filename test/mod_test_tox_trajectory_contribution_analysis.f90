@@ -27,11 +27,21 @@ contains
     function get_all_tests() result(all_tests)
         type(test_case) :: all_tests(5)
 
-        all_tests(1) = test_case("test_tox_trajectory_contribution_analysis_get_vec_across_samples", test_get_vec_across_samples)
-        all_tests(2) = test_case("test_tox_trajectory_contribution_analysis_get_vec_across_timepoints", test_get_vec_across_timepoints)
-        all_tests(3) = test_case("test_tox_trajectory_contribution_analysis_trajectory_contribution", test_trajectory_contribution)
-        all_tests(4) = test_case("test_tox_trajectory_contribution_analysis_spike_contribution", test_spike_contribution)
-        all_tests(5) = test_case("test_tox_trajectory_contribution_analysis_calc_contributions", test_calc_contributions)
+        all_tests(1) = test_case( &
+            "test_tox_trajectory_contribution_analysis_get_vec_across_samples", &
+            test_get_vec_across_samples)
+        all_tests(2) = test_case( &
+            "test_tox_trajectory_contribution_analysis_get_vec_across_timepoints", &
+            test_get_vec_across_timepoints)
+        all_tests(3) = test_case( &
+            "test_tox_trajectory_contribution_analysis_trajectory_contribution", &
+            test_trajectory_contribution)
+        all_tests(4) = test_case( &
+            "test_tox_trajectory_contribution_analysis_spike_contribution", &
+            test_spike_contribution)
+        all_tests(5) = test_case( &
+            "test_tox_trajectory_contribution_analysis_calc_contributions", &
+            test_calc_contributions)
     end function get_all_tests
 
     subroutine test_calc_contributions()
@@ -46,13 +56,17 @@ contains
         do i_factor = 1, n_factors
             do i_sample = 1, n_samples
                 do i_timepoint = 1, n_timepoints
-                    trajectories(i_factor, i_sample, i_timepoint) = 100.0_real64*i_factor + 10.0_real64*i_sample + real(i_timepoint, real64)
+                    trajectories(i_factor, i_sample, i_timepoint) = &
+                        100.0_real64*i_factor + 10.0_real64*i_sample + &
+                        real(i_timepoint, real64)
                 end do
             end do
         end do
 
         ! Case: aligned factor and dependent (factor=2, dependent=1)
-        call calc_contributions_alloc(trajectories, n_factors, n_samples, n_timepoints, 2, 1, MODE_NORMAL, spike_contribs, integrated_contribs, ierr)
+        call calc_contributions_alloc(trajectories, n_factors, n_samples, &
+            n_timepoints, 2, 1, MODE_NORMAL, spike_contribs, &
+            integrated_contribs, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_calc_contributions: MODE_NORMAL should return OK")
 
         ! Validate each sample
@@ -63,13 +77,20 @@ contains
             expected_spike = (factor_vec * dependent_vec) / magnitude
             expected_integrated = sum(factor_vec * dependent_vec) / magnitude
 
-            call assert_equal_array_real(spike_contribs(:, i_sample), expected_spike, n_timepoints, TOL, "test_calc_contributions: spike_contribs mismatch")
-            call assert_equal_real(integrated_contribs(i_sample), expected_integrated, TOL, "test_calc_contributions: integrated_contribs mismatch")
+            call assert_equal_array_real(spike_contribs(:, i_sample), &
+                expected_spike, n_timepoints, TOL, &
+                "test_calc_contributions: spike_contribs mismatch")
+            call assert_equal_real(integrated_contribs(i_sample), &
+                expected_integrated, TOL, &
+                "test_calc_contributions: integrated_contribs mismatch")
         end do
 
         ! Case: invalid mode
-        call calc_contributions_alloc(trajectories, n_factors, n_samples, n_timepoints, 2_int32, 1_int32, 99_int32, spike_contribs, integrated_contribs, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_calc_contributions: expected ERR_INVALID_INPUT for mode=99")
+        call calc_contributions_alloc(trajectories, n_factors, n_samples, &
+            n_timepoints, 2_int32, 1_int32, 99_int32, spike_contribs, &
+            integrated_contribs, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, &
+            "test_calc_contributions: expected ERR_INVALID_INPUT for mode=99")
 
     end subroutine test_calc_contributions
 
@@ -190,16 +211,20 @@ contains
         do i_factor = 1, n_factors
             do i_sample = 1, n_samples
                 do i_timepoint = 1, n_timepoints
-                    trajectories(i_factor,i_sample,i_timepoint) = 100.0_real64*i_factor + 10.0_real64*i_sample + real(i_timepoint,real64)
+                    trajectories(i_factor,i_sample,i_timepoint) = &
+                        100.0_real64*i_factor + 10.0_real64*i_sample + &
+                        real(i_timepoint,real64)
                 end do
             end do
         end do
 
         ! Valid extraction: factor 2, timepoint 3
         expected = [213.0, 223.0, 233.0]
-        call get_vec_across_samples(trajectories, n_factors, n_samples, n_timepoints, 2_int32, 3_int32, result, ierr)
+        call get_vec_across_samples(trajectories, n_factors, n_samples, &
+            n_timepoints, 2_int32, 3_int32, result, ierr)
         call assert_equal_int(ierr, ERR_OK, "Test failed: unexpected error code")
-        call assert_equal_array_real(result, expected, n_samples, 0.0_real64, "test_get_vec_across_timepoints: returned vector doesn't match")
+        call assert_equal_array_real(result, expected, n_samples, 0.0_real64, &
+            "test_get_vec_across_timepoints: returned vector doesn't match")
     end subroutine test_get_vec_across_samples
 
     subroutine test_get_vec_across_timepoints()
@@ -213,16 +238,21 @@ contains
         do i_factor = 1, n_factors
             do i_sample = 1, n_samples
                 do i_timepoint = 1, n_timepoints
-                    trajectories(i_factor,i_sample,i_timepoint) = 100.0_real64*i_factor + 10.0_real64*i_sample + real(i_timepoint,real64)
+                    trajectories(i_factor,i_sample,i_timepoint) = &
+                        100.0_real64*i_factor + 10.0_real64*i_sample + &
+                        real(i_timepoint,real64)
                 end do
             end do
         end do
 
         ! Valid extraction: factor 1, sample 2
         expected = [121.0, 122.0, 123.0, 124.0]
-        call get_vec_across_timepoints(trajectories, n_factors, n_samples, n_timepoints, 1_int32, 2_int32, result, ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_get_vec_across_timepoints: unexpected error code")
-        call assert_equal_array_real(result, expected, n_timepoints, 0.0_real64, "test_get_vec_across_timepoints: returned vector doesn't match")
+        call get_vec_across_timepoints(trajectories, n_factors, n_samples, &
+            n_timepoints, 1_int32, 2_int32, result, ierr)
+        call assert_equal_int(ierr, ERR_OK, &
+            "test_get_vec_across_timepoints: unexpected error code")
+        call assert_equal_array_real(result, expected, n_timepoints, 0.0_real64, &
+            "test_get_vec_across_timepoints: returned vector doesn't match")
     end subroutine test_get_vec_across_timepoints
 
     !> Run all tox_trajectory_contribution_analysis tests.
