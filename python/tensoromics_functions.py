@@ -2190,3 +2190,204 @@ def tox_calc_contributions_expert(trajectories, i_factor, dependent_idx, mode, t
         "spikes": spike_contribs,
         "trajectory": trajectory_contribs
     }
+
+def tox_process_trajectories(trajectories, factor_mask, dependent_idx, mode, percentile):
+    """
+    Wrapper for process_trajectories_alloc_C: processes multiple trajectories with per-timepoint percentiles.
+
+    Args:
+        trajectories (np.ndarray): 3D array of shape (n_factors, n_samples, n_timepoints)
+        factor_mask (np.ndarray): 1D boolean array of shape (n_factors,) indicating which factors to process
+        dependent_idx (int): 1-based index of the dependent variable
+        mode (int): Mode (1 = Normal, 2 = RAP)
+        percentile (float): Percentile value for threshold calculation (0.0-100.0)
+
+    Returns:
+        dict: A dictionary containing:
+            {
+                'integrated_contribs': np.ndarray,    # Integrated contributions [n_samples, n_processed_factors]
+                'spike_contribs': np.ndarray,         # Spike contributions [n_timepoints, n_samples, n_processed_factors]
+                'thresholds_integrated': np.ndarray,  # Thresholds for integrated contributions [n_processed_factors]
+                'thresholds_spike': np.ndarray,       # Thresholds for spike contributions [n_timepoints, n_processed_factors]
+                'outliers_integrated': np.ndarray,    # Outliers for integrated contributions [n_samples, n_processed_factors]
+                'outliers_spike': np.ndarray          # Outliers for spike contributions [n_timepoints, n_samples, n_processed_factors]
+            }
+    """
+    trajectories = np.asfortranarray(trajectories, dtype=np.float64)
+    n_factors, n_samples, n_timepoints = trajectories.shape
+    
+    # Convert boolean mask to integer array for C
+    factor_mask_int = np.ascontiguousarray(factor_mask.astype(np.int32), dtype=np.int32)
+    
+    # Calculate number of processed factors (excluding dependent_idx)
+    n_processed = np.sum(factor_mask) - (1 if factor_mask[dependent_idx - 1] else 0)
+    if n_processed <= 0:
+        raise ValueError("No factors to process after excluding dependent variable")
+    
+    # Prepare output arrays
+    integrated_contribs = np.zeros((n_samples, n_processed), dtype=np.float64, order="F")
+    spike_contribs = np.zeros((n_timepoints, n_samples, n_processed), dtype=np.float64, order="F")
+    thresholds_integrated = np.zeros(n_processed, dtype=np.float64, order='F')
+    thresholds_spike = np.zeros((n_timepoints, n_processed), dtype=np.float64, order='F')
+    outliers_integrated = np.zeros((n_samples, n_processed), dtype=np.int32, order='F')
+    outliers_spike = np.zeros((n_timepoints, n_samples, n_processed), dtype=np.int32, order='F')
+    
+    ierr = ctypes.c_int(0)
+
+    process_trajectories_c = lib.process_trajectories_C
+    process_trajectories_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # trajectories
+        ctypes.POINTER(ctypes.c_int),                                     # n_factors
+        ctypes.POINTER(ctypes.c_int),                                     # n_samples
+        ctypes.POINTER(ctypes.c_int),                                     # n_timepoints
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),     # factor_mask_int
+        ctypes.POINTER(ctypes.c_int),                                     # dependent_idx
+        ctypes.POINTER(ctypes.c_int),                                     # mode
+        ctypes.POINTER(ctypes.c_double),                                  # percentile
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # integrated_contribs
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # spike_contribs
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # thresholds_integrated
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),     # outliers_integrated
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # thresholds_spike
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),     # outliers_spike
+        ctypes.POINTER(ctypes.c_int)                                      # ierr
+    ]
+    process_trajectories_c.restype = None
+
+    process_trajectories_c(
+        trajectories,
+        ctypes.byref(ctypes.c_int(n_factors)),
+        ctypes.byref(ctypes.c_int(n_samples)),
+        ctypes.byref(ctypes.c_int(n_timepoints)),
+        ctypes.byref(ctypes.c_int(n_processed)),
+        factor_mask_int,
+        ctypes.byref(ctypes.c_int(dependent_idx)),
+        ctypes.byref(ctypes.c_int(mode)),
+        ctypes.byref(ctypes.c_double(percentile)),
+        integrated_contribs,
+        spike_contribs,
+        thresholds_integrated,
+        outliers_integrated,
+        thresholds_spike,
+        outliers_spike,
+        ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+    
+    # Convert integer outliers back to boolean for Python
+    outliers_integrated_bool = outliers_integrated.astype(bool)
+    outliers_spike_bool = outliers_spike.astype(bool)
+    
+    _readonly(integrated_contribs, spike_contribs, thresholds_integrated, 
+              thresholds_spike, outliers_integrated_bool, outliers_spike_bool)
+
+    return {
+        "integrated_contribs": integrated_contribs,
+        "spike_contribs": spike_contribs,
+        "thresholds_integrated": thresholds_integrated,
+        "thresholds_spike": thresholds_spike,
+        "outliers_integrated": outliers_integrated_bool,
+        "outliers_spike": outliers_spike_bool
+    }
+
+
+def tox_process_trajectories_flat(trajectories, factor_mask, dependent_idx, mode, percentile):
+    """
+    Wrapper for process_trajectories_flat_alloc_C: processes trajectories with global percentile for spike contributions.
+
+    Args:
+        trajectories (np.ndarray): 3D array of shape (n_factors, n_samples, n_timepoints)
+        factor_mask (np.ndarray): 1D boolean array of shape (n_factors,) indicating which factors to process
+        dependent_idx (int): 1-based index of the dependent variable
+        mode (int): Mode (1 = Normal, 2 = RAP)
+        percentile (float): Percentile value for threshold calculation (0.0-100.0)
+
+    Returns:
+        dict: A dictionary containing:
+            {
+                'integrated_contribs': np.ndarray,    # Integrated contributions [n_samples, n_processed_factors]
+                'spike_contribs': np.ndarray,         # Spike contributions [n_timepoints, n_samples, n_processed_factors]
+                'thresholds_integrated': np.ndarray,  # Thresholds for integrated contributions [n_processed_factors]
+                'thresholds_spike': np.ndarray,       # Thresholds for spike contributions [n_processed_factors] (1D)
+                'outliers_integrated': np.ndarray,    # Outliers for integrated contributions [n_samples, n_processed_factors]
+                'outliers_spike': np.ndarray          # Outliers for spike contributions [n_timepoints, n_samples, n_processed_factors]
+            }
+    """
+    trajectories = np.asfortranarray(trajectories, dtype=np.float64)
+    n_factors, n_samples, n_timepoints = trajectories.shape
+    
+    # Convert boolean mask to integer array for C
+    factor_mask_int = np.ascontiguousarray(factor_mask.astype(np.int32), dtype=np.int32)
+    
+    # Calculate number of processed factors (excluding dependent_idx)
+    n_processed = np.sum(factor_mask) - (1 if factor_mask[dependent_idx - 1] else 0)
+    if n_processed <= 0:
+        raise ValueError("No factors to process after excluding dependent variable")
+    
+    # Prepare output arrays
+    integrated_contribs = np.empty((n_samples, n_processed), dtype=np.float64, order="F")
+    spike_contribs = np.empty((n_timepoints, n_samples, n_processed), dtype=np.float64, order="F")
+    thresholds_integrated = np.empty(n_processed, dtype=np.float64, order='F')
+    thresholds_spike = np.empty(n_processed, dtype=np.float64, order='F')  # 1D for flat version
+    outliers_integrated = np.empty((n_samples, n_processed), dtype=np.int32, order='F')
+    outliers_spike = np.empty((n_timepoints, n_samples, n_processed), dtype=np.int32, order='F')
+    
+    ierr = ctypes.c_int(0)
+
+    process_trajectories_flat_c = lib.process_trajectories_flat_C
+    process_trajectories_flat_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # trajectories
+        ctypes.POINTER(ctypes.c_int),                                     # n_factors
+        ctypes.POINTER(ctypes.c_int),                                     # n_samples
+        ctypes.POINTER(ctypes.c_int),                                     # n_timepoints
+        ctypes.POINTER(ctypes.c_int),                                     # n_processed
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),     # factor_mask_int
+        ctypes.POINTER(ctypes.c_int),                                     # dependent_idx
+        ctypes.POINTER(ctypes.c_int),                                     # mode
+        ctypes.POINTER(ctypes.c_double),                                  # percentile
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # integrated_contribs
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # spike_contribs
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # thresholds_integrated
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),     # outliers_integrated
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # thresholds_spike
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),     # outliers_spike
+        ctypes.POINTER(ctypes.c_int)                                      # ierr
+    ]
+    process_trajectories_flat_c.restype = None
+
+    process_trajectories_flat_c(
+        trajectories,
+        ctypes.byref(ctypes.c_int(n_factors)),
+        ctypes.byref(ctypes.c_int(n_samples)),
+        ctypes.byref(ctypes.c_int(n_timepoints)),
+        ctypes.byref(ctypes.c_int(n_processed)),
+        factor_mask_int,
+        ctypes.byref(ctypes.c_int(dependent_idx)),
+        ctypes.byref(ctypes.c_int(mode)),
+        ctypes.byref(ctypes.c_double(percentile)),
+        integrated_contribs,
+        spike_contribs,
+        thresholds_integrated,
+        outliers_integrated,
+        thresholds_spike,
+        outliers_spike,
+        ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+    
+    # Convert integer outliers back to boolean for Python
+    outliers_integrated_bool = outliers_integrated.astype(bool)
+    outliers_spike_bool = outliers_spike.astype(bool)
+    
+    _readonly(integrated_contribs, spike_contribs, thresholds_integrated, 
+              thresholds_spike, outliers_integrated_bool, outliers_spike_bool)
+
+    return {
+        "integrated_contribs": integrated_contribs,
+        "spike_contribs": spike_contribs,
+        "thresholds_integrated": thresholds_integrated,
+        "thresholds_spike": thresholds_spike,
+        "outliers_integrated": outliers_integrated_bool,
+        "outliers_spike": outliers_spike_bool
+    }
