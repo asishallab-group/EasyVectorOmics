@@ -647,11 +647,14 @@ subroutine loess_smooth_2d_c(n_total, n_target, x_ref, y_ref, indices_used, n_us
 
 end subroutine loess_smooth_2d_c
 
+!> IMPORTANT - When using these C wrapper functions, no copies of the arrays will be created.
+!| The Fortran routine will operate directly on the memory provided by the caller.
+
 !> C wrapper for compute_edf.
 !| Allocates workspace internally and exposes a simple interface with C types.
 !| The number of unique values is returned via n_unique output parameter.
 subroutine compute_edf_c(values, n_values, unique_values, cdf_values, n_unique, ierr) &
-    bind(C, name="compute_edf_c")
+  bind(C, name="compute_edf_c")
   use iso_c_binding, only: c_int, c_double
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use f42_utils, only: compute_edf_alloc
