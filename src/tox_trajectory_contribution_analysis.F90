@@ -713,6 +713,23 @@ subroutine process_trajectories_C(trajectories, n_factors, n_samples, n_timepoin
     integer :: i
 
 
+    M_CHECK_NON_NULL(n_factors)
+    M_CHECK_NON_NULL(n_samples)
+    M_CHECK_NON_NULL(n_timepoints)
+    M_CHECK_NON_NULL(n_processed)
+    M_CHECK_NON_NULL(trajectories)
+    M_CHECK_NON_NULL(factor_mask_int)
+    M_CHECK_NON_NULL(dependent_idx)
+    M_CHECK_NON_NULL(mode)
+    M_CHECK_NON_NULL(percentile)
+    M_CHECK_NON_NULL(integrated_contribs)
+    M_CHECK_NON_NULL(spike_contribs)
+    M_CHECK_NON_NULL(thresholds_integrated_contrib)
+    M_CHECK_NON_NULL(outliers_integrated_contrib_int)
+    M_CHECK_NON_NULL(thresholds_spike_contrib)
+    M_CHECK_NON_NULL(outliers_spike_contrib_int)
+    M_CHECK_IERR_NON_NULL
+
     ! Initialize error
     call set_ok(ierr)
     
@@ -815,6 +832,23 @@ subroutine process_trajectories_flat_C(trajectories, n_factors, n_samples, n_tim
     logical, allocatable :: outliers_spike_contrib(:,:,:)
     integer :: i
     
+    M_CHECK_NON_NULL(n_factors)
+    M_CHECK_NON_NULL(n_samples)
+    M_CHECK_NON_NULL(n_timepoints)
+    M_CHECK_NON_NULL(n_processed)
+    M_CHECK_NON_NULL(trajectories)
+    M_CHECK_NON_NULL(factor_mask_int)
+    M_CHECK_NON_NULL(dependent_idx)
+    M_CHECK_NON_NULL(mode)
+    M_CHECK_NON_NULL(percentile)
+    M_CHECK_NON_NULL(integrated_contribs)
+    M_CHECK_NON_NULL(spike_contribs)
+    M_CHECK_NON_NULL(thresholds_integrated_contrib)
+    M_CHECK_NON_NULL(outliers_integrated_contrib_int)
+    M_CHECK_NON_NULL(thresholds_spike_contrib)
+    M_CHECK_NON_NULL(outliers_spike_contrib_int)
+    M_CHECK_IERR_NON_NULL
+
     ! Initialize error
     call set_ok(ierr)
     
