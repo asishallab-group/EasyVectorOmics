@@ -1528,7 +1528,7 @@ def tox_compute_rdi(distances, gene_to_fam, dscale):
     # Prepare output and work arrays
     rdi = np.zeros(n_genes, dtype=np.float64)
     sorted_rdi = np.zeros(n_genes, dtype=np.float64)
-    perm = np.zeros(n_genes, dtype=np.int32)
+    perm = np.arange(1, n_genes + 1, dtype=np.int32)
     stack_left = np.zeros(n_genes, dtype=np.int32)
     stack_right = np.zeros(n_genes, dtype=np.int32)
     

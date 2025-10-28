@@ -354,7 +354,7 @@ subroutine detect_outliers_integrated_expert_C(contributions, n_samples, thresho
                                         bind(C, name="detect_outliers_integrated_expert_C")
     use tox_conversions, only: logical_as_c_int
     use iso_c_binding, only: c_double, c_int
-    use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL, is_ok
+    use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL, is_ok, is_err
     use tox_trajectory_contribution_analysis_outlier_detection, only: detect_outliers_integrated
     real(c_double), intent(in) :: contributions(n_samples)
     !! Array of integrated contributions
@@ -403,7 +403,7 @@ subroutine detect_outliers_spike_expert_C(spike_contribs, n_timepoints, n_sample
                                     bind(C, name="detect_outliers_spike_expert_C")
     use tox_conversions, only: logical_as_c_int
     use iso_c_binding, only: c_double, c_int
-    use tox_errors, only: set_ok, set_err, is_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL
+    use tox_errors, only: set_ok, set_err, is_ok, is_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL
     use tox_trajectory_contribution_analysis_outlier_detection, only: detect_outliers_spike
     integer(c_int), intent(in), value :: n_samples
     !! Number of samples
@@ -424,7 +424,7 @@ subroutine detect_outliers_spike_expert_C(spike_contribs, n_timepoints, n_sample
     ! Initialize error
     call set_ok(ierr)
 
-    allocate(mask_2d(n_samples, n_timepoints), stat=ierr)
+    allocate(mask_2d(n_timepoints, n_samples), stat=ierr)
     if(is_err(ierr)) then
         call set_err(ierr, ERR_ALLOC_FAIL)
         return
@@ -433,7 +433,7 @@ subroutine detect_outliers_spike_expert_C(spike_contribs, n_timepoints, n_sample
     ! Call Fortran subroutine
     call detect_outliers_spike(spike_contribs, n_timepoints, n_samples, thresholds, mask_2d, ierr)
     
-    if(.not. is_err(ierr)) then
+    if(is_ok(ierr)) then
         ! Convert Fortran logical to C int (0=false, 1=true)
         call logical_as_c_int(mask_2d, outlier_mask)
     end if
