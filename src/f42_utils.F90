@@ -287,6 +287,7 @@ contains
     integer(int32), intent(inout) :: perm(:)
     integer(int32) :: n, i
     n = size(array)
+    
     ! Build max heap
     do i = n / 2, 1, -1
       call heapify_real(array, perm, n, i)
@@ -309,9 +310,10 @@ contains
       real(real64), intent(in) :: array(:)
       !| Permutation vector that will be sorted
       integer(int32), intent(inout) :: perm(:)
-      !| Size of the heap and root index
-      integer(int32), intent(in) :: heap_size, root
-      !| Local indices with descriptive names
+      !| Size of the heap
+      integer(int32), intent(in) :: heap_size
+      !| Root index
+      integer(int32), intent(in) :: root
       integer(int32) :: current, next_idx, largest_idx
 
       current = root
@@ -349,7 +351,6 @@ contains
     integer(int32), intent(in) :: array(:)
     !| Permutation vector that will be sorted
     integer(int32), intent(inout) :: perm(:)
-    !| Size of the array
     integer(int32) :: n, i
 
     n = size(array)
@@ -377,9 +378,10 @@ contains
       integer(int32), intent(in) :: array(:)
       !| Permutation vector that will be sorted
       integer(int32), intent(inout) :: perm(:)
-      !| Size of the heap and root index
-      integer(int32), intent(in) :: heap_size, root
-      !| Local indices with descriptive names
+      !| Size of the heap
+      integer(int32), intent(in) :: heap_size
+      !| Root index
+      integer(int32), intent(in) :: root
       integer(int32) :: current, next_idx, largest_idx
 
       current = root
@@ -421,7 +423,6 @@ contains
     character(len=*), intent(in)    :: array(:)
     !| Permutation vector that will be sorted
     integer(int32),   intent(inout) :: perm(:)
-    !| Size of the array
     integer(int32) :: n, i
 
     n = size(array)
@@ -449,9 +450,10 @@ contains
       character(len=*), intent(in) :: array(:)
       !| Permutation vector that will be sorted
       integer(int32),   intent(inout) :: perm(:)
-      !| Size of the heap and root index
-      integer(int32), intent(in) :: heap_size, root
-      !| Local indices with descriptive names
+      !| Size of the heap
+      integer(int32), intent(in) :: heap_size
+      !| Root index
+      integer(int32), intent(in) :: root
       integer(int32) :: current, next_idx, largest_idx
 
       current = root
