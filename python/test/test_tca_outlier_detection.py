@@ -8,9 +8,9 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 # Import your wrapper functions
 from tensoromics_functions import (
     calc_spike_thresholds,
-    calc_spike_thresholds_alloc,
+    calc_spike_thresholds_expert,
     calc_integrated_threshold,
-    calc_integrated_threshold_alloc,
+    calc_integrated_threshold_expert,
     detect_outliers_integrated,
     detect_outliers_spike
 )
@@ -53,7 +53,7 @@ def test_calc_spike_thresholds_basic():
     spike_data = create_sample_spike_data()  # 3 timepoints × 5 samples
     permutation = create_sample_permutation()  # 5 samples × 3 timepoints
     
-    thresholds = calc_spike_thresholds(spike_data, 80.0, permutation)
+    thresholds = calc_spike_thresholds_expert(spike_data, 80.0, permutation)
     
     # Validate output - should have 3 thresholds (one per timepoint)
     assert thresholds.shape == (3,), f"Expected shape (3,), got {thresholds.shape}"
@@ -69,12 +69,12 @@ def test_calc_spike_thresholds_basic():
     
     print("calc_spike_thresholds_basic passed")
 
-def test_calc_spike_thresholds_alloc_basic():
+def test_calc_spike_thresholds_basic():
     """Test spike threshold calculation with internal allocation"""
-    print("Testing calc_spike_thresholds_alloc_basic...")
+    print("Testing calc_spike_thresholds_basic...")
     
     spike_data = create_sample_spike_data()  # 3 timepoints × 5 samples
-    thresholds = calc_spike_thresholds_alloc(spike_data, 80.0)
+    thresholds = calc_spike_thresholds(spike_data, 80.0)
     
     # Validate output
     assert thresholds.shape == (3,), f"Expected shape (3,), got {thresholds.shape}"
@@ -85,7 +85,7 @@ def test_calc_spike_thresholds_alloc_basic():
     expected = np.array([4.2, 8.4, 12.6], dtype=np.float64)
     np.testing.assert_array_almost_equal(thresholds, expected, decimal=10)
     
-    print("calc_spike_thresholds_alloc_basic passed")
+    print("calc_spike_thresholds_basic passed")
 
 def test_calc_integrated_threshold_basic():
     """Test basic integrated threshold calculation"""
@@ -103,18 +103,18 @@ def test_calc_integrated_threshold_basic():
     
     print("calc_integrated_threshold_basic passed")
 
-def test_calc_integrated_threshold_alloc_basic():
+def test_calc_integrated_threshold_basic():
     """Test integrated threshold calculation with internal allocation"""
-    print("Testing calc_integrated_threshold_alloc_basic...")
+    print("Testing calc_integrated_threshold_basic...")
     
     contributions = create_sample_integrated_data()
-    threshold = calc_integrated_threshold_alloc(contributions, 80.0)
+    threshold = calc_integrated_threshold(contributions, 80.0)
     
     # Validate output
     assert isinstance(threshold, float), f"Expected float, got {type(threshold)}"
     assert abs(threshold - 42.0) < 1e-10, f"Expected 42.0, got {threshold}"
     
-    print("calc_integrated_threshold_alloc_basic passed")
+    print("calc_integrated_threshold_basic passed")
 
 def test_detect_outliers_integrated_basic():
     """Test integrated outlier detection"""
@@ -171,7 +171,7 @@ def test_spike_thresholds_edge_cases():
         [2.0, 2.0, 8.0, 2.0],  # Timepoint 2: [2,2,8,2]
     ], dtype=np.float64, order='F')
     
-    thresholds = calc_spike_thresholds_alloc(spike_data, 50.0)  # Median
+    thresholds = calc_spike_thresholds(spike_data, 50.0)  # Median
     
     # Timepoint1: [1,3,5,5] median = 4.0, Timepoint2: [2,2,2,8] median = 2.0
     expected = np.array([4.0, 2.0], dtype=np.float64)
@@ -185,12 +185,12 @@ def test_integrated_threshold_edge_cases():
     
     # Single element
     single_data = np.array([100.0], dtype=np.float64, order='F')
-    threshold = calc_integrated_threshold_alloc(single_data, 50.0)
+    threshold = calc_integrated_threshold(single_data, 50.0)
     assert abs(threshold - 100.0) < 1e-10, f"Expected 100.0, got {threshold}"
     
     # All identical values
     identical_data = np.array([5.0, 5.0, 5.0, 5.0], dtype=np.float64, order='F')
-    threshold = calc_integrated_threshold_alloc(identical_data, 75.0)
+    threshold = calc_integrated_threshold(identical_data, 75.0)
     assert abs(threshold - 5.0) < 1e-10, f"Expected 5.0, got {threshold}"
     
     print("integrated_threshold_edge_cases passed")
@@ -216,13 +216,13 @@ def test_invalid_percentiles():
     spike_data = create_sample_spike_data()
     
     try:
-        calc_spike_thresholds_alloc(spike_data, -10.0)
+        calc_spike_thresholds(spike_data, -10.0)
         assert False, "Should have raised ValueError for negative percentile"
     except ValueError as e:
         assert "percentile_val must be between 0.0 and 100.0" in str(e)
     
     try:
-        calc_spike_thresholds_alloc(spike_data, 150.0)
+        calc_spike_thresholds(spike_data, 150.0)
         assert False, "Should have raised ValueError for percentile > 100"
     except ValueError as e:
         assert "percentile_val must be between 0.0 and 100.0" in str(e)
@@ -239,7 +239,7 @@ def test_dimension_mismatch_errors():
     # Wrong permutation dimensions
     wrong_perm = np.array([[1, 2], [3, 4]], dtype=np.int32, order='F')  # 2×2 vs 5×3
     try:
-        calc_spike_thresholds(spike_data, 50.0, wrong_perm)
+        calc_spike_thresholds_expert(spike_data, 50.0, wrong_perm)
         assert False, "Should have raised ValueError for wrong permutation dimensions"
     except ValueError as e:
         assert "permutation shape" in str(e)
@@ -265,7 +265,7 @@ def test_memory_layout_handling():
     ], dtype=np.float64, order='C')  # C order
     
     # Function should convert to Fortran order internally
-    thresholds = calc_spike_thresholds_alloc(spike_data_c, 50.0)
+    thresholds = calc_spike_thresholds(spike_data_c, 50.0)
     assert thresholds.shape == (2,), f"Expected shape (2,), got {thresholds.shape}"
     assert thresholds.dtype == np.float64, f"Expected float64, got {thresholds.dtype}"
     
@@ -281,7 +281,7 @@ def test_data_type_conversion():
         [3.0, 4.0]
     ], dtype=np.float32, order='F')  # 2 timepoints × 2 samples
     
-    thresholds = calc_spike_thresholds_alloc(spike_data_float32, 50.0)
+    thresholds = calc_spike_thresholds(spike_data_float32, 50.0)
     assert thresholds.dtype == np.float64, f"Expected float64, got {thresholds.dtype}"
     
     # Test with integer input
@@ -290,7 +290,7 @@ def test_data_type_conversion():
         [3, 4]
     ], dtype=np.int32, order='F')  # 2 timepoints × 2 samples
     
-    thresholds = calc_spike_thresholds_alloc(spike_data_int, 50.0)
+    thresholds = calc_spike_thresholds(spike_data_int, 50.0)
     assert thresholds.dtype == np.float64, f"Expected float64, got {thresholds.dtype}"
     
     print("data_type_conversion passed")
@@ -304,7 +304,7 @@ def test_large_scale_performance():
     large_data = np.random.rand(n_timepoints, n_samples).astype(np.float64, order='F')
     
     # These should complete without errors
-    thresholds = calc_spike_thresholds_alloc(large_data, 95.0)
+    thresholds = calc_spike_thresholds(large_data, 95.0)
     assert thresholds.shape == (n_timepoints,), f"Expected shape ({n_timepoints},), got {thresholds.shape}"
     
     outliers = detect_outliers_spike(large_data, thresholds)
@@ -320,19 +320,19 @@ def test_consistency_between_versions():
     permutation = create_sample_permutation()  # 5 samples × 3 timepoints
     
     # Test spike thresholds consistency
-    thresholds_perf = calc_spike_thresholds(spike_data, 80.0, permutation)
-    thresholds_alloc = calc_spike_thresholds_alloc(spike_data, 80.0)
+    thresholds_perf = calc_spike_thresholds_expert(spike_data, 80.0, permutation)
+    thresholds = calc_spike_thresholds(spike_data, 80.0)
     
-    np.testing.assert_array_almost_equal(thresholds_perf, thresholds_alloc, decimal=10)
+    np.testing.assert_array_almost_equal(thresholds_perf, thresholds, decimal=10)
     
     # Test integrated thresholds consistency
     integrated_data = np.sum(spike_data, axis=0)  # Sum across timepoints for each sample
     integrated_perm = np.array([1, 2, 3, 4, 5], dtype=np.int32, order='F')
     
-    threshold_perf = calc_integrated_threshold(integrated_data, 75.0, integrated_perm)
-    threshold_alloc = calc_integrated_threshold_alloc(integrated_data, 75.0)
+    threshold_perf = calc_integrated_threshold_expert(integrated_data, 75.0, integrated_perm)
+    threshold = calc_integrated_threshold(integrated_data, 75.0)
     
-    assert abs(threshold_perf - threshold_alloc) < 1e-10, "Thresholds should be consistent"
+    assert abs(threshold_perf - threshold) < 1e-10, "Thresholds should be consistent"
     
     print("consistency_between_versions passed")
 
@@ -343,9 +343,9 @@ def run_all_tests():
     
     test_functions = [
         test_calc_spike_thresholds_basic,
-        test_calc_spike_thresholds_alloc_basic,
+        test_calc_spike_thresholds_basic,
         test_calc_integrated_threshold_basic,
-        test_calc_integrated_threshold_alloc_basic,
+        test_calc_integrated_threshold_basic,
         test_detect_outliers_integrated_basic,
         test_detect_outliers_spike_basic,
         test_spike_thresholds_edge_cases,

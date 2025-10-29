@@ -1982,7 +1982,7 @@ def tox_mean_vector(expression_vectors, gene_indices):
     _readonly(centroid_col)
     return centroid_col
 
-def calc_spike_thresholds(spike_contribs: np.ndarray, percentile_val: float, permutation: np.ndarray) -> np.ndarray:
+def calc_spike_thresholds_expert(spike_contribs: np.ndarray, percentile_val: float, permutation: np.ndarray) -> np.ndarray:
     """
     Calculate empirical thresholds for spike contributions using pre-sorted permutations
     
@@ -2035,7 +2035,7 @@ def calc_spike_thresholds(spike_contribs: np.ndarray, percentile_val: float, per
     _readonly(thresholds)
     return thresholds
 
-def calc_spike_thresholds_alloc(spike_contribs: np.ndarray, percentile_val: float) -> np.ndarray:
+def calc_spike_thresholds(spike_contribs: np.ndarray, percentile_val: float) -> np.ndarray:
     """
     Calculate empirical thresholds for spike contributions with internal allocations and sorting
     
@@ -2060,8 +2060,8 @@ def calc_spike_thresholds_alloc(spike_contribs: np.ndarray, percentile_val: floa
     ierr = ctypes.c_int(0)
     
     # Setup C wrapper
-    calc_spike_thresholds_alloc_c = lib.calc_spike_thresholds_C
-    calc_spike_thresholds_alloc_c.argtypes = [
+    calc_spike_thresholds_c = lib.calc_spike_thresholds_C
+    calc_spike_thresholds_c.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='F_CONTIGUOUS'),  # spike_contribs
         ctypes.c_int,  # n_timepoints
         ctypes.c_int,  # n_samples
@@ -2069,10 +2069,10 @@ def calc_spike_thresholds_alloc(spike_contribs: np.ndarray, percentile_val: floa
         np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # thresholds
         ctypes.POINTER(ctypes.c_int)  # ierr
     ]
-    calc_spike_thresholds_alloc_c.restype = None
+    calc_spike_thresholds_c.restype = None
     
     # Call Fortran routine
-    calc_spike_thresholds_alloc_c(spike_contribs, n_timepoints, n_samples, percentile_val, 
+    calc_spike_thresholds_c(spike_contribs, n_timepoints, n_samples, percentile_val, 
                                  thresholds, ctypes.byref(ierr))
     check_err_code(ierr.value)
     
@@ -2082,7 +2082,7 @@ def calc_spike_thresholds_alloc(spike_contribs: np.ndarray, percentile_val: floa
 
 # ==================== INTEGRATED THRESHOLDS FUNCTIONS ====================
 
-def calc_integrated_threshold(contributions: np.ndarray, percentile_val: float, 
+def calc_integrated_threshold_expert(contributions: np.ndarray, percentile_val: float, 
                             permutation: np.ndarray) -> float:
     """
     Calculate empirical threshold for integrated (trajectory-level) contributions
@@ -2132,7 +2132,7 @@ def calc_integrated_threshold(contributions: np.ndarray, percentile_val: float,
     
     return threshold.value
 
-def calc_integrated_threshold_alloc(contributions: np.ndarray, percentile_val: float) -> float:
+def calc_integrated_threshold(contributions: np.ndarray, percentile_val: float) -> float:
     """
     Calculate empirical threshold for integrated contributions with internal allocation and sorting
     
@@ -2156,18 +2156,18 @@ def calc_integrated_threshold_alloc(contributions: np.ndarray, percentile_val: f
     ierr = ctypes.c_int(0)
     
     # Setup C wrapper
-    calc_integrated_threshold_alloc_c = lib.calc_integrated_threshold_C
-    calc_integrated_threshold_alloc_c.argtypes = [
+    calc_integrated_threshold_c = lib.calc_integrated_threshold_C
+    calc_integrated_threshold_c.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # contributions
         ctypes.c_int,  # n_samples
         ctypes.c_double,  # percentile_val
         ctypes.POINTER(ctypes.c_double),  # threshold
         ctypes.POINTER(ctypes.c_int)  # ierr
     ]
-    calc_integrated_threshold_alloc_c.restype = None
+    calc_integrated_threshold_c.restype = None
     
     # Call Fortran routine
-    calc_integrated_threshold_alloc_c(contributions, n_samples, percentile_val, 
+    calc_integrated_threshold_c(contributions, n_samples, percentile_val, 
                                      threshold, ctypes.byref(ierr))
     check_err_code(ierr.value)
     

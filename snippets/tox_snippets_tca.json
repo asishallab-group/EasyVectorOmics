@@ -279,24 +279,24 @@
         ],
         "description": "Python setup for calc_contributions_expert_c call"
     },
-    "Call to calculate spike thresholds": {
-        "prefix": "tox:calc_spike_thresholds",
+    "Call to calculate spike thresholds expert": {
+        "prefix": "tox:calc_spike_thresholds_expert",
         "body": [
-            "call calc_spike_thresholds(spike_contribs, n_timepoints, n_samples, percentile_val, thresholds, permutation, ierr)"
+            "call calc_spike_thresholds_expert(spike_contribs, n_timepoints, n_samples, percentile_val, thresholds, permutation, ierr)"
         ],
         "description": "Call to calculate spike threshold from given spike contributions"
     },
-    "Call to calculate spike thresholds alloc": {
+    "Call to calculate spike thresholds": {
         "prefix": "tox:calc_spike_thresholds_alloc",
         "body": [
             "call calc_spike_thresholds_alloc(spike_contribs, n_timepoints, n_samples, percentile_val, thresholds, ierr)"
         ],
         "description": "Call to calculate spike thresholds from given spike contributions, uses quicksort internally"
     },
-    "Call to calculate integrated threshold": {
-        "prefix": "tox:calc_integrated_thresholds",
+    "Call to calculate integrated threshold expert": {
+        "prefix": "tox:calc_integrated_thresholds_expert",
         "body" : [
-            "call calc_integrated_threshold(contributions, n_samples, percentile_val, threshold, permutation, ierr)"
+            "call calc_integrated_threshold_expert(contributions, n_samples, percentile_val, threshold, permutation, ierr)"
         ],
         "description": "Call to calculate integrated thresholds from given contributions"
     },
@@ -307,10 +307,10 @@
         ],
         "description": "Call to calculate integrated thresholds from given contributions, uses quicksort internally"
     },
-    "Call to detect integrated outliers": {
-        "prefix": "tox:detect_outliers_integrated",
+    "Call to detect integrated outliers expert": {
+        "prefix": "tox:detect_outliers_integrated_expert",
         "body": [
-            "call detect_outliers_integrated(contributions, n_samples, threshold, outlier_mask, ierr)"
+            "call detect_outliers_integrated_expert(contributions, n_samples, threshold, outlier_mask, ierr)"
         ],
         "description": "Call to detect integrated outliers from given contributions and pre-calculated thresholds"
     },
@@ -321,10 +321,10 @@
         ],
         "description": "Call to detect spike outliers from given contributions and pre-calculated thresholds"
     },
-    "Python set up calc_spike_thresholds": {
+    "Python set up calc_spike_thresholds expert": {
         "prefix": "tox:calc_spike_thresholds_setup_py",
         "body": [
-            "def calc_spike_thresholds(spike_contribs: np.ndarray, percentile_val: float, permutation: np.ndarray) -> np.ndarray:",
+            "def calc_spike_thresholds_expert(spike_contribs: np.ndarray, percentile_val: float, permutation: np.ndarray) -> np.ndarray:",
             "    \"\"\"",
             "    Calculate empirical thresholds for spike contributions using pre-sorted permutations",
             "",
@@ -380,10 +380,10 @@
         ],
         "description": "Python setup for calc_spike_thresholds with pre-computed permutations"
     },
-    "Python set up calc_spike_thresholds_alloc": {
-        "prefix": "tox:calc_spike_thresholds_alloc_py",
+    "Python set up calc_spike_thresholds": {
+        "prefix": "tox:calc_spike_thresholds_py",
         "body": [
-            "def calc_spike_thresholds_alloc(spike_contribs: np.ndarray, percentile_val: float) -> np.ndarray:",
+            "def calc_spike_thresholds(spike_contribs: np.ndarray, percentile_val: float) -> np.ndarray:",
             "    \"\"\"",
             "    Calculate empirical thresholds for spike contributions with internal allocations and sorting",
             "",
@@ -408,8 +408,8 @@
             "    ierr = ctypes.c_int(0)",
             "",
             "    # Setup C wrapper",
-            "    calc_spike_thresholds_alloc_c = lib.calc_spike_thresholds_C",
-            "    calc_spike_thresholds_alloc_c.argtypes = [",
+            "    calc_spike_thresholds_c = lib.calc_spike_thresholds_C",
+            "    calc_spike_thresholds_c.argtypes = [",
             "        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='F_CONTIGUOUS'),  # spike_contribs",
             "        ctypes.c_int,  # n_timepoints",
             "        ctypes.c_int,  # n_samples",
@@ -417,10 +417,10 @@
             "        np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # thresholds",
             "        ctypes.POINTER(ctypes.c_int)  # ierr",
             "    ]",
-            "    calc_spike_thresholds_alloc_c.restype = None",
+            "    calc_spike_thresholds_c.restype = None",
             "",
             "    # Call Fortran routine",
-            "    calc_spike_thresholds_alloc_c(spike_contribs, n_timepoints, n_samples, percentile_val,",
+            "    calc_spike_thresholds_c(spike_contribs, n_timepoints, n_samples, percentile_val,",
             "                                 thresholds, ctypes.byref(ierr))",
             "    check_err_code(ierr.value)",
             "",
@@ -432,10 +432,10 @@
         "description": "Python setup for calc_spike_thresholds with internal allocation"
     },
 
-    "Python set up calc_integrated_threshold": {
+    "Python set up calc_integrated_threshold_expert": {
         "prefix": "tox:calc_integrated_threshold_py",
         "body": [
-            "def calc_integrated_threshold(contributions: np.ndarray, percentile_val: float,",
+            "def calc_integrated_threshold_expert(contributions: np.ndarray, percentile_val: float,",
             "                            permutation: np.ndarray) -> float:",
             "    \"\"\"",
             "    Calculate empirical threshold for integrated (trajectory-level) contributions",
@@ -489,10 +489,10 @@
         "description": "Python setup for calc_integrated_threshold with pre-computed permutations"
     },
 
-    "Python set up calc_integrated_threshold_alloc": {
-        "prefix": "tox:calc_integrated_threshold_alloc_py",
+    "Python set up calc_integrated_threshold": {
+        "prefix": "tox:calc_integrated_threshold_py",
         "body": [
-            "def calc_integrated_threshold_alloc(contributions: np.ndarray, percentile_val: float) -> float:",
+            "def calc_integrated_threshold(contributions: np.ndarray, percentile_val: float) -> float:",
             "    \"\"\"",
             "    Calculate empirical threshold for integrated contributions with internal allocation and sorting",
             "",
@@ -516,18 +516,18 @@
             "    ierr = ctypes.c_int(0)",
             "",
             "    # Setup C wrapper",
-            "    calc_integrated_threshold_alloc_c = lib.calc_integrated_threshold_C",
-            "    calc_integrated_threshold_alloc_c.argtypes = [",
+            "    calc_integrated_threshold_c = lib.calc_integrated_threshold_C",
+            "    calc_integrated_threshold_c.argtypes = [",
             "        np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # contributions",
             "        ctypes.c_int,  # n_samples",
             "        ctypes.c_double,  # percentile_val",
             "        ctypes.POINTER(ctypes.c_double),  # threshold",
             "        ctypes.POINTER(ctypes.c_int)  # ierr",
             "    ]",
-            "    calc_integrated_threshold_alloc_c.restype = None",
+            "    calc_integrated_threshold_c.restype = None",
             "",
             "    # Call Fortran routine",
-            "    calc_integrated_threshold_alloc_c(contributions, n_samples, percentile_val,",
+            "    calc_integrated_threshold_c(contributions, n_samples, percentile_val,",
             "                                     threshold, ctypes.byref(ierr))",
             "    check_err_code(ierr.value)",
             "",
@@ -642,36 +642,36 @@
         ],
         "description": "Python setup for detect_outliers_spike"
     },
-    "Python call to calc_spike_thresholds": {
+    "Python call to calc_spike_thresholds_expert": {
         "prefix": "tox:calc_spike_thresholds_call",
         "body": [
-            "thresholds = calc_spike_thresholds(spike_data, percentile_val, permutation)"
+            "thresholds = calc_spike_thresholds_expert(spike_data, percentile_val, permutation)"
         ],
         "description": "Call calc_spike_thresholds with pre-computed permutation"
     },
 
-    "Python call to calc_spike_thresholds_alloc": {
-        "prefix": "tox:calc_spike_thresholds_alloc_call",
+    "Python call to calc_spike_thresholds": {
+        "prefix": "tox:calc_spike_thresholds_call",
         "body": [
-            "thresholds = calc_spike_thresholds_alloc(spike_data, percentile_val)"
+            "thresholds = calc_spike_thresholds(spike_data, percentile_val)"
         ],
-        "description": "Call calc_spike_thresholds_alloc with internal allocation"
+        "description": "Call calc_spike_thresholds with internal allocation"
+    },
+
+    "Python call to calc_integrated_threshold_expert": {
+        "prefix": "tox:calc_integrated_threshold_call",
+        "body": [
+            "threshold = calc_integrated_threshold_expert(contributions, percentile_val, permutation)"
+        ],
+        "description": "Call calc_integrated_threshold with pre-computed permutation"
     },
 
     "Python call to calc_integrated_threshold": {
         "prefix": "tox:calc_integrated_threshold_call",
         "body": [
-            "threshold = calc_integrated_threshold(contributions, percentile_val, permutation)"
+            "threshold = calc_integrated_threshold(contributions, percentile_val)"
         ],
-        "description": "Call calc_integrated_threshold with pre-computed permutation"
-    },
-
-    "Python call to calc_integrated_threshold_alloc": {
-        "prefix": "tox:calc_integrated_threshold_alloc_call",
-        "body": [
-            "threshold = calc_integrated_threshold_alloc(contributions, percentile_val)"
-        ],
-        "description": "Call calc_integrated_threshold_alloc with internal allocation"
+        "description": "Call calc_integrated_threshold with internal allocation"
     },
 
     "Python call to detect_outliers_integrated": {
