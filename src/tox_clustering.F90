@@ -2,8 +2,8 @@
 
 module tox_clustering
     use, intrinsic :: iso_fortran_env, only: int32, real64
-    use, intrinsic :: ieee_arithmetic, only: ieee_positive_inf, ieee_value
-    use tox_errors
+    use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_positive_inf, ieee_is_nan
+    use tox_errors, only: is_err, set_err, set_ok, ERR_NAN_INF, ERR_INVALID_INPUT, validate_dimension_size
     implicit none
 contains
 
@@ -185,119 +185,166 @@ contains
         end do
     end subroutine k_means_assign_cluster_helper
 
-    pure subroutine maximum_linkage_clustering(n_clusters, data_points, n_points, n_dims, distances, sorted_distances_perm, labels, ierr)
-        integer(int32), intent(in) :: n_clusters
-            !! number of clusters
+    pure subroutine upgma(distances, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
-        integer(int32), intent(in) :: n_dims
-            !! number of elements a point has
-        real(real64), dimension(n_dims, n_points), intent(in) :: data_points
-            !! matrix with data points to cluster
-        real(real64), dimension(n_points, n_points), intent(in) :: distances
-            !! distance matrix, holding the distances between points
-        integer(int32), dimension(n_points * n_points), intent(in) :: sorted_distances_perm
-            !! permutation vector that sorts distances as flat array
-        integer(int32), dimension(n_points), intent(out) :: labels
-            !! array of labels, each index corresponds to the respective point's index, so first label is first point's label.
-            !!
-            !! each label is the index of its related cluster -> `1<=label<=n_clusters=k`
+        real(real64), dimension(n_points, n_points), intent(inout) :: distances
+            !! mutable distance matrix (pass copy if original data is needed), holding the positive distances between points
+        integer(int32), dimension(n_points - 1), intent(out) :: merge_i
+            !! holds cluster labels of the merged node pair at iteration k -> positives relate to leafs/data point indices, negatives to inner nodes
+        integer(int32), dimension(n_points - 1), intent(out) :: merge_j
+            !! holds cluster labels of the merged node pair at iteration k -> positives relate to leafs/data point indices, negatives to inner nodes
+        real(real64), dimension(n_points - 1), intent(out) :: heights
+            !! height of the shorter branch of the merge, e.g. if (A,B)+(C) merges to ((A,B),C), the branch to (A,B) is shorter
+        integer(int32), dimension(n_points - 1), intent(out) :: cluster_sizes
+            !! size of cluster at iteration k
         integer(int32), intent(out) :: ierr
             !! Error code
 
-        integer(int32) :: i_point, i_pair, cluster_count, i_point_a, i_point_b
+        integer(int32) :: i, row_idx, col_idx, weight_col, weight_row, new_weight, cluster_idx
+        real(real64) :: min_dist
 
         call set_ok(ierr)
 
-        call validate_dimension_size(n_clusters, ierr)
         call validate_dimension_size(n_points, ierr)
-        call validate_dimension_size(n_dims, ierr)
-        if (n_clusters > n_points) call set_err(ierr, ERR_INVALID_INPUT)
         if (is_err(ierr)) return
 
-        labels = 0_int32
+        do i = 1, n_points - 1
+            call get_min_distance_indices_helper(distances, n_points, row_idx, col_idx, min_dist)
 
-        cluster_count = n_points
-        i_pair = n_points * n_points
-        do while (cluster_count > n_clusters)
-            i_point_a = mod(sorted_distances_perm(i_pair) - 1, n_points) + 1
-            i_point_b = (sorted_distances_perm(i_pair) - 1) / n_points + 1
+            heights(i) = min_dist
 
-            call merge_linkage_clusters_helper(labels, n_points, i_point_a, i_point_b, cluster_count)
+            ! Get Weight and cluster index/label
+            call get_cluster_data_upgma_helper(distances, n_points, cluster_sizes, col_idx, weight_col, cluster_idx)
+            merge_j(i) = cluster_idx
+            call get_cluster_data_upgma_helper(distances, n_points, cluster_sizes, row_idx, weight_row, cluster_idx)
+            merge_i(i) = cluster_idx
 
-            i_pair = i_pair - 1
+
+            new_weight = weight_col + weight_row
+            cluster_sizes(i) = new_weight
+
+            call merge_distances_upgma_helper(distances, n_points, row_idx, col_idx, real(weight_row, real64), real(weight_col, real64), real(new_weight, real64), i, ierr)
         end do
+    end subroutine upgma
 
-        call assign_remaining_linkage_clusters_helper(labels, n_points, n_points - n_clusters)
-    end subroutine maximum_linkage_clustering
-
-    !> Helper to merge clusters in linkage hierarchy algorithms
-    pure subroutine merge_linkage_clusters_helper(labels, n_points, i_point_a, i_point_b, cluster_count)
+    pure subroutine get_cluster_data_upgma_helper(distances, n_points, cluster_sizes, idx, weight, cluster_idx)
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
-        integer(int32), dimension(n_points), intent(inout) :: labels
-            !! array of labels `0<=label<=n_points`, if `label==0` it is a cluster with only a single point
-        integer(int32), intent(in) :: i_point_a
-            !! index to label of cluster A in `labels`
-        integer(int32), intent(in) :: i_point_b
-            !! index to label of cluster B in `labels`
-        integer(int32), intent(inout) :: cluster_count
-            !! number of existing clusters in labels (zeros are separate clusters)
+        real(real64), dimension(n_points, n_points), intent(in) :: distances
+            !! distance matrix, holding the distances between points
+        integer(int32), dimension(n_points - 1), intent(in) :: cluster_sizes
+            !! size of cluster at iteration k
+        integer(int32), intent(in) :: idx
+            !! index of cluster in `distances`
+        integer(int32), intent(out) :: weight
+            !! number of leafs of cluster
+        integer(int32), intent(out) :: cluster_idx
+            !! index/label of cluster
 
-        integer(int32) :: label_a, label_b, i_point, lower_label, upper_label
+        integer(int32) :: iteration_k
 
-        label_a = labels(i_point_a)
-        label_b = labels(i_point_b)
+        iteration_k = int(distances(idx, idx), int32)
+        if (iteration_k == 0) then
+            weight = 1
+            cluster_idx = idx
+        else
+            weight = cluster_sizes(iteration_k)
+            cluster_idx = -iteration_k
+        end if   
+    end subroutine get_cluster_data_upgma_helper
 
-        ! if point a is not standalone cluster
-        if (label_a > 0) then
-            ! b is standalone cluster -> add b to cluster of a
-            if (label_b == 0) then
-                labels(i_point_b) = label_a
-            ! b is not standalone -> merge a and b clusters
-            else
-                lower_label = min(label_a, label_b)
-                upper_label = max(label_a, label_b)
-                do i_point = 1, n_points
-                    if ((labels(i_point) == label_a) .or. (labels(i_point) == label_b)) then
-                        labels(i_point) = lower_label
-                    else if (labels(i_point) > upper_label) then
-                        labels(i_point) = labels(i_point) - 1
+    pure subroutine merge_distances_upgma_helper(distances, n_points, row_idx, col_idx, weight_row, weight_col, new_weight, iteration_k, ierr)
+        integer(int32), intent(in) :: n_points
+            !! number of points to cluster
+        real(real64), dimension(n_points, n_points), intent(inout) :: distances
+            !! distance matrix, holding the distances between points
+        integer(int32), intent(in) :: row_idx
+            !! row index of min distance
+        integer(int32), intent(in) :: col_idx
+            !! column index of min distance
+        real(real64), intent(in) :: weight_row
+            !! cluster size of cluster at `row_idx`
+        real(real64), intent(in) :: weight_col
+            !! cluster size of cluster at `col_idx`
+        real(real64), intent(in) :: new_weight
+            !! cluster size of new cluster
+        integer(int32), intent(in) :: iteration_k
+            !! iteration of current merge
+        integer(int32), intent(inout) :: ierr
+            !! Error code
+
+        integer(int32) :: i_node
+        real(real64) :: new_dist
+
+        ! Merge distances
+        ! Update merged nodes with arithmetic mean distances
+        ! Use row index for merged distances
+        ! update bottom triangle
+        do i_node = 1, n_points
+            if (distances(i_node, i_node) >= 0.0_real64) then
+                ! i_node < col_idx < row_idx -> fill rows in both
+                if (i_node < col_idx) then
+                    new_dist = (distances(row_idx, i_node) * weight_row + distances(col_idx, i_node) * weight_col) / new_weight
+                    distances(col_idx, i_node) = new_dist
+                    distances(row_idx, i_node) = ieee_value(1.0_real64, ieee_positive_inf)
+                ! col_idx <= i_node < row_idx -> fill col of col_idx, row of row_idx
+                else if (i_node < row_idx) then
+                    new_dist = (distances(row_idx, i_node) * weight_row + distances(i_node, col_idx) * weight_col) / new_weight
+                    distances(i_node, col_idx) = new_dist
+                    distances(row_idx, i_node) = ieee_value(1.0_real64, ieee_positive_inf)
+                ! col_idx < row_idx < i_node -> fill columns in both
+                else if (i_node > row_idx) then
+                    new_dist = (distances(i_node, row_idx) * weight_row + distances(i_node, col_idx) * weight_col) / new_weight
+                    distances(i_node, col_idx) = new_dist
+                    ! don't fill row_idx with infinity, as whole column will be marked inactive
+                end if
+                if (ieee_is_nan(new_dist)) then
+                    call set_err(ierr, ERR_NAN_INF)
+                    return
+                end if
+            end if
+        end do
+
+        ! Update index and cluster size
+        distances(col_idx, col_idx) = real(iteration_k, real64)
+        distances(row_idx, col_idx) = ieee_value(1.0_real64, ieee_positive_inf) ! self distance of cluster should never be minimum
+        distances(row_idx, row_idx) = -1.0_real64 ! mark column inactive
+    end subroutine merge_distances_upgma_helper
+
+    !> Helper routine to find the indices of the minimum value a distance matrix.
+    !| 
+    !| - Expects `n>1`
+    !| - Searches in bottom triangle (excluding self-distance (i, i))
+    !| - bottom triangle -> `row_idx > col_idx`
+    pure subroutine get_min_distance_indices_helper(distances, n, row_idx, col_idx, min_dist)
+        integer(int32), intent(in) :: n
+            !! number of rows and columns of square matrix `distances`
+        real(real64), dimension(n, n), intent(in) :: distances
+            !! distance matrix, holding the distances between points
+        integer(int32), intent(out) :: row_idx
+            !! row index of min distance
+        integer(int32), intent(out) :: col_idx
+            !! column index of min distance
+        real(real64), intent(out) :: min_dist
+            !! min distance
+
+        integer(int32) :: i_row, i_col
+
+        min_dist = ieee_value(1.0_real64, ieee_positive_inf)
+
+        do i_col = 1, n - 1
+            if (distances(i_col, i_col) >= 0.0_real64) then
+                do i_row = i_col + 1, n
+                    if (distances(i_row, i_col) < min_dist) then
+                        min_dist = distances(i_row, i_col)
+                        row_idx = i_row
+                        col_idx = i_col
                     end if
                 end do
             end if
-        ! if point a is a standalone cluster, but b is not, add a to cluster of b
-        else if (label_b > 0) then
-            labels(i_point_a) = label_b
-        ! if both points are standalone clusters, merge them
-        else
-            labels(i_point_a) = n_points - cluster_count + 1
-            labels(i_point_b) = n_points - cluster_count + 1
-        end if
-
-        cluster_count = cluster_count - 1
-    end subroutine merge_linkage_clusters_helper
-
-    !> Helper to assign labels to remaining points where label is 0 yet (standalone cluster with only one point)
-    pure subroutine assign_remaining_linkage_clusters_helper(labels, n_points, max_label)
-        integer(int32), intent(in) :: n_points
-            !! number of points to cluster
-        integer(int32), dimension(n_points), intent(inout) :: labels
-            !! array of labels `0<=label<=n_points`, if `label==0` it is a cluster with only a single point
-        integer(int32), intent(in) :: max_label
-            !! max label value in `labels` -> each 0 gets a value above max
-
-        integer(int32) :: i_point, label
-
-        label = max_label + 1
-        do i_point = 1, n_points
-            if (labels(i_point) == 0) then
-                labels(i_point) = label
-                label = label + 1
-            end if
         end do
-    end subroutine assign_remaining_linkage_clusters_helper
-
+    end subroutine get_min_distance_indices_helper
 end module tox_clustering
 
 !> k-means clustering algorithm:
