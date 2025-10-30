@@ -40,12 +40,12 @@ EOF
 check_exit_code "Kind Mismatch Test failed"
 
 echo "Compiling src/"
-bash build.sh $@
+bash build.sh "$@"
 check_exit_code "Build failed"
 
 echo "Using compiler: $COMPILER"
 
-handle_args $@
+handle_args "$@"
 
 mkdir -p $BUILD_DIR
 
@@ -82,5 +82,9 @@ $EXECUTABLE $ARGS
 
 check_exit_code "Tests failed"
 
-rm -f test_*.bin
-rm -f test_*.zip
+if [[ -z "$KEEP_BIN" && -z "$KEEP_FILES" ]]; then
+  rm -f test_*.bin
+fi
+if [[ -z "$KEEP_ZIP" && -z "$KEEP_FILES" ]]; then
+  rm -f test_*.zip
+fi

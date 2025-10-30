@@ -56,6 +56,13 @@ function handle_args() {
       MAX_PERF_FLAG="-DMAX_PERFORMANCE"
     elif [[ "$arg" == -D* ]]; then
       DIRECTIVES="$DIRECTIVES $arg"
+    # genericly handle optional flags
+    elif [[ "$arg" == --* ]]; then
+      declare undashed=${arg:2}
+      declare key=${undashed%=*}
+      declare val=${undashed##$key}
+      if [[ ! $val ]];then val=1;fi
+      declare -g "$(echo "$key" | sed 's/\W/_/g; s/\w/\U&/g')=$val"
     else
       ARGS="$ARGS $arg"
     fi
