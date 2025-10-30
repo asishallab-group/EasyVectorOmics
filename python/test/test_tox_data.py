@@ -24,7 +24,8 @@ from tensoromics_functions_tox_data import (
     validate_shift_vectors,
     save_tox_data,
     read_tox_data,
-    create_zip_archive
+    create_zip_archive,
+    extract_zip_archive
 )
 from tensoromics_functions import (
     tox_group_centroid,
@@ -266,59 +267,33 @@ def test_non_standard_arrays():
     # Test 3: Read back and verify non-standard arrays
     print("\nTest 3: Reading back non-standard arrays")
     
-    # Extract the archive we just created
-    lib.extract_zip_archive_generic_c.argtypes = [
-        ctypes.POINTER(ctypes.c_char), ctypes.c_int,
-        ctypes.POINTER(ctypes.c_int)
-    ]
     
     zip_filename = "test_non_standard_1.zip"
-    zip_b = (ctypes.c_char * len(zip_filename))(*zip_filename.encode('utf-8'))
-    ierr = ctypes.c_int()
+
+    file_mapping = extract_zip_archive(zip_filename)
+    # Deserialize and verify some arrays
+    if "custom_3d_int_data" in file_mapping:
+        loaded_3d_int = tox_deserialize_int_nd(file_mapping["custom_3d_int_data"])
+        print(f"Loaded 3D int array shape: {loaded_3d_int.shape}")
+        print(f"Original and loaded arrays equal: {np.array_equal(array_3d_int, loaded_3d_int)}")
     
-    lib.extract_zip_archive_generic_c(
-        ctypes.cast(zip_b, ctypes.POINTER(ctypes.c_char)),
-        ctypes.c_int(len(zip_filename)),
-        ctypes.byref(ierr)
-    )
+    if "special_float_array" in file_mapping:
+        loaded_1d_float = tox_deserialize_real_nd(file_mapping["special_float_array"])
+        print(f"Loaded 1D float array: {loaded_1d_float}")
+        # For NaN/inf comparison, we need special handling
+        print(f"Float arrays equal (considering NaN): {np.array_equal(array_1d_float, loaded_1d_float, equal_nan=True)}")
     
-    if ierr.value == 0:
-        print("Successfully extracted archive")
-        
-        # Read manifest to understand what files we have
-        manifest_path = "manifest.txt"
-        file_mapping = {}
-        with open(manifest_path, 'r') as f:
-            for line in f:
-                parts = line.strip().split('=')
-                if len(parts) == 2:
-                    file_mapping[parts[0]] = parts[1]
-        
-        print("Files in archive:", file_mapping)
-        
-        # Deserialize and verify some arrays
-        if "custom_3d_int_data" in file_mapping:
-            loaded_3d_int = tox_deserialize_int_nd(file_mapping["custom_3d_int_data"])
-            print(f"Loaded 3D int array shape: {loaded_3d_int.shape}")
-            print(f"Original and loaded arrays equal: {np.array_equal(array_3d_int, loaded_3d_int)}")
-        
-        if "special_float_array" in file_mapping:
-            loaded_1d_float = tox_deserialize_real_nd(file_mapping["special_float_array"])
-            print(f"Loaded 1D float array: {loaded_1d_float}")
-            # For NaN/inf comparison, we need special handling
-            print(f"Float arrays equal (considering NaN): {np.array_equal(array_1d_float, loaded_1d_float, equal_nan=True)}")
-        
-        if "string_matrix" in file_mapping:
-            loaded_2d_char = tox_deserialize_char_nd(file_mapping["string_matrix"])
-            print(f"Loaded 2D char array shape: {loaded_2d_char.shape}")
-            print(f"String arrays equal: {np.array_equal(array_2d_char, loaded_2d_char)}")
-        
-        # Cleanup extracted files
-        for filename in file_mapping.values():
-            if os.path.exists(filename):
-                os.remove(filename)
-        if os.path.exists(manifest_path):
-            os.remove(manifest_path)
+    if "string_matrix" in file_mapping:
+        loaded_2d_char = tox_deserialize_char_nd(file_mapping["string_matrix"])
+        print(f"Loaded 2D char array shape: {loaded_2d_char.shape}")
+        print(f"String arrays equal: {np.array_equal(array_2d_char, loaded_2d_char)}")
+    
+    # Cleanup extracted files
+    for filename in file_mapping.values():
+        if os.path.exists(filename):
+            os.remove(filename)
+    if os.path.exists("manifest.txt"):
+        os.remove("manifest.txt")
     
     # Test 4: Error handling - mismatched keys and filenames
     print("\nTest 4: Error handling with mismatched arrays")

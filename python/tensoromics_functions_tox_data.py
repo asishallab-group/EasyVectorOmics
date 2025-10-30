@@ -48,7 +48,7 @@ lib.read_expression_vectors_C.argtypes = [
     ctypes.POINTER(ctypes.c_int),  # value_cols
     ctypes.c_int,                  # n_value_cols
     ctypes.POINTER(ctypes.c_int),  # ierr
-    ctypes.POINTER(ctypes.c_char),  # delimiter_raw
+    ctypes.POINTER(ctypes.c_char)  # delimiter_raw
 ]
 lib.read_expression_vectors_C.restype = None
 
@@ -66,18 +66,6 @@ lib.read_orthofinder_file_C.argtypes = [
     ctypes.POINTER(ctypes.c_int)   # ierr
 ]
 lib.read_orthofinder_file_C.restype = None
-
-# filter_unassigned_genes_C
-lib.filter_unassigned_genes_C.argtypes = [
-    ctypes.POINTER(ctypes.c_char),  # gene_ids_raw
-    ctypes.c_int,                  # gene_ids_len
-    ctypes.c_int,                  # n_genes
-    ctypes.POINTER(ctypes.c_int),  # gene_to_fam
-    ctypes.POINTER(ctypes.c_int),  # mask
-    ctypes.POINTER(ctypes.c_int),  # n_genes_kept
-    ctypes.POINTER(ctypes.c_int)   # ierr
-]
-lib.filter_unassigned_genes_C.restype = None
 
 # --- Validation C function signatures ---
 
@@ -119,9 +107,9 @@ lib.validate_shift_vectors_C.argtypes = [
 lib.validate_shift_vectors_C.restype = None
 
 lib.validate_string_array_uniqueness_C.argtypes = [
-    ctypes.POINTER(ctypes.c_char), # gene_ids_raw
-    ctypes.c_int,                 # gene_ids_len
-    ctypes.c_int,                 # n_genes
+    ctypes.POINTER(ctypes.c_char), # string_array_raw
+    ctypes.c_int,                 # string_len
+    ctypes.c_int,                 # n_strings
     ctypes.POINTER(ctypes.c_int)  # ierr
 ]
 lib.validate_string_array_uniqueness_C.restype = None
@@ -752,6 +740,75 @@ def create_zip_archive(zip_filename: str, keys, filenames) -> None:
     
     check_err_code(ierr.value)
     print(f"Successfully created archive: {zip_filename}")
+
+def extract_zip_archive(zip_filename):
+    """
+    Extract a zip archive created by create_zip_archive
+    
+    Parameters:
+    -----------
+    zip_filename : str
+        Path to the zip file to extract
+    
+    Returns:
+    --------
+    dict
+        Dictionary mapping data keys to extracted filenames
+    
+    Raises:
+    -------
+    RuntimeError
+        If extraction fails
+    FileNotFoundError
+        If zip file doesn't exist
+    """
+    
+    # Check if zip file exists
+    if not os.path.exists(zip_filename):
+        raise FileNotFoundError(f"Zip file not found: {zip_filename}")
+
+    lib.extract_zip_archive_generic_c.argtypes = [
+        ctypes.POINTER(ctypes.c_char), 
+        ctypes.c_int,
+        ctypes.POINTER(ctypes.c_int)
+    ]
+    
+    try:
+        # Initialize error code
+        ierr = ctypes.c_int()
+        
+        # Prepare filename for C function
+        zip_b = (ctypes.c_char * len(zip_filename))(*zip_filename.encode('utf-8'))
+        
+        # Call the C extraction function
+        lib.extract_zip_archive_generic_c(
+            ctypes.cast(zip_b, ctypes.POINTER(ctypes.c_char)),
+            ctypes.c_int(len(zip_filename)),
+            ctypes.byref(ierr)
+        )
+        
+        # Check for errors
+        if ierr.value != 0:
+            raise RuntimeError(f"Failed to extract zip archive. Error code: {ierr.value}")
+        
+        # Read manifest file to get file mapping
+        manifest_path = "manifest.txt"
+        if not os.path.exists(manifest_path):
+            raise RuntimeError("Manifest file not found after extraction")
+        
+        file_mapping = {}
+        with open(manifest_path, 'r') as f:
+            for line in f:
+                parts = line.strip().split('=')
+                if len(parts) == 2:
+                    file_mapping[parts[0]] = parts[1]
+        
+        print(f"Successfully extracted {len(file_mapping)} files from {zip_filename}")
+        
+        return file_mapping
+    except:
+        print("Failed extracting archive")
+
 
 def save_tox_data(zip_filename: str,
                  gene_ids = None,
