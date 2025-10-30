@@ -25,12 +25,7 @@ check_err_code <- function(ierr) {
     '204' = "NaN or Inf found in input data.",
     '205' = "Unsupported data type encountered.",
     '206' = "Array size mismatch detected",
-    '207' = "Input must be numeric.",
-    '208' = "Vectors must have same length.",
-    '209' = "gene_to_fam indices out of range.",
-    '210' = "Percentile must be between 0 and 100."
-    '211' = "n_families must be at least 1.",
-    '212' = "Input cannot be empty.",
+
     # MEMORY ERRORS
     '301' = "Memory allocation failed.",
     '302' = "Null pointer reference encountered.",
