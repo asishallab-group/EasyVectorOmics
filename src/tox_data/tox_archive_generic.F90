@@ -508,8 +508,7 @@ contains
 
     end subroutine add_data_to_zip
 
-
-    !> New generic manifest creation - FIXED VERSION
+    !> Write manifest from given key-value pairs
     subroutine write_manifest(keys, filenames, manifest_filename, ierr)
         character(len=*), intent(in) :: keys(:)
             !! Array of keys for manifest entries
@@ -543,7 +542,6 @@ contains
         ! Write each key-value pair to the manifest
         do i = 1, size(keys)
             if (len_trim(keys(i)) > 0 .and. len_trim(filenames(i)) > 0) then
-                ! Create the line dynamically to avoid memory issues
                 line = trim(keys(i)) // '=' // trim(filenames(i))
                 write(unit, '(a)') trim(line)
             end if
@@ -555,7 +553,7 @@ contains
         if(DEBUG) print *, "Manifest created successfully with ", size(keys), " entries"
     end subroutine write_manifest
 
-    !> Read manifest with generic key-value pairs - FIXED VERSION
+    !> Read manifest file and return key-value pairs
     subroutine read_manifest_generic(manifest_filename, keys, values, ierr)
         character(len=*), intent(in) :: manifest_filename
             !! Filename of the manifest (should be manifest.txt)
@@ -712,6 +710,7 @@ contains
         end if
     end subroutine extract_and_parse_manifest
 
+    !> Save standard tox data
     subroutine save_tox_data(zip_filename, ierr, gene_ids, gene_ids_file, expression, &
                             expression_file, gene_to_family, gene_to_family_file, &
                             family_ids, family_ids_file, family_centroids, &
@@ -719,19 +718,33 @@ contains
         implicit none
 
         character(len=*), intent(in) :: zip_filename
+        !! Zip filename
         character(len=*), intent(in), optional :: gene_ids(:)
+        !! Gene ids array, will be saved if provided
         character(len=*), intent(in), optional :: family_ids(:)
+        !! Family ids array, will be saved if provided
         real(real64), intent(in), optional :: expression(:,:)
+        !! Expression vectors array, will be saved if provided
         real(real64), intent(in), optional :: family_centroids(:,:)
+        !! Family centroids array, will be saved if provided
         real(real64), intent(in), optional :: shift_vectors(:,:)
+        !! Shift vectors array, will be saved if provided
         integer(int32), intent(in), optional :: gene_to_family(:)
+        !! Gene to family mapping array, will be saved if provided
         character(len=*), intent(in), optional :: gene_ids_file
+        !! Name of the gene ids file
         character(len=*), intent(in), optional :: expression_file
+        !! Name of the expression file
         character(len=*), intent(in), optional :: gene_to_family_file
+        !! Name of the gene to family mapping file
         character(len=*), intent(in), optional :: family_ids_file
+        !! Name of the family ids file
         character(len=*), intent(in), optional :: family_centroids_file
+        !! Name of the family centroids file
         character(len=*), intent(in), optional :: shift_vectors_file
+        !! Name of the shift vectors file
         integer(int32), intent(out) :: ierr
+        !! Error code
 
         character(len=:), allocatable :: actual_gene_ids_file, actual_expression_file, actual_gene_to_family_file, &
                                         actual_family_ids_file, actual_family_centroids_file, actual_shift_vectors_file
@@ -851,7 +864,6 @@ contains
             actual_shift_vectors_file = ""
         end if
 
-        ! Create the ZIP archive using the generic version
         if (is_ok(ierr)) then
             call create_zip_archive(zip_filename, keys, filenames, ierr)
         end if
@@ -881,6 +893,7 @@ contains
         end subroutine cleanup_temporary_files
     end subroutine save_tox_data
 
+    !> Read standard tox from a zip archive
     subroutine read_tox_data(zip_filename, ierr, gene_ids, gene_ids_file, expression, expression_file, &
                         gene_to_family, gene_to_family_file, family_ids, family_ids_file, &
                         family_centroids, family_centroids_file, shift_vectors, shift_vectors_file)
@@ -890,19 +903,33 @@ contains
         implicit none
         
         character(len=*), intent(in) :: zip_filename
+        !! Name of the zipfile
         integer(int32), intent(out) :: ierr
+        !! Error code
         character(len=:), allocatable, optional, intent(out) :: gene_ids(:)
+        !! Gene IDs array, will be populated if provided
         character(len=:), allocatable, optional, intent(out) :: family_ids(:)
+        !! Family IDs array, will be populated if provided
         real(real64), allocatable, optional, intent(out) :: expression(:,:)
+        !! Expression vectors array, will be populated if provided
         real(real64), allocatable, optional, intent(out) :: family_centroids(:,:)
+        !! Family centroids array, will be populated if provided
         real(real64), allocatable, optional, intent(out) :: shift_vectors(:,:)
-        integer(int32), allocatable, optional, intent(out) :: gene_to_family(:) 
+        !! Shift vectors array, will be populated if provided
+        integer(int32), allocatable, optional, intent(out) :: gene_to_family(:)
+        !! Gene to family mapping array, will be populated if provided 
         character(len=:), allocatable, optional, intent(out) :: gene_ids_file
+        !! Name of the gene ids file in the zip archive
         character(len=:), allocatable, optional, intent(out) :: expression_file
+        !! Name of the expression vectors file in the zip archive
         character(len=:), allocatable, optional, intent(out) :: gene_to_family_file
+        !! Name of the gene to family mapping file in the zip archive
         character(len=:), allocatable, optional, intent(out) :: family_ids_file
-        character(len=:), allocatable, optional, intent(out) :: family_centroids_file   
+        !! Name of the family ids file in the zip archive
+        character(len=:), allocatable, optional, intent(out) :: family_centroids_file  
+        !! Name of the family centroids file in the zip archive 
         character(len=:), allocatable, optional, intent(out) :: shift_vectors_file
+        !! Name of the shift vectors file in the zip archive
         
         character(len=:), allocatable :: keys(:), filenames(:)
         integer(int32) :: i
@@ -917,8 +944,7 @@ contains
         max_dims = 5
         
         if(DEBUG) write(*,*) 'Extracting zip archive...'
-        
-        ! Extract using generic version - gets ALL key-value pairs
+
         call extract_zip_archive(zip_filename, keys, filenames, ierr)
         if (is_err(ierr)) return
         
@@ -1071,16 +1097,24 @@ subroutine create_zip_archive_generic_R(zip_filename, zip_len, &
     use tox_errors, only: is_err, set_ok, set_err_once, ERR_INVALID_INPUT
     use iso_fortran_env, only: int32
     
-    ! Input arguments - compatible with R's .Fortran interface
     integer(int32), intent(in) :: zip_len
+    !! length of the zip file
     character(kind=c_char, len=1), intent(in) :: zip_filename(zip_len)
+    !! Zip filename as c_chars
     integer(int32), intent(in) :: keys_count
+    !! Number of keys
     integer(int32), intent(in) :: keys_len
+    !! Length of the keys
     character(kind=c_char, len=1), intent(in) :: keys(keys_len, keys_count)
-    integer(int32), intent(in) :: filenames_count  
+    !! Keys as c_chars
+    integer(int32), intent(in) :: filenames_count
+    !! Number of files  
     integer(int32), intent(in) :: filenames_len
+    !! Length of the filenames
     character(kind=c_char, len=1), intent(in) :: filenames(filenames_len, filenames_count)
+    !! Filenames as c_chars
     integer(int32), intent(out) :: ierr
+    !! Error code
     
     ! Local variables
     character(len=:), allocatable :: f_zip_filename
@@ -1089,11 +1123,9 @@ subroutine create_zip_archive_generic_R(zip_filename, zip_len, &
     
     call set_ok(ierr)
     
-    ! Convert zip filename using existing function
     call c_char_1d_as_string(zip_filename, f_zip_filename, ierr)
     if(is_err(ierr)) return
     
-    ! Convert 2D C string arrays to Fortran string arrays using existing function
     call c_char_2d_as_string(keys, f_keys, ierr)
     if(is_err(ierr)) return
     
@@ -1106,11 +1138,11 @@ subroutine create_zip_archive_generic_R(zip_filename, zip_len, &
         return
     end if
     
-    ! Call the actual Fortran implementation
     call create_zip_archive(f_zip_filename, f_keys, f_filenames, ierr)
     
 end subroutine create_zip_archive_generic_R
 
+!> Wrapper to extract all files from a zip archive
 subroutine extract_zip_archive_generic_R(zip_filename, filename_len, ierr)
     use iso_c_binding, only: c_char, c_null_char
     use iso_fortran_env, only: int32
@@ -1120,8 +1152,11 @@ subroutine extract_zip_archive_generic_R(zip_filename, filename_len, ierr)
     implicit none
 
     integer(int32), intent(in) :: filename_len
+    !! Length of the filename
     character(kind=c_char, len=1), intent(in) :: zip_filename(filename_len)
+    !! Zip filename as c_chars
     integer(int32), intent(out) :: ierr
+    !! Error code
     
     ! Local variables
     character(len=:), allocatable :: f_zip_filename
@@ -1154,14 +1189,23 @@ subroutine create_zip_archive_generic_c(zip_filename, zip_len, &
     
     ! Input arguments
     integer(c_int), intent(in), value :: zip_len
+    !! Length of the zip filename
     character(kind=c_char, len=1), intent(in) :: zip_filename(zip_len)
+    !! Zip Filename as c_chars
     integer(c_int), intent(in), value :: keys_count
+    !! number of keys
     integer(c_int), intent(in), value :: keys_len
+    !! lengths of the keys
     character(kind=c_char, len=1), intent(in) :: keys(keys_len, keys_count)
-    integer(c_int), intent(in), value :: filenames_count  
+    !! Keys as c_chars
+    integer(c_int), intent(in), value :: filenames_count
+    !! Number of files  
     integer(c_int), intent(in), value :: filenames_len
+    !! Length of the filenames
     character(kind=c_char, len=1), intent(in) :: filenames(filenames_len, filenames_count)
+    !! Filenames as c_chars
     integer(c_int), intent(out) :: ierr
+    !! Error code
     
     ! Local variables
     character(len=:), allocatable :: f_zip_filename
@@ -1170,11 +1214,9 @@ subroutine create_zip_archive_generic_c(zip_filename, zip_len, &
     
     call set_ok(ierr)
     
-    ! Convert C strings to Fortran strings using existing functions
     call c_char_1d_as_string(zip_filename, f_zip_filename, ierr)
     if(is_err(ierr)) return
     
-    ! Convert 2D C string arrays to Fortran string arrays using existing function
     call c_char_2d_as_string(keys, f_keys, ierr)
     if(is_err(ierr)) return
     
@@ -1187,7 +1229,6 @@ subroutine create_zip_archive_generic_c(zip_filename, zip_len, &
         return
     end if
     
-    ! Call the actual Fortran implementation
     call create_zip_archive(f_zip_filename, f_keys, f_filenames, ierr)
     
 end subroutine create_zip_archive_generic_c
@@ -1203,8 +1244,11 @@ subroutine extract_zip_archive_generic_c(zip_filename, filename_len, ierr) &
 
     ! Input arguments
     integer(c_int), intent(in), value :: filename_len
+    !! Length of the filename
     character(kind=c_char, len=1), intent(in) :: zip_filename(filename_len)
+    !! Zip filename length
     integer(c_int), intent(out) :: ierr
+    !! Error code
     
     ! Local variables
     character(len=:), allocatable :: f_zip_filename
@@ -1216,10 +1260,6 @@ subroutine extract_zip_archive_generic_c(zip_filename, filename_len, ierr) &
     call c_char_1d_as_string(zip_filename, f_zip_filename, ierr)
     if(is_err(ierr)) return
     
-    ! Call the actual Fortran implementation
     call extract_zip_archive(f_zip_filename, keys, filenames, ierr)
     
-    ! Clean up allocated arrays
-    if (allocated(keys)) deallocate(keys)
-    if (allocated(filenames)) deallocate(filenames)
 end subroutine extract_zip_archive_generic_c
