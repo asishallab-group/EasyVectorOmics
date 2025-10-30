@@ -251,7 +251,7 @@ subroutine read_gene_ids_from_tsv_file(filename, gene_ids, n_header_rows, gene_c
     ! Read data rows
     do
         read(unit, '(A)', iostat=ios) line
-        if (ios < 0) exit
+        if (ios == iostat_end) exit
         call check_okay_ioerror(ios, ierr, ERR_READ_DATA, unit)
         if(is_err(ierr)) return
         

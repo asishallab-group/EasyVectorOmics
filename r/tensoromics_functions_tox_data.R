@@ -548,15 +548,6 @@ create_zip_archive <- function(zip_filename, keys, filenames) {
   
   ierr <- integer(1)
   
-  # Debug output
-  message("Calling Fortran with:")
-  message("  zip_len: ", zip_len)
-  message("  max_key_len: ", max_key_len)
-  message("  max_filename_len: ", max_filename_len)
-  message("  count: ", count)
-  message("  keys: ", paste(keys, collapse = ", "))
-  message("  filenames: ", paste(filenames, collapse = ", "))
-  
   # Call the generic Fortran subroutine
   result <- .Fortran("create_zip_archive_generic_R",
                zip_raw, as.integer(zip_len),
@@ -898,4 +889,36 @@ read_tox_data <- function(zip_filename,
   }
   
   return(result)
+}
+
+extract_zip_archive <- function(zip_filename) {
+  if (!is.character(zip_filename) || nchar(zip_filename) == 0) {
+    stop("Zip name needs to be a non-empty string")
+  }
+  
+  # Fortran Aufruf zur Extraktion
+  ierr <- integer(1)
+  res <- .Fortran("extract_zip_archive_generic_R", 
+                  charToRaw(zip_filename), 
+                  nchar(zip_filename), 
+                  ierr = ierr)
+  
+  check_err_code(res$ierr)
+  
+  # Manifest Datei lesen und Mapping erstellen
+  manifest_path <- "manifest.txt"
+  if (!file.exists(manifest_path)) {
+    stop("Manifest file not found in archive")
+  }
+  
+  manifest_lines <- readLines(manifest_path)
+  file_mapping <- list()
+  for (line in manifest_lines) {
+    parts <- strsplit(line, "=")[[1]]
+    if (length(parts) == 2) {
+      file_mapping[[parts[1]]] <- parts[2]
+    }
+  }
+  
+  return(file_mapping)
 }

@@ -264,31 +264,7 @@ cat("\n=== Testing reading and comparing non-standard arrays ===\n")
 
 cat("Test 6a: Reading and verifying test_non_standard_1.zip\n")
 
-ierr <- integer(1)
-res <- .Fortran("extract_zip_archive_generic_R", charToRaw("test_non_standard_1.zip"), 
-                nchar("test_non_standard_1.zip"), ierr)
-if (ierr != 0) {
-  stop("Failed to extract archive")
-}
-
-manifest_path <- "manifest.txt"
-if (!file.exists(manifest_path)) {
-  stop("Manifest file not found in archive")
-}
-
-manifest_lines <- readLines(manifest_path)
-file_mapping <- list()
-for (line in manifest_lines) {
-  parts <- strsplit(line, "=")[[1]]
-  if (length(parts) == 2) {
-    file_mapping[[parts[1]]] <- parts[2]
-  }
-}
-
-cat("Files in archive:\n")
-for (key in names(file_mapping)) {
-  cat("  ", key, "->", file_mapping[[key]], "\n")
-}
+file_mapping <- extract_zip_archive("test_non_standard_1.zip")
 
 all_correct <- TRUE
 
@@ -419,49 +395,34 @@ if (!is.null(file_mapping[["complex_imag_part"]])) {
   all_correct <- FALSE
 }
 
-file.remove(manifest_path)
-
 cat("Test 6a result: All arrays match =", all_correct, "\n")
 
 cat("Test 6b: Reading and verifying test_mixed_arrays.zip\n")
 
-ierr <- integer(1)
-res <- .Fortran("extract_zip_archive_generic_R", charToRaw("test_mixed_arrays.zip"), 
-                nchar("test_mixed_arrays.zip"), ierr)
-
-if (ierr == 0) {
-  manifest_lines <- readLines("manifest.txt")
-  file_mapping <- list()
-  for (line in manifest_lines) {
-    parts <- strsplit(line, "=")[[1]]
-    if (length(parts) == 2) {
-      file_mapping[[parts[1]]] <- parts[2]
-    }
+file_mapping <- extract_zip_archive("test_mixed_arrays.zip")
+ 
+if (!is.null(file_mapping[["standard_gene_ids"]])) {
+  filename <- file_mapping[["standard_gene_ids"]]
+  if (file.exists(filename)) {
+    loaded_genes <- tox_deserialize_char_array(filename)
+    genes_match <- all(loaded_genes == gene_ids[1:5])
+    cat("standard_gene_ids arrays match:", genes_match, "\n")
+    file.remove(filename)
   }
-  
-  if (!is.null(file_mapping[["standard_gene_ids"]])) {
-    filename <- file_mapping[["standard_gene_ids"]]
-    if (file.exists(filename)) {
-      loaded_genes <- tox_deserialize_char_array(filename)
-      genes_match <- all(loaded_genes == gene_ids[1:5])
-      cat("standard_gene_ids arrays match:", genes_match, "\n")
-      file.remove(filename)
-    }
-  }
-  
-  if (!is.null(file_mapping[["standard_expression"]])) {
-    filename <- file_mapping[["standard_expression"]]
-    if (file.exists(filename)) {
-      loaded_expr <- tox_deserialize_real_array(filename)
-      loaded_expr_matrix <- matrix(loaded_expr, nrow=3, ncol=5)
-      expr_match <- all.equal(loaded_expr_matrix, kallisto_expr[1:3, 1:5], tolerance = 1e-10)
-      cat("standard_expression arrays match:", isTRUE(expr_match), "\n")
-      file.remove(filename)
-    }
-  }
-  
-  file.remove("manifest.txt")
 }
+
+if (!is.null(file_mapping[["standard_expression"]])) {
+  filename <- file_mapping[["standard_expression"]]
+  if (file.exists(filename)) {
+    loaded_expr <- tox_deserialize_real_array(filename)
+    loaded_expr_matrix <- matrix(loaded_expr, nrow=3, ncol=5)
+    expr_match <- all.equal(loaded_expr_matrix, kallisto_expr[1:3, 1:5], tolerance = 1e-10)
+    cat("standard_expression arrays match:", isTRUE(expr_match), "\n")
+    file.remove(filename)
+  }
+}
+
+file.remove("manifest.txt")
 
 cat("Checking created archives...\n")
 archives <- c("test_non_standard_1.zip", "test_mixed_arrays.zip", 

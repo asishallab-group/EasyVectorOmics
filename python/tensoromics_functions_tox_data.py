@@ -490,7 +490,7 @@ def validate_expression_data(expression_vectors, check_non_negative=True):
 
 def validate_family_centroids(family_centroids):
     """
-    Validate family centroids
+    Validate family centroids, checks for NaN/Inf
     Args:
         family_centroids: 2D array of family centroids (samples x families)
     """
@@ -508,7 +508,7 @@ def validate_family_centroids(family_centroids):
 
 def validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, gene_to_fam, n_genes, n_samples, n_families):
     """
-    Validate shift vectors
+    Validate shift vectors, checks if datatypes are correct and if the general structure matches (first d rows = centroids, d+1 to 2d rows = shift)
     Args:
         shift_vectors: 2D array of shift vectors (genes x samples)
         expression_vectors: 2D array of expression data (genes x samples)
