@@ -23,7 +23,7 @@ contains
 
   !> Get array of all available tests.
   function get_all_tests() result(all_tests)
-    type(test_case) :: all_tests(18)
+    type(test_case) :: all_tests(21)
 
     all_tests(1) = test_case("test_sort_real", test_sort_real)
     all_tests(2) = test_case("test_sort_integer", test_sort_integer)
@@ -44,11 +44,14 @@ contains
     all_tests(16) = test_case("test_heapsort_sorted_stability", test_heapsort_sorted_stability)
     all_tests(17) = test_case("test_heapsort_empty_array", test_heapsort_empty_array)
     all_tests(18) = test_case("test_heapsort_large_random", test_heapsort_large_random)
+    all_tests(19) = test_case("test_sort_duplicates", test_sort_duplicates)
+    all_tests(20) = test_case("test_sort_negatives", test_sort_negatives)
+    all_tests(21) = test_case("test_sort_nan", test_sort_nan)
   end function get_all_tests
 
   !> Run all sorting tests.
   subroutine run_all_tests_sorting()
-    type(test_case) :: all_tests(18)
+    type(test_case) :: all_tests(21)
     integer(int32) :: i
 
     all_tests = get_all_tests()
@@ -63,7 +66,7 @@ contains
   !> Run specific sorting tests by name.
   subroutine run_named_tests_sorting(test_names)
     character(len=*), intent(in) :: test_names(:)
-  type(test_case) :: all_tests(18)
+  type(test_case) :: all_tests(21)
     integer(int32) :: i, j
     logical :: found
     
@@ -347,5 +350,69 @@ contains
   call assert_equal_array_int(data(perm), sorted, n, "test_heapsort_large_random: sorted values mismatch")
   deallocate(rdata, data, perm, sorted, stack_left, stack_right, dummy_perm)
   end subroutine test_heapsort_large_random
+
+  !> Test sorting when the input contains duplicate values for integers.
+  subroutine test_sort_duplicates()
+    integer(int32), dimension(6) :: data = [2, 1, 2, 4, 2, 3]
+    integer(int32), dimension(6) :: perm, expected_sorted = [1, 2, 2, 2, 3, 4]
+    integer(int32) :: stack_left(20), stack_right(20)
+    integer(int32) :: i
+
+    perm = [(i, i = 1, 6)]
+    call sort_array(data, perm, stack_left, stack_right)
+    call assert_equal_array_int(data(perm), expected_sorted, 6, "test_sort_duplicates (quicksort): sorted values mismatch")
+
+    ! Also exercise heapsort implementation on the same data
+    perm = [(i, i = 1, 6)]
+    call sort_integer_heapsort(data, perm)
+    call assert_equal_array_int(data(perm), expected_sorted, 6, "test_sort_duplicates (heapsort): sorted values mismatch")
+  end subroutine test_sort_duplicates
+
+  !> Test sorting with negative numbers for integers.
+  subroutine test_sort_negatives()
+    integer(int32), dimension(5) :: data = [3, -1, 5, 0, -10]
+    integer(int32), dimension(5) :: perm, expected_sorted = [-10, -1, 0, 3, 5]
+    integer(int32) :: stack_left(20), stack_right(20)
+    integer(int32) :: i
+
+    perm = [(i, i = 1, 5)]
+    call sort_array(data, perm, stack_left, stack_right)
+    call assert_equal_array_int(data(perm), expected_sorted, 5, "test_sort_negatives (quicksort): sorted values mismatch")
+
+    perm = [(i, i = 1, 5)]
+    call sort_integer_heapsort(data, perm)
+    call assert_equal_array_int(data(perm), expected_sorted, 5, "test_sort_negatives (heapsort): sorted values mismatch")
+  end subroutine test_sort_negatives
+
+  !> Test behavior when the array contains a NaN value: NaN should end up as the last element.
+  subroutine test_sort_nan()
+    use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_is_nan, ieee_quiet_nan
+    real(real64), dimension(4) :: data
+    real(real64), dimension(3) :: expected_non_nan = [1.0d0, 2.0d0, 3.0d0]
+    integer(int32), dimension(4) :: perm
+    integer(int32) :: stack_left(20), stack_right(20)
+    real(real64) :: nanval
+    integer(int32) :: n
+    integer(int32) :: i
+
+    nanval = ieee_value(0.0_real64, ieee_quiet_nan)
+    data = [3.0d0, 1.0d0, nanval, 2.0d0]
+    n = size(data)
+
+    ! Quicksort variant
+    perm = [(i, i = 1, n)]
+    call sort_array(data, perm, stack_left, stack_right)
+    call assert_true(ieee_is_nan(data(perm(n))), "test_sort_nan (quicksort): NaN not last")
+  call assert_equal_array_real(data(perm(1:n-1)), expected_non_nan, n-1, 1d-12, &
+                 "test_sort_nan (quicksort): non-NaN values not sorted")
+
+    ! Heapsort variant
+    data = [3.0d0, 1.0d0, nanval, 2.0d0]
+    perm = [(i, i = 1, n)]
+    call sort_real_heapsort(data, perm)
+    call assert_true(ieee_is_nan(data(perm(n))), "test_sort_nan (heapsort): NaN not last")
+  call assert_equal_array_real(data(perm(1:n-1)), expected_non_nan, n-1, 1d-12, &
+                 "test_sort_nan (heapsort): non-NaN values not sorted")
+  end subroutine test_sort_nan
 
 end module mod_test_sorting
