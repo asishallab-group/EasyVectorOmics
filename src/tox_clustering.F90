@@ -279,7 +279,7 @@ contains
 
         ! Merge distances
         ! Update merged nodes with arithmetic mean distances
-        ! Use row index for merged distances
+        ! Use column index for merged distances -> fill row_idx with infinity values
         ! update bottom triangle
         do i_node = 1, n_points
             if (distances(i_node, i_node) >= 0.0_real64) then
@@ -315,6 +315,7 @@ contains
     !> Helper routine to find the indices of the minimum value a distance matrix.
     !| 
     !| - Expects `n>1`
+    !| - Ignores columns with self-distance (i,i)<0
     !| - Searches in bottom triangle (excluding self-distance (i, i))
     !| - bottom triangle -> `row_idx > col_idx`
     pure subroutine get_min_distance_indices_helper(distances, n, row_idx, col_idx, min_dist)
