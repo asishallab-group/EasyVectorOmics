@@ -299,7 +299,7 @@ contains
 
     !> Process trajectories with one percentile per timepoint for spike contributions.
     !! This subroutine uses multiple allocations. If you want to avoid this, you need to do the full pipeline manually step-by-step.
-    subroutine process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, factor_mask, dependent_idx, mode, percentile, &
+    subroutine process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, factor_mask, factor_mask_count, dependent_idx, mode, percentile, &
                                 integrated_contribs, spike_contribs, thresholds_integrated_contrib, &
                                 outliers_integrated_contrib, thresholds_spike_contrib, &
                                 outliers_spike_contrib, ierr)
@@ -310,6 +310,8 @@ contains
         !! Number of samples
         integer(int32), intent(in) :: n_timepoints
         !! Number of timepoints
+        integer(int32), intent(in) :: factor_mask_count
+        !! Number of true values in the factor mask
         real(real64), dimension(n_factors, n_samples, n_timepoints), intent(in) :: trajectories
         !! Trajectories array
         logical, dimension(n_factors), intent(in) :: factor_mask
@@ -321,17 +323,17 @@ contains
         real(real64), intent(in) :: percentile
         !! Percentile (0-100)
         
-        real(real64), dimension(n_samples, count(factor_mask)), intent(out) :: integrated_contribs
+        real(real64), dimension(n_samples, factor_mask_count), intent(out) :: integrated_contribs
         !! Integrated contributions
-        real(real64), dimension(n_timepoints, n_samples, count(factor_mask)), intent(out) :: spike_contribs
+        real(real64), dimension(n_timepoints, n_samples, factor_mask_count), intent(out) :: spike_contribs
         !! Spike contributions
-        real(real64), dimension(count(factor_mask)), intent(out) :: thresholds_integrated_contrib
+        real(real64), dimension(factor_mask_count), intent(out) :: thresholds_integrated_contrib
         !! Thresholds of integrated contributions based on the provided percentile
-        real(real64), dimension(n_timepoints, count(factor_mask)), intent(out) :: thresholds_spike_contrib
+        real(real64), dimension(n_timepoints, factor_mask_count), intent(out) :: thresholds_spike_contrib
         !! Thresholds of spike contributions based on the provided percentile
-        logical, dimension(n_samples, count(factor_mask)), intent(out) :: outliers_integrated_contrib
+        logical, dimension(n_samples, factor_mask_count), intent(out) :: outliers_integrated_contrib
         !! Detected outliers of the integrated contributions
-        logical, dimension(n_timepoints, n_samples, count(factor_mask)), intent(out) :: outliers_spike_contrib
+        logical, dimension(n_timepoints, n_samples, factor_mask_count), intent(out) :: outliers_spike_contrib
         !! Detected outliers of the spike contributions
 
         integer(int32), intent(out) :: ierr
@@ -395,7 +397,7 @@ contains
 
     !> Process trajectories with global percentile for spike contributions (flattened)
     !! This subroutine uses multiple allocations. If you want to avoid this, you need to do the full pipeline manually step-by-step.
-    subroutine process_trajectories_flat_alloc(trajectories, n_factors, n_samples, n_timepoints, factor_mask, dependent_idx, mode, percentile, &
+    subroutine process_trajectories_flat_alloc(trajectories, n_factors, n_samples, n_timepoints, factor_mask, factor_mask_count, dependent_idx, mode, percentile, &
                                     integrated_contribs, spike_contribs, thresholds_integrated_contrib, &
                                     outliers_integrated_contrib, thresholds_spike_contrib, &
                                     outliers_spike_contrib, ierr)
@@ -406,6 +408,8 @@ contains
         !! Number of samples
         integer(int32), intent(in) :: n_timepoints
         !! Number of timepoints
+        integer(int32), intent(in) :: factor_mask_count
+        !! Number of true values in the factor mask
         real(real64), dimension(n_factors, n_samples, n_timepoints), intent(in) :: trajectories
         !! Trajectories array
         logical, dimension(n_factors), intent(in) :: factor_mask
@@ -417,17 +421,17 @@ contains
         real(real64), intent(in) :: percentile
         !! Percentile value (0.0 - 100.0)
         
-        real(real64), dimension(n_samples, count(factor_mask)), intent(out) :: integrated_contribs
+        real(real64), dimension(n_samples, factor_mask_count), intent(out) :: integrated_contribs
         !! Integrated contributions
-        real(real64), dimension(n_timepoints, n_samples, count(factor_mask)), intent(out) :: spike_contribs
+        real(real64), dimension(n_timepoints, n_samples, factor_mask_count), intent(out) :: spike_contribs
         !! Spike contributions
-        real(real64), dimension(count(factor_mask)), intent(out) :: thresholds_integrated_contrib
+        real(real64), dimension(factor_mask_count), intent(out) :: thresholds_integrated_contrib
         !! Thresholds of integrated contributions based on provided percentile
-        real(real64), dimension(count(factor_mask)), intent(out) :: thresholds_spike_contrib
+        real(real64), dimension(factor_mask_count), intent(out) :: thresholds_spike_contrib
         !! Thresholds of spike contributions based on provided percentile
-        logical, dimension(n_samples, count(factor_mask)), intent(out) :: outliers_integrated_contrib
+        logical, dimension(n_samples, factor_mask_count), intent(out) :: outliers_integrated_contrib
         !! Outliers of integrated contributions based on provided percentile
-        logical, dimension(n_timepoints, n_samples, count(factor_mask)), intent(out) :: outliers_spike_contrib
+        logical, dimension(n_timepoints, n_samples, factor_mask_count), intent(out) :: outliers_spike_contrib
         !! Outliers of spike contributions based on provided percentile
         integer(int32), intent(out) :: ierr
         !! Error code
@@ -766,7 +770,7 @@ subroutine process_trajectories_C(trajectories, n_factors, n_samples, n_timepoin
     
     ! Call Fortran subroutine
     call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &
-                                  factor_mask, dependent_idx, mode, percentile, &
+                                  factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
                                   integrated_contribs, spike_contribs, &
                                   thresholds_integrated_contrib, outliers_integrated_contrib, &
                                   thresholds_spike_contrib, outliers_spike_contrib, ierr)
@@ -888,7 +892,7 @@ subroutine process_trajectories_flat_C(trajectories, n_factors, n_samples, n_tim
     
     ! Call Fortran subroutine
     call process_trajectories_flat_alloc(trajectories, n_factors, n_samples, n_timepoints, &
-                                       factor_mask, dependent_idx, mode, percentile, &
+                                       factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
                                        integrated_contribs, spike_contribs, &
                                        thresholds_integrated_contrib, outliers_integrated_contrib, &
                                        thresholds_spike_contrib, outliers_spike_contrib, ierr)

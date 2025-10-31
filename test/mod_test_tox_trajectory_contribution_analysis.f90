@@ -256,7 +256,7 @@ contains
 
         ! Call the routine
         call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &
-                                    factor_mask, dependent_idx, mode, percentile, &
+                                    factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
                                     integrated_contribs, spike_contribs, &
                                     thresholds_integrated_contrib, outliers_integrated_contrib, &
                                     thresholds_spike_contrib, outliers_spike_contrib, ierr)
@@ -295,7 +295,7 @@ contains
 
         ! Call the routine
         call process_trajectories_flat_alloc(trajectories, n_factors, n_samples, n_timepoints, &
-                                        factor_mask, dependent_idx, mode, percentile, &
+                                        factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
                                         integrated_contribs, spike_contribs, &
                                         thresholds_integrated_contrib, outliers_integrated_contrib, &
                                         thresholds_spike_contrib, outliers_spike_contrib, ierr)
@@ -324,7 +324,7 @@ contains
         
         ! Call the routine - should error with ERR_EMPTY_INPUT
         call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &
-                                    factor_mask, dependent_idx, mode, percentile, &
+                                    factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
                                     integrated_contribs, spike_contribs, &
                                     thresholds_integrated_contrib, outliers_integrated_contrib, &
                                     thresholds_spike_contrib, outliers_spike_contrib, ierr)
@@ -352,7 +352,7 @@ contains
         factor_mask = .true.
 
         call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &
-                                    factor_mask, dependent_idx, mode, percentile, &
+                                    factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
                                     integrated_contribs, spike_contribs, &
                                     thresholds_integrated_contrib, outliers_integrated_contrib, &
                                     thresholds_spike_contrib, outliers_spike_contrib, ierr)
@@ -382,7 +382,7 @@ contains
         factor_mask = .true.  ! All factors included, including dependent_idx
 
         call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &
-                                    factor_mask, dependent_idx, mode, percentile, &
+                                    factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
                                     integrated_contribs, spike_contribs, &
                                     thresholds_integrated_contrib, outliers_integrated_contrib, &
                                     thresholds_spike_contrib, outliers_spike_contrib, ierr)
