@@ -670,6 +670,7 @@ subroutine process_trajectories_C(trajectories, n_factors, n_samples, n_timepoin
     use iso_c_binding, only: c_double, c_int
     use tox_errors, only: set_ok, set_err, is_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL
     use tox_trajectory_contribution_analysis, only: process_trajectories_alloc
+    use iso_fortran_env, only: int32
     M_USE_NULL_VALIDATION
     implicit none
 
@@ -710,9 +711,10 @@ subroutine process_trajectories_C(trajectories, n_factors, n_samples, n_timepoin
     logical, allocatable :: factor_mask(:)
     logical, allocatable :: outliers_integrated_contrib(:,:)
     logical, allocatable :: outliers_spike_contrib(:,:,:)
-    integer :: i
+    integer(int32) :: i
 
 
+    M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_factors)
     M_CHECK_NON_NULL(n_samples)
     M_CHECK_NON_NULL(n_timepoints)
@@ -727,8 +729,7 @@ subroutine process_trajectories_C(trajectories, n_factors, n_samples, n_timepoin
     M_CHECK_NON_NULL(thresholds_integrated_contrib)
     M_CHECK_NON_NULL(outliers_integrated_contrib_int)
     M_CHECK_NON_NULL(thresholds_spike_contrib)
-    M_CHECK_NON_NULL(outliers_spike_contrib_int)
-    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(outliers_spike_contrib_int)    
 
     ! Initialize error
     call set_ok(ierr)
@@ -790,6 +791,7 @@ subroutine process_trajectories_flat_C(trajectories, n_factors, n_samples, n_tim
     use iso_c_binding, only: c_double, c_int
     use tox_errors, only: set_ok, set_err, is_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL
     use tox_trajectory_contribution_analysis, only: process_trajectories_flat_alloc
+    use iso_fortran_env, only: int32
     M_USE_NULL_VALIDATION
     implicit none
 
@@ -830,8 +832,9 @@ subroutine process_trajectories_flat_C(trajectories, n_factors, n_samples, n_tim
     logical, allocatable :: factor_mask(:)
     logical, allocatable :: outliers_integrated_contrib(:,:)
     logical, allocatable :: outliers_spike_contrib(:,:,:)
-    integer :: i
-    
+    integer(int32) :: i
+
+    M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_factors)
     M_CHECK_NON_NULL(n_samples)
     M_CHECK_NON_NULL(n_timepoints)
@@ -847,7 +850,6 @@ subroutine process_trajectories_flat_C(trajectories, n_factors, n_samples, n_tim
     M_CHECK_NON_NULL(outliers_integrated_contrib_int)
     M_CHECK_NON_NULL(thresholds_spike_contrib)
     M_CHECK_NON_NULL(outliers_spike_contrib_int)
-    M_CHECK_IERR_NON_NULL
 
     ! Initialize error
     call set_ok(ierr)
