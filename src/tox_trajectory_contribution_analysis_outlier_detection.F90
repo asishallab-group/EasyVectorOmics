@@ -40,6 +40,7 @@ contains
         
         call validate_dimension_size(n_samples, ierr)
         call validate_dimension_size(n_timepoints, ierr)
+        if(is_err(ierr)) return
         
         ! Calculate threshold for each timepoint using pre-sorted permutations
         do j = 1, n_timepoints
@@ -75,6 +76,7 @@ contains
         
         call validate_dimension_size(n_samples, ierr)
         call validate_dimension_size(n_timepoints, ierr)
+        if(is_err(ierr)) return
         
         allocate(permutation(n_samples, n_timepoints), stat=ierr)
         allocate(temp_perm(n_timepoints), stat=ierr)
@@ -185,6 +187,7 @@ contains
         
         ! Input validation        
         call validate_dimension_size(n_samples, ierr)
+        if(is_err(ierr)) return
         
         ! Detect outlier SAMPLES
         do i = 1, n_samples
@@ -213,10 +216,9 @@ contains
         ! Initialize error
         call set_ok(ierr)
         
-        if (n_timepoints == 0 .or. n_samples == 0) then
-            call set_err(ierr, ERR_EMPTY_INPUT)
-            return
-        end if
+        call validate_dimension_size(n_timepoints, ierr)
+        call validate_dimension_size(n_samples, ierr)
+        if(is_err(ierr)) return
         
         do j = 1, n_samples
             do i = 1, n_timepoints
