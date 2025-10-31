@@ -1212,23 +1212,5 @@
     ],
     "description": "Python function to check and raise error messages for tox error codes"
   }
-
-  ,
-  "Call to compute_edf_alloc": {
-    "prefix": "tox:compute_edf_alloc",
-    "body": [
-      "! Compute EDF (convenience wrapper) - sorts internally and computes EDF",
-      "call compute_edf_alloc(values, n_values, unique_values, cdf_values, n_unique, ierr)"
-    ],
-    "description": "Invoke compute_edf_alloc which sorts internally and computes the empirical distribution function"
-  },
-
-  "Call to compute_edf": {
-    "prefix": "tox:compute_edf",
-    "body": [
-      "! Compute empirical distribution function (EDF) - cumulative proportion of values ≤ each unique data point",
-      "call compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)"
-    ],
-    "description": "Invoke compute_edf to obtain sorted unique values and their cumulative frequencies"
-  }
+  
 }
