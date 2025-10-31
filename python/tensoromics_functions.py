@@ -2193,7 +2193,7 @@ def tox_calc_contributions_expert(trajectories, i_factor, dependent_idx, mode, t
 
 def tox_process_trajectories(trajectories, factor_mask, dependent_idx, mode, percentile):
     """
-    Wrapper for process_trajectories_alloc_C: processes multiple trajectories with per-timepoint percentiles.
+    Processes multiple trajectories with per-timepoint percentiles.
 
     Args:
         trajectories (np.ndarray): 3D array of shape (n_factors, n_samples, n_timepoints)
@@ -2294,7 +2294,7 @@ def tox_process_trajectories(trajectories, factor_mask, dependent_idx, mode, per
 
 def tox_process_trajectories_flat(trajectories, factor_mask, dependent_idx, mode, percentile):
     """
-    Wrapper for process_trajectories_flat_alloc_C: processes trajectories with global percentile for spike contributions.
+    Processes trajectories with global percentile for spike contributions.
 
     Args:
         trajectories (np.ndarray): 3D array of shape (n_factors, n_samples, n_timepoints)
