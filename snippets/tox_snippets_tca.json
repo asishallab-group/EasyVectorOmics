@@ -283,7 +283,7 @@
         "prefix": "tox:process_trajectories",
         "body": [
             "call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &",
-            "                factor_mask, dependent_idx, mode, percentile, &",
+            "                factor_mask, count(factor_mask), dependent_idx, mode, percentile, &",
             "                integrated_contribs, spike_contribs, &",
             "                thresholds_integrated_contrib, outliers_integrated_contrib, &",
             "                thresholds_spike_contrib, outliers_spike_contrib, ierr)"
@@ -294,7 +294,7 @@
         "prefix": "tox:process_trajectories_flat",
         "body": [
             "call process_trajectories_flat_alloc(trajectories, n_factors, n_samples, n_timepoints, &",
-            "                factor_mask, dependent_idx, mode, percentile, &",
+            "                factor_mask, count(factor_mask), dependent_idx, mode, percentile, &",
             "                integrated_contribs, spike_contribs, &",
             "                thresholds_integrated_contrib, outliers_integrated_contrib, &",
             "                thresholds_spike_contrib, outliers_spike_contrib, ierr)"
