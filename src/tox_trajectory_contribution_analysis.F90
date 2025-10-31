@@ -343,9 +343,7 @@ contains
         
         ! Input validation
         call validate_dimension_size(n_samples, ierr)
-        if (is_err(ierr)) return
         call validate_dimension_size(n_factors, ierr)
-        if (is_err(ierr)) return
         call validate_dimension_size(n_timepoints, ierr)
         if(is_err(ierr)) return
         
@@ -444,9 +442,7 @@ contains
         
         ! Input validation
         call validate_dimension_size(n_samples, ierr)
-        if (is_err(ierr)) return
         call validate_dimension_size(n_factors, ierr)
-        if (is_err(ierr)) return
         call validate_dimension_size(n_timepoints, ierr)
         if(is_err(ierr)) return
         
@@ -744,9 +740,7 @@ subroutine process_trajectories_C(trajectories, n_factors, n_samples, n_timepoin
     
     ! Check for valid dimensions
     call validate_dimension_size(n_samples, ierr)
-    if (is_err(ierr)) return
     call validate_dimension_size(n_factors, ierr)
-    if (is_err(ierr)) return
     call validate_dimension_size(n_timepoints, ierr)
     if(is_err(ierr)) return
     
