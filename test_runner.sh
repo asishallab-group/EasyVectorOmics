@@ -12,40 +12,42 @@ FLAGS=$(get_flags)
 ALIGN=$(get_alignment)
 MODULE_FLAG=$(get_module_flag $BUILD_DIR)
 
+handle_args "$@"
+
 echo "Detected alignment: $ALIGN"
 
-bash <<'EOF'
-function get_directives() {
-  echo "-D'OPEN_PAREN=(' -D'CLOSE_PAREN=)' -D'$1(KIND)=KIND(KIND)' -D'$2(KIND)=$1 OPEN_PAREN KIND CLOSE_PAREN' -D'$3(KIND)=$1 OPEN_PAREN 2 CLOSE_PAREN'"
-}
+if [[ -z "$NO_BUILD" ]]; then
+  bash <<'EOF'
+  function get_directives() {
+    echo "-D'OPEN_PAREN=(' -D'CLOSE_PAREN=)' -D'$1(KIND)=KIND(KIND)' -D'$2(KIND)=$1 OPEN_PAREN KIND CLOSE_PAREN' -D'$3(KIND)=$1 OPEN_PAREN 2 CLOSE_PAREN'"
+  }
 
-failed=0
-directives=()
-directives+=("-DTEST_KIND_MISMATCH_C_INT $(get_directives integer int32 c_int)")
-directives+=("-DTEST_KIND_MISMATCH_C_DOUBLE $(get_directives real real64 c_double)")
-directives+=("-DTEST_KIND_MISMATCH_C_DOUBLE_COMPLEX $(get_directives complex real64 c_double_complex)")
-for d in "${directives[@]}"; do
-  test_directive=${d%% *}
-  test_directive=${test_directive#-DTEST_KIND_MISMATCH_}
-  echo -en "Testing safeguard for mismatch for $test_directive: "
-  if [[ $(bash build.sh "$@" "${directives}" 2>&1 | grep "Divi.*zero") ]]; then
-    echo "success"
-  else
-    echo "failure"
-    failed=1
-  fi
-done
-exit $failed
+  failed=0
+  directives=()
+  directives+=("-DTEST_KIND_MISMATCH_C_INT $(get_directives integer int32 c_int)")
+  directives+=("-DTEST_KIND_MISMATCH_C_DOUBLE $(get_directives real real64 c_double)")
+  directives+=("-DTEST_KIND_MISMATCH_C_DOUBLE_COMPLEX $(get_directives complex real64 c_double_complex)")
+  for d in "${directives[@]}"; do
+    test_directive=${d%% *}
+    test_directive=${test_directive#-DTEST_KIND_MISMATCH_}
+    echo -en "Testing safeguard for mismatch for $test_directive: "
+    if [[ $(bash build.sh "$@" "${directives}" 2>&1 | grep "Divi.*zero") ]]; then
+      echo "success"
+    else
+      echo "failure"
+      failed=1
+    fi
+  done
+  exit $failed
 EOF
-check_exit_code "Kind Mismatch Test failed"
+  check_exit_code "Kind Mismatch Test failed"
 
-echo "Compiling src/"
-bash build.sh "$@"
-check_exit_code "Build failed"
+  echo "Compiling src/"
+  bash build.sh "$@"
+  check_exit_code "Build failed"
+fi
 
 echo "Using compiler: $COMPILER"
-
-handle_args "$@"
 
 mkdir -p $BUILD_DIR
 
