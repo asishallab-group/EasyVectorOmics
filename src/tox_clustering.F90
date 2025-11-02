@@ -3,8 +3,11 @@
 module tox_clustering
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_positive_inf, ieee_is_nan
-    use tox_errors, only: is_err, set_err, set_ok, ERR_NAN_INF, ERR_INVALID_INPUT, validate_dimension_size
+    use tox_errors, only: is_err, set_err, set_ok, ERR_NAN_INF, ERR_INVALID_INPUT, validate_dimension_size, validate_distance_matrix, validate_all_in_range_real, validate_in_range_int
     implicit none
+
+    integer(int32), parameter :: METHOD_UPGMA = 0
+    integer(int32), parameter :: METHOD_WPGMA = 1
 contains
 
     !> Performs k-means clustering on factor trajectories, so factor evolution over time
@@ -80,7 +83,9 @@ contains
         call validate_dimension_size(n_dims, ierr)
         if (n_clusters > n_points) call set_err(ierr, ERR_INVALID_INPUT)
 
-        if (max_iter < 1) call set_err(ierr, ERR_INVALID_INPUT)
+        call validate_all_in_range_real(data_points, n_points * n_dims, ierr)
+        call validate_all_in_range_real(centroids, n_clusters * n_dims, ierr)
+
         if (is_err(ierr)) return
 
         iteration = 0_int32
@@ -91,13 +96,7 @@ contains
             labels_changed = .false.
             label_counts = 0
             do i_point = 1, n_points
-                
                 call k_means_assign_cluster_helper(i_point, n_clusters, data_points, n_points, n_dims, centroids, label)
-
-                if (.not. label > 0) then
-                    call set_err(ierr, ERR_NAN_INF)
-                    exit
-                end if
 
                 label_counts(label) = label_counts(label) + 1
                 if (labels(i_point) /= label) then
@@ -189,7 +188,12 @@ contains
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
         real(real64), dimension(n_points, n_points), intent(inout) :: distances
-            !! mutable distance matrix (pass copy if original data is needed), holding the positive distances between points
+            !! symmetric distance matrix, holding the positive distances between points. Distance of X->X is always zero.
+            !!
+            !! @note
+            !! This subroutine operates in-place in the bottom triangle of the distance matrix and recovers it using the top triangle once done or on error.
+            !! So there is no need to copy an existing distance matrix, just pass the original.
+            !! @endnote
         integer(int32), dimension(n_points - 1), intent(out) :: merge_i
             !! holds cluster labels of the merged node pair at iteration k -> positives relate to leafs/data point indices, negatives to inner nodes
         integer(int32), dimension(n_points - 1), intent(out) :: merge_j
@@ -200,6 +204,62 @@ contains
             !! size of cluster at iteration k
         integer(int32), intent(out) :: ierr
             !! Error code
+    
+        call hierarchical_linkage(distances, n_points, merge_i, merge_j, heights, cluster_sizes, METHOD_UPGMA, ierr)
+    end subroutine upgma
+
+    pure subroutine wpgma(distances, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
+        integer(int32), intent(in) :: n_points
+            !! number of points to cluster
+        real(real64), dimension(n_points, n_points), intent(inout) :: distances
+            !! symmetric distance matrix, holding the positive distances between points. Distance of X->X is always zero.
+            !!
+            !! @note
+            !! This subroutine operates in-place in the bottom triangle of the distance matrix and recovers it using the top triangle once done or on error.
+            !! So there is no need to copy an existing distance matrix, just pass the original.
+            !! @endnote
+        integer(int32), dimension(n_points - 1), intent(out) :: merge_i
+            !! holds cluster labels of the merged node pair at iteration k -> positives relate to leafs/data point indices, negatives to inner nodes
+        integer(int32), dimension(n_points - 1), intent(out) :: merge_j
+            !! holds cluster labels of the merged node pair at iteration k -> positives relate to leafs/data point indices, negatives to inner nodes
+        real(real64), dimension(n_points - 1), intent(out) :: heights
+            !! height of the shorter branch of the merge, e.g. if (A,B)+(C) merges to ((A,B),C), the branch to (A,B) is shorter
+        integer(int32), dimension(n_points - 1), intent(out) :: cluster_sizes
+            !! size of cluster at iteration k
+        integer(int32), intent(out) :: ierr
+            !! Error code
+    
+        call hierarchical_linkage(distances, n_points, merge_i, merge_j, heights, cluster_sizes, METHOD_WPGMA, ierr)
+    end subroutine wpgma
+
+    pure subroutine hierarchical_linkage(distances, n_points, merge_i, merge_j, heights, cluster_sizes, method, ierr)
+        integer(int32), intent(in) :: n_points
+            !! number of points to cluster
+        real(real64), dimension(n_points, n_points), intent(inout) :: distances
+            !! symmetric distance matrix, holding the positive distances between points. Distance of X->X is always zero.
+            !!
+            !! @note
+            !! This subroutine operates in-place in the bottom triangle of the distance matrix and recovers it using the top triangle once done or on error.
+            !! So there is no need to copy an existing distance matrix, just pass the original.
+            !! @endnote
+        integer(int32), dimension(n_points - 1), intent(out) :: merge_i
+            !! holds cluster labels of the merged node pair at iteration k -> positives relate to leafs/data point indices, negatives to inner nodes
+        integer(int32), dimension(n_points - 1), intent(out) :: merge_j
+            !! holds cluster labels of the merged node pair at iteration k -> positives relate to leafs/data point indices, negatives to inner nodes
+        real(real64), dimension(n_points - 1), intent(out) :: heights
+            !! height of the shorter branch of the merge, e.g. if (A,B)+(C) merges to ((A,B),C), the branch to (A,B) is shorter
+        integer(int32), dimension(n_points - 1), intent(out) :: cluster_sizes
+            !! size of cluster at iteration k
+        integer(int32), intent(in) :: method
+            !! used algorithm
+            !!
+            !! | Mode  | Value |
+            !! |-------|-------|
+            !! | UPGMA |   0   |
+            !! | WPGMA |   1   |
+            !!
+        integer(int32), intent(out) :: ierr
+            !! Error code
 
         integer(int32) :: i, row_idx, col_idx, weight_col, weight_row, new_weight, cluster_idx
         real(real64) :: min_dist
@@ -207,6 +267,8 @@ contains
         call set_ok(ierr)
 
         call validate_dimension_size(n_points, ierr)
+        call validate_distance_matrix(distances, n_points, ierr)
+        call validate_in_range_int(method, ierr, min=0_int32, max=1_int32)
         if (is_err(ierr)) return
 
         do i = 1, n_points - 1
@@ -215,20 +277,45 @@ contains
             heights(i) = min_dist
 
             ! Get Weight and cluster index/label
-            call get_cluster_data_upgma_helper(distances, n_points, cluster_sizes, col_idx, weight_col, cluster_idx)
+            call get_cluster_data_hier_linkage_helper(distances, n_points, cluster_sizes, col_idx, weight_col, cluster_idx)
             merge_j(i) = cluster_idx
-            call get_cluster_data_upgma_helper(distances, n_points, cluster_sizes, row_idx, weight_row, cluster_idx)
+            call get_cluster_data_hier_linkage_helper(distances, n_points, cluster_sizes, row_idx, weight_row, cluster_idx)
             merge_i(i) = cluster_idx
 
 
             new_weight = weight_col + weight_row
             cluster_sizes(i) = new_weight
 
-            call merge_distances_upgma_helper(distances, n_points, row_idx, col_idx, real(weight_row, real64), real(weight_col, real64), real(new_weight, real64), i, ierr)
+            select case (method)
+                case (METHOD_UPGMA)
+                    call merge_distances_hier_linkage_helper(distances, n_points, row_idx, col_idx, real(weight_row, real64), real(weight_col, real64), real(new_weight, real64), i)
+                case (METHOD_WPGMA)
+                    call merge_distances_hier_linkage_helper(distances, n_points, row_idx, col_idx, 1.0_real64, 1.0_real64, 2.0_real64, i)
+            end select
         end do
-    end subroutine upgma
 
-    pure subroutine get_cluster_data_upgma_helper(distances, n_points, cluster_sizes, idx, weight, cluster_idx)
+        call recover_distance_matrix_helper(distances, n_points)
+    end subroutine hierarchical_linkage
+
+    pure subroutine recover_distance_matrix_helper(distances, n_points)
+        integer(int32), intent(in) :: n_points
+            !! number of points to cluster
+        real(real64), dimension(n_points, n_points), intent(inout) :: distances
+            !! top triangle holds distances, bottom triangle will be recovered
+
+        integer(int32) :: i_row, i_col
+
+        do i_col = 1, n_points
+            ! recover self distance
+            distances(i_col, i_col) = 0.0_real64
+            ! recover triangle
+            do i_row = i_col + 1, n_points
+                distances(i_row, i_col) = distances(i_col, i_row)
+            end do
+        end do
+    end subroutine recover_distance_matrix_helper
+
+    pure subroutine get_cluster_data_hier_linkage_helper(distances, n_points, cluster_sizes, idx, weight, cluster_idx)
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
         real(real64), dimension(n_points, n_points), intent(in) :: distances
@@ -252,9 +339,9 @@ contains
             weight = cluster_sizes(iteration_k)
             cluster_idx = -iteration_k
         end if   
-    end subroutine get_cluster_data_upgma_helper
+    end subroutine get_cluster_data_hier_linkage_helper
 
-    pure subroutine merge_distances_upgma_helper(distances, n_points, row_idx, col_idx, weight_row, weight_col, new_weight, iteration_k, ierr)
+    pure subroutine merge_distances_hier_linkage_helper(distances, n_points, row_idx, col_idx, weight_row, weight_col, new_weight, iteration_k)
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
         real(real64), dimension(n_points, n_points), intent(inout) :: distances
@@ -271,8 +358,6 @@ contains
             !! cluster size of new cluster
         integer(int32), intent(in) :: iteration_k
             !! iteration of current merge
-        integer(int32), intent(inout) :: ierr
-            !! Error code
 
         integer(int32) :: i_node
         real(real64) :: new_dist
@@ -299,10 +384,6 @@ contains
                     distances(i_node, col_idx) = new_dist
                     ! don't fill row_idx with infinity, as whole column will be marked inactive
                 end if
-                if (ieee_is_nan(new_dist)) then
-                    call set_err(ierr, ERR_NAN_INF)
-                    return
-                end if
             end if
         end do
 
@@ -310,7 +391,7 @@ contains
         distances(col_idx, col_idx) = real(iteration_k, real64)
         distances(row_idx, col_idx) = ieee_value(1.0_real64, ieee_positive_inf) ! self distance of cluster should never be minimum
         distances(row_idx, row_idx) = -1.0_real64 ! mark column inactive
-    end subroutine merge_distances_upgma_helper
+    end subroutine merge_distances_hier_linkage_helper
 
     !> Helper routine to find the indices of the minimum value a distance matrix.
     !| 

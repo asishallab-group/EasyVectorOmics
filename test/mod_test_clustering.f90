@@ -25,16 +25,17 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(5)
+        type(test_case) :: all_tests(6)
 
         all_tests(1) = test_case("test_tox_clustering_k_means_assign_cluster_helper", test_k_means_assign_cluster_helper)
         all_tests(2) = test_case("test_tox_clustering_k_means_recompute_cluster_centroids", test_k_means_recompute_cluster_centroids)
         all_tests(3) = test_case("test_tox_clustering_k_means_clustering", test_k_means_clustering)
-        all_tests(4) = test_case("test_tox_clustering_upgma_manually", test_upgma_manually)
+        all_tests(4) = test_case("test_tox_clustering_hierarchical_linkage_helpers", test_hierarchical_linkage_helpers)
         all_tests(5) = test_case("test_tox_clustering_upgma", test_upgma)
+        all_tests(6) = test_case("test_tox_clustering_wpgma", test_wpgma)
     end function get_all_tests
 
-    subroutine test_upgma_manually()
+    subroutine test_hierarchical_linkage_helpers()
         integer(int32), parameter :: n_points = 5
         real(real64) :: dist(n_points, n_points)
         real(real64) :: expected_dist(n_points, n_points)
@@ -64,12 +65,11 @@ contains
         ], shape(dist), order=[2,1])
 
         call get_min_distance_indices_helper(dist, n_points, row_idx, col_idx, min_dist)
-        call assert_equal_int(col_idx, 1_int32, "test_upgma: first merge, wrong min column index")
-        call assert_equal_int(row_idx, 2_int32, "test_upgma: first merge, wrong min row index")
-        call assert_equal_real(min_dist, 17.0_real64, TOL, "test_upgma: first merge, wrong min value")
-        call merge_distances_upgma_helper(dist, n_points, row_idx, col_idx, 1.0_real64, 1.0_real64, 2.0_real64, 1_int32, ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_merge_distances_upgma_helper: first merge ierr")
-        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_merge_distances_upgma_helper: first merge")
+        call assert_equal_int(col_idx, 1_int32, "test_hierarchical_linkage_helpers: first merge, wrong min column index")
+        call assert_equal_int(row_idx, 2_int32, "test_hierarchical_linkage_helpers: first merge, wrong min row index")
+        call assert_equal_real(min_dist, 17.0_real64, TOL, "test_hierarchical_linkage_helpers: first merge, wrong min value")
+        call merge_distances_hier_linkage_helper(dist, n_points, row_idx, col_idx, 1.0_real64, 1.0_real64, 2.0_real64, 1_int32)
+        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_hierarchical_linkage_helpers: first merge")
 
         expected_dist = reshape([ &
             2.0_real64,  17.0_real64, 21.0_real64, 31.0_real64, 23.0_real64, &
@@ -80,12 +80,11 @@ contains
         ], shape(dist), order=[2,1])
 
         call get_min_distance_indices_helper(dist, n_points, row_idx, col_idx, min_dist)
-        call assert_equal_int(col_idx, 1_int32, "test_upgma: second merge, wrong min column index")
-        call assert_equal_int(row_idx, 5_int32, "test_upgma: second merge, wrong min row index")
-        call assert_equal_real(min_dist, 22.0_real64, TOL, "test_upgma: second merge, wrong min value")
-        call merge_distances_upgma_helper(dist, n_points, row_idx, col_idx, 1.0_real64, 2.0_real64, 3.0_real64, 2_int32, ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_merge_distances_upgma_helper: second merge ierr")
-        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_merge_distances_upgma_helper: second merge")
+        call assert_equal_int(col_idx, 1_int32, "test_hierarchical_linkage_helpers: second merge, wrong min column index")
+        call assert_equal_int(row_idx, 5_int32, "test_hierarchical_linkage_helpers: second merge, wrong min row index")
+        call assert_equal_real(min_dist, 22.0_real64, TOL, "test_hierarchical_linkage_helpers: second merge, wrong min value")
+        call merge_distances_hier_linkage_helper(dist, n_points, row_idx, col_idx, 1.0_real64, 2.0_real64, 3.0_real64, 2_int32)
+        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_hierarchical_linkage_helpers: second merge")
 
         expected_dist = reshape([ &
              2.0_real64, 17.0_real64, 21.0_real64, 31.0_real64, 23.0_real64, &
@@ -96,12 +95,11 @@ contains
         ], shape(dist), order=[2,1])
 
         call get_min_distance_indices_helper(dist, n_points, row_idx, col_idx, min_dist)
-        call assert_equal_int(col_idx, 3_int32, "test_upgma: third merge, wrong min column index")
-        call assert_equal_int(row_idx, 4_int32, "test_upgma: third merge, wrong min row index")
-        call assert_equal_real(min_dist, 28.0_real64, TOL, "test_upgma: third merge, wrong min value")
-        call merge_distances_upgma_helper(dist, n_points, row_idx, col_idx, 1.0_real64, 1.0_real64, 2.0_real64, 3_int32, ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_merge_distances_upgma_helper: third merge ierr")
-        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_merge_distances_upgma_helper: third merge")
+        call assert_equal_int(col_idx, 3_int32, "test_hierarchical_linkage_helpers: third merge, wrong min column index")
+        call assert_equal_int(row_idx, 4_int32, "test_hierarchical_linkage_helpers: third merge, wrong min row index")
+        call assert_equal_real(min_dist, 28.0_real64, TOL, "test_hierarchical_linkage_helpers: third merge, wrong min value")
+        call merge_distances_hier_linkage_helper(dist, n_points, row_idx, col_idx, 1.0_real64, 1.0_real64, 2.0_real64, 3_int32)
+        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_hierarchical_linkage_helpers: third merge")
 
         expected_dist = reshape([ &
              4.0_real64, 17.0_real64, 21.0_real64, 31.0_real64, 23.0_real64, &
@@ -112,18 +110,17 @@ contains
         ], shape(dist), order=[2,1])
 
         call get_min_distance_indices_helper(dist, n_points, row_idx, col_idx, min_dist)
-        call assert_equal_int(col_idx, 1_int32, "test_upgma: last merge, wrong min column index")
-        call assert_equal_int(row_idx, 3_int32, "test_upgma: last merge, wrong min row index")
-        call assert_equal_real(min_dist, 33.0_real64, TOL, "test_upgma: last merge, wrong min value")
-        call merge_distances_upgma_helper(dist, n_points, row_idx, col_idx, 2.0_real64, 3.0_real64, 5.0_real64, 4_int32, ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_merge_distances_upgma_helper: last merge ierr")
-        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_merge_distances_upgma_helper: last merge")
-    end subroutine test_upgma_manually
+        call assert_equal_int(col_idx, 1_int32, "test_hierarchical_linkage_helpers: last merge, wrong min column index")
+        call assert_equal_int(row_idx, 3_int32, "test_hierarchical_linkage_helpers: last merge, wrong min row index")
+        call assert_equal_real(min_dist, 33.0_real64, TOL, "test_hierarchical_linkage_helpers: last merge, wrong min value")
+        call merge_distances_hier_linkage_helper(dist, n_points, row_idx, col_idx, 2.0_real64, 3.0_real64, 5.0_real64, 4_int32)
+        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_hierarchical_linkage_helpers: last merge")
+    end subroutine test_hierarchical_linkage_helpers
 
     subroutine test_upgma()
         integer(int32), parameter :: max_n_points = 5
         integer(int32) :: n_points
-        real(real64), allocatable :: dist(:, :)
+        real(real64), allocatable :: orig_dist(:, :), passed_dist(:, :)
         integer(int32) :: merge_i(max_n_points - 1), merge_j(max_n_points - 1)
         real(real64) :: heights(max_n_points - 1)
         integer(int32) :: cluster_sizes(max_n_points - 1)
@@ -141,23 +138,25 @@ contains
         expected_merge_i(:n_points-1) = [1, -1,3, -3]
         expected_merge_j(:n_points-1) = [2, 5, 4, -2]
         expected_heights(:n_points-1) = [17.0_real64, 22.0_real64, 28.0_real64, 33.0_real64]
-        allocate(dist(5,5))
-        dist = reshape([ &
+        allocate(orig_dist(5,5), passed_dist(5,5))
+        orig_dist = reshape([ &
             0.0, 17.0, 21.0, 31.0, 23.0, &
             17.0, 0.0, 30.0, 34.0, 21.0, &
             21.0, 30.0, 0.0, 28.0, 39.0, &
             31.0, 34.0, 28.0, 0.0, 43.0, &
             23.0, 21.0, 39.0, 43.0, 0.0 &
         ], [5,5], order=[2,1])
+        passed_dist = orig_dist
 
-        call upgma(dist, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
+        call upgma(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_upgma: reference case ierr")
+        call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_upgma: reference output matrix doesn't match input matrix")
         do i = 1, n_points - 1
             call assert_equal_int(min(merge_i(i), merge_j(i)), expected_merge_i(i), "test_upgma: reference merge_i")
             call assert_equal_int(max(merge_i(i), merge_j(i)), expected_merge_j(i), "test_upgma: reference merge_j")
             call assert_not_equal_int(merge_i(i), merge_j(i), "test_upgma: reference merge_j")
         end do
-        call assert_equal_array_real(heights, expected_heights, size(expected_heights), TOL, "test_upgma: reference heights")
+        call assert_equal_array_real(heights, expected_heights, size(expected_heights, kind=int32), TOL, "test_upgma: reference heights")
 
         ! -------------------------------
         ! Case 2: Equal distances
@@ -165,18 +164,20 @@ contains
         n_points = 4
         expected_heights(:n_points-1) = [1.0_real64, 1.0_real64, 1.0_real64]
 
-        deallocate(dist)
-        allocate(dist(4,4))
-        dist = reshape([ &
+        deallocate(orig_dist, passed_dist)
+        allocate(orig_dist(4,4), passed_dist(4,4))
+        orig_dist = reshape([ &
             0.0, 1.0, 1.0, 1.0, &
             1.0, 0.0, 1.0, 1.0, &
             1.0, 1.0, 0.0, 1.0, &
             1.0, 1.0, 1.0, 0.0 &
         ], [4,4], order=[2,1])
+        passed_dist = orig_dist
 
-        call upgma(dist, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
+        call upgma(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_upgma: equal-distance case ierr")
-        call assert_equal_array_real(heights, expected_heights, size(expected_heights), TOL, "test_upgma: equal-distance heights")
+        call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_upgma: equal-distance output matrix doesn't match input matrix")
+        call assert_equal_array_real(heights, expected_heights, size(expected_heights, kind=int32), TOL, "test_upgma: equal-distance heights")
 
         ! -------------------------------
         ! Case 3: Two points
@@ -184,25 +185,32 @@ contains
         n_points = 2
         expected_heights(:n_points-1) = [5.0_real64]
 
-        deallocate(dist)
-        allocate(dist(2,2))
-        dist = reshape([ &
+        deallocate(orig_dist, passed_dist)
+        allocate(orig_dist(2,2), passed_dist(2,2))
+        orig_dist = reshape([ &
             0.0, 5.0, &
             5.0, 0.0 &
         ], [2,2], order=[2,1])
+        passed_dist = orig_dist
 
-        call upgma(dist, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
+        call upgma(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_upgma: two-point case ierr")
-        ! call assert_equal_array_real(heights, expected_heights, size(expected_heights), TOL, "test_upgma: two-point height")
+        call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_upgma: two-point output matrix doesn't match input matrix")
+        call assert_equal_array_real(heights, expected_heights, size(expected_heights, kind=int32), TOL, "test_upgma: two-point height")
 
         ! -------------------------------
         ! Case 4: Single point
         ! -------------------------------
         n_points = 1
 
-        dist(:n_points, :n_points) = 0.0_real64
+        deallocate(orig_dist, passed_dist)
+        allocate(orig_dist(1,1), passed_dist(1,1))
+        orig_dist = reshape([ &
+            0.0 &
+        ], [1,1], order=[2,1])
+        passed_dist = orig_dist
 
-        call upgma(dist, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
+        call upgma(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_upgma: single-point case ierr")
 
         ! -------------------------------
@@ -210,18 +218,136 @@ contains
         ! -------------------------------
         n_points = 3
 
-        deallocate(dist)
-        allocate(dist(3,3))
-        dist = reshape([ &
+        deallocate(orig_dist, passed_dist)
+        allocate(orig_dist(3,3), passed_dist(3,3))
+        orig_dist = reshape([ &
                                         0.0_real64, 1.0_real64, 1.0_real64, &
                                         1.0_real64, 0.0_real64, 1.0_real64, &
             ieee_value(1.0_real64, ieee_quiet_nan), 1.0_real64, 0.0_real64 &
         ], [3,3], order=[2,1])
+        passed_dist = orig_dist
 
-        call upgma(dist, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
+        call upgma(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
         call assert_equal_int(ierr, ERR_NAN_INF, "test_upgma: NaN case should trigger ERR_NAN_INF")
+        call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_upgma: NaN case should output matrix doesn't match input matrix")
 
     end subroutine test_upgma
+
+    subroutine test_wpgma()
+        integer(int32), parameter :: max_n_points = 5
+        integer(int32) :: n_points
+        real(real64), allocatable :: orig_dist(:, :), passed_dist(:, :)
+        integer(int32) :: merge_i(max_n_points - 1), merge_j(max_n_points - 1)
+        real(real64) :: heights(max_n_points - 1)
+        integer(int32) :: cluster_sizes(max_n_points - 1)
+        integer(int32), dimension(max_n_points - 1) :: expected_merge_i
+        integer(int32), dimension(max_n_points - 1) :: expected_merge_j
+        real(real64), dimension(max_n_points - 1) :: expected_heights
+        integer(int32) :: ierr, i
+
+        call set_ok(ierr)
+
+        ! -------------------------------
+        ! Case 1: Example from https://en.wikipedia.org/wiki/WPGMA 29.10.2025
+        ! -------------------------------
+        n_points = 5
+        expected_merge_i(:n_points-1) = [1, -1,3, -3]
+        expected_merge_j(:n_points-1) = [2, 5, 4, -2]
+        expected_heights(:n_points-1) = [17.0_real64, 22.0_real64, 28.0_real64, 35.0_real64]
+        allocate(orig_dist(5,5), passed_dist(5,5))
+        orig_dist = reshape([ &
+            0.0, 17.0, 21.0, 31.0, 23.0, &
+            17.0, 0.0, 30.0, 34.0, 21.0, &
+            21.0, 30.0, 0.0, 28.0, 39.0, &
+            31.0, 34.0, 28.0, 0.0, 43.0, &
+            23.0, 21.0, 39.0, 43.0, 0.0 &
+        ], [5,5], order=[2,1])
+        passed_dist = orig_dist
+
+        call wpgma(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_wpgma: reference case ierr")
+        call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_wpgma: reference output matrix doesn't match input matrix")
+        do i = 1, n_points - 1
+            call assert_equal_int(min(merge_i(i), merge_j(i)), expected_merge_i(i), "test_wpgma: reference merge_i")
+            call assert_equal_int(max(merge_i(i), merge_j(i)), expected_merge_j(i), "test_wpgma: reference merge_j")
+            call assert_not_equal_int(merge_i(i), merge_j(i), "test_wpgma: reference merge_j")
+        end do
+        call assert_equal_array_real(heights, expected_heights, size(expected_heights, kind=int32), TOL, "test_wpgma: reference heights")
+
+        ! -------------------------------
+        ! Case 2: Equal distances
+        ! -------------------------------
+        n_points = 4
+        expected_heights(:n_points-1) = [1.0_real64, 1.0_real64, 1.0_real64]
+
+        deallocate(orig_dist, passed_dist)
+        allocate(orig_dist(4,4), passed_dist(4,4))
+        orig_dist = reshape([ &
+            0.0, 1.0, 1.0, 1.0, &
+            1.0, 0.0, 1.0, 1.0, &
+            1.0, 1.0, 0.0, 1.0, &
+            1.0, 1.0, 1.0, 0.0 &
+        ], [4,4], order=[2,1])
+        passed_dist = orig_dist
+
+        call wpgma(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_wpgma: equal-distance case ierr")
+        call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_wpgma: equal-distance output matrix doesn't match input matrix")
+        call assert_equal_array_real(heights, expected_heights, size(expected_heights, kind=int32), TOL, "test_wpgma: equal-distance heights")
+
+        ! -------------------------------
+        ! Case 3: Two points
+        ! -------------------------------
+        n_points = 2
+        expected_heights(:n_points-1) = [5.0_real64]
+
+        deallocate(orig_dist, passed_dist)
+        allocate(orig_dist(2,2), passed_dist(2,2))
+        orig_dist = reshape([ &
+            0.0, 5.0, &
+            5.0, 0.0 &
+        ], [2,2], order=[2,1])
+        passed_dist = orig_dist
+
+        call wpgma(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_wpgma: two-point case ierr")
+        call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_wpgma: two-point output matrix doesn't match input matrix")
+        call assert_equal_array_real(heights, expected_heights, size(expected_heights, kind=int32), TOL, "test_wpgma: two-point height")
+
+        ! -------------------------------
+        ! Case 4: Single point
+        ! -------------------------------
+        n_points = 1
+
+        deallocate(orig_dist, passed_dist)
+        allocate(orig_dist(1,1), passed_dist(1,1))
+        orig_dist = reshape([ &
+            0.0 &
+        ], [1,1], order=[2,1])
+        passed_dist = orig_dist
+
+        call wpgma(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_wpgma: single-point case ierr")
+
+        ! -------------------------------
+        ! Case 5: NaN in distance matrix
+        ! -------------------------------
+        n_points = 3
+
+        deallocate(orig_dist, passed_dist)
+        allocate(orig_dist(3,3), passed_dist(3,3))
+        orig_dist = reshape([ &
+                                        0.0_real64, 1.0_real64, 1.0_real64, &
+                                        1.0_real64, 0.0_real64, 1.0_real64, &
+            ieee_value(1.0_real64, ieee_quiet_nan), 1.0_real64, 0.0_real64 &
+        ], [3,3], order=[2,1])
+        passed_dist = orig_dist
+
+        call wpgma(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
+        call assert_equal_int(ierr, ERR_NAN_INF, "test_wpgma: NaN case should trigger ERR_NAN_INF")
+        call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_wpgma: NaN case should output matrix doesn't match input matrix")
+
+    end subroutine test_wpgma
 
     subroutine test_k_means_clustering()
         integer(int32), parameter :: n_dims = 2, n_points = 4, n_clusters = 2
@@ -380,7 +506,7 @@ contains
 
         all_tests = get_all_tests()
 
-        do i = 1, size(all_tests)
+        do i = 1, size(all_tests, kind=int32)
             call all_tests(i)%test_proc()
             print "(' ',A,' passed.')", trim(all_tests(i)%name)
         end do
@@ -396,9 +522,9 @@ contains
 
         all_tests = get_all_tests()
 
-        do i = 1, size(test_names)
+        do i = 1, size(test_names, kind=int32)
             found = .false.
-            do j = 1, size(all_tests)
+            do j = 1, size(all_tests, kind=int32)
                 if (trim(test_names(i)) == trim(all_tests(j)%name)) then
                     call all_tests(j)%test_proc()
                     print "(' ',A,' passed.')", trim(test_names(i))
