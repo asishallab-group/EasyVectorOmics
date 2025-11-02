@@ -12,7 +12,7 @@ module tox_clustering
 contains
 
     !> Performs k-means clustering on factor trajectories, so factor evolution over time
-    pure subroutine cluster_factor_trajectories_k_means(n_clusters, trajectories, n_factors, n_samples, n_timepoints, centroids, labels, label_counts, ierr, max_iter)
+    pure subroutine cluster_factor_trajectories_k_means(n_clusters, trajectories, n_factors, n_samples, n_timepoints, centroids, labels, label_counts, ierr, max_iterations)
         integer(int32), intent(in) :: n_clusters
             !! number (`k`) of clusters
         integer(int32), intent(in) :: n_factors
@@ -36,10 +36,10 @@ contains
             !! holds the number of points having the respective label assigned
         integer(int32), intent(out) :: ierr
             !! Error code
-        integer(int32), intent(in) :: max_iter
+        integer(int32), intent(in) :: max_iterations
             !! number of maximum iterations of the clustering
     
-        call k_means_clustering(n_clusters, trajectories, n_samples * n_timepoints, n_factors, centroids, labels, label_counts, ierr, max_iter)
+        call k_means_clustering(n_clusters, trajectories, n_samples * n_timepoints, n_factors, centroids, labels, label_counts, ierr, max_iterations)
     end subroutine cluster_factor_trajectories_k_means
 
     !> k-means clustering algorithm:
@@ -185,6 +185,12 @@ contains
         end do
     end subroutine k_means_assign_cluster_helper
 
+    !> Perform linkage clustering on a distance matrix.
+    !|
+    !| @note
+    !| This subroutine operates in-place in the bottom triangle of the distance matrix and recovers it using the top triangle once done or on error.
+    !| So there is no need to copy an existing distance matrix, just pass the original.
+    !| @endnote
     pure subroutine linkage_clustering(distances, n_points, merge_i, merge_j, heights, cluster_sizes, method, ierr)
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
@@ -251,6 +257,7 @@ contains
         call recover_distance_matrix_helper(distances, n_points)
     end subroutine linkage_clustering
 
+    !> Helper to recover a distance matrix from its top triangle.
     pure subroutine recover_distance_matrix_helper(distances, n_points)
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
@@ -269,6 +276,8 @@ contains
         end do
     end subroutine recover_distance_matrix_helper
 
+    !> Helper for linkage clustering to get the size/weight and label of a cluster
+    !| by using the self-distance as indicator in which iteration the cluster was merged
     pure subroutine get_cluster_data_linkage_helper(distances, n_points, cluster_sizes, idx, weight, cluster_label)
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
@@ -295,15 +304,16 @@ contains
         end if   
     end subroutine get_cluster_data_linkage_helper
 
+    !> Helper for *PGMA algorithms for updating the distance matrix on merge of two clusters
     pure subroutine merge_distances_xPGMA_linkage_helper(distances, n_points, idx_A, idx_B, size_A, size_B, iteration_k)
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
         real(real64), dimension(n_points, n_points), intent(inout) :: distances
             !! distance matrix, holding the distances between points
         integer(int32), intent(in) :: idx_A
-            !! row index of min distance
+            !! row index of min distance in `distances`
         integer(int32), intent(in) :: idx_B
-            !! column index of min distance
+            !! column index of min distance in `distances`
         integer(int32), intent(in) :: size_A
             !! cluster size of cluster at `idx_A`
         integer(int32), intent(in) :: size_B
@@ -349,15 +359,16 @@ contains
         call post_merge_distances_helper(distances, n_points, idx_A, idx_B, iteration_k)
     end subroutine merge_distances_xPGMA_linkage_helper
 
+    !> Helper for ward algorithm for updating the distance matrix on merge of two clusters
     pure subroutine merge_distances_ward_linkage_helper(distances, n_points, idx_A, idx_B, size_A, size_B, iteration_k, cluster_sizes, dist_AB)
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
         real(real64), dimension(n_points, n_points), intent(inout) :: distances
             !! distance matrix, holding the distances between points
         integer(int32), intent(in) :: idx_A
-            !! row index of min distance
+            !! row index of min distance in `distances`
         integer(int32), intent(in) :: idx_B
-            !! column index of min distance
+            !! column index of min distance in `distances`
         integer(int32), intent(in) :: size_A
             !! cluster size of cluster at `idx_A`
         integer(int32), intent(in) :: size_B
@@ -413,22 +424,23 @@ contains
         call post_merge_distances_helper(distances, n_points, idx_A, idx_B, iteration_k)
     end subroutine merge_distances_ward_linkage_helper
 
+    !> Helper for doing last updates after merge: disable merged cluster, update self-distance to current iteration
     pure subroutine post_merge_distances_helper(distances, n_points, idx_A, idx_B, iteration_k)
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
-        real(real64), dimension(n_points, n_points), intent(out) :: distances
+        real(real64), dimension(n_points, n_points), intent(inout) :: distances
             !! distance matrix, holding the distances between points
         integer(int32), intent(in) :: idx_A
-            !! row index of min distance
+            !! row index of min distance in `distances`
         integer(int32), intent(in) :: idx_B
-            !! column index of min distance
+            !! column index of min distance in `distances`
         integer(int32), intent(in) :: iteration_k
             !! iteration of current merge
 
         ! Update index and cluster size
         distances(idx_B, idx_B) = real(iteration_k, real64)
-        distances(idx_A, idx_B) = ieee_value(1.0_real64, ieee_positive_inf) ! column becomes new cluster -> old cluster must not be future minimum
-        distances(idx_A, idx_A) = -1.0_real64 ! mark column inactive
+        distances(idx_A, idx_B) = ieee_value(1.0_real64, ieee_positive_inf) ! column of B becomes new cluster -> A must not be future minimum
+        distances(idx_A, idx_A) = -1.0_real64 ! mark column of A inactive
     end subroutine post_merge_distances_helper
 
     !> Helper routine to find the indices of the minimum value a distance matrix.
@@ -443,9 +455,9 @@ contains
         real(real64), dimension(n, n), intent(in) :: distances
             !! distance matrix, holding the distances between points
         integer(int32), intent(out) :: row_idx
-            !! row index of min distance
+            !! row index of min distance in `distances`
         integer(int32), intent(out) :: col_idx
-            !! column index of min distance
+            !! column index of min distance in `distances`
         real(real64), intent(out) :: min_dist
             !! min distance
 
