@@ -6,8 +6,9 @@ module tox_clustering
     use tox_errors, only: is_err, set_err, set_ok, ERR_NAN_INF, ERR_INVALID_INPUT, validate_dimension_size, validate_distance_matrix, validate_all_in_range_real, validate_in_range_int
     implicit none
 
-    integer(int32), parameter :: METHOD_UPGMA = 0
-    integer(int32), parameter :: METHOD_WPGMA = 1
+    integer(int32), parameter :: METHOD_AVERAGE = 0
+    integer(int32), parameter :: METHOD_WEIGHTED = 1
+    integer(int32), parameter :: METHOD_WARD = 2
 contains
 
     !> Performs k-means clustering on factor trajectories, so factor evolution over time
@@ -184,54 +185,6 @@ contains
         end do
     end subroutine k_means_assign_cluster_helper
 
-    pure subroutine upgma(distances, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
-        integer(int32), intent(in) :: n_points
-            !! number of points to cluster
-        real(real64), dimension(n_points, n_points), intent(inout) :: distances
-            !! symmetric distance matrix, holding the positive distances between points. Distance of X->X is always zero.
-            !!
-            !! @note
-            !! This subroutine operates in-place in the bottom triangle of the distance matrix and recovers it using the top triangle once done or on error.
-            !! So there is no need to copy an existing distance matrix, just pass the original.
-            !! @endnote
-        integer(int32), dimension(n_points - 1), intent(out) :: merge_i
-            !! holds cluster labels of the merged node pair at iteration k -> positives relate to leafs/data point indices, negatives to inner nodes
-        integer(int32), dimension(n_points - 1), intent(out) :: merge_j
-            !! holds cluster labels of the merged node pair at iteration k -> positives relate to leafs/data point indices, negatives to inner nodes
-        real(real64), dimension(n_points - 1), intent(out) :: heights
-            !! height of the shorter branch of the merge, e.g. if (A,B)+(C) merges to ((A,B),C), the branch to (A,B) is shorter
-        integer(int32), dimension(n_points - 1), intent(out) :: cluster_sizes
-            !! size of cluster at iteration k
-        integer(int32), intent(out) :: ierr
-            !! Error code
-    
-        call hierarchical_linkage(distances, n_points, merge_i, merge_j, heights, cluster_sizes, METHOD_UPGMA, ierr)
-    end subroutine upgma
-
-    pure subroutine wpgma(distances, n_points, merge_i, merge_j, heights, cluster_sizes, ierr)
-        integer(int32), intent(in) :: n_points
-            !! number of points to cluster
-        real(real64), dimension(n_points, n_points), intent(inout) :: distances
-            !! symmetric distance matrix, holding the positive distances between points. Distance of X->X is always zero.
-            !!
-            !! @note
-            !! This subroutine operates in-place in the bottom triangle of the distance matrix and recovers it using the top triangle once done or on error.
-            !! So there is no need to copy an existing distance matrix, just pass the original.
-            !! @endnote
-        integer(int32), dimension(n_points - 1), intent(out) :: merge_i
-            !! holds cluster labels of the merged node pair at iteration k -> positives relate to leafs/data point indices, negatives to inner nodes
-        integer(int32), dimension(n_points - 1), intent(out) :: merge_j
-            !! holds cluster labels of the merged node pair at iteration k -> positives relate to leafs/data point indices, negatives to inner nodes
-        real(real64), dimension(n_points - 1), intent(out) :: heights
-            !! height of the shorter branch of the merge, e.g. if (A,B)+(C) merges to ((A,B),C), the branch to (A,B) is shorter
-        integer(int32), dimension(n_points - 1), intent(out) :: cluster_sizes
-            !! size of cluster at iteration k
-        integer(int32), intent(out) :: ierr
-            !! Error code
-    
-        call hierarchical_linkage(distances, n_points, merge_i, merge_j, heights, cluster_sizes, METHOD_WPGMA, ierr)
-    end subroutine wpgma
-
     pure subroutine hierarchical_linkage(distances, n_points, merge_i, merge_j, heights, cluster_sizes, method, ierr)
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
@@ -253,44 +206,45 @@ contains
         integer(int32), intent(in) :: method
             !! used algorithm
             !!
-            !! | Mode  | Value |
-            !! |-------|-------|
-            !! | UPGMA |   0   |
-            !! | WPGMA |   1   |
+            !! |      Method      | Value |
+            !! |------------------|-------|
+            !! | Average / UPGMA  |   0   |
+            !! | Weighted / WPGMA |   1   |
+            !! |      Ward        |   2   |
             !!
         integer(int32), intent(out) :: ierr
             !! Error code
 
-        integer(int32) :: i, row_idx, col_idx, weight_col, weight_row, new_weight, cluster_idx
-        real(real64) :: min_dist
+        integer(int32) :: i, idx_A, idx_B, size_B, size_A, size_AB, cluster_label
+        real(real64) :: dist_AB
 
         call set_ok(ierr)
 
         call validate_dimension_size(n_points, ierr)
         call validate_distance_matrix(distances, n_points, ierr)
-        call validate_in_range_int(method, ierr, min=0_int32, max=1_int32)
+        call validate_in_range_int(method, ierr, min=0_int32, max=2_int32)
         if (is_err(ierr)) return
 
         do i = 1, n_points - 1
-            call get_min_distance_indices_helper(distances, n_points, row_idx, col_idx, min_dist)
+            call get_min_distance_indices_helper(distances, n_points, idx_A, idx_B, dist_AB)
 
-            heights(i) = min_dist
+            heights(i) = dist_AB
 
             ! Get Weight and cluster index/label
-            call get_cluster_data_hier_linkage_helper(distances, n_points, cluster_sizes, col_idx, weight_col, cluster_idx)
-            merge_j(i) = cluster_idx
-            call get_cluster_data_hier_linkage_helper(distances, n_points, cluster_sizes, row_idx, weight_row, cluster_idx)
-            merge_i(i) = cluster_idx
+            call get_cluster_data_hier_linkage_helper(distances, n_points, cluster_sizes, idx_B, size_B, cluster_label)
+            merge_j(i) = cluster_label
+            call get_cluster_data_hier_linkage_helper(distances, n_points, cluster_sizes, idx_A, size_A, cluster_label)
+            merge_i(i) = cluster_label
 
-
-            new_weight = weight_col + weight_row
-            cluster_sizes(i) = new_weight
+            cluster_sizes(i) = size_B + size_A
 
             select case (method)
-                case (METHOD_UPGMA)
-                    call merge_distances_hier_linkage_helper(distances, n_points, row_idx, col_idx, real(weight_row, real64), real(weight_col, real64), real(new_weight, real64), i)
-                case (METHOD_WPGMA)
-                    call merge_distances_hier_linkage_helper(distances, n_points, row_idx, col_idx, 1.0_real64, 1.0_real64, 2.0_real64, i)
+                case (METHOD_AVERAGE)
+                    call merge_distances_xPGMA_linkage_helper(distances, n_points, idx_A, idx_B, size_A, size_B, i)
+                case (METHOD_WEIGHTED)
+                    call merge_distances_xPGMA_linkage_helper(distances, n_points, idx_A, idx_B, 1_int32, 1_int32, i)
+                case (METHOD_WARD)
+                    call merge_distances_ward_linkage_helper(distances, n_points, idx_A, idx_B, size_A, size_B, i, cluster_sizes, dist_AB)
             end select
         end do
 
@@ -315,7 +269,7 @@ contains
         end do
     end subroutine recover_distance_matrix_helper
 
-    pure subroutine get_cluster_data_hier_linkage_helper(distances, n_points, cluster_sizes, idx, weight, cluster_idx)
+    pure subroutine get_cluster_data_hier_linkage_helper(distances, n_points, cluster_sizes, idx, weight, cluster_label)
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
         real(real64), dimension(n_points, n_points), intent(in) :: distances
@@ -326,7 +280,7 @@ contains
             !! index of cluster in `distances`
         integer(int32), intent(out) :: weight
             !! number of leafs of cluster
-        integer(int32), intent(out) :: cluster_idx
+        integer(int32), intent(out) :: cluster_label
             !! index/label of cluster
 
         integer(int32) :: iteration_k
@@ -334,64 +288,148 @@ contains
         iteration_k = int(distances(idx, idx), int32)
         if (iteration_k == 0) then
             weight = 1
-            cluster_idx = idx
+            cluster_label = idx
         else
             weight = cluster_sizes(iteration_k)
-            cluster_idx = -iteration_k
+            cluster_label = -iteration_k
         end if   
     end subroutine get_cluster_data_hier_linkage_helper
 
-    pure subroutine merge_distances_hier_linkage_helper(distances, n_points, row_idx, col_idx, weight_row, weight_col, new_weight, iteration_k)
+    pure subroutine merge_distances_xPGMA_linkage_helper(distances, n_points, idx_A, idx_B, size_A, size_B, iteration_k)
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
         real(real64), dimension(n_points, n_points), intent(inout) :: distances
             !! distance matrix, holding the distances between points
-        integer(int32), intent(in) :: row_idx
+        integer(int32), intent(in) :: idx_A
             !! row index of min distance
-        integer(int32), intent(in) :: col_idx
+        integer(int32), intent(in) :: idx_B
             !! column index of min distance
-        real(real64), intent(in) :: weight_row
-            !! cluster size of cluster at `row_idx`
-        real(real64), intent(in) :: weight_col
-            !! cluster size of cluster at `col_idx`
-        real(real64), intent(in) :: new_weight
-            !! cluster size of new cluster
+        integer(int32), intent(in) :: size_A
+            !! cluster size of cluster at `idx_A`
+        integer(int32), intent(in) :: size_B
+            !! cluster size of cluster at `idx_B`
         integer(int32), intent(in) :: iteration_k
             !! iteration of current merge
 
         integer(int32) :: i_node
-        real(real64) :: new_dist
+        real(real64) :: new_dist, size_AB_real, new_dist_part_AC, new_dist_part_BC
 
         ! Merge distances
         ! Update merged nodes with arithmetic mean distances
-        ! Use column index for merged distances -> fill row_idx with infinity values
+        ! Use column index for merged distances -> fill idx_A with infinity values
         ! update bottom triangle
+        size_AB_real = real(size_B + size_A, real64)
         do i_node = 1, n_points
             if (distances(i_node, i_node) >= 0.0_real64) then
-                ! i_node < col_idx < row_idx -> fill rows in both
-                if (i_node < col_idx) then
-                    new_dist = (distances(row_idx, i_node) * weight_row + distances(col_idx, i_node) * weight_col) / new_weight
-                    distances(col_idx, i_node) = new_dist
-                    distances(row_idx, i_node) = ieee_value(1.0_real64, ieee_positive_inf)
-                ! col_idx <= i_node < row_idx -> fill col of col_idx, row of row_idx
-                else if (i_node < row_idx) then
-                    new_dist = (distances(row_idx, i_node) * weight_row + distances(i_node, col_idx) * weight_col) / new_weight
-                    distances(i_node, col_idx) = new_dist
-                    distances(row_idx, i_node) = ieee_value(1.0_real64, ieee_positive_inf)
-                ! col_idx < row_idx < i_node -> fill columns in both
-                else if (i_node > row_idx) then
-                    new_dist = (distances(i_node, row_idx) * weight_row + distances(i_node, col_idx) * weight_col) / new_weight
-                    distances(i_node, col_idx) = new_dist
-                    ! don't fill row_idx with infinity, as whole column will be marked inactive
+                ! i_node < idx_B < idx_A -> fill rows in both
+                if (i_node < idx_B) then
+                    new_dist_part_AC = distances(idx_A, i_node) * real(size_A, real64)
+                    new_dist_part_BC = distances(idx_B, i_node) * real(size_B, real64)
+                    new_dist = (new_dist_part_AC + new_dist_part_BC) / size_AB_real
+                    distances(idx_B, i_node) = new_dist
+                    distances(idx_A, i_node) = ieee_value(1.0_real64, ieee_positive_inf)
+                ! idx_B <= i_node < idx_A -> fill col of idx_B, row of idx_A
+                else if (i_node < idx_A) then
+                    new_dist_part_AC = distances(idx_A, i_node) * real(size_A, real64)
+                    new_dist_part_BC = distances(i_node, idx_B) * real(size_B, real64)
+                    new_dist = (new_dist_part_AC + new_dist_part_BC) / size_AB_real
+                    distances(i_node, idx_B) = new_dist
+                    distances(idx_A, i_node) = ieee_value(1.0_real64, ieee_positive_inf)
+                ! idx_B < idx_A < i_node -> fill columns in both
+                else if (i_node > idx_A) then
+                    new_dist_part_AC = distances(i_node, idx_A) * real(size_A, real64)
+                    new_dist_part_BC = distances(i_node, idx_B) * real(size_B, real64)
+                    new_dist = (new_dist_part_AC + new_dist_part_BC) / size_AB_real
+                    distances(i_node, idx_B) = new_dist
+                    ! don't fill idx_A with infinity, as whole column will be marked inactive
                 end if
             end if
         end do
 
+        call post_merge_distances_helper(distances, n_points, idx_A, idx_B, iteration_k)
+    end subroutine merge_distances_xPGMA_linkage_helper
+
+    pure subroutine merge_distances_ward_linkage_helper(distances, n_points, idx_A, idx_B, size_A, size_B, iteration_k, cluster_sizes, dist_AB)
+        integer(int32), intent(in) :: n_points
+            !! number of points to cluster
+        real(real64), dimension(n_points, n_points), intent(inout) :: distances
+            !! distance matrix, holding the distances between points
+        integer(int32), intent(in) :: idx_A
+            !! row index of min distance
+        integer(int32), intent(in) :: idx_B
+            !! column index of min distance
+        integer(int32), intent(in) :: size_A
+            !! cluster size of cluster at `idx_A`
+        integer(int32), intent(in) :: size_B
+            !! cluster size of cluster at `idx_B`
+        integer(int32), intent(in) :: iteration_k
+            !! iteration of current merge
+        integer(int32), dimension(n_points - 1), intent(in) :: cluster_sizes
+            !! size of cluster at iteration k, needed for ward algorithm
+        real(real64), intent(in) :: dist_AB
+            !! distance between cluster A and B
+
+        integer(int32) :: i_node, size_C, cluster_label_C
+        real(real64) :: new_dist, new_dist_part_AC, new_dist_part_BC, new_dist_part_AB, size_AC_real, size_BC_real, size_ABC_real
+
+        ! Merge distances
+        ! Update merged nodes with arithmetic mean distances
+        ! Use column index for merged distances -> fill idx_A with infinity values
+        ! update bottom triangle
+        do i_node = 1, n_points
+            if (distances(i_node, i_node) >= 0.0_real64) then
+                ! get number of leafs for current node/cluster
+                call get_cluster_data_hier_linkage_helper(distances, n_points, cluster_sizes, i_node, size_C, cluster_label_C)
+                size_AC_real = real(size_A + size_C, real64)
+                size_BC_real = real(size_B + size_C, real64)
+                size_ABC_real = real(size_A + size_B + size_C, real64)
+                new_dist_part_AB = dist_AB ** 2 * (real(size_C, real64) / size_ABC_real)
+
+                ! i_node < idx_B < idx_A -> fill rows in both
+                if (i_node < idx_B) then
+                    new_dist_part_AC = distances(idx_A, i_node) ** 2 * (size_AC_real / size_ABC_real)
+                    new_dist_part_BC = distances(idx_B, i_node) ** 2 * (size_BC_real / size_ABC_real)
+                    new_dist = sqrt(new_dist_part_AC + new_dist_part_BC - new_dist_part_AB)
+                    distances(idx_B, i_node) = new_dist
+                    distances(idx_A, i_node) = ieee_value(1.0_real64, ieee_positive_inf)
+                ! idx_B <= i_node < idx_A -> fill col of idx_B, row of idx_A
+                else if (i_node < idx_A) then
+                    new_dist_part_AC = distances(idx_A, i_node) ** 2 * (size_AC_real / size_ABC_real)
+                    new_dist_part_BC = distances(i_node, idx_B) ** 2 * (size_BC_real / size_ABC_real)
+                    new_dist = sqrt(new_dist_part_AC + new_dist_part_BC - new_dist_part_AB)
+                    distances(i_node, idx_B) = new_dist
+                    distances(idx_A, i_node) = ieee_value(1.0_real64, ieee_positive_inf)
+                ! idx_B < idx_A < i_node -> fill columns in both
+                else if (i_node > idx_A) then
+                    new_dist_part_AC = distances(i_node, idx_A) ** 2 * (size_AC_real / size_ABC_real)
+                    new_dist_part_BC = distances(i_node, idx_B) ** 2 * (size_BC_real / size_ABC_real)
+                    new_dist = sqrt(new_dist_part_AC + new_dist_part_BC - new_dist_part_AB)
+                    distances(i_node, idx_B) = new_dist
+                    ! don't fill idx_A with infinity, as whole column will be marked inactive
+                end if
+            end if
+        end do
+
+        call post_merge_distances_helper(distances, n_points, idx_A, idx_B, iteration_k)
+    end subroutine merge_distances_ward_linkage_helper
+
+    pure subroutine post_merge_distances_helper(distances, n_points, idx_A, idx_B, iteration_k)
+        integer(int32), intent(in) :: n_points
+            !! number of points to cluster
+        real(real64), dimension(n_points, n_points), intent(out) :: distances
+            !! distance matrix, holding the distances between points
+        integer(int32), intent(in) :: idx_A
+            !! row index of min distance
+        integer(int32), intent(in) :: idx_B
+            !! column index of min distance
+        integer(int32), intent(in) :: iteration_k
+            !! iteration of current merge
+
         ! Update index and cluster size
-        distances(col_idx, col_idx) = real(iteration_k, real64)
-        distances(row_idx, col_idx) = ieee_value(1.0_real64, ieee_positive_inf) ! self distance of cluster should never be minimum
-        distances(row_idx, row_idx) = -1.0_real64 ! mark column inactive
-    end subroutine merge_distances_hier_linkage_helper
+        distances(idx_B, idx_B) = real(iteration_k, real64)
+        distances(idx_A, idx_B) = ieee_value(1.0_real64, ieee_positive_inf) ! column becomes new cluster -> old cluster must not be future minimum
+        distances(idx_A, idx_A) = -1.0_real64 ! mark column inactive
+    end subroutine post_merge_distances_helper
 
     !> Helper routine to find the indices of the minimum value a distance matrix.
     !| 
