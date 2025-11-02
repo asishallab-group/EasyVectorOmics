@@ -28,7 +28,7 @@ contains
         type(test_case) :: all_tests(6)
 
         all_tests(1) = test_case("test_tox_clustering_k_means_assign_cluster_helper", test_k_means_assign_cluster_helper)
-        all_tests(2) = test_case("test_tox_clustering_k_means_recompute_cluster_centroids", test_k_means_recompute_cluster_centroids)
+        all_tests(2) = test_case("test_tox_clustering_k_means_recompute_cluster_centroids_helper", test_k_means_recompute_cluster_centroids_helper)
         all_tests(3) = test_case("test_tox_clustering_k_means_clustering", test_k_means_clustering)
         all_tests(4) = test_case("test_tox_clustering_linkage_helpers_xPGMA", test_linkage_helpers_xPGMA)
         all_tests(5) = test_case("test_tox_clustering_linkage_helpers_ward", test_linkage_helpers_ward)
@@ -415,7 +415,7 @@ contains
         call assert_equal_int(label_counts(2), 3, "test_k_means_clustering: label_counts(2) mismatch")
     end subroutine test_k_means_clustering
 
-    subroutine test_k_means_recompute_cluster_centroids()
+    subroutine test_k_means_recompute_cluster_centroids_helper()
         integer(int32), parameter :: n_dims = 2, n_points = 4, n_clusters = 3
         real(real64) :: data_points(n_dims, n_points)
         real(real64) :: centroids(n_dims, n_clusters), expected_centroids(n_dims, n_clusters)
@@ -443,19 +443,19 @@ contains
         centroids = -999.0_real64
 
         ! Call routine
-        call k_means_recompute_cluster_centroids(data_points, n_points, n_dims, centroids, n_clusters, labels, label_counts)
+        call k_means_recompute_cluster_centroids_helper(data_points, n_points, n_dims, centroids, n_clusters, labels, label_counts)
 
         ! Validate centroids
-        call assert_equal_array_real(centroids(:,1), expected_centroids(:,1), n_dims, TOL, "test_k_means_recompute_cluster_centroids: centroid(:,1) mismatch")
-        call assert_equal_array_real(centroids(:,2), expected_centroids(:,2), n_dims, TOL, "test_k_means_recompute_cluster_centroids: centroid(:,2) mismatch")
-        call assert_equal_array_real(centroids(:,3), expected_centroids(:,3), n_dims, TOL, "test_k_means_recompute_cluster_centroids: centroid(:,3) should be zero")
+        call assert_equal_array_real(centroids(:,1), expected_centroids(:,1), n_dims, TOL, "test_k_means_recompute_cluster_centroids_helper: centroid(:,1) mismatch")
+        call assert_equal_array_real(centroids(:,2), expected_centroids(:,2), n_dims, TOL, "test_k_means_recompute_cluster_centroids_helper: centroid(:,2) mismatch")
+        call assert_equal_array_real(centroids(:,3), expected_centroids(:,3), n_dims, TOL, "test_k_means_recompute_cluster_centroids_helper: centroid(:,3) should be zero")
 
         ! Validate label counts
-        call assert_equal_int(label_counts(1), 2, "test_k_means_recompute_cluster_centroids: label_counts(1) mismatch")
-        call assert_equal_int(label_counts(2), 2, "test_k_means_recompute_cluster_centroids: label_counts(2) mismatch")
-        call assert_equal_int(label_counts(3), 0, "test_k_means_recompute_cluster_centroids: label_counts(3) should be zero")
+        call assert_equal_int(label_counts(1), 2, "test_k_means_recompute_cluster_centroids_helper: label_counts(1) mismatch")
+        call assert_equal_int(label_counts(2), 2, "test_k_means_recompute_cluster_centroids_helper: label_counts(2) mismatch")
+        call assert_equal_int(label_counts(3), 0, "test_k_means_recompute_cluster_centroids_helper: label_counts(3) should be zero")
 
-    end subroutine test_k_means_recompute_cluster_centroids
+    end subroutine test_k_means_recompute_cluster_centroids_helper
 
     subroutine test_k_means_assign_cluster_helper()
         integer(int32), parameter :: n_dims = 2, n_points = 3, n_clusters = 2

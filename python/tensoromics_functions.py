@@ -2044,3 +2044,75 @@ def tox_k_means_clustering(data_points, centroids, max_iter):
         "labels": labels,
         "label_counts": label_counts
     }
+
+
+def tox_linkage_clustering(distances, method):
+    """
+    Wrapper for linkage_clustering_c: performs hierarchical clustering.
+
+    Args:
+        distances (np.ndarray): 2D array of shape (n_points, n_points), symmetric distance matrix
+        method (str): linkage method, one of "average", "weighted", "ward"
+
+    Returns:
+        dict: {
+            "merge_i": np.ndarray of shape (n_points - 1),
+            "merge_j": np.ndarray of shape (n_points - 1),
+            "heights": np.ndarray of shape (n_points - 1),
+            "cluster_sizes": np.ndarray of shape (n_points - 1)
+        }
+    """
+    import numpy as np
+    import ctypes
+
+    distances = np.asfortranarray(distances, dtype=np.float64)
+    n_points = distances.shape[0]
+
+    if distances.shape[1] != n_points:
+        raise ValueError("tox_linkage_clustering: distances must be square")
+
+    if method not in ("average", "weighted", "ward"):
+        raise ValueError(f"tox_linkage_clustering: invalid method '{method}'")
+
+    merge_i = np.empty(n_points - 1, dtype=np.int32)
+    merge_j = np.empty(n_points - 1, dtype=np.int32)
+    heights = np.empty(n_points - 1, dtype=np.float64)
+    cluster_sizes = np.empty(n_points - 1, dtype=np.int32)
+    ierr = ctypes.c_int(0)
+
+    linkage_clustering_c = lib.linkage_clustering_c
+    linkage_clustering_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+        ctypes.c_char_p,
+        ctypes.POINTER(ctypes.c_int)
+    ]
+    linkage_clustering_c.restype = None
+
+    linkage_clustering_c(
+        distances,
+        ctypes.byref(ctypes.c_int(n_points)),
+        merge_i,
+        merge_j,
+        heights,
+        cluster_sizes,
+        ctypes.c_char_p(method.encode("utf-8")),
+        ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+
+    _readonly(merge_i)
+    _readonly(merge_j)
+    _readonly(heights)
+    _readonly(cluster_sizes)
+
+    return {
+        "merge_i": merge_i,
+        "merge_j": merge_j,
+        "heights": heights,
+        "cluster_sizes": cluster_sizes
+    }

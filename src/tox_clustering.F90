@@ -109,12 +109,12 @@ contains
             ! if the assignments did not change, the clustering is done
             if (is_err(ierr) .or. .not. labels_changed) exit
 
-            call k_means_recompute_cluster_centroids(data_points, n_points, n_dims, centroids, n_clusters, labels, label_counts)
+            call k_means_recompute_cluster_centroids_helper(data_points, n_points, n_dims, centroids, n_clusters, labels, label_counts)
         end do
     end subroutine k_means_clustering
 
     !> Helper to recompute the centroids in k-means by taking the mean of assigned points
-    pure subroutine k_means_recompute_cluster_centroids(data_points, n_points, n_dims, centroids, n_clusters, labels, label_counts)
+    pure subroutine k_means_recompute_cluster_centroids_helper(data_points, n_points, n_dims, centroids, n_clusters, labels, label_counts)
         integer(int32), intent(in) :: n_clusters
             !! number (`k`) of clusters
         integer(int32), intent(in) :: n_points
@@ -128,11 +128,11 @@ contains
             !! The centroids should be unique. This is not checked in this routine.
             !!
             !! The final values will be the final centroids of the clusters
-        integer(int32), dimension(n_points), intent(out) :: labels
+        integer(int32), dimension(n_points), intent(in) :: labels
             !! array of labels, each index corresponds to the respective point's index, so first label is first point's label.
             !!
             !! each label is the index of its related cluster -> `1<=label<=n_clusters=k`
-        integer(int32), dimension(n_clusters), intent(out) :: label_counts
+        integer(int32), dimension(n_clusters), intent(in) :: label_counts
             !! holds the number of points having the respective label assigned
     
         integer(int32) :: i_point, label, i_dim
@@ -144,7 +144,7 @@ contains
                 centroids(i_dim, label) = centroids(i_dim, label) + data_points(i_dim, i_point) / real(max(label_counts(label), 1_int32), real64)
             end do
         end do
-    end subroutine k_means_recompute_cluster_centroids
+    end subroutine k_means_recompute_cluster_centroids_helper
 
     !> Helper routine to assign a cluster's label to a point in k-means
     pure subroutine k_means_assign_cluster_helper(i_point, n_clusters, data_points, n_points, n_dims, centroids, label)
@@ -513,3 +513,67 @@ pure subroutine k_means_clustering_c(n_clusters, data_points, n_points, n_dims, 
 
     call k_means_clustering(n_clusters, data_points, n_points, n_dims, centroids, labels, label_counts, ierr, max_iterations)
 end subroutine k_means_clustering_c
+
+!> C-compatible wrapper for linkage_clustering
+subroutine linkage_clustering_c(distances, n_points, merge_i, merge_j, heights, cluster_sizes, method, ierr) bind(C, name="linkage_clustering_c")
+    use tox_clustering, only: linkage_clustering, METHOD_WARD, METHOD_AVERAGE, METHOD_WEIGHTED
+    use, intrinsic :: iso_c_binding, only: c_int, c_double, c_char
+    use tox_errors, only: is_err, set_err, ERR_INVALID_INPUT
+    use tox_conversions, only: c_char_1d_as_string
+    M_USE_NULL_VALIDATION
+    implicit none
+
+    integer(c_int), intent(in), target :: n_points
+        !! number of points to cluster
+    real(c_double), dimension(n_points, n_points), intent(inout), target :: distances
+        !! symmetric distance matrix, holding the positive distances between points. Distance of X->X is always zero.
+        !!
+        !! @note
+        !! This subroutine operates in-place in the bottom triangle of the distance matrix and recovers it using the top triangle once done or on error.
+        !! So there is no need to copy an existing distance matrix, just pass the original.
+        !! @endnote
+    integer(c_int), dimension(n_points - 1), intent(out), target :: merge_i
+        !! holds cluster labels of the merged node pair at iteration k -> positives relate to leafs/data point indices, negatives to inner nodes
+    integer(c_int), dimension(n_points - 1), intent(out), target :: merge_j
+        !! holds cluster labels of the merged node pair at iteration k -> positives relate to leafs/data point indices, negatives to inner nodes
+    real(c_double), dimension(n_points - 1), intent(out), target :: heights
+        !! height of the shorter branch of the merge, e.g. if (A,B)+(C) merges to ((A,B),C), the branch to (A,B) is shorter
+    integer(c_int), dimension(n_points - 1), intent(out), target :: cluster_sizes
+        !! size of cluster at iteration k
+    character(kind=c_char, len=1), dimension(8), intent(in), target :: method
+        !! used algorithm
+        !!
+        !! |      Method      |      Value     |
+        !! |------------------|----------------|
+        !! | Average / UPGMA  |   "average"    |
+        !! | Weighted / WPGMA |   "weighted"   |
+        !! |      Ward        |     "ward"     |
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    character(len=:), allocatable :: method_f
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_points)
+    M_CHECK_NON_NULL(distances)
+    M_CHECK_NON_NULL(merge_i)
+    M_CHECK_NON_NULL(merge_j)
+    M_CHECK_NON_NULL(heights)
+    M_CHECK_NON_NULL(cluster_sizes)
+    M_CHECK_NON_NULL(method)
+
+    call c_char_1d_as_string(method, method_f, ierr)
+    if (is_err(ierr)) return
+
+    select case (trim(method_f))
+        case ("average")
+            call linkage_clustering(distances, n_points, merge_i, merge_j, heights, cluster_sizes, METHOD_AVERAGE, ierr)
+        case ("weighted")
+            call linkage_clustering(distances, n_points, merge_i, merge_j, heights, cluster_sizes, METHOD_WEIGHTED, ierr)
+        case ("ward")
+            call linkage_clustering(distances, n_points, merge_i, merge_j, heights, cluster_sizes, METHOD_WARD, ierr)
+        case default
+            call set_err(ierr, ERR_INVALID_INPUT)
+    end select
+
+end subroutine linkage_clustering_c
