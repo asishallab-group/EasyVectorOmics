@@ -185,7 +185,7 @@ contains
         end do
     end subroutine k_means_assign_cluster_helper
 
-    pure subroutine hierarchical_linkage(distances, n_points, merge_i, merge_j, heights, cluster_sizes, method, ierr)
+    pure subroutine linkage_clustering(distances, n_points, merge_i, merge_j, heights, cluster_sizes, method, ierr)
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
         real(real64), dimension(n_points, n_points), intent(inout) :: distances
@@ -231,9 +231,9 @@ contains
             heights(i) = dist_AB
 
             ! Get Weight and cluster index/label
-            call get_cluster_data_hier_linkage_helper(distances, n_points, cluster_sizes, idx_B, size_B, cluster_label)
+            call get_cluster_data_linkage_helper(distances, n_points, cluster_sizes, idx_B, size_B, cluster_label)
             merge_j(i) = cluster_label
-            call get_cluster_data_hier_linkage_helper(distances, n_points, cluster_sizes, idx_A, size_A, cluster_label)
+            call get_cluster_data_linkage_helper(distances, n_points, cluster_sizes, idx_A, size_A, cluster_label)
             merge_i(i) = cluster_label
 
             cluster_sizes(i) = size_B + size_A
@@ -249,7 +249,7 @@ contains
         end do
 
         call recover_distance_matrix_helper(distances, n_points)
-    end subroutine hierarchical_linkage
+    end subroutine linkage_clustering
 
     pure subroutine recover_distance_matrix_helper(distances, n_points)
         integer(int32), intent(in) :: n_points
@@ -269,7 +269,7 @@ contains
         end do
     end subroutine recover_distance_matrix_helper
 
-    pure subroutine get_cluster_data_hier_linkage_helper(distances, n_points, cluster_sizes, idx, weight, cluster_label)
+    pure subroutine get_cluster_data_linkage_helper(distances, n_points, cluster_sizes, idx, weight, cluster_label)
         integer(int32), intent(in) :: n_points
             !! number of points to cluster
         real(real64), dimension(n_points, n_points), intent(in) :: distances
@@ -293,7 +293,7 @@ contains
             weight = cluster_sizes(iteration_k)
             cluster_label = -iteration_k
         end if   
-    end subroutine get_cluster_data_hier_linkage_helper
+    end subroutine get_cluster_data_linkage_helper
 
     pure subroutine merge_distances_xPGMA_linkage_helper(distances, n_points, idx_A, idx_B, size_A, size_B, iteration_k)
         integer(int32), intent(in) :: n_points
@@ -379,7 +379,7 @@ contains
         do i_node = 1, n_points
             if (distances(i_node, i_node) >= 0.0_real64) then
                 ! get number of leafs for current node/cluster
-                call get_cluster_data_hier_linkage_helper(distances, n_points, cluster_sizes, i_node, size_C, cluster_label_C)
+                call get_cluster_data_linkage_helper(distances, n_points, cluster_sizes, i_node, size_C, cluster_label_C)
                 size_AC_real = real(size_A + size_C, real64)
                 size_BC_real = real(size_B + size_C, real64)
                 size_ABC_real = real(size_A + size_B + size_C, real64)

@@ -30,12 +30,12 @@ contains
         all_tests(1) = test_case("test_tox_clustering_k_means_assign_cluster_helper", test_k_means_assign_cluster_helper)
         all_tests(2) = test_case("test_tox_clustering_k_means_recompute_cluster_centroids", test_k_means_recompute_cluster_centroids)
         all_tests(3) = test_case("test_tox_clustering_k_means_clustering", test_k_means_clustering)
-        all_tests(4) = test_case("test_tox_clustering_hierarchical_linkage_helpers_xPGMA", test_hierarchical_linkage_helpers_xPGMA)
-        all_tests(5) = test_case("test_tox_clustering_hierarchical_linkage_helpers_ward", test_hierarchical_linkage_helpers_ward)
-        all_tests(6) = test_case("test_tox_clustering_hierarchical_methods", test_hierarchical_methods)
+        all_tests(4) = test_case("test_tox_clustering_linkage_helpers_xPGMA", test_linkage_helpers_xPGMA)
+        all_tests(5) = test_case("test_tox_clustering_linkage_helpers_ward", test_linkage_helpers_ward)
+        all_tests(6) = test_case("test_tox_clustering_linkage_methods", test_linkage_methods)
     end function get_all_tests
 
-    subroutine test_hierarchical_linkage_helpers_ward()
+    subroutine test_linkage_helpers_ward()
         integer(int32), parameter :: n_points = 5
         real(real64) :: dist(n_points, n_points)
         real(real64) :: expected_dist(n_points, n_points)
@@ -67,11 +67,11 @@ contains
         ], shape(dist), order=[2,1])
 
         call get_min_distance_indices_helper(dist, n_points, row_idx, col_idx, min_dist)
-        call assert_equal_int(col_idx, 1_int32, "test_hierarchical_linkage_helpers_ward: first merge, wrong min column index")
-        call assert_equal_int(row_idx, 2_int32, "test_hierarchical_linkage_helpers_ward: first merge, wrong min row index")
-        call assert_equal_real(min_dist, 17.0_real64, TOL, "test_hierarchical_linkage_helpers_ward: first merge, wrong min value")
+        call assert_equal_int(col_idx, 1_int32, "test_linkage_helpers_ward: first merge, wrong min column index")
+        call assert_equal_int(row_idx, 2_int32, "test_linkage_helpers_ward: first merge, wrong min row index")
+        call assert_equal_real(min_dist, 17.0_real64, TOL, "test_linkage_helpers_ward: first merge, wrong min value")
         call merge_distances_ward_linkage_helper(dist, n_points, row_idx, col_idx, 1_int32, 1_int32, 1_int32, cluster_sizes, min_dist)
-        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_hierarchical_linkage_helpers_ward: first merge")
+        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_linkage_helpers_ward: first merge")
 
         expected_dist = reshape([ &
             2.0_real64,  17.0_real64, 21.0_real64, 31.0_real64, 23.0_real64, &
@@ -83,11 +83,11 @@ contains
         cluster_sizes = [2, 0, 0, 0]
 
         call get_min_distance_indices_helper(dist, n_points, row_idx, col_idx, min_dist)
-        call assert_equal_int(col_idx, 1_int32, "test_hierarchical_linkage_helpers_ward: second merge, wrong min column index")
-        call assert_equal_int(row_idx, 5_int32, "test_hierarchical_linkage_helpers_ward: second merge, wrong min row index")
-        call assert_equal_real(min_dist, 23.459184413217212_real64, TOL, "test_hierarchical_linkage_helpers_ward: second merge, wrong min value")
+        call assert_equal_int(col_idx, 1_int32, "test_linkage_helpers_ward: second merge, wrong min column index")
+        call assert_equal_int(row_idx, 5_int32, "test_linkage_helpers_ward: second merge, wrong min row index")
+        call assert_equal_real(min_dist, 23.459184413217212_real64, TOL, "test_linkage_helpers_ward: second merge, wrong min value")
         call merge_distances_ward_linkage_helper(dist, n_points, row_idx, col_idx, 1_int32, 2_int32, 2_int32, cluster_sizes, min_dist)
-        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_hierarchical_linkage_helpers_ward: second merge")
+        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_linkage_helpers_ward: second merge")
 
         expected_dist = reshape([ &
              2.0_real64, 17.0_real64, 21.0_real64, 31.0_real64, 23.0_real64, &
@@ -99,11 +99,11 @@ contains
         cluster_sizes = [2, 3, 0, 0]
 
         call get_min_distance_indices_helper(dist, n_points, row_idx, col_idx, min_dist)
-        call assert_equal_int(col_idx, 3_int32, "test_hierarchical_linkage_helpers_ward: third merge, wrong min column index")
-        call assert_equal_int(row_idx, 4_int32, "test_hierarchical_linkage_helpers_ward: third merge, wrong min row index")
-        call assert_equal_real(min_dist, 28.0_real64, TOL, "test_hierarchical_linkage_helpers_ward: third merge, wrong min value")
+        call assert_equal_int(col_idx, 3_int32, "test_linkage_helpers_ward: third merge, wrong min column index")
+        call assert_equal_int(row_idx, 4_int32, "test_linkage_helpers_ward: third merge, wrong min row index")
+        call assert_equal_real(min_dist, 28.0_real64, TOL, "test_linkage_helpers_ward: third merge, wrong min value")
         call merge_distances_ward_linkage_helper(dist, n_points, row_idx, col_idx, 1_int32, 1_int32, 3_int32, cluster_sizes, min_dist)
-        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_hierarchical_linkage_helpers_ward: third merge")
+        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_linkage_helpers_ward: third merge")
 
         expected_dist = reshape([ &
              4.0_real64, 17.0_real64, 21.0_real64, 31.0_real64, 23.0_real64, &
@@ -115,14 +115,14 @@ contains
         cluster_sizes = [2, 3, 5, 0]
 
         call get_min_distance_indices_helper(dist, n_points, row_idx, col_idx, min_dist)
-        call assert_equal_int(col_idx, 1_int32, "test_hierarchical_linkage_helpers_ward: last merge, wrong min column index")
-        call assert_equal_int(row_idx, 3_int32, "test_hierarchical_linkage_helpers_ward: last merge, wrong min row index")
-        call assert_equal_real(min_dist, 43.87558166755931_real64, TOL, "test_hierarchical_linkage_helpers_ward: last merge, wrong min value")
+        call assert_equal_int(col_idx, 1_int32, "test_linkage_helpers_ward: last merge, wrong min column index")
+        call assert_equal_int(row_idx, 3_int32, "test_linkage_helpers_ward: last merge, wrong min row index")
+        call assert_equal_real(min_dist, 43.87558166755931_real64, TOL, "test_linkage_helpers_ward: last merge, wrong min value")
         call merge_distances_ward_linkage_helper(dist, n_points, row_idx, col_idx, 2_int32, 3_int32, 4_int32, cluster_sizes, min_dist)
-        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_hierarchical_linkage_helpers_ward: last merge")
-    end subroutine test_hierarchical_linkage_helpers_ward
+        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_linkage_helpers_ward: last merge")
+    end subroutine test_linkage_helpers_ward
 
-    subroutine test_hierarchical_linkage_helpers_xPGMA()
+    subroutine test_linkage_helpers_xPGMA()
         integer(int32), parameter :: n_points = 5
         real(real64) :: dist(n_points, n_points)
         real(real64) :: expected_dist(n_points, n_points)
@@ -152,11 +152,11 @@ contains
         ], shape(dist), order=[2,1])
 
         call get_min_distance_indices_helper(dist, n_points, row_idx, col_idx, min_dist)
-        call assert_equal_int(col_idx, 1_int32, "test_hierarchical_linkage_helpers_xPGMA: first merge, wrong min column index")
-        call assert_equal_int(row_idx, 2_int32, "test_hierarchical_linkage_helpers_xPGMA: first merge, wrong min row index")
-        call assert_equal_real(min_dist, 17.0_real64, TOL, "test_hierarchical_linkage_helpers_xPGMA: first merge, wrong min value")
+        call assert_equal_int(col_idx, 1_int32, "test_linkage_helpers_xPGMA: first merge, wrong min column index")
+        call assert_equal_int(row_idx, 2_int32, "test_linkage_helpers_xPGMA: first merge, wrong min row index")
+        call assert_equal_real(min_dist, 17.0_real64, TOL, "test_linkage_helpers_xPGMA: first merge, wrong min value")
         call merge_distances_xPGMA_linkage_helper(dist, n_points, row_idx, col_idx, 1_int32, 1_int32, 1_int32)
-        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_hierarchical_linkage_helpers_xPGMA: first merge")
+        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_linkage_helpers_xPGMA: first merge")
 
         expected_dist = reshape([ &
             2.0_real64,  17.0_real64, 21.0_real64, 31.0_real64, 23.0_real64, &
@@ -167,11 +167,11 @@ contains
         ], shape(dist), order=[2,1])
 
         call get_min_distance_indices_helper(dist, n_points, row_idx, col_idx, min_dist)
-        call assert_equal_int(col_idx, 1_int32, "test_hierarchical_linkage_helpers_xPGMA: second merge, wrong min column index")
-        call assert_equal_int(row_idx, 5_int32, "test_hierarchical_linkage_helpers_xPGMA: second merge, wrong min row index")
-        call assert_equal_real(min_dist, 22.0_real64, TOL, "test_hierarchical_linkage_helpers_xPGMA: second merge, wrong min value")
+        call assert_equal_int(col_idx, 1_int32, "test_linkage_helpers_xPGMA: second merge, wrong min column index")
+        call assert_equal_int(row_idx, 5_int32, "test_linkage_helpers_xPGMA: second merge, wrong min row index")
+        call assert_equal_real(min_dist, 22.0_real64, TOL, "test_linkage_helpers_xPGMA: second merge, wrong min value")
         call merge_distances_xPGMA_linkage_helper(dist, n_points, row_idx, col_idx, 1_int32, 2_int32, 2_int32)
-        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_hierarchical_linkage_helpers_xPGMA: second merge")
+        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_linkage_helpers_xPGMA: second merge")
 
         expected_dist = reshape([ &
              2.0_real64, 17.0_real64, 21.0_real64, 31.0_real64, 23.0_real64, &
@@ -182,11 +182,11 @@ contains
         ], shape(dist), order=[2,1])
 
         call get_min_distance_indices_helper(dist, n_points, row_idx, col_idx, min_dist)
-        call assert_equal_int(col_idx, 3_int32, "test_hierarchical_linkage_helpers_xPGMA: third merge, wrong min column index")
-        call assert_equal_int(row_idx, 4_int32, "test_hierarchical_linkage_helpers_xPGMA: third merge, wrong min row index")
-        call assert_equal_real(min_dist, 28.0_real64, TOL, "test_hierarchical_linkage_helpers_xPGMA: third merge, wrong min value")
+        call assert_equal_int(col_idx, 3_int32, "test_linkage_helpers_xPGMA: third merge, wrong min column index")
+        call assert_equal_int(row_idx, 4_int32, "test_linkage_helpers_xPGMA: third merge, wrong min row index")
+        call assert_equal_real(min_dist, 28.0_real64, TOL, "test_linkage_helpers_xPGMA: third merge, wrong min value")
         call merge_distances_xPGMA_linkage_helper(dist, n_points, row_idx, col_idx, 1_int32, 1_int32, 3_int32)
-        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_hierarchical_linkage_helpers_xPGMA: third merge")
+        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_linkage_helpers_xPGMA: third merge")
 
         expected_dist = reshape([ &
              4.0_real64, 17.0_real64, 21.0_real64, 31.0_real64, 23.0_real64, &
@@ -197,14 +197,14 @@ contains
         ], shape(dist), order=[2,1])
 
         call get_min_distance_indices_helper(dist, n_points, row_idx, col_idx, min_dist)
-        call assert_equal_int(col_idx, 1_int32, "test_hierarchical_linkage_helpers_xPGMA: last merge, wrong min column index")
-        call assert_equal_int(row_idx, 3_int32, "test_hierarchical_linkage_helpers_xPGMA: last merge, wrong min row index")
-        call assert_equal_real(min_dist, 33.0_real64, TOL, "test_hierarchical_linkage_helpers_xPGMA: last merge, wrong min value")
+        call assert_equal_int(col_idx, 1_int32, "test_linkage_helpers_xPGMA: last merge, wrong min column index")
+        call assert_equal_int(row_idx, 3_int32, "test_linkage_helpers_xPGMA: last merge, wrong min row index")
+        call assert_equal_real(min_dist, 33.0_real64, TOL, "test_linkage_helpers_xPGMA: last merge, wrong min value")
         call merge_distances_xPGMA_linkage_helper(dist, n_points, row_idx, col_idx, 2_int32, 3_int32, 4_int32)
-        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_hierarchical_linkage_helpers_xPGMA: last merge")
-    end subroutine test_hierarchical_linkage_helpers_xPGMA
+        call assert_equal_array_real(dist, expected_dist, n_points ** 2, TOL, "test_linkage_helpers_xPGMA: last merge")
+    end subroutine test_linkage_helpers_xPGMA
 
-    subroutine test_hierarchical_methods
+    subroutine test_linkage_methods
         integer(int32), parameter :: max_n_points = 5
         integer(int32) :: n_points
         real(real64), allocatable :: orig_dist(:, :), passed_dist(:, :)
@@ -261,16 +261,16 @@ contains
             ], [5,5])
             passed_dist = orig_dist
 
-            call hierarchical_linkage(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, methods(i_method), ierr)
-            call assert_equal_int(ierr, ERR_OK, "test_hierarchical_methods: "//method_name//": reference case ierr")
-            call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_hierarchical_methods: "//method_name//": reference output matrix doesn't match input matrix")
+            call linkage_clustering(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, methods(i_method), ierr)
+            call assert_equal_int(ierr, ERR_OK, "test_linkage_methods: "//method_name//": reference case ierr")
+            call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_linkage_methods: "//method_name//": reference output matrix doesn't match input matrix")
             do i = 1, n_points - 1
-                call assert_equal_int(min(merge_i(i), merge_j(i)), expected_merge_i(i, i_method), "test_hierarchical_methods: "//method_name//": reference merge_i")
-                call assert_equal_int(max(merge_i(i), merge_j(i)), expected_merge_j(i, i_method), "test_hierarchical_methods: "//method_name//": reference merge_j")
-                call assert_not_equal_int(merge_i(i), merge_j(i), "test_hierarchical_methods: "//method_name//": reference merge_j")
+                call assert_equal_int(min(merge_i(i), merge_j(i)), expected_merge_i(i, i_method), "test_linkage_methods: "//method_name//": reference merge_i")
+                call assert_equal_int(max(merge_i(i), merge_j(i)), expected_merge_j(i, i_method), "test_linkage_methods: "//method_name//": reference merge_j")
+                call assert_not_equal_int(merge_i(i), merge_j(i), "test_linkage_methods: "//method_name//": reference merge_j")
             end do
-            call assert_equal_array_real(heights, expected_heights(:, i_method), size(expected_heights, 1, kind=int32), TOL, "test_hierarchical_methods: "//method_name//": reference heights")
-            call assert_equal_array_int(cluster_sizes, expected_cluster_sizes(:, i_method), size(expected_cluster_sizes, 1, kind=int32), "test_hierarchical_methods: "//method_name//": reference cluster_sizes")
+            call assert_equal_array_real(heights, expected_heights(:, i_method), size(expected_heights, 1, kind=int32), TOL, "test_linkage_methods: "//method_name//": reference heights")
+            call assert_equal_array_int(cluster_sizes, expected_cluster_sizes(:, i_method), size(expected_cluster_sizes, 1, kind=int32), "test_linkage_methods: "//method_name//": reference cluster_sizes")
 
             ! -------------------------------
             ! Case 2: Equal distances
@@ -288,10 +288,10 @@ contains
             ], [4,4])
             passed_dist = orig_dist
 
-            call hierarchical_linkage(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, methods(i_method), ierr)
-            call assert_equal_int(ierr, ERR_OK, "test_hierarchical_methods: "//method_name//": equal-distance case ierr")
-            call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_hierarchical_methods: "//method_name//": equal-distance output matrix doesn't match input matrix")
-            call assert_equal_array_real(heights, expected_heights(:, i_method), size(expected_heights, 1, kind=int32), TOL, "test_hierarchical_methods: "//method_name//": equal-distance heights")
+            call linkage_clustering(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, methods(i_method), ierr)
+            call assert_equal_int(ierr, ERR_OK, "test_linkage_methods: "//method_name//": equal-distance case ierr")
+            call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_linkage_methods: "//method_name//": equal-distance output matrix doesn't match input matrix")
+            call assert_equal_array_real(heights, expected_heights(:, i_method), size(expected_heights, 1, kind=int32), TOL, "test_linkage_methods: "//method_name//": equal-distance heights")
 
             ! -------------------------------
             ! Case 3: Two points
@@ -307,10 +307,10 @@ contains
             ], [2,2])
             passed_dist = orig_dist
 
-            call hierarchical_linkage(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, methods(i_method), ierr)
-            call assert_equal_int(ierr, ERR_OK, "test_hierarchical_methods: "//method_name//": two-point case ierr")
-            call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_hierarchical_methods: "//method_name//": two-point output matrix doesn't match input matrix")
-            call assert_equal_array_real(heights, expected_heights(:, i_method), size(expected_heights, 1, kind=int32), TOL, "test_hierarchical_methods: "//method_name//": two-point height")
+            call linkage_clustering(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, methods(i_method), ierr)
+            call assert_equal_int(ierr, ERR_OK, "test_linkage_methods: "//method_name//": two-point case ierr")
+            call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_linkage_methods: "//method_name//": two-point output matrix doesn't match input matrix")
+            call assert_equal_array_real(heights, expected_heights(:, i_method), size(expected_heights, 1, kind=int32), TOL, "test_linkage_methods: "//method_name//": two-point height")
 
             ! -------------------------------
             ! Case 4: Single point
@@ -324,8 +324,8 @@ contains
             ], [1,1])
             passed_dist = orig_dist
 
-            call hierarchical_linkage(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, methods(i_method), ierr)
-            call assert_equal_int(ierr, ERR_OK, "test_hierarchical_methods: "//method_name//": single-point case ierr")
+            call linkage_clustering(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, methods(i_method), ierr)
+            call assert_equal_int(ierr, ERR_OK, "test_linkage_methods: "//method_name//": single-point case ierr")
 
             ! -------------------------------
             ! Case 5: NaN in distance matrix
@@ -341,11 +341,11 @@ contains
             ], [3,3])
             passed_dist = orig_dist
 
-            call hierarchical_linkage(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, methods(i_method), ierr)
-            call assert_equal_int(ierr, ERR_NAN_INF, "test_hierarchical_methods: "//method_name//": NaN case should trigger ERR_NAN_INF")
-            call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_hierarchical_methods: "//method_name//": NaN case should output matrix doesn't match input matrix")
+            call linkage_clustering(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, methods(i_method), ierr)
+            call assert_equal_int(ierr, ERR_NAN_INF, "test_linkage_methods: "//method_name//": NaN case should trigger ERR_NAN_INF")
+            call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_linkage_methods: "//method_name//": NaN case should output matrix doesn't match input matrix")
         end do
-    end subroutine test_hierarchical_methods
+    end subroutine test_linkage_methods
 
     subroutine test_k_means_clustering()
         integer(int32), parameter :: n_dims = 2, n_points = 4, n_clusters = 2
