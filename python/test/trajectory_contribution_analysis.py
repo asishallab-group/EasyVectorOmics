@@ -8,13 +8,17 @@ import sys
 import os
 from math import pi as PI
 
+os.environ['GFORTRAN_UNBUFFERED_ALL'] = '1'
+
 # Add parent directory to path to import tensoromics_functions
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from tensoromics_functions import (
     tox_trajectory_contribution,
     tox_spike_contribution,
     tox_calc_contributions,
-    tox_calc_contributions_expert
+    tox_calc_contributions_expert,
+    tox_process_trajectories,
+    tox_process_trajectories_flat
 )
 
 # Constants
@@ -116,6 +120,157 @@ def test_tox_calc_contributions():
 
     print("✅ Both tox_calc_contributions wrappers passed all tests.")
 
+def test_tox_process_trajectories():
+    """
+    Test tox_process_trajectories with multiple factors and known patterns.
+    """
+    # Create test data with predictable patterns
+    n_factors, n_samples, n_timepoints = 4, 5, 6
+    trajectories = np.random.RandomState(42).randn(n_factors, n_samples, n_timepoints)
+    
+    # Set factor mask: process factors 2, 3, 4 (exclude dependent_idx=1)
+    factor_mask = np.array([False, True, True, True])
+    dependent_idx = 1
+    mode = MODE_NORMAL
+    percentile = 90.0
+    
+    # Call the function
+    result = tox_process_trajectories(
+        trajectories, factor_mask, dependent_idx, mode, percentile
+    )
+    
+    # Verify output dimensions
+    n_processed = np.sum(factor_mask)
+    if factor_mask[dependent_idx - 1]:
+        n_processed -= 1
+    
+    assert result["integrated_contribs"].shape == (n_samples, n_processed), "Integrated contributions wrong shape"
+    assert result["spike_contribs"].shape == (n_timepoints, n_samples, n_processed), "Spike contributions wrong shape"
+    assert result["thresholds_integrated"].shape == (n_processed,), "Integrated thresholds wrong shape"
+    assert result["thresholds_spike"].shape == (n_timepoints, n_processed), "Spike thresholds wrong shape"
+    assert result["outliers_integrated"].shape == (n_samples, n_processed), "Integrated outliers wrong shape"
+    assert result["outliers_spike"].shape == (n_timepoints, n_samples, n_processed), "Spike outliers wrong shape"
+    
+    # Verify data types
+    assert result["integrated_contribs"].dtype == np.float64, "Integrated contribs should be float64"
+    assert result["spike_contribs"].dtype == np.float64, "Spike contribs should be float64"
+    assert result["thresholds_integrated"].dtype == np.float64, "Integrated thresholds should be float64"
+    assert result["thresholds_spike"].dtype == np.float64, "Spike thresholds should be float64"
+    assert result["outliers_integrated"].dtype == bool, "Integrated outliers should be boolean"
+    assert result["outliers_spike"].dtype == bool, "Spike outliers should be boolean"
+    
+    print("✅ tox_process_trajectories passed all tests.")
+
+
+def test_tox_process_trajectories_flat():
+    """
+    Test tox_process_trajectories_flat_alloc with global percentile for spike contributions.
+    """
+    # Create test data
+    n_factors, n_samples, n_timepoints = 3, 4, 5
+    trajectories = np.random.RandomState(123).randn(n_factors, n_samples, n_timepoints)
+    
+    # Set factor mask: process factors 2, 3 (exclude dependent_idx=1, fortran is 1 based)
+    factor_mask = np.array([False, True, True])
+    dependent_idx = 1
+    mode = MODE_RAP
+    percentile = 85.0
+    
+    # Call the function
+    result = tox_process_trajectories_flat(
+        trajectories, factor_mask, dependent_idx, mode, percentile
+    )
+    
+    # Verify output dimensions
+    n_processed = np.sum(factor_mask)
+    if factor_mask[dependent_idx - 1]:
+        n_processed -= 1
+
+    assert result["integrated_contribs"].shape == (n_samples, n_processed), "Integrated contributions wrong shape"
+    assert result["spike_contribs"].shape == (n_timepoints, n_samples, n_processed), "Spike contributions wrong shape"
+    assert result["thresholds_integrated"].shape == (n_processed,), "Integrated thresholds wrong shape"
+    assert result["thresholds_spike"].shape == (n_processed,), "Spike thresholds wrong shape (should be 1D)"
+    assert result["outliers_integrated"].shape == (n_samples, n_processed), "Integrated outliers wrong shape"
+    assert result["outliers_spike"].shape == (n_timepoints, n_samples, n_processed), "Spike outliers wrong shape"
+    
+    # Verify data types
+    assert result["integrated_contribs"].dtype == np.float64, "Integrated contribs should be float64"
+    assert result["spike_contribs"].dtype == np.float64, "Spike contribs should be float64"
+    assert result["thresholds_integrated"].dtype == np.float64, "Integrated thresholds should be float64"
+    assert result["thresholds_spike"].dtype == np.float64, "Spike thresholds should be float64"
+    assert result["outliers_integrated"].dtype == bool, "Integrated outliers should be boolean"
+    assert result["outliers_spike"].dtype == bool, "Spike outliers should be boolean"
+    
+    # For RAP mode, contributions should be angles in [0, pi]
+    if mode == MODE_RAP:
+        assert np.all(result["integrated_contribs"] >= 0.0) and np.all(result["integrated_contribs"] <= PI), \
+            "RAP mode integrated contributions should be angles in [0, pi]"
+        assert np.all(result["spike_contribs"] >= 0.0) and np.all(result["spike_contribs"] <= PI), \
+            "RAP mode spike contributions should be angles in [0, pi]"
+    
+    print("✅ tox_process_trajectories_flat passed all tests.")
+
+
+def test_process_trajectories_edge_cases():
+    """
+    Test edge cases for process trajectories functions.
+    """
+    # Test with minimum valid dimensions
+    n_factors, n_samples, n_timepoints = 2, 2, 2
+    trajectories = np.random.RandomState(456).randn(n_factors, n_samples, n_timepoints)
+    
+    # Only one factor to process (dependent_idx=0, process factor 1)
+    factor_mask = np.array([False, True])
+    dependent_idx = 1
+    mode = MODE_NORMAL
+    percentile = 95.0
+    
+    # Both functions should handle this case
+    result_alloc = tox_process_trajectories(
+        trajectories, factor_mask, dependent_idx, mode, percentile
+    )
+    result_flat = tox_process_trajectories_flat(
+        trajectories, factor_mask, dependent_idx, mode, percentile
+    )
+    
+    # Should process exactly one factor
+    assert result_alloc["integrated_contribs"].shape[1] == 1, "Should process exactly one factor"
+    assert result_flat["integrated_contribs"].shape[1] == 1, "Should process exactly one factor"
+    
+    print("✅ Process trajectories edge cases passed all tests.")
+
+
+def test_process_trajectories_consistency():
+    """
+    Test that both process trajectories functions produce consistent results for the same input.
+    """
+    # Create identical test data
+    n_factors, n_samples, n_timepoints = 3, 4, 5
+    trajectories = np.random.RandomState(789).randn(n_factors, n_samples, n_timepoints)
+    
+    factor_mask = np.array([True, False, True])
+    dependent_idx = 2
+    mode = MODE_NORMAL
+    percentile = 80.0
+    
+    # Call both functions
+    result_alloc = tox_process_trajectories(
+        trajectories, factor_mask, dependent_idx, mode, percentile
+    )
+    result_flat = tox_process_trajectories_flat(
+        trajectories, factor_mask, dependent_idx, mode, percentile
+    )
+    
+    # Contributions should be identical (same calculation method)
+    assert np.allclose(result_alloc["integrated_contribs"], result_flat["integrated_contribs"]), \
+        "Integrated contributions should be identical"
+    assert np.allclose(result_alloc["spike_contribs"], result_flat["spike_contribs"]), \
+        "Spike contributions should be identical"
+    
+    # Outliers should be the same (same data, different threshold methods)
+    # Note: outliers might differ due to different threshold calculation methods
+    
+    print("✅ Process trajectories consistency test passed.")
 
 def main():
     print("=================================================")
@@ -126,7 +281,10 @@ def main():
     test_tox_spike_contribution()
     test_tox_trajectory_contribution()
     test_tox_calc_contributions()
-
+    test_tox_process_trajectories()
+    test_tox_process_trajectories_flat()
+    test_process_trajectories_edge_cases()
+    test_process_trajectories_consistency()
 
 if __name__ == "__main__":
     main()

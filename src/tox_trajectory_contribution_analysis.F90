@@ -4,7 +4,7 @@ module tox_trajectory_contribution_analysis
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
     use f42_utils, only: is_close
-    use tox_errors, only: set_ok, set_err, is_err, ERR_IDX_OUT_OF_BOUNDS, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, ERR_INVALID_INPUT, ERR_NAN_INF, ERR_ALLOC_FAIL
+    use tox_errors, only: set_ok, set_err, is_err, ERR_IDX_OUT_OF_BOUNDS, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, ERR_INVALID_INPUT, ERR_NAN_INF, ERR_ALLOC_FAIL, validate_dimension_size
     implicit none
 
     integer(int32), parameter :: MODE_NORMAL = 1
@@ -48,7 +48,7 @@ contains
             dot_prod = dot_prod + factor(i_timepoint) * dependent(i_timepoint)
         end do
 
-        if (ieee_is_nan(magnitude) .or. ieee_is_nan(dot_prod)) then
+        if (ieee_is_nan(dot_prod)) then
             call set_err(ierr, ERR_NAN_INF)
             return
         end if
@@ -244,10 +244,10 @@ contains
 
         call set_ok(ierr)
 
-        if (n_factors <= 0 .or. n_samples <= 0 .or. n_timepoints <= 0) then
-            call set_err(ierr, ERR_EMPTY_INPUT)
-            return
-        end if
+        call validate_dimension_size(n_samples, ierr)
+        call validate_dimension_size(n_factors, ierr)
+        call validate_dimension_size(n_timepoints, ierr)
+        if(is_err(ierr)) return
 
         if (i_factor < 1 .or. i_timepoint < 1 .or. i_factor > n_factors .or. i_timepoint > n_timepoints) then
             call set_err(ierr, ERR_IDX_OUT_OF_BOUNDS)
@@ -282,10 +282,10 @@ contains
 
         call set_ok(ierr)
 
-        if (n_factors <= 0 .or. n_samples <= 0 .or. n_timepoints <= 0) then
-            call set_err(ierr, ERR_EMPTY_INPUT)
-            return
-        end if
+        call validate_dimension_size(n_samples, ierr)
+        call validate_dimension_size(n_factors, ierr)
+        call validate_dimension_size(n_timepoints, ierr)
+        if(is_err(ierr)) return
 
         if (i_factor < 1 .or. i_sample < 1 .or. i_factor > n_factors .or. i_sample > n_samples) then
             call set_err(ierr, ERR_IDX_OUT_OF_BOUNDS)
@@ -297,6 +297,200 @@ contains
         end do
     end subroutine get_vec_across_timepoints
 
+    !> Process trajectories with one percentile per timepoint for spike contributions.
+    !! This subroutine uses multiple allocations. If you want to avoid this, you need to do the full pipeline manually step-by-step.
+    subroutine process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, factor_mask, factor_mask_count, dependent_idx, mode, percentile, &
+                                integrated_contribs, spike_contribs, thresholds_integrated_contrib, &
+                                outliers_integrated_contrib, thresholds_spike_contrib, &
+                                outliers_spike_contrib, ierr)
+        use tox_trajectory_contribution_analysis_outlier_detection
+        integer(int32), intent(in) :: n_factors
+        !! Number of factors
+        integer(int32), intent(in) :: n_samples
+        !! Number of samples
+        integer(int32), intent(in) :: n_timepoints
+        !! Number of timepoints
+        integer(int32), intent(in) :: factor_mask_count
+        !! Number of true values in the factor mask
+        real(real64), dimension(n_factors, n_samples, n_timepoints), intent(in) :: trajectories
+        !! Trajectories array
+        logical, dimension(n_factors), intent(in) :: factor_mask
+        !! Mask for what factors should be included
+        integer(int32), intent(in) :: dependent_idx
+        !! Index of the dependend factor
+        integer(int32), intent(in) :: mode
+        !! Mode for contribution calculation
+        real(real64), intent(in) :: percentile
+        !! Percentile (0-100)
+        
+        real(real64), dimension(n_samples, factor_mask_count), intent(out) :: integrated_contribs
+        !! Integrated contributions
+        real(real64), dimension(n_timepoints, n_samples, factor_mask_count), intent(out) :: spike_contribs
+        !! Spike contributions
+        real(real64), dimension(factor_mask_count), intent(out) :: thresholds_integrated_contrib
+        !! Thresholds of integrated contributions based on the provided percentile
+        real(real64), dimension(n_timepoints, factor_mask_count), intent(out) :: thresholds_spike_contrib
+        !! Thresholds of spike contributions based on the provided percentile
+        logical, dimension(n_samples, factor_mask_count), intent(out) :: outliers_integrated_contrib
+        !! Detected outliers of the integrated contributions
+        logical, dimension(n_timepoints, n_samples, factor_mask_count), intent(out) :: outliers_spike_contrib
+        !! Detected outliers of the spike contributions
+
+        integer(int32), intent(out) :: ierr
+        integer(int32) :: i_factor, i_included_factor
+        
+        call set_ok(ierr)
+        
+        ! Input validation
+        call validate_dimension_size(n_samples, ierr)
+        call validate_dimension_size(n_factors, ierr)
+        call validate_dimension_size(n_timepoints, ierr)
+        if(is_err(ierr)) return
+        
+        if (dependent_idx < 1 .or. dependent_idx > n_factors) then
+            call set_err(ierr, ERR_INVALID_INPUT)
+            return
+        end if
+        
+        if (factor_mask(dependent_idx)) then
+            call set_err(ierr, ERR_INVALID_INPUT)
+            return
+        end if
+        
+        i_included_factor = 0
+        do i_factor = 1, n_factors
+            if (factor_mask(i_factor)) then
+                i_included_factor = i_included_factor + 1
+                
+                ! Calculate contributions
+                call calc_contributions_alloc(trajectories, n_factors, n_samples, n_timepoints, &
+                                    i_factor, dependent_idx, mode, &
+                                    spike_contribs(:, :, i_included_factor), &
+                                    integrated_contribs(:, i_included_factor), &
+                                    ierr)
+                if (is_err(ierr)) exit
+                
+                ! Calculate integrated threshold and outliers
+                call calc_integrated_threshold_alloc(integrated_contribs(:, i_included_factor), &
+                                            n_samples, percentile, thresholds_integrated_contrib(i_included_factor), &
+                                            ierr)
+                if (is_err(ierr)) exit
+
+                call detect_outliers_integrated(integrated_contribs(:, i_included_factor), n_samples, &
+                                            thresholds_integrated_contrib(i_included_factor), &
+                                            outliers_integrated_contrib(:, i_included_factor), ierr)
+                if (is_err(ierr)) exit
+
+                ! Calculate spike thresholds and outliers (one per timepoint)
+                call calc_spike_thresholds_alloc(spike_contribs(:, :, i_included_factor), &
+                                        n_timepoints, n_samples, percentile, & 
+                                        thresholds_spike_contrib(:, i_included_factor), ierr)
+                if (is_err(ierr)) exit
+                
+                call detect_outliers_spike(spike_contribs(:, :, i_included_factor), n_timepoints, &
+                                        n_samples, thresholds_spike_contrib(:, i_included_factor), &
+                                        outliers_spike_contrib(:, :, i_included_factor), ierr)
+                if (is_err(ierr)) exit
+            end if
+        end do
+    end subroutine process_trajectories_alloc
+
+    !> Process trajectories with global percentile for spike contributions (flattened)
+    !! This subroutine uses multiple allocations. If you want to avoid this, you need to do the full pipeline manually step-by-step.
+    subroutine process_trajectories_flat_alloc(trajectories, n_factors, n_samples, n_timepoints, factor_mask, factor_mask_count, dependent_idx, mode, percentile, &
+                                    integrated_contribs, spike_contribs, thresholds_integrated_contrib, &
+                                    outliers_integrated_contrib, thresholds_spike_contrib, &
+                                    outliers_spike_contrib, ierr)
+        use tox_trajectory_contribution_analysis_outlier_detection
+        integer(int32), intent(in) :: n_factors
+        !! Number of factors
+        integer(int32), intent(in) :: n_samples
+        !! Number of samples
+        integer(int32), intent(in) :: n_timepoints
+        !! Number of timepoints
+        integer(int32), intent(in) :: factor_mask_count
+        !! Number of true values in the factor mask
+        real(real64), dimension(n_factors, n_samples, n_timepoints), intent(in) :: trajectories
+        !! Trajectories array
+        logical, dimension(n_factors), intent(in) :: factor_mask
+        !! Logical mask for factors
+        integer(int32), intent(in) :: dependent_idx
+        !! Index of the dependent factor
+        integer(int32), intent(in) :: mode
+        !! Mode to use for contribution calculation
+        real(real64), intent(in) :: percentile
+        !! Percentile value (0.0 - 100.0)
+        
+        real(real64), dimension(n_samples, factor_mask_count), intent(out) :: integrated_contribs
+        !! Integrated contributions
+        real(real64), dimension(n_timepoints, n_samples, factor_mask_count), intent(out) :: spike_contribs
+        !! Spike contributions
+        real(real64), dimension(factor_mask_count), intent(out) :: thresholds_integrated_contrib
+        !! Thresholds of integrated contributions based on provided percentile
+        real(real64), dimension(factor_mask_count), intent(out) :: thresholds_spike_contrib
+        !! Thresholds of spike contributions based on provided percentile
+        logical, dimension(n_samples, factor_mask_count), intent(out) :: outliers_integrated_contrib
+        !! Outliers of integrated contributions based on provided percentile
+        logical, dimension(n_timepoints, n_samples, factor_mask_count), intent(out) :: outliers_spike_contrib
+        !! Outliers of spike contributions based on provided percentile
+        integer(int32), intent(out) :: ierr
+        !! Error code
+        
+        integer(int32) :: i_factor, i_included_factor
+        
+        call set_ok(ierr)
+        
+        ! Input validation
+        call validate_dimension_size(n_samples, ierr)
+        call validate_dimension_size(n_factors, ierr)
+        call validate_dimension_size(n_timepoints, ierr)
+        if(is_err(ierr)) return
+        
+        if (dependent_idx < 1 .or. dependent_idx > n_factors) then
+            call set_err(ierr, ERR_IDX_OUT_OF_BOUNDS)
+            return
+        end if
+        
+        if (factor_mask(dependent_idx)) then
+            call set_err(ierr, ERR_INVALID_INPUT)
+            return
+        end if
+        
+        i_included_factor = 0
+        do i_factor = 1, n_factors
+            if (factor_mask(i_factor)) then
+                i_included_factor = i_included_factor + 1
+                
+                ! Calculate contributions
+                call calc_contributions_alloc(trajectories, n_factors, n_samples, n_timepoints, &
+                                    i_factor, dependent_idx, mode, &
+                                    spike_contribs(:, :, i_included_factor), &
+                                    integrated_contribs(:, i_included_factor), ierr)
+                if (is_err(ierr)) exit
+                
+                ! Calculate integrated threshold and outliers
+                call calc_integrated_threshold_alloc(integrated_contribs(:, i_included_factor), n_samples, &
+                                            percentile, thresholds_integrated_contrib(i_included_factor),ierr)
+                if (is_err(ierr)) exit
+                
+                call detect_outliers_integrated(integrated_contribs(:, i_included_factor), n_samples, &
+                                            thresholds_integrated_contrib(i_included_factor), &
+                                            outliers_integrated_contrib(:, i_included_factor), ierr)
+                if (is_err(ierr)) exit
+                
+                ! Use flattened spike contributions with integrated routines
+                call calc_integrated_threshold_alloc(spike_contribs(:, :, i_included_factor), n_timepoints * n_samples, &
+                                            percentile, thresholds_spike_contrib(i_included_factor), ierr)
+                if (is_err(ierr)) exit
+                
+                call detect_outliers_integrated(spike_contribs(:, :, i_included_factor), n_timepoints * n_samples, &
+                                            thresholds_spike_contrib(i_included_factor), &
+                                            outliers_spike_contrib(:, :, i_included_factor), ierr)
+                if (is_err(ierr)) exit
+            end if
+        end do
+        
+    end subroutine process_trajectories_flat_alloc
 end module tox_trajectory_contribution_analysis
 
 pure subroutine trajectory_contribution_c(factor, dependent, n_timepoints, mode, contribution, ierr) bind(C, name="trajectory_contribution_c")
@@ -467,3 +661,245 @@ pure subroutine calc_contributions_c(trajectories, n_factors, n_samples, n_timep
 
     call calc_contributions_alloc(trajectories, n_factors, n_samples, n_timepoints, i_factor + 1, dependent_idx + 1, mode, spike_contribs, integrated_contribs, ierr)
 end subroutine calc_contributions_c
+
+!> C wrapper for process_trajectories_alloc
+!> @Note Indices are 1 based, make sure all variables align with this
+subroutine process_trajectories_C(trajectories, n_factors, n_samples, n_timepoints, n_processed, &
+                                      factor_mask_int, dependent_idx, mode, percentile, &
+                                      integrated_contribs, spike_contribs, &
+                                      thresholds_integrated_contrib, outliers_integrated_contrib_int, &
+                                      thresholds_spike_contrib, outliers_spike_contrib_int, ierr) &
+                                      bind(C, name="process_trajectories_C")
+    use tox_conversions, only: logical_as_c_int, c_int_as_logical
+    use iso_c_binding, only: c_double, c_int
+    use tox_errors, only: set_ok, set_err, is_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL, validate_dimension_size
+    use tox_trajectory_contribution_analysis, only: process_trajectories_alloc
+    use iso_fortran_env, only: int32
+    M_USE_NULL_VALIDATION
+    implicit none
+
+    integer(c_int), intent(in), target :: n_factors
+        !! Number of factors
+    integer(c_int), intent(in), target :: n_samples
+        !! Number of samples
+    integer(c_int), intent(in), target :: n_timepoints
+        !! Number of timepoints
+    integer(c_int), intent(in), target :: n_processed
+        !! Number of processed factors
+    real(c_double), intent(in), target :: trajectories(n_factors, n_samples, n_timepoints)
+        !! Trajectories array
+    integer(c_int), intent(in), target :: factor_mask_int(n_factors)
+        !! Mask for factors as C integers (0=false, 1=true)
+    integer(c_int), intent(in), target :: dependent_idx
+        !! Index of the dependent factor (1-based from C)
+    integer(c_int), intent(in), target :: mode
+        !! Mode for contribution calculation
+    real(c_double), intent(in), target :: percentile
+        !! Percentile (0-100)
+    
+    real(c_double), intent(out), target :: integrated_contribs(n_samples, n_processed)
+        !! Integrated contributions
+    real(c_double), intent(out), target :: spike_contribs(n_timepoints, n_samples, n_processed)
+        !! Spike contributions
+    real(c_double), intent(out), target :: thresholds_integrated_contrib(n_processed)
+        !! Thresholds for integrated contributions
+    integer(c_int), intent(out), target :: outliers_integrated_contrib_int(n_samples, n_processed)
+        !! Outliers for integrated contributions as C integers
+    real(c_double), intent(out), target :: thresholds_spike_contrib(n_timepoints, n_processed)
+        !! Thresholds for spike contributions
+    integer(c_int), intent(out), target :: outliers_spike_contrib_int(n_timepoints, n_samples, n_processed)
+        !! Outliers for spike contributions as C integers
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+    
+    logical, allocatable :: factor_mask(:)
+    logical, allocatable :: outliers_integrated_contrib(:,:)
+    logical, allocatable :: outliers_spike_contrib(:,:,:)
+    integer(int32) :: i
+
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_factors)
+    M_CHECK_NON_NULL(n_samples)
+    M_CHECK_NON_NULL(n_timepoints)
+    M_CHECK_NON_NULL(n_processed)
+    M_CHECK_NON_NULL(trajectories)
+    M_CHECK_NON_NULL(factor_mask_int)
+    M_CHECK_NON_NULL(dependent_idx)
+    M_CHECK_NON_NULL(mode)
+    M_CHECK_NON_NULL(percentile)
+    M_CHECK_NON_NULL(integrated_contribs)
+    M_CHECK_NON_NULL(spike_contribs)
+    M_CHECK_NON_NULL(thresholds_integrated_contrib)
+    M_CHECK_NON_NULL(outliers_integrated_contrib_int)
+    M_CHECK_NON_NULL(thresholds_spike_contrib)
+    M_CHECK_NON_NULL(outliers_spike_contrib_int)    
+
+    ! Initialize error
+    call set_ok(ierr)
+    
+    ! Check for valid dimensions
+    call validate_dimension_size(n_samples, ierr)
+    call validate_dimension_size(n_factors, ierr)
+    call validate_dimension_size(n_timepoints, ierr)
+    if(is_err(ierr)) return
+    
+    ! Convert C integer mask to Fortran logical
+    allocate(factor_mask(n_factors), stat=ierr)
+    if (is_err(ierr)) then
+        call set_err(ierr, ERR_ALLOC_FAIL)
+        return
+    end if
+
+    call c_int_as_logical(factor_mask_int, factor_mask)
+    
+    ! Allocate temporary arrays for logical outputs
+    allocate(outliers_integrated_contrib(n_samples, n_factors), stat=ierr)
+    if (is_err(ierr)) then
+        call set_err(ierr, ERR_ALLOC_FAIL)
+        deallocate(factor_mask)
+        return
+    end if
+    
+    allocate(outliers_spike_contrib(n_timepoints, n_samples, n_factors), stat=ierr)
+    if (is_err(ierr)) then
+        call set_err(ierr, ERR_ALLOC_FAIL)
+        deallocate(factor_mask, outliers_integrated_contrib)
+        return
+    end if
+    
+    ! Call Fortran subroutine
+    call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &
+                                  factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
+                                  integrated_contribs, spike_contribs, &
+                                  thresholds_integrated_contrib, outliers_integrated_contrib, &
+                                  thresholds_spike_contrib, outliers_spike_contrib, ierr)
+    
+    if (.not. is_err(ierr)) then
+        ! Convert Fortran logical outputs to C integers
+        call logical_as_c_int(outliers_integrated_contrib, outliers_integrated_contrib_int)
+        call logical_as_c_int(outliers_spike_contrib, outliers_spike_contrib_int)
+    end if
+    
+end subroutine process_trajectories_C
+
+!> C wrapper for process_trajectories_flat_alloc
+!> @Note Indices are 1 based, make sure all variables align with this
+subroutine process_trajectories_flat_C(trajectories, n_factors, n_samples, n_timepoints, n_processed, &
+                                           factor_mask_int, dependent_idx, mode, percentile, &
+                                           integrated_contribs, spike_contribs, &
+                                           thresholds_integrated_contrib, outliers_integrated_contrib_int, &
+                                           thresholds_spike_contrib, outliers_spike_contrib_int, ierr) &
+                                           bind(C, name="process_trajectories_flat_C")
+    use tox_conversions, only: logical_as_c_int, c_int_as_logical
+    use iso_c_binding, only: c_double, c_int
+    use tox_errors, only: set_ok, set_err, is_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL, validate_dimension_size
+    use tox_trajectory_contribution_analysis, only: process_trajectories_flat_alloc
+    use iso_fortran_env, only: int32
+    M_USE_NULL_VALIDATION
+    implicit none
+
+    integer(c_int), intent(in), target :: n_factors
+        !! Number of factors
+    integer(c_int), intent(in), target :: n_samples
+        !! Number of samples
+    integer(c_int), intent(in), target :: n_timepoints
+        !! Number of timepoints
+    integer(c_int), intent(in), target :: n_processed
+        !! Number of processed factors
+    real(c_double), intent(in), target :: trajectories(n_factors, n_samples, n_timepoints)
+        !! Trajectories array
+    integer(c_int), intent(in), target :: factor_mask_int(n_factors)
+        !! Mask for factors as C integers (0=false, 1=true)
+    integer(c_int), intent(in), target :: dependent_idx
+        !! Index of the dependent factor (0-based from C)
+    integer(c_int), intent(in), target :: mode
+        !! Mode for contribution calculation
+    real(c_double), intent(in), target :: percentile
+        !! Percentile (0-100)
+    
+    real(c_double), intent(out), target :: integrated_contribs(n_samples, n_processed)
+        !! Integrated contributions
+    real(c_double), intent(out), target :: spike_contribs(n_timepoints, n_samples, n_processed)
+        !! Spike contributions
+    real(c_double), intent(out), target :: thresholds_integrated_contrib(n_processed)
+        !! Thresholds for integrated contributions
+    integer(c_int), intent(out), target :: outliers_integrated_contrib_int(n_samples, n_processed)
+        !! Outliers for integrated contributions as C integers
+    real(c_double), intent(out), target :: thresholds_spike_contrib(n_processed)
+        !! Thresholds for spike contributions (1D for flat version)
+    integer(c_int), intent(out), target :: outliers_spike_contrib_int(n_timepoints, n_samples, n_processed)
+        !! Outliers for spike contributions as C integers
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+    
+    logical, allocatable :: factor_mask(:)
+    logical, allocatable :: outliers_integrated_contrib(:,:)
+    logical, allocatable :: outliers_spike_contrib(:,:,:)
+    integer(int32) :: i
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_factors)
+    M_CHECK_NON_NULL(n_samples)
+    M_CHECK_NON_NULL(n_timepoints)
+    M_CHECK_NON_NULL(n_processed)
+    M_CHECK_NON_NULL(trajectories)
+    M_CHECK_NON_NULL(factor_mask_int)
+    M_CHECK_NON_NULL(dependent_idx)
+    M_CHECK_NON_NULL(mode)
+    M_CHECK_NON_NULL(percentile)
+    M_CHECK_NON_NULL(integrated_contribs)
+    M_CHECK_NON_NULL(spike_contribs)
+    M_CHECK_NON_NULL(thresholds_integrated_contrib)
+    M_CHECK_NON_NULL(outliers_integrated_contrib_int)
+    M_CHECK_NON_NULL(thresholds_spike_contrib)
+    M_CHECK_NON_NULL(outliers_spike_contrib_int)
+
+    ! Initialize error
+    call set_ok(ierr)
+    
+    ! Check for valid dimensions
+    call validate_dimension_size(n_samples, ierr)
+    call validate_dimension_size(n_factors, ierr)
+    call validate_dimension_size(n_timepoints, ierr)
+    if(is_err(ierr)) return
+    
+    ! Convert C integer mask to Fortran logical
+    allocate(factor_mask(n_factors), stat=ierr)
+    if (is_err(ierr)) then
+        call set_err(ierr, ERR_ALLOC_FAIL)
+        return
+    end if
+    
+    do i = 1, n_factors
+        factor_mask(i) = (factor_mask_int(i) /= 0)
+    end do
+    
+    ! Allocate temporary arrays for logical outputs
+    allocate(outliers_integrated_contrib(n_samples, n_factors-1), stat=ierr)
+    if (is_err(ierr)) then
+        call set_err(ierr, ERR_ALLOC_FAIL)
+        deallocate(factor_mask)
+        return
+    end if
+    
+    allocate(outliers_spike_contrib(n_timepoints, n_samples, n_factors-1), stat=ierr)
+    if (is_err(ierr)) then
+        call set_err(ierr, ERR_ALLOC_FAIL)
+        deallocate(factor_mask, outliers_integrated_contrib)
+        return
+    end if
+    
+    ! Call Fortran subroutine
+    call process_trajectories_flat_alloc(trajectories, n_factors, n_samples, n_timepoints, &
+                                       factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
+                                       integrated_contribs, spike_contribs, &
+                                       thresholds_integrated_contrib, outliers_integrated_contrib, &
+                                       thresholds_spike_contrib, outliers_spike_contrib, ierr)
+    
+    if (.not. is_err(ierr)) then
+        ! Convert Fortran logical outputs to C integers
+        call logical_as_c_int(outliers_integrated_contrib, outliers_integrated_contrib_int)
+        call logical_as_c_int(outliers_spike_contrib, outliers_spike_contrib_int)
+    end if    
+end subroutine process_trajectories_flat_C
