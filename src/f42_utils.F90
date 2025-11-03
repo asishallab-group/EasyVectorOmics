@@ -437,7 +437,7 @@ contains
     end do
   end subroutine loess_smooth_2d
 
-    !> Calculate the percentile of an array given a sorted permutation.
+  !> Calculate the percentile of an array given a sorted permutation.
   !! Uses linear interpolation between adjacent values.
   pure subroutine calc_percentile(array, permutation, percentile, value, ierr)
     real(real64), intent(in) :: array(:)

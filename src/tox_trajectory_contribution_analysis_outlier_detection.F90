@@ -3,7 +3,7 @@
 module tox_trajectory_contribution_analysis_outlier_detection
     use, intrinsic :: iso_fortran_env, only: real64, int32
     use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, &
-                         ERR_ALLOC_FAIL, set_ok, set_err, is_err
+                         ERR_ALLOC_FAIL, set_ok, set_err, is_err, validate_dimension_size
     use f42_utils, only: calc_percentile, calc_percentile_alloc, sort_real
     
     implicit none
@@ -38,15 +38,9 @@ contains
         call set_ok(ierr)
         
         
-        if (n_timepoints == 0 .or. n_samples == 0) then
-            call set_err(ierr, ERR_EMPTY_INPUT)
-            return
-        end if
-        
-        if (percentile_val < 0.0_real64 .or. percentile_val > 100.0_real64) then
-            call set_err(ierr, ERR_INVALID_INPUT)
-            return
-        end if
+        call validate_dimension_size(n_samples, ierr)
+        call validate_dimension_size(n_timepoints, ierr)
+        if(is_err(ierr)) return
         
         ! Calculate threshold for each timepoint using pre-sorted permutations
         do j = 1, n_timepoints
@@ -80,10 +74,9 @@ contains
         ! Initialize error
         call set_ok(ierr)
         
-        if (n_timepoints == 0 .or. n_samples == 0) then
-            call set_err(ierr, ERR_EMPTY_INPUT)
-            return
-        end if
+        call validate_dimension_size(n_samples, ierr)
+        call validate_dimension_size(n_timepoints, ierr)
+        if(is_err(ierr)) return
         
         allocate(permutation(n_samples, n_timepoints), stat=ierr)
         allocate(temp_perm(n_timepoints), stat=ierr)
@@ -193,10 +186,8 @@ contains
         call set_ok(ierr)
         
         ! Input validation        
-        if (n_samples == 0) then
-            call set_err(ierr, ERR_EMPTY_INPUT)
-            return
-        end if
+        call validate_dimension_size(n_samples, ierr)
+        if(is_err(ierr)) return
         
         ! Detect outlier SAMPLES
         do i = 1, n_samples
@@ -225,10 +216,9 @@ contains
         ! Initialize error
         call set_ok(ierr)
         
-        if (n_timepoints == 0 .or. n_samples == 0) then
-            call set_err(ierr, ERR_EMPTY_INPUT)
-            return
-        end if
+        call validate_dimension_size(n_timepoints, ierr)
+        call validate_dimension_size(n_samples, ierr)
+        if(is_err(ierr)) return
         
         do j = 1, n_samples
             do i = 1, n_timepoints
@@ -266,12 +256,6 @@ subroutine calc_spike_thresholds_expert_C(spike_contribs, n_timepoints, n_sample
     ! Initialize error
     call set_ok(ierr)
     
-    ! Check for valid dimensions
-    if (n_samples <= 0 .or. n_timepoints <= 0) then
-        call set_err(ierr, ERR_EMPTY_INPUT)
-        return
-    end if
-    
     call calc_spike_thresholds(spike_contribs, n_timepoints, n_samples, percentile_val, &
                                 thresholds, permutation, ierr)
     
@@ -301,12 +285,6 @@ subroutine calc_spike_thresholds_C(spike_contribs, n_timepoints, n_samples, &
     ! Initialize error
     call set_ok(ierr)
     
-    ! Check for valid dimensions
-    if (n_samples <= 0 .or. n_timepoints <= 0) then
-        call set_err(ierr, ERR_EMPTY_INPUT)
-        return
-    end if
-
     ! Call Fortran subroutine
     call calc_spike_thresholds_alloc(spike_contribs, n_timepoints, n_samples, percentile_val, &
                                     thresholds, ierr)
@@ -337,12 +315,6 @@ subroutine calc_integrated_threshold_expert_C(contributions, n_samples, percenti
     ! Initialize error
     call set_ok(ierr)
     
-    ! Check for valid dimensions
-    if (n_samples <= 0) then
-        call set_err(ierr, ERR_EMPTY_INPUT)
-        return
-    end if
-    
     ! Call Fortran subroutine
     call calc_integrated_threshold(contributions, n_samples, percentile_val, &
                                 threshold, permutation, ierr)
@@ -371,12 +343,6 @@ subroutine calc_integrated_threshold_C(contributions, n_samples, percentile_val,
     ! Initialize error
     call set_ok(ierr)
     
-    ! Check for valid dimensions
-    if (n_samples <= 0) then
-        call set_err(ierr, ERR_EMPTY_INPUT)
-        return
-    end if
-    
     ! Call Fortran subroutine
     call calc_integrated_threshold_alloc(contributions, n_samples, percentile_val, &
                                         threshold, ierr)
@@ -390,7 +356,7 @@ subroutine detect_outliers_integrated_expert_C(contributions, n_samples, thresho
                                         bind(C, name="detect_outliers_integrated_expert_C")
     use tox_conversions, only: logical_as_c_int
     use iso_c_binding, only: c_double, c_int
-    use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL, is_err
+    use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL, is_ok, is_err
     use tox_trajectory_contribution_analysis_outlier_detection, only: detect_outliers_integrated
     real(c_double), intent(in) :: contributions(n_samples)
     !! Array of integrated contributions
@@ -425,13 +391,8 @@ subroutine detect_outliers_integrated_expert_C(contributions, n_samples, thresho
     call detect_outliers_integrated(contributions, n_samples, threshold, &
                                     mask_1d, ierr)
     
-    if (.not. is_err(ierr)) then
+    if (is_ok(ierr)) then
         call logical_as_c_int(mask_1d, outlier_mask)
-    else
-        ! Initialize output to false on error
-        do i = 1, n_samples
-            outlier_mask(i) = 0_c_int
-        end do
     end if
     
     deallocate(mask_1d)
@@ -444,7 +405,7 @@ subroutine detect_outliers_spike_expert_C(spike_contribs, n_timepoints, n_sample
                                     bind(C, name="detect_outliers_spike_expert_C")
     use tox_conversions, only: logical_as_c_int
     use iso_c_binding, only: c_double, c_int
-    use tox_errors, only: set_ok, set_err, is_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL
+    use tox_errors, only: set_ok, set_err, is_ok, is_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL
     use tox_trajectory_contribution_analysis_outlier_detection, only: detect_outliers_spike
     integer(c_int), intent(in), value :: n_samples
     !! Number of samples
@@ -464,14 +425,8 @@ subroutine detect_outliers_spike_expert_C(spike_contribs, n_timepoints, n_sample
     
     ! Initialize error
     call set_ok(ierr)
-    
-    ! Check for valid dimensions
-    if (n_samples <= 0 .or. n_timepoints <= 0) then
-        call set_err(ierr, ERR_EMPTY_INPUT)
-        return
-    end if
 
-    allocate(mask_2d(n_samples, n_timepoints), stat=ierr)
+    allocate(mask_2d(n_timepoints, n_samples), stat=ierr)
     if(is_err(ierr)) then
         call set_err(ierr, ERR_ALLOC_FAIL)
         return
@@ -480,7 +435,7 @@ subroutine detect_outliers_spike_expert_C(spike_contribs, n_timepoints, n_sample
     ! Call Fortran subroutine
     call detect_outliers_spike(spike_contribs, n_timepoints, n_samples, thresholds, mask_2d, ierr)
     
-    if(.not. is_err(ierr)) then
+    if(is_ok(ierr)) then
         ! Convert Fortran logical to C int (0=false, 1=true)
         call logical_as_c_int(mask_2d, outlier_mask)
     end if
