@@ -244,10 +244,10 @@ contains
 
         call set_ok(ierr)
 
-        if (n_factors <= 0 .or. n_samples <= 0 .or. n_timepoints <= 0) then
-            call set_err(ierr, ERR_EMPTY_INPUT)
-            return
-        end if
+        call validate_dimension_size(n_samples, ierr)
+        call validate_dimension_size(n_factors, ierr)
+        call validate_dimension_size(n_timepoints, ierr)
+        if(is_err(ierr)) return
 
         if (i_factor < 1 .or. i_timepoint < 1 .or. i_factor > n_factors .or. i_timepoint > n_timepoints) then
             call set_err(ierr, ERR_IDX_OUT_OF_BOUNDS)
@@ -282,10 +282,10 @@ contains
 
         call set_ok(ierr)
 
-        if (n_factors <= 0 .or. n_samples <= 0 .or. n_timepoints <= 0) then
-            call set_err(ierr, ERR_EMPTY_INPUT)
-            return
-        end if
+        call validate_dimension_size(n_samples, ierr)
+        call validate_dimension_size(n_factors, ierr)
+        call validate_dimension_size(n_timepoints, ierr)
+        if(is_err(ierr)) return
 
         if (i_factor < 1 .or. i_sample < 1 .or. i_factor > n_factors .or. i_sample > n_samples) then
             call set_err(ierr, ERR_IDX_OUT_OF_BOUNDS)
