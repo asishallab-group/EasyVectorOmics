@@ -11,21 +11,21 @@ def test_bst():
     x = np.array([3.0, 1.0, 4.0, 2.0], dtype=np.float64)
     
     # Build BST index using the wrapper function
-    ix = build_bst_index(x)
+    ix = build_bst_index(x) - 1
 
     print(f"BST indices (Python 0-based): {ix}")
     print(f"Sorted values: {x[ix]}")
 
     # Range query using the wrapper function
-    matching_indices, count = bst_range_query(x, ix, 1.5, 3.5)
-    print(f"Range [1.5, 3.5] matches: {matching_indices} (values: {x[matching_indices]})")
+    res = bst_range_query(x, ix, 1.5, 3.5)
+    print(f"Range [1.5, 3.5] matches: {res["matching_indices"] - 1} (values: {x[res["matching_indices"] - 1]})")
 
 def test_kdtree():
     print("\n=== Testing KD-Tree ===")
     X = np.array([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]], dtype=np.float64, order='F')
     
     # Build KD-Tree using the wrapper function
-    kd_ix = build_kd_index(X, np.array([1, 2], dtype=np.int32))
+    kd_ix = build_kd_index(X, np.array([1, 2], dtype=np.int32)) - 1
     print(f"KD-Tree indices (Python 0-based): {kd_ix}")
     print(f"Points in order:\n{X[:, kd_ix]}")
 
@@ -43,7 +43,7 @@ def test_spherical_kdtree():
     print(f"Norms: {np.linalg.norm(unit_vectors, axis=0)}")  # Should all be ~1.0
     
     # Build spherical KD-Tree using the wrapper function
-    sphere_ix = build_spherical_kd(unit_vectors, np.array([1, 2, 3], dtype=np.int32))
+    sphere_ix = build_spherical_kd(unit_vectors, np.array([1, 2, 3], dtype=np.int32)) - 1
     print(f"Spherical KD-Tree indices (Python 0-based): {sphere_ix}")
     print(f"Vectors in spherical order:\n{unit_vectors[:, sphere_ix]}")
     
@@ -74,7 +74,7 @@ def test_spherical_kdtree_specific_cases():
     print(f"Sphere points shape: {sphere_points.shape}")
     print(f"Sample point norms: {np.linalg.norm(sphere_points[:, :3], axis=0)}")
     
-    sphere_ix = build_spherical_kd(sphere_points, np.array([1, 2, 3], dtype=np.int32))
+    sphere_ix = build_spherical_kd(sphere_points, np.array([1, 2, 3], dtype=np.int32)) - 1
     print(f"Spherical indices for sphere points: {sphere_ix[:10]}...")  # Show first 10
     
     # Test case 2: Hemisphere (common in many applications)
@@ -83,7 +83,7 @@ def test_spherical_kdtree_specific_cases():
     hemisphere_points = np.asfortranarray(hemisphere_points)
     
     print(f"Hemisphere points shape: {hemisphere_points.shape}")
-    hemisphere_ix = build_spherical_kd(hemisphere_points, np.array([1, 2, 3], dtype=np.int32))
+    hemisphere_ix = build_spherical_kd(hemisphere_points, np.array([1, 2, 3], dtype=np.int32)) - 1
     print(f"Spherical indices for hemisphere: {hemisphere_ix[:10]}...")
 
 def test_bst_edge_cases():
@@ -91,7 +91,7 @@ def test_bst_edge_cases():
     # Empty array
     try:
         x = np.array([], dtype=np.float64)
-        ix = build_bst_index(x)
+        ix = build_bst_index(x) - 1
         print("Empty array: No error (expected behavior)")
     except Exception as e:
         print(f"Empty array: Exception caught: {e}")
@@ -99,7 +99,7 @@ def test_bst_edge_cases():
     # Single element
     try:
         x = np.array([42.0], dtype=np.float64)
-        ix = build_bst_index(x)
+        ix = build_bst_index(x) - 1
         print(f"Single element BST indices: {ix}")
     except Exception as e:
         print(f"Single element test failed: {e}")
@@ -109,7 +109,7 @@ def test_kdtree_edge_cases():
     # Empty matrix
     try:
         X = np.empty((2, 0), dtype=np.float64, order='F')
-        kd_ix = build_kd_index(X)
+        kd_ix = build_kd_index(X) - 1
         print("Empty matrix: No error (expected behavior)")
     except Exception as e:
         print(f"Empty matrix: Exception caught: {e}")
@@ -117,7 +117,7 @@ def test_kdtree_edge_cases():
     # Single point
     try:
         X = np.array([[1.0], [2.0]], dtype=np.float64, order='F')
-        kd_ix = build_kd_index(X, np.array([1, 2], dtype=np.int32))
+        kd_ix = build_kd_index(X, np.array([1, 2], dtype=np.int32)) - 1
         print(f"Single point KD-Tree indices: {kd_ix}")
     except Exception as e:
         print(f"Single point test failed: {e}")
@@ -128,7 +128,7 @@ def test_spherical_kdtree_edge_cases():
     # Empty spherical data
     try:
         empty_vectors = np.empty((3, 0), dtype=np.float64, order='F')
-        sphere_ix = build_spherical_kd(empty_vectors)
+        sphere_ix = build_spherical_kd(empty_vectors) - 1
         print("Empty spherical data: No error (expected behavior)")
     except Exception as e:
         print(f"Empty spherical data: Exception caught: {e}")
@@ -136,7 +136,7 @@ def test_spherical_kdtree_edge_cases():
     # Single vector on sphere
     try:
         single_vector = np.array([[0.0], [0.0], [1.0]], dtype=np.float64, order='F')  # North pole
-        sphere_ix = build_spherical_kd(single_vector, np.array([1, 2, 3], dtype=np.int32))
+        sphere_ix = build_spherical_kd(single_vector, np.array([1, 2, 3], dtype=np.int32)) - 1
         print(f"Single vector spherical indices: {sphere_ix}")
     except Exception as e:
         print(f"Single vector test failed: {e}")
@@ -146,7 +146,7 @@ def test_spherical_kdtree_edge_cases():
         circle_vectors = np.array([[1.0, 0.0, -1.0, 0.0], 
                                  [0.0, 1.0, 0.0, -1.0]], dtype=np.float64, order='F')
         circle_vectors = circle_vectors / np.linalg.norm(circle_vectors, axis=0)  # Normalize
-        circle_ix = build_spherical_kd(circle_vectors, np.array([1, 2], dtype=np.int32))
+        circle_ix = build_spherical_kd(circle_vectors, np.array([1, 2], dtype=np.int32)) - 1
         print(f"2D circle indices: {circle_ix}")
     except Exception as e:
         print(f"2D circle test failed: {e}")
