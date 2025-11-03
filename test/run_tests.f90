@@ -20,6 +20,7 @@ program main
   use mod_test_gene_centroids
   use mod_test_tox_conversions
   use mod_test_arrays
+  use mod_test_outlier_detection
   use mod_test_tox_trajectory_contribution_analysis
 
   implicit none
@@ -101,6 +102,7 @@ contains
     call add_suite("arrays", run_all_tests_array, run_named_tests_array)
     call add_suite("gene_centroids", run_all_tests_gene_centroids, run_named_tests_gene_centroids)
     call add_suite("tox_conversions", run_all_tests_tox_conversions, run_named_tests_tox_conversions)
+    call add_suite("outlier_detection", run_all_tests_outlier_detection, run_named_tests_outlier_detection)
     call add_suite("tox_trajectory_contribution_analysis", run_all_tests_tox_trajectory_contribution_analysis, run_named_tests_tox_trajectory_contribution_analysis)
   end subroutine initialize_suites
   
