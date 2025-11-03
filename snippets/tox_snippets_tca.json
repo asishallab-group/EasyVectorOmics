@@ -1,4 +1,6 @@
 {
+    "_comment": "VS Code snippets for Tensor Omics trajectory contribution analysis (TCA) functions",
+    
     "Call to get_vec_across_samples": {
         "prefix": "tox:get_vec_across_samples",
         "body": [
@@ -279,6 +281,143 @@
         ],
         "description": "Python setup for calc_contributions_expert_c call"
     },
+  "Call to compute_edf_alloc": {
+    "prefix": "tox:compute_edf_alloc",
+    "body": [
+      "! Compute EDF (convenience wrapper) - sorts internally and computes EDF",
+      "call compute_edf_alloc(values, n_values, unique_values, cdf_values, n_unique, ierr)"
+    ],
+    "description": "Invoke compute_edf_alloc which sorts internally and computes the empirical distribution function"
+  },
+
+  "Call to compute_edf": {
+    "prefix": "tox:compute_edf",
+    "body": [
+      "! Compute empirical distribution function (EDF) - cumulative proportion of values ≤ each unique data point",
+      "call compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)"
+    ],
+    "description": "Invoke compute_edf to obtain sorted unique values and their cumulative frequencies"
+  }
+    ,
+
+    "Python set up compute_edf": {
+        "prefix": "tox:compute_edf_py",
+        "body": [
+            "def tox_compute_edf(values):",
+            "    \"\"\"",
+            "    Compute empirical distribution function (EDF) for an array of values.",
+            "",
+            "    This wrapper calls the C ABI `compute_edf_c` which sorts internally and returns",
+            "    the unique values and their cumulative distribution (CDF).",
+            "",
+            "    Args:",
+            "        values (np.ndarray): 1D array of numeric values (float64)",
+            "",
+            "    Returns:",
+            "        dict: { 'unique': np.ndarray, 'cdf': np.ndarray, 'n_unique': int }",
+            "    \"\"\"",
+            "    values = np.ascontiguousarray(values, dtype=np.float64)",
+            "    n_values = ctypes.c_int(values.shape[0])",
+            "",
+            "    # allocate output buffers (max size = n_values)",
+            "    unique_values = np.empty(n_values.value, dtype=np.float64)",
+            "    cdf_values = np.empty(n_values.value, dtype=np.float64)",
+            "    n_unique = ctypes.c_int(0)",
+            "    ierr = ctypes.c_int(0)",
+            "",
+            "    compute_edf_c = lib.compute_edf_c",
+            "    compute_edf_c.argtypes = [",
+            "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # values",
+            "        ctypes.POINTER(ctypes.c_int),                                      # n_values",
+            "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # unique_values",
+            "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # cdf_values",
+            "        ctypes.POINTER(ctypes.c_int),                                      # n_unique",
+            "        ctypes.POINTER(ctypes.c_int)                                       # ierr",
+            "    ]",
+            "    compute_edf_c.restype = None",
+            "",
+            "    compute_edf_c(",
+            "        values,",
+            "        ctypes.byref(n_values),",
+            "        unique_values,",
+            "        cdf_values,",
+            "        ctypes.byref(n_unique),",
+            "        ctypes.byref(ierr)",
+            "    )",
+            "    check_err_code(ierr.value)",
+            "    _readonly(unique_values, cdf_values)",
+            "",
+            "    return {",
+            "        \"unique\": unique_values[:n_unique.value].copy(),",
+            "        \"cdf\": cdf_values[:n_unique.value].copy(),",
+            "        \"n_unique\": int(n_unique.value)",
+            "    }",
+            ""
+        ],
+        "description": "Python setup for compute_edf_c: convenience wrapper that returns unique values and CDF"
+    },
+
+    "Python set up compute_edf_expert level": {
+        "prefix": "tox:compute_edf_expert_py",
+        "body": [
+            "def tox_compute_edf_expert(values):",
+            "    \"\"\"",
+            "    Compute empirical distribution function (EDF) and return the permutation, unique values and CDF.",
+            "",
+            "    This wrapper calls the C ABI `compute_edf_expert_c` which produces a permutation array (perm),",
+            "    the unique sorted values and their cumulative distribution (CDF).",
+            "",
+            "    Args:",
+            "        values (np.ndarray): 1D array of numeric values (float64)",
+            "",
+            "    Returns:",
+            "        dict: { 'perm': np.ndarray, 'unique': np.ndarray, 'cdf': np.ndarray, 'n_unique': int }",
+            "    \"\"\"",
+            "    values = np.ascontiguousarray(values, dtype=np.float64)",
+            "    n_values = ctypes.c_int(values.shape[0])",
+            "",
+            "    # allocate outputs",
+            "    perm = np.empty(n_values.value, dtype=np.int32)",
+            "    unique_values = np.empty(n_values.value, dtype=np.float64)",
+            "    cdf_values = np.empty(n_values.value, dtype=np.float64)",
+            "    n_unique = ctypes.c_int(0)",
+            "    ierr = ctypes.c_int(0)",
+            "",
+            "    compute_edf_expert_c = lib.compute_edf_expert_c",
+            "    compute_edf_expert_c.argtypes = [",
+            "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # values",
+            "        ctypes.POINTER(ctypes.c_int),                                      # n_values",
+            "        np.ctypeslib.ndpointer(dtype=np.int32, flags=\"C_CONTIGUOUS\"),   # perm",
+            "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # unique_values",
+            "        np.ctypeslib.ndpointer(dtype=np.float64, flags=\"C_CONTIGUOUS\"),  # cdf_values",
+            "        ctypes.POINTER(ctypes.c_int),                                      # n_unique",
+            "        ctypes.POINTER(ctypes.c_int)                                       # ierr",
+            "    ]",
+            "    compute_edf_expert_c.restype = None",
+            "",
+            "    compute_edf_expert_c(",
+            "        values,",
+            "        ctypes.byref(n_values),",
+            "        perm,",
+            "        unique_values,",
+            "        cdf_values,",
+            "        ctypes.byref(n_unique),",
+            "        ctypes.byref(ierr)",
+            "    )",
+            "    check_err_code(ierr.value)",
+            "    _readonly(perm, unique_values, cdf_values)",
+            "",
+            "    return {",
+            "        \"perm\": perm.copy(),",
+            "        \"unique\": unique_values[:n_unique.value].copy(),",
+            "        \"cdf\": cdf_values[:n_unique.value].copy(),",
+            "        \"n_unique\": int(n_unique.value)",
+            "    }",
+            ""
+        ],
+        "description": "Python setup for compute_edf_expert_c: returns permutation, unique values and CDF"
+    },
+
     "Call to process trajectories": {
         "prefix": "tox:process_trajectories",
         "body": [

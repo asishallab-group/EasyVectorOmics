@@ -1,7 +1,3 @@
-"""
-TensorOmics Functions Module
-Python wrapper functions for Fortran routines via C interface
-"""
 
 import numpy as np
 import ctypes
@@ -2266,6 +2262,149 @@ def detect_outliers_spike(spike_contribs: np.ndarray, thresholds: np.ndarray) ->
     # Mark output as read-only
     _readonly(outlier_mask_bool)
     return outlier_mask_bool
+
+def compute_edf(values):
+    """
+    Compute Empirical Distribution Function (EDF) for given values.
+    
+    This function computes the empirical cumulative distribution function (EDF)
+    for a set of observed data values. The EDF represents the proportion of values
+    less than or equal to each unique value in the dataset.
+    
+    Args:
+        values: Array of observed data values (e.g., contributions or spikes)
+                Can be list or numpy array
+    
+    Returns:
+        dict: Dictionary with keys:
+            - 'unique_values': Sorted unique data values (read-only numpy array)
+            - 'cdf_values': Corresponding cumulative frequencies between 0 and 1 (read-only)
+            - 'n_unique': Number of unique values found (int)
+    
+    Raises:
+        RuntimeError: If error occurs during computation (invalid input, empty input)
+    
+    """
+    # Input validation and conversion
+    values = np.asarray(values, dtype=np.float64)
+    
+    n_values = len(values)
+    
+    # Prepare output arrays with explicit sizes (n_values as per C interface)
+    unique_values = np.zeros(n_values, dtype=np.float64, order='F')
+    cdf_values = np.zeros(n_values, dtype=np.float64, order='F')
+    n_unique = ctypes.c_int()
+    ierr = ctypes.c_int()
+    
+    # Define C interface with explicit size arrays
+    lib.compute_edf_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # values(n_values)
+        ctypes.c_int,                                                                                # n_values
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # unique_values(n_values)
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # cdf_values(n_values)
+        ctypes.POINTER(ctypes.c_int),                                                                # n_unique
+        ctypes.POINTER(ctypes.c_int)                                                                 # ierr
+    ]
+    lib.compute_edf_c.restype = None
+    
+    # Call Fortran function via C interface
+    lib.compute_edf_c(
+        values,
+        n_values,
+        unique_values,
+        cdf_values,
+        ctypes.byref(n_unique),
+        ctypes.byref(ierr)
+    )
+    
+    # Error handling
+    check_err_code(ierr.value)
+    
+    # Mark arrays as read-only
+    _readonly(unique_values, cdf_values)
+    
+    return {
+        'unique_values': unique_values,
+        'cdf_values': cdf_values,
+        'n_unique': n_unique.value
+    }
+
+
+def compute_edf_expert(values, perm):
+    """
+    Expert interface for Empirical Distribution Function (EDF) with pre-sorted permutation.
+    
+    This function computes the EDF using a pre-sorted permutation array, allowing users
+    to have full control over the sorting algorithm or reuse existing permutations.
+    
+    Args:
+        values: Array of observed data values (e.g., contributions or spikes)
+        perm: Pre-sorted permutation indices (must be sorted by values[perm])
+              Array of 1-based indices in Fortran style
+    
+    Returns:
+        dict: Dictionary with keys:
+            - 'unique_values': Sorted unique data values (read-only numpy array)
+            - 'cdf_values': Corresponding cumulative frequencies between 0 and 1 (read-only)
+            - 'n_unique': Number of unique values found (int)
+    
+    Raises:
+        RuntimeError: If error occurs during computation (invalid input, empty input)
+    
+    Note:
+        The perm array must be sorted such that values[perm[i]] is in ascending order.
+        This function skips the internal sorting step for better performance.
+    
+    """
+    # Input validation and conversion
+    values = np.asarray(values, dtype=np.float64)
+    perm = np.asarray(perm, dtype=np.int32)
+    
+    n_values = len(values)
+    
+    if len(perm) != n_values:
+        raise ValueError(f"perm length ({len(perm)}) must match values length ({n_values})")
+    
+    # Prepare output arrays with explicit sizes
+    unique_values = np.zeros(n_values, dtype=np.float64, order='F')
+    cdf_values = np.zeros(n_values, dtype=np.float64, order='F')
+    n_unique = ctypes.c_int()
+    ierr = ctypes.c_int()
+    
+    # Define C interface
+    lib.compute_edf_expert_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # values(n_values)
+        ctypes.c_int,                                                                                # n_values
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),    # perm(n_values)
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # unique_values(n_values)
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # cdf_values(n_values)
+        ctypes.POINTER(ctypes.c_int),                                                                # n_unique
+        ctypes.POINTER(ctypes.c_int)                                                                 # ierr
+    ]
+    lib.compute_edf_expert_c.restype = None
+    
+    # Call Fortran function via C interface
+    lib.compute_edf_expert_c(
+        values,
+        n_values,
+        perm,
+        unique_values,
+        cdf_values,
+        ctypes.byref(n_unique),
+        ctypes.byref(ierr)
+    )
+    
+    # Error handling
+    check_err_code(ierr.value)
+    
+    # Mark arrays as read-only
+    _readonly(unique_values, cdf_values)
+    
+    return {
+        'unique_values': unique_values,
+        'cdf_values': cdf_values,
+        'n_unique': n_unique.value
+    }
 
 def tox_trajectory_contribution(factor, dependent, mode):
     """

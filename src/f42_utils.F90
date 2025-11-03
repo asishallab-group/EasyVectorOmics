@@ -1,6 +1,5 @@
 !> Utility module for data analysis.
 !| This module provides general-purpose utility functions for data analysis, to be used as needed.
-
 module f42_utils
   use, intrinsic :: iso_fortran_env, only: real64, int32
   use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, ERR_EMPTY_INPUT, set_ok, set_err_once
@@ -8,12 +7,14 @@ module f42_utils
 
   public :: sort_real, sort_integer, sort_character
   public :: sort_array
+  public :: compute_edf, compute_edf_alloc
 
   interface sort_array
     module procedure sort_real, sort_integer, sort_character
   end interface sort_array
 
   real(real64), parameter :: EPS = epsilon(1.0_real64)
+
 contains
 
   pure logical function is_close(a, b)
@@ -437,6 +438,107 @@ contains
     end do
   end subroutine loess_smooth_2d
 
+  !> Compute the Empirical Distribution Function (EDF) from pre-sorted permutation.
+  !| Returns the sorted unique values and their cumulative frequencies in [0,1].
+  !| Assumes perm is already sorted by values[perm]. Caller controls sorting algorithm.
+  !| The number of unique values can be determined by finding the last non-zero cdf_value.
+  subroutine compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
+    !| Array of observed data values (e.g., contributions or spikes).
+    real(real64), intent(in) :: values(n_values)
+    !| Number of values in the input array.
+    integer(int32), intent(in) :: n_values
+    !| Pre-sorted permutation indices (must be sorted by values[perm]).
+    integer(int32), intent(in) :: perm(n_values)
+    !| Sorted unique data values.
+    real(real64), intent(out) :: unique_values(n_values)
+    !| Corresponding cumulative frequencies between 0 and 1.
+    real(real64), intent(out) :: cdf_values(n_values)
+    !| Number of unique values found (actual size of output arrays)
+    integer(int32), intent(out) :: n_unique
+    !| Error code: 0=ok, 201=invalid input, 202=empty input
+    integer(int32), intent(out) :: ierr
+
+    integer(int32) :: i
+    real(real64) :: current_val, cumulative_count
+
+    ! Initialize error code and outputs
+    call set_ok(ierr)
+    unique_values = 0.0_real64
+    cdf_values = 0.0_real64
+
+    ! Input validation
+    if (n_values <= 0) then
+      call set_err_once(ierr, ERR_EMPTY_INPUT)
+      return
+    end if
+
+    if (size(values) < n_values .or. size(perm) < n_values) then
+      call set_err_once(ierr, ERR_INVALID_INPUT)
+      return
+    end if
+
+    ! Identify unique values and compute cumulative frequencies
+    n_unique = 0
+    cumulative_count = 0.0_real64
+    current_val = -huge(1.0_real64)  ! Initialize to lowest possible value
+
+    do i = 1, n_values
+      ! Check if this is a new unique value (exact comparison)
+      if (values(perm(i)) /= current_val) then
+        ! New unique value found
+        current_val = values(perm(i))
+        n_unique = n_unique + 1
+        
+        if (n_unique > size(unique_values)) then
+          ! Output array is too small
+          call set_err_once(ierr, ERR_INVALID_INPUT)
+          return
+        end if
+        
+        unique_values(n_unique) = current_val
+      end if
+      
+      ! Update cumulative count and set CDF value
+      cumulative_count = cumulative_count + 1.0_real64
+      cdf_values(n_unique) = cumulative_count / real(n_values, real64)
+    end do
+  end subroutine compute_edf
+
+  !> Helper routine that sorts and calls compute_edf.
+  !| Allocates workspace internally and performs sorting before computing EDF.
+  !| Use this for convenience; use compute_edf directly for custom sorting.
+  subroutine compute_edf_alloc(values, n_values, unique_values, cdf_values, n_unique, ierr)
+    !| Array of observed data values (e.g., contributions or spikes).
+    real(real64), intent(in) :: values(n_values)
+    !| Number of values in the input array.
+    integer(int32), intent(in) :: n_values
+    !| Sorted unique data values.
+    real(real64), intent(out) :: unique_values(n_values)
+    !| Corresponding cumulative frequencies between 0 and 1.
+    real(real64), intent(out) :: cdf_values(n_values)
+    !| Number of unique values found (actual size of output arrays)
+    integer(int32), intent(out) :: n_unique
+    !| Error code: 0=ok, 201=invalid input, 202=empty input
+    integer(int32), intent(out) :: ierr
+
+    ! Local workspace arrays with explicit size
+    integer(int32) :: perm(n_values)
+    integer(int32) :: stack_left(n_values)
+    integer(int32) :: stack_right(n_values)
+    integer(int32) :: i
+
+    ! Initialize permutation vector to [1, 2, 3, ..., n_values]
+    do i = 1, n_values
+      perm(i) = i
+    end do
+
+    ! Sort values using the permutation vector
+    call sort_array(values, perm, stack_left, stack_right)
+
+    ! Compute EDF with sorted permutation
+    call compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
+  end subroutine compute_edf_alloc
+
   !> Calculate the percentile of an array given a sorted permutation.
   !! Uses linear interpolation between adjacent values.
   pure subroutine calc_percentile(array, permutation, percentile, value, ierr)
@@ -655,3 +757,60 @@ subroutine loess_smooth_2d_c(n_total, n_target, x_ref, y_ref, indices_used, n_us
   ierr = ierr_f
 
 end subroutine loess_smooth_2d_c
+
+!> IMPORTANT - When using these C wrapper functions, no copies of the arrays will be created.
+!| The Fortran routine will operate directly on the memory provided by the caller.
+
+!> C wrapper for compute_edf.
+!| Allocates workspace internally and exposes a simple interface with C types.
+!| The number of unique values is returned via n_unique output parameter.
+subroutine compute_edf_c(values, n_values, unique_values, cdf_values, n_unique, ierr) &
+  bind(C, name="compute_edf_c")
+  use iso_c_binding, only: c_int, c_double
+  use, intrinsic :: iso_fortran_env, only: int32, real64
+  use f42_utils, only: compute_edf_alloc
+  implicit none
+  !| Number of values in the input array.
+  integer(c_int), intent(in), value :: n_values
+  !| Array of observed data values (e.g., contributions or spikes).
+  real(c_double), intent(in) :: values(n_values)
+  !| Sorted unique data values (sized to n_values).
+  real(c_double), intent(out) :: unique_values(n_values)
+  !| Corresponding cumulative frequencies between 0 and 1 (sized to n_values).
+  real(c_double), intent(out) :: cdf_values(n_values)
+  !| Number of unique values found.
+  integer(c_int), intent(out) :: n_unique
+  !| Error code: 0=ok, 201=invalid input, 202=empty input
+  integer(c_int), intent(out) :: ierr
+
+  call compute_edf_alloc(values, n_values, unique_values, cdf_values, n_unique, ierr)
+end subroutine compute_edf_c
+
+!> Expert C wrapper for compute_edf.
+!| Direct interface to compute_edf for users who have already sorted their data
+!| or have a custom permutation vector. This skips the internal sorting step
+!| for better performance when the caller has full control.
+subroutine compute_edf_expert_c(values, n_values, perm, unique_values, cdf_values, n_unique, ierr) &
+    bind(C, name="compute_edf_expert_c")
+  use iso_c_binding, only: c_int, c_double
+  use, intrinsic :: iso_fortran_env, only: int32, real64
+  use f42_utils, only: compute_edf
+  implicit none
+  !| Number of values in the input array.
+  integer(c_int), intent(in), value :: n_values
+  !| Array of observed data values (e.g., contributions or spikes).
+  real(c_double), intent(in) :: values(n_values)
+  !| Pre-sorted permutation indices (must be sorted by values[perm]).
+  !| Caller is responsible for sorting this array before calling.
+  integer(c_int), intent(in) :: perm(n_values)
+  !| Sorted unique data values (sized to n_values).
+  real(c_double), intent(out) :: unique_values(n_values)
+  !| Corresponding cumulative frequencies between 0 and 1 (sized to n_values).
+  real(c_double), intent(out) :: cdf_values(n_values)
+  !| Number of unique values found.
+  integer(c_int), intent(out) :: n_unique
+  !| Error code: 0=ok, 201=invalid input, 202=empty input
+  integer(c_int), intent(out) :: ierr
+
+  call compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
+end subroutine compute_edf_expert_c

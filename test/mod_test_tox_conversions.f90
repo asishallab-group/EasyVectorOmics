@@ -54,11 +54,13 @@ contains
         c_val = 3.141592653589793_c_double
         expected_fortran = 3.141592653589793_real64
         call c_double_as_real64(c_val, casted_fortran)
-        call assert_equal_real(casted_fortran, expected_fortran, TOL, "test_tox_conversions_c_double_as_real64: value mismatch")
+        call assert_equal_real(casted_fortran, expected_fortran, TOL, &
+            "test_tox_conversions_c_double_as_real64: value mismatch")
 
         c_val_array = [c_val]
         call c_double_as_real64(c_val_array, casted_array)
-        call assert_equal_array_real(casted_array, [expected_fortran], 1, TOL, "test_tox_conversions_c_double_as_real64: value mismatch")
+        call assert_equal_array_real(casted_array, [expected_fortran], 1, TOL, &
+            "test_tox_conversions_c_double_as_real64: value mismatch")
     end subroutine test_tox_conversions_c_double_as_real64
 
     subroutine test_tox_conversions_c_complex_as_complex
@@ -71,11 +73,13 @@ contains
         c_val = (3.141592653589793_c_double_complex, 3.141592653589793_c_double_complex)
         expected_fortran = (3.141592653589793_real64, 3.141592653589793_real64)
         call c_complex_as_complex(c_val, casted_fortran)
-        call assert_equal_complex(casted_fortran, expected_fortran, TOL, "test_tox_conversions_c_complex_as_complex: value mismatch")
+        call assert_equal_complex(casted_fortran, expected_fortran, TOL, &
+            "test_tox_conversions_c_complex_as_complex: value mismatch")
 
         c_val_array = [c_val]
         call c_complex_as_complex(c_val_array, casted_array)
-        call assert_equal_array_complex(casted_array, [expected_fortran], 1, TOL, "test_tox_conversions_c_complex_as_complex: value mismatch")
+        call assert_equal_array_complex(casted_array, [expected_fortran], 1, TOL, &
+            "test_tox_conversions_c_complex_as_complex: value mismatch")
     end subroutine test_tox_conversions_c_complex_as_complex
 
     subroutine test_tox_conversions_c_int_as_int32
@@ -201,11 +205,13 @@ contains
         f_val = (3.141592653589793_real64, 3.141592653589793_real64)
         expected_c = (3.141592653589793_c_double_complex, 3.141592653589793_c_double_complex)
         call complex_as_c_complex(f_val, casted_c)
-        call assert_equal_complex(casted_c, expected_c, TOL, "test_tox_conversions_complex_as_c_complex: value mismatch")
+        call assert_equal_complex(casted_c, expected_c, TOL, &
+            "test_tox_conversions_complex_as_c_complex: value mismatch")
 
         f_val_array = [f_val]
         call complex_as_c_complex(f_val_array, casted_array)
-        call assert_equal_array_complex(casted_array, [expected_c], 1, TOL, "test_tox_conversions_complex_as_c_complex: value mismatch")
+        call assert_equal_array_complex(casted_array, [expected_c], 1, TOL, &
+            "test_tox_conversions_complex_as_c_complex: value mismatch")
     end subroutine test_tox_conversions_complex_as_c_complex
 
     subroutine test_tox_conversions_int32_as_c_int
@@ -270,10 +276,12 @@ contains
         f_str = "Hello"
         allocate(c_array(6))
         call string_as_c_char_1d(f_str, c_array)
-        call assert_true(all(c_array == ["H", "e", "l", "l", "o", c_null_char]), "test_tox_conversions_string_as_c_char_1d: value mismatch")
+        call assert_true(all(c_array == ["H", "e", "l", "l", "o", c_null_char]), &
+            "test_tox_conversions_string_as_c_char_1d: value mismatch")
 
         call string_as_c_char_1d(f_str, c_array(1:5))
-        call assert_true(all(c_array(1:5) == ["H", "e", "l", "l", c_null_char]), "test_tox_conversions_string_as_c_char_1d: value mismatch")
+        call assert_true(all(c_array(1:5) == ["H", "e", "l", "l", c_null_char]), &
+            "test_tox_conversions_string_as_c_char_1d: value mismatch")
 
         f_str = ""
         call string_as_c_char_1d(f_str, c_array)
@@ -292,8 +300,10 @@ contains
         f_str(1) = "Hello"
         f_str(2) = ""
         call string_as_c_char_2d(f_str, c_array)
-        call assert_true(all(c_array(:, 1) == ["H", "e", "l", "l", "o", c_null_char]), "test_tox_conversions_string_as_c_char_2d: mismatch in first string")
-        call assert_true(c_array(1, 2) == c_null_char, "test_tox_conversions_string_as_c_char_2d: mismatch in second string")
+        call assert_true(all(c_array(:, 1) == ["H", "e", "l", "l", "o", c_null_char]), &
+            "test_tox_conversions_string_as_c_char_2d: mismatch in first string")
+        call assert_true(c_array(1, 2) == c_null_char, &
+            "test_tox_conversions_string_as_c_char_2d: mismatch in second string")
     end subroutine test_tox_conversions_string_as_c_char_2d
 
     !> Run all tox_conversions tests.
