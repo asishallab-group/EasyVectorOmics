@@ -221,13 +221,16 @@ contains
     integer(int32), intent(out) :: ierr
       !! Error code
     real(real64), intent(in), optional :: min
-      !! lower bound for a distance value, default is lowest 64-bit float -> -huge(1.0_real64)
+      !! lower bound for a distance value, default is zero to have only positives
     real(real64), intent(in), optional :: max
       !! upper bound for a distance value, default is largest 64-bit float -> huge(1.0_real64)
 
     integer(int32) :: i_col, i_row
+    real(real64) :: actual_min
 
-    call validate_all_in_range_real(distances, n * n, ierr, min, max)
+    M_DEFAULT_VAL(min, actual_min, 0.0_real64)
+
+    call validate_all_in_range_real(distances, n * n, ierr, actual_min, max)
     if (is_err(ierr)) return
 
     do i_col = 1, n

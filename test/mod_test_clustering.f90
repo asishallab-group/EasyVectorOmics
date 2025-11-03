@@ -335,7 +335,7 @@ contains
             deallocate(orig_dist, passed_dist)
             allocate(orig_dist(3,3), passed_dist(3,3))
             orig_dist = reshape([ &
-                                            0.0_real64, 1.0_real64, 1.0_real64, &
+                                            0.0_real64, 1.0_real64, ieee_value(1.0_real64, ieee_quiet_nan), &
                                             1.0_real64, 0.0_real64, 1.0_real64, &
                 ieee_value(1.0_real64, ieee_quiet_nan), 1.0_real64, 0.0_real64 &
             ], [3,3])
@@ -344,6 +344,24 @@ contains
             call linkage_clustering(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, methods(i_method), ierr)
             call assert_equal_int(ierr, ERR_NAN_INF, "test_linkage_methods: "//method_name//": NaN case should trigger ERR_NAN_INF")
             call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_linkage_methods: "//method_name//": NaN case should output matrix doesn't match input matrix")
+
+            ! -------------------------------
+            ! Case 6: Negative value in distance matrix
+            ! -------------------------------
+            n_points = 3
+
+            deallocate(orig_dist, passed_dist)
+            allocate(orig_dist(3,3), passed_dist(3,3))
+            orig_dist = reshape([ &
+                0.0_real64, 1.0_real64, -1.0_real64, &
+                1.0_real64, 0.0_real64, 1.0_real64, &
+                -1.0_real64, 1.0_real64, 0.0_real64 &
+            ], [3,3])
+            passed_dist = orig_dist
+
+            call linkage_clustering(passed_dist, n_points, merge_i, merge_j, heights, cluster_sizes, methods(i_method), ierr)
+            call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_linkage_methods: "//method_name//": Negative distance case should trigger ERR_INVALID_INPUT")
+            call assert_equal_array_real(passed_dist, orig_dist, size(orig_dist, kind=int32), 0.0_real64, "test_linkage_methods: "//method_name//": Negative distance case should output matrix doesn't match input matrix")
         end do
     end subroutine test_linkage_methods
 
