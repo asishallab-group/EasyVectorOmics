@@ -24,15 +24,24 @@ contains
    function get_all_tests() result(all_tests)
       type(test_case) :: all_tests(TEST_COUNT)
 
-      all_tests(1) = test_case("test_omics_vector_RAP_projection_all_selected", test_omics_vector_RAP_projection_all_selected)
-      all_tests(2) = test_case("test_omics_vector_RAP_projection_one_axis_selected", test_omics_vector_RAP_projection_one_axis_selected)
-      all_tests(3) = test_case("test_omics_vector_RAP_projection_one_vector_selected", test_omics_vector_RAP_projection_one_vector_selected)
-      all_tests(4) = test_case("test_omics_vector_RAP_projection_constant_vector", test_omics_vector_RAP_projection_constant_vector)
-      all_tests(5) = test_case("test_omics_vector_RAP_projection_orthogonal_vector", test_omics_vector_RAP_projection_orthogonal_vector)
-      all_tests(6) = test_case("test_omics_vector_RAP_projection_no_axes", test_omics_vector_RAP_projection_no_axes)
-      all_tests(7) = test_case("test_omics_vector_RAP_projection_no_vectors", test_omics_vector_RAP_projection_no_vectors)
-      all_tests(8) = test_case("test_omics_vector_RAP_projection_mixed_selection", test_omics_vector_RAP_projection_mixed_selection)
-      all_tests(9) = test_case("test_omics_vector_RAP_projection_non_square_vecs", test_omics_vector_RAP_projection_non_square_vecs)
+      all_tests(1) = test_case("test_omics_vector_RAP_projection_all_selected", &
+          test_omics_vector_RAP_projection_all_selected)
+      all_tests(2) = test_case("test_omics_vector_RAP_projection_one_axis_selected", &
+          test_omics_vector_RAP_projection_one_axis_selected)
+      all_tests(3) = test_case("test_omics_vector_RAP_projection_one_vector_selected", &
+          test_omics_vector_RAP_projection_one_vector_selected)
+      all_tests(4) = test_case("test_omics_vector_RAP_projection_constant_vector", &
+          test_omics_vector_RAP_projection_constant_vector)
+      all_tests(5) = test_case("test_omics_vector_RAP_projection_orthogonal_vector", &
+          test_omics_vector_RAP_projection_orthogonal_vector)
+      all_tests(6) = test_case("test_omics_vector_RAP_projection_no_axes", &
+          test_omics_vector_RAP_projection_no_axes)
+      all_tests(7) = test_case("test_omics_vector_RAP_projection_no_vectors", &
+          test_omics_vector_RAP_projection_no_vectors)
+      all_tests(8) = test_case("test_omics_vector_RAP_projection_mixed_selection", &
+          test_omics_vector_RAP_projection_mixed_selection)
+      all_tests(9) = test_case("test_omics_vector_RAP_projection_non_square_vecs", &
+          test_omics_vector_RAP_projection_non_square_vecs)
    end function get_all_tests
 
    !> Wrapper function for the actual call of `call_omics_vector_RAP_projection`
@@ -56,7 +65,8 @@ contains
       allocate(projections(n_selected_axes, n_selected_vecs))
       projections = 1
 
-      call omics_vector_RAP_projection_r(vecs, n_axes, n_vecs, vecs_mask, n_selected_vecs, axes_mask, n_selected_axes, projections, ierr)
+      call omics_vector_RAP_projection_r(vecs, n_axes, n_vecs, vecs_mask, &
+          n_selected_vecs, axes_mask, n_selected_axes, projections, ierr)
 
       call assert_equal_int(ierr, 0, "ierr should be 0 for valid input: " // trim(test_name))
 

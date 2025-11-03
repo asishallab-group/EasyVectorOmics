@@ -189,5 +189,20 @@
       "! Convert to fortran type",
       "call string_as_c_char_2d(${1:strings}, ${2:c_char_array})"
     ]
+  },
+
+  "Calculate percentile": {
+    "prefix": "f42:calculate_percentile",
+    "body": [
+      "! Calculate percentile",
+      "call calc_percentile(${1:array}, ${2:permutation}, ${3:percentile}, ${4:value}, ${5:ierr})"
+    ]
+  },
+  "Calculate percentile alloc": {
+    "prefix": "f42:calculate_percentile_alloc",
+    "body": [
+      "! Calculate percentile",
+      "call calc_percentile_alloc(${1:array}, ${2:percentile}, ${3:value}, ${4:ierr})"
+    ]
   }
 }
