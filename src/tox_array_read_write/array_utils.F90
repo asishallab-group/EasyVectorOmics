@@ -1,6 +1,6 @@
 !> Module for array utilities
 module array_utils
-  use safeguard
+    use safeguard
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use tox_errors
     implicit none
