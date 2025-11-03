@@ -17,7 +17,7 @@ def test_bst():
     print(f"Sorted values: {x[ix]}")
 
     # Range query using the wrapper function
-    res = bst_range_query(x, ix, 1.5, 3.5)
+    res = bst_range_query(x, ix + 1, 1.5, 3.5)
     print(f"Range [1.5, 3.5] matches: {res["matching_indices"] - 1} (values: {x[res["matching_indices"] - 1]})")
 
 def test_kdtree():
