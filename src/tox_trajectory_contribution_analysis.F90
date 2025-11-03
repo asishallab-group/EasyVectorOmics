@@ -793,7 +793,7 @@ subroutine process_trajectories_flat_C(trajectories, n_factors, n_samples, n_tim
                                            bind(C, name="process_trajectories_flat_C")
     use tox_conversions, only: logical_as_c_int, c_int_as_logical
     use iso_c_binding, only: c_double, c_int
-    use tox_errors, only: set_ok, set_err, is_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL
+    use tox_errors, only: set_ok, set_err, is_err, ERR_EMPTY_INPUT, ERR_ALLOC_FAIL, validate_dimension_size
     use tox_trajectory_contribution_analysis, only: process_trajectories_flat_alloc
     use iso_fortran_env, only: int32
     M_USE_NULL_VALIDATION
@@ -859,10 +859,10 @@ subroutine process_trajectories_flat_C(trajectories, n_factors, n_samples, n_tim
     call set_ok(ierr)
     
     ! Check for valid dimensions
-    if (n_factors <= 0 .or. n_samples <= 0 .or. n_timepoints <= 0) then
-        call set_err(ierr, ERR_EMPTY_INPUT)
-        return
-    end if
+    call validate_dimension_size(n_samples, ierr)
+    call validate_dimension_size(n_factors, ierr)
+    call validate_dimension_size(n_timepoints, ierr)
+    if(is_err(ierr)) return
     
     ! Convert C integer mask to Fortran logical
     allocate(factor_mask(n_factors), stat=ierr)
