@@ -25,13 +25,18 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(5)
+        type(test_case) :: all_tests(10)
 
         all_tests(1) = test_case("test_tox_trajectory_contribution_analysis_get_vec_across_samples", test_get_vec_across_samples)
         all_tests(2) = test_case("test_tox_trajectory_contribution_analysis_get_vec_across_timepoints", test_get_vec_across_timepoints)
         all_tests(3) = test_case("test_tox_trajectory_contribution_analysis_trajectory_contribution", test_trajectory_contribution)
         all_tests(4) = test_case("test_tox_trajectory_contribution_analysis_spike_contribution", test_spike_contribution)
         all_tests(5) = test_case("test_tox_trajectory_contribution_analysis_calc_contributions", test_calc_contributions)
+        all_tests(6) = test_case("test_process_trajectories_alloc", test_process_trajectories_alloc)
+        all_tests(7) = test_case("test_process_trajectories_flat_alloc", test_process_trajectories_flat_alloc)
+        all_tests(8) = test_case("test_process_trajectories_empty_input", test_process_trajectories_empty_input)
+        all_tests(9) = test_case("test_process_trajectories_invalid_dependent", test_process_trajectories_invalid_dependent)
+        all_tests(10) = test_case("test_process_trajectories_dependent_in_mask", test_process_trajectories_dependent_in_mask)
     end function get_all_tests
 
     subroutine test_calc_contributions()
@@ -224,6 +229,166 @@ contains
         call assert_equal_int(ierr, ERR_OK, "test_get_vec_across_timepoints: unexpected error code")
         call assert_equal_array_real(result, expected, n_timepoints, 0.0_real64, "test_get_vec_across_timepoints: returned vector doesn't match")
     end subroutine test_get_vec_across_timepoints
+
+    !> Test: Basic trajectory processing with per-timepoint percentiles
+    subroutine test_process_trajectories_alloc()
+        integer(int32), parameter :: n_factors = 3, n_samples = 4, n_timepoints = 5
+        real(real64) :: trajectories(n_factors, n_samples, n_timepoints)
+        logical :: factor_mask(n_factors)
+        integer(int32) :: dependent_idx = 2
+        integer(int32) :: mode = MODE_NORMAL
+        real(real64) :: percentile = 95.0_real64
+        real(real64) :: integrated_contribs(n_samples, n_factors-1)  ! dependent_idx excluded
+        real(real64) :: spike_contribs(n_timepoints, n_samples, n_factors-1)
+        real(real64) :: thresholds_integrated_contrib(n_factors-1)
+        real(real64) :: thresholds_spike_contrib(n_timepoints, n_factors-1)
+        logical :: outliers_integrated_contrib(n_samples, n_factors-1)
+        logical :: outliers_spike_contrib(n_timepoints, n_samples, n_factors-1)
+        integer(int32) :: ierr
+
+        ! Initialize test data
+        call random_number(trajectories)
+        trajectories = trajectories * 10.0_real64  ! Scale to reasonable values
+        
+        ! Set factor mask: exclude dependent_idx
+        factor_mask = .true.
+        factor_mask(dependent_idx) = .false.
+
+        ! Call the routine
+        call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &
+                                    factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
+                                    integrated_contribs, spike_contribs, &
+                                    thresholds_integrated_contrib, outliers_integrated_contrib, &
+                                    thresholds_spike_contrib, outliers_spike_contrib, ierr)
+
+        call assert_equal_int(ierr, 0, 'Error code 0 for process_trajectories_alloc')
+        call assert_true(size(integrated_contribs, 1) == n_samples, 'Integrated contribs correct sample dimension')
+        call assert_true(size(integrated_contribs, 2) == count(factor_mask), 'Integrated contribs correct factor dimension')
+        call assert_true(size(spike_contribs, 1) == n_timepoints, 'Spike contribs correct timepoint dimension')
+        call assert_true(size(spike_contribs, 2) == n_samples, 'Spike contribs correct sample dimension')
+        call assert_true(size(spike_contribs, 3) == count(factor_mask), 'Spike contribs correct factor dimension')
+    end subroutine test_process_trajectories_alloc
+
+    !> Test: Flat trajectory processing with global percentile
+    subroutine test_process_trajectories_flat_alloc()
+        integer(int32), parameter :: n_factors = 3, n_samples = 4, n_timepoints = 5
+        real(real64) :: trajectories(n_factors, n_samples, n_timepoints)
+        logical :: factor_mask(n_factors)
+        integer(int32) :: dependent_idx = 2
+        integer(int32) :: mode = MODE_RAP
+        real(real64) :: percentile = 90.0_real64
+        real(real64) :: integrated_contribs(n_samples, n_factors-1)
+        real(real64) :: spike_contribs(n_timepoints, n_samples, n_factors-1)
+        real(real64) :: thresholds_integrated_contrib(n_factors-1)
+        real(real64) :: thresholds_spike_contrib(n_factors-1)  ! Note: 1D for flat version
+        logical :: outliers_integrated_contrib(n_samples, n_factors-1)
+        logical :: outliers_spike_contrib(n_timepoints, n_samples, n_factors-1)
+        integer(int32) :: ierr
+
+        ! Initialize test data
+        call random_number(trajectories)
+        trajectories = trajectories * 5.0_real64  ! Scale to reasonable values
+        
+        ! Set factor mask: exclude dependent_idx
+        factor_mask = .true.
+        factor_mask(dependent_idx) = .false.
+
+        ! Call the routine
+        call process_trajectories_flat_alloc(trajectories, n_factors, n_samples, n_timepoints, &
+                                        factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
+                                        integrated_contribs, spike_contribs, &
+                                        thresholds_integrated_contrib, outliers_integrated_contrib, &
+                                        thresholds_spike_contrib, outliers_spike_contrib, ierr)
+
+        call assert_equal_int(ierr, 0, 'Error code 0 for process_trajectories_flat_alloc')
+        call assert_true(size(thresholds_spike_contrib) == count(factor_mask), 'Flat spike thresholds correct dimension')
+        call assert_true(all(thresholds_spike_contrib > 0.0_real64), 'Flat spike thresholds should be positive')
+    end subroutine test_process_trajectories_flat_alloc
+
+    !> Test: Error handling for empty input in trajectory processing
+    subroutine test_process_trajectories_empty_input()
+        integer(int32), parameter :: n_factors = 0, n_samples = 0, n_timepoints = 0
+        real(real64), allocatable :: trajectories(:,:,:)
+        logical, allocatable :: factor_mask(:)
+        integer(int32) :: dependent_idx = 1
+        integer(int32) :: mode = MODE_NORMAL
+        real(real64) :: percentile = 95.0_real64
+        real(real64), allocatable :: integrated_contribs(:,:), spike_contribs(:,:,:)
+        real(real64), allocatable :: thresholds_integrated_contrib(:), thresholds_spike_contrib(:,:)
+        logical, allocatable :: outliers_integrated_contrib(:,:), outliers_spike_contrib(:,:,:)
+        integer(int32) :: ierr
+
+        ! Allocate zero-sized arrays
+        allocate(trajectories(0,0,0))
+        allocate(factor_mask(0))
+        
+        ! Call the routine - should error with ERR_EMPTY_INPUT
+        call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &
+                                    factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
+                                    integrated_contribs, spike_contribs, &
+                                    thresholds_integrated_contrib, outliers_integrated_contrib, &
+                                    thresholds_spike_contrib, outliers_spike_contrib, ierr)
+
+        call assert_equal_int(ierr, ERR_EMPTY_INPUT, 'Error code for empty input')
+    end subroutine test_process_trajectories_empty_input
+
+    !> Test: Error handling for invalid dependent index
+    subroutine test_process_trajectories_invalid_dependent()
+        integer(int32), parameter :: n_factors = 3, n_samples = 4, n_timepoints = 5
+        real(real64) :: trajectories(n_factors, n_samples, n_timepoints)
+        logical :: factor_mask(n_factors)
+        integer(int32) :: dependent_idx = 5  ! Out of bounds
+        integer(int32) :: mode = MODE_NORMAL
+        real(real64) :: percentile = 95.0_real64
+        real(real64) :: integrated_contribs(n_samples, n_factors-1)
+        real(real64) :: spike_contribs(n_timepoints, n_samples, n_factors-1)
+        real(real64) :: thresholds_integrated_contrib(n_factors-1)
+        real(real64) :: thresholds_spike_contrib(n_timepoints, n_factors-1)
+        logical :: outliers_integrated_contrib(n_samples, n_factors-1)
+        logical :: outliers_spike_contrib(n_timepoints, n_samples, n_factors-1)
+        integer(int32) :: ierr
+
+        call random_number(trajectories)
+        factor_mask = .true.
+
+        call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &
+                                    factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
+                                    integrated_contribs, spike_contribs, &
+                                    thresholds_integrated_contrib, outliers_integrated_contrib, &
+                                    thresholds_spike_contrib, outliers_spike_contrib, ierr)
+
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, 'Error code for invalid dependent index')
+    end subroutine test_process_trajectories_invalid_dependent
+
+    !> Test: Error when dependent_idx is included in factor_mask
+    subroutine test_process_trajectories_dependent_in_mask()
+        integer(int32), parameter :: n_factors = 3, n_samples = 4, n_timepoints = 5
+        real(real64) :: trajectories(n_factors, n_samples, n_timepoints)
+        logical :: factor_mask(n_factors)
+        integer(int32) :: dependent_idx = 2
+        integer(int32) :: mode = MODE_NORMAL
+        real(real64) :: percentile = 95.0_real64
+        real(real64) :: integrated_contribs(n_samples, n_factors)
+        real(real64) :: spike_contribs(n_timepoints, n_samples, n_factors)
+        real(real64) :: thresholds_integrated_contrib(n_factors)
+        real(real64) :: thresholds_spike_contrib(n_timepoints, n_factors)
+        logical :: outliers_integrated_contrib(n_samples, n_factors)
+        logical :: outliers_spike_contrib(n_timepoints, n_samples, n_factors)
+        integer(int32) :: ierr
+
+        call random_number(trajectories)
+        
+        ! Include dependent_idx in mask - this should cause an error
+        factor_mask = .true.  ! All factors included, including dependent_idx
+
+        call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &
+                                    factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
+                                    integrated_contribs, spike_contribs, &
+                                    thresholds_integrated_contrib, outliers_integrated_contrib, &
+                                    thresholds_spike_contrib, outliers_spike_contrib, ierr)
+
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, 'Error when dependent_idx in factor_mask')
+    end subroutine test_process_trajectories_dependent_in_mask
 
     !> Run all tox_trajectory_contribution_analysis tests.
     subroutine run_all_tests_tox_trajectory_contribution_analysis
