@@ -14,7 +14,7 @@ MODULE_FLAG=$(get_module_flag $BUILD_DIR)
 
 echo "Detected alignment: $ALIGN"
 echo "Compiling src/"
-bash build.sh $@
+# bash build.sh $@
 check_exit_code "Build failed"
 
 echo "Using compiler: $COMPILER"

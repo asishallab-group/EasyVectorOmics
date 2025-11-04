@@ -2216,23 +2216,6 @@ def tox_detect_subfunctionalization(ancestor, paralogs, rdi_threshold, filtered_
     max_subset_size = ctypes.c_int(work_array_size_data["actual_max_subset_size"])
     work_array_size = ctypes.c_int(work_array_size_data["work_array_size"])
 
-    # Step 1: Calculate max_subset_size and n_paralog_subsets
-    calc_size_c = lib.calc_work_arr_paralog_subsets_size
-    calc_size_c.argtypes = [
-        ctypes.POINTER(ctypes.c_int),  # max_subset_size (inout)
-        ctypes.POINTER(ctypes.c_int),                  # n_paralogs
-        ctypes.POINTER(ctypes.c_int),  # work_array_size
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # filtered_paralogs_mask
-        ctypes.POINTER(ctypes.c_int),                  # n_mask_chunks
-        ctypes.POINTER(ctypes.c_int)   # ierr
-    ]
-    calc_size_c.restype = None
-
-    calc_size_c(ctypes.byref(max_subset_size), ctypes.byref(n_paralogs),
-                ctypes.byref(work_array_size), filtered_paralogs_mask,
-                ctypes.byref(n_mask_chunks), ctypes.byref(ierr))
-    check_err_code(ierr.value)
-
     # Step 2: Allocate output arrays
     work_arr_paralog_subsets = np.zeros((n_mask_chunks.value, work_array_size.value), dtype=np.int32, order='F')
     active_mask = np.zeros(n_mask_chunks.value, dtype=np.int32)

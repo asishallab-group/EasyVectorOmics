@@ -25,7 +25,7 @@ def test_paralog_functions():
 
     bit_mask = np.zeros(chunk_count, dtype=np.int32)
     bit_mask[i_paralog // 32] = 1 << (i_paralog % 32)
-    state = tox_mask_check_state(bit_mask, i_paralog)
+    state = tox_mask_check_state(bit_mask, i_paralog + 1)
     print(f"Paralog {i_paralog + 1} active in mask: {state}")
 
     print("\n=== Testing Pattern Filtering ===")
@@ -68,7 +68,7 @@ def test_paralog_functions():
     print("\n=== Testing Subfunctionalization Detection ===")
 
     norms = np.sqrt(np.sum(paralogs**2, axis=0))
-    sorted_perm = np.argsort(norms).astype(np.int32)
+    sorted_perm = np.argsort(norms).astype(np.int32) + 1
 
     subfunc_result = tox_detect_subfunctionalization(
         ancestor=ancestor,

@@ -2,14 +2,24 @@
 
 module tox_paralog_analysis
     use, intrinsic :: iso_fortran_env, only: int32, real64
-    use tox_errors, only: set_ok, set_err, is_err, ERR_INVALID_INPUT, ERR_SIZE_MISMATCH
+    use tox_errors, only: set_ok, set_err, is_err, ERR_INVALID_INPUT, ERR_SIZE_MISMATCH, validate_dimension_size, validate_in_range_int, validate_all_in_range_int, validate_in_range_real, validate_all_in_range_real
     use f42_utils, only: add_vector, subtract_vector, norm, angle_between
     implicit none
+
+    private :: validate_pattern
 
     integer(int32), parameter :: DOSAGE_PATTERN = 0
     integer(int32), parameter :: SUBFUNC_PATTERN = 1
 
 contains
+
+    !> Validation helper for pattern validation
+    pure subroutine validate_pattern(pattern, ierr)
+        integer(int32), intent(in) :: pattern
+        integer(int32), intent(inout) :: ierr
+
+        call validate_in_range_int(pattern, ierr, min=0_int32, max=1_int32)
+    end subroutine validate_pattern
 
     !> Identifies subsets of paralogs with small angle to the `ancestor` (max_angle) and sum to a magnitude significantly exceeding `norm(ancestor)` (gain)
     pure subroutine detect_dosage_effect(ancestor, paralogs, n_paralogs, n_dims, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, ierr, max_angle, gain_gamma)
@@ -40,7 +50,7 @@ contains
         integer(int32), intent(out) :: ierr
             !! error code
         real(real64), intent(in), optional :: gain_gamma
-            !! true positive magnitude gain for dosage effect, default 0.1
+            !! positive magnitude gain for dosage effect, default 0.1
         real(real64), intent(in), optional :: max_angle
             !! maximum angle in radians that a subset candidate must not exceed, otherwise pruned, default is Pi
 
@@ -89,6 +99,8 @@ contains
 
     !> Identifies subsets of paralogs where dosage effect or subfunctionalization applies, depending on `pattern`
     pure subroutine detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+        use f42_utils, only: PI
+
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
         integer(int32), intent(in) :: n_paralogs
@@ -127,9 +139,9 @@ contains
         integer(int32), intent(out) :: ierr
             !! error code
         real(real64), intent(in), optional :: dosage_gain_gamma
-            !! in dosage mode required true positive magnitude gain for dosage, default 0.1
+            !! in dosage mode required positive magnitude gain for dosage, default 0.1
         real(real64), intent(in), optional :: dosage_max_angle
-            !! in dosage mode maximum angle in radians that a subset candidate must not exceed, otherwise pruned, default is Pi
+            !! in dosage mode maximum angle in radians `0<=angle<=2*Pi` that a subset candidate must not exceed, otherwise pruned, default is Pi
         real(real64), dimension(n_paralogs), intent(in), optional :: subfunc_paralog_norms
             !! in subfunctionalization mode needed for subset pruning, holds the euclidean norms of paralogs (you can use the `norm` from `f42_utils` function for this)
         integer(int32), dimension(n_paralogs), intent(in), optional :: subfunc_sorted_paralog_norms_perm
@@ -143,6 +155,20 @@ contains
         integer(int32) :: i_paralog, subset_size, n_active_masks, n_new_active_masks, last_paralog_idx
 
         call set_ok(ierr)
+
+        call validate_dimension_size(n_paralogs, ierr)
+        call validate_dimension_size(n_paralog_subsets, ierr)
+        call validate_dimension_size(n_dims, ierr)
+        call validate_dimension_size(n_mask_chunks, ierr)
+        call validate_in_range_int(max_subset_size, ierr, min=1_int32)
+        call validate_all_in_range_real(ancestor, n_dims, ierr)
+        call validate_all_in_range_real(paralogs, n_dims * n_paralogs, ierr)
+        call validate_in_range_real(dosage_gain_gamma, ierr, min=0.0_real64)
+        call validate_in_range_real(dosage_max_angle, ierr, min=0.0_real64, max=2 * PI)
+        call validate_all_in_range_real(subfunc_paralog_norms, n_paralogs, ierr)
+        call validate_all_in_range_int(subfunc_sorted_paralog_norms_perm, n_paralogs, ierr, min=1_int32)
+        call validate_in_range_real(subfunc_rdi_threshold, ierr, min=0.0_real64)
+        if (is_err(ierr)) return
 
         work_arr_paralog_subsets = 0_int32
         n_active_masks = 0_int32
@@ -167,10 +193,10 @@ contains
         do subset_size = 2, max_subset_size
             n_new_active_masks = 0_int32
             do while (n_active_masks > 0)
-                call take_active_mask(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, active_mask, ierr)
+                call take_active_mask_helper(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, active_mask, ierr)
                 if (is_err(ierr)) return
 
-                call generate_subsets(active_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+                call generate_subsets_helper(active_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
                 if (is_err(ierr)) return
             end do
 
@@ -181,7 +207,9 @@ contains
     !> Generates subsets for `candidate_mask` by extending it with one valid paralog.
     !| Subsets with bad paralog constellation will be pruned,
     !| others will be added to the work array, either as new active subset that will be extended in coming iterations or as result.
-    pure subroutine generate_subsets(candidate_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+    !| 
+    !| Doesn't do any input validation.
+    pure subroutine generate_subsets_helper(candidate_mask, filtered_paralogs_mask, n_mask_chunks, pattern, ancestor, paralogs, n_paralogs, n_dims, temp_paralog_vector, work_arr_paralog_subsets, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
         integer(int32), intent(in) :: n_paralogs
@@ -221,7 +249,7 @@ contains
         integer(int32), intent(out) :: ierr
             !! error code
         real(real64), intent(in), optional :: dosage_gain_gamma
-            !! in dosage mode required true positive magnitude gain for dosage, default 0.1
+            !! in dosage mode required positive magnitude gain for dosage, default 0.1
         real(real64), intent(in), optional :: dosage_max_angle
             !! in dosage mode maximum angle in radians that a subset candidate must not exceed, otherwise pruned, default is Pi
         real(real64), dimension(n_paralogs), intent(in), optional :: subfunc_paralog_norms
@@ -233,14 +261,16 @@ contains
 
         integer(int32) :: i_paralog
 
+        call set_ok(ierr)
+
         select case (pattern)
         case (DOSAGE_PATTERN)
             block
                 use f42_utils, only: PI
                 real(real64) :: subset_angle, gain, max_angle
 
-                gain = merge(dosage_gain_gamma, 0.1_real64, present(dosage_gain_gamma))
-                max_angle = merge(dosage_max_angle, PI, present(dosage_max_angle))
+                M_DEFAULT_VAL(dosage_gain_gamma, gain, 0.1_real64)
+                M_DEFAULT_VAL(dosage_max_angle, max_angle, PI)
 
                 !! prepare sum vector, so the extending paralog just needs to be included in one operation and excluded after calculation
                 temp_paralog_vector = 0
@@ -268,9 +298,9 @@ contains
                         if (subset_angle <= max_angle) then
                             ! If norm exceeds ancestor's norm significantly, subset is a result
                             if (norm(temp_paralog_vector) >= (1 + gain) * norm(ancestor)) then
-                                call add_to_results(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
+                                call add_to_results_helper(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
                             else
-                                call add_new_active_mask(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
+                                call add_new_active_mask_helper(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
                             end if
                             if (is_err(ierr)) return
                         end if
@@ -318,12 +348,12 @@ contains
 
                         residual_norm = norm(temp_paralog_vector)
                         if (residual_norm <= subfunc_rdi_threshold) then
-                            call add_to_results(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
+                            call add_to_results_helper(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
                         else if (i_paralog < n_paralogs) then
                             ! subfunc_temp_work_array(i_paralog+1) is min(nor) for i in i_paralog+1:n_paralogs )
                             ! so if the minimum norm of the remaining paralogs is not lower the residual, prune this subset branch
                             if (subfunc_temp_work_array(i_paralog + 1) <= residual_norm) then
-                                call add_new_active_mask(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
+                                call add_new_active_mask_helper(work_arr_paralog_subsets, n_mask_chunks, n_paralog_subsets, n_results, n_active_masks, n_new_active_masks, candidate_mask, ierr)
                             end if
                         end if
                         if (is_err(ierr)) return
@@ -340,7 +370,7 @@ contains
             return
         end select
 
-    end subroutine generate_subsets
+    end subroutine generate_subsets_helper
 
     !> Helper for subfunctionalization pruning. It initializes a working array with each index i holding the min value in subarray src_arr(i:src_arr_len)
     pure subroutine fill_array_with_minvals_for_each_idx(out_arr, src_arr, sorted_src_arr_perm, src_arr_len, ierr)
@@ -388,7 +418,7 @@ contains
     !> For memory efficiency this subroutine helps holding different kinds of masks in a single array.
     !| To achieve this, `subsets` has this structure: [...results, ...active_masks, ...new_active_masks]
     !| This routine removes an active mask from the `subsets` array and returns it in `active_mask`.
-    pure subroutine take_active_mask(subsets, n_mask_chunks, n_subsets, n_results, n_active_masks, n_new_active_masks, active_mask, ierr)
+    pure subroutine take_active_mask_helper(subsets, n_mask_chunks, n_subsets, n_results, n_active_masks, n_new_active_masks, active_mask, ierr)
         integer(int32), intent(in) :: n_mask_chunks
             !! number of 32 bit chunks in a mask
         integer(int32), intent(in) :: n_subsets
@@ -408,10 +438,12 @@ contains
 
         call set_ok(ierr)
 
-        if (n_active_masks <= 0 .or. n_results < 0 .or. n_new_active_masks < 0) then
-            call set_err(ierr, ERR_INVALID_INPUT)
-            return
-        end if
+        call validate_dimension_size(n_mask_chunks, ierr)
+        call validate_dimension_size(n_subsets, ierr)
+        call validate_in_range_int(n_active_masks, ierr, min=1_int32)
+        call validate_in_range_int(n_results, ierr, min=0_int32)
+        call validate_in_range_int(n_new_active_masks, ierr, min=0_int32)
+        if (is_err(ierr)) return
 
         if (n_subsets < n_results + n_active_masks + n_new_active_masks) then
             call set_err(ierr, ERR_SIZE_MISMATCH)
@@ -426,12 +458,12 @@ contains
 
         ! update count
         n_active_masks = n_active_masks - 1
-    end subroutine take_active_mask
+    end subroutine take_active_mask_helper
 
     !> For memory efficiency this subroutine helps holding different kinds of masks in a single array.
     !| To achieve this, `subsets` has this structure: [...results, ...active_masks, ...new_active_masks]
     !| This routine adds a result mask to `subsets` array.
-    pure subroutine add_to_results(subsets, n_mask_chunks, n_subsets, n_results, n_active_masks, n_new_active_masks, result, ierr)
+    pure subroutine add_to_results_helper(subsets, n_mask_chunks, n_subsets, n_results, n_active_masks, n_new_active_masks, result, ierr)
         integer(int32), intent(in) :: n_mask_chunks
             !! number of 32 bit chunks in a mask
         integer(int32), intent(in) :: n_subsets
@@ -451,10 +483,12 @@ contains
 
         call set_ok(ierr)
 
-        if (n_active_masks < 0 .or. n_results < 0 .or. n_new_active_masks < 0) then
-            call set_err(ierr, ERR_INVALID_INPUT)
-            return
-        end if
+        call validate_dimension_size(n_mask_chunks, ierr)
+        call validate_dimension_size(n_subsets, ierr)
+        call validate_in_range_int(n_active_masks, ierr, min=0_int32)
+        call validate_in_range_int(n_results, ierr, min=0_int32)
+        call validate_in_range_int(n_new_active_masks, ierr, min=0_int32)
+        if (is_err(ierr)) return
 
         if (n_subsets < n_results + n_active_masks + n_new_active_masks + 1) then
             call set_err(ierr, ERR_SIZE_MISMATCH)
@@ -469,12 +503,12 @@ contains
         ! store result
         n_results = n_results + 1
         subsets(:, n_results) = result
-    end subroutine add_to_results
+    end subroutine add_to_results_helper
 
     !> For memory efficiency this subroutine helps holding different kinds of masks in a single array.
     !| To achieve this, `subsets` has this structure: [...results, ...active_masks, ...new_active_masks]
     !| This routine adds a new active mask to the `subsets` array.
-    pure subroutine add_new_active_mask(subsets, n_mask_chunks, n_subsets, n_results, n_active_masks, n_new_active_masks, new_active_mask, ierr)
+    pure subroutine add_new_active_mask_helper(subsets, n_mask_chunks, n_subsets, n_results, n_active_masks, n_new_active_masks, new_active_mask, ierr)
         integer(int32), intent(in) :: n_mask_chunks
             !! number of 32 bit chunks in a mask
         integer(int32), intent(in) :: n_subsets
@@ -494,10 +528,12 @@ contains
 
         call set_ok(ierr)
 
-        if (n_active_masks < 0 .or. n_results < 0 .or. n_new_active_masks < 0) then
-            call set_err(ierr, ERR_INVALID_INPUT)
-            return
-        end if
+        call validate_dimension_size(n_mask_chunks, ierr)
+        call validate_dimension_size(n_subsets, ierr)
+        call validate_in_range_int(n_active_masks, ierr, min=0_int32)
+        call validate_in_range_int(n_results, ierr, min=0_int32)
+        call validate_in_range_int(n_new_active_masks, ierr, min=0_int32)
+        if (is_err(ierr)) return
 
         if (n_subsets < n_results + n_active_masks + n_new_active_masks + 1) then
             call set_err(ierr, ERR_SIZE_MISMATCH)
@@ -507,7 +543,7 @@ contains
         ! simply append the new active mask to the end
         n_new_active_masks = n_new_active_masks + 1
         subsets(:, n_results + n_active_masks + n_new_active_masks) = new_active_mask
-    end subroutine add_new_active_mask
+    end subroutine add_new_active_mask_helper
 
     !> This subroutine easily determines the needed chunk count for subset bit masks, as an integer has only 32 bits.
     pure subroutine mask_chunk_count(n_paralogs, count)
@@ -585,6 +621,13 @@ contains
 
         call set_ok(ierr)
 
+        call validate_dimension_size(n_paralogs, ierr)
+        call validate_dimension_size(n_mask_chunks, ierr)
+        call validate_pattern(pattern, ierr)
+        call validate_in_range_real(threshold, ierr)
+        call validate_all_in_range_real(paralog_angles, n_paralogs, ierr)
+        if (is_err(ierr)) return
+
         mask = 0_int32
 
         select case (pattern)
@@ -636,6 +679,10 @@ contains
         integer(int32) :: i_paralog, subset_size, extensions_count, results, previous_results, n_paralogs_filtered
 
         call set_ok(ierr)
+
+        call validate_dimension_size(n_paralogs, ierr)
+        call validate_dimension_size(n_mask_chunks, ierr)
+        if (is_err(ierr)) return
 
         n_paralogs_filtered = 0
         do i_paralog = 1, n_paralogs
@@ -779,7 +826,7 @@ pure subroutine detect_dosage_effect_c(ancestor, paralogs, n_paralogs, n_dims, f
     integer(c_int), dimension(n_mask_chunks), intent(in), target :: filtered_paralogs_mask
         !! bit mask with paralogs' indices kept by pattern set to 1, else 0. Use `filter_paralogs_by_pattern` for its calculation
     real(c_double), intent(in), target :: gain_gamma
-        !! in dosage mode required true positive magnitude gain for dosage, default 0.1
+        !! in dosage mode required positive magnitude gain for dosage, default 0.1
     real(c_double), intent(in), target :: max_angle
         !! in dosage mode maximum angle in radians that a subset candidate must not exceed, otherwise pruned, default is Pi
 
@@ -841,7 +888,7 @@ pure subroutine detect_dosage_effect_r(ancestor, paralogs, n_paralogs, n_dims, f
     integer(int32), dimension(n_mask_chunks), intent(in) :: filtered_paralogs_mask
         !! bit mask with paralogs' indices kept by pattern set to 1, else 0. Use `filter_paralogs_by_pattern` for its calculation
     real(real64), intent(in) :: gain_gamma
-        !! in dosage mode required true positive magnitude gain for dosage, default 0.1
+        !! in dosage mode required positive magnitude gain for dosage, default 0.1
     real(real64), intent(in) :: max_angle
         !! in dosage mode maximum angle in radians that a subset candidate must not exceed, otherwise pruned, default is Pi
 
@@ -1178,7 +1225,7 @@ pure subroutine mask_check_state_c(bit_mask, n_mask_chunks, i_paralog, state, ie
     M_CHECK_NON_NULL(i_paralog)
     M_CHECK_NON_NULL(state)
 
-    call logical_as_c_int(mask_check_state(bit_mask, i_paralog + 1), state)
+    call logical_as_c_int(mask_check_state(bit_mask, i_paralog), state)
 end subroutine mask_check_state_c
 
 pure subroutine mask_check_state_r(bit_mask, n_mask_chunks, i_paralog, state)
