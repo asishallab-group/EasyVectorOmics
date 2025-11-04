@@ -472,12 +472,12 @@ def validate_expression_data(expression_vectors, check_non_negative=True):
     """
     Validate expression data
     Args:
-        expression_vectors: 2D array of expression data (genes x samples)
+        expression_vectors: 2D array of expression data (samples x genes)
         check_non_negative: Whether to check for non-negative values
     """
     arr = _ensure_float_array(expression_vectors)
     arr = np.asfortranarray(arr, dtype=np.float64)
-    n_genes, n_samples = arr.shape
+    n_samples, n_genes = arr.shape
     ierr = ctypes.c_int()
     lib.validate_expression_data_C(
         arr.ctypes.data_as(ctypes.POINTER(ctypes.c_double)),
@@ -510,8 +510,8 @@ def validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, 
     """
     Validate shift vectors, checks if datatypes are correct and if the general structure matches (first d rows = centroids, d+1 to 2d rows = shift)
     Args:
-        shift_vectors: 2D array of shift vectors (genes x samples)
-        expression_vectors: 2D array of expression data (genes x samples)
+        shift_vectors: 2D array of shift vectors (2*samples x genes)
+        expression_vectors: 2D array of expression data (samples x genes)
         family_centroids: 2D array of family centroids (samples x families)
         gene_to_fam: Array mapping each gene to a family index (0 if unassigned)
         n_genes: Number of genes
@@ -569,9 +569,9 @@ def validate_data_structure(n_genes, n_families, n_samples, gene_ids, gene_famil
         gene_ids: List of gene IDs
         gene_family_ids: List of family IDs
         gene_to_fam: Array mapping each gene to a family index (0 if unassigned)
-        expression_vectors: 2D array of expression data (genes x samples)
+        expression_vectors: 2D array of expression data (samples x genes)
         family_centroids: 2D array of family centroids (samples x families)
-        shift_vectors: 2D array of shift vectors (genes x samples)
+        shift_vectors: 2D array of shift vectors (2*samples x genes)
     """
     gene_ids = _ensure_string_array(gene_ids)
     gene_family_ids = _ensure_string_array(gene_family_ids)
@@ -617,7 +617,7 @@ def validate_all_data(n_genes, n_families, n_samples, gene_ids, gene_family_ids,
         gene_ids: List of gene IDs
         gene_family_ids: List of family IDs
         gene_to_fam: Array mapping each gene to a family index (0 if unassigned)
-        expression_vectors: 2D array of expression data (genes x samples)
+        expression_vectors: 2D array of expression data (samples x genes)
         family_centroids: 2D array of family centroids (samples x families)
         shift_vectors: 2D array of shift vectors (genes x samples)
     """
