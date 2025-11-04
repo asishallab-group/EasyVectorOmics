@@ -1,6 +1,7 @@
 !> Module for trajectory explanatory contribution analysis (TCA)
 !! Provides functionality for detecting outliers in trajectory and spike contributions
 module tox_trajectory_contribution_analysis_outlier_detection
+    use safeguard
     use, intrinsic :: iso_fortran_env, only: real64, int32
     use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, &
                          ERR_ALLOC_FAIL, set_ok, set_err, is_err, validate_dimension_size

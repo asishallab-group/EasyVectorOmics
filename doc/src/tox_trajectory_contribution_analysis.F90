@@ -1,6 +1,7 @@
 #include "macros.h"
 
 module tox_trajectory_contribution_analysis
+    use safeguard
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
     use f42_utils, only: is_close
