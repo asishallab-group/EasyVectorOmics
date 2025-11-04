@@ -309,7 +309,9 @@ test_detect_outliers_large_dataset <- function() {
     rnorm(8, 5, 0.1),     # Family 5: tight cluster around 5
     c(20, 25)             # Two clear outliers
   )
-  gene_to_fam <- c(rep(1:5, each=10), c(1, 2))
+  # Map each distance to a family index. The constructed distances vector has
+  # 10+10+10+10+8+2 = 50 elements, so create a matching mapping of length 50.
+  gene_to_fam <- rep(1:5, each = 10)
   percentile <- 90.0
   
   result <- tox_detect_outliers(distances, gene_to_fam, n_families, percentile)

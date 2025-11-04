@@ -1,4 +1,5 @@
 #include <Rcpp.h>
+#include <algorithm>
 
 using namespace Rcpp;
 
@@ -38,8 +39,7 @@ extern "C" {
     double* rdi, double* sorted_rdi,
     int* is_outlier_int,
     double* threshold,
-    double percentile,
-    int* ierr
+    double percentile
   );
   
   void detect_outliers_c(
@@ -83,15 +83,12 @@ extern "C" {
 // ===================================================================
 
 // [[Rcpp::export]]
-List tox_compute_family_scaling_rcpp(
-    int n_genes, int n_families,
-    NumericVector distances,
-    IntegerVector gene_to_fam,
-    NumericVector dscale,
-    NumericVector loess_x,
-    NumericVector loess_y,
-    IntegerVector indices_used) {
-
+List tox_compute_family_scaling_rcpp(NumericVector distances, IntegerVector gene_to_fam, int n_families) {
+  int n_genes = distances.size();
+  NumericVector dscale(n_families);
+  NumericVector loess_x(n_families);
+  NumericVector loess_y(n_families);
+  IntegerVector indices_used(n_families);
   int ierr = 0;
 
   compute_family_scaling_c(
@@ -115,19 +112,14 @@ List tox_compute_family_scaling_rcpp(
 }
 
 // [[Rcpp::export]]
-List tox_compute_family_scaling_expert_rcpp(
-    int n_genes, int n_families,
-    NumericVector distances,
-    IntegerVector gene_to_fam,
-    NumericVector dscale,
-    NumericVector loess_x,
-    NumericVector loess_y,
-    IntegerVector indices_used,
-    IntegerVector perm_tmp,
-    IntegerVector stack_left_tmp,
-    IntegerVector stack_right_tmp,
-    NumericVector family_distances) {
-
+List tox_compute_family_scaling_expert_rcpp(int n_families, NumericVector distances, IntegerVector gene_to_fam,
+                                            IntegerVector perm_tmp, IntegerVector stack_left_tmp, IntegerVector stack_right_tmp,
+                                            NumericVector family_distances) {
+  int n_genes = distances.size();
+  NumericVector dscale(n_families);
+  NumericVector loess_x(n_families);
+  NumericVector loess_y(n_families);
+  IntegerVector indices_used(n_families);
   int ierr = 0;
 
   compute_family_scaling_expert_c(
@@ -146,23 +138,23 @@ List tox_compute_family_scaling_expert_rcpp(
     Named("loess_x") = loess_x,
     Named("loess_y") = loess_y,
     Named("indices_used") = indices_used,
+    Named("perm_tmp") = perm_tmp,
+    Named("stack_left_tmp") = stack_left_tmp,
+    Named("stack_right_tmp") = stack_right_tmp,
+    Named("family_distances") = family_distances,
     Named("ierr") = ierr
   );
 }
 
 // [[Rcpp::export]]
-List tox_compute_rdi_rcpp(
-    int n_genes, int n_families,
-    NumericVector distances,
-    IntegerVector gene_to_fam,
-    NumericVector dscale,
-    NumericVector rdi,
-    NumericVector sorted_rdi,
-    IntegerVector perm,
-    IntegerVector stack_left,
-    IntegerVector stack_right) {
-
-  int ierr = 0;
+List tox_compute_rdi_rcpp(NumericVector distances, IntegerVector gene_to_fam, NumericVector dscale) {
+  int n_genes = distances.size();
+  int n_families = dscale.size();
+  NumericVector rdi(n_genes);
+  NumericVector sorted_rdi(n_genes);
+  IntegerVector perm(n_genes);
+  IntegerVector stack_left(n_genes);
+  IntegerVector stack_right(n_genes);
 
   compute_rdi_c(
     n_genes, n_families,
@@ -176,53 +168,50 @@ List tox_compute_rdi_rcpp(
     Named("rdi") = rdi,
     Named("sorted_rdi") = sorted_rdi,
     Named("perm") = perm,
-    Named("ierr") = ierr
+    Named("stack_left") = stack_left,
+    Named("stack_right") = stack_right
   );
-
 }
 
 // [[Rcpp::export]]
-List tox_identify_outliers_rcpp(
-    int n_genes,
-    NumericVector rdi,
-    NumericVector sorted_rdi,
-    IntegerVector is_outlier_int,
-    double percentile) {
-
+List tox_identify_outliers_rcpp(NumericVector rdi, double percentile) {
+  int n_genes = rdi.size();
+  NumericVector sorted_rdi = clone(rdi);
+  std::sort(sorted_rdi.begin(), sorted_rdi.end());
+  IntegerVector is_outlier_int(n_genes);
   double threshold = 0.0;
-  int ierr = 0;
 
   identify_outliers_c(
     n_genes,
     rdi.begin(), sorted_rdi.begin(),
     is_outlier_int.begin(),
     &threshold,
-    percentile,
-    &ierr
+    percentile
   );
 
+  // Convert integer 0/1 flags to logical vector for R
+  LogicalVector is_outlier(n_genes);
+  for (int i = 0; i < n_genes; ++i) {
+    is_outlier[i] = (is_outlier_int[i] != 0);
+  }
+
   return List::create(
-    Named("is_outlier_int") = is_outlier_int,
-    Named("threshold") = threshold,
-    Named("ierr") = ierr
+    Named("is_outlier") = is_outlier,
+    Named("threshold") = threshold
   );
 }
 
 // [[Rcpp::export]]
-List tox_detect_outliers_rcpp(
-    int n_genes, int n_families,
-    NumericVector distances,
-    IntegerVector gene_to_fam,
-    NumericVector work_array,
-    IntegerVector perm,
-    IntegerVector stack_left,
-    IntegerVector stack_right,
-    IntegerVector is_outlier_int,
-    NumericVector loess_x,
-    NumericVector loess_y,
-    IntegerVector loess_n,
-    double percentile) {
-
+List tox_detect_outliers_rcpp(NumericVector distances, IntegerVector gene_to_fam, int n_families, double percentile) {
+  int n_genes = distances.size();
+  NumericVector work_array(n_genes);
+  IntegerVector perm(n_genes);
+  IntegerVector stack_left(n_genes);
+  IntegerVector stack_right(n_genes);
+  IntegerVector is_outlier_int(n_genes);
+  NumericVector loess_x(n_families);
+  NumericVector loess_y(n_families);
+  IntegerVector loess_n(n_families);
   int ierr = 0;
 
   detect_outliers_c(
@@ -236,8 +225,17 @@ List tox_detect_outliers_rcpp(
     percentile
   );
 
+  // Convert integer flags to logical vector for R
+  LogicalVector is_outlier(n_genes);
+  for (int i = 0; i < n_genes; ++i) {
+    is_outlier[i] = (is_outlier_int[i] != 0);
+  }
+
   return List::create(
-    Named("is_outlier_int") = is_outlier_int,
+    Named("is_outlier") = is_outlier,
+    Named("loess_x") = loess_x,
+    Named("loess_y") = loess_y,
+    Named("loess_n") = loess_n,
     Named("ierr") = ierr
   );
 }
