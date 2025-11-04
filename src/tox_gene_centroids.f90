@@ -4,6 +4,7 @@
 ! wrappers are defined outside the module for compatibility.
 
 module tox_gene_centroids
+  use safeguard
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, set_ok, set_err_once, is_ok
   implicit none
@@ -177,6 +178,7 @@ pure subroutine group_centroid_c(expression_vectors, n_axes, n_genes, gene_to_fa
                                  centroid_matrix, mode, ortholog_set, selected_indices, &
                                  selected_indices_len, ierr) &
   bind(c, name='group_centroid_c')
+  use, intrinsic :: iso_fortran_env, only: int32
   use, intrinsic :: iso_c_binding, only: c_int, c_double, c_char
   use tox_gene_centroids, only: group_centroid, GROUP_ORTHOLOGS, GROUP_ALL
   use tox_errors, only: is_ok, set_err, ERR_INVALID_INPUT
@@ -207,7 +209,7 @@ pure subroutine group_centroid_c(expression_vectors, n_axes, n_genes, gene_to_fa
 
   ! Local variables
   logical :: ortholog_set_fortran(n_genes)
-  integer :: i, mode_int
+  integer(int32) :: i, mode_int
   character(len=:), allocatable :: mode_string
 
   ! Convert raw character array to Fortran string

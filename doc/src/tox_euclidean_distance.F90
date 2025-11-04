@@ -1,5 +1,6 @@
 !> Module with Euclidean distance computation routines for tensor omics.
 module tox_euclidean_distance
+  use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
 

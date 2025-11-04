@@ -176,28 +176,34 @@ Push right and left intervals onto stack</p></td>
                  <td><p>Converts a c_char value to fortran character, elemental -&gt; any shape</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/c_complex_as_complex.html'>c_complex_as_complex</a></td>
-                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Converts a c_double_complex value to fortran complex(real64), elemental -&gt; any shape</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/c_double_as_real64.html'>c_double_as_real64</a></td>
-                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Converts a c_double value to real64, elemental -&gt; any shape</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/c_int_as_int32.html'>c_int_as_int32</a></td>
-                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Converts a c_int value to int32, elemental -&gt; any shape</p></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/c_int_as_logical.html'>c_int_as_logical</a></td>
                  <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
                  <td>Subroutine</td>
                  <td><p>Converts a c_int value to logical, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_contributions.html'>calc_contributions</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Calculates both spike and integrated contributions for a given factor against a dependent variable</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_contributions_alloc.html'>calc_contributions_alloc</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Calculates both spike and integrated contributions for a given factor against a dependent variable</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_contributions_c.html'>calc_contributions_c</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Calculates both spike and integrated contributions for a given factor against a dependent variable</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_contributions_expert_c.html'>calc_contributions_expert_c</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Calculates both spike and integrated contributions for a given factor against a dependent variable</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/calc_fchange.html'>calc_fchange</a></td>
@@ -223,6 +229,70 @@ Suitable for use with ctypes. Computes log2 fold changes between condition and c
                  <td><p>R/Fortran wrapper for fold change calculation.
 Provides an interface for R (.Fortran) and Fortran code to call the fold change calculation routine.
 Computes log2 fold changes between condition and control columns for all genes. Arguments match R's .Fortran calling convention.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_integrated_threshold.html'>calc_integrated_threshold</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis_outlier_detection.html'>tox_trajectory_contribution_analysis_outlier_detection</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Calculate empirical threshold for integrated (trajectory-level) contributions</p><a href="../proc/calc_integrated_threshold.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_integrated_threshold_alloc.html'>calc_integrated_threshold_alloc</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis_outlier_detection.html'>tox_trajectory_contribution_analysis_outlier_detection</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Calculate empirical threshold for integrated contributions (with internal allocation and sorting)</p><a href="../proc/calc_integrated_threshold_alloc.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_integrated_threshold_c.html'>calc_integrated_threshold_C</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis_outlier_detection.f90.html'>tox_trajectory_contribution_analysis_outlier_detection.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C wrapper for calc_integrated_threshold_alloc (with internal allocations)
+Input: contributions(n_samples) - one integrated contribution per sample</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_integrated_threshold_expert_c.html'>calc_integrated_threshold_expert_C</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis_outlier_detection.f90.html'>tox_trajectory_contribution_analysis_outlier_detection.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C wrapper for calc_integrated_threshold (with pre-computed permutation)
+Input: contributions(n_samples) - one integrated contribution per sample</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_percentile.html'>calc_percentile</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Calculate the percentile of an array given a sorted permutation.
+Uses linear interpolation between adjacent values.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_percentile_alloc.html'>calc_percentile_alloc</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Calculate the percentile of an array, allocating necessary arrays when no sorting permutation is given</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_spike_thresholds.html'>calc_spike_thresholds</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis_outlier_detection.html'>tox_trajectory_contribution_analysis_outlier_detection</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Calculate empirical thresholds for spike contributions (using pre-sorted permutations)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_spike_thresholds_alloc.html'>calc_spike_thresholds_alloc</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis_outlier_detection.html'>tox_trajectory_contribution_analysis_outlier_detection</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Calculate empirical thresholds for spike contributions (with internal allocations and sorting)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_spike_thresholds_c.html'>calc_spike_thresholds_C</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis_outlier_detection.f90.html'>tox_trajectory_contribution_analysis_outlier_detection.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C wrapper for calc_spike_thresholds_alloc (with internal allocations)
+Data layout: spike_contribs(n_samples, n_genes) - rows=samples, columns=genes</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_spike_thresholds_expert_c.html'>calc_spike_thresholds_expert_C</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis_outlier_detection.f90.html'>tox_trajectory_contribution_analysis_outlier_detection.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C wrapper for calc_spike_thresholds (with pre-computed 2D permutations)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/calc_tiss_avg.html'>calc_tiss_avg</a></td>
@@ -313,10 +383,40 @@ This measures both magnitude and directionality of angular separation in RAP spa
                  <td></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/complex_as_c_complex.html'>complex_as_c_complex</a></td>
-                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td><a href='../proc/compute_edf.html'>compute_edf</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Subroutine</td>
-                 <td><p>Converts a fortran complex(real64) value to c_double_complex, elemental -&gt; any shape</p></td>
+                 <td><p>Compute the Empirical Distribution Function (EDF) from pre-sorted permutation.
+Returns the sorted unique values and their cumulative frequencies in [0,1].
+Assumes perm is already sorted by values[perm]. Caller controls sorting algorithm.
+The number of unique values can be determined by finding the last non-zero cdf_value.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_edf_alloc.html'>compute_edf_alloc</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Helper routine that sorts and calls compute_edf.
+Allocates workspace internally and performs sorting before computing EDF.
+Use this for convenience; use compute_edf directly for custom sorting.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_edf_c.html'>compute_edf_c</a></td>
+                 <td><a href='../sourcefile/f42_utils.f90.html'>f42_utils.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>IMPORTANT - When using these C wrapper functions, no copies of the arrays will be created.
+The Fortran routine will operate directly on the memory provided by the caller.
+C wrapper for compute_edf.
+Allocates workspace internally and exposes a simple interface with C types.
+The number of unique values is returned via n_unique output parameter.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_edf_expert_c.html'>compute_edf_expert_c</a></td>
+                 <td><a href='../sourcefile/f42_utils.f90.html'>f42_utils.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Expert C wrapper for compute_edf.
+Direct interface to compute_edf for users who have already sorted their data
+or have a custom permutation vector. This skips the internal sorting step
+for better performance when the caller has full control.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/compute_family_scaling.html'>compute_family_scaling</a></td>
@@ -485,13 +585,13 @@ Calls compute_tissue_versatility with standard Fortran types for R interface.</p
                  <td><a href='../proc/deserialize_char_flat_c.html'>deserialize_char_flat_C</a></td>
                  <td><a href='../sourcefile/deserialize_char.f90.html'>deserialize_char.F90</a></td>
                  <td>Subroutine</td>
-                 <td><p>C binding for the subroutine to deserialize a flat character array from a file</p><a href="../proc/deserialize_char_flat_c.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>C binding for the subroutine to deserialize a flat character array from a file</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_char_flat_r.html'>deserialize_char_flat_r</a></td>
                  <td><a href='../sourcefile/deserialize_char.f90.html'>deserialize_char.F90</a></td>
                  <td>Subroutine</td>
-                 <td><p>Subroutine to deserialize a flat character array from a file and return it as an ASCII array callable by R</p><a href="../proc/deserialize_char_flat_r.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Subroutine to deserialize a flat character array from a file and return it as an ASCII array callable by R</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_int_1d.html'>deserialize_int_1d</a></td>
@@ -528,13 +628,13 @@ Directly deserialize a 1D integer array from a file</p></td>
                  <td><a href='../proc/deserialize_int_c.html'>deserialize_int_C</a></td>
                  <td><a href='../sourcefile/deserialize_int.f90.html'>deserialize_int.F90</a></td>
                  <td>Subroutine</td>
-                 <td><p>C binding for the subroutine to deserialize an integer array from a file</p><a href="../proc/deserialize_int_c.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>C binding for the subroutine to deserialize an integer array from a file</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_int_r.html'>deserialize_int_r</a></td>
                  <td><a href='../sourcefile/deserialize_int.f90.html'>deserialize_int.F90</a></td>
                  <td>Subroutine</td>
-                 <td><p>R interface for deserializing an integer array from a file</p><a href="../proc/deserialize_int_r.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>R interface for deserializing an integer array from a file</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_real_1d.html'>deserialize_real_1d</a></td>
@@ -570,13 +670,13 @@ Directly deserialize a 1D integer array from a file</p></td>
                  <td><a href='../proc/deserialize_real_c.html'>deserialize_real_C</a></td>
                  <td><a href='../sourcefile/deserialize_real.f90.html'>deserialize_real.F90</a></td>
                  <td>Subroutine</td>
-                 <td><p>C binding for the subroutine to deserialize a real array from a file</p><a href="../proc/deserialize_real_c.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>C binding for the subroutine to deserialize a real array from a file</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_real_flat_r.html'>deserialize_real_flat_r</a></td>
                  <td><a href='../sourcefile/deserialize_real.f90.html'>deserialize_real.F90</a></td>
                  <td>Subroutine</td>
-                 <td><p>R binding for the subroutine to deserialize a flat real array from a file</p><a href="../proc/deserialize_real_flat_r.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>R binding for the subroutine to deserialize a flat real array from a file</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/detect_outliers.html'>detect_outliers</a></td>
@@ -592,11 +692,36 @@ Directly deserialize a 1D integer array from a file</p></td>
 Calls detect_outliers with C-compatible types for external interface.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/detect_outliers_integrated.html'>detect_outliers_integrated</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis_outlier_detection.html'>tox_trajectory_contribution_analysis_outlier_detection</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Detect outliers in integrated (trajectory-level) contributions</p><a href="../proc/detect_outliers_integrated.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/detect_outliers_integrated_expert_c.html'>detect_outliers_integrated_expert_C</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis_outlier_detection.f90.html'>tox_trajectory_contribution_analysis_outlier_detection.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C wrapper for detect_outliers_integrated
+Identifies outlier samples based on integrated contributions</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/detect_outliers_r.html'>detect_outliers_r</a></td>
                  <td><a href='../sourcefile/tox_get_outliers.f90.html'>tox_get_outliers.F90</a></td>
                  <td>Subroutine</td>
                  <td><p>R wrapper for detect_outliers.
 Calls detect_outliers with standard Fortran types for R interface.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/detect_outliers_spike.html'>detect_outliers_spike</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis_outlier_detection.html'>tox_trajectory_contribution_analysis_outlier_detection</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Detect outliers in spike contributions</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/detect_outliers_spike_expert_c.html'>detect_outliers_spike_expert_C</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis_outlier_detection.f90.html'>tox_trajectory_contribution_analysis_outlier_detection.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C wrapper for detect_outliers_spike</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/distance_to_centroid.html'>distance_to_centroid</a></td>
@@ -671,6 +796,18 @@ Calls euclidean_distance with standard Fortran types for R interface.</p></td>
                  <td><p>Get the value at the sorted position.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/get_vec_across_samples.html'>get_vec_across_samples</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Accessor routine to extract sample data for a specific factor and timepoint</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/get_vec_across_timepoints.html'>get_vec_across_timepoints</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Accessor routine to extract timepoint data for a specific factor and sample</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/group_centroid.html'>group_centroid</a></td>
                  <td><a href='../module/tox_gene_centroids.html'>tox_gene_centroids</a></td>
                  <td>Subroutine</td>
@@ -711,10 +848,10 @@ Calls identify_outliers with C-compatible types for external interface.</p></td>
 Calls identify_outliers with standard Fortran types for R interface.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/int32_as_c_int.html'>int32_as_c_int</a></td>
-                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Converts a int32 value to c_int, elemental -&gt; any shape</p></td>
+                 <td><a href='../proc/is_close.html'>is_close</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Function</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/is_err.html'>is_err</a></td>
@@ -885,6 +1022,32 @@ Provides an interface for R (.Fortran) and Fortran code to call the normalizatio
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/process_trajectories_alloc.html'>process_trajectories_alloc</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Process trajectories with one percentile per timepoint for spike contributions.
+This subroutine uses multiple allocations. If you want to avoid this, you need to do the full pipeline manually step-by-step.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/process_trajectories_c.html'>process_trajectories_C</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C wrapper for process_trajectories_alloc</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/process_trajectories_flat_alloc.html'>process_trajectories_flat_alloc</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Process trajectories with global percentile for spike contributions (flattened)
+This subroutine uses multiple allocations. If you want to avoid this, you need to do the full pipeline manually step-by-step.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/process_trajectories_flat_c.html'>process_trajectories_flat_C</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C wrapper for process_trajectories_flat_alloc</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/project_selected_vecs_onto_rap.html'>project_selected_vecs_onto_rap</a></td>
                  <td><a href='../module/relative_axis_plane_tools.html'>relative_axis_plane_tools</a></td>
                  <td>Subroutine</td>
@@ -937,12 +1100,6 @@ Sorts indirectly using the permutation vector <code>perm</code>. Manual stack re
                  <td><a href='../module/array_utils.html'>array_utils</a></td>
                  <td>Subroutine</td>
                  <td><p>Opens unit and reads file header with all metadata from given file</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/real64_as_c_double.html'>real64_as_c_double</a></td>
-                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Converts a real64 value to c_double, elemental -&gt; any shape</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/relative_axes_changes_from_shift_vector.html'>relative_axes_changes_from_shift_vector</a></td>
@@ -1034,7 +1191,7 @@ The file will contain a magic number, type code, dimension, shape, character len
                  <td><a href='../module/serialize_char.html'>serialize_char</a></td>
                  <td>Subroutine</td>
                  <td><p>Serialize a character array of arbitrary dimensions to a binary file.
-The file will contain a magic number, type code, dimension, shape, character length, and the array data.</p><a href="../proc/serialize_char_nd.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+The file will contain a magic number, type code, dimension, shape, character length, and the array data.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/serialize_int_1d.html'>serialize_int_1d</a></td>
@@ -1082,7 +1239,7 @@ R can not pass a multidimensional array directly, so we use a flat array and dim
                  <td><a href='../proc/serialize_int_nd.html'>serialize_int_nd</a></td>
                  <td><a href='../module/serialize_int.html'>serialize_int</a></td>
                  <td>Subroutine</td>
-                 <td><p>Serialize a flat integer array with specified dimensions and number of dimensions to a binary file.</p><a href="../proc/serialize_int_nd.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+                 <td><p>Serialize a flat integer array with specified dimensions and number of dimensions to a binary file.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/serialize_int_nd_c.html'>serialize_int_nd_C</a></td>
@@ -1136,7 +1293,7 @@ R can not pass a multidimensional array directly, so we use a flat array and dim
                  <td><a href='../proc/serialize_real_nd.html'>serialize_real_nd</a></td>
                  <td><a href='../module/serialize_real.html'>serialize_real</a></td>
                  <td>Subroutine</td>
-                 <td><p>@brief Writes serialized real array from R to file with metdata.</p></td>
+                 <td><p>Writes serialized real array from R to file with metdata.</p><a href="../proc/serialize_real_nd.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/serialize_real_nd_c.html'>serialize_real_nd_C</a></td>
@@ -1190,6 +1347,28 @@ Similar to <code>sort_real</code>, but for integer input.</p></td>
 Creates a sorted version of the array by reordering the <code>perm</code> vector. The original data in <code>array</code> remains unchanged.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/spike_contribution.html'>spike_contribution</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Calculates spike contributions using cosine similarity for specific indices
+<script type="math/tex; mode=display"> contributions(i) =
+        \frac{factor(i) \cdot dependent(i)}
+             {\left \Vert factor \right \Vert \cdot \left \Vert dependent \right \Vert}
+        \; | \; 1 \le i \le n\_timepoints </script>
+There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/spike_contribution_c.html'>spike_contribution_c</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Calculates spike contributions using cosine similarity for specific indices
+<script type="math/tex; mode=display"> contributions(i) =
+        \frac{factor(i) \cdot dependent(i)}
+             {\left \Vert factor \right \Vert \cdot \left \Vert dependent \right \Vert}
+        \; | \; 1 \le i \le n\_timepoints </script>
+There are two modes:</p><a href="../proc/spike_contribution_c.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/string_as_c_char_1d.html'>string_as_c_char_1d</a></td>
                  <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
                  <td>Subroutine</td>
@@ -1212,6 +1391,20 @@ Creates a sorted version of the array by reordering the <code>perm</code> vector
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Subroutine</td>
                  <td><p>Swap two integer values in-place.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/trajectory_contribution.html'>trajectory_contribution</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Calculates trajectory contribution using cosine similarity
+<script type="math/tex; mode=display"> contribution = \frac{factor \cdot dependent}{\left \Vert factor \right \Vert \cdot \left \Vert dependent \right \Vert} </script>
+There are two modes:</p><a href="../proc/trajectory_contribution.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/trajectory_contribution_c.html'>trajectory_contribution_c</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/validate_dimension_size.html'>validate_dimension_size</a></td>
@@ -1257,7 +1450,7 @@ Converts integer mask to logical and calls which.</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-09-29 07:27 +0000"             </p>
+ on "2025-11-04 14:33 +0000"             </p>
           </div>
         </div>
         <br>

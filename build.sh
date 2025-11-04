@@ -16,7 +16,7 @@ if [ -d "build" ]; then
 fi
 
 # Build with FPM first
-fpm build --compiler $COMPILER --flag "$FLAGS" --flag "-DDEFAULT_ALIGNMENT=$ALIGN" --flag "$MAX_PERF_FLAG"
+fpm build --compiler $COMPILER --flag "$FLAGS $DIRECTIVES" --flag "-DDEFAULT_ALIGNMENT=$ALIGN" --flag "$MAX_PERF_FLAG"
 
 check_exit_code "Build with fpm failed"
 

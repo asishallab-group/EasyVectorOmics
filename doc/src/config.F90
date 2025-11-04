@@ -1,5 +1,3 @@
-#include "precompiler_constants.F90"
-
 module config
   implicit none
 #ifdef DEFAULT_ALIGNMENT

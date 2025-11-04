@@ -1,5 +1,6 @@
 !> Module for tools related to relative axis planes (RAPs), i.e. planes in higher-dimensional gene expression space
 module tox_relative_axis_plane_tools
+   use safeguard
    use, intrinsic :: iso_fortran_env, only: real64, int32
    use, intrinsic :: ieee_arithmetic
    use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, set_ok, set_err_once, is_ok
@@ -207,7 +208,7 @@ contains
             orientation_sign = sign(1.0_real64, v1(1) * v2(2) - v1(2) * v2(1))
          case (3)
             ! For 3D, use [1,2,3] directly
-            orientation_sign = cross_product_orientation_sign(v1, v2, n_dims, [1,2,3])
+            orientation_sign = cross_product_orientation_sign(v1, v2, n_dims, [1_int32,2_int32,3_int32])
          case (4:)
             ! For >3D, use selected_axes_for_signed
             orientation_sign = cross_product_orientation_sign(v1, v2, n_dims, selected_axes_for_signed)

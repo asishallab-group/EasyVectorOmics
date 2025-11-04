@@ -1,3 +1,4 @@
+
 ## node modules
 **/node_modules*
 
@@ -317,3 +318,12 @@ TSWLatexianTemp*
 #*Notes.bib
 *.DS_Store
 */.DS_Store
+
+# VS Code workspace settings (ignore local editor configs)
+.vscode/
+
+# Fortran build artifacts
+*.mod
+*.o
+*.so
+*.a
