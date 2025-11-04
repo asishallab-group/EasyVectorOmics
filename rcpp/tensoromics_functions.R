@@ -1,9 +1,7 @@
 library(Rcpp)
 
 # Get absolute path to build directory containing the compiled Fortran library
-# Use normalizePath without shQuote so the path is a plain absolute string.
-# Avoid quoting here because PKG_LIBS is passed to the compiler/linker
-# as tokens and literal quotes can sometimes confuse non-shell invocations.
+
 lib_path <- normalizePath("build")
 
 # Set up compilation flags for linking with Fortran library

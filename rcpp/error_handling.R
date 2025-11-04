@@ -24,11 +24,10 @@ check_err_code <- function(ierr) {
     '203' = "Dimension mismatch detected.",
     '204' = "NaN or Inf found in input data.",
     '205' = "Unsupported data type encountered.",
-    '206' = "Array size mismatch detected",
-  '401' = "Non-positive scaling factor encountered (dscale must be > 0).",
+    '206' = "Array size mismatch detected.",
 
   # MEMORY ERRORS
-  '301' = "Memory allocation failed.",
+    '301' = "Memory allocation failed.",
     '302' = "Null pointer reference encountered.",
 
     # FORTRAN RUNTIME ERRORS
