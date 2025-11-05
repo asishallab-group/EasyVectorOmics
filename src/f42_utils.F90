@@ -4,6 +4,7 @@
 module f42_utils
   use, intrinsic :: iso_fortran_env, only: real64, int32
   use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, ERR_EMPTY_INPUT, set_ok, set_err_once
+  use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
   implicit none
 
   public :: sort_real, sort_integer, sort_character
@@ -128,10 +129,10 @@ contains
 
       ! Partitioning loop
       do
-        do while (array(perm(i)) < pivot_val)
+        do while (real_less(array(perm(i)), pivot_val))
           i = i + 1
         end do
-        do while (array(perm(j)) > pivot_val)
+        do while (real_greater(array(perm(j)), pivot_val))
           j = j - 1
         end do
         if (i <= j) then
@@ -328,13 +329,13 @@ contains
 
         ! Only compare the right child (next_idx) when it actually exists
         if (next_idx <= heap_size) then
-          if (array(perm(next_idx)) > array(perm(largest_idx))) then
+          if (real_greater(array(perm(next_idx)), array(perm(largest_idx)))) then
             largest_idx = next_idx
           end if
         end if
 
         ! If the larger child is greater than current, swap permutation entries
-        if (array(perm(largest_idx)) > array(perm(current))) then
+        if (real_greater(array(perm(largest_idx)), array(perm(current)))) then
           call swap_int(perm(current), perm(largest_idx))
           current = largest_idx
         else
@@ -496,6 +497,40 @@ contains
     temp = a; a = b; b = temp
   end subroutine swap_int
 
+  ! Helper: NaN-aware comparisons for real(real64).
+  ! We treat NaN as greater than any numeric value so that NaNs end up at the
+  ! end of ascending sorts. These helpers define a total-like ordering where
+  ! (number) < (NaN) and (NaN) > (number); two NaNs compare equal (neither < nor >).
+  pure logical function real_less(a, b)
+    real(real64), intent(in) :: a, b
+    if (ieee_is_nan(a) .and. ieee_is_nan(b)) then
+      real_less = .false.
+    else if (ieee_is_nan(a)) then
+      ! a is NaN, treat as greater -> not less
+      real_less = .false.
+    else if (ieee_is_nan(b)) then
+      ! b is NaN, any real a is less than NaN
+      real_less = .true.
+    else
+      real_less = (a < b)
+    end if
+  end function real_less
+
+  pure logical function real_greater(a, b)
+    real(real64), intent(in) :: a, b
+    if (ieee_is_nan(a) .and. ieee_is_nan(b)) then
+      real_greater = .false.
+    else if (ieee_is_nan(a)) then
+      ! a is NaN -> treat as greater
+      real_greater = .true.
+    else if (ieee_is_nan(b)) then
+      ! b is NaN -> a is not greater
+      real_greater = .false.
+    else
+      real_greater = (a > b)
+    end if
+  end function real_greater
+  
   !> Finds the indices of the true values in a logical mask.
   pure subroutine which(mask, n, idx_out, m_max, m_out, ierr)
     !| Logical array of size n.
