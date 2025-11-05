@@ -59,16 +59,16 @@ tox_euclidean_distance <- function(vec1, vec2) {
 #' 
 tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
   # Input validation
-  if (!is.numeric(genes) || !is.numeric(centroids)) {
-    check_err_code(201)
+   if (!is.numeric(genes) || !is.numeric(centroids)) {
+    stop("genes and centroids must be numeric")
   }
   if (!is.numeric(gene_to_fam) && !is.integer(gene_to_fam)) {
-    check_err_code(201)
+    stop("gene_to_fam must be numeric or integer")
   }
   if (!is.numeric(d) && !is.integer(d)) {
-    check_err_code(201)
+    stop("d must be numeric or integer")
   }
-  
+
   # Convert to appropriate types
   genes <- as.numeric(genes)
   centroids <- as.numeric(centroids)
@@ -81,18 +81,18 @@ tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
   
   # Validate dimensions
   if (length(genes) %% d != 0) {
-    check_err_code(203)
+    stop("Length of genes must be divisible by d")
   }
   if (length(centroids) %% d != 0) {
-    check_err_code(203)
+    stop("Length of centroids must be divisible by d")
   }
   if (length(gene_to_fam) != n_genes) {
-    check_err_code(206)
+    stop("Length of gene_to_fam must equal number of genes")
   }
   if (any(gene_to_fam < 0)) {
-    check_err_code(201)
+    stop("gene_to_fam indices must be between 0 and n_families (0 = no family assignment)")
   }
-  
+
   # Call Rcpp wrapper
   return(tox_distance_to_centroid_rcpp(genes, centroids, gene_to_fam, d))
 }
@@ -117,16 +117,16 @@ tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
 #' 
 tox_calculate_tissue_versatility <- function(expression_vectors, vector_selection, axis_selection) {
   # Input validation
-  if (!is.matrix(expression_vectors)) {
-    check_err_code(200)
+   if (!is.matrix(expression_vectors)) {
+    stop("expression_vectors must be a matrix")
   }
   if (!is.logical(vector_selection) && !is.numeric(vector_selection)) {
-    check_err_code(201)
+    stop("vector_selection must be logical or numeric")
   }
   if (!is.logical(axis_selection) && !is.numeric(axis_selection)) {
-    check_err_code(201)
+    stop("axis_selection must be logical or numeric")
   }
-  
+
   # Convert to appropriate types for Rcpp
   if (is.numeric(vector_selection)) {
     vector_selection <- as.integer(as.logical(vector_selection))
@@ -141,12 +141,13 @@ tox_calculate_tissue_versatility <- function(expression_vectors, vector_selectio
   }
   
   # Validate dimensions
-  if (length(vector_selection) != ncol(expression_vectors)) {
-    check_err_code(203)
+   if (length(vector_selection) != ncol(expression_vectors)) {
+    stop("vector_selection length must match number of columns in expression_vectors")
   }
   if (length(axis_selection) != nrow(expression_vectors)) {
-    check_err_code(203)
+    stop("axis_selection length must match number of rows in expression_vectors")
   }
+
   
   # Call Rcpp wrapper
   result <- tox_calculate_tissue_versatility_rcpp(expression_vectors, vector_selection, axis_selection)
@@ -190,16 +191,16 @@ tox_calculate_tissue_versatility <- function(expression_vectors, vector_selectio
 tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile = 95.0) {
   # Input validation
   if (!is.numeric(distances)) {
-    check_err_code(201)
+    stop("distances must be numeric")
   }
   if (!is.numeric(gene_to_fam) && !is.integer(gene_to_fam)) {
-    check_err_code(201)
+    stop("gene_to_fam must be numeric or integer")
   }
   if (!is.numeric(n_families) && !is.integer(n_families)) {
-    check_err_code(201)
+    stop("n_families must be numeric or integer")
   }
   if (!is.numeric(percentile)) {
-    check_err_code(201)
+    stop("percentile must be numeric")
   }
   
   # Convert to appropriate types for Rcpp
@@ -213,19 +214,19 @@ tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile =
 
   # Validate dimensions
   if (length(gene_to_fam) != n_genes) {
-    check_err_code(206)
+    stop("length of gene_to_fam must match number of distances")
   }
   if (length(distances) == 0) {
-    check_err_code(202)  
+    stop("distances cannot be empty")
   }
   if (any(!is.finite(distances))) {
-    check_err_code(204)  
+    stop("distances contains non-finite values")
   }
   if (n_families < 1L) {
-    check_err_code(201) 
+    stop("n_families must be >= 1")
   }
   if (percentile < 0 || percentile > 100) {
-    check_err_code(201) 
+    stop("percentile must be between 0 and 100")
   }
   
   # Call Rcpp wrapper
@@ -270,13 +271,13 @@ tox_compute_family_scaling <- function(distances, gene_to_fam, n_families) {
 
   # Input validation
   if (!is.numeric(distances)) {
-    check_err_code(201)
+    stop("distances must be numeric")
   }
   if (!is.numeric(gene_to_fam) && !is.integer(gene_to_fam)) {
-    check_err_code(201)
+    stop("gene_to_fam must be numeric or integer")
   }
   if (!is.numeric(n_families) && !is.integer(n_families)) {
-    check_err_code(201)
+    stop("n_families must be numeric or integer")
   }
   
   # Convert to appropriate types
@@ -289,19 +290,19 @@ tox_compute_family_scaling <- function(distances, gene_to_fam, n_families) {
 
   # Validate dimensions 
   if (n_genes == 0L) {
-    check_err_code(202)  
+    stop("distances cannot be empty")  
   }
   if (any(!is.finite(distances))) {
-    check_err_code(204)  
+    stop("distances contains non-finite values")  
   }
   if (length(gene_to_fam) != n_genes) {
-    check_err_code(206)  
+    stop("length of gene_to_fam must match number of distances")  
   }
   if (n_families < 1L) {
-    check_err_code(201)  
+    stop("n_families must be >= 1")  
   }
   if (any(gene_to_fam < 0L) || any(gene_to_fam > n_families)) {
-    check_err_code(201)  
+    stop("Invalid input: gene_to_fam indices must be between 0 and n_families (0 = no family assignment)")  
   }
   
   # Call the Rcpp forwarder.
@@ -348,25 +349,25 @@ tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families
 
   # Input validation
   if (!is.numeric(distances)) {
-    check_err_code(201)
+    stop("distances must be numeric")
   }
   if (!is.numeric(gene_to_fam) && !is.integer(gene_to_fam)) {
-    check_err_code(201)
+    stop("gene_to_fam must be numeric or integer")
   }
   if (!is.numeric(n_families) && !is.integer(n_families)) {
-    check_err_code(201)
+    stop("n_families must be numeric or integer")
   }
   if (!is.numeric(family_distances) && !is.integer(family_distances)) {
-    check_err_code(201)
+    stop("family_distances must be numeric")
   }
   if (!is.numeric(perm_tmp) && !is.integer(perm_tmp)) {
-    check_err_code(201)
+    stop("perm_tmp must be numeric or integer")
   }
   if (!is.numeric(stack_left_tmp) && !is.integer(stack_left_tmp)) {
-    check_err_code(201)
+    stop("stack_left_tmp must be numeric or integer")
   }
   if (!is.numeric(stack_right_tmp) && !is.integer(stack_right_tmp)) {
-    check_err_code(201)
+    stop("stack_right_tmp must be numeric or integer")
   }
 
   # Convert to appropriate types
@@ -383,26 +384,26 @@ tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families
 
   # Validate Dimentions
   if (n_genes == 0L) {
-    check_err_code(202) 
+    stop("distances cannot be empty") 
   }
   if (any(!is.finite(distances))) {
-    check_err_code(204)  
+    stop("distances contains non-finite values")  
   }
   if (length(gene_to_fam) != n_genes) {
-    check_err_code(206)  
+    stop("length of gene_to_fam must match number of distances")  
   }
   if (n_families < 1L) {
-    check_err_code(201)  
+    stop("n_families must be >= 1")  
   }
   # Work arrays must match distances length
   if (length(perm_tmp) != n_genes ||
       length(stack_left_tmp) != n_genes ||
       length(stack_right_tmp) != n_genes ||
       length(family_distances) != n_genes) {
-    check_err_code(206)  
+    stop("workspace arrays (perm_tmp, stack_left_tmp, stack_right_tmp, family_distances) must each have length equal to number of genes")  
   }
   if (any(gene_to_fam < 0L) || any(gene_to_fam > n_families)) {
-    check_err_code(201)
+    stop("Invalid input: gene_to_fam indices must be between 0 and n_families (0 = no family assignment)")  
   }
 
  
@@ -452,13 +453,13 @@ tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families
 tox_compute_rdi <- function(distances, gene_to_fam, dscale) {
   # Input validation
   if (!is.numeric(distances)) {
-    check_err_code(201)
+    stop("distances must be numeric")
   }
   if (!is.numeric(gene_to_fam) && !is.integer(gene_to_fam)) {
-    check_err_code(201)
+    stop("gene_to_fam must be numeric or integer")
   }
   if (!is.numeric(dscale)) {
-    check_err_code(201)
+    stop("dscale must be numeric")
   }
 
   # Type conversion
@@ -472,20 +473,20 @@ tox_compute_rdi <- function(distances, gene_to_fam, dscale) {
   
   # Validate Dimentions
   if (n_genes == 0L) {
-    check_err_code(202)  
+    stop("distances cannot be empty")  
   }
   if (length(gene_to_fam) != n_genes) {
-    check_err_code(206) 
+    stop("length of gene_to_fam must match number of distances") 
   }
   if (any(!is.finite(distances)) || any(!is.finite(dscale))) {
-    check_err_code(204)  
+    stop("distances and dscale must contain finite numeric values")  
   }
   if (n_families < 1L) {
-    check_err_code(201) 
+    stop("dscale must have length >= 1 (n_families >= 1)") 
   }
   # gene_to_fam indices must be within [0, n_families]
   if (any(gene_to_fam < 0L) || any(gene_to_fam > n_families)) {
-    check_err_code(201) 
+    stop("Invalid input: gene_to_fam indices must be between 0 and n_families (0 = no family assignment)")
   }
  
   # Call Rcpp forwarder (no ierr check requested)
@@ -516,10 +517,10 @@ tox_identify_outliers <- function(rdi, percentile = 95.0) {
 
   # Input validation
   if (!is.numeric(rdi)) {
-    check_err_code(201)
+    stop("rdi must be numeric")
   }
   if (!is.numeric(percentile)) {
-    check_err_code(201)
+    stop("percentile must be numeric")
   }
 
   # Type conversion
@@ -531,13 +532,13 @@ tox_identify_outliers <- function(rdi, percentile = 95.0) {
 
    # Validate dimentions
   if (n_genes == 0L) {
-    check_err_code(202) 
+    stop("rdi cannot be empty") 
   }
   if (any(!is.finite(rdi))) {
-    check_err_code(204) 
+    stop("rdi contains non-finite values") 
   }
   if (percentile < 0.0 || percentile > 100.0) {
-    check_err_code(201) 
+    stop("percentile must be between 0 and 100") 
   }
   
   # Call forwarder

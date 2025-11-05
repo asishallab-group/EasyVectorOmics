@@ -55,7 +55,7 @@ contains
 
     ! Check for invalid family indices (0 = no family assignment is allowed)
     do i = 1, n_genes
-      if (gene_to_fam(i) < 0 .or. gene_to_fam(i) > n_families) then
+      if (gene_to_fam(i) < 1 .or. gene_to_fam(i) > n_families) then
         dscale = -1.0_real64  ! Set to -1 to indicate error, do not use if ierr /= 0
         call set_err_once(ierr, ERR_INVALID_INPUT)
         return
