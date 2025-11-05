@@ -31,15 +31,15 @@ source("r/error_handling.R")
 tox_euclidean_distance <- function(vec1, vec2) {
   # Input validation
   if (!is.numeric(vec1) || !is.numeric(vec2)) {
-    check_err_code(201)
+    stop("Both vectors must be numeric")
   }
   if (length(vec1) != length(vec2)) {
-    check_err_code(203)
+    stop("Vectors must have the same length")
   }
   if (length(vec1) == 0) {
-    check_err_code(202)
+    stop("Vectors cannot be empty")
   }
-  
+
   # Call Rcpp wrapper 
   return(tox_euclidean_distance_rcpp(as.numeric(vec1), as.numeric(vec2)))
 }
