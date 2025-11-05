@@ -175,7 +175,13 @@ contains
     end if
   end subroutine validate_all_in_range_int
 
-  !> Validates min<=e<=max AND e/=NaN for all elements e of an array
+  !> Validates min<=e<=max AND e/=NaN for all elements e of an array.
+  !|
+  !| @note
+  !| This validation is inclusive: `min<=val<=max`<br>
+  !| To achieve exclusive bounds, us above/below from f42_utils,
+  !| like: `validate_in_range_real(x, ierr, min=above(0.0_real64), max=below(100.0_real64))` for `0<x<100`
+  !| @endnote
   pure subroutine validate_in_range_real(val, ierr, min, max)
     real(real64), intent(in), optional :: val
       !! value to be validated

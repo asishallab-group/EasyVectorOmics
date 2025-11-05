@@ -3,7 +3,8 @@
 module f42_utils
   use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
-  use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_INTERNAL, set_ok, set_err_once, set_err
+  use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, set_ok, set_err_once, set_err
+  use, intrinsic :: ieee_arithmetic, only: ieee_next_after, ieee_value, ieee_positive_inf, ieee_negative_inf
   implicit none
 
   public :: sort_real, sort_integer, sort_character
@@ -17,6 +18,20 @@ module f42_utils
   real(real64), parameter :: PI = 4.0_real64 * atan(1.0_real64)
   real(real64), parameter :: EPS = epsilon(1.0_real64)
 contains
+
+  !> Returns the next representable float lower than a value. Helpful for exclusive upper bounds in ranges.
+  pure real(real64) function below(val)
+      real(real64), intent(in) :: val
+  
+      below = ieee_next_after(val, ieee_value(1.0_real64, ieee_negative_inf))
+  end function below
+
+  !> Returns the next representable float greater than a value. Helpful for exclusive upper bounds in ranges.
+  pure real(real64) function above(val)
+      real(real64), intent(in) :: val
+  
+      above = ieee_next_after(val, ieee_value(1.0_real64, ieee_positive_inf))
+  end function above
 
   pure logical function is_close(a, b)
     real(real64), intent(in) :: a
@@ -55,7 +70,7 @@ contains
     end do
     norm_product = sqrt(norm1) * sqrt(norm2)
     if (is_close(norm_product, 0.0_real64)) then
-        call set_err(ierr, ERR_INVALID_INPUT)
+        call set_err(ierr, ERR_DIVISION_BY_ZERO)
         return
     end if
 
