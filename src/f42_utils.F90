@@ -513,35 +513,43 @@ contains
   ! We treat NaN as greater than any numeric value so that NaNs end up at the
   ! end of ascending sorts. These helpers define a total-like ordering where
   ! (number) < (NaN) and (NaN) > (number); two NaNs compare equal (neither < nor >).
+  !> NaN-aware less-than comparison for real(real64).
+!> Finite values are always considered smaller than NaN.
+!> Two NaNs are treated as equal (neither less nor greater).
   pure logical function real_less(a, b)
-    real(real64), intent(in) :: a, b
+    real(real64), intent(in) :: a
+    real(real64), intent(in) :: b
+
     if (ieee_is_nan(a) .and. ieee_is_nan(b)) then
       real_less = .false.
     else if (ieee_is_nan(a)) then
-      ! a is NaN, treat as greater -> not less
       real_less = .false.
     else if (ieee_is_nan(b)) then
-      ! b is NaN, any real a is less than NaN
       real_less = .true.
     else
       real_less = (a < b)
     end if
   end function real_less
 
+
+  !> NaN-aware greater-than comparison for real(real64).
+  !> NaN is treated as greater than any finite number.
+  !> Two NaNs are treated as equal.
   pure logical function real_greater(a, b)
-    real(real64), intent(in) :: a, b
+    real(real64), intent(in) :: a
+    real(real64), intent(in) :: b
+
     if (ieee_is_nan(a) .and. ieee_is_nan(b)) then
       real_greater = .false.
     else if (ieee_is_nan(a)) then
-      ! a is NaN -> treat as greater
       real_greater = .true.
     else if (ieee_is_nan(b)) then
-      ! b is NaN -> a is not greater
       real_greater = .false.
     else
       real_greater = (a > b)
     end if
   end function real_greater
+
   
   !> Finds the indices of the true values in a logical mask.
   pure subroutine which(mask, n, idx_out, m_max, m_out, ierr)
