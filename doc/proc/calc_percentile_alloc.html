@@ -10,7 +10,7 @@
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>c_double_as_real64 &ndash; TensorOmics</title>
+    <title>calc_percentile_alloc &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -74,7 +74,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>c_double_as_real64
+    <h1>calc_percentile_alloc
       <small>Subroutine</small>
       
     </h1>
@@ -85,21 +85,21 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">5 statements</a>
+                 title=" 0.6% of total for procedures.">26 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/tox_conversions.F90"> Source File</a>
+              <a href="../src/f42_utils.F90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/tox_conversions.f90.html'>tox_conversions.F90</a></li>
-                <li class="breadcrumb-item"><a href='../module/tox_conversions.html'>tox_conversions</a></li>
-            <li class="breadcrumb-item active" aria-current="page">c_double_as_real64</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/f42_utils.f90.html'>f42_utils.F90</a></li>
+                <li class="breadcrumb-item"><a href='../module/f42_utils.html'>f42_utils</a></li>
+            <li class="breadcrumb-item active" aria-current="page">calc_percentile_alloc</li>
           </ol>
         </nav>
       </div>
@@ -146,11 +146,23 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public elemental subroutine c_double_as_real64(c_val, f_val)  
+    <h2>public  subroutine calc_percentile_alloc(array, percentile, value, ierr)  
 </h2>
-    
+        <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/tox_errors.html'>tox_errors</a></li>
+              </ul>
+            </li>
+        </ul>
+      </div>
+    </div>
 
-    <p>Converts a c_double value to real64, elemental -&gt; any shape</p>
+
+    <p>Calculate the percentile of an array, allocating necessary arrays when no sorting permutation is given</p>
 
 
     <h3>Arguments</h3>
@@ -166,22 +178,37 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-c_val"></span>
-              real(kind=c_double),
+              <span class="anchor" id="variable-array~8"></span>
+              real(kind=real64),
             </td>
 <td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>c_val</strong></td>
+            <td><strong>array</strong>(:)</td>
             <td>
-                <p>the element containing the c variant of the number</p>
+                <p>Input array</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-f_val"></span>
+              <span class="anchor" id="variable-percentile~2"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>percentile</strong></td>
+            <td>
+                <p>Desired percentile (0-100)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-value~2"></span>
               real(kind=real64),
             </td>
 <td>intent(out)</td>
@@ -189,9 +216,24 @@
               
             </td>
             <td>::</td>
-            <td><strong>f_val</strong></td>
+            <td><strong>value</strong></td>
             <td>
-                <p>the element that will hold the real64 representation of the c_double</p>
+                <p>Output percentile value</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~12"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ierr</strong></td>
+            <td>
+                <p>Error code</p>
             </td>
         </tr>
     </tbody>
@@ -228,7 +270,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-09-29 07:27 +0000"             </p>
+ on "2025-11-04 14:33 +0000"             </p>
           </div>
         </div>
         <br>

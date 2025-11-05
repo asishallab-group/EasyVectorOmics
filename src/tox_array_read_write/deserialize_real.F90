@@ -1,5 +1,6 @@
 !> Module for deserializing real (double precision) arrays from binary files
 module real_deserialize_mod
+  use safeguard
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only : c_loc, c_f_pointer
   use array_utils, only: ascii_to_string, read_file_header, check_okay_dims, check_okay_ndims
@@ -29,7 +30,7 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    call check_okay_ndims(ndims, 1, unit, ierr)
+    call check_okay_ndims(ndims, 1_int32, unit, ierr)
     if(.not. is_ok(ierr)) return
 
     read(unit, iostat=ioerror) arr
@@ -58,7 +59,7 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    call check_okay_ndims(ndims, 2, unit, ierr)
+    call check_okay_ndims(ndims, 2_int32, unit, ierr)
     if(.not. is_ok(ierr)) return
 
     read(unit, iostat=ioerror) arr
@@ -86,7 +87,7 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    call check_okay_ndims(ndims, 3, unit, ierr)
+    call check_okay_ndims(ndims, 3_int32, unit, ierr)
     if(.not. is_ok(ierr)) return
 
     read(unit, iostat=ioerror) arr
@@ -115,7 +116,7 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    call check_okay_ndims(ndims, 4, unit, ierr)
+    call check_okay_ndims(ndims, 4_int32, unit, ierr)
     if(.not. is_ok(ierr)) return
 
     read(unit, iostat=ioerror) arr
@@ -144,7 +145,7 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    call check_okay_ndims(ndims, 5, unit, ierr)
+    call check_okay_ndims(ndims, 5_int32, unit, ierr)
     if(.not. is_ok(ierr)) return
 
     read(unit, iostat=ioerror) arr

@@ -10,7 +10,7 @@
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>int32_as_c_int &ndash; TensorOmics</title>
+    <title>calc_contributions_c &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -74,7 +74,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>int32_as_c_int
+    <h1>calc_contributions_c
       <small>Subroutine</small>
       
     </h1>
@@ -85,21 +85,20 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">5 statements</a>
+                 title=" 1.2% of total for procedures.">55 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/tox_conversions.F90"> Source File</a>
+              <a href="../src/tox_trajectory_contribution_analysis.F90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/tox_conversions.f90.html'>tox_conversions.F90</a></li>
-                <li class="breadcrumb-item"><a href='../module/tox_conversions.html'>tox_conversions</a></li>
-            <li class="breadcrumb-item active" aria-current="page">int32_as_c_int</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">calc_contributions_c</li>
           </ol>
         </nav>
       </div>
@@ -146,11 +145,25 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public elemental subroutine int32_as_c_int(f_val, c_val)  
+    <h2>pure subroutine calc_contributions_c(trajectories, n_factors, n_samples, n_timepoints, i_factor, dependent_idx, mode, spike_contribs, integrated_contribs, ierr) bind(C, name="calc_contributions_c")  
 </h2>
-    
+        <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
+                  <li class="list-inline-item"><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></li>
+                  <li class="list-inline-item"><a href='../module/tox_errors.html'>tox_errors</a></li>
+              </ul>
+            </li>
+        </ul>
+      </div>
+    </div>
 
-    <p>Converts a int32 value to c_int, elemental -&gt; any shape</p>
+
+    <p>Calculates both spike and integrated contributions for a given factor against a dependent variable</p>
 
 
     <h3>Arguments</h3>
@@ -166,32 +179,169 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-f_val~6"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-trajectories~8"></span>
+              real(kind=c_double),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              dimension(n_factors, n_samples, n_timepoints), target
             </td>
             <td>::</td>
-            <td><strong>f_val</strong></td>
+            <td><strong>trajectories</strong></td>
             <td>
-                <p>the element containing the fortran variant of the number</p>
+                <p>Trajectories of expression data</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-c_val~6"></span>
+              <span class="anchor" id="variable-n_factors~8"></span>
               integer(kind=c_int),
             </td>
-<td>intent(out)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              target
             </td>
             <td>::</td>
-            <td><strong>c_val</strong></td>
+            <td><strong>n_factors</strong></td>
             <td>
-                <p>the element that will hold the c_int representation of the int32</p>
+                <p>Number of factors in <code>trajectories</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_samples~20"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              target
+            </td>
+            <td>::</td>
+            <td><strong>n_samples</strong></td>
+            <td>
+                <p>Number of samples in <code>trajectories</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_timepoints~18"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              target
+            </td>
+            <td>::</td>
+            <td><strong>n_timepoints</strong></td>
+            <td>
+                <p>Number of timepoints in <code>trajectories</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-i_factor~8"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              target
+            </td>
+            <td>::</td>
+            <td><strong>i_factor</strong></td>
+            <td>
+                <p>Factor (independent variable) index the contributions should be calculated for, starting from 0</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dependent_idx~6"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              target
+            </td>
+            <td>::</td>
+            <td><strong>dependent_idx</strong></td>
+            <td>
+                <p>Index of the dependent variable the contributions should be calculated for, starting from 0</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mode~12"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              target
+            </td>
+            <td>::</td>
+            <td><strong>mode</strong></td>
+            <td>
+                <table>
+<thead>
+<tr>
+<th>Mode</th>
+<th>Value</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Normal</td>
+<td>1</td>
+</tr>
+<tr>
+<td>RAP</td>
+<td>2</td>
+</tr>
+</tbody>
+</table>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-spike_contribs~12"></span>
+              real(kind=c_double),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_timepoints, n_samples), target
+            </td>
+            <td>::</td>
+            <td><strong>spike_contribs</strong></td>
+            <td>
+                <p>Output array to hold the timpoint-wise contributions per sample</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-integrated_contribs~6"></span>
+              real(kind=c_double),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_samples), target
+            </td>
+            <td>::</td>
+            <td><strong>integrated_contribs</strong></td>
+            <td>
+                <p>Output array to hold the contribution per sample</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~127"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              target
+            </td>
+            <td>::</td>
+            <td><strong>ierr</strong></td>
+            <td>
+                <p>Error code</p>
             </td>
         </tr>
     </tbody>
@@ -228,7 +378,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-09-29 07:27 +0000"             </p>
+ on "2025-11-04 14:33 +0000"             </p>
           </div>
         </div>
         <br>
