@@ -826,6 +826,26 @@ Calls euclidean_distance with standard Fortran types for R interface.</p></td>
                  <td><p>R interface wrapper for group_centroid.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/heapsort_character.html'>heapsort_character</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Internal heapsort implementation for character arrays.
+Lexicographic heapsort using string comparison, indirect via <code>perm</code>.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/heapsort_integer.html'>heapsort_integer</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Internal heapsort implementation for integer arrays.
+Indirectly sorts <code>array</code> using <code>perm</code>, same algorithm as <code>heapsort_real</code>.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/heapsort_real.html'>heapsort_real</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Sorts indirectly using the permutation vector <code>perm</code>. Uses <code>heapify_real</code> to maintain heap property.</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/identify_outliers.html'>identify_outliers</a></td>
                  <td><a href='../module/tox_get_outliers.html'>tox_get_outliers</a></td>
                  <td>Subroutine</td>
@@ -1102,6 +1122,22 @@ Sorts indirectly using the permutation vector <code>perm</code>. Manual stack re
                  <td><p>Opens unit and reads file header with all metadata from given file</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/real_greater.html'>real_greater</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Function</td>
+                 <td><p>NaN-aware greater-than comparison for real(real64).
+NaN is treated as greater than any finite number.
+Two NaNs are treated as equal.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/real_less.html'>real_less</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Function</td>
+                 <td><p>NaN-aware less-than comparison for real(real64).
+Finite values are always considered smaller than NaN.
+Two NaNs are treated as equal (neither less nor greater).</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/relative_axes_changes_from_shift_vector.html'>relative_axes_changes_from_shift_vector</a></td>
                  <td><a href='../module/relative_axis_plane_tools.html'>relative_axis_plane_tools</a></td>
                  <td>Subroutine</td>
@@ -1326,10 +1362,23 @@ R can not pass a multidimensional array directly, so we use a flat array and dim
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../interface/sort_array_heapsort.html'>sort_array_heapsort</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/sort_character.html'>sort_character</a></td>
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Subroutine</td>
                  <td><p>Sort a character array indirectly using quicksort.
+Uses lexicographic ordering and permutation vector sorting.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/sort_character_heapsort.html'>sort_character_heapsort</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Sort a character array indirectly using heapsort.
 Uses lexicographic ordering and permutation vector sorting.</p></td>
                </tr>
 			   <tr>
@@ -1340,10 +1389,24 @@ Uses lexicographic ordering and permutation vector sorting.</p></td>
 Similar to <code>sort_real</code>, but for integer input.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/sort_integer_heapsort.html'>sort_integer_heapsort</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Sort an integer array indirectly using heapsort.
+Similar to <code>sort_real_heapsort</code>, but for integer input.</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/sort_real.html'>sort_real</a></td>
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Subroutine</td>
                  <td><p>Sort a real array indirectly using quicksort.
+Creates a sorted version of the array by reordering the <code>perm</code> vector. The original data in <code>array</code> remains unchanged.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/sort_real_heapsort.html'>sort_real_heapsort</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Sort a real array indirectly using heapsort.
 Creates a sorted version of the array by reordering the <code>perm</code> vector. The original data in <code>array</code> remains unchanged.</p></td>
                </tr>
 			   <tr>
@@ -1450,7 +1513,7 @@ Converts integer mask to logical and calls which.</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-11-04 14:33 +0000"             </p>
+ on "2025-11-07 06:24 +0000"             </p>
           </div>
         </div>
         <br>
