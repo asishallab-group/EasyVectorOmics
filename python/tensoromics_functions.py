@@ -3173,3 +3173,33 @@ def tox_process_trajectories_flat(trajectories, factor_mask, dependent_idx, mode
         "outliers_integrated": outliers_integrated_bool,
         "outliers_spike": outliers_spike_bool
     }
+
+
+def tox_normalize_unit_length(vector):
+    """
+    Normalize a vector to unit length in-place.
+
+    Args:
+        vector (np.ndarray): 1D array of shape (n_dims,) to be normalized.
+
+    Returns:
+        np.ndarray: The same array, normalized in-place.
+    """
+
+    vector = np.ascontiguousarray(vector, dtype=np.float64)
+    n_dims = ctypes.c_int(vector.size)
+    ierr = ctypes.c_int(0)
+
+    normalize_unit_length_c = lib.normalize_unit_length_c
+    normalize_unit_length_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int)
+    ]
+    normalize_unit_length_c.restype = None
+
+    normalize_unit_length_c(vector, ctypes.byref(n_dims), ctypes.byref(ierr))
+    check_err_code(ierr.value)
+
+    _readonly(vector)
+    return vector
