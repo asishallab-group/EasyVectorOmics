@@ -24,7 +24,7 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(18)
+        type(test_case) :: all_tests(19)
 
         all_tests(1) = test_case("test_tox_paralog_analysis_mask_set_state", test_mask_set_state)
         all_tests(2) = test_case("test_tox_paralog_analysis_mask_check_state", test_mask_check_state)
@@ -44,7 +44,76 @@ contains
         all_tests(16) = test_case("test_tox_paralog_analysis_detect_patterns_mixed_results", test_detect_patterns_mixed_results)
         all_tests(17) = test_case("test_tox_paralog_analysis_detect_patterns_subfunc_floating_point_epsilon", test_detect_patterns_subfunc_floating_point_epsilon)
         all_tests(18) = test_case("test_tox_paralog_analysis_detect_patterns_input_validation", test_detect_patterns_input_validation)
+        all_tests(19) = test_case("test_tox_paralog_analysis_detect_neofunctionalization_genes_input_validation", test_detect_neofunctionalization_genes_input_validation)
     end function get_all_tests
+
+    subroutine test_detect_neofunctionalization_genes_input_validation()
+        use ieee_arithmetic, only: ieee_value, ieee_quiet_nan, ieee_positive_inf
+
+        integer(int32), parameter :: n_dims = 3, n_paralogs = 2
+        integer(int32) :: ierr
+        real(real64) :: ancestor(n_dims)
+        real(real64) :: paralogs(n_dims, n_paralogs)
+        real(real64) :: threshold
+        logical :: neofunc_paralogs(n_paralogs)
+
+        ! -------------------------------
+        ! Case 1: Valid input
+        ! -------------------------------
+        ancestor = [0.5_real64, -0.3_real64, 0.8_real64]
+        paralogs(:,1) = [0.6_real64, -0.2_real64, 0.7_real64]
+        paralogs(:,2) = [-0.4_real64, 0.1_real64, 1.0_real64]
+        threshold = 0.2_real64
+
+        call detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_detect_neofunctionalization_genes_input_validation: valid input")
+
+        ! -------------------------------
+        ! Case 2: Ancestor out of range
+        ! -------------------------------
+        ancestor = 10 * ancestor
+        call detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_neofunctionalization_genes_input_validation: ancestor out of range")
+        ancestor = [0.5_real64, -0.3_real64, 0.8_real64]
+
+        ! -------------------------------
+        ! Case 3: Paralogs out of range
+        ! -------------------------------
+        paralogs = paralogs * 10
+        call detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_neofunctionalization_genes_input_validation: paralogs out of range")
+        paralogs(:,1) = [0.6_real64, -0.2_real64, 0.7_real64]
+        paralogs(:,2) = [-0.4_real64, 0.1_real64, 1.0_real64]
+
+        ! -------------------------------
+        ! Case 4: NaN in ancestor
+        ! -------------------------------
+        ancestor = [0.5_real64, ieee_value(1.0_real64, ieee_quiet_nan), 0.8_real64]
+        call detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, ierr)
+        call assert_equal_int(ierr, ERR_NAN_INF, "test_detect_neofunctionalization_genes_input_validation: NaN in ancestor")
+
+        ancestor = [0.5_real64, -0.3_real64, 0.8_real64]  ! reset
+
+        ! -------------------------------
+        ! Case 5: Infinity in paralogs
+        ! -------------------------------
+        paralogs(:,1) = [0.6_real64, ieee_value(1.0_real64, ieee_positive_inf), 0.7_real64]
+        call detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, ierr)
+        call assert_equal_int(ierr, ERR_NAN_INF, "test_detect_neofunctionalization_genes_input_validation: Infinity in paralogs")
+
+        paralogs(:,1) = [0.6_real64, -0.2_real64, 0.7_real64]  ! reset
+
+        ! -------------------------------
+        ! Case 6: Threshold out of range
+        ! -------------------------------
+        threshold = 1.5_real64
+        call detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_neofunctionalization_genes_input_validation: threshold > 1.0")
+
+        threshold = -1.5_real64
+        call detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_neofunctionalization_genes_input_validation: threshold < -1.0")
+    end subroutine test_detect_neofunctionalization_genes_input_validation
 
     subroutine test_detect_patterns_input_validation()
         use f42_utils, only: PI
@@ -85,7 +154,7 @@ contains
                              n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
                              temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
                              subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
-        call assert_equal_int(ierr, ERR_OK, "detect_patterns: valid input")
+        call assert_equal_int(ierr, ERR_OK, "test_detect_patterns_input_validation: valid input")
 
         ! -------------------------------
         ! Case 2: max_subset_size = 0
@@ -95,7 +164,7 @@ contains
                              n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
                              temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
                              subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
-        call assert_equal_int(ierr, ERR_OK, "detect_patterns: max_subset_size = 0")
+        call assert_equal_int(ierr, ERR_OK, "test_detect_patterns_input_validation: max_subset_size = 0")
 
         max_subset_size = 2  ! reset
 
@@ -107,7 +176,7 @@ contains
                              n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
                              temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
                              subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
-        call assert_equal_int(ierr, ERR_NAN_INF, "detect_patterns: NaN in ancestor")
+        call assert_equal_int(ierr, ERR_NAN_INF, "test_detect_patterns_input_validation: NaN in ancestor")
 
         ancestor = [1.0_real64, 2.0_real64, 3.0_real64]  ! reset
 
@@ -119,7 +188,7 @@ contains
                              n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
                              temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
                              subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
-        call assert_equal_int(ierr, ERR_NAN_INF, "detect_patterns: Infinity in paralogs")
+        call assert_equal_int(ierr, ERR_NAN_INF, "test_detect_patterns_input_validation: Infinity in paralogs")
 
         paralogs(:,1) = [1.0_real64, 0.0_real64, 0.0_real64]  ! reset
 
@@ -131,13 +200,13 @@ contains
                              n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
                              temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
                              subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "detect_patterns: dosage_gain_gamma == 0")
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_patterns_input_validation: dosage_gain_gamma == 0")
         dosage_gain_gamma = -1.0_real64
         call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, &
                              n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
                              temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
                              subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "detect_patterns: dosage_gain_gamma < 0")
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_patterns_input_validation: dosage_gain_gamma < 0")
 
         dosage_gain_gamma = 0.1_real64  ! reset
 
@@ -149,13 +218,13 @@ contains
                              n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
                              temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
                              subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "detect_patterns: dosage_max_angle == 2π")
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_patterns_input_validation: dosage_max_angle == 2π")
         dosage_max_angle = 3.0_real64 * PI
         call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, &
                              n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
                              temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
                              subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "detect_patterns: dosage_max_angle > 2π")
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_patterns_input_validation: dosage_max_angle > 2π")
 
         dosage_max_angle = PI  ! reset
 
@@ -167,7 +236,7 @@ contains
                              n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
                              temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
                              subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
-        call assert_equal_int(ierr, ERR_NAN_INF, "detect_patterns: NaN in subfunc_paralog_norms")
+        call assert_equal_int(ierr, ERR_NAN_INF, "test_detect_patterns_input_validation: NaN in subfunc_paralog_norms")
 
         subfunc_paralog_norms = [1.0_real64, 2.0_real64]  ! reset
 
@@ -179,7 +248,7 @@ contains
                              n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
                              temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
                              subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "detect_patterns: subfunc_sorted_paralog_norms_perm < 1")
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_patterns_input_validation: subfunc_sorted_paralog_norms_perm < 1")
 
         subfunc_sorted_paralog_norms_perm = [1, 2]  ! reset
         
@@ -191,7 +260,7 @@ contains
                              n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
                              temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
                              subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "detect_patterns: subfunc_rdi_threshold < 0")
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_patterns_input_validation: subfunc_rdi_threshold < 0")
     end subroutine test_detect_patterns_input_validation
 
     subroutine test_detect_patterns_subfunc_floating_point_epsilon
