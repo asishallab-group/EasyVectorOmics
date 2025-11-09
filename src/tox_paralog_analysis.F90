@@ -224,7 +224,7 @@ contains
         call validate_in_range_real(dosage_gain_gamma, ierr, min=above(0.0_real64))
         call validate_in_range_real(dosage_max_angle, ierr, min=0.0_real64, max=below(2 * PI))
         call validate_all_in_range_real(subfunc_paralog_norms, n_paralogs, ierr)
-        call validate_all_in_range_int(subfunc_sorted_paralog_norms_perm, n_paralogs, ierr, min=1_int32)
+        call validate_all_in_range_int(subfunc_sorted_paralog_norms_perm, n_paralogs, ierr, min=1_int32, max=n_paralogs)
         call validate_in_range_real(subfunc_rdi_threshold, ierr, min=0.0_real64)
         if (is_err(ierr)) return
 
@@ -825,11 +825,10 @@ contains
 
         call set_ok(ierr)
 
+        call validate_in_range_int(i_paralog, ierr, min=1_int32, max=size(bit_mask, kind=int32)*32_int32)
+        if (is_err(ierr)) return
+
         i_mask_chunk = (i_paralog - 1) / 32 + 1
-        if (i_mask_chunk > size(bit_mask)) then
-            call set_err(ierr, ERR_INVALID_INPUT)
-            return
-        end if
 
         if (state) then
             bit_mask(i_mask_chunk) = ibset(bit_mask(i_mask_chunk), mod(i_paralog - 1, 32))
@@ -847,12 +846,15 @@ contains
         logical :: state
             !! check result
 
-        integer(int32) :: i_mask_chunk
+        integer(int32) :: i_mask_chunk, ierr
 
-        i_mask_chunk = (i_paralog - 1) / 32 + 1
-        if (i_mask_chunk > size(bit_mask)) then
+        call set_ok(ierr)
+        call validate_in_range_int(i_paralog, ierr, min=1_int32, max=size(bit_mask, kind=int32)*32_int32)
+
+        if (is_err(ierr)) then
             state = .false.
         else
+            i_mask_chunk = (i_paralog - 1) / 32 + 1
             state = btest(bit_mask(i_mask_chunk), mod(i_paralog - 1, 32))
         end if
 

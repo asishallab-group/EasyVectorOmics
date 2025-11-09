@@ -516,6 +516,7 @@ contains
         call assert_equal_int(ierr, ERR_OK, "test_detect_patterns_perfect_subfunc_split: unexpected error when calculating work array size")
         allocate(work_arr_paralog_subsets(n_mask_chunks, work_array_size))
 
+        ! print *, filtered_paralogs_mask, max_subset_size
         call detect_subfunctionalization(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, work_array_size, active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_detect_patterns_perfect_subfunc_split: unexpected error when detecting subfunctionalization")
         call assert_equal_int(n_results, 1_int32, "test_detect_patterns_perfect_subfunc_split: expected only one result for subfunctionalization")
