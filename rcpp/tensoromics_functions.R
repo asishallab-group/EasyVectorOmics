@@ -164,3 +164,129 @@ tox_calculate_tissue_versatility <- function(expression_vectors, vector_selectio
     n_selected_axes = result$n_selected_axes
   ))
 }
+# ===================================================================
+# SHIFT VECTOR FIELD FUNCTIONS
+# ===================================================================
+#' Calculate Shift Vector Field 
+#' Computes the shift vector field for each gene expression vector based on its family centroid.
+#' The shift vector is defined as the difference between the gene expression vector and its corresponding family centroid,
+#' starting at the expression vector and pointing to its family centroid.
+#' This function automatically checks for errors and throws informative exceptions.
+#'
+#' @param expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors)
+#' @param family_centroids: Matrix where each column is a family centroid vector (n_axes x n_families)
+#' @param gene_to_centroid: Array mapping each gene to its corresponding family centroid ID in family_centroids (length n_vectors)
+#' 
+#' @return List containing:
+#'   \item{shift_vectors}{The computed shift vectors for each gene expression vector}
+#'
+
+tox_compute_shift_vector_field <- function(expression_vectors, family_centroids, gene_to_centroid) {
+  # Input validation
+  if (!is.matrix(expression_vectors)) {
+    stop("expression_vectors must be a matrix")
+  }
+
+  if (!is.matrix(family_centroids)) {
+    stop("family_centroids must be a matrix")
+  }
+
+  # Validate length of gene_to_centroid
+  if (n_vectors != length(gene_to_centroid)) {
+    stop("number of expression_vectors must be equal to length of gene_to_centroid")
+  }
+
+  # Validate dimensions
+  if (n_axes_genes != n_axes_centroids) {
+    stop("family_centroids must have the same number of axes as expression_vectors")
+  }
+  
+
+  
+  # Call Rcpp wrapper
+  result <- tox_compute_shift_vector_field_rcpp(expression_vectors, family_centroids, gene_to_centroid)
+  
+  # Check for errors and throw informative messages
+  check_err_code(result$ierr)
+  
+  return(list(
+    shift_vectors = result$shift_vectors
+  ))
+}
+
+# ===================================================================
+# GENE CENTROIDS FUNCTIONS
+# ===================================================================
+#' Calculate Gene Centroids
+
+#' Computes the centroids for each gene family based on the expression vectors of its member genes.
+#' This function automatically checks for errors and throws informative exceptions.
+#'
+#' @param expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors)
+#' @param gene_to_family: Array mapping each gene to its corresponding family ID (length n_vectors)
+#' @param n_families: Total number of gene families
+#' @param ortholog_set: Logical array indicating if a gene is part of a specific subset (e.g., orthologs)
+#' @param mode: Character string indicating the mode of operation ('all' or 'ortho')
+#'
+#' @return List containing:
+#'   \item{centroid_matrix}{The computed centroids for each gene family}
+#'
+
+tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, ortholog_set, mode = 'all') {
+  
+  # 1) Validate inputs
+  if (!is.matrix(expression_vectors) || !is.numeric(expression_vectors)) {
+    stop("`expression_vectors` must be a numeric matrix.")
+  }
+ 
+  if (!is.integer(gene_to_family) || length(gene_to_family) != n_genes) {
+    stop("`gene_to_family` must be an integer vector of length n_genes.")
+  }
+  if (!is.logical(ortholog_set) || length(ortholog_set) != n_genes) {
+    stop("`ortholog_set` must be a logical vector of length n_genes.")
+  }
+  if (!mode %in% c('all', 'ortho')) {
+    stop("`mode` must be either 'all' or 'ortho'.")
+  }
+
+ 
+  # 3) Call Rcpp wrapper
+  result <- tox_group_centroid_rcpp(expression_vectors, gene_to_family, n_families, ortholog_set, mode = 'all')
+  
+  # Check for errors and throw informative messages
+  check_err_code(result$ierr)
+
+  return(result)
+}
+
+#' Compute the element-wise mean for a given set of gene expression vectors
+#'
+#' This function wraps the Fortran subroutine `mean_vector_r`
+#' to compute the centroid (mean vector) for a selected set of genes.
+#'
+#' @param expression_vectors Numeric matrix (n_axes x n_genes) of gene expression vectors
+#' @param gene_indices Integer vector of column indices of selected genes (1-based)
+#'
+#' @return Numeric vector of length n_axes representing the computed centroid
+#'
+
+tox_mean_vector <- function(expression_vectors, gene_indices) {
+  # Validate inputs
+  if (!is.matrix(expression_vectors) || !is.numeric(expression_vectors)) {
+    stop("`expression_vectors` must be a numeric matrix.")
+  }
+ 
+  if (!is.integer(gene_indices) || any(gene_indices < 1) || any(gene_indices > n_genes)) {
+    stop("`gene_indices` must be integer indices between 1 and n_genes.")
+  }
+
+ 
+  # Call Rcpp wrapper
+  result <- tox_mean_vector_rcpp(expression_vectors, gene_indices)
+  
+  # Check for errors and throw informative messages
+  check_err_code(result$ierr)
+  
+
+  return(result)
+}
