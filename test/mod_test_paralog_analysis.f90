@@ -2,7 +2,6 @@
 module mod_test_tox_paralog_analysis
     use asserts
     use, intrinsic :: iso_fortran_env, only: real64, int32
-    use, intrinsic :: iso_c_binding
     use tox_paralog_analysis
     use tox_errors
     implicit none
@@ -25,7 +24,7 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(17)
+        type(test_case) :: all_tests(18)
 
         all_tests(1) = test_case("test_tox_paralog_analysis_mask_set_state", test_mask_set_state)
         all_tests(2) = test_case("test_tox_paralog_analysis_mask_check_state", test_mask_check_state)
@@ -44,7 +43,156 @@ contains
         all_tests(15) = test_case("test_tox_paralog_analysis_detect_patterns_dosage_effect_near_angle_margin", test_detect_patterns_dosage_effect_near_angle_margin)
         all_tests(16) = test_case("test_tox_paralog_analysis_detect_patterns_mixed_results", test_detect_patterns_mixed_results)
         all_tests(17) = test_case("test_tox_paralog_analysis_detect_patterns_subfunc_floating_point_epsilon", test_detect_patterns_subfunc_floating_point_epsilon)
+        all_tests(18) = test_case("test_tox_paralog_analysis_detect_patterns_input_validation", test_detect_patterns_input_validation)
     end function get_all_tests
+
+    subroutine test_detect_patterns_input_validation()
+        use f42_utils, only: PI
+        use ieee_arithmetic, only: ieee_value, ieee_quiet_nan, ieee_positive_inf
+
+        integer(int32), parameter :: n_dims = 3, n_paralogs = 2
+        integer(int32), parameter :: n_mask_chunks = 1, n_paralog_subsets = 4
+        integer(int32) :: ierr, pattern, max_subset_size, n_results
+        real(real64) :: ancestor(n_dims), paralogs(n_dims, n_paralogs)
+        integer(int32) :: filtered_paralogs_mask(n_mask_chunks)
+        integer(int32) :: work_arr_paralog_subsets(n_mask_chunks, n_paralog_subsets)
+        integer(int32) :: active_mask(n_mask_chunks)
+        real(real64) :: temp_paralog_vector(n_dims)
+        real(real64) :: dosage_gain_gamma, dosage_max_angle
+        real(real64) :: subfunc_paralog_norms(n_paralogs)
+        integer(int32) :: subfunc_sorted_paralog_norms_perm(n_paralogs)
+        real(real64) :: subfunc_temp_work_array(n_paralogs)
+        real(real64) :: subfunc_rdi_threshold, INF, NAN
+
+        INF = ieee_value(1.0_real64, ieee_positive_inf)
+        NAN = ieee_value(1.0_real64, ieee_quiet_nan)
+        pattern = 0
+        filtered_paralogs_mask = [1]
+        max_subset_size = 2
+        dosage_gain_gamma = 0.1_real64
+        dosage_max_angle = PI
+        subfunc_paralog_norms = [1.0_real64, 2.0_real64]
+        subfunc_sorted_paralog_norms_perm = [1, 2]
+        subfunc_rdi_threshold = 0.0_real64
+
+        ! -------------------------------
+        ! Case 1: Valid input
+        ! -------------------------------
+        ancestor = [1.0_real64, 2.0_real64, 3.0_real64]
+        paralogs = reshape([1.0_real64, 0.0_real64, 0.0_real64, 0.0_real64, 1.0_real64, 0.0_real64], [n_dims, n_paralogs])
+
+        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, &
+                             n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
+                             temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
+                             subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+        call assert_equal_int(ierr, ERR_OK, "detect_patterns: valid input")
+
+        ! -------------------------------
+        ! Case 2: max_subset_size = 0
+        ! -------------------------------
+        max_subset_size = 0
+        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, &
+                             n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
+                             temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
+                             subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+        call assert_equal_int(ierr, ERR_OK, "detect_patterns: max_subset_size = 0")
+
+        max_subset_size = 2  ! reset
+
+        ! -------------------------------
+        ! Case 3: NaN in ancestor
+        ! -------------------------------
+        ancestor = [1.0_real64,     INF, 3.0_real64]
+        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, &
+                             n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
+                             temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
+                             subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+        call assert_equal_int(ierr, ERR_NAN_INF, "detect_patterns: NaN in ancestor")
+
+        ancestor = [1.0_real64, 2.0_real64, 3.0_real64]  ! reset
+
+        ! -------------------------------
+        ! Case 4: Infinity in paralogs
+        ! -------------------------------
+        paralogs(:,1) = [1.0_real64, INF, 0.0_real64]
+        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, &
+                             n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
+                             temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
+                             subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+        call assert_equal_int(ierr, ERR_NAN_INF, "detect_patterns: Infinity in paralogs")
+
+        paralogs(:,1) = [1.0_real64, 0.0_real64, 0.0_real64]  ! reset
+
+        ! -------------------------------
+        ! Case 5: dosage_gain_gamma <= 0
+        ! -------------------------------
+        dosage_gain_gamma = 0.0_real64
+        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, &
+                             n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
+                             temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
+                             subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "detect_patterns: dosage_gain_gamma == 0")
+        dosage_gain_gamma = -1.0_real64
+        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, &
+                             n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
+                             temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
+                             subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "detect_patterns: dosage_gain_gamma < 0")
+
+        dosage_gain_gamma = 0.1_real64  ! reset
+
+        ! -------------------------------
+        ! Case 6: dosage_max_angle >= 2π
+        ! -------------------------------
+        dosage_max_angle = 2.0_real64 * PI
+        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, &
+                             n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
+                             temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
+                             subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "detect_patterns: dosage_max_angle == 2π")
+        dosage_max_angle = 3.0_real64 * PI
+        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, &
+                             n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
+                             temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
+                             subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "detect_patterns: dosage_max_angle > 2π")
+
+        dosage_max_angle = PI  ! reset
+
+        ! -------------------------------
+        ! Case 7: NaN in subfunc_paralog_norms
+        ! -------------------------------
+        subfunc_paralog_norms = [1.0_real64, NAN]
+        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, &
+                             n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
+                             temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
+                             subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+        call assert_equal_int(ierr, ERR_NAN_INF, "detect_patterns: NaN in subfunc_paralog_norms")
+
+        subfunc_paralog_norms = [1.0_real64, 2.0_real64]  ! reset
+
+        ! -------------------------------
+        ! Case 8: subfunc_sorted_paralog_norms_perm < 1
+        ! -------------------------------
+        subfunc_sorted_paralog_norms_perm = [0, 2]
+        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, &
+                             n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
+                             temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
+                             subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "detect_patterns: subfunc_sorted_paralog_norms_perm < 1")
+
+        subfunc_sorted_paralog_norms_perm = [1, 2]  ! reset
+        
+        ! -------------------------------
+        ! Case 9: subfunc_rdi_threshold < 0
+        ! -------------------------------
+        subfunc_rdi_threshold = -1.0_real64
+        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, &
+                             n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
+                             temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
+                             subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "detect_patterns: subfunc_rdi_threshold < 0")
+    end subroutine test_detect_patterns_input_validation
 
     subroutine test_detect_patterns_subfunc_floating_point_epsilon
         integer(int32), parameter :: n_paralogs = 3, n_dims = 3, n_mask_chunks = 1

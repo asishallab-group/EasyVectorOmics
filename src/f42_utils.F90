@@ -23,14 +23,22 @@ contains
   pure real(real64) function below(val)
       real(real64), intent(in) :: val
   
-      below = ieee_next_after(val, ieee_value(1.0_real64, ieee_negative_inf))
+      if (val == 0.0_real64) then
+          below = -tiny(1.0_real64)
+      else
+          below = ieee_next_after(val, ieee_value(1.0_real64, ieee_negative_inf))
+      end if
   end function below
 
   !> Returns the next representable float greater than a value. Helpful for exclusive upper bounds in ranges.
   pure real(real64) function above(val)
       real(real64), intent(in) :: val
   
-      above = ieee_next_after(val, ieee_value(1.0_real64, ieee_positive_inf))
+      if (val == 0.0_real64) then
+          above = tiny(1.0_real64)
+      else
+          above = ieee_next_after(val, ieee_value(1.0_real64, ieee_positive_inf))
+      end if
   end function above
 
   pure logical function is_close(a, b)
