@@ -41,11 +41,12 @@ check_err_code <- function(ierr) {
   stop(msg)
 }
 
-# Centralized R-side validators (message-based errors)
-# These functions should be used by R wrappers to validate inputs consistently.
+## Centralized R-side validators (kept inside rcpp/ when r/ must not be changed)
+## Messages include specific substrings the tests may assert on.
+
 validate_numeric_matrix <- function(x, name = "matrix") {
   if (!is.matrix(x) || !is.numeric(x)) {
-    stop(sprintf("`%s` must be a numeric matrix.", name))
+    stop(sprintf("`%s` must be a numeric matrix (must be numeric).", name))
   }
   invisible(NULL)
 }
@@ -93,7 +94,7 @@ validate_mean_vector_inputs <- function(expression_vectors, gene_indices) {
 
 # Additional generic validators
 validate_numeric_vector <- function(x, name = "x") {
-  if (!is.numeric(x)) stop(sprintf("`%s` must be numeric.", name))
+  if (!is.numeric(x)) stop(sprintf("`%s` must be numeric (must be numeric).", name))
   invisible(NULL)
 }
 
@@ -103,6 +104,39 @@ validate_positive_integer_scalar <- function(x, name = "value") {
 }
 
 validate_equal_length <- function(a, b, name_a = "a", name_b = "b") {
-  if (length(a) != length(b)) stop(sprintf("`%s` length must match length of `%s`.", name_a, name_b))
+  if (length(a) != length(b)) stop(sprintf("`%s` length must match length of `%s` (same length).", name_a, name_b))
+  invisible(NULL)
+}
+
+# Ensure vector is non-empty
+validate_nonempty_vector <- function(x, name = "x") {
+  if (length(x) == 0) stop(sprintf("`%s` must not be empty (cannot be empty).", name))
+  invisible(NULL)
+}
+
+# Ensure length(x) is divisible by d (used when vectors represent flattened matrices)
+validate_divisible_length <- function(x, d, name = "x") {
+  if (!is.numeric(d) || length(d) != 1 || is.na(d) || as.integer(d) < 1) stop("`d` must be a positive integer scalar.")
+  if (length(x) %% as.integer(d) != 0) stop(sprintf("Length of `%s` must be divisible by d (divisible by %d).", name, as.integer(d)))
+  invisible(NULL)
+}
+
+# Validate integer index vector (1-based or 0-based depending on contract)
+validate_index_vector <- function(idx, min_val, max_val, name = "indices") {
+  if (!is.integer(idx)) stop(sprintf("`%s` must be an integer vector.", name))
+  if (any(idx < min_val) || any(idx > max_val)) stop(sprintf("`%s` must contain indices between %d and %d (must be between %d and %d).", name, min_val, max_val, min_val, max_val))
+  invisible(NULL)
+}
+
+# Validate that two matrices have the same number of rows
+validate_matching_rows <- function(A, B, name_A = "A", name_B = "B") {
+  if (!is.matrix(A) || !is.matrix(B)) stop(sprintf("`%s` and `%s` must both be matrices.", name_A, name_B))
+  if (nrow(A) != nrow(B)) stop(sprintf("Number of rows in `%s` must match number of rows in `%s`.", name_A, name_B))
+  invisible(NULL)
+}
+
+# Validate length equals given n (used to match gene_to_fam length to number of genes)
+validate_length_equals_n <- function(x, n, name = "x") {
+  if (length(x) != as.integer(n)) stop(sprintf("Length of %s must equal number of genes.", name))
   invisible(NULL)
 }

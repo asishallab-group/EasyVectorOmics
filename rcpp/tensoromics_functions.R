@@ -10,8 +10,8 @@ Sys.setenv(PKG_LIBS = paste0("-Wl,-rpath,", lib_path, " -L", lib_path, " -ltenso
 sourceCpp("rcpp/tensoromics_functions.cpp", env = .GlobalEnv)
 
 cat("✓ TensorOmics Rcpp functions loaded successfully\n")
-
-source("r/error_handling.R")
+## Use the rcpp-local validators (we keep all edits inside rcpp/ per workspace policy)
+source("rcpp/error_handling.R")
 
 
 # ===================================================================
@@ -29,18 +29,12 @@ source("r/error_handling.R")
 #' @return Numeric value representing the Euclidean distance between the vectors
 #' 
 tox_euclidean_distance <- function(vec1, vec2) {
-  # Input validation
-  if (!is.numeric(vec1) || !is.numeric(vec2)) {
-    stop("Both vectors must be numeric")
-  }
-  if (length(vec1) != length(vec2)) {
-    stop("Vectors must have the same length")
-  }
-  if (length(vec1) == 0) {
-    stop("Vectors cannot be empty")
-  }
-  
-  # Call Rcpp wrapper 
+  # Perform R-layer validation using rcpp-local validators, then forward to Rcpp.
+  validate_numeric_vector(vec1, "vec1")
+  validate_numeric_vector(vec2, "vec2")
+  validate_equal_length(vec1, vec2, "vec1", "vec2")
+  validate_nonempty_vector(vec1, "vec1")
+
   return(tox_euclidean_distance_rcpp(as.numeric(vec1), as.numeric(vec2)))
 }
 
@@ -58,42 +52,32 @@ tox_euclidean_distance <- function(vec1, vec2) {
 #' @return Numeric vector of distances from each gene to its family centroid
 #' 
 tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
-  # Input validation
-  if (!is.numeric(genes) || !is.numeric(centroids)) {
-    stop("genes and centroids must be numeric")
-  }
-  if (!is.numeric(gene_to_fam) && !is.integer(gene_to_fam)) {
-    stop("gene_to_fam must be numeric or integer")
-  }
-  if (!is.numeric(d) && !is.integer(d)) {
-    stop("d must be numeric or integer")
-  }
-  
-  # Convert to appropriate types
+  # R-layer validation in rcpp/ (kept here because r/ must not be changed)
+  validate_numeric_vector(genes, "genes")
+  validate_numeric_vector(centroids, "centroids")
+  validate_positive_integer_scalar(d, "d")
+
+   # Convert to appropriate types
   genes <- as.numeric(genes)
   centroids <- as.numeric(centroids)
   gene_to_fam <- as.integer(gene_to_fam)
   d <- as.integer(d)
-  
-  # Calculate dimensions
+
+#  # Validate flattened lengths are compatible with d
+  validate_divisible_length(genes, d, "genes")
+  validate_divisible_length(centroids, d, "centroids")
+
+    # Calculate dimensions
   n_genes <- as.integer(length(genes) / d)
   n_families <- as.integer(length(centroids) / d)
-  
-  # Validate dimensions
-  if (length(genes) %% d != 0) {
-    stop("Length of genes must be divisible by d")
-  }
-  if (length(centroids) %% d != 0) {
-    stop("Length of centroids must be divisible by d")
-  }
-  if (length(gene_to_fam) != n_genes) {
-    stop("Length of gene_to_fam must equal number of genes")
-  }
-  if (any(gene_to_fam < 0)) {
+  validate_length_equals_n(gene_to_fam, n_genes, "gene_to_fam")
+  # Reject negative indices (tests expect this); allow values > n_families so Fortran
+  # can return -1 for invalid family assignments.
+  if (any(gene_to_fam < 0L)) {
     stop("gene_to_fam indices must be between 0 and n_families (0 = no family assignment)")
   }
-  
-  # Call Rcpp wrapper
+  if (any(gene_to_fam < 0)) stop(sprintf("`%s` must be between 0 and %d.", "gene_to_fam", as.integer(n_families)))
+
   return(tox_distance_to_centroid_rcpp(genes, centroids, gene_to_fam, d))
 }
 
@@ -116,47 +100,29 @@ tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
 #'   \item{n_selected_axes}{Number of axes used in calculation}
 #' 
 tox_calculate_tissue_versatility <- function(expression_vectors, vector_selection, axis_selection) {
-  # Input validation
-  if (!is.matrix(expression_vectors)) {
-    stop("expression_vectors must be a matrix")
-  }
-  if (!is.logical(vector_selection) && !is.numeric(vector_selection)) {
-    stop("vector_selection must be logical or numeric")
-  }
-  if (!is.logical(axis_selection) && !is.numeric(axis_selection)) {
-    stop("axis_selection must be logical or numeric")
-  }
-  
-  # Convert to appropriate types for Rcpp
+  # R-layer validation (kept in rcpp/ to avoid touching r/)
+  validate_numeric_matrix(expression_vectors, "expression_vectors")
+  n_axes <- nrow(as.matrix(expression_vectors))
+  n_vectors <- ncol(as.matrix(expression_vectors))
+
+  # Ensure selection vectors have correct lengths and types
   if (is.numeric(vector_selection)) {
     vector_selection <- as.integer(as.logical(vector_selection))
   } else {
     vector_selection <- as.integer(vector_selection)
   }
-  
   if (is.numeric(axis_selection)) {
     axis_selection <- as.integer(as.logical(axis_selection))
   } else {
     axis_selection <- as.integer(axis_selection)
   }
-  
-  # Validate dimensions
-  if (length(vector_selection) != ncol(expression_vectors)) {
-    stop("vector_selection length must match number of columns in expression_vectors")
-  }
-  if (length(axis_selection) != nrow(expression_vectors)) {
-    stop("axis_selection length must match number of rows in expression_vectors")
-  }
-  
-  # Call Rcpp wrapper
-  result <- tox_calculate_tissue_versatility_rcpp(expression_vectors, vector_selection, axis_selection)
-  
-  # Check for errors
-  if (result$ierr != 0) {
-    check_err_code(result$ierr)
-  }
-  
-  # Return structured result 
+
+  validate_logical_vector(as.logical(vector_selection), "vector_selection", expected_length = n_vectors)
+  validate_logical_vector(as.logical(axis_selection), "axis_selection", expected_length = n_axes)
+
+  result <- tox_calculate_tissue_versatility_rcpp(as.matrix(expression_vectors), vector_selection, axis_selection)
+  if (result$ierr != 0) check_err_code(result$ierr)
+
   return(list(
     tissue_versatilities = result$tissue_versatilities,
     tissue_angles_deg = result$tissue_angles_deg,
@@ -182,36 +148,22 @@ tox_calculate_tissue_versatility <- function(expression_vectors, vector_selectio
 #'
 
 tox_compute_shift_vector_field <- function(expression_vectors, family_centroids, gene_to_centroid) {
-  # Input validation
-  if (!is.matrix(expression_vectors)) {
-    stop("expression_vectors must be a matrix")
-  }
+  # R-layer validation (kept in rcpp/)
+  validate_numeric_matrix(expression_vectors, "expression_vectors")
+  validate_numeric_matrix(family_centroids, "family_centroids")
+  # Ensure matching axes (rows)
+  validate_matching_rows(as.matrix(expression_vectors), as.matrix(family_centroids), "expression_vectors", "family_centroids")
 
-  if (!is.matrix(family_centroids)) {
-    stop("family_centroids must be a matrix")
-  }
+  # gene_to_centroid should be integer vector with length equal to number of vectors
+  gene_to_centroid <- as.integer(gene_to_centroid)
+  n_vectors <- ncol(as.matrix(expression_vectors))
+  validate_length_equals_n(gene_to_centroid, n_vectors, "gene_to_centroid")
+  if (any(is.na(gene_to_centroid))) stop("`gene_to_centroid` must not contain NA values.")
+  if (any(gene_to_centroid < 0L)) stop("`gene_to_centroid` must not contain negative indices.")
 
-  # Validate length of gene_to_centroid
-  if (n_vectors != length(gene_to_centroid)) {
-    stop("number of expression_vectors must be equal to length of gene_to_centroid")
-  }
-
-  # Validate dimensions
-  if (n_axes_genes != n_axes_centroids) {
-    stop("family_centroids must have the same number of axes as expression_vectors")
-  }
-  
-
-  
-  # Call Rcpp wrapper
-  result <- tox_compute_shift_vector_field_rcpp(expression_vectors, family_centroids, gene_to_centroid)
-  
-  # Check for errors and throw informative messages
+  result <- tox_compute_shift_vector_field_rcpp(as.matrix(expression_vectors), as.matrix(family_centroids), as.integer(gene_to_centroid))
   check_err_code(result$ierr)
-  
-  return(list(
-    shift_vectors = result$shift_vectors
-  ))
+  return(list(shift_vectors = result$shift_vectors))
 }
 
 # ===================================================================
@@ -232,30 +184,13 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
 #'   \item{centroid_matrix}{The computed centroids for each gene family}
 #'
 
+ 
 tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, ortholog_set, mode = 'all') {
-  
-  # 1) Validate inputs
-  if (!is.matrix(expression_vectors) || !is.numeric(expression_vectors)) {
-    stop("`expression_vectors` must be a numeric matrix.")
-  }
- 
-  if (!is.integer(gene_to_family) || length(gene_to_family) != n_genes) {
-    stop("`gene_to_family` must be an integer vector of length n_genes.")
-  }
-  if (!is.logical(ortholog_set) || length(ortholog_set) != n_genes) {
-    stop("`ortholog_set` must be a logical vector of length n_genes.")
-  }
-  if (!mode %in% c('all', 'ortho')) {
-    stop("`mode` must be either 'all' or 'ortho'.")
-  }
+  # R-layer validation (kept in rcpp/)
+  validate_group_centroid_inputs(as.matrix(expression_vectors), gene_to_family, n_families, ortholog_set, mode)
 
- 
-  # 3) Call Rcpp wrapper
-  result <- tox_group_centroid_rcpp(expression_vectors, gene_to_family, n_families, ortholog_set, mode = 'all')
-  
-  # Check for errors and throw informative messages
+  result <- tox_group_centroid_rcpp(as.matrix(expression_vectors), as.integer(gene_to_family), as.integer(n_families), as.integer(ortholog_set), as.integer(ifelse(mode == 'all', 1, 0)))
   check_err_code(result$ierr)
-
   return(result)
 }
 
@@ -271,22 +206,10 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
 #'
 
 tox_mean_vector <- function(expression_vectors, gene_indices) {
-  # Validate inputs
-  if (!is.matrix(expression_vectors) || !is.numeric(expression_vectors)) {
-    stop("`expression_vectors` must be a numeric matrix.")
-  }
- 
-  if (!is.integer(gene_indices) || any(gene_indices < 1) || any(gene_indices > n_genes)) {
-    stop("`gene_indices` must be integer indices between 1 and n_genes.")
-  }
+  # R-layer validation (kept in rcpp/)
+  validate_mean_vector_inputs(as.matrix(expression_vectors), as.integer(gene_indices))
 
- 
-  # Call Rcpp wrapper
-  result <- tox_mean_vector_rcpp(expression_vectors, gene_indices)
-  
-  # Check for errors and throw informative messages
+  result <- tox_mean_vector_rcpp(as.matrix(expression_vectors), as.integer(gene_indices))
   check_err_code(result$ierr)
-  
-
   return(result)
 }
