@@ -2,7 +2,7 @@
 
 module tox_paralog_analysis
     use, intrinsic :: iso_fortran_env, only: int32, real64
-    use tox_errors, only: set_ok, set_err, is_err, ERR_INVALID_INPUT, ERR_SIZE_MISMATCH, validate_dimension_size, validate_in_range_int, validate_all_in_range_int, validate_in_range_real, validate_all_in_range_real
+    use tox_errors, only: set_ok, set_err, is_err, ERR_INVALID_INPUT, ERR_SIZE_MISMATCH, ERR_INTERNAL, validate_dimension_size, validate_in_range_int, validate_all_in_range_int, validate_in_range_real, validate_all_in_range_real
     use f42_utils, only: add_vector, subtract_vector, norm, angle_between, below, above
     implicit none
 
@@ -21,19 +21,21 @@ contains
         call validate_in_range_int(pattern, ierr, min=0_int32, max=1_int32)
     end subroutine validate_pattern
 
-    pure subroutine detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, ierr)
+    pure subroutine detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, n_mask_chunks, ierr)
         integer(int32), intent(in) :: n_dims
             !! size of `ancestor` vector and vectors in `paralogs`
         integer(int32), intent(in) :: n_paralogs
             !! number of vectors in `paralogs`
+        integer(int32), intent(in) :: n_mask_chunks
+            !! number of 32 bit chunks a mask needs to encode `n_paralogs` paralogs. Use subroutine `mask_chunk_count` for calculation
         real(real64), dimension(n_dims), intent(in) :: ancestor
             !! RAP projected unit length expression vector of ancestral ortholog
         real(real64), dimension(n_dims, n_paralogs), intent(in) :: paralogs
             !! RAP projected unit length expression vectors of paralogs
         real(real64), intent(in) :: threshold
             !! threshold that determines neofunctionalization, may be a percentile of all ancestors's vector components
-        logical, dimension(n_paralogs), intent(out) :: neofunc_paralogs
-            !! logical mask that marks neofunctionalization candidates
+        integer(int32), dimension(n_mask_chunks), intent(out) :: neofunc_paralogs
+            !! bit mask that marks neofunctionalization candidates
         integer(int32), intent(out) :: ierr
             !! error code
 
@@ -49,6 +51,8 @@ contains
         call validate_in_range_real(threshold, ierr, min=-1.0_real64, max=1.0_real64)
         if (is_err(ierr)) return
 
+        neofunc_paralogs = 0_int32
+
         do i_paralog = 1, n_paralogs
             has_expressed_axis = .false.
             has_non_expressed_axis = .false.
@@ -61,9 +65,13 @@ contains
                 end if
             end do
 
-            neofunc_paralogs(i_paralog) = has_expressed_axis .and. has_non_expressed_axis
+            call mask_set_state(neofunc_paralogs, i_paralog, has_expressed_axis .and. has_non_expressed_axis, ierr)
         end do
 
+        ! This is only the case if `mask_set_state` has been called with wrong inputs
+        if (is_err(ierr)) then
+            call set_err(ierr, ERR_INTERNAL)
+        end if
     end subroutine detect_neofunctionalization_genes
 
     !> Identifies subsets of paralogs with small angle to the `ancestor` (max_angle) and sum to a magnitude significantly exceeding `norm(ancestor)` (gain)
