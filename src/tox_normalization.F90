@@ -1,9 +1,44 @@
+#include "macros.h"
+
 !> Module with normalization routines for tensor omics.
 module tox_normalization
   use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
-  use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT, ERR_INVALID_INPUT, is_err
+  use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT, ERR_INVALID_INPUT, ERR_DIVISION_BY_ZERO, is_err, validate_dimension_size, validate_in_range_real
+  use f42_utils, only: norm, is_close
 contains
+
+  !> Normalizes an input vector to unit length in-place
+  pure subroutine normalize_unit_length(vector, n_dims, ierr)
+    integer(int32), intent(in) :: n_dims
+      !! number of elements in `vector`
+    real(real64), dimension(n_dims), intent(inout) :: vector
+      !! Vector that will be normalized to unit length
+    integer(int32), intent(out) :: ierr
+      !! Error code
+
+    integer(int32) :: i_dim
+    real(real64) :: vector_norm
+
+    call set_ok(ierr)
+
+    call validate_dimension_size(n_dims, ierr)
+    if(is_err(ierr)) return
+
+    vector_norm = norm(vector)
+    if (is_close(vector_norm, 0.0_real64)) then
+        call set_err(ierr, ERR_DIVISION_BY_ZERO)
+        return
+    end if
+
+    ! check for nan, inf
+    call validate_in_range_real(vector_norm, ierr)
+    if (is_err(ierr)) return
+
+    do i_dim = 1, n_dims
+        vector(i_dim) = vector(i_dim) / vector_norm
+    end do
+  end subroutine normalize_unit_length
 
   !> Complete normalization pipeline for gene expression data.
   !! Performs: std dev normalization, quantile normalization, replicate averaging, log2(x+1) transformation.
@@ -685,3 +720,23 @@ subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev
 
   call normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ierr)
 end subroutine normalization_pipeline_c
+
+!> C-compatible wrapper for normalize_unit_length
+pure subroutine normalize_unit_length_c(vector, n_dims, ierr) bind(C, name="normalize_unit_length_c")
+    use tox_normalization, only: normalize_unit_length
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
+    M_USE_NULL_VALIDATION
+
+    integer(c_int), intent(in), target :: n_dims
+        !! number of elements in `vector`
+    real(c_double), dimension(n_dims), intent(inout), target :: vector
+        !! Vector that will be normalized to unit length
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_dims)
+    M_CHECK_NON_NULL(vector)
+
+    call normalize_unit_length(vector, n_dims, ierr)
+end subroutine normalize_unit_length_c

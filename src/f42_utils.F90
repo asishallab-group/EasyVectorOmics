@@ -4,7 +4,7 @@ module f42_utils
   use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
   use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, set_ok, set_err_once, set_err
-  use, intrinsic :: ieee_arithmetic, only: ieee_next_after, ieee_value, ieee_positive_inf, ieee_negative_inf
+  use, intrinsic :: ieee_arithmetic, only: ieee_next_after, ieee_value, ieee_positive_inf, ieee_negative_inf, ieee_is_finite
   implicit none
 
   public :: sort_real, sort_integer, sort_character
@@ -39,7 +39,11 @@ contains
     real(real64), intent(in) :: b
       !! Second variable of comparison a==b
 
-    is_close = abs(a - b) <= EPS * max(abs(a), abs(b))
+    if (ieee_is_finite(a) .and. ieee_is_finite(b)) then
+      is_close = abs(a - b) <= EPS * max(abs(a), abs(b))
+    else
+      is_close = a == b
+    end if
   end function is_close
 
   !> Computes the radian angle between two vectors

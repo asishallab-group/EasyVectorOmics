@@ -21,6 +21,51 @@ contains
         call validate_in_range_int(pattern, ierr, min=0_int32, max=1_int32)
     end subroutine validate_pattern
 
+    pure subroutine detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, ierr)
+        integer(int32), intent(in) :: n_dims
+            !! size of `ancestor` vector and vectors in `paralogs`
+        integer(int32), intent(in) :: n_paralogs
+            !! number of vectors in `paralogs`
+        real(real64), dimension(n_dims), intent(in) :: ancestor
+            !! RAP projected unit length expression vector of ancestral ortholog
+        real(real64), dimension(n_dims, n_paralogs), intent(in) :: paralogs
+            !! RAP projected unit length expression vectors of paralogs
+        real(real64), intent(in) :: threshold
+            !! threshold that determines neofunctionalization, may be a percentile of all ancestors's vector components
+        logical, dimension(n_paralogs), intent(out) :: neofunc_paralogs
+            !! logical mask that marks neofunctionalization candidates
+        integer(int32), intent(out) :: ierr
+            !! error code
+
+        integer(int32) :: i_paralog, i_dim
+        logical :: has_non_expressed_axis, has_expressed_axis
+
+        call set_ok(ierr)
+
+        call validate_dimension_size(n_paralogs, ierr)
+        call validate_dimension_size(n_dims, ierr)
+        call validate_all_in_range_real(ancestor, n_dims, ierr, min=-1.0_real64, max=1.0_real64)
+        call validate_all_in_range_real(paralogs, n_dims * n_paralogs, ierr, min=-1.0_real64, max=1.0_real64)
+        call validate_in_range_real(threshold, ierr, min=-1.0_real64, max=1.0_real64)
+        if (is_err(ierr)) return
+
+        do i_paralog = 1, n_paralogs
+            has_expressed_axis = .false.
+            has_non_expressed_axis = .false.
+
+            do i_dim = 1, n_dims
+                if (paralogs(i_dim, i_paralog) < threshold) then
+                    has_non_expressed_axis = .true.
+                else if (paralogs(i_dim, i_paralog) > threshold) then
+                    has_expressed_axis = .true.
+                end if
+            end do
+
+            neofunc_paralogs(i_paralog) = has_expressed_axis .and. has_non_expressed_axis
+        end do
+
+    end subroutine detect_neofunctionalization_genes
+
     !> Identifies subsets of paralogs with small angle to the `ancestor` (max_angle) and sum to a magnitude significantly exceeding `norm(ancestor)` (gain)
     pure subroutine detect_dosage_effect(ancestor, paralogs, n_paralogs, n_dims, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, ierr, max_angle, gain_gamma)
         integer(int32), intent(in) :: n_dims
@@ -806,7 +851,7 @@ contains
     end function mask_check_state
 end module tox_paralog_analysis
 
-!> Identifies subsets of paralogs with small angle to the `ancestor` (max_angle) and sum to a magnitude significantly exceeding `norm(ancestor)` (gain)
+!> C-compatible wrapper for `detect_dosage_effect`
 pure subroutine detect_dosage_effect_c(ancestor, paralogs, n_paralogs, n_dims, filtered_paralogs_mask, n_mask_chunks, &
                                 n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, &
                                 active_mask, temp_paralog_vector, ierr, max_angle, gain_gamma) bind(C, name="detect_dosage_effect_c")
@@ -868,7 +913,7 @@ pure subroutine detect_dosage_effect_c(ancestor, paralogs, n_paralogs, n_dims, f
                               active_mask, temp_paralog_vector, ierr, max_angle=max_angle, gain_gamma=gain_gamma)
 end subroutine detect_dosage_effect_c
 
-!> Identifies subsets of paralogs with small angle to the `ancestor` (max_angle) and sum to a magnitude significantly exceeding `norm(ancestor)` (gain)
+!> R-compatible wrapper for `detect_subfunctionalization`
 pure subroutine detect_dosage_effect_r(ancestor, paralogs, n_paralogs, n_dims, filtered_paralogs_mask, n_mask_chunks, &
                                 n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, &
                                 active_mask, temp_paralog_vector, ierr, max_angle, gain_gamma)
@@ -912,7 +957,7 @@ pure subroutine detect_dosage_effect_r(ancestor, paralogs, n_paralogs, n_dims, f
                               active_mask, temp_paralog_vector, ierr, max_angle=max_angle, gain_gamma=gain_gamma)
 end subroutine detect_dosage_effect_r
 
-!> Identifies subsets of paralogs exhibiting significant angles to the `ancestor`
+!> C-compatible wrapper for `detect_subfunctionalization`
 pure subroutine detect_subfunctionalization_c(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, &
                                        n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, &
                                        active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr) &
@@ -980,7 +1025,7 @@ pure subroutine detect_subfunctionalization_c(ancestor, paralogs, n_paralogs, n_
                                    active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr)
 end subroutine detect_subfunctionalization_c
 
-!> Identifies subsets of paralogs exhibiting significant angles to the `ancestor`
+!> R-compatible wrapper for `detect_subfunctionalization`
 pure subroutine detect_subfunctionalization_r(ancestor, paralogs, n_paralogs, n_dims, rdi_threshold, filtered_paralogs_mask, &
                                          n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, &
                                          active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr)
@@ -1029,8 +1074,7 @@ pure subroutine detect_subfunctionalization_r(ancestor, paralogs, n_paralogs, n_
                                    active_mask, temp_paralog_vector, paralog_norms, sorted_paralog_norms_perm, temp_work_array, ierr)
 end subroutine detect_subfunctionalization_r
 
-!> This subroutine prefilters the paralogs for subfunctionalization,
-!| as paralogs that are already too distant in angle to the ancestor don't match the pattern and don't need to be tried as subset extensions.
+!> C-compatible wrapper for `filter_paralogs_by_pattern_subfunctionalization`
 pure subroutine filter_paralogs_by_pattern_subfunctionalization_c(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr) bind(C, name="filter_paralogs_by_pattern_subfunctionalization_c")
     use tox_paralog_analysis, only: filter_paralogs_by_pattern_subfunctionalization
     use, intrinsic :: iso_c_binding, only: c_double, c_int
@@ -1060,8 +1104,7 @@ pure subroutine filter_paralogs_by_pattern_subfunctionalization_c(paralog_angles
     call filter_paralogs_by_pattern_subfunctionalization(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
 end subroutine filter_paralogs_by_pattern_subfunctionalization_c
 
-!> This subroutine prefilters the paralogs for subfunctionalization,
-!| as paralogs that are already too distant in angle to the ancestor don't match the pattern and don't need to be tried as subset extensions.
+!> R-compatible wrapper for `detect_subfunctionalization`
 pure subroutine filter_paralogs_by_pattern_subfunctionalization_r(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
     use tox_paralog_analysis, only: filter_paralogs_by_pattern_subfunctionalization
     use, intrinsic :: iso_fortran_env, only: real64, int32
@@ -1083,8 +1126,7 @@ pure subroutine filter_paralogs_by_pattern_subfunctionalization_r(paralog_angles
     call filter_paralogs_by_pattern_subfunctionalization(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
 end subroutine filter_paralogs_by_pattern_subfunctionalization_r
 
-!> This subroutine prefilters the paralogs for dosage effect,
-!| as paralogs that are already too distant in angle to the ancestor don't match the pattern and don't need to be tried as subset extensions.
+!> C-compatible wrapper for `filter_paralogs_by_pattern_dosage_effect`
 pure subroutine filter_paralogs_by_pattern_dosage_effect_c(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr) bind(C, name="filter_paralogs_by_pattern_dosage_effect")
     use tox_paralog_analysis, only: filter_paralogs_by_pattern_dosage_effect
     use, intrinsic :: iso_c_binding, only: c_double, c_int
@@ -1114,8 +1156,7 @@ pure subroutine filter_paralogs_by_pattern_dosage_effect_c(paralog_angles, thres
     call filter_paralogs_by_pattern_dosage_effect(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
 end subroutine filter_paralogs_by_pattern_dosage_effect_c
 
-!> This subroutine prefilters the paralogs for dosage effect,
-!| as paralogs that are already too distant in angle to the ancestor don't match the pattern and don't need to be tried as subset extensions.
+!> R-compatible wrapper for `detect_subfunctionalization`
 pure subroutine filter_paralogs_by_pattern_dosage_effect_r(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
     use tox_paralog_analysis, only: filter_paralogs_by_pattern_dosage_effect
     use, intrinsic :: iso_fortran_env, only: real64, int32
@@ -1137,11 +1178,7 @@ pure subroutine filter_paralogs_by_pattern_dosage_effect_r(paralog_angles, thres
     call filter_paralogs_by_pattern_dosage_effect(paralog_angles, threshold, n_paralogs, mask, n_mask_chunks, ierr)
 end subroutine filter_paralogs_by_pattern_dosage_effect_r
 
-!> The `detect_*` subroutines need a work array for the to be tested subsets.
-!| In worst case, all need to be tried and subsets that cannot be extended will be kept as results.
-!| This is the reason why the work array holds the results as well, as all subsets that are stored in the array can be results as well.
-!|
-!| This subroutine calculates the needed size for the work array.
+!> C-compatible wrapper for `calc_work_arr_paralog_subsets_size`
 pure subroutine calc_work_arr_paralog_subsets_size_c(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr) bind(C, name="calc_work_arr_paralog_subsets_size")
     use tox_paralog_analysis, only: calc_work_arr_paralog_subsets_size
     use, intrinsic :: iso_c_binding, only: c_int
@@ -1176,11 +1213,7 @@ pure subroutine calc_work_arr_paralog_subsets_size_c(max_subset_size, n_paralogs
     call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
 end subroutine calc_work_arr_paralog_subsets_size_c
 
-!> The `detect_*` subroutines need a work array for the to be tested subsets.
-!| In worst case, all need to be tried and subsets that cannot be extended will be kept as results.
-!| This is the reason why the work array holds the results as well, as all subsets that are stored in the array can be results as well.
-!|
-!| This subroutine calculates the needed size for the work array.
+!> R-compatible wrapper for `detect_subfunctionalization`
 pure subroutine calc_work_arr_paralog_subsets_size_r(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
     use tox_paralog_analysis, only: calc_work_arr_paralog_subsets_size
     use, intrinsic :: iso_fortran_env, only: real64, int32
@@ -1207,6 +1240,7 @@ pure subroutine calc_work_arr_paralog_subsets_size_r(max_subset_size, n_paralogs
     call calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)
 end subroutine calc_work_arr_paralog_subsets_size_r
 
+!> C-compatible wrapper for `mask_chunk_count`
 pure subroutine mask_chunk_count_c(n_paralogs, count, ierr) bind(C, name="mask_chunk_count_c")
     use tox_paralog_analysis, only: mask_chunk_count
     use, intrinsic :: iso_c_binding, only: c_int
@@ -1227,6 +1261,7 @@ pure subroutine mask_chunk_count_c(n_paralogs, count, ierr) bind(C, name="mask_c
     call mask_chunk_count(n_paralogs, count)
 end subroutine mask_chunk_count_c
 
+!> R-compatible wrapper for `detect_subfunctionalization`
 pure subroutine mask_chunk_count_r(n_paralogs, count)
     use tox_paralog_analysis, only: mask_chunk_count
     use, intrinsic :: iso_fortran_env, only: int32
@@ -1240,7 +1275,7 @@ pure subroutine mask_chunk_count_r(n_paralogs, count)
     call mask_chunk_count(n_paralogs, count)
 end subroutine mask_chunk_count_r
 
-!> This subroutine easily determines the needed chunk count for subset bit masks, as an integer has only 32 bits.
+!> C-compatible wrapper for `mask_check_state`
 pure subroutine mask_check_state_c(bit_mask, n_mask_chunks, i_paralog, state, ierr) bind(C, name="mask_check_state_c")
     use tox_paralog_analysis, only: mask_check_state
     use tox_conversions, only: logical_as_c_int
@@ -1267,7 +1302,7 @@ pure subroutine mask_check_state_c(bit_mask, n_mask_chunks, i_paralog, state, ie
     call logical_as_c_int(mask_check_state(bit_mask, i_paralog), state)
 end subroutine mask_check_state_c
 
-!> This subroutine easily determines the needed chunk count for subset bit masks, as an integer has only 32 bits.
+!> R-compatible wrapper for `detect_subfunctionalization`
 pure subroutine mask_check_state_r(bit_mask, n_mask_chunks, i_paralog, state)
     use tox_paralog_analysis, only: mask_check_state
     use, intrinsic :: iso_fortran_env, only: int32

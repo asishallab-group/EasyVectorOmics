@@ -24,6 +24,7 @@ program main
   use mod_test_tox_paralog_analysis
   use mod_test_outlier_detection
   use mod_test_tox_traj_contrib_analysis
+  use mod_test_normalization_unit_length
 
   implicit none
 
@@ -108,6 +109,7 @@ contains
     call add_suite("tox_paralog_analysis", run_all_tests_tox_paralog_analysis, run_named_tests_tox_paralog_analysis)
     call add_suite("outlier_detection", run_all_tests_outlier_detection, run_named_tests_outlier_detection)
     call add_suite("tox_trajectory_contribution_analysis", run_all_tests_tox_trajectory_contribution_analysis, run_named_tests_tox_trajectory_contribution_analysis)
+    call add_suite("normalization_unit_length", run_all_tests_normalization_unit_length, run_named_tests_normalization_unit_length)
   end subroutine initialize_suites
   
 
