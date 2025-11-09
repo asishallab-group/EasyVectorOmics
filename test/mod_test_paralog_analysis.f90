@@ -44,76 +44,79 @@ contains
         all_tests(16) = test_case("test_tox_paralog_analysis_detect_patterns_mixed_results", test_detect_patterns_mixed_results)
         all_tests(17) = test_case("test_tox_paralog_analysis_detect_patterns_subfunc_floating_point_epsilon", test_detect_patterns_subfunc_floating_point_epsilon)
         all_tests(18) = test_case("test_tox_paralog_analysis_detect_patterns_input_validation", test_detect_patterns_input_validation)
-        all_tests(19) = test_case("test_tox_paralog_analysis_detect_neofunctionalization_genes_input_validation", test_detect_neofunctionalization_genes_input_validation)
+        all_tests(19) = test_case("test_tox_paralog_analysis_detect_neofunctionalization_input_validation", test_detect_neofunctionalization_input_validation)
     end function get_all_tests
 
-    subroutine test_detect_neofunctionalization_genes_input_validation()
+    subroutine test_detect_neofunctionalization_input_validation()
         use ieee_arithmetic, only: ieee_value, ieee_quiet_nan, ieee_positive_inf
 
-        integer(int32), parameter :: n_dims = 3, n_paralogs = 2, mask_chunk_count = 1
+        integer(int32), parameter :: n_dims = 3, n_paralogs = 2, n_families = 1
         integer(int32) :: ierr
-        real(real64) :: ancestor(n_dims)
+        real(real64) :: ancestors(n_dims, n_families)
         real(real64) :: paralogs(n_dims, n_paralogs)
-        real(real64) :: threshold
-        integer(int32) :: neofunc_paralogs(mask_chunk_count)
+        integer(int32) :: gene_to_fam(n_paralogs)
+        real(real64) :: thresholds(n_dims)
+        logical :: neofunc_paralogs(n_dims, n_paralogs)
+
+        gene_to_fam = 1
 
         ! -------------------------------
         ! Case 1: Valid input
         ! -------------------------------
-        ancestor = [0.5_real64, -0.3_real64, 0.8_real64]
+        ancestors(:, 1) = [0.5_real64, -0.3_real64, 0.8_real64]
         paralogs(:,1) = [0.6_real64, -0.2_real64, 0.7_real64]
         paralogs(:,2) = [-0.4_real64, 0.1_real64, 1.0_real64]
-        threshold = 0.2_real64
+        thresholds = 0.2_real64
 
-        call detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, mask_chunk_count, ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_detect_neofunctionalization_genes_input_validation: valid input")
+        call detect_neofunctionalization(ancestors, n_families, paralogs, n_dims, gene_to_fam, n_paralogs, thresholds, neofunc_paralogs, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_detect_neofunctionalization_input_validation: valid input")
 
         ! -------------------------------
         ! Case 2: Ancestor out of range
         ! -------------------------------
-        ancestor = 10 * ancestor
-        call detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, mask_chunk_count, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_neofunctionalization_genes_input_validation: ancestor out of range")
-        ancestor = [0.5_real64, -0.3_real64, 0.8_real64]
+        ancestors = 10 * ancestors
+        call detect_neofunctionalization(ancestors, n_families, paralogs, n_dims, gene_to_fam, n_paralogs, thresholds, neofunc_paralogs, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_neofunctionalization_input_validation: ancestors out of range")
+        ancestors(:, 1) = [0.5_real64, -0.3_real64, 0.8_real64]
 
         ! -------------------------------
         ! Case 3: Paralogs out of range
         ! -------------------------------
         paralogs = paralogs * 10
-        call detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, mask_chunk_count, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_neofunctionalization_genes_input_validation: paralogs out of range")
+        call detect_neofunctionalization(ancestors, n_families, paralogs, n_dims, gene_to_fam, n_paralogs, thresholds, neofunc_paralogs, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_neofunctionalization_input_validation: paralogs out of range")
         paralogs(:,1) = [0.6_real64, -0.2_real64, 0.7_real64]
         paralogs(:,2) = [-0.4_real64, 0.1_real64, 1.0_real64]
 
         ! -------------------------------
-        ! Case 4: NaN in ancestor
+        ! Case 4: NaN in ancestors
         ! -------------------------------
-        ancestor = [0.5_real64, ieee_value(1.0_real64, ieee_quiet_nan), 0.8_real64]
-        call detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, mask_chunk_count, ierr)
-        call assert_equal_int(ierr, ERR_NAN_INF, "test_detect_neofunctionalization_genes_input_validation: NaN in ancestor")
+        ancestors(:, 1) = [0.5_real64, ieee_value(1.0_real64, ieee_quiet_nan), 0.8_real64]
+        call detect_neofunctionalization(ancestors, n_families, paralogs, n_dims, gene_to_fam, n_paralogs, thresholds, neofunc_paralogs, ierr)
+        call assert_equal_int(ierr, ERR_NAN_INF, "test_detect_neofunctionalization_input_validation: NaN in ancestors")
 
-        ancestor = [0.5_real64, -0.3_real64, 0.8_real64]  ! reset
+        ancestors(:, 1) = [0.5_real64, -0.3_real64, 0.8_real64]  ! reset
 
         ! -------------------------------
         ! Case 5: Infinity in paralogs
         ! -------------------------------
         paralogs(:,1) = [0.6_real64, ieee_value(1.0_real64, ieee_positive_inf), 0.7_real64]
-        call detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, mask_chunk_count, ierr)
-        call assert_equal_int(ierr, ERR_NAN_INF, "test_detect_neofunctionalization_genes_input_validation: Infinity in paralogs")
+        call detect_neofunctionalization(ancestors, n_families, paralogs, n_dims, gene_to_fam, n_paralogs, thresholds, neofunc_paralogs, ierr)
+        call assert_equal_int(ierr, ERR_NAN_INF, "test_detect_neofunctionalization_input_validation: Infinity in paralogs")
 
         paralogs(:,1) = [0.6_real64, -0.2_real64, 0.7_real64]  ! reset
 
         ! -------------------------------
         ! Case 6: Threshold out of range
         ! -------------------------------
-        threshold = 1.5_real64
-        call detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, mask_chunk_count, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_neofunctionalization_genes_input_validation: threshold > 1.0")
+        thresholds = 1.5_real64
+        call detect_neofunctionalization(ancestors, n_families, paralogs, n_dims, gene_to_fam, n_paralogs, thresholds, neofunc_paralogs, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_neofunctionalization_input_validation: thresholds > 1.0")
 
-        threshold = -1.5_real64
-        call detect_neofunctionalization_genes(ancestor, paralogs, n_dims, n_paralogs, threshold, neofunc_paralogs, mask_chunk_count, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_neofunctionalization_genes_input_validation: threshold < -1.0")
-    end subroutine test_detect_neofunctionalization_genes_input_validation
+        thresholds = -1.5_real64
+        call detect_neofunctionalization(ancestors, n_families, paralogs, n_dims, gene_to_fam, n_paralogs, thresholds, neofunc_paralogs, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_neofunctionalization_input_validation: thresholds < -1.0")
+    end subroutine test_detect_neofunctionalization_input_validation
 
     subroutine test_detect_patterns_input_validation()
         use f42_utils, only: PI
