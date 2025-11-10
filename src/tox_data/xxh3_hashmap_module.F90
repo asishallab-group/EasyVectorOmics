@@ -2,7 +2,7 @@ module xxh3_hashmap_module
     use, intrinsic :: iso_c_binding, only: c_loc
     use iso_fortran_env, only: int32, int64
     use f42_utils, only: next_power_of_two
-    use config, only: DEBUG
+    use config, only: DEBUG, debug_hashing
     use tox_errors, only: set_ok, set_err, ERR_INVALID_INPUT
     implicit none
     private
@@ -36,7 +36,6 @@ module xxh3_hashmap_module
     ! Parameters
     integer, parameter :: DEFAULT_KEY_LENGTH = 256
     real, parameter :: MAX_LOAD_FACTOR = 0.75
-    logical, parameter :: debug_hashing = .false.
     
     ! Hash table structure
     type :: hashmap_type

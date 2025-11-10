@@ -8,4 +8,5 @@ module config
   integer, parameter :: alignment = 32  ! fallback
 #endif
   logical, parameter :: DEBUG = .true.
+  logical, parameter :: debug_hashing = .false.
 end module config
