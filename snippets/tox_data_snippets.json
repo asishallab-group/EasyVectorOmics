@@ -589,8 +589,8 @@
         "       as.integer(max_filename_len),", 
         "       as.integer(filename_count),",
         "       ierr = ierr)",
-  
-        "check_err_code(result$ierr)
+        "",
+        "check_err_code(result$ierr)"
     ],
     "description": "R call to create zip archive"
   },
