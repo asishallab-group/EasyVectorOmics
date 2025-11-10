@@ -313,11 +313,11 @@ contains
         
     end subroutine check_for_nan_inf
 
-    !> Validate that no gene ids appears more than once
+    !> Validate that no string appears more than once
     subroutine validate_string_array_uniqueness(str_arr, ierr)
         use xxh3_hashmap_module, only: hashset_type, hashset_create, hashset_put, hashset_destroy
         character(len=*), intent(in) :: str_arr(:)
-            !! gene ids array
+            !! string array
         integer(int32), intent(out) :: ierr
             !! Error code 
         integer(int32) :: i
@@ -530,7 +530,7 @@ subroutine validate_shift_vectors_R(shift_vectors, expression_vectors, family_ce
     call validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, gene_to_fam, n_samples, ierr)
 end subroutine validate_shift_vectors_R
 
-!> R Binding to validate gene ids uniqueness
+!> R Binding to validate string array uniqueness
 subroutine validate_string_array_uniqueness_R(str_arr, str_len, n_strings, ierr)
     use tox_data_validation, only: validate_string_array_uniqueness
     use tox_errors, only: set_ok, is_ok, set_err_once, ERR_ALLOC_FAIL
@@ -538,11 +538,11 @@ subroutine validate_string_array_uniqueness_R(str_arr, str_len, n_strings, ierr)
     use iso_c_binding, only: c_char
     use iso_fortran_env, only: int32
     integer(int32), intent(in) :: str_len
-        !! Length of the gene ids
+        !! Length of the strings
     integer(int32), intent(in) :: n_strings
-        !! Number of genes
+        !! Number of strings
     character(kind=c_char, len=1), intent(in) :: str_arr(str_len, n_strings)
-        !! Gene ids array
+        !! strings array
     integer(int32), intent(out) :: ierr
         !! Error code
 
@@ -784,7 +784,7 @@ subroutine validate_shift_vectors_C(shift_vectors, expression_vectors, family_ce
     call validate_shift_vectors(shift_vectors, expression_vectors, family_centroids, gene_to_fam, n_samples, ierr)
 end subroutine validate_shift_vectors_C
 
-!> C Binding to validate gene ids uniqueness
+!> C Binding to validate string array uniqueness
 subroutine validate_string_array_uniqueness_C(str_arr, str_len, n_strings, ierr) bind(C, name="validate_string_array_uniqueness_C")
     use iso_c_binding, only: c_int, c_char
     use tox_data_validation, only: validate_string_array_uniqueness
@@ -792,11 +792,11 @@ subroutine validate_string_array_uniqueness_C(str_arr, str_len, n_strings, ierr)
     use tox_conversions, only: c_char_1d_as_string
     implicit none
     integer(c_int), intent(in), value :: str_len
-        !! Length of gene ids 
+        !! Length of the strings
     integer(c_int), intent(in), value :: n_strings
-        !! Number of genes
+        !! Number of strings
     character(kind=c_char, len=1), intent(in) :: str_arr(str_len, n_strings)
-        !! Pointer to gene ids array
+        !! Pointer to string array
     integer(c_int), intent(out) :: ierr 
         !! Error code
 
