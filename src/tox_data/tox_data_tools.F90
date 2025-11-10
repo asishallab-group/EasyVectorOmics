@@ -145,7 +145,7 @@ subroutine read_expression_vectors_tsv(file_list, gene_ids, expression_vectors, 
         end do
         if (n_valid_cols == 0) then
             call set_err_once(ierr, ERR_INVALID_INPUT)
-            if(DEBUG) write(*,*) 'Error: No valid value columns found in file: ', trim(file_list(i))
+            write(*,*) 'Error: No valid value columns found in file: ', trim(file_list(i))
             close(unit)
             cycle
         end if
@@ -182,7 +182,7 @@ subroutine read_expression_vectors_tsv(file_list, gene_ids, expression_vectors, 
             ! Use hashmap for gene lookup
             idx = hashmap_get(gene_map, gene)
             if (idx == -1) then
-                if(DEBUG) write(*,*) 'Warning: Gene ', trim(gene), ' not found in master gene list'
+                write(*,*) 'Warning: Gene ', trim(gene), ' not found in master gene list'
                 cycle
             end if
             
@@ -194,6 +194,7 @@ subroutine read_expression_vectors_tsv(file_list, gene_ids, expression_vectors, 
                         expression_vectors(current_sample + k, idx) = value
                     else
                         call set_err_once(ierr, ERR_INVALID_INPUT)
+                        write(*,*) 'Non-finite value encountered at row ', current_row, ' column ', valid_cols(k)
                         call hashmap_destroy(gene_map)
                         close(unit)
                         return
