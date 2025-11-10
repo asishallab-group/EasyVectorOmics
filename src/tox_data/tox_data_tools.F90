@@ -327,7 +327,7 @@ subroutine read_orthofinder_file(filename, gene_ids, family_ids, gene_to_fam, ie
     fam_idx = 0
     do
         read(unit, '(A)', iostat=ios) line
-        if (ios < 0) exit
+        if (ios == iostat_end) exit
         call check_okay_ioerror(ios, ierr, ERR_READ_DATA, unit)
         if(is_err(ierr)) then
             call hashmap_destroy(gene_map)
