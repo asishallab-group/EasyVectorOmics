@@ -73,7 +73,7 @@ string_to_raw <- function(s, len) {
 #' @return A list with elements:
 #'   - expression_vectors: A numeric matrix of dimensions (n_samples x n_genes)
 #'   - ierr: Integer error code (0 if successful)
-read_expression_vectors <- function(file_list, gene_ids, 
+read_expression_vectors_tsv <- function(file_list, gene_ids, 
                                     n_header_rows, gene_col, value_cols, delimiter = "\t", n_samples) {
     nfiles <- length(file_list)
     ngenes <- length(gene_ids)
@@ -99,7 +99,7 @@ read_expression_vectors <- function(file_list, gene_ids,
     # Prepare output
     expression_vectors <- double(n_samples * ngenes)
     
-    out <- .Fortran("read_expression_vectors_R",
+    out <- .Fortran("read_expression_vectors_tsv_R",
         file_list_raw = file_raw,              # Pass raw bytes directly
         file_list_len = as.integer(256),       # Fixed length of 256
         n_files = as.integer(nfiles),

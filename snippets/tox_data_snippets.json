@@ -16,10 +16,10 @@
     ],
     "description": "Argument type setup for read_gene_ids_from_tsv_file_C"
   },
-  "Python call to read_expression_vectors_C_setup": {
+  "Python call to read_expression_vectors_tsv_C_setup": {
     "prefix": "tox:read_expression_setup_py",
     "body": [
-      "lib.read_expression_vectors_C.argtypes = [",
+      "lib.read_expression_vectors_tsv_C.argtypes = [",
       "    ctypes.POINTER(ctypes.c_char),  # file_list_raw",
       "    ctypes.c_int,                  # file_list_len",
       "    ctypes.c_int,                  # n_files",
@@ -35,9 +35,9 @@
       "    ctypes.POINTER(ctypes.c_int),  # ierr",
       "    ctypes.POINTER(ctypes.c_int)   # delimiter_ascii",
       "]",
-      "lib.read_expression_vectors_C.restype = None"
+      "lib.read_expression_vectors_tsv_C.restype = None"
     ],
-    "description": "Argument type setup for read_expression_vectors_C"
+    "description": "Argument type setup for read_expression_vectors_tsv_C"
   },
   "Python call to read_orthofinder_file_C_setup": {
     "prefix": "tox:read_orthofinder_setup_py",
@@ -174,10 +174,10 @@
   "Python call to create generic zip archive setup":{
   	"prefix": "tox:create_zip_archive_generic_setup_py",
   	"body":[
-  	    "lib.create_zip_archive_generic_c.argtypes = [
+  	  "lib.create_zip_archive_generic_c.argtypes = [",
 	    "    ctypes.POINTER(ctypes.c_char),                                        # zip_filename",
 	    "    ctypes.c_int,                                                         # zip_len",
-  	    "    np.ctypeslib.ndpointer(dtype=np.byte, ndim=2, flags='F_CONTIGUOUS'),  # keys",
+  	  "    np.ctypeslib.ndpointer(dtype=np.byte, ndim=2, flags='F_CONTIGUOUS'),  # keys",
 	    "    ctypes.c_int,                                                         # keys_len",
 	    "    ctypes.c_int,                                                         # keys_count",
 	    "    np.ctypeslib.ndpointer(dtype=np.byte, ndim=2, flags='F_CONTIGUOUS'),  # filenames",
@@ -206,10 +206,10 @@
     ],
     "description": "Read gene IDs from tsv file using Fortran backend"
   },
-  "Python call to read_expression_vectors": {
+  "Python call to read_expression_vectors_tsv": {
     "prefix": "tox:read_expression_py",
     "body": [
-      "expression_vectors = read_expression_vectors(",
+      "expression_vectors = read_expression_vectors_tsv(",
       "    file_list,",
       "    gene_ids,",
       "    n_samples,",
@@ -363,10 +363,10 @@
       ],
       "description": "Extract all files from a zip archive to the disk"
   },
-  "R call to read_expression_vectors_R": {
-    "prefix": "tox:read_expression_vectors_R",
+  "R call to read_expression_vectors_tsv_R": {
+    "prefix": "tox:read_expression_vectors_tsv_R",
     "body": [
-      "out <- .Fortran(\"read_expression_vectors_R\",",
+      "out <- .Fortran(\"read_expression_vectors_tsv_R\",",
       "    file_list_raw = file_raw,",
       "    file_list_len = as.integer(256),",
       "    n_files = as.integer(nfiles),",
@@ -618,10 +618,10 @@
       ],
       "description": "Reads gene to family mapping from an orthofinder file"
   },
-  "Fortran call to read_expression_vectors":{
-      "prefix": "tox:read_expression_vectors",
+  "Fortran call to read_expression_vectors_tsv":{
+      "prefix": "tox:read_expression_vectors_tsv",
       "body": [
-          "call read_expression_vectors(file_list, gene_ids, expression_vectors, &",
+          "call read_expression_vectors_tsv(file_list, gene_ids, expression_vectors, &",
           "                   n_header_rows, gene_col, value_cols, start_row, ierr, delimiter)"
       ],
       "description": "Read expression vectors from a csv/tsv file"

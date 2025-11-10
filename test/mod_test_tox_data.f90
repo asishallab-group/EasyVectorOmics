@@ -107,7 +107,7 @@ contains
 
     ! Read expression data
     kallisto_expr = 0.0_real64
-    call read_expression_vectors(expr_file, gene_ids, kallisto_expr, &
+    call read_expression_vectors_tsv(expr_file, gene_ids, kallisto_expr, &
                           1, 1, value_cols, 1, ierr, char(9))
 
     ! Read family mapping
@@ -254,31 +254,31 @@ contains
     csv_file = [ &
       'test/test_files/kallisto_csv_values.csv']
 
-    call read_expression_vectors(inf_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
+    call read_expression_vectors_tsv(inf_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
     call assert_equal_int(ierr, 201, "Error while reading expression vectors, should get invalid input for Inf in expression data")
     call set_ok(ierr)
 
-    call read_expression_vectors(nan_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
+    call read_expression_vectors_tsv(nan_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
     call assert_equal_int(ierr, 201, "Error while reading expression vectors, should get invalid input for NaN in expression data")
     call set_ok(ierr)
 
-    call read_expression_vectors(invalid_struct_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
+    call read_expression_vectors_tsv(invalid_struct_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
     call assert_equal_int(ierr, 107, "Should throw error for invalid structure")
     call set_ok(ierr)
 
-    call read_expression_vectors(no_genes_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [1,2,3,4,5,6], 1, ierr)
+    call read_expression_vectors_tsv(no_genes_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [1,2,3,4,5,6], 1, ierr)
     call assert_equal_int(ierr, 0, "Should print warnings for missing genes")
     call set_ok(ierr)
 
-    call read_expression_vectors(empty_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [1,2,3,4,5,6], 1, ierr)
+    call read_expression_vectors_tsv(empty_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [1,2,3,4,5,6], 1, ierr)
     call assert_equal_int(ierr, 107, "should throw error for empty file")
     call set_ok(ierr)
 
-    call read_expression_vectors(mixed_seperators, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
+    call read_expression_vectors_tsv(mixed_seperators, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr)
     call assert_equal_int(ierr, 201, "Should throw error for file with mixed seperators")
     call set_ok(ierr)
 
-    call read_expression_vectors(csv_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr, ',')
+    call read_expression_vectors_tsv(csv_file, gene_ids_false_inputs, expr_vecs_false_inputs, 1, 1, [2,3,4,5,6,7], 1, ierr, ',')
     call assert_equal_int(ierr, 0, "Should read csv file without error")
 
   end subroutine test_read_expression_data

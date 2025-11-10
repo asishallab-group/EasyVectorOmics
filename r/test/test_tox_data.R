@@ -24,7 +24,7 @@ cat("ierr (gene ids):", res_gene$ierr, "\n")
 
 # Read 6-replicate files
 cat("Reading expression file...\n")
-res_expr_6 <- read_expression_vectors(
+res_expr_6 <- read_expression_vectors_tsv(
   file_list = file,
   gene_ids = gene_ids,
   n_header_rows = 1,

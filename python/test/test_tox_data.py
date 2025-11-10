@@ -11,7 +11,7 @@ lib = ctypes.CDLL(dll_path)
 
 
 from tensoromics_functions_tox_data import (
-    read_expression_vectors,
+    read_expression_vectors_tsv,
     read_orthofinder_file,
     filter_unassigned_genes,
     read_gene_ids_from_tsv_file,
@@ -61,7 +61,7 @@ print("gene_ids type:", type(gene_ids))
 
 # Read 6-replicate files
 print("Reading 6-replicate files...")
-kallisto_expr = read_expression_vectors(
+kallisto_expr = read_expression_vectors_tsv(
     file_list=file,
     gene_ids=gene_ids,  # Now accepts numpy array
     n_samples=67,

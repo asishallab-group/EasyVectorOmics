@@ -8,7 +8,7 @@ module tox_data_tools
     private
 
     public :: read_gene_ids_from_tsv_file
-    public :: read_expression_vectors
+    public :: read_expression_vectors_tsv
     public :: read_orthofinder_file
     public :: split_string
     public :: get_unassigned_mask, apply_unassigned_mask
@@ -18,7 +18,7 @@ module tox_data_tools
 contains
 
 !> Read expression vectors from csv/tsv files
-subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
+subroutine read_expression_vectors_tsv(file_list, gene_ids, expression_vectors, &
                              n_header_rows, gene_col, value_cols, start_row, ierr, delimiter)
     use xxh3_hashmap_module
     use ieee_arithmetic, only: ieee_is_finite
@@ -214,7 +214,7 @@ subroutine read_expression_vectors(file_list, gene_ids, expression_vectors, &
 
     call hashmap_destroy(gene_map)
     deallocate(valid_cols)
-end subroutine read_expression_vectors
+end subroutine read_expression_vectors_tsv
 
 !> Only read the gene ids from a tsv file
 subroutine read_gene_ids_from_tsv_file(filename, gene_ids, n_header_rows, gene_col, ierr)
@@ -560,7 +560,7 @@ subroutine read_gene_ids_from_tsv_file_R(filename_raw, fn_len, gene_ids_raw, gen
 end subroutine read_gene_ids_from_tsv_file_R
 
 !> R binding to read expression vectors from files.
-subroutine read_expression_vectors_R(file_list_raw, file_list_len, n_files, &
+subroutine read_expression_vectors_tsv_R(file_list_raw, file_list_len, n_files, &
                                  gene_ids_raw, gene_ids_len, n_genes, &
                                  expression_vectors_flat, n_samples, &
                                  n_header_rows, gene_col, value_cols, &
@@ -569,7 +569,7 @@ subroutine read_expression_vectors_R(file_list_raw, file_list_len, n_files, &
     use iso_c_binding, only: c_char
     use tox_errors, only: set_ok, is_err, check_io_stat 
     use tox_conversions, only: c_char_1d_as_string, string_as_c_char_1d
-    use tox_data_tools, only: read_expression_vectors
+    use tox_data_tools, only: read_expression_vectors_tsv
     implicit none
     integer(int32), intent(in) :: file_list_len
         !! Length of the filenames
@@ -641,7 +641,7 @@ subroutine read_expression_vectors_R(file_list_raw, file_list_len, n_files, &
       delimiter = char(9)
     end if
 
-    call read_expression_vectors(file_list, gene_ids, expression_vectors, &
+    call read_expression_vectors_tsv(file_list, gene_ids, expression_vectors, &
                                 n_header_rows, gene_col, value_cols, &
                                 start_row, ierr, delimiter)
 
@@ -658,7 +658,7 @@ subroutine read_expression_vectors_R(file_list_raw, file_list_len, n_files, &
     do i = 1, n_genes
         call string_as_c_char_1d(trim(gene_ids(i)), gene_ids_raw(:, i))
     end do
-end subroutine read_expression_vectors_R
+end subroutine read_expression_vectors_tsv_R
 
 !> R Binding to read a family file
 subroutine read_orthofinder_file_R(filename_raw, fn_len, gene_ids_raw, gene_ids_len, n_genes, &
@@ -768,13 +768,13 @@ subroutine read_gene_ids_from_tsv_file_C(filename_raw, fn_len, gene_ids_raw, gen
 end subroutine read_gene_ids_from_tsv_file_C
 
 !> C binding for reading expression vectors from files
-subroutine read_expression_vectors_C(file_list_raw, file_list_len, n_files, &
+subroutine read_expression_vectors_tsv_C(file_list_raw, file_list_len, n_files, &
                                  gene_ids_raw, gene_ids_len, n_genes, &
                                  expression_vectors, n_samples, &
                                  n_header_rows, gene_col, value_cols, &
-                                 n_value_cols, ierr, delimiter_raw) bind(C, name="read_expression_vectors_C")
+                                 n_value_cols, ierr, delimiter_raw) bind(C, name="read_expression_vectors_tsv_C")
     use iso_c_binding, only: c_int, c_double, c_char
-    use tox_data_tools, only: read_expression_vectors
+    use tox_data_tools, only: read_expression_vectors_tsv
     use tox_errors, only: set_ok, is_err, check_io_stat
     use tox_conversions, only: c_char_1d_as_string, string_as_c_char_1d
     implicit none
@@ -837,13 +837,13 @@ subroutine read_expression_vectors_C(file_list_raw, file_list_len, n_files, &
       gene_ids(i) = trim(tmp_str)
     end do
 
-    call read_expression_vectors(file_list, gene_ids, expression_vectors, &
+    call read_expression_vectors_tsv(file_list, gene_ids, expression_vectors, &
                                 n_header_rows, gene_col, value_cols, &
                                 start_row, ierr, delimiter)
 
     if(is_err(ierr)) return
 
-end subroutine read_expression_vectors_C
+end subroutine read_expression_vectors_tsv_C
 
 !> C binding for reading family file
 subroutine read_orthofinder_file_C(filename_raw, fn_len, gene_ids_raw, gene_ids_len, n_genes, &

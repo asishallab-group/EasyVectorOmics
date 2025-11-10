@@ -33,8 +33,8 @@ lib.read_gene_ids_from_tsv_file_C.argtypes = [
 ]
 lib.read_gene_ids_from_tsv_file_C.restype = None
 
-# read_expression_vectors_C
-lib.read_expression_vectors_C.argtypes = [
+# read_expression_vectors_tsv_C
+lib.read_expression_vectors_tsv_C.argtypes = [
     ctypes.POINTER(ctypes.c_char),  # file_list_raw
     ctypes.c_int,                  # file_list_len
     ctypes.c_int,                  # n_files
@@ -50,7 +50,7 @@ lib.read_expression_vectors_C.argtypes = [
     ctypes.POINTER(ctypes.c_int),  # ierr
     ctypes.POINTER(ctypes.c_char)  # delimiter_raw
 ]
-lib.read_expression_vectors_C.restype = None
+lib.read_expression_vectors_tsv_C.restype = None
 
 # read_orthofinder_file_C
 lib.read_orthofinder_file_C.argtypes = [
@@ -310,8 +310,8 @@ def read_gene_ids_from_tsv_file(filename, n_genes, gene_ids_len, n_header_rows, 
     
     return np.array(gene_ids, dtype='U')
 
-# Function for read_expression_vectors_C
-def read_expression_vectors(file_list, gene_ids, n_samples, n_header_rows, 
+# Function for read_expression_vectors_tsv_C
+def read_expression_vectors_tsv(file_list, gene_ids, n_samples, n_header_rows, 
                            gene_col, value_cols, delimiter='\t'):
     """
     Read expression vectors from given tabular (csv/tsv) files
@@ -347,7 +347,7 @@ def read_expression_vectors(file_list, gene_ids, n_samples, n_header_rows,
     value_cols_ct = (ctypes.c_int * len(value_cols))(*value_cols)
     
     # Call C function
-    lib.read_expression_vectors_C(
+    lib.read_expression_vectors_tsv_C(
         file_list_matrix.ctypes.data_as(ctypes.POINTER(ctypes.c_char)),
         ctypes.c_int(max_file_len),
         ctypes.c_int(len(file_list)),
