@@ -890,7 +890,7 @@ contains
     
     ! Create ZIP archive
     print *, "Creating ZIP archive..."
-    call create_zip_archive("test_manual_archive.zip", keys, filenames, ierr)
+    call create_zip_archive("test_archive_manual_1.zip", keys, filenames, ierr)
     call assert_equal_int(ierr, ERR_OK, "Error creating ZIP archive")
     
     print *, "ZIP archive created successfully"
@@ -905,7 +905,7 @@ contains
     
     ! Extract ZIP archive
     print *, "Extracting ZIP archive..."
-    call extract_zip_archive("test_manual_archive.zip", extracted_keys, extracted_filenames, ierr)
+    call extract_zip_archive("test_archive_manual_1.zip", extracted_keys, extracted_filenames, ierr)
     call assert_equal_int(ierr, ERR_OK, "Error extracting ZIP archive")
     
     !print *, "ZIP archive extracted successfully"

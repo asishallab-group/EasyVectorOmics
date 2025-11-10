@@ -93,6 +93,7 @@ $EXECUTABLE "${TEST_ARGS[@]}"
 test_code=$?
 
 if [[ $test_code -eq 0 ]]; then
+  rm manifest.txt
   rm -f test_*.bin
   if [[ "$KEEP_ZIP" == "false" ]]; then
     rm -f test_archive_*_*.zip
