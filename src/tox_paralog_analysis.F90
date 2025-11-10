@@ -3,7 +3,7 @@
 module tox_paralog_analysis
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use tox_errors, only: set_ok, set_err, is_err, ERR_INVALID_INPUT, ERR_SIZE_MISMATCH, validate_dimension_size, validate_in_range_int, validate_all_in_range_int, validate_in_range_real, validate_all_in_range_real
-    use f42_utils, only: add_vector, subtract_vector, norm, angle_between, below, above
+    use f42_utils, only: add_vector, subtract_vector, norm, angle_between, above
     implicit none
 
     private :: validate_pattern
@@ -98,7 +98,7 @@ contains
         real(real64), intent(in), optional :: gain_gamma
             !! positive magnitude gain for dosage effect, default 0.1
         real(real64), intent(in), optional :: max_angle
-            !! maximum angle in radians that a subset candidate must not exceed, otherwise pruned, default is Pi
+            !! in dosage mode maximum angle in radians `0<=angle<=Pi` that a subset candidate must not exceed, otherwise pruned, default is Pi
 
         call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, DOSAGE_PATTERN, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, dosage_max_angle=max_angle, dosage_gain_gamma=gain_gamma, ierr=ierr)
     end subroutine detect_dosage_effect
@@ -187,7 +187,7 @@ contains
         real(real64), intent(in), optional :: dosage_gain_gamma
             !! in dosage mode required positive magnitude gain for dosage, default 0.1
         real(real64), intent(in), optional :: dosage_max_angle
-            !! in dosage mode maximum angle in radians `0<=angle<2*Pi` that a subset candidate must not exceed, otherwise pruned, default is Pi
+            !! in dosage mode maximum angle in radians `0<=angle<=Pi` that a subset candidate must not exceed, otherwise pruned, default is Pi
         real(real64), dimension(n_paralogs), intent(in), optional :: subfunc_paralog_norms
             !! in subfunctionalization mode needed for subset pruning, holds the euclidean norms of paralogs (you can use the `norm` from `f42_utils` function for this)
         integer(int32), dimension(n_paralogs), intent(in), optional :: subfunc_sorted_paralog_norms_perm
@@ -215,7 +215,7 @@ contains
         call validate_all_in_range_real(ancestor, n_dims, ierr)
         call validate_all_in_range_real(paralogs, n_dims * n_paralogs, ierr)
         call validate_in_range_real(dosage_gain_gamma, ierr, min=above(0.0_real64))
-        call validate_in_range_real(dosage_max_angle, ierr, min=0.0_real64, max=below(2 * PI))
+        call validate_in_range_real(dosage_max_angle, ierr, min=0.0_real64, max=PI)
         call validate_all_in_range_real(subfunc_paralog_norms, n_paralogs, ierr)
         call validate_all_in_range_int(subfunc_sorted_paralog_norms_perm, n_paralogs, ierr, min=1_int32, max=n_paralogs)
         call validate_in_range_real(subfunc_rdi_threshold, ierr, min=0.0_real64)

@@ -214,20 +214,14 @@ contains
         dosage_gain_gamma = 0.1_real64  ! reset
 
         ! -------------------------------
-        ! Case 6: dosage_max_angle >= 2π
+        ! Case 6: dosage_max_angle > PI
         ! -------------------------------
-        dosage_max_angle = 2.0_real64 * PI
+        dosage_max_angle = 1.1_real64 * PI
         call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, &
                              n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
                              temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
                              subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_patterns_input_validation: dosage_max_angle == 2π")
-        dosage_max_angle = 3.0_real64 * PI
-        call detect_patterns(ancestor, paralogs, n_paralogs, n_dims, pattern, filtered_paralogs_mask, n_mask_chunks, &
-                             n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, &
-                             temp_paralog_vector, dosage_max_angle, dosage_gain_gamma, subfunc_rdi_threshold, &
-                             subfunc_paralog_norms, subfunc_sorted_paralog_norms_perm, subfunc_temp_work_array, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_patterns_input_validation: dosage_max_angle > 2π")
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_detect_patterns_input_validation: dosage_max_angle > PI")
 
         dosage_max_angle = PI  ! reset
 
