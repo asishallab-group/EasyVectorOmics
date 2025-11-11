@@ -178,7 +178,7 @@ contains
     logical :: found
     
     ! Setup global data first
-    ! call setup_global_data()
+    call setup_global_data()
     
     all_tests = get_all_tests()
     do i = 1, size(test_names)

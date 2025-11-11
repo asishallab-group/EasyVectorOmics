@@ -7,6 +7,6 @@ module config
 #else
   integer, parameter :: alignment = 32  ! fallback
 #endif
-  logical, parameter :: DEBUG = .true.
-  logical, parameter :: debug_hashing = .false.
+  logical :: DEBUG = .false.
+  logical :: debug_hashing = .false.
 end module config
