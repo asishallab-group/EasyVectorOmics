@@ -51,15 +51,17 @@ contains
         call validate_dimension_size(n_families, ierr)
         call validate_all_in_range_real(ancestors, n_axes * n_families, ierr, min=-1.0_real64, max=1.0_real64)
         call validate_all_in_range_real(genes, n_axes * n_genes, ierr, min=-1.0_real64, max=1.0_real64)
-        call validate_all_in_range_int(gene_to_fam, n_genes, ierr, min=1_int32, max=n_families)
+        call validate_all_in_range_int(gene_to_fam, n_genes, ierr, min=0_int32, max=n_families)
         call validate_all_in_range_real(thresholds, n_axes, ierr, min=-1.0_real64, max=1.0_real64)
         if (is_err(ierr)) return
 
         do i_gene = 1, n_genes
             fam_idx = gene_to_fam(i_gene)
-            do i_axis = 1, n_axes
-                neofunc(i_gene, i_axis) = abs(ancestors(i_axis, fam_idx) - genes(i_axis, i_gene)) > thresholds(i_axis)
-            end do
+            if (fam_idx > 0) then
+                do i_axis = 1, n_axes
+                    neofunc(i_gene, i_axis) = abs(ancestors(i_axis, fam_idx) - genes(i_axis, i_gene)) > thresholds(i_axis)
+                end do
+            end if
         end do
     end subroutine detect_neofunctionalization
 
