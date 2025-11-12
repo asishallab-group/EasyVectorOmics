@@ -56,7 +56,7 @@ contains
         real(real64) :: paralogs(n_dims, n_paralogs)
         integer(int32) :: gene_to_fam(n_paralogs)
         real(real64) :: thresholds(n_dims)
-        logical :: neofunc_paralogs(n_dims, n_paralogs)
+        logical :: neofunc_paralogs(n_paralogs, n_dims)
 
         gene_to_fam = 1
 

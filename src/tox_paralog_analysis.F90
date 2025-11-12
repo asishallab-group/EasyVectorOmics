@@ -1,6 +1,7 @@
 #include "macros.h"
 
 module tox_paralog_analysis
+    use safeguard
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use tox_errors, only: set_ok, set_err, is_err, ERR_INVALID_INPUT, ERR_SIZE_MISMATCH, validate_dimension_size, validate_in_range_int, validate_all_in_range_int, validate_in_range_real, validate_all_in_range_real
     use f42_utils, only: add_vector, subtract_vector, norm, angle_between, above
@@ -35,15 +36,13 @@ contains
         integer(int32), dimension(n_genes), intent(in) :: gene_to_fam
             !! mapping of gene index to family index
         real(real64), dimension(n_axes), intent(in) :: thresholds
-            !! threshold per axis that defines significant expression, may be a percentile of all ancestors' value for `axis`
-        logical, dimension(n_axes, n_genes), intent(out) :: neofunc
+            !! threshold per axis that defines significant change in expression, may be a percentile of all genes' changes per axis
+        logical, dimension(n_genes, n_axes), intent(out) :: neofunc
             !! `.true.` if neofunctionalization has been detected for the respective axes
         integer(int32), intent(out) :: ierr
             !! error code
 
         integer(int32) :: i_gene, i_axis, fam_idx
-        logical :: was_low_expr, now_high_expr
-        real(real64) :: threshold
 
         call set_ok(ierr)
 
@@ -59,10 +58,7 @@ contains
         do i_gene = 1, n_genes
             fam_idx = gene_to_fam(i_gene)
             do i_axis = 1, n_axes
-                threshold = thresholds(i_axis)
-                was_low_expr = ancestors(i_axis, fam_idx) < threshold
-                now_high_expr = genes(i_axis, i_gene) > threshold
-                neofunc(i_axis, i_gene) = was_low_expr .and. now_high_expr
+                neofunc(i_gene, i_axis) = abs(ancestors(i_axis, fam_idx) - genes(i_axis, i_gene)) > thresholds(i_axis)
             end do
         end do
     end subroutine detect_neofunctionalization
@@ -216,7 +212,7 @@ contains
         call validate_all_in_range_real(paralogs, n_dims * n_paralogs, ierr)
         call validate_in_range_real(dosage_gain_gamma, ierr, min=above(0.0_real64))
         call validate_in_range_real(dosage_max_angle, ierr, min=0.0_real64, max=PI)
-        call validate_all_in_range_real(subfunc_paralog_norms, n_paralogs, ierr)
+        call validate_all_in_range_real(subfunc_paralog_norms, n_paralogs, ierr, min=0.0_real64)
         call validate_all_in_range_int(subfunc_sorted_paralog_norms_perm, n_paralogs, ierr, min=1_int32, max=n_paralogs)
         call validate_in_range_real(subfunc_rdi_threshold, ierr, min=0.0_real64)
         if (is_err(ierr)) return
