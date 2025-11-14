@@ -66,7 +66,13 @@ validate_logical_vector <- function(x, name = "vector", expected_length = NULL) 
   if (!is.null(expected_length) && length(x) != expected_length) stop(sprintf("`%s` must be of length %d.", name, expected_length))
   invisible(NULL)
 }
-
+validate_gene_to_family <- function(gene_to_fam, n_genes, n_families, name = "gene_to_fam") {
+  if (!is.numeric(gene_to_fam) && !is.integer(gene_to_fam)) stop(sprintf("`%s` must be numeric or integer.", name))
+  if (length(gene_to_fam) != as.integer(n_genes)) stop(sprintf("Length of `%s` must equal number of genes (%d).", name, as.integer(n_genes)))
+  if (any(is.na(gene_to_fam))) stop(sprintf("`%s` contains NA values.", name))
+  if (any(gene_to_fam < 0)) stop(sprintf("`%s` indices must be >= 0 (0 = no family assignment).", name))
+  invisible(NULL)
+}
 validate_mode <- function(mode, allowed = c('all', 'ortho')) {
   if (!mode %in% allowed) stop(sprintf("`mode` must be one of: %s.", paste(allowed, collapse = ", ")))
   invisible(NULL)
@@ -121,12 +127,12 @@ validate_divisible_length <- function(x, d, name = "x") {
   invisible(NULL)
 }
 
-# Validate integer index vector (1-based or 0-based depending on contract)
-validate_index_vector <- function(idx, min_val, max_val, name = "indices") {
-  if (!is.integer(idx)) stop(sprintf("`%s` must be an integer vector.", name))
-  if (any(idx < min_val) || any(idx > max_val)) stop(sprintf("`%s` must contain indices between %d and %d (must be between %d and %d).", name, min_val, max_val, min_val, max_val))
+validate_index_bounds <- function(idx, low = 1, high = Inf, name = "idx") {
+  if (!is.numeric(idx) && !is.integer(idx)) stop(sprintf("`%s` must be numeric or integer.", name))
+  if (any(idx < low, na.rm = TRUE) || any(idx > high, na.rm = TRUE)) stop(sprintf("Invalid input: `%s` indices must be between %s and %s.", name, low, ifelse(is.infinite(high), "Inf", as.character(high))))
   invisible(NULL)
 }
+
 
 # Validate that two matrices have the same number of rows
 validate_matching_rows <- function(A, B, name_A = "A", name_B = "B") {
