@@ -65,6 +65,11 @@ module tox_errors
     !! Array size mismatch
   integer(int32), parameter :: ERR_STRING_TOO_LONG    = 207
     !! String exceeds buffer size 
+  integer(int32), parameter :: ERR_IDX_OUT_OF_BOUNDS  = 208
+    !! Array index out of bounds
+  integer(int32), parameter :: ERR_DIVISION_BY_ZERO   = 209
+    !! memory allocation failed
+
   !------------------------------
   ! 3xx: Memory
   !------------------------------

@@ -1,4 +1,5 @@
 module tox_data_accessors
+    use safeguard
   use iso_fortran_env, only: int32, real64
   use tox_errors, only: set_ok, set_err_once, ERR_SIZE_MISMATCH, ERR_INVALID_INPUT
   implicit none

@@ -108,14 +108,14 @@ validate_expression_data(kallisto_expr, True)
 
 ortholog_set = np.array([True for i in range(n_genes_kept)])
 
-centroids = tox_group_centroid(filtered_kallisto_expr, filtered_gene_to_fam, n_families, ortholog_set)
+centroids = tox_group_centroid(filtered_kallisto_expr, filtered_gene_to_fam, n_families, "all", ortholog_set)
 
 print("Validating centroids...")
 validate_family_centroids(centroids)
 print("Centroids validated")
 
 shift_vectors_result = tox_compute_shift_vector_field(filtered_kallisto_expr, centroids, filtered_gene_to_fam)
-shift_vectors = shift_vectors_result["shift_vectors"]
+shift_vectors = shift_vectors_result
 
 print("Validating shift vectors...")
 validate_shift_vectors(shift_vectors, filtered_kallisto_expr, centroids, filtered_gene_to_fam, 

@@ -1,4 +1,5 @@
 module tox_data_validation
+    use safeguard
     use iso_fortran_env, only: real64, int32
     use tox_errors, only: set_ok, is_ok, set_err_once, ERR_INVALID_INPUT, ERR_SIZE_MISMATCH
     use config, only: DEBUG

@@ -1,6 +1,6 @@
 !> Wrappers for serialization/deserialization of arrays
 module tox_data_read_write
-
+    use safeguard
     use iso_fortran_env, only: real64, int32
     use tox_errors, only: set_ok, set_err, is_err, is_ok
     use serialize_int, only: serialize_int_1d

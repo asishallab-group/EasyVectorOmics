@@ -1,4 +1,5 @@
 module xxh3_hashmap_module
+    use safeguard
     use, intrinsic :: iso_c_binding, only: c_loc
     use iso_fortran_env, only: int32, int64
     use f42_utils, only: next_power_of_two
