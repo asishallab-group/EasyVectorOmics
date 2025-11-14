@@ -542,33 +542,6 @@ This method segments the vector field into coherent \emph{signal-rich subfields}
 
 \textbf{Note:} The threshold \( \tau \) may be adjusted (e.g., 1\%, 10\%) to modulate sensitivity. The procedure generalizes naturally to higher-order tensors by applying the same algorithm to scalar-valued summary fields (e.g., Frobenius norms of second-order tensors).
 
-\subsection{Subfield Descriptor}
-\label{sec:subfield_descriptor}
-
-Each collected subfield is characterized by aggregating its expression vectors into a matrix \( M \in \mathbb{R}^{n \times k} \), where each of the \( k \) columns is a gene expression vector embedded in the fixed \( n \)-dimensional semantic space. The structure of the subfield is quantified using the following derived quantities:
-
-\begin{itemize}
-    \item \textbf{Flow direction:} The first eigenvector of the covariance matrix \( C = M M^T \), representing the dominant direction of signal flow across the subfield.
-
-    \item \textbf{Rotation vector:} The antisymmetric (skew-symmetric) component of the covariance matrix is defined as:
-    \[
-    A = \operatorname{skew}(C) := \frac{1}{2}(C - C^T)
-    \]
-    This decomposition follows conventions from continuum mechanics and enables separation of directional flow and local rotational tendency. The antisymmetric matrix \( A \) encodes the local rotation axis and magnitude of net curl induced by the subfield’s geometry.
-
-    \item \textbf{Signal strength:} The Frobenius norm \( \|M\|_F \) measures the total signal energy contributed by all expression vectors in the subfield.
-
-    \item \textbf{Directional spread:} The matrix rank of \( M \), estimated via singular value decomposition, indicates the number of independent directions represented in the subfield. A rank of one implies collinearity; higher ranks indicate multi-directional heterogeneity.
-\end{itemize}
-
-To enable comparison across subfields of varying size \( k \), the signal strength can be normalized by the root of the cardinality:
-\[
-\text{RFI} = \frac{\|M\|_F}{\sqrt{k}}
-\]
-This Relative Frobenius Index (RFI) provides a density-independent measure of average vector magnitude per subfield.
-
-\textbf{Note:} All direction vectors \( \vec{v} \in \mathbb{R}^n \setminus \{ \vec{0} \} \) are assumed to be non-zero, as normalization and angular analysis are undefined for the zero vector. If an unscaled antisymmetric component \( A = C - C^T \) is used instead of the factorized form, this corresponds to measuring the total (unweighted) rotation strength. The scaled form \(\frac{1}{2}(C - C^T)\) is preferred for decomposition consistency and interpretability.
-
 \subsection{Workbench for Interactive Exploration}
 \label{sec:workbench}
 
@@ -692,6 +665,7 @@ In Mode B, we additionally compute the angular velocity of shift direction over 
 where \( \vec{s}_t^{\perp} \) denotes the projection of the shift vector into \( \Pi_t \). This metric captures turning behavior in shift trajectories and may reveal biological transitions or inflection points in tissue preference.
 
 \subsection{Mjölnir's Handle — Canonical Axis Reconstruction for Eitri Surface Extraction}
+\label{sec:semantic_axis}
 
 \begin{itemize}
   \item \textbf{Purpose:}
@@ -785,7 +759,6 @@ Traditional ML pipelines in omics use raw gene-level input or PCA-transformed da
 In contrast, \textbf{Gilgamesh Learning} leverages the latent geometry of semantic fields constructed in TOX to provide biologically interpretable classification, tracing the activation of regions (cylinder bins) and their descriptors, and linking learned patterns back to cellular processes or clinical labels.
 
 \subsection{Method}
-\label{sec:semantic_axis}
 
 Let $\mathcal{F} \subset \mathbb{R}^n$ be a subfield of expression or shift vectors, constructed post-normalization, smoothing, and grid interpolation. Let $H$ denote the \textbf{Mj\"olnir handle}, i.e., the primary flow axis of the subfield, computed via kernel-smoothing over Brokk root vectors as described in the corresponding section.
 
@@ -1192,6 +1165,7 @@ center, allowing the use of linear algebraic descriptors to quantify its
 structure, energy, and dynamics.
 
 \subsection{Four Descriptors of a Subfield}
+\label{sec:subfield_descriptor}
 
 From \(M\) and \(C\), we define four key descriptors that characterize the 
 aggregate effect of the subfield on the virtual particle:
@@ -1247,6 +1221,14 @@ aggregate effect of the subfield on the virtual particle:
 
 Together, these four quantities --- energy, rank, principal direction, and 
 rotation --- form the Tensor Omics Field Descriptors (TOXFD).
+
+To enable comparison across subfields of varying size \( k \), the signal strength can be normalized by the root of the cardinality:
+\[
+\text{RFI} = \frac{\|M\|_F}{\sqrt{k}}
+\]
+This Relative Frobenius Index (RFI) provides a density-independent measure of average vector magnitude per subfield.
+
+\textbf{Note:} All direction vectors \( \vec{v} \in \mathbb{R}^n \setminus \{ \vec{0} \} \) are assumed to be non-zero, as normalization and angular analysis are undefined for the zero vector. If an unscaled antisymmetric component \( A = C - C^T \) is used instead of the factorized form, this corresponds to measuring the total (unweighted) rotation strength. The scaled form \(\frac{1}{2}(C - C^T)\) is preferred for decomposition consistency and interpretability.
 
 \subsection{Vector Sets versus Vector Fields}
 
