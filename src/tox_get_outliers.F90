@@ -1,3 +1,4 @@
+
 !> Module to identify gene outliers based on their distances to family centroids.
 module tox_get_outliers
   use, intrinsic :: iso_fortran_env, only: real64, int32
@@ -53,7 +54,7 @@ contains
     sigma = default_sigma
     cutoff = default_cutoff
 
-    ! Check for invalid family indices (0 = no family assignment is allowed)
+    ! Check for invalid family indices
     do i = 1, n_genes
       if (gene_to_fam(i) < 1 .or. gene_to_fam(i) > n_families) then
         dscale = -1.0_real64  ! Set to -1 to indicate error, do not use if ierr /= 0
