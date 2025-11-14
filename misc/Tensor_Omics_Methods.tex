@@ -20,6 +20,9 @@
 
 \maketitle
 
+\tableofcontents
+\newpage
+
 \section{Overview}
 This document outlines the sequential pipeline used in Tensor Omics for preprocessing, vector space construction, outlier detection, and geometric analysis of gene expression data.
 
@@ -782,6 +785,7 @@ Traditional ML pipelines in omics use raw gene-level input or PCA-transformed da
 In contrast, \textbf{Gilgamesh Learning} leverages the latent geometry of semantic fields constructed in TOX to provide biologically interpretable classification, tracing the activation of regions (cylinder bins) and their descriptors, and linking learned patterns back to cellular processes or clinical labels.
 
 \subsection{Method}
+\label{sec:semantic_axis}
 
 Let $\mathcal{F} \subset \mathbb{R}^n$ be a subfield of expression or shift vectors, constructed post-normalization, smoothing, and grid interpolation. Let $H$ denote the \textbf{Mj\"olnir handle}, i.e., the primary flow axis of the subfield, computed via kernel-smoothing over Brokk root vectors as described in the corresponding section.
 
@@ -1154,31 +1158,38 @@ The method is linear-algebraic, computationally efficient, and applicable to bot
 
 \section{Tensor Omics Field Descriptors (TOXFD)}
 
-\subsection{Concept of the Subfield Effect}
+\subsection{Concept of Subfields and Vector Fields}
 
-In Tensor Omics, a \textit{subfield} is a subset of vectors 
-\(\{\vec{v}_i\}_{i=1}^{m}\) extracted from an omics vector space 
-(e.g. expression vectors or shift vectors) that share semantic proximity 
-or biological annotation (e.g. ``photosynthesis'', ``inflammatory response'').
-The collective influence of such a subfield can be described as the cumulative 
-effect that all its vectors exert on a \textit{virtual particle} positioned at 
-the center of the subfield. 
-
-This analogy allows the use of linear algebraic descriptors that quantify 
-the structure, energy, and dynamics of a subfield, independent of its 
-dimensionality or biological origin.
-
-We represent the subfield as a matrix
+In Tensor Omics, a \textit{vector field} consists of vectors together with the
+coordinates from which they originate,
 \[
-M = [\, \vec{v}_1, \vec{v}_2, \ldots, \vec{v}_m \,] \in \mathbb{R}^{n \times m},
+\mathcal{F} = \{\, (\vec{x}_i, \vec{v}_i) \mid \vec{x}_i, \vec{v}_i \in \mathbb{R}^n \,\}.
 \]
-where each column corresponds to an individual vector in the subfield.  
-The cumulative covariance structure of the field is then given by
+A \textit{subfield} is any subset of this field,
 \[
-C = M M^{\mathsf{T}}.
+\mathcal{K} \subseteq \mathcal{F},
 \]
-This covariance captures both the magnitude and directional coherence of 
-vectors in the subfield.
+selected according to biological, semantic, or geometric criteria
+(e.g.\ ``photosynthesis'', ``inflammatory response'', collinearity, or local density).
+
+When the original data consist only of vectors without explicit coordinates,
+the subfield refers simply to a subset of vectors 
+\(\{\vec{v}_i\}_{i=1}^{m}\) extracted from an omics vector space.
+Such a subset can still be analyzed collectively by arranging its vectors into
+the matrix
+\[
+M = [\, \vec{v}_1, \vec{v}_2, \ldots, \vec{v}_m \,] \in \mathbb{R}^{n \times m}.
+\]
+
+The cumulative covariance structure of the subfield is then given by
+\[
+C = M M^{\mathsf{T}},
+\]
+which captures both the magnitude and directional coherence among the vectors.
+This formulation enables describing the collective influence of the subfield as
+the cumulative effect exerted on a virtual particle placed conceptually at its
+center, allowing the use of linear algebraic descriptors to quantify its
+structure, energy, and dynamics.
 
 \subsection{Four Descriptors of a Subfield}
 
@@ -1235,23 +1246,20 @@ aggregate effect of the subfield on the virtual particle:
 \end{enumerate}
 
 Together, these four quantities --- energy, rank, principal direction, and 
-rotation --- form the \textbf{Tensor Omics Field Descriptors (TOXFD)}.
+rotation --- form the Tensor Omics Field Descriptors (TOXFD).
 
 \subsection{Vector Sets versus Vector Fields}
 
-A \textit{set of vectors} (e.g. all expression vectors of a gene family) 
-is described only by the vectors themselves and their distribution in space.
-In contrast, a \textit{vector field} additionally associates each vector 
-with a coordinate (position), such as the centroid of a gene family or 
-a point in tissue-expression space:
-\[
-\mathcal{F} = \{\, (\vec{x}_i, \vec{v}_i) \,|\, \vec{x}_i, \vec{v}_i \in \mathbb{R}^n \,\}.
-\]
+A \textit{vector set} (e.g.\ all expression vectors of a gene family) consists 
+only of vectors and their distribution in space.  
 
-For such fields, TOXFDs can be computed in two complementary ways:
+When vectors additionally carry explicit coordinates---as in shift vectors 
+originating at gene-family centroids---they form a \textit{vector field}.  
+In such cases, TOXFDs can be applied either to the coordinates or to the 
+vectors themselves, yielding complementary information:
 
 \begin{itemize}
-  \item On the \textbf{coordinates} \(\vec{x}_i\):  
+  \item \textbf{On the coordinates} $\vec{x}_i$:  
   the descriptors characterize the geometry and spatial extent of the region 
   in Tensor Omics space, answering questions like:
   \begin{itemize}
@@ -1260,7 +1268,7 @@ For such fields, TOXFDs can be computed in two complementary ways:
     \item Does the region itself curve or spiral through Tensor space (rotation)?
   \end{itemize}
 
-  \item On the \textbf{shift vectors} \(\vec{v}_i\):  
+  \item \textbf{On the vectors} $\vec{v}_i$:  
   the descriptors characterize the dynamics or changes that occur within that region:
   \begin{itemize}
     \item Which semantic axes dominate expression changes?
@@ -1268,18 +1276,21 @@ For such fields, TOXFDs can be computed in two complementary ways:
     \item Are changes co-directed or diverse (rank)?
     \item Do they form coherent rotational flows or transitions (rotation)?
   \end{itemize}
+
 \end{itemize}
 
 \textbf{Examples.}  
-In transcriptomics, coordinates represent gene families in expression space, 
-while shift vectors represent expression changes (e.g. stress response).  
-In physics, coordinates might represent spatial positions, and shift vectors 
-might represent wind velocity or magnetic field direction.
+In transcriptomics, coordinates correspond to gene-family positions in 
+expression space, while shift vectors represent changes such as stress 
+responses.  
+In physics, coordinates represent spatial positions, and vectors represent wind 
+velocities or magnetic field directions.
+
 
 \subsection{Tracing a Field along its Semantic Axis}
 
 Assume a subfield has an associated \textit{semantic axis}
-\(\vec{d}_{\text{sem}}\) (see Section~X.X for its definition), 
+\(\vec{d}_{\text{sem}}\) (see Section~\ref{sec:semantic_axis} for its definition), 
 obtained for example by the Mjölnir manifold learning method.  
 We can then analyze how TOXFD quantities evolve along this axis.
 
