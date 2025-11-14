@@ -233,7 +233,7 @@ subroutine deserialize_logical_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
   close(unit)
   if (.not. is_ok(ioerror)) then
     call set_err_once(ierr, ERR_READ_DATA)
-    RETURN
+    return
   end if
 end subroutine
 

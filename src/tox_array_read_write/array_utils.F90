@@ -45,7 +45,7 @@ module array_utils
     if(ndims /= expected) then
       close(unit)
       call set_err_once(ierr, ERR_DIM_MISMATCH)
-      RETURN
+      return
     end if
 
   end Subroutine
@@ -109,7 +109,7 @@ module array_utils
     !! Fortran unit number for the file
     integer(int32), intent(out) :: type_code
     !! type code of the array (1=int, 2=real, 3=char, 4=logical, 5=complex)
-    integer(int32), INTENT(out) :: ndims
+    integer(int32), intent(out) :: ndims
     !! number of dimensions
     integer(int32), intent(out) :: clen
     !! character length (only for character arrays)
@@ -190,7 +190,7 @@ module array_utils
     !! Array to store output dimensions
     integer(int32), intent(out) :: ierr
     !! Error code
-    integer(int32), INTENT(OUT), OPTIONAL :: clen
+    integer(int32), intent(out), optional :: clen
     !! length of each string (needed for char arrays)
 
     integer(int32) :: unit
@@ -208,7 +208,7 @@ module array_utils
 
     if(size(dims) > dims_out_capacity) then
       call set_err_once(ierr, ERR_DIM_MISMATCH)
-      RETURN
+      return
     end if
 
     do i = 1, ndims
@@ -228,7 +228,7 @@ module array_utils
     integer(int32), intent(in) :: ascii_array(clen)
       !! Array of ASCII characters
     
-    character(len=:), allocatable, INTENT(OUT) :: str
+    character(len=:), allocatable, intent(out) :: str
     !! Output string
     integer(int32) :: i
     !! loop variable
