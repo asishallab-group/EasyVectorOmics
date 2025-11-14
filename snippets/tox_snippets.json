@@ -77,7 +77,7 @@
     ],
     "description": "Invoke distance calculation from genes to family centroids"
   },
-  "Wrapper R": {
+   "Wrapper R": {
     "prefix": "wrapper_r",
     "body": [
       "subroutine ${1:core_name}_r(${2:args})",
@@ -123,6 +123,7 @@
     ],
     "description": "Map flat array to 2D with c_f_pointer"
   },
+  
   "R call to normalize_by_std_dev": {
     "prefix": "tox:R_norm_by_std_dev",
     "body": [
@@ -1211,5 +1212,5 @@
     ],
     "description": "Python function to check and raise error messages for tox error codes"
   }
-
+  
 }

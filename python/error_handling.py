@@ -25,6 +25,8 @@ def check_err_code(ierr: int) -> None:
         204: "NaN or Inf found in input data.",
         205: "Unsupported data type encountered.",
         206: "Array size mismatch detected",
+        208: "Array index out of bounds",
+        209: "Division by Zero",
 
         # MEMORY ERRORS
         301: "Memory allocation failed.",

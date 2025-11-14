@@ -3,6 +3,7 @@
 !! This module provides routines to build a BST index (via sorting), access sorted values,
 !! and perform efficient range queries over a real-valued array.
 module binary_search_tree
+  use safeguard
   use f42_utils, only: sort_array
   use iso_fortran_env, only: int32, real64
   use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_DIM_MISMATCH, ERR_SIZE_MISMATCH, is_ok, set_err_once, set_ok, validate_dimension_size
