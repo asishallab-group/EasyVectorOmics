@@ -223,6 +223,7 @@ subroutine deserialize_int_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
 
   if (product(dims) /= arr_size) then
     call set_err_once(ierr, ERR_SIZE_MISMATCH)
+    close(unit)
     return
   end if
 

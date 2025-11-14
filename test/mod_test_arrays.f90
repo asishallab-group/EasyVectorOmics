@@ -104,17 +104,18 @@ contains
 
       fname = "test_iarr1d.bin"
       call serialize_int_1d(iarr1d, fname, ierr)
-      if (.not. is_ok(ierr)) error stop
+      print *, "Serialized integer 1D array to ", trim(fname)
+      if (.not. is_ok(ierr)) error stop ierr
 
       ! Metadata auslesen
       call get_array_metadata(fname, dims, 5, ndims, ierr)
-      if (.not. is_ok(ierr)) error stop
+      if (.not. is_ok(ierr)) error stop ierr
       
       ! Array basierend auf Metadaten allokieren
       allocate(iarr1d2(dims(1)))
       
       call deserialize_int_1d(iarr1d2, fname, ierr)
-      if (.not. is_ok(ierr)) error stop
+      if (.not. is_ok(ierr)) error stop ierr
       call assert_equal_array_int(iarr1d, iarr1d2, size(iarr1d), "Mismatch")
   end subroutine test_integer_array_1d
 
