@@ -358,7 +358,7 @@ def build_bst_index(values):
     values (np.array): 1D array of values to index
     
     Returns:
-    np.array: BST indices (0-based for Python)
+    np.array: BST indices (1-based)
     """
     n = len(values)
     indices = np.empty(n, dtype=np.int32)
@@ -369,9 +369,8 @@ def build_bst_index(values):
     # Build BST index
     lib.build_bst_index_C(values, n, indices, stack_left, stack_right, ctypes.byref(ierr))
     check_err_code(ierr.value)
-    
-    # Convert from Fortran 1-based to Python 0-based indexing
-    return indices - 1
+
+    return indices
 
 def bst_range_query(values, indices, lower_bound, upper_bound):
     """
@@ -384,25 +383,26 @@ def bst_range_query(values, indices, lower_bound, upper_bound):
     upper_bound (float): Upper bound of range (inclusive)
     
     Returns:
-    tuple: (matching_indices, count) where matching_indices are 0-based Python indices
+    dictionary: (matching_indices, count) where matching_indices are 1-based Fortran indices
     """
     n = len(values)
     output_indices = np.empty(n, dtype=np.int32)
     match_count = ctypes.c_int32(0)
     ierr = ctypes.c_int()
     
-    # Convert indices back to 1-based for Fortran
-    indices_1based = indices + 1
-    
     # Perform range query
-    lib.bst_range_query_C(values, indices_1based, n, lower_bound, upper_bound, 
+    lib.bst_range_query_C(values, indices, n, lower_bound, upper_bound, 
                          output_indices, ctypes.byref(match_count), ctypes.byref(ierr))
     check_err_code(ierr.value)
     
-    # Convert from Fortran 1-based to Python 0-based indexing
-    matching_indices = output_indices[:match_count.value] - 1
+    matching_indices = output_indices[:match_count.value]
     
-    return matching_indices, match_count.value
+    result = {
+        "matching_indices": matching_indices,
+        "count": match_count.value
+    }
+
+    return result
 
 # --- KD-Tree Functions ---
 def build_kd_index(points, dimension_order=None):
@@ -414,7 +414,7 @@ def build_kd_index(points, dimension_order=None):
     dimension_order (np.array): Order of dimensions for splitting (1-based)
     
     Returns:
-    np.array: KD-Tree indices (0-based for Python)
+    np.array: KD-Tree indices (1-based Fortran indices)
     """
     d, n = points.shape
     
@@ -441,8 +441,7 @@ def build_kd_index(points, dimension_order=None):
                         value_buffer, permutation, stack_left, stack_right, ctypes.byref(ierr))
     check_err_code(ierr.value)
     
-    # Convert from Fortran 1-based to Python 0-based indexing
-    return kd_indices - 1
+    return kd_indices
 
 def build_spherical_kd(vectors, dimension_order=None):
     """
@@ -453,7 +452,7 @@ def build_spherical_kd(vectors, dimension_order=None):
     dimension_order (np.array): Order of dimensions for splitting (1-based)
     
     Returns:
-    np.array: Spherical KD-Tree indices (0-based for Python)
+    np.array: Spherical KD-Tree indices (1-based Fortran indices)
     """
     # For spherical KD-Tree, we use the same implementation as regular KD-Tree
     # but with a different name for clarity
