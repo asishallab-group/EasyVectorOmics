@@ -34,6 +34,12 @@ contains
     call read_file_header(filename, unit, type_code, ndim, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
+    if(type_code /= 3) then
+      call set_err_once(ierr, ERR_TYPE_MISMATCH)
+      close(unit)
+      return
+    end if
+
     ! Allocate output array with stored character length
     allocate(character(len=clen) :: flat(product(dims)))
     
@@ -64,6 +70,12 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
+    if(type_code /= 3) then
+      call set_err_once(ierr, ERR_TYPE_MISMATCH)
+      close(unit)
+      return
+    end if
+
     call check_okay_ndims(ndims, 1, unit, ierr)
     if(.not. is_ok(ierr)) return
 
@@ -92,6 +104,12 @@ contains
     call set_ok(ierr)
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
+
+    if(type_code /= 3) then
+      call set_err_once(ierr, ERR_TYPE_MISMATCH)
+      close(unit)
+      return
+    end if
 
     call check_okay_ndims(ndims, 2, unit, ierr)
     if(.not. is_ok(ierr)) return
@@ -122,6 +140,12 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
+    if(type_code /= 3) then
+      call set_err_once(ierr, ERR_TYPE_MISMATCH)
+      close(unit)
+      return
+    end if
+
     call check_okay_ndims(ndims, 3, unit, ierr)
     if(.not. is_ok(ierr)) return
 
@@ -151,6 +175,12 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
+    if(type_code /= 3) then
+      call set_err_once(ierr, ERR_TYPE_MISMATCH)
+      close(unit)
+      return
+    end if
+
     call check_okay_ndims(ndims, 4, unit, ierr)
     if(.not. is_ok(ierr)) return
 
@@ -179,6 +209,12 @@ contains
     call set_ok(ierr)
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
+
+    if(type_code /= 3) then
+      call set_err_once(ierr, ERR_TYPE_MISMATCH)
+      close(unit)
+      return
+    end if
 
     call check_okay_ndims(ndims, 5, unit, ierr)
     if(.not. is_ok(ierr)) return

@@ -2,7 +2,7 @@
 module complex_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only : c_loc, c_f_pointer
-  use array_utils, only: read_file_header, check_okay_dims, check_okay_ndims
+  use array_utils, only: read_file_header, check_okay_ndims
   use tox_errors
   implicit none
 

@@ -4,7 +4,7 @@ module array_utils
     use tox_errors
     implicit none
 
-    PUBLIC :: get_array_metadata, ascii_to_string, read_file_header, write_file_header, string_to_ascii_arr, check_okay_dims
+    PUBLIC :: get_array_metadata, ascii_to_string, read_file_header, write_file_header, string_to_ascii_arr
     public :: check_okay_ndims
 
     integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
@@ -30,22 +30,6 @@ module array_utils
       return
     end if
     
-  end subroutine
-
-  !> check if array dimensions match the expected dimensions
-  subroutine check_okay_dims(dims, expected, ierr)
-    integer(int32), intent(in) :: dims(:)
-    !! array of actual dimensions
-    integer(int32), intent(in) :: expected
-    !! expected number of dimensions
-    integer(int32), intent(out) :: ierr
-    !! error code
-
-    if (size(dims) /= expected) then
-      call set_err_once(ierr, ERR_DIM_MISMATCH)
-      RETURN
-    end if
-
   end subroutine
 
   subroutine check_okay_ndims(ndims, expected, unit, ierr)
@@ -159,21 +143,33 @@ module array_utils
 
     read(unit, iostat=ioerror) type_code
     call check_okay_ioerror(ioerror, ierr, ERR_READ_TYPE, unit)
-    if (.not. is_ok(ierr)) return
+    if (.not. is_ok(ierr)) then
+      close(unit)
+      return
+    end if
 
     read(unit, iostat=ioerror) ndims
     call check_okay_ioerror(ioerror, ierr, ERR_READ_NDIMS, unit)
-    if (.not. is_ok(ierr)) return
+    if (.not. is_ok(ierr)) then
+      close(unit)
+      return
+    end if
 
     allocate(dims(ndims))
     read(unit, iostat=ioerror) dims
     call check_okay_ioerror(ioerror, ierr, ERR_READ_DIMS, unit)
-    if (.not. is_ok(ierr)) return
+    if (.not. is_ok(ierr)) then
+      close(unit)
+      return
+    end if
 
     if(type_code==3) then
       read(unit, iostat=ioerror) clen
       call check_okay_ioerror(ioerror, ierr, ERR_READ_CHARLEN, unit)
-      if (.not. is_ok(ierr)) return
+      if (.not. is_ok(ierr)) then
+        close(unit)
+        return
+      end if
     else
       clen = 0 ! Not applicable for non-character types
     end if

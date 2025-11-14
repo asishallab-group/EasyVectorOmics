@@ -2,7 +2,7 @@
 module real_deserialize_mod
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only : c_loc, c_f_pointer
-  use array_utils, only: ascii_to_string, read_file_header, check_okay_dims, check_okay_ndims
+  use array_utils, only: ascii_to_string, read_file_header, check_okay_ndims
   use, intrinsic :: iso_fortran_env, only: real64, int32
   use tox_errors
   implicit none
@@ -28,6 +28,12 @@ contains
     call set_ok(ierr)
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
+
+    if(type_code /= 2) then
+      call set_err_once(ierr, ERR_TYPE_MISMATCH)
+      close(unit)
+      return
+    end if
 
     call check_okay_ndims(ndims, 1, unit, ierr)
     if(.not. is_ok(ierr)) return
@@ -58,6 +64,12 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
+    if(type_code /= 2) then
+      call set_err_once(ierr, ERR_TYPE_MISMATCH)
+      close(unit)
+      return
+    end if
+
     call check_okay_ndims(ndims, 2, unit, ierr)
     if(.not. is_ok(ierr)) return
 
@@ -85,6 +97,12 @@ contains
     call set_ok(ierr)
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
+
+    if(type_code /= 2) then
+      call set_err_once(ierr, ERR_TYPE_MISMATCH)
+      close(unit)
+      return
+    end if
 
     call check_okay_ndims(ndims, 3, unit, ierr)
     if(.not. is_ok(ierr)) return
@@ -115,6 +133,12 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
+    if(type_code /= 2) then
+      call set_err_once(ierr, ERR_TYPE_MISMATCH)
+      close(unit)
+      return
+    end if
+
     call check_okay_ndims(ndims, 4, unit, ierr)
     if(.not. is_ok(ierr)) return
 
@@ -144,6 +168,12 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
+    if(type_code /= 2) then
+      call set_err_once(ierr, ERR_TYPE_MISMATCH)
+      close(unit)
+      return
+    end if
+
     call check_okay_ndims(ndims, 5, unit, ierr)
     if(.not. is_ok(ierr)) return
 
@@ -165,7 +195,7 @@ subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_raw, fn_len, ier
   use iso_c_binding, only : c_char
   use array_utils, only : read_file_header
   use tox_conversions, only : c_char_1d_as_string
-  use tox_errors, only : set_ok, set_err_once, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA
+  use tox_errors, only : set_ok, set_err_once, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH
   implicit none
 
   integer(int32), intent(in) :: fn_len
@@ -197,6 +227,12 @@ subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_raw, fn_len, ier
   call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
   if(.not. is_ok(ierr)) return
 
+  if(type_code /= 2) then
+    call set_err_once(ierr, ERR_TYPE_MISMATCH)
+    close(unit)
+    return
+  end if
+
   if (product(dims) /= arr_size) then
     call set_err_once(ierr, ERR_SIZE_MISMATCH)
     close(unit)
@@ -219,7 +255,7 @@ subroutine deserialize_real_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C,
     use iso_c_binding, only : c_int, c_double, c_char
     use iso_fortran_env, only: int32, real64
     use array_utils, only: read_file_header
-    use tox_errors, only : set_ok, set_err_once, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA
+    use tox_errors, only : set_ok, set_err_once, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH
     use tox_conversions, only : c_char_1d_as_string
     implicit none
 
@@ -254,6 +290,12 @@ subroutine deserialize_real_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C,
 
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if(.not. is_ok(ierr)) return
+
+    if(type_code /= 2) then
+      call set_err_once(ierr, ERR_TYPE_MISMATCH)
+      close(unit)
+      return
+    end if
 
     ! Safety check: ensure provided buffer matches size in file
     if (product(dims) /= arr_size) then
