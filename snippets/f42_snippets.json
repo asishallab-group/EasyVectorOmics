@@ -53,8 +53,16 @@
       "! Fortran sort - automatically selects implementation based on data type",
       "call sort_array(array, perm, stack_left, stack_right)"
     ],
-    "description": "Generic interface that resolves to appropriate sort function"
+    "description": "Generic interface that resolves to appropriate sort function"    
   },
+  "Fortran call to sort_array_heapsort": {
+    "prefix":"f42:sort_array_heapsort",
+    "body": [
+      "! Fortran sort - automatically selects implementation based on data type",
+      "call sort_array_heapsort(array, perm)"
+    ], 
+    "description": "Generic interface that resolves to appropriate heapsort function"
+    },
   "Fortran call to which": {
     "prefix": "f42:which",
     "body": [
@@ -109,14 +117,14 @@
     "body": [
 	  "lib.loess_smooth_2d_c.argtypes = [",
       "    ctypes.c_int, # n_total",
-	  "    ctypes.c_int, # n_target",
+	    "    ctypes.c_int, # n_target",
       "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'), # x_ref",
       "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'), # y_ref",
       "    np.ctypeslib.ndpointer(dtype=np.int32, flags='C_CONTIGUOUS'), # indices_used",
       "    ctypes.c_int,  # n_used",
       "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'), # x_query",
       "    ctypes.c_double, # kernel_sigma",
-	  "    ctypes.c_double, # kernel_cutoff",
+	    "    ctypes.c_double, # kernel_cutoff",
       "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'), # y_out",
       "]",
       "lib.loess_smooth_2d_c.restype = None",
@@ -125,54 +133,6 @@
 
     ],
     "description": "Call loess_smooth_2d_c from Python using ctypes"
-  },
-
-  "Convert c_double to real64": {
-    "prefix": "f42:c_double_as_real64",
-    "body":  [
-      "! Convert to fortran type",
-      "call c_double_as_real64(${1:c_val}, ${2:f_val})"
-    ]
-  },
-
-  "Convert real64 to c_double": {
-    "prefix": "f42:real64_as_c_double",
-    "body":  [
-      "! Convert to fortran type",
-      "call real64_as_c_double(${1:f_val}, ${2:c_val})"
-    ]
-  },
-
-  "Convert c_complex to complex": {
-    "prefix": "f42:c_complex_as_complex",
-    "body":  [
-      "! Convert to fortran type",
-      "call c_complex_as_complex(${1:c_val}, ${2:f_val})"
-    ]
-  },
-
-  "Convert complex to c_complex": {
-    "prefix": "f42:complex_as_c_complex",
-    "body":  [
-      "! Convert to fortran type",
-      "call complex_as_c_complex(${1:f_val}, ${2:c_val})"
-    ]
-  },
-
-  "Convert c_int to int32": {
-    "prefix": "f42:c_int_as_int32",
-    "body":  [
-      "! Convert to fortran type",
-      "call c_int_as_int32(${1:c_val}, ${2:f_val})"
-    ]
-  },
-
-  "Convert int32 to c_int": {
-    "prefix": "f42:int32_as_c_int",
-    "body":  [
-      "! Convert to fortran type",
-      "call int32_as_c_int(${1:f_val}, ${2:c_val})"
-    ]
   },
 
   "Convert c_int to logical": {
@@ -236,6 +196,21 @@
     "body":  [
       "! Convert to fortran type",
       "call string_as_c_char_2d(${1:strings}, ${2:c_char_array})"
+    ]
+  },
+
+  "Calculate percentile": {
+    "prefix": "f42:calculate_percentile",
+    "body": [
+      "! Calculate percentile",
+      "call calc_percentile(${1:array}, ${2:permutation}, ${3:percentile}, ${4:value}, ${5:ierr})"
+    ]
+  },
+  "Calculate percentile alloc": {
+    "prefix": "f42:calculate_percentile_alloc",
+    "body": [
+      "! Calculate percentile",
+      "call calc_percentile_alloc(${1:array}, ${2:percentile}, ${3:value}, ${4:ierr})"
     ]
   }
 }
