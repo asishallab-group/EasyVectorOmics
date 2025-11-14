@@ -122,4 +122,21 @@ contains
     if(n == 0) call set_err(ierr, ERR_EMPTY_INPUT)
   end subroutine
 
+  !> validate that the actual type code matches the expected type code
+  !! Closes the connected unit in case of an error
+  subroutine validate_type_code(actual, expected, unit, ierr)
+    integer(int32), intent(in) :: actual
+    !! Actual type code read from file
+    integer(int32), intent(in) :: expected
+    !! Expected type code
+    integer(int32), intent(in) :: unit
+    !! Unit connection
+    integer(int32), intent(out) :: ierr
+    !! Error code
+    if(actual /= expected) then
+      close(unit)
+      call set_err(ierr, ERR_TYPE_MISMATCH)
+    end if
+  end subroutine
+
 end module tox_errors

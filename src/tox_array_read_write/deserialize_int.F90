@@ -28,11 +28,8 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if(type_code /= 1) then
-      call set_err_once(ierr, ERR_TYPE_MISMATCH)
-      close(unit)
-      return
-    end if
+    call validate_type_code(type_code, 1, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
     call check_okay_ndims(ndims, 1, unit, ierr)
     if(.not. is_ok(ierr)) return
@@ -61,11 +58,8 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if(type_code /= 1) then
-      call set_err_once(ierr, ERR_TYPE_MISMATCH)
-      close(unit)
-      return
-    end if
+    call validate_type_code(type_code, 1, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
     call check_okay_ndims(ndims, 2, unit, ierr)
     if(.not. is_ok(ierr)) return
@@ -94,11 +88,8 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if(type_code /= 1) then
-      call set_err_once(ierr, ERR_TYPE_MISMATCH)
-      close(unit)
-      return
-    end if
+    call validate_type_code(type_code, 1, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
     call check_okay_ndims(ndims, 3, unit, ierr)
     if(.not. is_ok(ierr)) return
@@ -127,11 +118,8 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if(type_code /= 1) then
-      call set_err_once(ierr, ERR_TYPE_MISMATCH)
-      close(unit)
-      return
-    end if
+    call validate_type_code(type_code, 1, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
     call check_okay_ndims(ndims, 4, unit, ierr)
     if(.not. is_ok(ierr)) return
@@ -160,11 +148,8 @@ contains
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if(type_code /= 1) then
-      call set_err_once(ierr, ERR_TYPE_MISMATCH)
-      close(unit)
-      return
-    end if
+    call validate_type_code(type_code, 1, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
     call check_okay_ndims(ndims, 5, unit, ierr)
     if(.not. is_ok(ierr)) return
@@ -186,7 +171,7 @@ subroutine deserialize_int_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
   use iso_c_binding, only : c_char
   use array_utils, only : read_file_header
   use tox_conversions, only : c_char_1d_as_string
-  use tox_errors, only : set_err_once, set_ok, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH
+  use tox_errors, only : set_err_once, set_ok, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH, validate_type_code
   implicit none
 
   integer(int32), intent(in)  :: arr_size
@@ -215,11 +200,8 @@ subroutine deserialize_int_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
   call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
   if (.not. is_ok(ierr)) return
 
-  if(type_code /= 1) then
-    call set_err_once(ierr, ERR_TYPE_MISMATCH)
-    close(unit)
-    return
-  end if
+  call validate_type_code(type_code, 1, unit, ierr)
+  if(.not. is_ok(ierr)) return
 
   if (product(dims) /= arr_size) then
     call set_err_once(ierr, ERR_SIZE_MISMATCH)
@@ -242,7 +224,7 @@ subroutine deserialize_int_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, 
     use iso_c_binding, only: c_int, c_char
     use iso_fortran_env, only: int32
     use array_utils, only: read_file_header
-    use tox_errors, only : set_err_once, set_ok, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH
+    use tox_errors, only : set_err_once, set_ok, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH, validate_type_code
     use tox_conversions, only : c_char_1d_as_string
     implicit none
 
@@ -268,7 +250,7 @@ subroutine deserialize_int_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, 
     call set_ok(ierr)
     call set_ok(ioerror)
 
-    ! ASCII → String
+    ! raw → String
     call c_char_1d_as_string(filename_raw, filename, ierr)
     if (.not. is_ok(ierr)) return
 
@@ -277,11 +259,8 @@ subroutine deserialize_int_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, 
     call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
     if (.not. is_ok(ierr)) return
 
-    if(type_code /= 1) then
-      call set_err_once(ierr, ERR_TYPE_MISMATCH)
-      close(unit)
-      return
-    end if
+    call validate_type_code(type_code, 1, unit, ierr)
+    if(.not. is_ok(ierr)) return
 
     ! Safety check: ensure provided buffer matches size in file
     if (product(dims) /= arr_size) then
