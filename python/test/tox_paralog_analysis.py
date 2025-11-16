@@ -53,11 +53,11 @@ def test_paralog_functions():
 
     print("\n=== Testing Dosage Effect Detection ===")
 
-    ancestor = np.array([1.0, 1.0], dtype=np.float64)
+    ancestor = np.array([1.0, 1.0], dtype=np.float64, order="F")
     paralogs = np.array([
         [1.1, 1.2, 1.3, 1.4, 1.5],
         [0.9, 0.8, 0.7, 0.6, 0.5]
-    ], dtype=np.float64)
+    ], dtype=np.float64, order="F")
 
     dosage_result = tox_detect_dosage_effect(
         ancestor=ancestor,
