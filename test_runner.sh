@@ -62,6 +62,7 @@ echo "Compiling test modules..."
 $COMPILER $FLAGS $MODULE_FLAG -DDEFAULT_ALIGNMENT=$ALIGN $MAX_PERF_FLAG \
   -I$BUILD_DIR \
   -c $TEST_DIR/*.[fF]90
+check_exit_code "Test compilation failed"
 
 # Move object files to build/
 mv *.o $BUILD_DIR/ 2>/dev/null || true
