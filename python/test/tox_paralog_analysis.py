@@ -13,7 +13,8 @@ from tensoromics_functions import (
     tox_detect_dosage_effect,
     tox_detect_subfunctionalization,
     tox_mask_chunk_count,
-    tox_detect_neofunctionalization
+    tox_detect_neofunctionalization,
+    tox_normalize_unit_length
 )
 
 
@@ -32,13 +33,15 @@ def test_paralog_functions():
 
     print("\n=== Testing Pattern Filtering ===")
 
+    sorted_gene_to_fam_perm = np.arange(1, n_paralogs+1)
+    perm_first_paralog_idx = 1
     angles = np.array([0.1, 0.3, 0.5, 0.7, 0.9], dtype=np.float64)
     threshold = 0.6
 
-    dosage_mask = tox_filter_paralogs_by_pattern_dosage_effect(angles, threshold)
+    dosage_mask = tox_filter_paralogs_by_pattern_dosage_effect(angles, threshold, sorted_gene_to_fam_perm, perm_first_paralog_idx, n_paralogs)
     print("Dosage effect mask:", dosage_mask)
 
-    subfunc_mask = tox_filter_paralogs_by_pattern_subfunctionalization(angles, threshold)
+    subfunc_mask = tox_filter_paralogs_by_pattern_subfunctionalization(angles, threshold, sorted_gene_to_fam_perm, perm_first_paralog_idx, n_paralogs)
     print("Subfunctionalization mask:", subfunc_mask)
 
     print("\n=== Testing Work Array Size Calculation ===")
@@ -58,7 +61,10 @@ def test_paralog_functions():
 
     dosage_result = tox_detect_dosage_effect(
         ancestor=ancestor,
-        paralogs=paralogs,
+        genes=paralogs,
+        sorted_gene_to_fam_perm=sorted_gene_to_fam_perm,
+        perm_first_paralog_idx=perm_first_paralog_idx,
+        n_paralogs=n_paralogs,
         filtered_paralogs_mask=dosage_mask,
         max_subset_size=n_paralogs,
         gain_gamma=0.1,
@@ -74,7 +80,10 @@ def test_paralog_functions():
 
     subfunc_result = tox_detect_subfunctionalization(
         ancestor=ancestor,
-        paralogs=paralogs,
+        genes=paralogs,
+        sorted_gene_to_fam_perm=sorted_gene_to_fam_perm,
+        perm_first_paralog_idx=perm_first_paralog_idx,
+        n_paralogs=n_paralogs,
         rdi_threshold=0.5,
         filtered_paralogs_mask=subfunc_mask,
         max_subset_size=n_paralogs,
@@ -95,13 +104,19 @@ def test_paralog_functions():
     single_mask = tox_mask_chunk_count(1)
     print("Single paralog mask chunk count:", single_mask)
 
+    print("✅ Paralog functions passed.")
+
 
 def test_detect_neofunctionalization():
     # -------------------------------
     # Case 1: Differences below threshold → all false (all zeros)
     # -------------------------------
-    ancestors = np.array([[0.5, 0.2],
-                          [0.3, 0.1]], dtype=np.float64, order="F")
+    ancestors = np.array([[5, 2],
+                          [3, 1]], dtype=np.float64, order="F")
+
+    # Normalize ancestors
+    ancestors = np.apply_along_axis(tox_normalize_unit_length, axis=0, arr=ancestors)
+
     gene_to_fam = np.array([1, 2, 1], dtype=np.int32, order="F")
     thresholds = np.array([0.05, 0.05], dtype=np.float64, order="F")
 
@@ -117,21 +132,27 @@ def test_detect_neofunctionalization():
     # -------------------------------
     # Case 2: Differences above threshold → some true (some ones)
     # -------------------------------
-    ancestors = np.array([[0.5, 0.2],
-                          [0.3, 0.1]], dtype=np.float64, order="F")
+    ancestors = np.array([[5, 2],
+                          [3, 1]], dtype=np.float64, order="F")
+
+    # Normalize ancestors
+    ancestors = np.apply_along_axis(tox_normalize_unit_length, axis=0, arr=ancestors)
+
     gene_to_fam = np.array([1, 2, 1], dtype=np.int32, order="F")
     thresholds = np.array([0.2, 0.2], dtype=np.float64, order="F")
 
     # Build genes offset by threshold * family index
     genes = np.empty((2, 3), dtype=np.float64, order="F")
     for i_gene in range(3):
-        genes[:, i_gene] = ancestors[:, gene_to_fam[i_gene] - 1] + thresholds * gene_to_fam[i_gene]
+        genes[:, i_gene] = ancestors[:, gene_to_fam[i_gene] - 1] - thresholds * gene_to_fam[i_gene]
 
     neofunc = tox_detect_neofunctionalization(ancestors, genes, gene_to_fam, thresholds)
-    expected = np.array([[0, 0],
-                         [1, 1],
-                         [0, 0]], dtype=np.int32, order="F")
+    expected = np.array([[False, False],
+                         [True, True],
+                         [False, False]], dtype=bool, order="F")
     assert np.array_equal(neofunc, expected), "Case 2 output mismatch"
+
+    print("✅ Neofunctionalization passed.")
 
 
 def main():
@@ -141,7 +162,7 @@ def main():
     print()
 
     # Run the tests
-    # test_paralog_functions()
+    test_paralog_functions()
     test_detect_neofunctionalization()
 
 

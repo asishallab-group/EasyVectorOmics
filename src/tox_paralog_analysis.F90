@@ -668,7 +668,7 @@ contains
         integer(int32), intent(in) :: n_mask_chunks
             !! number of 32 bit chunks a mask needs to encode `n_genes` genes
         real(real64), dimension(n_genes), intent(in) :: gene_angles
-            !! vector, holding the angles between ancestor and genes
+            !! vector, holding the angles between ancestor and genes (0<=angle<=Pi)
         real(real64), intent(in) :: threshold
             !! filter threshold
         integer(int32), dimension(n_genes), intent(in) :: sorted_gene_to_fam_perm
@@ -699,7 +699,7 @@ contains
         integer(int32), intent(in) :: n_mask_chunks
             !! number of 32 bit chunks a mask needs to encode `n_genes` genes
         real(real64), dimension(n_genes), intent(in) :: gene_angles
-            !! vector, holding the angles between ancestor and genes
+            !! vector, holding the angles between ancestor and genes (0<=angle<=Pi)
         real(real64), intent(in) :: threshold
             !! filter threshold
         integer(int32), dimension(n_genes), intent(in) :: sorted_gene_to_fam_perm
@@ -724,6 +724,8 @@ contains
 
     !> This subroutine prefilters the genes for a specific pattern to reduce detection overhead, as less subsets need to be tried.
     pure subroutine filter_paralogs_by_pattern(pattern, gene_angles, threshold, n_genes, sorted_gene_to_fam_perm, perm_first_paralog_idx, n_paralogs, mask, n_mask_chunks, ierr)
+        use f42_utils, only: PI
+
         integer(int32), intent(in) :: n_genes
             !! number of genes
         integer(int32), intent(in) :: n_mask_chunks
@@ -749,7 +751,7 @@ contains
         integer(int32), intent(in) :: n_paralogs
             !! number of paralogs for `ancestor`, thus `perm_first_paralog_idx + n_paralogs - 1` is the last member index
         real(real64), dimension(n_genes), intent(in) :: gene_angles
-            !! vector, holding the angles between ancestor and genes
+            !! vector, holding the angles between ancestor and genes (0<=angle<=Pi)
         real(real64), intent(in) :: threshold
             !! filter threshold
         integer(int32), dimension(n_mask_chunks), intent(out) :: mask
@@ -764,7 +766,7 @@ contains
         call validate_dimension_size(n_genes, ierr)
         call validate_dimension_size(n_mask_chunks, ierr)
         call validate_in_range_real(threshold, ierr)
-        call validate_all_in_range_real(gene_angles, n_genes, ierr)
+        call validate_all_in_range_real(gene_angles, n_genes, ierr, min=0.0_real64, max=PI)
         call validate_all_in_range_int(sorted_gene_to_fam_perm, n_genes, ierr, min=1_int32, max=n_genes)
         call validate_in_range_int(perm_first_paralog_idx, ierr, min=1_int32, max=n_genes)
         call validate_in_range_int(n_paralogs, ierr, min=1_int32, max=n_genes)
@@ -1175,7 +1177,7 @@ pure subroutine filter_paralogs_by_pattern_subfunctionalization_c(gene_angles, t
     integer(c_int), intent(in), target :: n_mask_chunks
         !! number of 32 bit chunks a mask needs to encode `n_genes` genes
     real(c_double), dimension(n_genes), intent(in), target :: gene_angles
-        !! vector, holding the angles between ancestor and genes
+        !! vector, holding the angles between ancestor and genes (0<=angle<=Pi)
     real(c_double), intent(in), target :: threshold
         !! filter threshold
     integer(c_int), dimension(n_genes), intent(in), target :: sorted_gene_to_fam_perm
@@ -1220,7 +1222,7 @@ pure subroutine filter_paralogs_by_pattern_dosage_effect_c(gene_angles, threshol
     integer(c_int), intent(in), target :: n_mask_chunks
         !! number of 32 bit chunks a mask needs to encode `n_genes` genes
     real(c_double), dimension(n_genes), intent(in), target :: gene_angles
-        !! vector, holding the angles between ancestor and genes
+        !! vector, holding the angles between ancestor and genes (0<=angle<=Pi)
     real(c_double), intent(in), target :: threshold
         !! filter threshold
     integer(c_int), dimension(n_genes), intent(in), target :: sorted_gene_to_fam_perm
