@@ -1979,364 +1979,6 @@ def tox_mean_vector(expression_vectors, gene_indices):
     return centroid_col
 
 
-def tox_mask_check_state(bit_mask, i_paralog):
-    """
-    Check the state of a specific paralog in a bit mask.
-
-    Args:
-        bit_mask (array-like): Integer array representing the bit mask (chunks of 32 bits).
-        i_paralog (int): Index of the paralog to check.
-
-    Returns:
-        bool  # indicating inactive or active
-    """
-    bit_mask = np.ascontiguousarray(bit_mask, dtype=np.int32)
-    n_mask_chunks = ctypes.c_int(len(bit_mask))
-    i_paralog = ctypes.c_int(i_paralog)
-    state = ctypes.c_int(0)
-    ierr = ctypes.c_int(0)
-
-    # Setup C wrapper
-    mask_check_state_c = lib.mask_check_state_c
-    mask_check_state_c.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # bit_mask
-        ctypes.POINTER(ctypes.c_int),  # n_mask_chunks
-        ctypes.POINTER(ctypes.c_int),  # i_paralog
-        ctypes.POINTER(ctypes.c_int),  # state
-        ctypes.POINTER(ctypes.c_int)   # ierr
-    ]
-    mask_check_state_c.restype = None
-
-    # Call Fortran routine
-    mask_check_state_c(bit_mask, ctypes.byref(n_mask_chunks), ctypes.byref(i_paralog), ctypes.byref(state), ctypes.byref(ierr))
-    check_err_code(ierr.value)
-
-    return bool(state.value)
-
-
-def tox_mask_chunk_count(n_paralogs):
-    """
-    Compute the number of 32-bit chunks needed to encode a given number of paralogs.
-
-    Args:
-        n_paralogs (int): Number of paralogs to encode.
-
-    Returns:
-        int  # Number of 32-bit chunks required
-    """
-    n_paralogs = ctypes.c_int(n_paralogs)
-    count = ctypes.c_int(0)
-    ierr = ctypes.c_int(0)
-
-    # Setup C wrapper
-    mask_chunk_count_c = lib.mask_chunk_count_c
-    mask_chunk_count_c.argtypes = [
-        ctypes.POINTER(ctypes.c_int),                  # n_paralogs
-        ctypes.POINTER(ctypes.c_int), # count
-        ctypes.POINTER(ctypes.c_int)  # ierr
-    ]
-    mask_chunk_count_c.restype = None
-
-    # Call Fortran routine
-    mask_chunk_count_c(ctypes.byref(n_paralogs), ctypes.byref(count), ctypes.byref(ierr))
-    check_err_code(ierr.value)
-
-    return count.value
-
-
-def tox_calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, filtered_paralogs_mask):
-    """
-    Calculate the required work array size for paralog subset analysis.
-
-    Args:
-        max_subset_size (int): Maximum subset size (may be adjusted by the routine).
-        n_paralogs (int): Total number of paralogs.
-        filtered_paralogs_mask (array-like): Integer bit mask (chunks of 32 bits) marking filtered paralogs.
-
-    Returns:
-        dict: A dictionary containing:
-            {
-                'actual_max_subset_size': int,     # Possibly updated max subset size
-                'work_array_size': int      # Required size of the work array
-            }
-    """
-    filtered_paralogs_mask = np.ascontiguousarray(filtered_paralogs_mask, dtype=np.int32)
-    n_mask_chunks = ctypes.c_int(len(filtered_paralogs_mask))
-    n_paralogs = ctypes.c_int(n_paralogs)
-    max_subset_size_c = ctypes.c_int(max_subset_size)
-    work_array_size = ctypes.c_int(0)
-    ierr = ctypes.c_int(0)
-
-    # Setup C wrapper
-    calc_work_arr_size_c = lib.calc_work_arr_paralog_subsets_size
-    calc_work_arr_size_c.argtypes = [
-        ctypes.POINTER(ctypes.c_int),  # max_subset_size (inout)
-        ctypes.POINTER(ctypes.c_int),                  # n_paralogs
-        ctypes.POINTER(ctypes.c_int),  # work_array_size (out)
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # filtered_paralogs_mask
-        ctypes.POINTER(ctypes.c_int),                  # n_mask_chunks
-        ctypes.POINTER(ctypes.c_int)   # ierr
-    ]
-    calc_work_arr_size_c.restype = None
-
-    # Call Fortran routine
-    calc_work_arr_size_c(ctypes.byref(max_subset_size_c), ctypes.byref(n_paralogs),
-                         ctypes.byref(work_array_size), filtered_paralogs_mask,
-                         ctypes.byref(n_mask_chunks), ctypes.byref(ierr))
-    check_err_code(ierr.value)
-
-    return {
-        'actual_max_subset_size': max_subset_size_c.value,
-        'work_array_size': work_array_size.value
-    }
-
-
-def tox_filter_paralogs_by_pattern_dosage_effect(paralog_angles, threshold):
-    """
-    Filter paralogs based on dosage effect pattern using angle threshold.
-
-    Args:
-        paralog_angles (array-like): Sorted angles between ancestor and paralogs (length = n_paralogs).
-        threshold (float): Filtering threshold for angle comparison.
-
-    Returns:
-        np.ndarray  # Integer bit mask (chunks of 32 bits) with 1 for kept paralogs, 0 otherwise
-    """
-    paralog_angles = np.ascontiguousarray(paralog_angles, dtype=np.float64)
-    n_paralogs = ctypes.c_int(len(paralog_angles))
-    threshold = ctypes.c_double(threshold)
-
-    # Compute number of 32-bit chunks needed
-    n_mask_chunks = (len(paralog_angles) + 31) // 32
-    n_mask_chunks_c = ctypes.c_int(n_mask_chunks)
-
-    mask = np.zeros(n_mask_chunks, dtype=np.int32)
-    ierr = ctypes.c_int(0)
-
-    # Setup C wrapper
-    filter_dosage_effect_c = lib.filter_paralogs_by_pattern_dosage_effect
-    filter_dosage_effect_c.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # paralog_angles
-        ctypes.POINTER(ctypes.c_double),                                                 # threshold
-        ctypes.POINTER(ctypes.c_int),                                                    # n_paralogs
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),   # mask
-        ctypes.POINTER(ctypes.c_int),                                                    # n_mask_chunks
-        ctypes.POINTER(ctypes.c_int)                                     # ierr
-    ]
-    filter_dosage_effect_c.restype = None
-
-    # Call Fortran routine
-    filter_dosage_effect_c(paralog_angles, ctypes.byref(threshold), ctypes.byref(n_paralogs),
-                           mask, ctypes.byref(n_mask_chunks_c), ctypes.byref(ierr))
-    check_err_code(ierr.value)
-
-    return mask
-
-
-def tox_filter_paralogs_by_pattern_subfunctionalization(paralog_angles, threshold):
-    """
-    Filter paralogs based on subfunctionalization pattern using angle threshold.
-
-    Args:
-        paralog_angles (array-like): Sorted angles between ancestor and paralogs (length = n_paralogs).
-        threshold (float): Filtering threshold for angle comparison.
-
-    Returns:
-        np.ndarray  # Integer bit mask (chunks of 32 bits) with 1 for kept paralogs, 0 otherwise
-    """
-    paralog_angles = np.ascontiguousarray(paralog_angles, dtype=np.float64)
-    n_paralogs = ctypes.c_int(len(paralog_angles))
-    threshold = ctypes.c_double(threshold)
-
-    # Compute number of 32-bit chunks needed
-    n_mask_chunks = (len(paralog_angles) + 31) // 32
-    n_mask_chunks_c = ctypes.c_int(n_mask_chunks)
-
-    mask = np.zeros(n_mask_chunks, dtype=np.int32)
-    ierr = ctypes.c_int(0)
-
-    # Setup C wrapper
-    filter_subfunctionalization_c = lib.filter_paralogs_by_pattern_subfunctionalization_c
-    filter_subfunctionalization_c.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # paralog_angles
-        ctypes.POINTER(ctypes.c_double),                                                 # threshold
-        ctypes.POINTER(ctypes.c_int),                                                    # n_paralogs
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),   # mask
-        ctypes.POINTER(ctypes.c_int),                                                    # n_mask_chunks
-        ctypes.POINTER(ctypes.c_int)                                     # ierr
-    ]
-    filter_subfunctionalization_c.restype = None
-
-    # Call Fortran routine
-    filter_subfunctionalization_c(paralog_angles, ctypes.byref(threshold), ctypes.byref(n_paralogs),
-                                  mask, ctypes.byref(n_mask_chunks_c), ctypes.byref(ierr))
-    check_err_code(ierr.value)
-
-    return mask
-
-
-def tox_detect_subfunctionalization(ancestor, paralogs, rdi_threshold, filtered_paralogs_mask,
-                                    max_subset_size, paralog_norms, sorted_paralog_norms_perm):
-    """
-    Detect subfunctionalization patterns among paralogs based on residual distance and pruning heuristics.
-
-    Args:
-        ancestor (array-like): Expression vector of the ancestral ortholog (length = n_dims).
-        paralogs (array-like): 2D array of paralog expression vectors (shape = [n_dims, n_paralogs]).
-        rdi_threshold (float): Maximum allowed residual distance from ancestor.
-        filtered_paralogs_mask (array-like): Integer bit mask (chunks of 32 bits) marking filtered paralogs.
-        paralog_norms (array-like): Euclidean norms of paralogs (length = n_paralogs).
-        sorted_paralog_norms_perm (array-like): Permutation indices for sorted paralog norms (length = n_paralogs).
-
-    Returns:
-        dict: A dictionary containing:
-            {
-                'n_results': int,
-                'results': np.ndarray
-            }
-    """
-    # Prepare inputs
-    ancestor = np.asfortranarray(ancestor, dtype=np.float64)
-    paralogs = np.asfortranarray(paralogs, dtype=np.float64)
-    paralog_norms = np.ascontiguousarray(paralog_norms, dtype=np.float64)
-    sorted_paralog_norms_perm = np.ascontiguousarray(sorted_paralog_norms_perm, dtype=np.int32)
-    filtered_paralogs_mask = np.ascontiguousarray(filtered_paralogs_mask, dtype=np.int32)
-
-    n_dims = ctypes.c_int(ancestor.shape[0])
-    n_paralogs = ctypes.c_int(paralogs.shape[1])
-    n_mask_chunks = ctypes.c_int(len(filtered_paralogs_mask))
-    rdi_threshold = ctypes.c_double(rdi_threshold)
-    ierr = ctypes.c_int(0)
-
-    work_array_size_data = tox_calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs.value, filtered_paralogs_mask)
-    max_subset_size = ctypes.c_int(work_array_size_data["actual_max_subset_size"])
-    work_array_size = ctypes.c_int(work_array_size_data["work_array_size"])
-
-    # Step 2: Allocate output arrays
-    work_arr_paralog_subsets = np.zeros((n_mask_chunks.value, work_array_size.value), dtype=np.int32, order='F')
-    active_mask = np.zeros(n_mask_chunks.value, dtype=np.int32)
-    temp_paralog_vector = np.zeros(n_dims.value, dtype=np.float64)
-    temp_work_array = np.zeros(n_paralogs.value, dtype=np.float64)
-    n_results = ctypes.c_int(0)
-
-    # Step 3: Setup and call detect_subfunctionalization_c
-    detect_subfunc_c = lib.detect_subfunctionalization_c
-    detect_subfunc_c.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # ancestor
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # paralogs
-        ctypes.POINTER(ctypes.c_int),  # n_paralogs
-        ctypes.POINTER(ctypes.c_int),  # n_dims
-        ctypes.POINTER(ctypes.c_double),  # rdi_threshold
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # filtered_paralogs_mask
-        ctypes.POINTER(ctypes.c_int),  # n_mask_chunks
-        ctypes.POINTER(ctypes.c_int),  # n_results
-        ctypes.POINTER(ctypes.c_int),  # max_subset_size
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),  # work_arr_paralog_subsets
-        ctypes.POINTER(ctypes.c_int),  # n_paralog_subsets
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # active_mask
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # temp_paralog_vector
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # paralog_norms
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # sorted_paralog_norms_perm
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # temp_work_array
-        ctypes.POINTER(ctypes.c_int)  # ierr
-    ]
-    detect_subfunc_c.restype = None
-
-    detect_subfunc_c(ancestor, paralogs, ctypes.byref(n_paralogs), ctypes.byref(n_dims), ctypes.byref(rdi_threshold),
-                     filtered_paralogs_mask, ctypes.byref(n_mask_chunks), ctypes.byref(n_results),
-                     ctypes.byref(max_subset_size), work_arr_paralog_subsets, ctypes.byref(work_array_size),
-                     active_mask, temp_paralog_vector, paralog_norms,
-                     sorted_paralog_norms_perm, temp_work_array, ctypes.byref(ierr))
-    check_err_code(ierr.value)
-
-    results = work_arr_paralog_subsets[:, :n_results.value].copy()
-    _readonly(results)
-    return {
-        "n_results": n_results.value,
-        "results": results
-    }
-
-
-def tox_detect_dosage_effect(ancestor, paralogs, filtered_paralogs_mask, max_subset_size, gain_gamma=0.1, max_angle=np.pi):
-    """
-    Detect dosage effect patterns among paralogs based on gain and angle thresholds.
-
-    Args:
-        ancestor (array-like): Expression vector of the ancestral ortholog (length = n_dims).
-        paralogs (array-like): 2D array of paralog expression vectors (shape = [n_dims, n_paralogs]).
-        filtered_paralogs_mask (array-like): Integer bit mask (chunks of 32 bits) marking filtered paralogs.
-        gain_gamma (float): Required magnitude gain for dosage effect (default: 0.1).
-        max_angle (float): Maximum angle in radians allowed for subset candidates (default: π).
-
-    Returns:
-        dict: A dictionary containing:
-            {
-                'n_results': int,
-                'results': np.ndarray
-            }
-    """
-    # Prepare inputs
-    ancestor = np.asfortranarray(ancestor, dtype=np.float64)
-    paralogs = np.asfortranarray(paralogs, dtype=np.float64)
-    filtered_paralogs_mask = np.ascontiguousarray(filtered_paralogs_mask, dtype=np.int32)
-
-    n_dims = ctypes.c_int(ancestor.shape[0])
-    n_paralogs = ctypes.c_int(paralogs.shape[1])
-    n_mask_chunks = ctypes.c_int(len(filtered_paralogs_mask))
-    ierr = ctypes.c_int(0)
-    max_angle = ctypes.c_double(max_angle)
-    gain_gamma = ctypes.c_double(gain_gamma)
-
-    # Step 1: Calculate max_subset_size and n_paralog_subsets
-    work_array_size_data = tox_calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs.value, filtered_paralogs_mask)
-    max_subset_size = ctypes.c_int(work_array_size_data["actual_max_subset_size"])
-    work_array_size = ctypes.c_int(work_array_size_data["work_array_size"])
-
-    check_err_code(ierr.value)
-
-    # Step 2: Allocate output arrays
-    work_arr_paralog_subsets = np.zeros((n_mask_chunks.value, work_array_size.value), dtype=np.int32, order='F')
-    active_mask = np.zeros(n_mask_chunks.value, dtype=np.int32)
-    temp_paralog_vector = np.zeros(n_dims.value, dtype=np.float64)
-    n_results = ctypes.c_int(0)
-
-    # Step 3: Setup and call detect_dosage_effect_c
-    detect_dosage_effect_c = lib.detect_dosage_effect_c
-    detect_dosage_effect_c.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # ancestor
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # paralogs
-        ctypes.POINTER(ctypes.c_int),  # n_paralogs
-        ctypes.POINTER(ctypes.c_int),  # n_dims
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # filtered_paralogs_mask
-        ctypes.POINTER(ctypes.c_int),  # n_mask_chunks
-        ctypes.POINTER(ctypes.c_int),  # n_results
-        ctypes.POINTER(ctypes.c_int),  # max_subset_size
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),  # work_arr_paralog_subsets
-        ctypes.POINTER(ctypes.c_int),  # n_paralog_subsets
-        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # active_mask
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # temp_paralog_vector
-        ctypes.POINTER(ctypes.c_int),  # ierr
-        ctypes.POINTER(ctypes.c_double),  # max_angle
-        ctypes.POINTER(ctypes.c_double)   # gain_gamma
-    ]
-    detect_dosage_effect_c.restype = None
-
-    detect_dosage_effect_c(ancestor, paralogs, ctypes.byref(n_paralogs), ctypes.byref(n_dims),
-                           filtered_paralogs_mask, ctypes.byref(n_mask_chunks),
-                           ctypes.byref(n_results), ctypes.byref(max_subset_size),
-                           work_arr_paralog_subsets, ctypes.byref(work_array_size),
-                           active_mask, temp_paralog_vector,
-                           ctypes.byref(ierr), ctypes.byref(max_angle), ctypes.byref(gain_gamma))
-    check_err_code(ierr.value)
-
-    results = work_arr_paralog_subsets[:, :n_results.value].copy()
-    _readonly(results)
-    return {
-        "n_results": n_results.value,
-        "results": results
-    }
-
-
 def calc_spike_thresholds_expert(spike_contribs: np.ndarray, percentile_val: float, permutation: np.ndarray) -> np.ndarray:
     """
     Calculate empirical thresholds for spike contributions using pre-sorted permutations
@@ -3203,3 +2845,58 @@ def tox_normalize_unit_length(vector):
 
     _readonly(vector)
     return vector
+
+
+def tox_detect_neofunctionalization(ancestors, genes, gene_to_fam, thresholds):
+    """
+    Identify neofunctionalization for genes by checking whether the difference
+    of expression to its ancestor exceeds the threshold for each axis.
+
+    Args:
+        ancestors (np.ndarray): 2D array of shape (n_axes, n_families).
+        genes (np.ndarray): 2D array of shape (n_axes, n_genes).
+        gene_to_fam (np.ndarray): 1D integer array of length n_genes mapping gene index to family index.
+        thresholds (np.ndarray): 1D array of shape (n_axes,) with per-axis thresholds.
+
+    Returns:
+        np.ndarray: Integer array of shape (n_genes, n_axes) with 0/1 values
+                    (non-zero interpreted as True).
+    """
+
+    # Ensure contiguous arrays with correct dtypes
+    ancestors = np.asfortranarray(ancestors, dtype=np.float64)
+    genes = np.asfortranarray(genes, dtype=np.float64)
+    gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
+    thresholds = np.ascontiguousarray(thresholds, dtype=np.float64)
+
+    n_axes = ctypes.c_int(ancestors.shape[0])
+    n_families = ctypes.c_int(ancestors.shape[1])
+    n_genes = ctypes.c_int(genes.shape[1])
+
+    # Allocate output as int32 (Fortran logical mapped to c_int)
+    neofunc = np.empty((n_genes.value, n_axes.value), dtype=np.int32, order="F")
+    ierr = ctypes.c_int(0)
+
+    # Setup C wrapper
+    detect_neofunc_c = lib.detect_neofunctionalization_c
+    detect_neofunc_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # ancestors
+        ctypes.POINTER(ctypes.c_int),                                    # n_families
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # genes
+        ctypes.POINTER(ctypes.c_int),                                    # n_axes
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # gene_to_fam
+        ctypes.POINTER(ctypes.c_int),                                    # n_genes
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # thresholds
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),    # neofunc
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
+    ]
+    detect_neofunc_c.restype = None
+
+    # Call Fortran routine
+    detect_neofunc_c(ancestors, ctypes.byref(n_families), genes, ctypes.byref(n_axes),
+                     gene_to_fam, ctypes.byref(n_genes), thresholds, neofunc, ctypes.byref(ierr))
+    check_err_code(ierr.value)
+
+    _readonly(neofunc)
+
+    return neofunc

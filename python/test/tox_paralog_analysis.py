@@ -12,8 +12,10 @@ from tensoromics_functions import (
     tox_calc_work_arr_paralog_subsets_size,
     tox_detect_dosage_effect,
     tox_detect_subfunctionalization,
-    tox_mask_chunk_count
+    tox_mask_chunk_count,
+    tox_detect_neofunctionalization
 )
+
 
 def test_paralog_functions():
     print("=== Testing Mask Logic ===")
@@ -94,5 +96,54 @@ def test_paralog_functions():
     print("Single paralog mask chunk count:", single_mask)
 
 
-# Run the test
-test_paralog_functions()
+def test_detect_neofunctionalization():
+    # -------------------------------
+    # Case 1: Differences below threshold → all false (all zeros)
+    # -------------------------------
+    ancestors = np.array([[0.5, 0.2],
+                          [0.3, 0.1]], dtype=np.float64, order="F")
+    gene_to_fam = np.array([1, 2, 1], dtype=np.int32, order="F")
+    thresholds = np.array([0.05, 0.05], dtype=np.float64, order="F")
+
+    # Build genes identical to ancestors for each gene's family
+    genes = np.empty((2, 3), dtype=np.float64, order="F")
+    for i_gene in range(3):
+        genes[:, i_gene] = ancestors[:, gene_to_fam[i_gene] - 1]  # adjust index for Python 0-based
+
+    neofunc = tox_detect_neofunctionalization(ancestors, genes, gene_to_fam, thresholds)
+    expected = np.zeros((3, 2), dtype=np.int32, order="F")
+    assert np.array_equal(neofunc, expected), "Case 1 output mismatch"
+
+    # -------------------------------
+    # Case 2: Differences above threshold → some true (some ones)
+    # -------------------------------
+    ancestors = np.array([[0.5, 0.2],
+                          [0.3, 0.1]], dtype=np.float64, order="F")
+    gene_to_fam = np.array([1, 2, 1], dtype=np.int32, order="F")
+    thresholds = np.array([0.2, 0.2], dtype=np.float64, order="F")
+
+    # Build genes offset by threshold * family index
+    genes = np.empty((2, 3), dtype=np.float64, order="F")
+    for i_gene in range(3):
+        genes[:, i_gene] = ancestors[:, gene_to_fam[i_gene] - 1] + thresholds * gene_to_fam[i_gene]
+
+    neofunc = tox_detect_neofunctionalization(ancestors, genes, gene_to_fam, thresholds)
+    expected = np.array([[0, 0],
+                         [1, 1],
+                         [0, 0]], dtype=np.int32, order="F")
+    assert np.array_equal(neofunc, expected), "Case 2 output mismatch"
+
+
+def main():
+    print("=================================================")
+    print("    TOX PARALOG ANALYSIS PYTHON INTERFACE TESTS")
+    print("=================================================")
+    print()
+
+    # Run the tests
+    # test_paralog_functions()
+    test_detect_neofunctionalization()
+
+
+if __name__ == '__main__':
+    main()

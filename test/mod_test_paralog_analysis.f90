@@ -24,7 +24,7 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(19)
+        type(test_case) :: all_tests(20)
 
         all_tests(1) = test_case("test_tox_paralog_analysis_mask_set_state", test_mask_set_state)
         all_tests(2) = test_case("test_tox_paralog_analysis_mask_check_state", test_mask_check_state)
@@ -43,9 +43,53 @@ contains
         all_tests(15) = test_case("test_tox_paralog_analysis_detect_patterns_dosage_effect_near_angle_margin", test_detect_patterns_dosage_effect_near_angle_margin)
         all_tests(16) = test_case("test_tox_paralog_analysis_detect_patterns_mixed_results", test_detect_patterns_mixed_results)
         all_tests(17) = test_case("test_tox_paralog_analysis_detect_patterns_subfunc_floating_point_epsilon", test_detect_patterns_subfunc_floating_point_epsilon)
-        all_tests(18) = test_case("test_tox_paralog_analysis_detect_patterns_input_validation", test_detect_patterns_input_validation)
-        all_tests(19) = test_case("test_tox_paralog_analysis_detect_neofunctionalization_input_validation", test_detect_neofunctionalization_input_validation)
+        all_tests(18) = test_case("test_tox_paralog_analysis_detect_neofunctionalization", test_detect_neofunctionalization)
+        all_tests(19) = test_case("test_tox_paralog_analysis_detect_patterns_input_validation", test_detect_patterns_input_validation)
+        all_tests(20) = test_case("test_tox_paralog_analysis_detect_neofunctionalization_input_validation", test_detect_neofunctionalization_input_validation)
     end function get_all_tests
+
+    subroutine test_detect_neofunctionalization()
+        integer(int32), parameter :: n_axes = 2, n_families = 2, n_genes = 3
+        integer(int32) :: ierr
+        real(real64) :: ancestors(n_axes, n_families)
+        real(real64) :: genes(n_axes, n_genes)
+        integer(int32) :: gene_to_fam(n_genes)
+        real(real64) :: thresholds(n_axes)
+        logical :: neofunc(n_genes, n_axes)
+        logical :: expected(n_genes, n_axes)
+        integer(int32) :: i_gene
+
+        ! -------------------------------
+        ! Case 1: Differences below threshold → all false
+        ! -------------------------------
+        ancestors = reshape([0.5_real64, 0.2_real64, 0.3_real64, 0.1_real64], [n_axes, n_families])
+        gene_to_fam = [1, 2, 1]
+        thresholds = [0.05_real64, 0.05_real64]
+        do i_gene = 1, n_genes
+            genes(:, i_gene) = ancestors(:, gene_to_fam(i_gene))
+        end do
+        expected = .false.
+
+        call detect_neofunctionalization(ancestors, n_families, genes, n_axes, gene_to_fam, n_genes, thresholds, neofunc, ierr)
+        call assert_equal_int(ierr, ERR_OK, "Case 1 ierr")
+        call assert_equal_array_logical(neofunc, expected, n_genes*n_axes, "test_detect_neofunctionalization: Case 1 output")
+
+        ! -------------------------------
+        ! Case 2: Differences above threshold → some true
+        ! -------------------------------
+        ancestors = reshape([0.5_real64, 0.2_real64, 0.3_real64, 0.1_real64], [n_axes, n_families])
+        gene_to_fam = [1, 2, 1]
+        thresholds = [0.2_real64, 0.2_real64]
+        do i_gene = 1, n_genes
+            genes(:, i_gene) = ancestors(:, gene_to_fam(i_gene)) + thresholds * gene_to_fam(i_gene)
+        end do
+
+        expected = reshape([.false., .true., .false., .false., .true., .false.], [n_genes, n_axes])
+
+        call detect_neofunctionalization(ancestors, n_families, genes, n_axes, gene_to_fam, n_genes, thresholds, neofunc, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_detect_neofunctionalization: Case 2 ierr")
+        call assert_equal_array_logical(neofunc, expected, n_genes*n_axes, "test_detect_neofunctionalization: Case 2 output")
+    end subroutine test_detect_neofunctionalization
 
     subroutine test_detect_neofunctionalization_input_validation()
         use ieee_arithmetic, only: ieee_value, ieee_quiet_nan, ieee_positive_inf
