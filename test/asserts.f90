@@ -72,7 +72,7 @@ contains
     logical, intent(in) :: a(n), b(n)
     integer(int32), intent(in) :: n
     character(*), intent(in) :: msg
-    if (any(a /= b)) then
+    if (any(a .neqv. b)) then
       write(error_unit,*) "ASSERTION FAILED: ", trim(msg), &
            " (logical arrays differ)"
       stop 1
