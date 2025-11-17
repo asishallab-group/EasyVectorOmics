@@ -2647,12 +2647,12 @@ def tox_process_trajectories(trajectories, factor_mask, dependent_idx, mode, per
         raise ValueError("No factors to process after excluding dependent variable")
     
     # Prepare output arrays
-    integrated_contribs = np.zeros((n_samples, n_processed), dtype=np.float64, order="F")
-    spike_contribs = np.zeros((n_timepoints, n_samples, n_processed), dtype=np.float64, order="F")
-    thresholds_integrated = np.zeros(n_processed, dtype=np.float64, order='F')
-    thresholds_spike = np.zeros((n_timepoints, n_processed), dtype=np.float64, order='F')
-    outliers_integrated = np.zeros((n_samples, n_processed), dtype=np.int32, order='F')
-    outliers_spike = np.zeros((n_timepoints, n_samples, n_processed), dtype=np.int32, order='F')
+    integrated_contribs = np.empty((n_samples, n_processed), dtype=np.float64, order="F")
+    spike_contribs = np.empty((n_timepoints, n_samples, n_processed), dtype=np.float64, order="F")
+    thresholds_integrated = np.empty(n_processed, dtype=np.float64)
+    thresholds_spike = np.empty((n_timepoints, n_processed), dtype=np.float64, order='F')
+    outliers_integrated = np.empty((n_samples, n_processed), dtype=np.int32, order='F')
+    outliers_spike = np.empty((n_timepoints, n_samples, n_processed), dtype=np.int32, order='F')
     
     ierr = ctypes.c_int(0)
 
@@ -2669,7 +2669,7 @@ def tox_process_trajectories(trajectories, factor_mask, dependent_idx, mode, per
         ctypes.POINTER(ctypes.c_double),                                  # percentile
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # integrated_contribs
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # spike_contribs
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # thresholds_integrated
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),   # thresholds_integrated
         np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),     # outliers_integrated
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # thresholds_spike
         np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),     # outliers_spike
@@ -2812,4 +2812,139 @@ def tox_process_trajectories_flat(trajectories, factor_mask, dependent_idx, mode
         "thresholds_spike": thresholds_spike,
         "outliers_integrated": outliers_integrated_bool,
         "outliers_spike": outliers_spike_bool
+    }
+
+
+def tox_k_means_clustering(data_points, centroids, max_iter):
+    """
+    Wrapper for k_means_clustering_c: performs full k-means clustering.
+
+    Args:
+        data_points (np.ndarray): 2D array of shape (n_dims, n_points)
+        centroids (np.ndarray): 2D array of shape (n_dims, n_clusters), initial centroids
+        max_iter (int): maximum number of iterations
+
+    Returns:
+        dict: {
+            "centroids": np.ndarray of shape (n_dims, n_clusters),
+            "labels": np.ndarray of shape (n_points),
+            "label_counts": np.ndarray of shape (n_clusters)
+        }
+    """
+
+    data_points = np.asfortranarray(data_points, dtype=np.float64)
+    centroids = np.asfortranarray(centroids, dtype=np.float64)
+
+    n_dims, n_points = data_points.shape
+    _, n_clusters = centroids.shape
+
+    labels = np.empty(n_points, dtype=np.int32)
+    label_counts = np.empty(n_clusters, dtype=np.int32)
+    ierr = ctypes.c_int(0)
+
+    k_means_clustering_c = lib.k_means_clustering_c
+    k_means_clustering_c.argtypes = [
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int)
+    ]
+    k_means_clustering_c.restype = None
+
+    k_means_clustering_c(
+        ctypes.byref(ctypes.c_int(n_clusters)),
+        data_points,
+        ctypes.byref(ctypes.c_int(n_points)),
+        ctypes.byref(ctypes.c_int(n_dims)),
+        centroids,
+        labels,
+        label_counts,
+        ctypes.byref(ierr),
+        ctypes.byref(ctypes.c_int(max_iter))
+    )
+    check_err_code(ierr.value)
+
+    _readonly(centroids, labels, label_counts)
+
+    return {
+        "centroids": centroids,
+        "labels": labels,
+        "label_counts": label_counts
+    }
+
+
+def tox_linkage_clustering(distances, method):
+    """
+    Wrapper for linkage_clustering_c: performs hierarchical clustering.
+
+    Args:
+        distances (np.ndarray): 2D array of shape (n_points, n_points), symmetric distance matrix
+        method (str): linkage method, one of "average", "weighted", "ward"
+
+    Returns:
+        dict: {
+            "merge_i": np.ndarray of shape (n_points - 1),
+            "merge_j": np.ndarray of shape (n_points - 1),
+            "heights": np.ndarray of shape (n_points - 1),
+            "cluster_sizes": np.ndarray of shape (n_points - 1)
+        }
+    """
+    import numpy as np
+    import ctypes
+
+    distances = np.asfortranarray(distances, dtype=np.float64)
+    n_points = distances.shape[0]
+
+    if distances.shape[1] != n_points:
+        raise ValueError("tox_linkage_clustering: distances must be square")
+
+    if method not in ("average", "weighted", "ward"):
+        raise ValueError(f"tox_linkage_clustering: invalid method '{method}'")
+
+    merge_i = np.empty(n_points - 1, dtype=np.int32)
+    merge_j = np.empty(n_points - 1, dtype=np.int32)
+    heights = np.empty(n_points - 1, dtype=np.float64)
+    cluster_sizes = np.empty(n_points - 1, dtype=np.int32)
+    ierr = ctypes.c_int(0)
+
+    linkage_clustering_c = lib.linkage_clustering_c
+    linkage_clustering_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+        ctypes.c_char_p,
+        ctypes.POINTER(ctypes.c_int)
+    ]
+    linkage_clustering_c.restype = None
+
+    linkage_clustering_c(
+        distances,
+        ctypes.byref(ctypes.c_int(n_points)),
+        merge_i,
+        merge_j,
+        heights,
+        cluster_sizes,
+        ctypes.c_char_p(method.encode("utf-8")),
+        ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+
+    _readonly(merge_i)
+    _readonly(merge_j)
+    _readonly(heights)
+    _readonly(cluster_sizes)
+
+    return {
+        "merge_i": merge_i,
+        "merge_j": merge_j,
+        "heights": heights,
+        "cluster_sizes": cluster_sizes
     }
