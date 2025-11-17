@@ -1,4 +1,5 @@
 source("r/tensoromics_functions_tox_data.R")
+source("r/tensoromics_functions.R")
 
 # ---- Example: replicate Fortran test logic in R ----
 
@@ -83,7 +84,8 @@ cat("Validating expression data...\n")
 validate_expression_data(kallisto_expr, n_genes, n_samples)
 
 ortholog_set <- rep(TRUE, n_genes)
-family_centroids <- tox_group_centroid(kallisto_expr, gene_to_fam, n_families, ortholog_set, mode='all')
+
+family_centroids <- tox_group_centroid(kallisto_expr, gene_to_fam, n_families, 'all')
 
 cat(nrow(family_centroids), "x", ncol(family_centroids), "\n")
 
@@ -91,7 +93,7 @@ cat("Validating family centroids...\n")
 validate_family_centroids(family_centroids, n_families, n_samples)
 
 res <- tox_compute_shift_vector_field(kallisto_expr, family_centroids, gene_to_fam)
-shift_vectors <- matrix(res$shift_vectors, nrow=2*n_samples, ncol=n_genes)
+shift_vectors <- matrix(res, nrow=2*n_samples, ncol=n_genes)
 
 cat("Validating shift vectors...\n")
 validate_shift_vectors(shift_vectors, kallisto_expr, family_centroids, gene_to_fam, n_samples)
