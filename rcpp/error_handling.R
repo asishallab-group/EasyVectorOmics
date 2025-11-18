@@ -44,34 +44,34 @@ check_err_code <- function(ierr) {
 ## Centralized R-side validators (kept inside rcpp/ when r/ must not be changed)
 ## Messages include specific substrings the tests may assert on.
 
-validate_numeric_matrix <- function(x, name = "matrix") {
+validate_numeric_matrix <- function(x, name = deparse(substitute(x))) {
   if (!is.matrix(x) || !is.numeric(x)) {
-    stop(sprintf("`%s` must be a numeric matrix (must be numeric).", name))
+    stop(sprintf("%s must be a numeric matrix (must be numeric).", name))
   }
-  invisible(NULL)
+  invisible(TRUE)
 }
 
-validate_integer_vector <- function(x, name = "vector", expected_length = NULL, bounds = NULL) {
-  if (!is.integer(x)) stop(sprintf("`%s` must be an integer vector.", name))
-  if (!is.null(expected_length) && length(x) != expected_length) stop(sprintf("`%s` must be of length %d.", name, expected_length))
+validate_integer_vector <- function(x, name = deparse(substitute(x)), expected_length = NULL, bounds = NULL) {
+  if (!is.integer(x)) stop(sprintf("%s must be an integer vector.", name))
+  if (!is.null(expected_length) && length(x) != expected_length) stop(sprintf("%s must be of length %d.", name, expected_length))
   if (!is.null(bounds)) {
-    if (!is.null(bounds$min) && any(x < bounds$min)) stop(sprintf("`%s` contains values < %d.", name, bounds$min))
-    if (!is.null(bounds$max) && any(x > bounds$max)) stop(sprintf("`%s` contains values > %d.", name, bounds$max))
+    if (!is.null(bounds$min) && any(x < bounds$min)) stop(sprintf("%s contains values < %d.", name, bounds$min))
+    if (!is.null(bounds$max) && any(x > bounds$max)) stop(sprintf("%s contains values > %d.", name, bounds$max))
   }
-  invisible(NULL)
+  invisible(TRUE)
 }
 
-validate_logical_vector <- function(x, name = "vector", expected_length = NULL) {
-  if (!is.logical(x)) stop(sprintf("`%s` must be a logical vector.", name))
-  if (!is.null(expected_length) && length(x) != expected_length) stop(sprintf("`%s` must be of length %d.", name, expected_length))
-  invisible(NULL)
+validate_logical_vector <- function(x, name = deparse(substitute(x)), expected_length = NULL) {
+  if (!is.logical(x)) stop(sprintf("%s must be a logical vector.", name))
+  if (!is.null(expected_length) && length(x) != expected_length) stop(sprintf("%s must be of length %d.", name, expected_length))
+  invisible(TRUE)
 }
-validate_gene_to_family <- function(gene_to_fam, n_genes, n_families, name = "gene_to_fam") {
-  if (!is.numeric(gene_to_fam) && !is.integer(gene_to_fam)) stop(sprintf("`%s` must be numeric or integer.", name))
-  if (length(gene_to_fam) != as.integer(n_genes)) stop(sprintf("Length of `%s` must equal number of genes (%d).", name, as.integer(n_genes)))
-  if (any(is.na(gene_to_fam))) stop(sprintf("`%s` contains NA values.", name))
-  if (any(gene_to_fam < 0)) stop(sprintf("`%s` indices must be >= 0 (0 = no family assignment).", name))
-  invisible(NULL)
+validate_gene_to_family <- function(gene_to_fam, n_genes, n_families, name = deparse(substitute(gene_to_fam))) {
+  if (!is.numeric(gene_to_fam) && !is.integer(gene_to_fam)) stop(sprintf("%s must be numeric or integer.", name))
+  if (length(gene_to_fam) != as.integer(n_genes)) stop(sprintf("Length of %s must equal number of genes (%d).", name, as.integer(n_genes)))
+  if (any(is.na(gene_to_fam))) stop(sprintf("%s contains NA values.", name))
+  if (any(gene_to_fam < 0)) stop(sprintf("%s indices must be >= 0 (0 = no family assignment).", name))
+  invisible(TRUE)
 }
 validate_mode <- function(mode, allowed = c('all', 'ortho')) {
   if (!mode %in% allowed) stop(sprintf("`mode` must be one of: %s.", paste(allowed, collapse = ", ")))
@@ -93,56 +93,56 @@ validate_group_centroid_inputs <- function(expression_vectors, gene_to_family, n
 validate_mean_vector_inputs <- function(expression_vectors, gene_indices) {
   validate_numeric_matrix(expression_vectors, "expression_vectors")
   n_genes <- ncol(expression_vectors)
-  if (!is.integer(gene_indices)) stop("`gene_indices` must be an integer vector of 1-based column indices.")
-  if (any(gene_indices < 1) || any(gene_indices > n_genes)) stop("`gene_indices` must contain indices between 1 and ncol(expression_vectors).")
-  invisible(NULL)
+  if (!is.integer(gene_indices)) stop("gene_indices must be an integer vector of 1-based column indices.")
+  if (any(gene_indices < 1) || any(gene_indices > n_genes)) stop("gene_indices must contain indices between 1 and ncol(expression_vectors).")
+  invisible(TRUE)
 }
 
 # Additional generic validators
-validate_numeric_vector <- function(x, name = "x") {
-  if (!is.numeric(x)) stop(sprintf("`%s` must be numeric (must be numeric).", name))
-  invisible(NULL)
+validate_numeric_vector <- function(x, name = deparse(substitute(x))) {
+  if (!is.numeric(x)) stop(sprintf("%s must be numeric", name))
+  invisible(TRUE)
 }
 
-validate_positive_integer_scalar <- function(x, name = "value") {
-  if (!is.numeric(x) || length(x) != 1 || is.na(x) || as.integer(x) < 1) stop(sprintf("`%s` must be a positive integer scalar.", name))
-  invisible(NULL)
+validate_positive_integer_scalar <- function(x, name = deparse(substitute(x))) {
+  if (!is.numeric(x) || length(x) != 1 || is.na(x) || as.integer(x) < 1) stop(sprintf("%s must be a positive integer scalar.", name))
+  invisible(TRUE)
 }
 
-validate_equal_length <- function(a, b, name_a = "a", name_b = "b") {
-  if (length(a) != length(b)) stop(sprintf("`%s` length must match length of `%s` (same length).", name_a, name_b))
-  invisible(NULL)
+validate_equal_length <- function(a, b, name_a = deparse(substitute(a)), name_b = deparse(substitute(b))) {
+  if (length(a) != length(b)) stop(sprintf("%s length must match length of %s (same length).", name_a, name_b))
+  invisible(TRUE)
 }
 
 # Ensure vector is non-empty
-validate_nonempty_vector <- function(x, name = "x") {
-  if (length(x) == 0) stop(sprintf("`%s` must not be empty (cannot be empty).", name))
-  invisible(NULL)
+validate_nonempty_vector <- function(x, name = deparse(substitute(x))) {
+  if (length(x) == 0) stop(sprintf("%s must not be empty (cannot be empty).", name))
+  invisible(TRUE)
 }
 
 # Ensure length(x) is divisible by d (used when vectors represent flattened matrices)
-validate_divisible_length <- function(x, d, name = "x") {
-  if (!is.numeric(d) || length(d) != 1 || is.na(d) || as.integer(d) < 1) stop("`d` must be a positive integer scalar.")
-  if (length(x) %% as.integer(d) != 0) stop(sprintf("Length of `%s` must be divisible by d (divisible by %d).", name, as.integer(d)))
-  invisible(NULL)
+validate_divisible_length <- function(x, d, name = deparse(substitute(x))) {
+  if (!is.numeric(d) || length(d) != 1 || is.na(d) || as.integer(d) < 1) stop("d must be a positive integer scalar.")
+  if (length(x) %% as.integer(d) != 0) stop(sprintf("Length of %s must be divisible by d (divisible by %d).", name, as.integer(d)))
+  invisible(TRUE)
 }
 
-validate_index_bounds <- function(idx, low = 1, high = Inf, name = "idx") {
-  if (!is.numeric(idx) && !is.integer(idx)) stop(sprintf("`%s` must be numeric or integer.", name))
-  if (any(idx < low, na.rm = TRUE) || any(idx > high, na.rm = TRUE)) stop(sprintf("Invalid input: `%s` indices must be between %s and %s.", name, low, ifelse(is.infinite(high), "Inf", as.character(high))))
-  invisible(NULL)
+validate_index_bounds <- function(idx, low = 1, high = Inf, name = deparse(substitute(idx))) {
+  if (!is.numeric(idx) && !is.integer(idx)) stop(sprintf("%s must be numeric or integer.", name))
+  if (any(idx < low, na.rm = TRUE) || any(idx > high, na.rm = TRUE)) stop(sprintf("Invalid input: %s indices must be between %s and %s.", name, low, ifelse(is.infinite(high), "Inf", as.character(high))))
+  invisible(TRUE)
 }
 
 
 # Validate that two matrices have the same number of rows
-validate_matching_rows <- function(A, B, name_A = "A", name_B = "B") {
-  if (!is.matrix(A) || !is.matrix(B)) stop(sprintf("`%s` and `%s` must both be matrices.", name_A, name_B))
-  if (nrow(A) != nrow(B)) stop(sprintf("Number of rows in `%s` must match number of rows in `%s`.", name_A, name_B))
-  invisible(NULL)
+validate_matching_rows <- function(A, B, name_A = deparse(substitute(A)), name_B = deparse(substitute(B))) {
+  if (!is.matrix(A) || !is.matrix(B)) stop(sprintf("%s and %s must both be matrices.", name_A, name_B))
+  if (nrow(A) != nrow(B)) stop(sprintf("Number of rows in %s must match number of rows in %s.", name_A, name_B))
+  invisible(TRUE)
 }
 
 # Validate length equals given n (used to match gene_to_fam length to number of genes)
-validate_length_equals_n <- function(x, n, name = "x") {
+validate_length_equals_n <- function(x, n, name = deparse(substitute(x))) {
   if (length(x) != as.integer(n)) stop(sprintf("Length of %s must equal number of genes.", name))
-  invisible(NULL)
+  invisible(TRUE)
 }
