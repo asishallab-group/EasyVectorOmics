@@ -322,3 +322,8 @@ TSWLatexianTemp*
 #*Notes.bib
 *.DS_Store
 */.DS_Store
+.vscode/
+
+# Ignore compiled Fortran module and object files
+**/*.mod
+**/*.o
