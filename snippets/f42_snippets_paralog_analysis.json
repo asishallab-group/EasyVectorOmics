@@ -1,12 +1,4 @@
 {
-    "Call to detect_dosage_effect": {
-        "prefix": "tox:detect_dosage_effect",
-        "body": [
-            "call detect_dosage_effect(ancestor, paralogs, n_paralogs, n_dims, filtered_paralogs_mask, n_mask_chunks, n_results, max_subset_size, work_arr_paralog_subsets, n_paralog_subsets, active_mask, temp_paralog_vector, ierr, max_angle, gain_gamma)"
-        ],
-        "description": "Detects dosage effect of subsets of paralogs"
-    },
-    
     "Call to angle_between": {
         "prefix": "f42:angle_between",
         "body": [
