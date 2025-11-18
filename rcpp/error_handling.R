@@ -70,7 +70,7 @@ validate_gene_to_family <- function(gene_to_fam, n_genes, n_families, name = dep
   if (!is.numeric(gene_to_fam) && !is.integer(gene_to_fam)) stop(sprintf("%s must be numeric or integer.", name))
   if (length(gene_to_fam) != as.integer(n_genes)) stop(sprintf("Length of %s must equal number of genes (%d).", name, as.integer(n_genes)))
   if (any(is.na(gene_to_fam))) stop(sprintf("%s contains NA values.", name))
-  if (any(gene_to_fam < 0)) stop(sprintf("%s indices must be >= 0 (0 = no family assignment).", name))
+  if (any(gene_to_fam < 0)) stop(sprintf("%s must be between 0 and %d.", name, as.integer(n_families)))
   invisible(TRUE)
 }
 validate_mode <- function(mode, allowed = c('all', 'ortho')) {

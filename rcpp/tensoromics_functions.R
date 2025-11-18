@@ -66,18 +66,13 @@ tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
 #  # Validate flattened lengths are compatible with d
   validate_divisible_length(genes, d, "genes")
   validate_divisible_length(centroids, d, "centroids")
-
-    # Calculate dimensions
+  # Calculate dimensions
   n_genes <- as.integer(length(genes) / d)
   n_families <- as.integer(length(centroids) / d)
+  validate_gene_to_family(gene_to_fam, n_genes, n_families, "gene_to_fam")
   validate_length_equals_n(gene_to_fam, n_genes, "gene_to_fam")
-  # Reject negative indices (tests expect this); allow values > n_families so Fortran
-  # can return -1 for invalid family assignments.
-  if (any(gene_to_fam < 0L)) {
-    stop("gene_to_fam indices must be between 0 and n_families (0 = no family assignment)")
-  }
-  if (any(gene_to_fam < 0)) stop(sprintf("`%s` must be between 0 and %d.", "gene_to_fam", as.integer(n_families)))
-
+  
+  
   return(tox_distance_to_centroid_rcpp(genes, centroids, gene_to_fam, d))
 }
 
