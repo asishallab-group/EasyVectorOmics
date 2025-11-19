@@ -1063,6 +1063,7 @@ for k = 2 to MAX_PARALOGS:
 This algorithm achieves robust and scalable detection of subfunctionalization and dosage patterns by systematic, bitmask-driven dynamic programming with domain-motivated pruning rules.
 
 \section{Detection of Explanatory Contributions via ``Explanatory Contribution Analysis''}
+\label{teca}
 
 The nickname we give this ``Factor–Response Trajectory Analysis'' or
 ``Trajectory Explanatory Contribution Analysis'' is
@@ -1150,5 +1151,139 @@ Urd provides an efficient and explainable framework for:
     \item Applying empirical, percentile-based thresholds to control for noise and experimental biases.
 \end{enumerate}
 The method is linear-algebraic, computationally efficient, and applicable to both univariate and multivariate factor/response settings.
+
+\subsection{Permutation Testing for TECA — p-value calculation}
+
+\subsubsection{Data and Setup}
+
+In this example, we consider an experiment with \(N = 60\) cows. For each cow \(i \in \{1,\dots,N\}\), we measure
+
+\begin{itemize}
+  \item a \emph{dependent variable} trajectory \(y_i(t)\): the rumen pH over time,
+  \item a set of \emph{factor variable} trajectories \(x_{g,i}(t)\): microbiome gene expression levels for each gene \(g \in \{1,\dots,G\}\).
+\end{itemize}
+
+Measurements are taken on \(T = 20\) days:
+\begin{itemize}
+  \item days 1--8: normal grass-based diet,
+  \item days 9--15: carbohydrate-rich diet (e.g. with maize),
+  \item days 16--20: normal diet again.
+\end{itemize}
+
+For each gene \(g\) and cow \(i\), TECA (see Section \ref{teca}) provides a numerical measure of how well the factor trajectory \(x_{g,i}(t)\) explains the dependent trajectory \(y_i(t)\). We denote this contribution by
+\[
+C_{g,i} = \mathrm{TECA}\bigl(x_{g,i}(t),\, y_i(t)\bigr),
+\]
+which can be, for example, a cosine-like similarity between the two trajectories or a sum over spike contributions.
+
+Our goal is to test, for each gene \(g\), whether the observed contributions \(C_{g,i}\) across cows are stronger than would be expected by chance if microbiome expression and rumen pH were unrelated.
+
+\subsubsection{Null Hypothesis and What to Permute}
+
+The key statistical assumption we want to test is:
+
+\begin{quote}
+\textbf{Null hypothesis \(H_0\):} There is no systematic relationship between microbiome gene expression and rumen pH across cows. Any observed alignment between \(x_{g,i}(t)\) and \(y_i(t)\) is due to chance.
+\end{quote}
+
+Under this null hypothesis, the \emph{shape} of each cow's trajectories over time should be preserved: it is plausible that each cow has a characteristic time course of microbiome activity and a characteristic time course of rumen pH. What we want to break is the specific pairing between a cow's microbiome trajectory and that same cow's pH trajectory.
+
+Therefore we:
+\begin{itemize}
+  \item \textbf{preserve} the internal time structure of all trajectories \(x_{g,i}(t)\) and \(y_i(t)\),
+  \item \textbf{preserve} the distribution of trajectories across cows,
+  \item \textbf{break} the link between factor trajectory and dependent trajectory on the cow level.
+\end{itemize}
+
+Practically, this is done by permuting the mapping between cow indices for the dependent variable and the factor trajectories. In other words, we keep the microbiome time series of each cow fixed, but we randomly reassign which rumen pH trajectory is paired with which microbiome trajectory.
+
+We do \emph{not} permute time indices within a trajectory and we do \emph{not} create artificial trajectories by mixing time points from different cows. This ensures that we test exactly the cow-level association we are interested in, without destroying the temporal patterns that TECA is designed to measure.
+
+\subsubsection{Test Statistic for Whole Trajectories}
+
+For a fixed gene \(g\), we first compute the TECA contribution for each cow \(i\),
+\[
+C_{g,i} = \mathrm{TECA}\bigl(x_{g,i}(t),\, y_i(t)\bigr).
+\]
+A simple and interpretable global statistic is the mean contribution across cows,
+\[
+T_{\mathrm{obs}}(g) = \frac{1}{N} \sum_{i=1}^{N} C_{g,i}.
+\]
+Other summaries (such as the median, the sum of absolute contributions, or a quantile) can also be used, but for concreteness we use the mean here and denote it by \(T_{\mathrm{obs}}(g)\). Large positive values of \(T_{\mathrm{obs}}(g)\) indicate that, on average, gene \(g\) shows strong alignment between its expression trajectory and the rumen pH trajectory across cows.
+
+\subsubsection{Permutation Procedure for Whole Trajectories}
+
+To estimate how large \(T_{\mathrm{obs}}(g)\) could be under the null hypothesis, we build a null distribution using permutations. Let \(B\) be the number of permutation replicates (for example \(B = 1000\)).
+
+For each permutation \(b \in \{1,\dots,B\}\), we perform the following steps:
+
+\begin{enumerate}
+  \item Draw a random permutation \(\pi_b\) of the cow indices \(\{1,\dots,N\}\).
+  \item For each cow \(i\), pair the gene trajectory \(x_{g,i}(t)\) with a \emph{shuffled} pH trajectory \(y_{\pi_b(i)}(t)\). This breaks the original cow-level link but keeps all trajectories intact.
+  \item Compute the permuted TECA contribution for each cow:
+  \[
+  C^{(b)}_{g,i} = \mathrm{TECA}\bigl(x_{g,i}(t),\, y_{\pi_b(i)}(t)\bigr).
+  \]
+  \item Summarize the permuted contributions to obtain a permuted test statistic:
+  \[
+  T^{(b)}(g) = \frac{1}{N} \sum_{i=1}^{N} C^{(b)}_{g,i}.
+  \]
+\end{enumerate}
+
+After \(B\) permutations we have a null distribution
+\[
+\{T^{(1)}(g), T^{(2)}(g), \dots, T^{(B)}(g)\}
+\]
+of the test statistic under the assumption that microbiome trajectories and pH trajectories are unrelated across cows.
+
+\subsubsection{P-Value for Whole Trajectory Contributions}
+
+If large values of \(T_{\mathrm{obs}}(g)\) indicate stronger explanatory contribution (for example, larger positive cosine similarity), the one-sided permutation p-value is
+\[
+p_g = \frac{1 + \#\{b \in \{1,\dots,B\} : T^{(b)}(g) \geq T_{\mathrm{obs}}(g)\}}{1 + B}.
+\]
+
+The numerator counts how many permuted statistics are at least as large as the observed statistic; we add 1 in both numerator and denominator as a standard finite-sample correction. A small p-value means that it would be rare to observe a contribution as strong as \(T_{\mathrm{obs}}(g)\) if there were no real association between gene \(g\)'s expression trajectories and rumen pH.
+
+\subsubsection{Permutation Testing for Spike Contributions}
+
+TECA can also be used to define \emph{spike} contributions at specific time points, for example
+\[
+S_{g,i,t} = \mathrm{SpikeTECA}\bigl(x_{g,i}(t),\, y_i(t)\bigr),
+\]
+where \(S_{g,i,t}\) is a local contribution at time point \(t\) for gene \(g\) in cow \(i\). This might be, for instance, the pointwise product of normalized trajectories or a locally normalized cosine contribution.
+
+We can test the significance of an observed spike \(S_{g,i,t}\) in a similar way. The permutation procedure is the same as before: we permute cow indices of the pH trajectories, but we do not change the time structure.
+
+For each permutation \(b \in \{1,\dots,B\}\):
+
+\begin{enumerate}
+  \item Draw a permutation \(\pi_b\) of the cow indices.
+  \item Recompute the spike for gene \(g\), cow \(i\), time \(t\) under the permuted pairing:
+  \[
+  S^{(b)}_{g,i,t} = \mathrm{SpikeTECA}\bigl(x_{g,i}(t),\, y_{\pi_b(i)}(t)\bigr).
+  \]
+\end{enumerate}
+
+This gives a null distribution \(\{S^{(1)}_{g,i,t},\dots,S^{(B)}_{g,i,t}\}\) for the spike statistic at the same gene, cow, and time point under the assumption of no association.
+
+If large positive values of \(S_{g,i,t}\) indicate strong local contribution, the spike-level p-value is
+\[
+p_{g,i,t} = \frac{1 + \#\{b \in \{1,\dots,B\} : S^{(b)}_{g,i,t} \geq S_{g,i,t}\}}{1 + B}.
+\]
+
+Again, a small p-value means that the observed spike is unlikely under the null hypothesis and may indicate a biologically meaningful event (for example a sudden microbiome expression change associated with a drop in rumen pH during the carbohydrate-rich diet phase).
+
+\subsubsection{Summary}
+
+In summary, the permutation test for TECA operates by:
+\begin{itemize}
+  \item preserving the full temporal structure of microbiome and pH trajectories within each cow,
+  \item breaking only the cow-level link between the factor (microbiome) trajectories and the dependent (pH) trajectories,
+  \item recomputing TECA-based statistics under many random reassignments,
+  \item comparing the observed statistics to this null distribution to obtain p-values.
+\end{itemize}
+
+This design ensures that the permutation test answers precisely the question of interest: whether the observed TECA contributions between microbiome gene expression and rumen pH trajectories across cows are stronger than would be expected by chance.
 
 \end{document}
