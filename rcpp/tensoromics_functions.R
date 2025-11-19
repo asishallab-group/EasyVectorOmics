@@ -184,7 +184,7 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
   # R-layer validation (kept in rcpp/)
   validate_group_centroid_inputs(as.matrix(expression_vectors), gene_to_family, n_families, ortholog_set, mode)
 
-  result <- tox_group_centroid_rcpp(as.matrix(expression_vectors), as.integer(gene_to_family), as.integer(n_families), as.integer(ortholog_set), as.integer(ifelse(mode == 'all', 1, 0)))
+  result <- tox_group_centroid_rcpp(as.matrix(expression_vectors), as.integer(gene_to_family), as.integer(n_families),  as.integer(ifelse(mode == 'all', 1, 0)), as.integer(ortholog_set))
   check_err_code(result$ierr)
   return(result)
 }
