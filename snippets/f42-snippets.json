@@ -124,5 +124,102 @@
                 "res$sphere_ix"
         ],
         "description": "Spherical kd tree index builder in R"
+    },
+    "Python call to build binary search tree index setup": {
+        "prefix": "f42:build_bst_index_py_setup",
+        "body":[
+            "lib.build_bst_index_C.argtypes = [",
+            "    np.ctypeslib.ndpointer(dtype=np.float64, flags='C_CONTIGUOUS'),  # values",
+            "    ctypes.c_int32,                                                  # num_values",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),                          # sorted_indices (out)",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),                          # stack_left",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),                          # stack_right",
+            "    ctypes.POINTER(ctypes.c_int)                                     # ierr",
+            "]"
+        ],
+        "description": "Python setup to build a binary search tree"
+    },
+    "Python call to build binary seach tree index":{
+        "prefix": "f42:build_bst_index_py",   
+        "body": [
+            "indices = build_bst_index(values) - 1"
+        ],
+        "description":"Build index structure for binary search tree and convert to pythons 0-based indexing"
+    },
+    "Python call to setup binary search tree range query": {
+        "prefix": "f42:bst_range_query_py_setup",
+        "body": [
+            "lib.bst_range_query_C.argtypes = [",
+            "    np.ctypeslib.ndpointer(dtype=np.float64),  # values",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),    # sorted_indices",
+            "    ctypes.c_int32,                            # num_values",
+            "    ctypes.c_double,                           # low",
+            "    ctypes.c_double,                           # high",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),    # out_indices (out)",
+            "    ctypes.POINTER(ctypes.c_int32),            # number_matches (out)",
+            "    ctypes.POINTER(ctypes.c_int)               # ierr",
+            "]"
+        ],
+        "description": "Setup binary search tree range query"
+    },
+    "Python call to bst_range_query":{
+        "prefix":"f42:bst_range_query_py",
+        "body": [
+            "res = bst_range_query(values, indicies + 1, lower_bound, upper_bound)"
+        ],
+        "description": "Get all values between the upper and  lower bound from a binary search tree structure"
+    },
+    "Python call to setup build_kd_index": {
+        "prefix": "f42:build_kd_index_py_setup",
+        "body": [
+            "lib.build_kd_index_C.argtypes = [",
+            "    np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='F_CONTIGUOUS'),  # X_flat (col-major)",
+            "    ctypes.c_int32,                                                  # d",
+            "    ctypes.c_int32,                                                  # n",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),                          # kd_ix (out)",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),                          # dim_order",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),                          # work",
+            "    np.ctypeslib.ndpointer(dtype=np.float64),                        # subarray",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),                          # perm",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),                          # stack_left",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),                          # stack_right",
+            "    ctypes.POINTER(ctypes.c_int)",
+            "]"
+        ],
+        "description":"Setup the build_kd_index function"
+    },
+    "Python call to setup build_spherical_kd": {
+        "prefix": "f42:build_spherical_kd_py_setup",
+        "body": [
+            "# build_spherical_kd uses the same setup as build_kd_index",
+            "lib.build_kd_index_C.argtypes = [",
+            "    np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='F_CONTIGUOUS'),  # X_flat (col-major)",
+            "    ctypes.c_int32,                                                  # d",
+            "    ctypes.c_int32,                                                  # n",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),                          # kd_ix (out)",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),                          # dim_order",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),                          # work",
+            "    np.ctypeslib.ndpointer(dtype=np.float64),                        # subarray",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),                          # perm",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),                          # stack_left",
+            "    np.ctypeslib.ndpointer(dtype=np.int32),                          # stack_right",
+            "    ctypes.POINTER(ctypes.c_int)",
+            "]"
+        ],
+        "description": "Setup the build_spherical_kd function (same as build_kd_index)"
+    },
+    "Python call to build_kd_index":{
+        "prefix":"f42:build_kd_index_py",
+        "body": [
+            "kd_index = build_kd_index(values) - 1"
+        ],
+        "description": "Build Kd-tree index for given values, optionally takes dimension order"
+    },
+    "Python call to build_spherical_kd": {
+        "prefix": "f42:build_spherical_kd_py",
+        "body": [
+            "indices = build_spherical_kd(vectors, dimension_order) - 1"
+        ],
+        "description": "Build spherical KD-Tree index for unit vectors and convert to 0-based indexing"
     }
 }
