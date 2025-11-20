@@ -1,6 +1,7 @@
 library(Rcpp)
 
 # Get absolute path to build directory containing the compiled Fortran library
+
 lib_path <- normalizePath("build")
 
 # Set up compilation flags for linking with Fortran library
@@ -11,8 +12,7 @@ sourceCpp("rcpp/tensoromics_functions.cpp", env = .GlobalEnv)
 
 cat("✓ TensorOmics Rcpp functions loaded successfully\n")
 
-source("r/error_handling.R")
-
+source("rcpp/error_handling.R")
 
 # ===================================================================
 # EUCLIDEAN DISTANCE FUNCTIONS
@@ -30,16 +30,11 @@ source("r/error_handling.R")
 #' 
 tox_euclidean_distance <- function(vec1, vec2) {
   # Input validation
-  if (!is.numeric(vec1) || !is.numeric(vec2)) {
-    stop("Both vectors must be numeric")
-  }
-  if (length(vec1) != length(vec2)) {
-    stop("Vectors must have the same length")
-  }
-  if (length(vec1) == 0) {
-    stop("Vectors cannot be empty")
-  }
-  
+  validate_numeric_vector(vec1, "vec1")
+  validate_numeric_vector(vec2, "vec2")
+  validate_same_length(vec1, vec2, "vec1", "vec2")
+  validate_nonempty(vec1, "vec1")
+
   # Call Rcpp wrapper 
   return(tox_euclidean_distance_rcpp(as.numeric(vec1), as.numeric(vec2)))
 }
@@ -58,41 +53,22 @@ tox_euclidean_distance <- function(vec1, vec2) {
 #' @return Numeric vector of distances from each gene to its family centroid
 #' 
 tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
-  # Input validation
-  if (!is.numeric(genes) || !is.numeric(centroids)) {
-    stop("genes and centroids must be numeric")
-  }
-  if (!is.numeric(gene_to_fam) && !is.integer(gene_to_fam)) {
-    stop("gene_to_fam must be numeric or integer")
-  }
-  if (!is.numeric(d) && !is.integer(d)) {
-    stop("d must be numeric or integer")
-  }
-  
-  # Convert to appropriate types
+  #Convert to appropriate types
   genes <- as.numeric(genes)
   centroids <- as.numeric(centroids)
   gene_to_fam <- as.integer(gene_to_fam)
   d <- as.integer(d)
-  
-  # Calculate dimensions
+
+  # Input validation
+  validate_positive_integer_scalar(d, "d")
+  validate_divisible_length(genes, d, "genes")
+  validate_divisible_length(centroids, d, "centroids")
+
   n_genes <- as.integer(length(genes) / d)
   n_families <- as.integer(length(centroids) / d)
-  
-  # Validate dimensions
-  if (length(genes) %% d != 0) {
-    stop("Length of genes must be divisible by d")
-  }
-  if (length(centroids) %% d != 0) {
-    stop("Length of centroids must be divisible by d")
-  }
-  if (length(gene_to_fam) != n_genes) {
-    stop("Length of gene_to_fam must equal number of genes")
-  }
-  if (any(gene_to_fam < 0)) {
-    stop("gene_to_fam indices must be between 0 and n_families (0 = no family assignment)")
-  }
-  
+
+  validate_gene_to_family(gene_to_fam, n_genes, n_families, "gene_to_fam")
+
   # Call Rcpp wrapper
   return(tox_distance_to_centroid_rcpp(genes, centroids, gene_to_fam, d))
 }
@@ -116,18 +92,14 @@ tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
 #'   \item{n_selected_axes}{Number of axes used in calculation}
 #' 
 tox_calculate_tissue_versatility <- function(expression_vectors, vector_selection, axis_selection) {
-  # Input validation
-  if (!is.matrix(expression_vectors)) {
-    stop("expression_vectors must be a matrix")
-  }
-  if (!is.logical(vector_selection) && !is.numeric(vector_selection)) {
-    stop("vector_selection must be logical or numeric")
-  }
-  if (!is.logical(axis_selection) && !is.numeric(axis_selection)) {
-    stop("axis_selection must be logical or numeric")
-  }
-  
-  # Convert to appropriate types for Rcpp
+  #Input validation
+  validate_numeric_matrix(expression_vectors, "expression_vectors")
+
+  # Ensure selectors have expected lengths
+  validate_logical_or_index_vector(vector_selection, expected_length = ncol(expression_vectors), name = "vector_selection")
+  validate_logical_or_index_vector(axis_selection, expected_length = nrow(expression_vectors), name = "axis_selection")
+
+  #Convert to appropriate types for Rcpp
   if (is.numeric(vector_selection)) {
     vector_selection <- as.integer(as.logical(vector_selection))
   } else {
@@ -139,15 +111,7 @@ tox_calculate_tissue_versatility <- function(expression_vectors, vector_selectio
   } else {
     axis_selection <- as.integer(axis_selection)
   }
-  
-  # Validate dimensions
-  if (length(vector_selection) != ncol(expression_vectors)) {
-    stop("vector_selection length must match number of columns in expression_vectors")
-  }
-  if (length(axis_selection) != nrow(expression_vectors)) {
-    stop("axis_selection length must match number of rows in expression_vectors")
-  }
-  
+
   # Call Rcpp wrapper
   result <- tox_calculate_tissue_versatility_rcpp(expression_vectors, vector_selection, axis_selection)
   
@@ -163,4 +127,153 @@ tox_calculate_tissue_versatility <- function(expression_vectors, vector_selectio
     n_selected_vectors = result$n_selected_vectors,
     n_selected_axes = result$n_selected_axes
   ))
+
+}
+# ===================================================================
+# NORMALIZATION FUNCTIONS
+# ===================================================================
+#' Normalize gene expression values by standard deviation
+#'
+#' This function wraps the Fortran subroutine `normalize_by_std_dev`
+#' to normalize each gene's expression across tissues by the standard deviation.
+#'
+#' @param input_matrix A numeric matrix with genes as rows and tissues as columns.
+#' @return A normalized numeric matrix with the same dimensions and names as the input.
+#' @details
+#' - The input matrix is flattened into a column-major vector.
+#' - Calls a Fortran routine that normalizes each gene across tissues.
+#' - Restores the original row and column names after normalization.
+#'
+#' @examples
+#' normalized_matrix <- tox_normalize_by_std_dev(input_matrix)
+tox_normalize_by_std_dev <- function(input_matrix) {
+  # Validate input matrix values (NA / Inf / NaN)
+  validate_numeric_matrix_values(input_matrix, "input_matrix")
+  result <- tox_normalize_by_std_dev_rcpp(input_matrix)
+  if (result$ierr != 0) {
+    check_err_code(result$ierr)
+  }
+
+  return(matrix(result$output_vector, nrow = nrow(input_matrix), ncol = ncol(input_matrix), dimnames = dimnames(input_matrix)))
+}
+
+#' Quantile normalization of gene expression values
+#'
+#' This function wraps the Fortran subroutine `quantile_normalization`
+#' to apply quantile normalization across all tissue columns.
+#'
+#' @param input_matrix A numeric matrix with genes as rows and tissues as columns.
+#' @return A quantile-normalized numeric matrix with the same dimensions and names as the input.
+#' @details
+#' - The input matrix is flattened into a column-major vector.
+#' - The Fortran subroutine sorts and aligns the distributions across tissues.
+#' - After normalization, the original row and column names are restored.
+#'
+#' @examples
+#' normalized_matrix <- tox_quantile_normalization(input_matrix)
+tox_quantile_normalization <- function(input_matrix) {
+  validate_matrix(input_matrix, "input_matrix")
+  result <- tox_quantile_normalization_rcpp(input_matrix)
+
+  if (result$ierr != 0) {
+    check_err_code(result$ierr)
+  }
+ 
+  return(matrix(result$output_vector, nrow = n_genes, ncol = n_tissues, dimnames = dimnames(input_matrix)))
+}
+
+#' Apply log2(x + 1) transformation to gene expression values
+#'
+#' This function wraps the Fortran subroutine `log2_transformation`
+#' to apply a log2(x + 1) transformation to each element in the input matrix.
+#'
+#' @param input_matrix A numeric matrix with genes as rows and tissues as columns.
+#' @return A numeric matrix with log2-transformed expression values, 
+#' preserving the same dimensions and names as the input.
+#' @details
+#' - The input matrix is flattened into a column-major vector.
+#' - The Fortran subroutine applies a log2(x+1) transformation to each value.
+#' - After transformation, the original row and column names are restored.
+#'
+#' @examples
+#' log_matrix <- tox_log2_transformation(input_matrix)
+tox_log2_transformation <- function(input_matrix) {
+  validate_matrix(input_matrix, "input_matrix")
+  result <- tox_log2_transformation_rcpp(input_matrix)
+  
+  if (result$ierr != 0) {
+    check_err_code(result$ierr)
+  }
+  
+  return(matrix(result$output_vector, nrow = n_genes, ncol = n_tissues, dimnames = dimnames(input_matrix)))
+}
+
+#' Calculate average expression across replicates for each tissue group
+#'
+#' This function wraps the Fortran subroutine `calc_tiss_avg`
+#' to compute the mean expression value for replicates grouped by tissue.
+#'
+#' @param df A data frame or matrix with genes as rows and tissue replicates as columns.
+#' @return A data frame with genes as rows and averaged tissues as columns.
+#' @details
+#' - Replicate columns are grouped based on their parsed tissue group names.
+#' - The input matrix is sorted according to groups before being processed.
+#' - Calls a Fortran subroutine that calculates averages within each group.
+#' - The result restores the original gene IDs as row names.
+#'
+#' @examples
+#' averaged_df <- tox_calculate_tissue_averages(df)
+tox_calculate_tissue_averages <- function(df) {
+  validate_matrix(as.matrix(df), "df")
+  result <- tox_calc_tiss_avg_rcpp(as.matrix(df))
+  
+  if (result$ierr != 0) {
+    check_err_code(result$ierr)
+  }
+  n_genes <- nrow(df)
+  n_cols <- length(result$output_vector) / n_genes
+  output_matrix <- matrix(result$output_vector, nrow = n_genes, ncol = n_cols)
+  return(as.data.frame(output_matrix))
+}
+
+
+#' Calculate log2 fold changes based on control and condition patterns
+#' @param df A data frame with genes as rows and tissues/conditions as columns.
+#' @param control_pattern A string pattern to detect control columns.
+#' @param condition_patterns A character vector with patterns to detect condition columns.
+tox_calculate_fc_by_patterns <- function(df, control_pattern, condition_patterns) {
+  validate_matrix(as.matrix(df), "df")
+  validate_string_scalar(control_pattern, "control_pattern")
+  validate_character_vector(condition_patterns, "condition_patterns")
+
+  result <- tox_calc_fchange_rcpp(as.matrix(df), control_pattern, condition_patterns)
+  
+  if (result$ierr != 0) {
+    check_err_code(result$ierr)
+  }
+
+  n_genes <- nrow(df)
+  n_conditions <- length(condition_patterns)
+  output_matrix <- matrix(result$output_vector, nrow = n_genes, ncol = n_conditions)
+  return(as.data.frame(output_matrix))
+}
+
+
+#' Complete normalization pipeline for gene expression data (up to log2(x+1))
+#' @param input_matrix Numeric matrix (genes x tissues)
+#' @param group_s Integer vector: start column index for each replicate group (1-based)
+#' @param group_c Integer vector: number of columns per replicate group
+tox_normalization_pipeline <- function(input_matrix, group_s, group_c) {
+  validate_matrix(input_matrix, "input_matrix")
+  group_s <- as.integer(group_s)
+  group_c <- as.integer(group_c)
+  validate_group_vectors(group_s, group_c, ncol(input_matrix))
+
+  result <- tox_normalization_pipeline_rcpp(input_matrix, group_s, group_c)
+  
+  if (result$ierr != 0) {
+    check_err_code(result$ierr)
+  }
+
+  return(matrix(result$buf_log, nrow = nrow(input_matrix), ncol = length(group_s)))
 }

@@ -1,6 +1,7 @@
 stages:
   - run-tests
   - generate-docs
+  - done
 
 image: archlinux:latest
 before_script:
@@ -49,8 +50,8 @@ run-tests:
         - test_runner.sh
       when: always
 
-    # trigger only when a MR to 'main' is created and src/ or test/ changed
-    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main"'
+    # trigger when a MR is created and src/ or test/ changed
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       changes:
         - src/**
         - test/**
@@ -95,3 +96,13 @@ generate-docs:  # generate documentation after tests have passed
 
     # add and commit changes to docs folder
     - git-push "Update generated documentation" doc
+
+done: # Final stage that will always be in a pipeline and succeeds when all other stages pass
+  stage: done
+  needs:
+    - job: run-tests
+      optional: true
+    - job: generate-docs
+      optional: true
+  script:
+    - echo "All jobs passed"
