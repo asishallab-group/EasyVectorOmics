@@ -19,39 +19,39 @@ from tensoromics_functions import (
 
 
 def test_paralog_functions():
-    print("=== Testing Mask Logic ===")
+    # Testing Mask Logic
 
     n_paralogs = 5
     i_paralog = 2
     chunk_count = tox_mask_chunk_count(n_paralogs)
-    print(f"Chunk count for {n_paralogs} paralogs: {chunk_count}")
+    assert chunk_count == 1, f"Chunk count for {n_paralogs} paralogs should be 1, got " + str(chunk_count)
 
     bit_mask = np.zeros(chunk_count, dtype=np.int32)
     bit_mask[i_paralog // 32] = 1 << (i_paralog % 32)
     state = tox_mask_check_state(bit_mask, i_paralog + 1)
-    print(f"Paralog {i_paralog + 1} active in mask: {state}")
+    assert state, f"Paralog {i_paralog + 1} should be active"
 
-    print("\n=== Testing Pattern Filtering ===")
+    # Testing Pattern Filtering
 
-    sorted_gene_to_fam_perm = np.arange(1, n_paralogs+1)
-    perm_first_paralog_idx = 1
+    n_families = 1
+    gene_to_fam = np.full(n_paralogs, 1)
     angles = np.array([0.1, 0.3, 0.5, 0.7, 0.9], dtype=np.float64)
     threshold = 0.6
 
-    dosage_mask = tox_filter_paralogs_by_pattern_dosage_effect(angles, threshold, sorted_gene_to_fam_perm, perm_first_paralog_idx, n_paralogs)
-    print("Dosage effect mask:", dosage_mask)
+    dosage_mask, = tox_filter_paralogs_by_pattern_dosage_effect(angles, threshold, gene_to_fam, n_families)
+    assert (dosage_mask == [7]).all(), "dosage_mask should be [7], got " + str(dosage_mask)
 
-    subfunc_mask = tox_filter_paralogs_by_pattern_subfunctionalization(angles, threshold, sorted_gene_to_fam_perm, perm_first_paralog_idx, n_paralogs)
-    print("Subfunctionalization mask:", subfunc_mask)
+    subfunc_mask, = tox_filter_paralogs_by_pattern_subfunctionalization(angles, threshold, gene_to_fam, n_families)
+    assert (subfunc_mask == []).all(), "subfunc_mask should be [], got " + str(subfunc_mask)
 
-    print("\n=== Testing Work Array Size Calculation ===")
+    # Testing Work Array Size Calculation
 
     max_subset_size = 3
-    work_size_info = tox_calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, dosage_mask)
-    print("Work array size:", work_size_info['work_array_size'])
-    print("Adjusted max subset size:", work_size_info['actual_max_subset_size'])
+    work_array_size, actual_max_subset_size = tox_calc_work_arr_paralog_subsets_size(max_subset_size, n_paralogs, dosage_mask).values()
+    assert work_array_size == 3, "Expected work_array_size to be 3, got " + str(work_array_size)
+    assert actual_max_subset_size == 3, "Expected actual_max_subset_size to be 3, got " + str(actual_max_subset_size)
 
-    print("\n=== Testing Dosage Effect Detection ===")
+    # Testing Dosage Effect Detection
 
     ancestor = np.array([1.0, 1.0], dtype=np.float64, order="F")
     paralogs = np.array([
@@ -62,18 +62,15 @@ def test_paralog_functions():
     dosage_result = tox_detect_dosage_effect(
         ancestor=ancestor,
         genes=paralogs,
-        sorted_gene_to_fam_perm=sorted_gene_to_fam_perm,
-        perm_first_paralog_idx=perm_first_paralog_idx,
-        n_paralogs=n_paralogs,
         filtered_paralogs_mask=dosage_mask,
         max_subset_size=n_paralogs,
         gain_gamma=0.1,
         max_angle=math.pi
     )
-    print(f"Dosage effect results: {dosage_result['n_results']} subsets")
-    print(dosage_result['results'])
+    assert (dosage_result['results'] == [[6, 3, 5]]).all(), "Dosage Effect results should be [[6, 3, 5]], got " + str(dosage_result['results'])
+    assert dosage_result['n_results'] == 3, "Expected Dosage Effect n_results to be 3, got " + str(dosage_result['n_results'])
 
-    print("\n=== Testing Subfunctionalization Detection ===")
+    # Testing Subfunctionalization Detection
 
     norms = np.sqrt(np.sum(paralogs**2, axis=0))
     sorted_perm = np.argsort(norms).astype(np.int32) + 1
@@ -81,28 +78,24 @@ def test_paralog_functions():
     subfunc_result = tox_detect_subfunctionalization(
         ancestor=ancestor,
         genes=paralogs,
-        sorted_gene_to_fam_perm=sorted_gene_to_fam_perm,
-        perm_first_paralog_idx=perm_first_paralog_idx,
-        n_paralogs=n_paralogs,
         rdi_threshold=0.5,
         filtered_paralogs_mask=subfunc_mask,
         max_subset_size=n_paralogs,
         paralog_norms=norms,
         sorted_paralog_norms_perm=sorted_perm
     )
-    print(f"Subfunctionalization results: {subfunc_result['n_results']} subsets")
-    print(subfunc_result['results'])
+    assert (subfunc_result['results'] == []).all(), "Subfunctionalization results should be empty array, got " + str(subfunc_result['results'])
+    assert subfunc_result['n_results'] == 0, "Expected Subfunctionalization n_results to be zero, got " + str(subfunc_result['n_results'])
 
-    print("\n=== Testing Edge Cases ===")
+    # Testing Edge Cases
 
     try:
         empty_mask = tox_mask_chunk_count(0)
-        print("Empty paralog count test: Success")
     except Exception as e:
-        print("Empty paralog count test: Error")
+        raise AssertionError("tox_mask_chunk_count throws error for empty mask")
 
     single_mask = tox_mask_chunk_count(1)
-    print("Single paralog mask chunk count:", single_mask)
+    assert single_mask == 1, "Single paralog mask chunk count should be 1, got " + str(single_mask)
 
     print("✅ Paralog functions passed.")
 
