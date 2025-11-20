@@ -1051,8 +1051,6 @@ contains
 
 end module f42_utils
 
-
-
 ! === R WRAPPERS ===
 
 !> R wrapper for loess_smooth_2d.
@@ -1094,7 +1092,7 @@ end subroutine loess_smooth_2d_r
 !> C wrapper for which.
 !| Converts integer mask to logical and calls which.
 subroutine which_c(mask, n, idx_out, m_max, m_out, ierr) bind(C, name="which_c")
-  use iso_c_binding
+  use, intrinsic :: iso_c_binding, only: c_int
   use, intrinsic :: iso_fortran_env, only: int32
   use f42_utils, only: which
   implicit none
@@ -1123,7 +1121,7 @@ end subroutine which_c
 !| Direct wrapper - user must pre-filter indices in C before calling.
 subroutine loess_smooth_2d_c(n_total, n_target, x_ref, y_ref, indices_used, n_used, x_query, &
     kernel_sigma, kernel_cutoff, y_out, ierr) bind(C, name="loess_smooth_2d_c")
-  use iso_c_binding, only : c_int, c_double
+  use, intrinsic :: iso_c_binding, only : c_int, c_double
   use, intrinsic :: iso_fortran_env, only: int32
   use f42_utils, only: loess_smooth_2d
   implicit none
@@ -1165,7 +1163,7 @@ end subroutine loess_smooth_2d_c
 !| The number of unique values is returned via n_unique output parameter.
 subroutine compute_edf_c(values, n_values, unique_values, cdf_values, n_unique, ierr) &
   bind(C, name="compute_edf_c")
-  use iso_c_binding, only: c_int, c_double
+  use, intrinsic :: iso_c_binding, only: c_int, c_double
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use f42_utils, only: compute_edf_alloc
   implicit none
@@ -1191,7 +1189,7 @@ end subroutine compute_edf_c
 !| for better performance when the caller has full control.
 subroutine compute_edf_expert_c(values, n_values, perm, unique_values, cdf_values, n_unique, ierr) &
     bind(C, name="compute_edf_expert_c")
-  use iso_c_binding, only: c_int, c_double
+  use, intrinsic :: iso_c_binding, only: c_int, c_double
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use f42_utils, only: compute_edf
   implicit none

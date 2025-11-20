@@ -1,7 +1,7 @@
 module tox_conversions
-    use iso_fortran_env, only: int32, real64
+    use, intrinsic :: iso_fortran_env, only: int32, real64
     use tox_errors, only: ERR_ALLOC_FAIL, is_err, set_ok, set_err
-    use iso_c_binding, only: c_int, c_double, c_null_char, c_double_complex, c_char, c_ptr
+    use, intrinsic :: iso_c_binding, only: c_int, c_double, c_null_char, c_char
 
 contains
 

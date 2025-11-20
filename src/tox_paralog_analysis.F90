@@ -871,7 +871,7 @@ end module tox_paralog_analysis
 
 !> C-compatible wrapper for detect_neofunctionalization
 pure subroutine detect_neofunctionalization_c(ancestors, n_families, genes, n_axes, gene_to_fam, n_genes, thresholds, neofunc, ierr) bind(C, name="detect_neofunctionalization_c")
-    use, intrinsic :: iso_c_binding, only: c_int, c_double, c_bool
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
     use tox_paralog_analysis, only: detect_neofunctionalization
     use tox_errors, only: set_err, is_err, is_ok, set_ok, ERR_ALLOC_FAIL, validate_dimension_size
     use tox_conversions, only: logical_as_c_int, c_int_as_logical
