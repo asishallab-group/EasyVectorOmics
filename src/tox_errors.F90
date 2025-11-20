@@ -1,6 +1,9 @@
+#include "macros.h"
+
 !> error handling module for tensor-omics
 module tox_errors
-  use iso_fortran_env, only: int32
+  use, intrinsic :: iso_fortran_env, only: int32, real64
+  use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_is_finite
   implicit none
   public   ! <-- expose all names (constants + procedures)
 
@@ -140,5 +143,125 @@ contains
     if(n < 0) call set_err(ierr, ERR_INVALID_INPUT)  
     if(n == 0) call set_err(ierr, ERR_EMPTY_INPUT)
   end subroutine
+
+  !> Validates min<=e<=max for all elements e of an array
+  pure subroutine validate_in_range_int(val, ierr, min, max)
+    integer(int32), intent(in) :: val
+      !! value to be validated
+    integer(int32), intent(out) :: ierr
+      !! Error code
+    integer(int32), intent(in), optional :: min
+      !! lower bound for a value, default is lowest 32-bit integer -> -huge(1_int32)
+    integer(int32), intent(in), optional :: max
+      !! upper bound for a value, default is largest 32-bit integer -> huge(1_int32)
+
+    integer(int32) :: actual_min, actual_max
+
+    M_DEFAULT_VAL(min, actual_min, -huge(1_int32))
+    M_DEFAULT_VAL(max, actual_max, huge(1_int32))
+  
+    if ((val < actual_min) .or. (val > actual_max)) then
+      call set_err(ierr, ERR_INVALID_INPUT)
+    end if
+  end subroutine validate_in_range_int
+
+  !> Validates min<=e<=max for all elements e of an array
+  pure subroutine validate_all_in_range_int(array, n_elements, ierr, min, max)
+    integer(int32), intent(in) :: n_elements
+      !! Size of `array`
+    integer(int32), dimension(n_elements), intent(in) :: array
+      !! Array to be validated
+    integer(int32), intent(out) :: ierr
+      !! Error code
+    integer(int32), intent(in), optional :: min
+      !! lower bound for a value, default is lowest 32-bit integer -> -huge(1_int32)
+    integer(int32), intent(in), optional :: max
+      !! upper bound for a value, default is largest 32-bit integer -> huge(1_int32)
+
+    integer(int32) :: i_element
+  
+    do i_element = 1, n_elements
+      call validate_in_range_int(array(i_element), ierr, min, max)
+    end do
+  end subroutine validate_all_in_range_int
+
+  !> Validates min<=e<=max AND e/=NaN for all elements e of an array
+  pure subroutine validate_in_range_real(val, ierr, min, max)
+    real(real64), intent(in) :: val
+      !! value to be validated
+    integer(int32), intent(out) :: ierr
+      !! Error code
+    real(real64), intent(in), optional :: min
+      !! lower bound for a value, default is lowest 64-bit float -> -huge(1.0_real64)
+    real(real64), intent(in), optional :: max
+      !! upper bound for a value, default is largest 64-bit float -> huge(1.0_real64)
+
+    real(real64) :: actual_min, actual_max
+
+    M_DEFAULT_VAL(min, actual_min, -huge(1.0_real64))
+    M_DEFAULT_VAL(max, actual_max, huge(1.0_real64))
+  
+    if (ieee_is_nan(val) .or. .not. ieee_is_finite(val)) then
+      call set_err(ierr, ERR_NAN_INF)
+      return
+    end if
+
+    if ((val < actual_min) .or. (val > actual_max)) then
+      call set_err(ierr, ERR_INVALID_INPUT)
+    end if
+  end subroutine validate_in_range_real
+
+  !> Validates min<=e<=max AND e/=NaN for all elements e of an array
+  pure subroutine validate_all_in_range_real(array, n_elements, ierr, min, max)
+    integer(int32), intent(in) :: n_elements
+      !! Size of `array`
+    real(real64), dimension(n_elements), intent(in) :: array
+      !! Array to be validated
+    integer(int32), intent(out) :: ierr
+      !! Error code
+    real(real64), intent(in), optional :: min
+      !! lower bound for a value, default is lowest 64-bit float -> -huge(1.0_real64)
+    real(real64), intent(in), optional :: max
+      !! upper bound for a value, default is largest 64-bit float -> huge(1.0_real64)
+
+    integer(int32) :: i_element
+  
+    do i_element = 1, n_elements
+      call validate_in_range_real(array(i_element), ierr, min, max)
+    end do
+  end subroutine validate_all_in_range_real
+
+  !> Strictly validates a distance matrix of euclidean distances.
+  !| This means that distance X->X is exactly zero (no tolerance)
+  !| and X->Y is exactly the same as Y->X (no tolerance).
+  pure subroutine validate_distance_matrix(distances, n, ierr, min, max)
+    integer(int32), intent(in) :: n
+      !! Number of columns and rows of `distances`
+    real(real64), dimension(n, n), intent(in) :: distances
+      !! Matrix to be validated
+    integer(int32), intent(out) :: ierr
+      !! Error code
+    real(real64), intent(in), optional :: min
+      !! lower bound for a distance value, default is zero to have only positives
+    real(real64), intent(in), optional :: max
+      !! upper bound for a distance value, default is largest 64-bit float -> huge(1.0_real64)
+
+    integer(int32) :: i_col, i_row
+    real(real64) :: actual_min
+
+    M_DEFAULT_VAL(min, actual_min, 0.0_real64)
+
+    call validate_all_in_range_real(distances, n * n, ierr, actual_min, max)
+    if (is_err(ierr)) return
+
+    do i_col = 1, n
+      if (distances(i_col, i_col) /= 0.0_real64) call set_err(ierr, ERR_INVALID_INPUT)
+      do i_row = 1, n
+        if (distances(i_row, i_col) /= distances(i_col, i_row)) then
+          call set_err(ierr, ERR_INVALID_INPUT)
+        end if
+      end do
+    end do
+  end subroutine validate_distance_matrix
 
 end module tox_errors
