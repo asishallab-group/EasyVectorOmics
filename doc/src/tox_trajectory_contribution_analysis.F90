@@ -716,7 +716,6 @@ subroutine process_trajectories_C(trajectories, n_factors, n_samples, n_timepoin
     logical, allocatable :: factor_mask(:)
     logical, allocatable :: outliers_integrated_contrib(:,:)
     logical, allocatable :: outliers_spike_contrib(:,:,:)
-    integer(int32) :: i
 
 
     M_CHECK_IERR_NON_NULL
@@ -755,14 +754,14 @@ subroutine process_trajectories_C(trajectories, n_factors, n_samples, n_timepoin
     call c_int_as_logical(factor_mask_int, factor_mask)
     
     ! Allocate temporary arrays for logical outputs
-    allocate(outliers_integrated_contrib(n_samples, n_factors), stat=ierr)
+    allocate(outliers_integrated_contrib(n_samples, n_processed), stat=ierr)
     if (is_err(ierr)) then
         call set_err(ierr, ERR_ALLOC_FAIL)
         deallocate(factor_mask)
         return
     end if
     
-    allocate(outliers_spike_contrib(n_timepoints, n_samples, n_factors), stat=ierr)
+    allocate(outliers_spike_contrib(n_timepoints, n_samples, n_processed), stat=ierr)
     if (is_err(ierr)) then
         call set_err(ierr, ERR_ALLOC_FAIL)
         deallocate(factor_mask, outliers_integrated_contrib)
@@ -771,7 +770,7 @@ subroutine process_trajectories_C(trajectories, n_factors, n_samples, n_timepoin
     
     ! Call Fortran subroutine
     call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &
-                                  factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
+                                  factor_mask, n_processed, dependent_idx, mode, percentile, &
                                   integrated_contribs, spike_contribs, &
                                   thresholds_integrated_contrib, outliers_integrated_contrib, &
                                   thresholds_spike_contrib, outliers_spike_contrib, ierr)
@@ -837,7 +836,6 @@ subroutine process_trajectories_flat_C(trajectories, n_factors, n_samples, n_tim
     logical, allocatable :: factor_mask(:)
     logical, allocatable :: outliers_integrated_contrib(:,:)
     logical, allocatable :: outliers_spike_contrib(:,:,:)
-    integer(int32) :: i
 
     M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_factors)
@@ -872,19 +870,17 @@ subroutine process_trajectories_flat_C(trajectories, n_factors, n_samples, n_tim
         return
     end if
     
-    do i = 1, n_factors
-        factor_mask(i) = (factor_mask_int(i) /= 0)
-    end do
+    call c_int_as_logical(factor_mask_int, factor_mask)
     
     ! Allocate temporary arrays for logical outputs
-    allocate(outliers_integrated_contrib(n_samples, n_factors-1), stat=ierr)
+    allocate(outliers_integrated_contrib(n_samples, n_processed), stat=ierr)
     if (is_err(ierr)) then
         call set_err(ierr, ERR_ALLOC_FAIL)
         deallocate(factor_mask)
         return
     end if
     
-    allocate(outliers_spike_contrib(n_timepoints, n_samples, n_factors-1), stat=ierr)
+    allocate(outliers_spike_contrib(n_timepoints, n_samples, n_processed), stat=ierr)
     if (is_err(ierr)) then
         call set_err(ierr, ERR_ALLOC_FAIL)
         deallocate(factor_mask, outliers_integrated_contrib)
@@ -893,7 +889,7 @@ subroutine process_trajectories_flat_C(trajectories, n_factors, n_samples, n_tim
     
     ! Call Fortran subroutine
     call process_trajectories_flat_alloc(trajectories, n_factors, n_samples, n_timepoints, &
-                                       factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
+                                       factor_mask, n_processed, dependent_idx, mode, percentile, &
                                        integrated_contribs, spike_contribs, &
                                        thresholds_integrated_contrib, outliers_integrated_contrib, &
                                        thresholds_spike_contrib, outliers_spike_contrib, ierr)

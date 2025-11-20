@@ -383,6 +383,12 @@ This measures both magnitude and directionality of angular separation in RAP spa
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/cluster_factor_trajectories_k_means.html'>cluster_factor_trajectories_k_means</a></td>
+                 <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Performs k-means clustering on factor trajectories, so factor evolution over time</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/compute_edf.html'>compute_edf</a></td>
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Subroutine</td>
@@ -784,10 +790,23 @@ Calls euclidean_distance with standard Fortran types for R interface.</p></td>
                  <td><p>Subroutine to get the dimensions of an array file</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/get_cluster_data_linkage_helper.html'>get_cluster_data_linkage_helper</a></td>
+                 <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Helper for linkage clustering to get the size/weight and label of a cluster
+by using the self-distance as indicator in which iteration the cluster was merged</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/get_kd_point.html'>get_kd_point</a></td>
                  <td><a href='../module/kd_tree.html'>kd_tree</a></td>
                  <td>Subroutine</td>
                  <td><p>Get point from KD index</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/get_min_distance_indices_helper.html'>get_min_distance_indices_helper</a></td>
+                 <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Helper routine to find the indices of the minimum value a distance matrix.</p><a href="../proc/get_min_distance_indices_helper.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/get_sorted_value.html'>get_sorted_value</a></td>
@@ -824,6 +843,26 @@ Calls euclidean_distance with standard Fortran types for R interface.</p></td>
                  <td><a href='../sourcefile/tox_gene_centroids.f90.html'>tox_gene_centroids.f90</a></td>
                  <td>Subroutine</td>
                  <td><p>R interface wrapper for group_centroid.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/heapsort_character.html'>heapsort_character</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Internal heapsort implementation for character arrays.
+Lexicographic heapsort using string comparison, indirect via <code>perm</code>.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/heapsort_integer.html'>heapsort_integer</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Internal heapsort implementation for integer arrays.
+Indirectly sorts <code>array</code> using <code>perm</code>, same algorithm as <code>heapsort_real</code>.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/heapsort_real.html'>heapsort_real</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Sorts indirectly using the permutation vector <code>perm</code>. Uses <code>heapify_real</code> to maintain heap property.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/identify_outliers.html'>identify_outliers</a></td>
@@ -864,6 +903,42 @@ Calls identify_outliers with standard Fortran types for R interface.</p></td>
                  <td><a href='../module/tox_errors.html'>tox_errors</a></td>
                  <td>Function</td>
                  <td><p>check if the error code indicates success</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/k_means_assign_cluster_helper.html'>k_means_assign_cluster_helper</a></td>
+                 <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Helper routine to assign a cluster's label to a point in k-means</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/k_means_clustering.html'>k_means_clustering</a></td>
+                 <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
+                 <td>Subroutine</td>
+                 <td><p>k-means clustering algorithm:</p><a href="../proc/k_means_clustering.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/k_means_clustering_c.html'>k_means_clustering_c</a></td>
+                 <td><a href='../sourcefile/tox_clustering.f90.html'>tox_clustering.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>k-means clustering algorithm:</p><a href="../proc/k_means_clustering_c.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/k_means_recompute_cluster_centroids_helper.html'>k_means_recompute_cluster_centroids_helper</a></td>
+                 <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Helper to recompute the centroids in k-means by taking the mean of assigned points</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/linkage_clustering.html'>linkage_clustering</a></td>
+                 <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Perform linkage clustering on a distance matrix.</p><a href="../proc/linkage_clustering.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/linkage_clustering_c.html'>linkage_clustering_c</a></td>
+                 <td><a href='../sourcefile/tox_clustering.f90.html'>tox_clustering.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for linkage_clustering</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/loess_smooth_2d.html'>loess_smooth_2d</a></td>
@@ -937,6 +1012,18 @@ Applies log2(x+1) to each element of the input matrix. Arguments match R's .Fort
                  <td><a href='../sourcefile/tox_gene_centroids.f90.html'>tox_gene_centroids.f90</a></td>
                  <td>Subroutine</td>
                  <td><p>R interface wrapper for mean_vector.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/merge_distances_ward_linkage_helper.html'>merge_distances_ward_linkage_helper</a></td>
+                 <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Helper for ward algorithm for updating the distance matrix on merge of two clusters</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/merge_distances_xpgma_linkage_helper.html'>merge_distances_xPGMA_linkage_helper</a></td>
+                 <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Helper for *PGMA algorithms for updating the distance matrix on merge of two clusters</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/normalization_pipeline.html'>normalization_pipeline</a></td>
@@ -1022,6 +1109,12 @@ Provides an interface for R (.Fortran) and Fortran code to call the normalizatio
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/post_merge_distances_helper.html'>post_merge_distances_helper</a></td>
+                 <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Helper for doing last updates after merge: disable merged cluster, update self-distance to current iteration</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/process_trajectories_alloc.html'>process_trajectories_alloc</a></td>
                  <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
                  <td>Subroutine</td>
@@ -1100,6 +1193,28 @@ Sorts indirectly using the permutation vector <code>perm</code>. Manual stack re
                  <td><a href='../module/array_utils.html'>array_utils</a></td>
                  <td>Subroutine</td>
                  <td><p>Opens unit and reads file header with all metadata from given file</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/real_greater.html'>real_greater</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Function</td>
+                 <td><p>NaN-aware greater-than comparison for real(real64).
+NaN is treated as greater than any finite number.
+Two NaNs are treated as equal.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/real_less.html'>real_less</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Function</td>
+                 <td><p>NaN-aware less-than comparison for real(real64).
+Finite values are always considered smaller than NaN.
+Two NaNs are treated as equal (neither less nor greater).</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/recover_distance_matrix_helper.html'>recover_distance_matrix_helper</a></td>
+                 <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Helper to recover a distance matrix from its top triangle.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/relative_axes_changes_from_shift_vector.html'>relative_axes_changes_from_shift_vector</a></td>
@@ -1326,10 +1441,23 @@ R can not pass a multidimensional array directly, so we use a flat array and dim
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../interface/sort_array_heapsort.html'>sort_array_heapsort</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/sort_character.html'>sort_character</a></td>
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Subroutine</td>
                  <td><p>Sort a character array indirectly using quicksort.
+Uses lexicographic ordering and permutation vector sorting.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/sort_character_heapsort.html'>sort_character_heapsort</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Sort a character array indirectly using heapsort.
 Uses lexicographic ordering and permutation vector sorting.</p></td>
                </tr>
 			   <tr>
@@ -1340,10 +1468,24 @@ Uses lexicographic ordering and permutation vector sorting.</p></td>
 Similar to <code>sort_real</code>, but for integer input.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/sort_integer_heapsort.html'>sort_integer_heapsort</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Sort an integer array indirectly using heapsort.
+Similar to <code>sort_real_heapsort</code>, but for integer input.</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/sort_real.html'>sort_real</a></td>
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Subroutine</td>
                  <td><p>Sort a real array indirectly using quicksort.
+Creates a sorted version of the array by reordering the <code>perm</code> vector. The original data in <code>array</code> remains unchanged.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/sort_real_heapsort.html'>sort_real_heapsort</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Sort a real array indirectly using heapsort.
 Creates a sorted version of the array by reordering the <code>perm</code> vector. The original data in <code>array</code> remains unchanged.</p></td>
                </tr>
 			   <tr>
@@ -1407,10 +1549,42 @@ There are two modes:</p><a href="../proc/trajectory_contribution.html" class="pu
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/validate_all_in_range_int.html'>validate_all_in_range_int</a></td>
+                 <td><a href='../module/tox_errors.html'>tox_errors</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Validates min&lt;=e&lt;=max for all elements e of an array</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_all_in_range_real.html'>validate_all_in_range_real</a></td>
+                 <td><a href='../module/tox_errors.html'>tox_errors</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Validates min&lt;=e&lt;=max AND e/=NaN for all elements e of an array</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/validate_dimension_size.html'>validate_dimension_size</a></td>
                  <td><a href='../module/tox_errors.html'>tox_errors</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_distance_matrix.html'>validate_distance_matrix</a></td>
+                 <td><a href='../module/tox_errors.html'>tox_errors</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Strictly validates a distance matrix of euclidean distances.
+This means that distance X-&gt;X is exactly zero (no tolerance)
+and X-&gt;Y is exactly the same as Y-&gt;X (no tolerance).</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_in_range_int.html'>validate_in_range_int</a></td>
+                 <td><a href='../module/tox_errors.html'>tox_errors</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Validates min&lt;=e&lt;=max for all elements e of an array</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_in_range_real.html'>validate_in_range_real</a></td>
+                 <td><a href='../module/tox_errors.html'>tox_errors</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Validates min&lt;=e&lt;=max AND e/=NaN for all elements e of an array</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/which.html'>which</a></td>
@@ -1450,7 +1624,7 @@ Converts integer mask to logical and calls which.</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-11-04 14:33 +0000"             </p>
+ on "2025-11-18 12:59 +0000"             </p>
           </div>
         </div>
         <br>

@@ -4,6 +4,7 @@ module f42_utils
   use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
   use tox_errors, only: ERR_OK, ERR_INVALID_INPUT, ERR_EMPTY_INPUT, set_ok, set_err_once
+  use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
   implicit none
 
   public :: sort_real, sort_integer, sort_character
@@ -13,6 +14,10 @@ module f42_utils
   interface sort_array
     module procedure sort_real, sort_integer, sort_character
   end interface sort_array
+
+  interface sort_array_heapsort
+    module procedure sort_real_heapsort, sort_integer_heapsort, sort_character_heapsort
+  end interface sort_array_heapsort
 
   real(real64), parameter :: EPS = epsilon(1.0_real64)
 
@@ -69,6 +74,36 @@ contains
     call quicksort_char(array, perm, int(size(array), int32), stack_left, stack_right)
   end subroutine sort_character
 
+  !> Sort a real array indirectly using heapsort.
+  !| Creates a sorted version of the array by reordering the `perm` vector. The original data in `array` remains unchanged.
+  pure subroutine sort_real_heapsort(array, perm)
+    !| Real input array to sort
+    real(real64), intent(in) :: array(:)
+    !| Permutation vector that will be sorted
+    integer(int32), intent(inout) :: perm(:)
+    call heapsort_real(array, perm)
+  end subroutine sort_real_heapsort  
+
+  !> Sort an integer array indirectly using heapsort.  
+  !| Similar to `sort_real_heapsort`, but for integer input.
+  pure subroutine sort_integer_heapsort(array, perm)
+    !| Integer input array to sort
+    integer(int32), intent(in) :: array(:)
+    !| Permutation vector that will be sorted
+    integer(int32), intent(inout) :: perm(:)
+    call heapsort_integer(array, perm)
+  end subroutine sort_integer_heapsort  
+
+  !> Sort a character array indirectly using heapsort.  
+  !| Uses lexicographic ordering and permutation vector sorting.  
+  pure subroutine sort_character_heapsort(array, perm)
+    !| Character input array to sort
+    character(len=*), intent(in) :: array(:)
+    !| Permutation vector that will be sorted
+    integer(int32), intent(inout) :: perm(:)
+    call heapsort_character(array, perm)
+  end subroutine sort_character_heapsort  
+
   !> Internal quicksort implementation for real arrays.
   !| Sorts indirectly using the permutation vector `perm`. Manual stack replaces recursion.
   pure subroutine quicksort_real(array, perm, n, stack_left, stack_right)
@@ -106,10 +141,10 @@ contains
 
       ! Partitioning loop
       do
-        do while (array(perm(i)) < pivot_val)
+        do while (real_less(array(perm(i)), pivot_val))
           i = i + 1
         end do
-        do while (array(perm(j)) > pivot_val)
+        do while (real_greater(array(perm(j)), pivot_val))
           j = j - 1
         end do
         if (i <= j) then
@@ -208,7 +243,7 @@ contains
     integer(int32), intent(inout) :: stack_left(:)
     !| Manual stack of right indices for quicksort recursion
     integer(int32), intent(inout) :: stack_right(:)
-
+    !| Temporary variables
     integer(int32) :: left, right, i, j, top, pivot_idx
     character(len=len(array)) :: pivot_val
 
@@ -256,6 +291,214 @@ contains
     end do
   end subroutine quicksort_char
 
+  !Internal heapsort implementations for real arrays.
+  !> Sorts indirectly using the permutation vector `perm`. Uses `heapify_real` to maintain heap property.
+  pure subroutine heapsort_real(array, perm) 
+    !| Real input array to sort     
+    real(real64), intent(in) :: array(:)
+    !| Permutation vector that will be sorted
+    integer(int32), intent(inout) :: perm(:)
+    integer(int32) :: n, i
+    n = size(array)
+    
+    ! Build max heap
+    do i = n / 2, 1, -1
+      call heapify_real(array, perm, n, i)
+    end do
+    ! Heap sort
+    do i = n, 2, -1
+      call swap_int(perm(1), perm(i))
+      call heapify_real(array, perm, i - 1, 1)
+    end do
+
+  contains
+
+    !> Iterative heapify (non-recursive, pure)
+    !| Restore the max-heap property for the subtree rooted at `root`.
+    !| Heap layout (1-based): left child = 2*i, right child = 2*i+1.
+    !| We reorder the permutation vector `perm` (indices) rather than moving
+    !| array values. Guard accesses by checking child indices before indexing.
+    pure subroutine heapify_real(array, perm, heap_size, root)
+      !| Real input array to sort
+      real(real64), intent(in) :: array(:)
+      !| Permutation vector that will be sorted
+      integer(int32), intent(inout) :: perm(:)
+      !| Size of the heap
+      integer(int32), intent(in) :: heap_size
+      !| Root index
+      integer(int32), intent(in) :: root
+      integer(int32) :: current, next_idx, largest_idx
+
+      current = root
+
+      do
+        ! Use `largest_idx` directly as the left-child index: left = 2*current
+        largest_idx = 2 * current
+        ! If there is no left child the subtree is a leaf; we're done
+        if (largest_idx > heap_size) exit
+
+        next_idx = largest_idx + 1
+
+        ! Only compare the right child (next_idx) when it actually exists
+        if (next_idx <= heap_size) then
+          if (real_greater(array(perm(next_idx)), array(perm(largest_idx)))) then
+            largest_idx = next_idx
+          end if
+        end if
+
+        ! If the larger child is greater than current, swap permutation entries
+        if (real_greater(array(perm(largest_idx)), array(perm(current)))) then
+          call swap_int(perm(current), perm(largest_idx))
+          current = largest_idx
+        else
+          exit
+        end if
+      end do
+    end subroutine heapify_real
+  end subroutine heapsort_real
+
+  !> Internal heapsort implementation for integer arrays.
+  !| Indirectly sorts `array` using `perm`, same algorithm as `heapsort_real`.
+  pure subroutine heapsort_integer(array, perm)
+    !| Integer input array to sort
+    integer(int32), intent(in) :: array(:)
+    !| Permutation vector that will be sorted
+    integer(int32), intent(inout) :: perm(:)
+    integer(int32) :: n, i
+
+    n = size(array)
+
+    ! Build max-heap
+    do i = n / 2, 1, -1
+      call heapify_integer(array, perm, n, i)
+    end do
+
+    ! Heap sort
+    do i = n, 2, -1
+      call swap_int(perm(1), perm(i))
+      call heapify_integer(array, perm, i - 1, 1)
+    end do
+
+  contains
+
+  !> Iterative heapify (non-recursive, pure)
+  !| Restore the max-heap property for the subtree rooted at `root`.
+  !| Heap layout (1-based): left child = 2*i, right child = 2*i+1.
+  !| We reorder the permutation vector `perm` (indices) rather than moving
+  !| array values. Guard accesses by checking child indices before indexing.
+    pure subroutine heapify_integer(array, perm, heap_size, root)
+      !| Integer input array to sort
+      integer(int32), intent(in) :: array(:)
+      !| Permutation vector that will be sorted
+      integer(int32), intent(inout) :: perm(:)
+      !| Size of the heap
+      integer(int32), intent(in) :: heap_size
+      !| Root index
+      integer(int32), intent(in) :: root
+      integer(int32) :: current, next_idx, largest_idx
+
+      current = root
+
+      do
+        ! Compute left-child index (use largest_idx as left to avoid extra var)
+        largest_idx = 2 * current
+        ! If there is no left child the subtree is a leaf; nothing to do
+        if (largest_idx > heap_size) exit
+
+        ! Compute right-child index (may be out of heap bounds)
+        next_idx = largest_idx + 1
+
+        ! Only compare right-child when it actually exists (guarded access)
+        if (next_idx <= heap_size) then
+          if (array(perm(next_idx)) > array(perm(largest_idx))) then
+            ! Right child is larger than left child
+            largest_idx = next_idx
+          end if
+        end if
+
+        ! Compare the selected child with the current node; if the child is
+        ! greater, swap permutation indices so the larger value moves up the
+        ! heap. We swap entries of `perm` (indices), not the array values.
+        if (array(perm(largest_idx)) > array(perm(current))) then
+          call swap_int(perm(current), perm(largest_idx))
+          current = largest_idx
+        else
+          exit
+        end if
+      end do
+    end subroutine heapify_integer
+  end subroutine heapsort_integer
+
+  !> Internal heapsort implementation for character arrays.
+  !| Lexicographic heapsort using string comparison, indirect via `perm`.
+  pure subroutine heapsort_character(array, perm)
+    !| Character input array to sort
+    character(len=*), intent(in)    :: array(:)
+    !| Permutation vector that will be sorted
+    integer(int32),   intent(inout) :: perm(:)
+    integer(int32) :: n, i
+
+    n = size(array)
+
+    ! Build max-heap
+    do i = n / 2, 1, -1
+      call heapify_character(array, perm, n, i)
+    end do
+
+    ! Heap sort
+    do i = n, 2, -1
+      call swap_int(perm(1), perm(i))
+      call heapify_character(array, perm, i - 1, 1)
+    end do
+
+  contains
+
+  !> Iterative heapify (non-recursive, pure)
+  !| Restore the max-heap property for the subtree rooted at `root`.
+  !| Heap layout (1-based): left child = 2*i, right child = 2*i+1.
+  !| We reorder the permutation vector `perm` (indices) rather than moving
+  !| array values. Guard accesses by checking child indices before indexing.
+    pure subroutine heapify_character(array, perm, heap_size, root)
+      !| Character input array to sort
+      character(len=*), intent(in) :: array(:)
+      !| Permutation vector that will be sorted
+      integer(int32),   intent(inout) :: perm(:)
+      !| Size of the heap
+      integer(int32), intent(in) :: heap_size
+      !| Root index
+      integer(int32), intent(in) :: root
+      integer(int32) :: current, next_idx, largest_idx
+
+      current = root
+
+      do
+        ! Compute left-child index (use largest_idx directly as left = 2*current)
+        largest_idx = 2 * current
+        ! If there is no left child the subtree is a leaf; nothing to do
+        if (largest_idx > heap_size) exit
+
+        ! Potential right child index
+        next_idx = largest_idx + 1
+
+        ! Only compare right child when it exists to avoid OOB access
+        if (next_idx <= heap_size) then
+          if (array(perm(next_idx)) > array(perm(largest_idx))) then
+            largest_idx = next_idx
+          end if
+        end if
+
+        ! If the selected child is larger than current, swap permutation
+        ! indices so the larger element moves up. We swap entries in `perm`.
+        if (array(perm(largest_idx)) > array(perm(current))) then
+          call swap_int(perm(current), perm(largest_idx))
+          current = largest_idx
+        else
+          exit
+        end if
+      end do
+    end subroutine heapify_character
+  end subroutine heapsort_character
+
   !> Swap two integer values in-place.
   pure subroutine swap_int(a, b)
     !| First integer to swap
@@ -266,6 +509,48 @@ contains
     temp = a; a = b; b = temp
   end subroutine swap_int
 
+  ! Helper: NaN-aware comparisons for real(real64).
+  ! We treat NaN as greater than any numeric value so that NaNs end up at the
+  ! end of ascending sorts. These helpers define a total-like ordering where
+  ! (number) < (NaN) and (NaN) > (number); two NaNs compare equal (neither < nor >).
+  !> NaN-aware less-than comparison for real(real64).
+!> Finite values are always considered smaller than NaN.
+!> Two NaNs are treated as equal (neither less nor greater).
+  pure logical function real_less(a, b)
+    real(real64), intent(in) :: a
+    real(real64), intent(in) :: b
+
+    if (ieee_is_nan(a) .and. ieee_is_nan(b)) then
+      real_less = .false.
+    else if (ieee_is_nan(a)) then
+      real_less = .false.
+    else if (ieee_is_nan(b)) then
+      real_less = .true.
+    else
+      real_less = (a < b)
+    end if
+  end function real_less
+
+
+  !> NaN-aware greater-than comparison for real(real64).
+  !> NaN is treated as greater than any finite number.
+  !> Two NaNs are treated as equal.
+  pure logical function real_greater(a, b)
+    real(real64), intent(in) :: a
+    real(real64), intent(in) :: b
+
+    if (ieee_is_nan(a) .and. ieee_is_nan(b)) then
+      real_greater = .false.
+    else if (ieee_is_nan(a)) then
+      real_greater = .true.
+    else if (ieee_is_nan(b)) then
+      real_greater = .false.
+    else
+      real_greater = (a > b)
+    end if
+  end function real_greater
+
+  
   !> Finds the indices of the true values in a logical mask.
   pure subroutine which(mask, n, idx_out, m_max, m_out, ierr)
     !| Logical array of size n.
@@ -280,12 +565,12 @@ contains
     integer(int32), intent(out) :: m_out
     !| Error code: 0=ok, 201=invalid input, 202=empty input
     integer(int32), intent(out) :: ierr
-    
+
     integer(int32) :: i, count
-    
+
     ! Initialize error code
     call set_ok(ierr)
-    
+
     ! Validate inputs
     if (n <= 0 .or. m_max <= 0) then
       call set_err_once(ierr, ERR_INVALID_INPUT)
@@ -293,14 +578,14 @@ contains
       idx_out = 0
       return
     end if
-    
+
     if (size(mask) < n .or. size(idx_out) < m_max) then
       call set_err_once(ierr, ERR_INVALID_INPUT)
       m_out = 0
       idx_out = 0
       return
     end if
-    
+
     count = 0
     idx_out = 0  ! Initialize to avoid garbage values
     do i = 1, n
