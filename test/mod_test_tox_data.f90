@@ -10,7 +10,7 @@ module mod_test_tox_data
   use tox_gene_centroids
   use tox_shift_vectors
   use tox_errors
-  use tox_archive_generic, only: save_tox_data, read_tox_data, create_zip_archive, extract_zip_archive, delete_file
+  use tox_archive, only: save_tox_data, read_tox_data, create_zip_archive, extract_zip_archive, delete_file
   use int_deserialize_mod
   use real_deserialize_mod
   use char_deserialize_mod
