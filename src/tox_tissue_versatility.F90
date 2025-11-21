@@ -2,6 +2,7 @@
 !| This module implements the angle-based metric for tissue versatility,
 !| quantifying how uniformly a gene is expressed across selected axes (tissues).
 module tox_tissue_versatility
+  use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
   use tox_errors, only: ERR_EMPTY_INPUT, set_ok, set_err_once
   implicit none
