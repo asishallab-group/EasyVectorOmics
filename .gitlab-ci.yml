@@ -5,10 +5,10 @@ stages:
 
 image: archlinux:latest
 before_script:
-  # install gfortran, python, pip, git
+  # install gfortran, python, pip, git, xxhash, libzip
   - pacman -Sy --noconfirm archlinux-keyring
   - pacman -Syu --noconfirm
-  - pacman -S --noconfirm gcc-fortran python python-pip git
+  - pacman -S --noconfirm gcc-fortran python python-pip git libzip xxhash
   - pacman -Scc --noconfirm
 
   # install fpm
