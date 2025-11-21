@@ -118,5 +118,9 @@ done: # Final stage that will always be in a pipeline and succeeds when all othe
     - job: generate-docs
       optional: true
   script:
+<<<<<<< HEAD
     - echo "All jobs passed"
 
+=======
+    - echo "All jobs passed"
+>>>>>>> origin/main

@@ -1,5 +1,7 @@
+
 !> Module to identify gene outliers based on their distances to family centroids.
 module tox_get_outliers
+  use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
   use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
   use f42_utils, only: loess_smooth_2d,sort_array  
@@ -127,7 +129,7 @@ contains
           median_dist = family_distances(perm_tmp((n_in_family+1)/2))
         end if
         ! Only pass first n_valid elements of LOESS arrays
-        call loess_smooth_2d(n_families, 1, loess_x, loess_y, indices_used(1:n_valid), n_valid, [median_dist], &
+        call loess_smooth_2d(n_families, 1_int32, loess_x, loess_y, indices_used(1:n_valid), n_valid, [median_dist], &
                 sigma, cutoff, loess_pred, ierr)
         dscale(family_idx) = loess_pred(1,1)
       else

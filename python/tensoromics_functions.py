@@ -1,7 +1,3 @@
-"""
-TensorOmics Functions Module
-Python wrapper functions for Fortran routines via C interface
-"""
 
 import numpy as np
 import ctypes
@@ -316,36 +312,6 @@ def tox_deserialize_char_nd(filename: str, ndim_max=5):
     result = strings_1d.reshape(tuple(dims), order='F')
     return result
 
-def tox_errors(ierr):
-    """
-    Check error code and raise informative exception if needed
-    
-    Args:
-        ierr: Error code from Fortran routine
-        context: Optional context string for debugging
-    
-    Raises:
-        RuntimeError: If error code indicates failure
-    """
-    error_messages = {
-        0: None,  # Success
-        101: "File could not be opened",
-        102: "Could not read magic number",
-        103: "Could not read array type code", 
-        104: "Could not read array dimension number",
-        105: "Could not read array dimensions",
-        106: "Could not read character length",
-        107: "Could not read array data",
-        200: "Invalid file format (magic number mismatch)",
-        202: "No axes selected (empty input)",
-        5002: "File not open or unit not connected",
-        9999: "Unknown error"
-    }
-    
-    msg = error_messages.get(ierr, f"Unknown Fortran error code: {ierr}")
-    
-    if msg is not None:
-        raise RuntimeError(msg)
 
 # Configure BST argument types
 lib.build_bst_index_C.argtypes = [
@@ -392,7 +358,7 @@ def build_bst_index(values):
     values (np.array): 1D array of values to index
     
     Returns:
-    np.array: BST indices (0-based for Python)
+    np.array: BST indices (1-based)
     """
     n = len(values)
     indices = np.empty(n, dtype=np.int32)
@@ -403,9 +369,8 @@ def build_bst_index(values):
     # Build BST index
     lib.build_bst_index_C(values, n, indices, stack_left, stack_right, ctypes.byref(ierr))
     check_err_code(ierr.value)
-    
-    # Convert from Fortran 1-based to Python 0-based indexing
-    return indices - 1
+
+    return indices
 
 def bst_range_query(values, indices, lower_bound, upper_bound):
     """
@@ -418,25 +383,26 @@ def bst_range_query(values, indices, lower_bound, upper_bound):
     upper_bound (float): Upper bound of range (inclusive)
     
     Returns:
-    tuple: (matching_indices, count) where matching_indices are 0-based Python indices
+    dictionary: (matching_indices, count) where matching_indices are 1-based Fortran indices
     """
     n = len(values)
     output_indices = np.empty(n, dtype=np.int32)
     match_count = ctypes.c_int32(0)
     ierr = ctypes.c_int()
     
-    # Convert indices back to 1-based for Fortran
-    indices_1based = indices + 1
-    
     # Perform range query
-    lib.bst_range_query_C(values, indices_1based, n, lower_bound, upper_bound, 
+    lib.bst_range_query_C(values, indices, n, lower_bound, upper_bound, 
                          output_indices, ctypes.byref(match_count), ctypes.byref(ierr))
     check_err_code(ierr.value)
     
-    # Convert from Fortran 1-based to Python 0-based indexing
-    matching_indices = output_indices[:match_count.value] - 1
+    matching_indices = output_indices[:match_count.value]
     
-    return matching_indices, match_count.value
+    result = {
+        "matching_indices": matching_indices,
+        "count": match_count.value
+    }
+
+    return result
 
 # --- KD-Tree Functions ---
 def build_kd_index(points, dimension_order=None):
@@ -448,7 +414,7 @@ def build_kd_index(points, dimension_order=None):
     dimension_order (np.array): Order of dimensions for splitting (1-based)
     
     Returns:
-    np.array: KD-Tree indices (0-based for Python)
+    np.array: KD-Tree indices (1-based Fortran indices)
     """
     d, n = points.shape
     
@@ -475,8 +441,7 @@ def build_kd_index(points, dimension_order=None):
                         value_buffer, permutation, stack_left, stack_right, ctypes.byref(ierr))
     check_err_code(ierr.value)
     
-    # Convert from Fortran 1-based to Python 0-based indexing
-    return kd_indices - 1
+    return kd_indices
 
 def build_spherical_kd(vectors, dimension_order=None):
     """
@@ -487,7 +452,7 @@ def build_spherical_kd(vectors, dimension_order=None):
     dimension_order (np.array): Order of dimensions for splitting (1-based)
     
     Returns:
-    np.array: Spherical KD-Tree indices (0-based for Python)
+    np.array: Spherical KD-Tree indices (1-based Fortran indices)
     """
     # For spherical KD-Tree, we use the same implementation as regular KD-Tree
     # but with a different name for clarity
@@ -500,6 +465,280 @@ def _readonly(*arrays: np.ndarray) -> None:
             a.flags.writeable = False
             # NOTE: Returned NumPy arrays are read-only for safety.
             # If you need to modify them (e.g., for plotting), use `.copy()`.
+
+
+def tox_vector_RAP_projection(vecs, vecs_selection_mask, axes_selection_mask):
+    """
+    Project selected vectors onto RAP constructed from selected axes.
+    Args:
+        vecs: Expression vectors (n_axes x n_vecs)
+        vecs_selection_mask: Boolean/integer array (length n_vecs)
+        axes_selection_mask: Boolean/integer array (length n_axes)
+    Returns:
+        np.ndarray: Projected vectors (n_selected_axes x n_selected_vecs)
+    Raises:
+        RuntimeError: If Fortran routine returns error
+    """
+    vecs = np.asfortranarray(vecs, dtype=np.float64)
+    vecs_selection_mask = np.ascontiguousarray(vecs_selection_mask, dtype=np.int32)
+    axes_selection_mask = np.ascontiguousarray(axes_selection_mask, dtype=np.int32)
+    n_axes, n_vecs = vecs.shape
+    if len(vecs_selection_mask) != n_vecs:
+        raise ValueError("vecs_selection_mask length must match number of columns in vecs")
+    if len(axes_selection_mask) != n_axes:
+        raise ValueError("axes_selection_mask length must match number of rows in vecs")
+    n_selected_vecs = int(np.sum(vecs_selection_mask))
+    n_selected_axes = int(np.sum(axes_selection_mask))
+    projections = np.empty((n_selected_axes, n_selected_vecs), order="F", dtype=np.float64)
+    ierr = ctypes.c_int(0)
+    omics_vector_RAP_projection = lib.omics_vector_RAP_projection_c
+    omics_vector_RAP_projection.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # vecs
+        ctypes.c_int,                                                    # n_axes
+        ctypes.c_int,                                                    # n_vecs
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),   # vecs_selection_mask
+        ctypes.c_int,                                                    # n_selected_vecs
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),   # axes_selection_mask
+        ctypes.c_int,                                                    # n_selected_axes
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # projections
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
+    ]
+    omics_vector_RAP_projection.restype = None
+    omics_vector_RAP_projection(
+        vecs, n_axes, n_vecs,
+        vecs_selection_mask, n_selected_vecs,
+        axes_selection_mask, n_selected_axes,
+        projections, ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+    _readonly(projections)
+    return projections
+
+def tox_field_RAP_projection(vecs, vecs_selection_mask, axes_selection_mask):
+    """
+    Project selected vector fields onto RAP constructed from selected axes.
+    Args:
+        vecs: Vector fields (2*n_axes x n_vecs)
+        vecs_selection_mask: Boolean/integer array (length n_vecs)
+        axes_selection_mask: Boolean/integer array (length n_axes)
+    Returns:
+        np.ndarray: Projected vectors (n_selected_axes x n_selected_vecs)
+    Raises:
+        RuntimeError: If Fortran routine returns error
+    """
+    vecs = np.asfortranarray(vecs, dtype=np.float64)
+    vecs_selection_mask = np.ascontiguousarray(vecs_selection_mask, dtype=np.int32)
+    axes_selection_mask = np.ascontiguousarray(axes_selection_mask, dtype=np.int32)
+    n_axes = len(axes_selection_mask)
+    n_vecs = vecs.shape[1]
+    if len(vecs_selection_mask) != n_vecs:
+        raise ValueError("vecs_selection_mask length must match number of columns in vecs")
+    if vecs.shape[0] != 2 * n_axes:
+        raise ValueError("vecs must have 2*n_axes rows")
+    n_selected_vecs = int(np.sum(vecs_selection_mask))
+    n_selected_axes = int(np.sum(axes_selection_mask))
+    projections = np.empty((n_selected_axes, n_selected_vecs), order="F", dtype=np.float64)
+    ierr = ctypes.c_int(0)
+    omics_field_RAP_projection = lib.omics_field_RAP_projection_c
+    omics_field_RAP_projection.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # vecs
+        ctypes.c_int,                                                    # n_axes
+        ctypes.c_int,                                                    # n_vecs
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),   # vecs_selection_mask
+        ctypes.c_int,                                                    # n_selected_vecs
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),   # axes_selection_mask
+        ctypes.c_int,                                                    # n_selected_axes
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # projections
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
+    ]
+    omics_field_RAP_projection.restype = None
+    omics_field_RAP_projection(
+        vecs, n_axes, n_vecs,
+        vecs_selection_mask, n_selected_vecs,
+        axes_selection_mask, n_selected_axes,
+        projections, ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+    _readonly(projections)
+    return projections
+
+
+def tox_clock_hand_angle_between_vectors(v1, v2, selected_axes_for_signed):
+    """
+    Calculate clock hand angle between two vectors
+    
+    Args:
+        v1: First vector (numpy array)
+        v2: Second vector (numpy array)
+        selected_axes_for_signed: Integer array of axes to use for signed angle (length n_dims)
+    
+    Returns:
+        float: Signed angle between vectors in degrees
+    Raises:
+        RuntimeError: If Fortran routine returns error
+    """
+    # Input validation and conversion
+    v1 = np.ascontiguousarray(v1, dtype=np.float64)  # First vector
+    v2 = np.ascontiguousarray(v2, dtype=np.float64)  # Second vector
+    selected_axes_for_signed = np.ascontiguousarray(selected_axes_for_signed, dtype=np.int32)  # Axes for signed angle
+    n_dims = len(v1)
+    if len(v2) != n_dims:
+        raise ValueError("v1 and v2 must have same length")
+    # Para 2D y 3D, Fortran ignora selected_axes_for_signed, pero requiere longitud 3
+    if n_dims <= 3:
+        selected_axes_for_signed = np.array([1, 2, 1], dtype=np.int32)
+    else:
+        selected_axes_for_signed = np.ascontiguousarray(selected_axes_for_signed, dtype=np.int32)
+        if len(selected_axes_for_signed) != 3:
+            raise ValueError("selected_axes_for_signed must have length 3 for n_dims > 3")
+        if np.any(selected_axes_for_signed < 1) or np.any(selected_axes_for_signed > n_dims):
+            raise ValueError("selected_axes_for_signed indices must be in [1, n_dims] for n_dims > 3")
+    # Prepare output and error code
+    signed_angle = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+    # Setup C wrapper
+    clock_hand_angle = lib.clock_hand_angle_between_vectors_c
+    clock_hand_angle.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # v1
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # v2
+        ctypes.c_int,  # n_dims
+        ctypes.POINTER(ctypes.c_double),  # signed_angle
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # selected_axes_for_signed
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    clock_hand_angle.restype = None
+    # Call Fortran routine
+    clock_hand_angle(v1, v2, n_dims, ctypes.byref(signed_angle), selected_axes_for_signed, ctypes.byref(ierr))
+    # Check for errors
+    check_err_code(ierr.value)
+
+    _readonly(signed_angle)
+    return signed_angle.value
+
+def tox_clock_hand_angles_for_shift_vectors(origins, targets, vecs_selection_mask, selected_axes_for_signed):
+    """
+    Calculate clock hand angles for shift vectors
+    
+    Args:
+        origins: Origin vectors (n_dims x n_vecs)
+        targets: Target vectors (n_dims x n_vecs)
+        vecs_selection_mask: Boolean array indicating which vectors to process
+        selected_axes_for_signed: Integer array of axes to use for signed angle (length n_dims)
+    
+    Returns:
+        numpy.ndarray: Signed angles for selected vectors in degrees
+    Raises:
+        RuntimeError: If Fortran routine returns error
+    """
+    # Input validation and conversion
+    origins = np.asfortranarray(origins, dtype=np.float64)  # Origin vectors
+    targets = np.asfortranarray(targets, dtype=np.float64)  # Target vectors
+    vecs_selection_mask = np.ascontiguousarray(vecs_selection_mask, dtype=np.int32)  # Selection mask
+    selected_axes_for_signed = np.ascontiguousarray(selected_axes_for_signed, dtype=np.int32)  # Axes for signed angle
+    n_dims, n_vecs = origins.shape
+    if targets.shape != (n_dims, n_vecs):
+        raise ValueError("origins and targets must have same shape")
+    if len(vecs_selection_mask) != n_vecs:
+        raise ValueError("vecs_selection_mask must match number of vectors")
+    if n_dims <= 3:
+        selected_axes_for_signed = np.array([1, 2, 1], dtype=np.int32)
+    else:
+        selected_axes_for_signed = np.ascontiguousarray(selected_axes_for_signed, dtype=np.int32)
+        if len(selected_axes_for_signed) != 3:
+            raise ValueError("selected_axes_for_signed must have length 3 for n_dims > 3")
+        if np.any(selected_axes_for_signed < 1) or np.any(selected_axes_for_signed > n_dims):
+            raise ValueError("selected_axes_for_signed indices must be in [1, n_dims] for n_dims > 3")
+    n_selected_vecs = int(np.sum(vecs_selection_mask))
+    # Prepare output and error code
+    signed_angles = np.zeros(n_selected_vecs, dtype=np.float64)
+    ierr = ctypes.c_int(0)
+    # Setup C wrapper
+    clock_hand_angles = lib.clock_hand_angles_for_shift_vectors_c
+    clock_hand_angles.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # origins
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # targets
+        ctypes.c_int,  # n_dims
+        ctypes.c_int,  # n_vecs
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # vecs_selection_mask
+        ctypes.c_int,  # n_selected_vecs
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # selected_axes_for_signed
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # signed_angles
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    clock_hand_angles.restype = None
+    # Call Fortran routine
+    clock_hand_angles(origins, targets, n_dims, n_vecs, vecs_selection_mask, n_selected_vecs, selected_axes_for_signed, signed_angles, ctypes.byref(ierr))
+    # Check for errors
+    check_err_code(ierr.value)
+    # Mark output as read-only
+    _readonly(signed_angles)
+    return signed_angles
+
+def relative_axes_changes_from_shift_vector(shift_vector):
+    """
+    Compute relative axis contributions from a shift vector (RAP space).
+    Args:
+        shift_vector (array-like): Input vector (1D)
+    Returns:
+        np.ndarray: Relative axis contributions (sum to 1)
+    Raises:
+        RuntimeError: If Fortran routine returns error
+    """
+    # Input validation and conversion
+    vec = np.ascontiguousarray(shift_vector, dtype=np.float64)  # Shift vector
+    n_dims = len(vec)
+    # Prepare output and error code
+    contrib = np.zeros(n_dims, dtype=np.float64)
+    ierr = ctypes.c_int(0)
+    # Setup C wrapper
+    relative_axes_changes = lib.relative_axes_changes_from_shift_vector_c
+    relative_axes_changes.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # shift_vector
+        ctypes.c_int,  # n_dims
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # contrib
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    relative_axes_changes.restype = None
+    # Call Fortran routine
+    relative_axes_changes(vec, n_dims, contrib, ctypes.byref(ierr))
+    # Check for errors
+    check_err_code(ierr.value)
+    # Mark output as read-only
+    _readonly(contrib)
+    return contrib
+
+def relative_axes_expression_from_expression_vector(expression_vector):
+    """
+    Compute relative axis contributions from an expression vector (RAP space).
+    Args:
+        expression_vector (array-like): Input vector (1D)
+    Returns:
+        np.ndarray: Relative axis contributions (sum to 1)
+    Raises:
+        RuntimeError: If Fortran routine returns error
+    """
+    # Input validation and conversion
+    vec = np.ascontiguousarray(expression_vector, dtype=np.float64)  # Expression vector
+    n_dims = len(vec)
+    # Prepare output and error code
+    contrib = np.zeros(n_dims, dtype=np.float64)
+    ierr = ctypes.c_int(0)
+    # Setup C wrapper
+    relative_axes_changes = lib.relative_axes_expression_from_expression_vector_c
+    relative_axes_changes.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # expression_vector
+        ctypes.c_int,  # n_dims
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # contrib
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    relative_axes_changes.restype = None
+    # Call Fortran routine
+    relative_axes_changes(vec, n_dims, contrib, ctypes.byref(ierr))
+    # Check for errors
+    check_err_code(ierr.value)
+    # Mark output as read-only
+    _readonly(contrib)
+    return contrib
 
 def tox_normalize_by_std_dev(input_matrix):
     """
@@ -538,7 +777,7 @@ def tox_normalize_by_std_dev(input_matrix):
     
     # Call Fortran routine
     normalize_c(n_genes, n_tissues, input_flat, output_flat, ctypes.byref(ierr))
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
     
     # Reshape and return
     result = output_flat.reshape((n_genes, n_tissues), order='F')
@@ -591,7 +830,7 @@ def tox_quantile_normalization(input_matrix):
     # Call Fortran routine
     quantile_norm_c(n_genes, n_tissues, input_flat, output_flat,
                     temp_col, rank_means, perm, stack_left, stack_right, max_stack, ctypes.byref(ierr))
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
     
     # Reshape and return
     result = output_flat.reshape((n_genes, n_tissues), order='F')
@@ -631,7 +870,7 @@ def tox_log2_transformation(input_matrix):
     
     # Call Fortran routine
     log2_transform_c(n_genes, n_tissues, input_flat, output_flat, ctypes.byref(ierr))
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
     
     # Reshape and return
     result = output_flat.reshape((n_genes, n_tissues), order='F')
@@ -682,7 +921,7 @@ def tox_calculate_tissue_averages(input_matrix, group_starts, group_counts):
     
     # Call Fortran routine
     tiss_avg_c(n_genes, n_groups, group_starts, group_counts, input_flat, output_flat, ctypes.byref(ierr))
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
     
     # Reshape and return
     result = output_flat.reshape((n_genes, n_groups), order='F')
@@ -754,7 +993,7 @@ def tox_normalization_pipeline(input_matrix, group_starts, group_counts):
         temp_col, rank_means, perm, stack_left, stack_right, max_stack,
         group_starts, group_counts, n_grps, ctypes.byref(ierr)
     )
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
 
     # Reshape and return log2(x+1) output
     result = buf_log.reshape((n_genes, n_grps), order='F')
@@ -804,7 +1043,7 @@ def tox_calculate_fold_changes(input_matrix, control_cols, condition_cols):
     
     # Call Fortran routine
     fchange_c(n_genes, n_samples, n_pairs, control_cols, condition_cols, input_flat, output_flat, ctypes.byref(ierr))
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
     
     # Reshape and return
     result = output_flat.reshape((n_genes, n_pairs), order='F')
@@ -901,7 +1140,7 @@ def tox_calculate_tissue_versatility(expression_vectors, vector_selection, axis_
     )
     
     # Check for errors and throw informative messages
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
     
     # Mark outputs as read-only
     _readonly(tissue_versatilities, tissue_angles_deg)
@@ -1101,7 +1340,7 @@ def tox_loess_smooth_2d(x_ref, y_ref, indices_used, x_query, kernel_sigma, kerne
     )
     
     # Check for errors
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
     
     # Mark output as read-only
     _readonly(y_out)
@@ -1157,7 +1396,7 @@ def tox_compute_family_scaling(distances, gene_to_fam):
     )
     
     # Check for errors
-    tox_errors(error_code[0])
+    check_err_code(error_code[0])
     
     # Mark outputs as read-only
     _readonly(dscale, loess_x, loess_y, indices_used)
@@ -1245,7 +1484,7 @@ def tox_compute_family_scaling_expert(distances, gene_to_fam, perm_tmp, stack_le
     )
     
     # Check for errors
-    tox_errors(error_code[0])
+    check_err_code(error_code[0])
     
     # Mark outputs as read-only
     _readonly(dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances)
@@ -1284,7 +1523,7 @@ def tox_compute_rdi(distances, gene_to_fam, dscale):
     # Prepare output and work arrays
     rdi = np.zeros(n_genes, dtype=np.float64)
     sorted_rdi = np.zeros(n_genes, dtype=np.float64)
-    perm = np.zeros(n_genes, dtype=np.int32)
+    perm = np.arange(1, n_genes + 1, dtype=np.int32)
     stack_left = np.zeros(n_genes, dtype=np.int32)
     stack_right = np.zeros(n_genes, dtype=np.int32)
     
@@ -1424,7 +1663,7 @@ def tox_detect_outliers(distances, gene_to_fam, percentile=95.0):
     )
     
     # Check for errors
-    tox_errors(error_code.value)
+    check_err_code(error_code.value)
     
     # Mark outputs as read-only
     _readonly(outliers_int, loess_x, loess_y, loess_n)
@@ -1483,7 +1722,7 @@ def tox_which(cond):
     )
     
     # Check for errors
-    tox_errors(error_code.value)
+    check_err_code(error_code.value)
     
     # Mark output as read-only
     _readonly(idx_out)
@@ -1505,8 +1744,7 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
         gene_to_centroid: Array mapping each gene to its corresponding family centroid index in family_centroids with length n_vectors (1 based for fortran)
 
     Returns:
-        dict: Dictionary containing:
-            - shift_vectors: The computed shift vectors for each gene expression vector
+        shift_vectors: The computed shift vectors for each gene expression vector
 
     """
     
@@ -1580,18 +1818,16 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
     )
 
     # Check for errors and throw informative messages
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
 
     # Mark outputs as read-only
     _readonly(shift_vectors)
     
-    # Return structured result (no ierr since we checked for errors)
-    return {
-        "shift_vectors": shift_vectors
-    }
+    # Return result (no ierr since we checked for errors)
+    return shift_vectors
 
 
-def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_set, mode='all'):
+def tox_group_centroid(expression_vectors, gene_to_family, n_families, mode, ortholog_set = None):
     """
     Computes expression centroids for groups of genes.
 
@@ -1605,10 +1841,10 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
             A 1D NumPy array of length n_genes, mapping each gene to a family ID.
         n_families : int
             The total number of unique families.
+        mode : str
+            The calculation mode. 'all' or 'orthologs'.
         ortholog_set : np.ndarray
-            A 1D boolean NumPy array of length n_genes, indicating ortholog membership.
-        mode : str, optional
-            The calculation mode. 'all' (default) or 'ortho'.
+            (Optional) A 1D boolean NumPy array of length n_genes, indicating ortholog membership (only required in 'orthologs' mode).
 
     Returns:
         np.ndarray
@@ -1620,6 +1856,14 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
         raise ValueError("`vectors` must be a 2D NumPy array.")
     n_axes, n_genes = expression_vectors.shape
 
+    if mode != 'all' and mode != 'orthologs':
+        raise ValueError("'mode' must be either 'all' or 'orthologs'.")
+    if mode == 'orthologs': 
+        if ortholog_set is None:
+            raise ValueError("`ortholog_set` must be provided when mode is 'orthologs'.")
+    else:
+        ortholog_set = np.ones(n_genes, dtype=np.int32, order="F")
+
     vecs_f = np.asarray(expression_vectors, dtype=np.float64, order="F")
     g2f_map_f = np.asarray(gene_to_family, dtype=np.int32, order="F")
     ortho_set_int_f = np.asarray(ortholog_set, dtype=np.int32, order="F")
@@ -1628,11 +1872,8 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
         raise ValueError("`gene_to_family` must be a 1D NumPy array of size n_genes.")
     if ortho_set_int_f.size != n_genes:
         raise ValueError("`ortholog_set` must be a 1D NumPy array of size n_genes.")
-    if mode not in ['all', 'ortho']:
-        raise ValueError("`mode` must be either 'all' or 'ortho'.")
 
     # 2) Prepare output buffers and mode flag
-    use_all_mode_int = 1 if mode == 'all' else 0
     centroids_out = np.zeros((n_axes, n_families), dtype=np.float64, order="F")
     selected_indices = np.zeros(n_genes, dtype=np.int32, order="F")
     ierr = ctypes.c_int(0)
@@ -1646,7 +1887,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
         np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # gene_to_family
         ctypes.c_int,                                                   # n_families
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"), # centroid_matrix (out)
-        ctypes.c_int,                                                   # use_all_mode (as int)
+        ctypes.c_char * 10,                                             # mode (character array)
         np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # ortholog_set (as int array)
         np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),   # selected_indices
         ctypes.c_int,                                                   # selected_indices_len
@@ -1655,6 +1896,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
     group_centroid_c.restype = None
 
     # 4) Call the Fortran routine
+    mode_buffer = ctypes.create_string_buffer(mode.encode('utf-8'), size=10)
     group_centroid_c(
         vecs_f,
         n_axes,
@@ -1662,7 +1904,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
         g2f_map_f,
         n_families,
         centroids_out,
-        use_all_mode_int,
+        mode_buffer,
         ortho_set_int_f,
         selected_indices,
         n_genes,
@@ -1670,7 +1912,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, ortholog_
     )
 
     # Check for errors and throw informative messages
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
 
     # 5) Mark output as read-only and return
     _readonly(centroids_out)
@@ -1729,8 +1971,980 @@ def tox_mean_vector(expression_vectors, gene_indices):
     )
 
     # Error handling
-    tox_errors(ierr.value)
+    check_err_code(ierr.value)
 
     # Mark output as read-only
     _readonly(centroid_col)
     return centroid_col
+
+def calc_spike_thresholds_expert(spike_contribs: np.ndarray, percentile_val: float, permutation: np.ndarray) -> np.ndarray:
+    """
+    Calculate empirical thresholds for spike contributions using pre-sorted permutations
+    
+    Args:
+        spike_contribs: 2D array of spike contributions [n_timepoints, n_samples] 
+                       (rows=timepoints, columns=samples) in Fortran order
+        percentile_val: Percentile value for threshold (0.0-100.0)
+        permutation: Pre-computed permutation indices [n_samples, n_timepoints] 
+                    (each column contains sorted indices for a timepoint) in Fortran order
+    
+    Returns:
+        thresholds: 1D array of thresholds for each timepoint [n_timepoints] (read-only)
+    """
+    # Ensure correct data types and memory layout
+    spike_contribs = np.asarray(spike_contribs, dtype=np.float64, order='F')
+    permutation = np.asarray(permutation, dtype=np.int32, order='F')
+    
+    n_timepoints, n_samples = spike_contribs.shape
+    
+    # Validate input dimensions
+    if permutation.shape != (n_samples, n_timepoints):
+        raise ValueError(f"permutation shape {permutation.shape} doesn't match expected (n_samples, n_timepoints) = ({n_samples}, {n_timepoints})")
+    
+    if not (0.0 <= percentile_val <= 100.0):
+        raise ValueError("percentile_val must be between 0.0 and 100.0")
+    
+    # Prepare outputs
+    thresholds = np.zeros(n_timepoints, dtype=np.float64, order='F')
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper - using expert_C version with permutations
+    calc_spike_thresholds_c = lib.calc_spike_thresholds_expert_C
+    calc_spike_thresholds_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='F_CONTIGUOUS'),  # spike_contribs
+        ctypes.c_int,  # n_timepoints
+        ctypes.c_int,  # n_samples
+        ctypes.c_double,  # percentile_val
+        np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # thresholds
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags='F_CONTIGUOUS'),  # permutation
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    calc_spike_thresholds_c.restype = None
+    
+    # Call Fortran routine
+    calc_spike_thresholds_c(spike_contribs, n_timepoints, n_samples, percentile_val, 
+                           thresholds, permutation, ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    # Mark output as read-only
+    _readonly(thresholds)
+    return thresholds
+
+def calc_spike_thresholds(spike_contribs: np.ndarray, percentile_val: float) -> np.ndarray:
+    """
+    Calculate empirical thresholds for spike contributions with internal allocations and sorting
+    
+    Args:
+        spike_contribs: 2D array of spike contributions [n_timepoints, n_samples] 
+                       (rows=timepoints, columns=samples) in Fortran order
+        percentile_val: Percentile value for threshold (0.0-100.0)
+    
+    Returns:
+        thresholds: 1D array of thresholds for each timepoint [n_timepoints] (read-only)
+    """
+    # Ensure correct data types and memory layout
+    spike_contribs = np.asarray(spike_contribs, dtype=np.float64, order='F')
+    
+    n_timepoints, n_samples = spike_contribs.shape
+    
+    if not (0.0 <= percentile_val <= 100.0):
+        raise ValueError("percentile_val must be between 0.0 and 100.0")
+    
+    # Prepare outputs
+    thresholds = np.zeros(n_timepoints, dtype=np.float64, order='F')
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper
+    calc_spike_thresholds_c = lib.calc_spike_thresholds_C
+    calc_spike_thresholds_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='F_CONTIGUOUS'),  # spike_contribs
+        ctypes.c_int,  # n_timepoints
+        ctypes.c_int,  # n_samples
+        ctypes.c_double,  # percentile_val
+        np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # thresholds
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    calc_spike_thresholds_c.restype = None
+    
+    # Call Fortran routine
+    calc_spike_thresholds_c(spike_contribs, n_timepoints, n_samples, percentile_val, 
+                                 thresholds, ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    # Mark output as read-only
+    _readonly(thresholds)
+    return thresholds
+
+# ==================== INTEGRATED THRESHOLDS FUNCTIONS ====================
+
+def calc_integrated_threshold_expert(contributions: np.ndarray, percentile_val: float, 
+                            permutation: np.ndarray) -> float:
+    """
+    Calculate empirical threshold for integrated (trajectory-level) contributions
+    
+    Args:
+        contributions: 1D array of integrated contributions [n_samples] in Fortran order
+        percentile_val: Percentile value for threshold (0.0-100.0)
+        permutation: Pre-computed permutation indices for sorted contributions [n_samples] 
+                    in Fortran order
+    
+    Returns:
+        threshold: Scalar threshold value
+    """
+    # Ensure correct data types and memory layout
+    contributions = np.asarray(contributions, dtype=np.float64, order='F')
+    permutation = np.asarray(permutation, dtype=np.int32, order='F')
+    
+    n_samples = contributions.size
+    
+    # Validate input dimensions
+    if permutation.size != n_samples:
+        raise ValueError(f"permutation size {permutation.size} doesn't match contributions size {n_samples}")
+    
+    if not (0.0 <= percentile_val <= 100.0):
+        raise ValueError("percentile_val must be between 0.0 and 100.0")
+    
+    # Prepare outputs
+    threshold = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper - using expert_C version with permutations
+    calc_integrated_threshold_c = lib.calc_integrated_threshold_expert_C
+    calc_integrated_threshold_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # contributions
+        ctypes.c_int,  # n_samples
+        ctypes.c_double,  # percentile_val
+        ctypes.POINTER(ctypes.c_double),  # threshold
+        np.ctypeslib.ndpointer(dtype=np.int32, flags='F_CONTIGUOUS'),  # permutation
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    calc_integrated_threshold_c.restype = None
+    
+    # Call Fortran routine
+    calc_integrated_threshold_c(contributions, n_samples, percentile_val, 
+                               threshold, permutation, ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    return threshold.value
+
+def calc_integrated_threshold(contributions: np.ndarray, percentile_val: float) -> float:
+    """
+    Calculate empirical threshold for integrated contributions with internal allocation and sorting
+    
+    Args:
+        contributions: 1D array of integrated contributions [n_samples] in Fortran order
+        percentile_val: Percentile value for threshold (0.0-100.0)
+    
+    Returns:
+        threshold: Scalar threshold value
+    """
+    # Ensure correct data types and memory layout
+    contributions = np.asarray(contributions, dtype=np.float64, order='F')
+    
+    n_samples = contributions.size
+    
+    if not (0.0 <= percentile_val <= 100.0):
+        raise ValueError("percentile_val must be between 0.0 and 100.0")
+    
+    # Prepare outputs
+    threshold = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper
+    calc_integrated_threshold_c = lib.calc_integrated_threshold_C
+    calc_integrated_threshold_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # contributions
+        ctypes.c_int,  # n_samples
+        ctypes.c_double,  # percentile_val
+        ctypes.POINTER(ctypes.c_double),  # threshold
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    calc_integrated_threshold_c.restype = None
+    
+    # Call Fortran routine
+    calc_integrated_threshold_c(contributions, n_samples, percentile_val, 
+                                     threshold, ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    return threshold.value
+
+# ==================== OUTLIER DETECTION FUNCTIONS ====================
+
+def detect_outliers_integrated(contributions: np.ndarray, threshold: float) -> np.ndarray:
+    """
+    Detect outliers in integrated (trajectory-level) contributions
+    
+    Args:
+        contributions: 1D array of integrated contributions [n_samples] in Fortran order
+        threshold: Scalar threshold value for outlier detection
+    
+    Returns:
+        outlier_mask: 1D boolean array indicating outlier samples [n_samples] (read-only)
+    """
+    # Ensure correct data types and memory layout
+    contributions = np.asarray(contributions, dtype=np.float64, order='F')
+    
+    n_samples = contributions.size
+    
+    # Prepare outputs
+    outlier_mask = np.zeros(n_samples, dtype=np.int32, order='F')  # C int for logical
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper - using expert_C version
+    detect_outliers_integrated_c = lib.detect_outliers_integrated_expert_C
+    detect_outliers_integrated_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # contributions
+        ctypes.c_int,  # n_samples
+        ctypes.c_double,  # threshold
+        np.ctypeslib.ndpointer(dtype=np.int32, flags='F_CONTIGUOUS'),  # outlier_mask
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    detect_outliers_integrated_c.restype = None
+    
+    # Call Fortran routine
+    detect_outliers_integrated_c(contributions, n_samples, threshold, 
+                                outlier_mask, ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    # Convert C int (0/1) to Python boolean
+    outlier_mask_bool = outlier_mask.astype(bool)
+    
+    # Mark output as read-only
+    _readonly(outlier_mask_bool)
+    return outlier_mask_bool
+
+def detect_outliers_spike(spike_contribs: np.ndarray, thresholds: np.ndarray) -> np.ndarray:
+    """
+    Detect outliers in spike contributions
+    
+    Args:
+        spike_contribs: 2D array of spike contributions [n_timepoints, n_samples] 
+                       (rows=timepoints, columns=samples) in Fortran order
+        thresholds: 1D array of thresholds for each timepoint [n_timepoints] in Fortran order
+    
+    Returns:
+        outlier_mask: 2D boolean array indicating outliers [n_timepoints, n_samples] (read-only)
+    """
+    # Ensure correct data types and memory layout
+    spike_contribs = np.asarray(spike_contribs, dtype=np.float64, order='F')
+    thresholds = np.asarray(thresholds, dtype=np.float64, order='F')
+    
+    n_timepoints, n_samples = spike_contribs.shape
+    
+    # Validate input dimensions
+    if thresholds.size != n_timepoints:
+        raise ValueError(f"thresholds size {thresholds.size} doesn't match n_timepoints {n_timepoints}")
+    
+    outlier_mask = np.zeros((n_timepoints, n_samples), dtype=np.int32, order='F')  # C int for logical
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper - using expert_C version
+    detect_outliers_spike_c = lib.detect_outliers_spike_expert_C
+    detect_outliers_spike_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=2, flags='F_CONTIGUOUS'),  # spike_contribs
+        ctypes.c_int,  # n_timepoints
+        ctypes.c_int,  # n_samples
+        np.ctypeslib.ndpointer(dtype=np.float64, flags='F_CONTIGUOUS'),  # thresholds
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=2, flags='F_CONTIGUOUS'),  # outlier_mask
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    detect_outliers_spike_c.restype = None
+    
+    # Call Fortran routine
+    detect_outliers_spike_c(spike_contribs, n_timepoints, n_samples, thresholds, 
+                           outlier_mask, ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    # Convert C int (0/1) to Python boolean
+    outlier_mask_bool = outlier_mask.astype(bool)
+    
+    # Mark output as read-only
+    _readonly(outlier_mask_bool)
+    return outlier_mask_bool
+
+def compute_edf(values):
+    """
+    Compute Empirical Distribution Function (EDF) for given values.
+    
+    This function computes the empirical cumulative distribution function (EDF)
+    for a set of observed data values. The EDF represents the proportion of values
+    less than or equal to each unique value in the dataset.
+    
+    Args:
+        values: Array of observed data values (e.g., contributions or spikes)
+                Can be list or numpy array
+    
+    Returns:
+        dict: Dictionary with keys:
+            - 'unique_values': Sorted unique data values (read-only numpy array)
+            - 'cdf_values': Corresponding cumulative frequencies between 0 and 1 (read-only)
+            - 'n_unique': Number of unique values found (int)
+    
+    Raises:
+        RuntimeError: If error occurs during computation (invalid input, empty input)
+    
+    """
+    # Input validation and conversion
+    values = np.asarray(values, dtype=np.float64)
+    
+    n_values = len(values)
+    
+    # Prepare output arrays with explicit sizes (n_values as per C interface)
+    unique_values = np.zeros(n_values, dtype=np.float64, order='F')
+    cdf_values = np.zeros(n_values, dtype=np.float64, order='F')
+    n_unique = ctypes.c_int()
+    ierr = ctypes.c_int()
+    
+    # Define C interface with explicit size arrays
+    lib.compute_edf_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # values(n_values)
+        ctypes.c_int,                                                                                # n_values
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # unique_values(n_values)
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # cdf_values(n_values)
+        ctypes.POINTER(ctypes.c_int),                                                                # n_unique
+        ctypes.POINTER(ctypes.c_int)                                                                 # ierr
+    ]
+    lib.compute_edf_c.restype = None
+    
+    # Call Fortran function via C interface
+    lib.compute_edf_c(
+        values,
+        n_values,
+        unique_values,
+        cdf_values,
+        ctypes.byref(n_unique),
+        ctypes.byref(ierr)
+    )
+    
+    # Error handling
+    check_err_code(ierr.value)
+    
+    # Mark arrays as read-only
+    _readonly(unique_values, cdf_values)
+    
+    return {
+        'unique_values': unique_values,
+        'cdf_values': cdf_values,
+        'n_unique': n_unique.value
+    }
+
+
+def compute_edf_expert(values, perm):
+    """
+    Expert interface for Empirical Distribution Function (EDF) with pre-sorted permutation.
+    
+    This function computes the EDF using a pre-sorted permutation array, allowing users
+    to have full control over the sorting algorithm or reuse existing permutations.
+    
+    Args:
+        values: Array of observed data values (e.g., contributions or spikes)
+        perm: Pre-sorted permutation indices (must be sorted by values[perm])
+              Array of 1-based indices in Fortran style
+    
+    Returns:
+        dict: Dictionary with keys:
+            - 'unique_values': Sorted unique data values (read-only numpy array)
+            - 'cdf_values': Corresponding cumulative frequencies between 0 and 1 (read-only)
+            - 'n_unique': Number of unique values found (int)
+    
+    Raises:
+        RuntimeError: If error occurs during computation (invalid input, empty input)
+    
+    Note:
+        The perm array must be sorted such that values[perm[i]] is in ascending order.
+        This function skips the internal sorting step for better performance.
+    
+    """
+    # Input validation and conversion
+    values = np.asarray(values, dtype=np.float64)
+    perm = np.asarray(perm, dtype=np.int32)
+    
+    n_values = len(values)
+    
+    if len(perm) != n_values:
+        raise ValueError(f"perm length ({len(perm)}) must match values length ({n_values})")
+    
+    # Prepare output arrays with explicit sizes
+    unique_values = np.zeros(n_values, dtype=np.float64, order='F')
+    cdf_values = np.zeros(n_values, dtype=np.float64, order='F')
+    n_unique = ctypes.c_int()
+    ierr = ctypes.c_int()
+    
+    # Define C interface
+    lib.compute_edf_expert_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # values(n_values)
+        ctypes.c_int,                                                                                # n_values
+        np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),    # perm(n_values)
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # unique_values(n_values)
+        np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, shape=(n_values,), flags='F_CONTIGUOUS'),  # cdf_values(n_values)
+        ctypes.POINTER(ctypes.c_int),                                                                # n_unique
+        ctypes.POINTER(ctypes.c_int)                                                                 # ierr
+    ]
+    lib.compute_edf_expert_c.restype = None
+    
+    # Call Fortran function via C interface
+    lib.compute_edf_expert_c(
+        values,
+        n_values,
+        perm,
+        unique_values,
+        cdf_values,
+        ctypes.byref(n_unique),
+        ctypes.byref(ierr)
+    )
+    
+    # Error handling
+    check_err_code(ierr.value)
+    
+    # Mark arrays as read-only
+    _readonly(unique_values, cdf_values)
+    
+    return {
+        'unique_values': unique_values,
+        'cdf_values': cdf_values,
+        'n_unique': n_unique.value
+    }
+
+def tox_trajectory_contribution(factor, dependent, mode):
+    """
+    Compute trajectory-level contribution between two vectors.
+
+    Args:
+        factor (np.ndarray): 1D array of shape (n_timepoints,) — independent variable
+        dependent (np.ndarray): 1D array of shape (n_timepoints,) — dependent variable
+        mode (int): 1 for cosine similarity, 2 for angle (acos)
+
+    Returns:
+        float: contribution value
+    """
+    factor = np.ascontiguousarray(factor, dtype=np.float64)
+    dependent = np.ascontiguousarray(dependent, dtype=np.float64)
+    assert factor.shape == dependent.shape, "Shape mismatch"
+
+    n_timepoints = ctypes.c_int(len(factor))
+    mode_c = ctypes.c_int(mode)
+    contribution = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+
+    trajectory_contribution_c = lib.trajectory_contribution_c
+    trajectory_contribution_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_int)
+    ]
+    trajectory_contribution_c.restype = None
+
+    trajectory_contribution_c(
+        factor, dependent,
+        ctypes.byref(n_timepoints),
+        ctypes.byref(mode_c),
+        ctypes.byref(contribution),
+        ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+    return contribution.value
+
+
+def tox_spike_contribution(factor, dependent, mode):
+    """
+    Compute spike-wise contribution between two vectors using directional or angular mode.
+
+    Args:
+        factor (np.ndarray): 1D array of shape (n_timepoints,) representing the independent variable.
+        dependent (np.ndarray): 1D array of shape (n_timepoints,) representing the dependent variable.
+        mode (int): Mode of contribution (1 = Normal, 2 = RAP).
+
+    Returns:
+        np.ndarray: 1D array of shape (n_timepoints,) with contribution values per timepoint.
+    """
+    factor = np.ascontiguousarray(factor, dtype=np.float64)
+    dependent = np.ascontiguousarray(dependent, dtype=np.float64)
+
+    if factor.shape != dependent.shape:
+        raise ValueError("factor and dependent must have the same shape")
+
+    n_timepoints = ctypes.c_int(factor.shape[0])
+    mode_c = ctypes.c_int(mode)
+
+    contribution = np.empty(n_timepoints.value, dtype=np.float64)
+    ierr = ctypes.c_int(0)
+
+    spike_contribution_c = lib.spike_contribution_c
+    spike_contribution_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # factor
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # dependent
+        ctypes.POINTER(ctypes.c_int),                                     # n_timepoints
+        ctypes.POINTER(ctypes.c_int),                                     # mode
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # contribution
+        ctypes.POINTER(ctypes.c_int)                                      # ierr
+    ]
+    spike_contribution_c.restype = None
+
+    spike_contribution_c(
+        factor,
+        dependent,
+        ctypes.byref(n_timepoints),
+        ctypes.byref(mode_c),
+        contribution,
+        ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+    _readonly(contribution)
+    return contribution
+
+
+def tox_calc_contributions(trajectories, i_factor, dependent_idx, mode):
+    """
+    Wrapper for calc_contributions_c: calculates spike and integrated contributions using internal allocation.
+
+    Args:
+        trajectories (np.ndarray): 3D array of shape (n_factors, n_samples, n_timepoints)
+        i_factor (int): 0-based index of the independent variable
+        dependent_idx (int): 0-based index of the dependent variable
+        mode (int): Mode (1 = Normal, 2 = RAP)
+
+    Returns:
+        dict: A dictionary containing:,
+            {
+                'spikes': np.ndarray,                  # Spike contributions [n_timepoints, n_samples]
+                'trajectory': np.ndarray      # Trajectory contributions [n_samples]
+            }
+    """
+    trajectories = np.asfortranarray(trajectories, dtype=np.float64)
+    n_factors, n_samples, n_timepoints = trajectories.shape
+
+    spike_contribs = np.empty((n_timepoints, n_samples), dtype=np.float64, order="F")
+    trajectory_contribs = np.empty(n_samples, dtype=np.float64)
+    ierr = ctypes.c_int(0)
+
+    calc_contributions_c = lib.calc_contributions_c
+    calc_contributions_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int)
+    ]
+    calc_contributions_c.restype = None
+
+    calc_contributions_c(
+        trajectories,
+        ctypes.byref(ctypes.c_int(n_factors)),
+        ctypes.byref(ctypes.c_int(n_samples)),
+        ctypes.byref(ctypes.c_int(n_timepoints)),
+        ctypes.byref(ctypes.c_int(i_factor)),
+        ctypes.byref(ctypes.c_int(dependent_idx)),
+        ctypes.byref(ctypes.c_int(mode)),
+        spike_contribs,
+        trajectory_contribs,
+        ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+    _readonly(spike_contribs, trajectory_contribs)
+
+    return {
+        "spikes": spike_contribs,
+        "trajectory": trajectory_contribs
+    }
+
+
+def tox_calc_contributions_expert(trajectories, i_factor, dependent_idx, mode, temp_factor_vector, temp_dependent_vector):
+    """
+    Wrapper for calc_contributions_expert_c: calculates spike and integrated contributions using caller-provided buffers.
+
+    Args:
+        trajectories (np.ndarray): 3D array of shape (n_factors, n_samples, n_timepoints)
+        i_factor (int): 0-based index of the independent variable
+        dependent_idx (int): 0-based index of the dependent variable
+        mode (int): Mode (1 = Normal, 2 = RAP)
+        temp_factor_vector (np.ndarray): 1D work array of shape (n_timepoints,)
+        temp_dependent_vector (np.ndarray): 1D work array of shape (n_timepoints,)
+
+    Returns:
+        dict: A dictionary containing:,
+            {
+                'spikes': np.ndarray,                  # Spike contributions [n_timepoints, n_samples]
+                'trajectory': np.ndarray      # Trajectory contributions [n_samples]
+            }
+    """
+    trajectories = np.asfortranarray(trajectories, dtype=np.float64)
+    n_factors, n_samples, n_timepoints = trajectories.shape
+
+    spike_contribs = np.empty((n_timepoints, n_samples), dtype=np.float64, order="F")
+    trajectory_contribs = np.empty(n_samples, dtype=np.float64)
+    ierr = ctypes.c_int(0)
+
+    calc_contributions_expert_c = lib.calc_contributions_expert_c
+    calc_contributions_expert_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int), ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int)
+    ]
+    calc_contributions_expert_c.restype = None
+
+    calc_contributions_expert_c(
+        trajectories,
+        ctypes.byref(ctypes.c_int(n_factors)),
+        ctypes.byref(ctypes.c_int(n_samples)),
+        ctypes.byref(ctypes.c_int(n_timepoints)),
+        ctypes.byref(ctypes.c_int(i_factor)),
+        ctypes.byref(ctypes.c_int(dependent_idx)),
+        ctypes.byref(ctypes.c_int(mode)),
+        spike_contribs,
+        trajectory_contribs,
+        temp_factor_vector,
+        temp_dependent_vector,
+        ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+    _readonly(spike_contribs, trajectory_contribs)
+
+    return {
+        "spikes": spike_contribs,
+        "trajectory": trajectory_contribs
+    }
+
+def tox_process_trajectories(trajectories, factor_mask, dependent_idx, mode, percentile):
+    """
+    Processes multiple trajectories with per-timepoint percentiles.
+
+    Args:
+        trajectories (np.ndarray): 3D array of shape (n_factors, n_samples, n_timepoints)
+        factor_mask (np.ndarray): 1D boolean array of shape (n_factors,) indicating which factors to process
+        dependent_idx (int): 1-based index of the dependent variable
+        mode (int): Mode (1 = Normal, 2 = RAP)
+        percentile (float): Percentile value for threshold calculation (0.0-100.0)
+
+    Returns:
+        dict: A dictionary containing:
+            {
+                'integrated_contribs': np.ndarray,    # Integrated contributions [n_samples, n_processed_factors]
+                'spike_contribs': np.ndarray,         # Spike contributions [n_timepoints, n_samples, n_processed_factors]
+                'thresholds_integrated': np.ndarray,  # Thresholds for integrated contributions [n_processed_factors]
+                'thresholds_spike': np.ndarray,       # Thresholds for spike contributions [n_timepoints, n_processed_factors]
+                'outliers_integrated': np.ndarray,    # Outliers for integrated contributions [n_samples, n_processed_factors]
+                'outliers_spike': np.ndarray          # Outliers for spike contributions [n_timepoints, n_samples, n_processed_factors]
+            }
+    """
+    trajectories = np.asfortranarray(trajectories, dtype=np.float64)
+    n_factors, n_samples, n_timepoints = trajectories.shape
+    
+    # Convert boolean mask to integer array for C
+    factor_mask_int = np.ascontiguousarray(factor_mask.astype(np.int32), dtype=np.int32)
+    
+    # Calculate number of processed factors (excluding dependent_idx)
+    n_processed = np.sum(factor_mask) - (1 if factor_mask[dependent_idx - 1] else 0)
+    if n_processed <= 0:
+        raise ValueError("No factors to process after excluding dependent variable")
+    
+    # Prepare output arrays
+    integrated_contribs = np.empty((n_samples, n_processed), dtype=np.float64, order="F")
+    spike_contribs = np.empty((n_timepoints, n_samples, n_processed), dtype=np.float64, order="F")
+    thresholds_integrated = np.empty(n_processed, dtype=np.float64)
+    thresholds_spike = np.empty((n_timepoints, n_processed), dtype=np.float64, order='F')
+    outliers_integrated = np.empty((n_samples, n_processed), dtype=np.int32, order='F')
+    outliers_spike = np.empty((n_timepoints, n_samples, n_processed), dtype=np.int32, order='F')
+    
+    ierr = ctypes.c_int(0)
+
+    process_trajectories_c = lib.process_trajectories_C
+    process_trajectories_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # trajectories
+        ctypes.POINTER(ctypes.c_int),                                     # n_factors
+        ctypes.POINTER(ctypes.c_int),                                     # n_samples
+        ctypes.POINTER(ctypes.c_int),                                     # n_timepoints
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),     # factor_mask_int
+        ctypes.POINTER(ctypes.c_int),                                     # dependent_idx
+        ctypes.POINTER(ctypes.c_int),                                     # mode
+        ctypes.POINTER(ctypes.c_double),                                  # percentile
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # integrated_contribs
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # spike_contribs
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),   # thresholds_integrated
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),     # outliers_integrated
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # thresholds_spike
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),     # outliers_spike
+        ctypes.POINTER(ctypes.c_int)                                      # ierr
+    ]
+    process_trajectories_c.restype = None
+
+    process_trajectories_c(
+        trajectories,
+        ctypes.byref(ctypes.c_int(n_factors)),
+        ctypes.byref(ctypes.c_int(n_samples)),
+        ctypes.byref(ctypes.c_int(n_timepoints)),
+        ctypes.byref(ctypes.c_int(n_processed)),
+        factor_mask_int,
+        ctypes.byref(ctypes.c_int(dependent_idx)),
+        ctypes.byref(ctypes.c_int(mode)),
+        ctypes.byref(ctypes.c_double(percentile)),
+        integrated_contribs,
+        spike_contribs,
+        thresholds_integrated,
+        outliers_integrated,
+        thresholds_spike,
+        outliers_spike,
+        ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+    
+    # Convert integer outliers back to boolean for Python
+    outliers_integrated_bool = outliers_integrated.astype(bool)
+    outliers_spike_bool = outliers_spike.astype(bool)
+    
+    _readonly(integrated_contribs, spike_contribs, thresholds_integrated, 
+              thresholds_spike, outliers_integrated_bool, outliers_spike_bool)
+
+    return {
+        "integrated_contribs": integrated_contribs,
+        "spike_contribs": spike_contribs,
+        "thresholds_integrated": thresholds_integrated,
+        "thresholds_spike": thresholds_spike,
+        "outliers_integrated": outliers_integrated_bool,
+        "outliers_spike": outliers_spike_bool
+    }
+
+
+def tox_process_trajectories_flat(trajectories, factor_mask, dependent_idx, mode, percentile):
+    """
+    Processes trajectories with global percentile for spike contributions.
+
+    Args:
+        trajectories (np.ndarray): 3D array of shape (n_factors, n_samples, n_timepoints)
+        factor_mask (np.ndarray): 1D boolean array of shape (n_factors,) indicating which factors to process
+        dependent_idx (int): 1-based index of the dependent variable
+        mode (int): Mode (1 = Normal, 2 = RAP)
+        percentile (float): Percentile value for threshold calculation (0.0-100.0)
+
+    Returns:
+        dict: A dictionary containing:
+            {
+                'integrated_contribs': np.ndarray,    # Integrated contributions [n_samples, n_processed_factors]
+                'spike_contribs': np.ndarray,         # Spike contributions [n_timepoints, n_samples, n_processed_factors]
+                'thresholds_integrated': np.ndarray,  # Thresholds for integrated contributions [n_processed_factors]
+                'thresholds_spike': np.ndarray,       # Thresholds for spike contributions [n_processed_factors] (1D)
+                'outliers_integrated': np.ndarray,    # Outliers for integrated contributions [n_samples, n_processed_factors]
+                'outliers_spike': np.ndarray          # Outliers for spike contributions [n_timepoints, n_samples, n_processed_factors]
+            }
+    """
+    trajectories = np.asfortranarray(trajectories, dtype=np.float64)
+    n_factors, n_samples, n_timepoints = trajectories.shape
+    
+    # Convert boolean mask to integer array for C
+    factor_mask_int = np.ascontiguousarray(factor_mask.astype(np.int32), dtype=np.int32)
+    
+    # Calculate number of processed factors (excluding dependent_idx)
+    n_processed = np.sum(factor_mask) - (1 if factor_mask[dependent_idx - 1] else 0)
+    if n_processed <= 0:
+        raise ValueError("No factors to process after excluding dependent variable")
+    
+    # Prepare output arrays
+    integrated_contribs = np.empty((n_samples, n_processed), dtype=np.float64, order="F")
+    spike_contribs = np.empty((n_timepoints, n_samples, n_processed), dtype=np.float64, order="F")
+    thresholds_integrated = np.empty(n_processed, dtype=np.float64, order='F')
+    thresholds_spike = np.empty(n_processed, dtype=np.float64, order='F')  # 1D for flat version
+    outliers_integrated = np.empty((n_samples, n_processed), dtype=np.int32, order='F')
+    outliers_spike = np.empty((n_timepoints, n_samples, n_processed), dtype=np.int32, order='F')
+    
+    ierr = ctypes.c_int(0)
+
+    process_trajectories_flat_c = lib.process_trajectories_flat_C
+    process_trajectories_flat_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # trajectories
+        ctypes.POINTER(ctypes.c_int),                                     # n_factors
+        ctypes.POINTER(ctypes.c_int),                                     # n_samples
+        ctypes.POINTER(ctypes.c_int),                                     # n_timepoints
+        ctypes.POINTER(ctypes.c_int),                                     # n_processed
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),     # factor_mask_int
+        ctypes.POINTER(ctypes.c_int),                                     # dependent_idx
+        ctypes.POINTER(ctypes.c_int),                                     # mode
+        ctypes.POINTER(ctypes.c_double),                                  # percentile
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # integrated_contribs
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # spike_contribs
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # thresholds_integrated
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),     # outliers_integrated
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),   # thresholds_spike
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),     # outliers_spike
+        ctypes.POINTER(ctypes.c_int)                                      # ierr
+    ]
+    process_trajectories_flat_c.restype = None
+
+    process_trajectories_flat_c(
+        trajectories,
+        ctypes.byref(ctypes.c_int(n_factors)),
+        ctypes.byref(ctypes.c_int(n_samples)),
+        ctypes.byref(ctypes.c_int(n_timepoints)),
+        ctypes.byref(ctypes.c_int(n_processed)),
+        factor_mask_int,
+        ctypes.byref(ctypes.c_int(dependent_idx)),
+        ctypes.byref(ctypes.c_int(mode)),
+        ctypes.byref(ctypes.c_double(percentile)),
+        integrated_contribs,
+        spike_contribs,
+        thresholds_integrated,
+        outliers_integrated,
+        thresholds_spike,
+        outliers_spike,
+        ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+    
+    # Convert integer outliers back to boolean for Python
+    outliers_integrated_bool = outliers_integrated.astype(bool)
+    outliers_spike_bool = outliers_spike.astype(bool)
+    
+    _readonly(integrated_contribs, spike_contribs, thresholds_integrated, 
+              thresholds_spike, outliers_integrated_bool, outliers_spike_bool)
+
+    return {
+        "integrated_contribs": integrated_contribs,
+        "spike_contribs": spike_contribs,
+        "thresholds_integrated": thresholds_integrated,
+        "thresholds_spike": thresholds_spike,
+        "outliers_integrated": outliers_integrated_bool,
+        "outliers_spike": outliers_spike_bool
+    }
+
+
+def tox_k_means_clustering(data_points, centroids, max_iter):
+    """
+    Wrapper for k_means_clustering_c: performs full k-means clustering.
+
+    Args:
+        data_points (np.ndarray): 2D array of shape (n_dims, n_points)
+        centroids (np.ndarray): 2D array of shape (n_dims, n_clusters), initial centroids
+        max_iter (int): maximum number of iterations
+
+    Returns:
+        dict: {
+            "centroids": np.ndarray of shape (n_dims, n_clusters),
+            "labels": np.ndarray of shape (n_points),
+            "label_counts": np.ndarray of shape (n_clusters)
+        }
+    """
+
+    data_points = np.asfortranarray(data_points, dtype=np.float64)
+    centroids = np.asfortranarray(centroids, dtype=np.float64)
+
+    n_dims, n_points = data_points.shape
+    _, n_clusters = centroids.shape
+
+    labels = np.empty(n_points, dtype=np.int32)
+    label_counts = np.empty(n_clusters, dtype=np.int32)
+    ierr = ctypes.c_int(0)
+
+    k_means_clustering_c = lib.k_means_clustering_c
+    k_means_clustering_c.argtypes = [
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int)
+    ]
+    k_means_clustering_c.restype = None
+
+    k_means_clustering_c(
+        ctypes.byref(ctypes.c_int(n_clusters)),
+        data_points,
+        ctypes.byref(ctypes.c_int(n_points)),
+        ctypes.byref(ctypes.c_int(n_dims)),
+        centroids,
+        labels,
+        label_counts,
+        ctypes.byref(ierr),
+        ctypes.byref(ctypes.c_int(max_iter))
+    )
+    check_err_code(ierr.value)
+
+    _readonly(centroids, labels, label_counts)
+
+    return {
+        "centroids": centroids,
+        "labels": labels,
+        "label_counts": label_counts
+    }
+
+
+def tox_linkage_clustering(distances, method):
+    """
+    Wrapper for linkage_clustering_c: performs hierarchical clustering.
+
+    Args:
+        distances (np.ndarray): 2D array of shape (n_points, n_points), symmetric distance matrix
+        method (str): linkage method, one of "average", "weighted", "ward"
+
+    Returns:
+        dict: {
+            "merge_i": np.ndarray of shape (n_points - 1),
+            "merge_j": np.ndarray of shape (n_points - 1),
+            "heights": np.ndarray of shape (n_points - 1),
+            "cluster_sizes": np.ndarray of shape (n_points - 1)
+        }
+    """
+    import numpy as np
+    import ctypes
+
+    distances = np.asfortranarray(distances, dtype=np.float64)
+    n_points = distances.shape[0]
+
+    if distances.shape[1] != n_points:
+        raise ValueError("tox_linkage_clustering: distances must be square")
+
+    if method not in ("average", "weighted", "ward"):
+        raise ValueError(f"tox_linkage_clustering: invalid method '{method}'")
+
+    merge_i = np.empty(n_points - 1, dtype=np.int32)
+    merge_j = np.empty(n_points - 1, dtype=np.int32)
+    heights = np.empty(n_points - 1, dtype=np.float64)
+    cluster_sizes = np.empty(n_points - 1, dtype=np.int32)
+    ierr = ctypes.c_int(0)
+
+    linkage_clustering_c = lib.linkage_clustering_c
+    linkage_clustering_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),
+        ctypes.c_char_p,
+        ctypes.POINTER(ctypes.c_int)
+    ]
+    linkage_clustering_c.restype = None
+
+    linkage_clustering_c(
+        distances,
+        ctypes.byref(ctypes.c_int(n_points)),
+        merge_i,
+        merge_j,
+        heights,
+        cluster_sizes,
+        ctypes.c_char_p(method.encode("utf-8")),
+        ctypes.byref(ierr)
+    )
+    check_err_code(ierr.value)
+
+    _readonly(merge_i)
+    _readonly(merge_j)
+    _readonly(heights)
+    _readonly(cluster_sizes)
+
+    return {
+        "merge_i": merge_i,
+        "merge_j": merge_j,
+        "heights": heights,
+        "cluster_sizes": cluster_sizes
+    }

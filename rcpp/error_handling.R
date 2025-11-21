@@ -129,11 +129,37 @@ validate_positive_integer_scalar <- function(x, name = deparse(substitute(x))) {
   invisible(NULL)
 }
 
-# Validate gene_to_family vector (length and index bounds)
+# # Validate gene_to_family vector (length and index bounds)
+# validate_gene_to_family <- function(gene_to_fam, n_genes, n_families, name = deparse(substitute(gene_to_fam))) {
+#   if (!is.integer(gene_to_fam) && !is.numeric(gene_to_fam)) stop(sprintf("%s must be integer (or numeric)", name))
+#   if (length(gene_to_fam) != n_genes) stop(sprintf("Length of %s must equal number of genes (%d)", name, n_genes))
+#   if (any(gene_to_fam < 0)) stop(sprintf("%s must be between 0 and %d (0 = no family assignment)", name, n_families))
+#   # Allow indices > n_families here; Fortran / C code handles invalid indices and returns -1 for invalid genes.
+#   invisible(NULL)
+# }
 validate_gene_to_family <- function(gene_to_fam, n_genes, n_families, name = deparse(substitute(gene_to_fam))) {
-  if (!is.integer(gene_to_fam) && !is.numeric(gene_to_fam)) stop(sprintf("%s must be integer (or numeric)", name))
+  if (!is.numeric(gene_to_fam) && !is.integer(gene_to_fam)) stop(sprintf("%s must be numeric or integer", name))
   if (length(gene_to_fam) != n_genes) stop(sprintf("Length of %s must equal number of genes (%d)", name, n_genes))
-  if (any(gene_to_fam < 0)) stop(sprintf("%s must be between 0 and %d (0 = no family assignment)", name, n_families))
-  # Allow indices > n_families here; Fortran / C code handles invalid indices and returns -1 for invalid genes.
-  invisible(NULL)
+  if (any(is.na(gene_to_fam))) stop(sprintf("%s contains NA values", name))
+  if (any(gene_to_fam < 0)) stop(sprintf("%s indices must be between 0 and %d (0 = no family assignment)", name, n_families))
+  invisible(TRUE)
 }
+
+validate_index_bounds <- function(idx, low = 1, high = Inf, name = deparse(substitute(idx))) {
+  if (!is.numeric(idx) && !is.integer(idx)) stop(sprintf("%s must be numeric or integer", name))
+  if (any(idx < low, na.rm = TRUE) || any(idx > high, na.rm = TRUE)) stop(sprintf("Invalid input: %s indices must be between %s and %s", name, low, ifelse(is.infinite(high), "Inf", as.character(high))))
+  invisible(TRUE)
+}
+
+## Small helpers for messages used in tests
+validate_length_equals_n <- function(x, n, name = deparse(substitute(x))) {
+  if (length(x) != n) stop(sprintf("%s length must equal %d", name, n))
+  invisible(TRUE)
+}
+
+# validate_positive_integer_scalar <- function(x, name = deparse(substitute(x))) {
+#   if (!(is.numeric(x) || is.integer(x))) stop(sprintf("%s must be numeric or integer", name))
+#   if (length(x) != 1 || is.na(x) || as.integer(x) <= 0) stop(sprintf("%s must be a positive integer scalar", name))
+#   invisible(TRUE)
+# }
+

@@ -1,5 +1,5 @@
 # Comprehensive R test suite for tox_normalization_pipeline (mirrors Fortran unit tests)
-source("r/tensoromics_functions.R")
+source("rcpp/tensoromics_functions.R")
 
 # Helper: compare two numeric vectors/matrices with tolerance
 assert_equal <- function(x, y, tol=1e-12, msg="") {

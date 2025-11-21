@@ -2,7 +2,7 @@
 # This script generates a small synthetic dataset and runs the full pipeline,
 # including fold change calculation for multiple conditions.
 
-source("r/tensoromics_functions.R")
+source("rcpp/tensoromics_functions.R")
 
 # --- Mocked gene expression data ---
 set.seed(42)

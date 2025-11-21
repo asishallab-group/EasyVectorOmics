@@ -1,5 +1,5 @@
 # Load all TensorOmics helper functions
-source("r/tensoromics_functions.R")
+source("rcpp/tensoromics_functions.R")
 
 # === Example of full normalization pipeline ===
 

@@ -1,10 +1,11 @@
 !> @file mod_test_loess_smoothing.f90
-!> Unit test suite for LOESS smoothing (f42_loess_smoothing.F90)
+!> Unit test suite for LOESS smoothing from f42_utils
 !> @details Unit tests for LOESS smoothing, including masking and edge cases.
 
 module mod_test_loess_smoothing
   use asserts
   use f42_utils
+  use tox_errors
   use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
   public
