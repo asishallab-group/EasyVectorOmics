@@ -1,7 +1,6 @@
 stages:
   - run-tests
   - generate-docs
-  - done
 
 image: archlinux:latest
 
@@ -60,7 +59,7 @@ run-tests:
   stage: run-tests
   rules:
     # trigger only when a MR or commit to 'main'
-    - if: '$CI_COMMIT_BRANCH == "main" || ($CI_PIPELINE_SOURCE == "merge_request_event")'
+    - if: '$CI_COMMIT_BRANCH == "main" || ($CI_PIPELINE_SOURCE == "merge_request_event" && $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main")'
       changes:
         - rcpp/**
         - python/**
@@ -109,18 +108,3 @@ generate-docs:  # generate documentation after tests have passed
     # add and commit changes to docs folder
     - *install-git
     - git-push "Update generated documentation" doc
-
-done: # Final stage that will always be in a pipeline and succeeds when all other stages pass
-  stage: done
-  needs:
-    - job: run-tests
-      optional: true
-    - job: generate-docs
-      optional: true
-  script:
-<<<<<<< HEAD
-    - echo "All jobs passed"
-
-=======
-    - echo "All jobs passed"
->>>>>>> origin/main
