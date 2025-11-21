@@ -3,13 +3,16 @@
 \usepackage{amsmath}
 \usepackage{amssymb}
 \usepackage{geometry}
+\usepackage{float}
+\usepackage{graphicx}
 \usepackage{hyperref}
 \hypersetup{
     colorlinks=true,
-    linkcolor=cyan,
-    filecolor=magenta,      
+    linkcolor=blue,
     urlcolor=blue,
-    }
+    citecolor=blue
+}
+
 \geometry{margin=2.5cm}
 
 \title{Tensor Omics: Core Preprocessing, Analysis Pipeline, and Geometric Tools
@@ -20,8 +23,58 @@
 
 \maketitle
 
+\tableofcontents
+\newpage
+
 \section{Overview}
-This document outlines the sequential pipeline used in Tensor Omics for preprocessing, vector space construction, outlier detection, and geometric analysis of gene expression data.
+
+The Tensor Omics (TOX) tool implements Geometric Learning in a semantic vector space. We represent the data in its natural space, where each measurement is its own axis. We use model-free and minimum-parameter geometric methods to describe the data, find meaningful patterns, identify significant contributions of factors to dependent variables, analyse trajectories, and learn fields of vectors with intrinsic similarity. 
+
+We rely exclusively on pure linear algebra to characterize these structures, using distances, angles, projections, and linear mapping.
+
+\vspace{0.5cm}
+Tensor Omics differs from conventional geometric learning tensor decomposition in that it operates in empirically defined semantic vector spaces rather than abstract latent dimensions --- a demonstration (See Figure~\ref{fig:figure1}):
+
+\vspace{0.5cm}
+(A) Medical omics vectors in semantic space. Each gene, protein or clinical patient measure is placed as a point in multi-dimensional space, with axes representing gene expression in a tissue or clinical patient measures. Arrows denote shift vectors from gene family centroids and enable the explainable detection of changes in gene expression from healthy control. Grid points support interpolation and smoothing. Patient time trajectories are shown in the lower left (healthy controls in green, mean control trajectory in fat light green, and a cancer trajectory in orange). The disease specific signals can directly be obtained by geometric trajectory comparison (violet time resolved shift arrows $\vec{s}_{t_i}$). Significant signals are detected empirically as outliers in the upper 5\%-ile.
+
+\vspace{0.5cm}
+(B) Angle to the space diagonal as a measure of omics specificity: low angles indicate e.g. broad tissue expression, high angles signal strong tissue preference.
+
+\vspace{0.5cm}
+(C) Clock hand angle in the Relative Axes Plane (RAP), capturing changes in tissue preference with robust correction for the overall expression magnitude.
+
+\vspace{0.5cm}
+(D) Causal and explainable omics learning by selecting factors showing geometric similarities in predictive properties. Tensor Omics supports three independent strategies: radial subset growing until only background signal remains (orange), metadata-based selection (e.g. inflammatory response, green), and directional filtering by alignment with a user-defined direction of interest (DOI, e.g. median survival time after treatment or distance of patient trajectory to the healthy control, blue). Methods can be combined to define coherent subfields for geometric analysis.
+
+\vspace{0.5cm}
+(E) Explainable analysis of patient time trajectories (as shown in A). Changes in tissue preference (angles $\phi$) relative to the anchor axis (AA). Inset plots show the distance to the healthy control trajectory (top) and the angle between consecutive shift vectors (bottom).
+
+\vspace{0.5cm}
+(F) Learned subfield (see D) characterization by emulating the aggregated effect of vectors on a virtual particle. Measures include signal strength (Frobenius norm $||M||_F$), disease subtyping as directional spread (rank), potential disease specific biomarkers as principal flow direction (first eigenvector of covariance matrix C), and disease specific changes in omics factors as rotation axis and magnitude (from the antisymmetric component ($0.5 \times (C - C^T)$).
+
+\vspace{0.5cm}
+(G) Gradient-following kernel traversal to elucidate disease trajectory analysis in early, mid, and late stages: subfield (see D) structure is decomposed via Singular-Value-Decomposition (SVD) into dominant axes (E1, E2 top left) which are smoothed into a single semantic axis (pink line), along which kernel profiles (pink bell top right) reveal flow, rotation, spread, and signal strength (as in F; lower left). Embedding of subfields for machine learning (lower right): The semantic axis is used to orient the subfield with the major flow of the vectors ($\oplus$) and split into five-percentile windows pushed along the semantic axis (dotted lines). Each section is represented by an aggregated vector of field strength (norm), directional spread (rank), principal direction (eigenvector), and rotational moment.
+
+\vspace{0.5cm}
+(H) The semantic axis (see G) is used to push a higher dimensional object through a lower dimensional space for visualization in the ``Data-Vis'' interactive graphical user interface (Tensor Omics package). This enables direct visualization of higher dimensions and can be used to show for example the developmental hourglass.
+
+\vspace{0.5cm}
+Panels A–H together illustrate how Tensor Omics unifies geometric learning, empirical explainability, and visualization within a single analytical framework.
+
+\vspace{0.5cm}
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/tox_methods_1a.png}
+    \label{fig:figure1}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=1\textwidth]{figures/tox_methods_1b.png}
+    \caption{Overview of the Tensor Omics}
+\end{figure}
+
 
 \section{From Raw Data to Expression Vectors}
 
@@ -539,33 +592,6 @@ This method segments the vector field into coherent \emph{signal-rich subfields}
 
 \textbf{Note:} The threshold \( \tau \) may be adjusted (e.g., 1\%, 10\%) to modulate sensitivity. The procedure generalizes naturally to higher-order tensors by applying the same algorithm to scalar-valued summary fields (e.g., Frobenius norms of second-order tensors).
 
-\subsection{Subfield Descriptor}
-\label{sec:subfield_descriptor}
-
-Each collected subfield is characterized by aggregating its expression vectors into a matrix \( M \in \mathbb{R}^{n \times k} \), where each of the \( k \) columns is a gene expression vector embedded in the fixed \( n \)-dimensional semantic space. The structure of the subfield is quantified using the following derived quantities:
-
-\begin{itemize}
-    \item \textbf{Flow direction:} The first eigenvector of the covariance matrix \( C = M M^T \), representing the dominant direction of signal flow across the subfield.
-
-    \item \textbf{Rotation vector:} The antisymmetric (skew-symmetric) component of the covariance matrix is defined as:
-    \[
-    A = \operatorname{skew}(C) := \frac{1}{2}(C - C^T)
-    \]
-    This decomposition follows conventions from continuum mechanics and enables separation of directional flow and local rotational tendency. The antisymmetric matrix \( A \) encodes the local rotation axis and magnitude of net curl induced by the subfield’s geometry.
-
-    \item \textbf{Signal strength:} The Frobenius norm \( \|M\|_F \) measures the total signal energy contributed by all expression vectors in the subfield.
-
-    \item \textbf{Directional spread:} The matrix rank of \( M \), estimated via singular value decomposition, indicates the number of independent directions represented in the subfield. A rank of one implies collinearity; higher ranks indicate multi-directional heterogeneity.
-\end{itemize}
-
-To enable comparison across subfields of varying size \( k \), the signal strength can be normalized by the root of the cardinality:
-\[
-\text{RFI} = \frac{\|M\|_F}{\sqrt{k}}
-\]
-This Relative Frobenius Index (RFI) provides a density-independent measure of average vector magnitude per subfield.
-
-\textbf{Note:} All direction vectors \( \vec{v} \in \mathbb{R}^n \setminus \{ \vec{0} \} \) are assumed to be non-zero, as normalization and angular analysis are undefined for the zero vector. If an unscaled antisymmetric component \( A = C - C^T \) is used instead of the factorized form, this corresponds to measuring the total (unweighted) rotation strength. The scaled form \(\frac{1}{2}(C - C^T)\) is preferred for decomposition consistency and interpretability.
-
 \subsection{Workbench for Interactive Exploration}
 \label{sec:workbench}
 
@@ -689,6 +715,7 @@ In Mode B, we additionally compute the angular velocity of shift direction over 
 where \( \vec{s}_t^{\perp} \) denotes the projection of the shift vector into \( \Pi_t \). This metric captures turning behavior in shift trajectories and may reveal biological transitions or inflection points in tissue preference.
 
 \subsection{Mjölnir's Handle — Canonical Axis Reconstruction for Eitri Surface Extraction}
+\label{sec:semantic_axis}
 
 \begin{itemize}
   \item \textbf{Purpose:}
@@ -1150,5 +1177,333 @@ Urd provides an efficient and explainable framework for:
     \item Applying empirical, percentile-based thresholds to control for noise and experimental biases.
 \end{enumerate}
 The method is linear-algebraic, computationally efficient, and applicable to both univariate and multivariate factor/response settings.
+
+
+\section{Tensor Omics Field Descriptors (TOXFD)}
+
+\subsection{Concept of Subfields and Vector Fields}
+
+In Tensor Omics, a \textit{vector field} consists of vectors together with the
+coordinates from which they originate,
+\[
+\mathcal{F} = \{\, (\vec{x}_i, \vec{v}_i) \mid \vec{x}_i, \vec{v}_i \in \mathbb{R}^n \,\}.
+\]
+A \textit{subfield} is any subset of this field,
+\[
+\mathcal{K} \subseteq \mathcal{F},
+\]
+selected according to biological, semantic, or geometric criteria
+(e.g.\ ``photosynthesis'', ``inflammatory response'', collinearity, or local density).
+
+When the original data consist only of vectors without explicit coordinates,
+the subfield refers simply to a subset of vectors 
+\(\{\vec{v}_i\}_{i=1}^{m}\) extracted from an omics vector space.
+Such a subset can still be analyzed collectively by arranging its vectors into
+the matrix
+\[
+M = [\, \vec{v}_1, \vec{v}_2, \ldots, \vec{v}_m \,] \in \mathbb{R}^{n \times m}.
+\]
+
+The cumulative covariance structure of the subfield is then given by
+\[
+C = M M^{\mathsf{T}},
+\]
+which captures both the magnitude and directional coherence among the vectors.
+This formulation enables describing the collective influence of the subfield as
+the cumulative effect exerted on a virtual particle placed conceptually at its
+center, allowing the use of linear algebraic descriptors to quantify its
+structure, energy, and dynamics.
+
+\subsection{Four Descriptors of a Subfield}
+\label{sec:subfield_descriptor}
+
+From \(M\) and \(C\), we define four key descriptors that characterize the 
+aggregate effect of the subfield on the virtual particle:
+
+\begin{enumerate}
+  \item \textbf{Energy (Signal Strength)}  
+  \[
+  E = \|M\|_{F} = \sqrt{\sum_{i=1}^{n}\sum_{j=1}^{m} M_{ij}^{2}},
+  \]
+  the Frobenius norm of \(M\), measures the total intensity or activity within 
+  the subfield.  
+  In gene expression analysis, this reflects the cumulative divergence or 
+  activity of genes; in a wind or magnetic field analogy, it corresponds to the 
+  total kinetic or magnetic energy in the region.
+
+  \item \textbf{Rank (Dimensionality or Spread)}  
+  \[
+  R = \text{rank}(M),
+  \]
+  quantifies the effective dimensionality of the subfield.  
+  A low rank indicates that vectors are nearly co-linear (a one-dimensional flow), 
+  whereas a high rank implies multi-directional or isotropic behavior.  
+  In biological terms, \(R\) measures the number of independent directions of 
+  functional or regulatory diversification within the subfield.
+
+  \item \textbf{Principal Flow Direction}  
+  The first eigenvector of \(C\),
+  \[
+  \vec{f} = \text{eigvec}_1(C),
+  \]
+  indicates the main direction of flow or bias within the subfield.  
+  It defines the orientation along which the virtual particle would experience 
+  the strongest net force.  
+  In gene expression space, this represents the dominant tissue or condition 
+  toward which expression diverges; in a physical field, it corresponds to the 
+  prevailing wind or magnetic alignment.
+
+  \item \textbf{Rotation Axis and Magnitude}  
+  The antisymmetric component of \(C\),
+  \[
+  A = \tfrac{1}{2}(C - C^{\mathsf{T}}),
+  \]
+  encodes local rotational tendencies within the subfield.  
+  The magnitude of rotation can be quantified by
+  \[
+  \omega = \|A\|_{F},
+  \]
+  and the rotation axis \(\vec{r}\) can be extracted from the 
+  principal eigenvector of \(A\) (or equivalently from its polar decomposition).  
+  This quantity distinguishes coherent directional rotation (e.g. circular shifts 
+  or spirals in semantic space) from purely divergent or convergent flows.
+\end{enumerate}
+
+Together, these four quantities --- energy, rank, principal direction, and 
+rotation --- form the Tensor Omics Field Descriptors (TOXFD).
+
+To enable comparison across subfields of varying size \( k \), the signal strength can be normalized by the root of the cardinality:
+\[
+\text{RFI} = \frac{\|M\|_F}{\sqrt{k}}
+\]
+This Relative Frobenius Index (RFI) provides a density-independent measure of average vector magnitude per subfield.
+
+\textbf{Note:} All direction vectors \( \vec{v} \in \mathbb{R}^n \setminus \{ \vec{0} \} \) are assumed to be non-zero, as normalization and angular analysis are undefined for the zero vector. If an unscaled antisymmetric component \( A = C - C^T \) is used instead of the factorized form, this corresponds to measuring the total (unweighted) rotation strength. The scaled form \(\frac{1}{2}(C - C^T)\) is preferred for decomposition consistency and interpretability.
+
+\subsection{Vector Sets versus Vector Fields}
+
+A \textit{vector set} (e.g.\ all expression vectors of a gene family) consists 
+only of vectors and their distribution in space.  
+
+When vectors additionally carry explicit coordinates---as in shift vectors 
+originating at gene-family centroids---they form a \textit{vector field}.  
+In such cases, TOXFDs can be applied either to the coordinates or to the 
+vectors themselves, yielding complementary information:
+
+\begin{itemize}
+  \item \textbf{On the coordinates} $\vec{x}_i$:  
+  the descriptors characterize the geometry and spatial extent of the region 
+  in Tensor Omics space, answering questions like:
+  \begin{itemize}
+    \item Which semantic axes dominate the spatial extent of the field?
+    \item Is the field elongated or isotropic (rank)?
+    \item Does the region itself curve or spiral through Tensor space (rotation)?
+  \end{itemize}
+
+  \item \textbf{On the vectors} $\vec{v}_i$:  
+  the descriptors characterize the dynamics or changes that occur within that region:
+  \begin{itemize}
+    \item Which semantic axes dominate expression changes?
+    \item How strong are those changes (energy)?
+    \item Are changes co-directed or diverse (rank)?
+    \item Do they form coherent rotational flows or transitions (rotation)?
+  \end{itemize}
+
+\end{itemize}
+
+\textbf{Examples.}  
+In transcriptomics, coordinates correspond to gene-family positions in 
+expression space, while shift vectors represent changes such as stress 
+responses.  
+In physics, coordinates represent spatial positions, and vectors represent wind 
+velocities or magnetic field directions.
+
+
+\subsection{Tracing a Field along its Semantic Axis}
+
+Assume a subfield has an associated \textit{semantic axis}
+\(\vec{d}_{\text{sem}}\) (see Section~\ref{sec:semantic_axis} for its definition), 
+obtained for example by the Mjölnir manifold learning method.  
+We can then analyze how TOXFD quantities evolve along this axis.
+
+A Gaussian kernel \(K(\vec{x}; \sigma)\) is moved along \(\vec{d}_{\text{sem}}\).  
+At each kernel center, the local subset of vectors 
+\(\{\vec{v}_i\}\) within the kernel’s support is collected into a matrix \(M\), 
+and the four TOX Field Descriptors are computed locally:
+\[
+\{E(\vec{x}), R(\vec{x}), \vec{f}(\vec{x}), \omega(\vec{x})\}.
+\]
+
+Plotting these quantities along the semantic axis reveals how 
+field energy, diversity, and rotational behavior change over semantic space 
+(e.g., developmental time, aging trajectory, or stress gradient).  
+This procedure generalizes naturally to 2D semantic surfaces, 
+where the descriptors can be visualized as tensor fields over the manifold.
+
+\subsection{Interpretation and Scientific Questions}
+
+These descriptors allow a model-free geometric interpretation of high-dimensional data:
+\begin{itemize}
+  \item \textbf{Energy:} How strong are the local signals or shifts?
+  \item \textbf{Rank:} How many independent biological factors are active?
+  \item \textbf{Flow:} In which semantic direction does the process move?
+  \item \textbf{Rotation:} Are changes linear, oscillatory, or cyclic?
+\end{itemize}
+
+Together, they enable systematic comparison of complex omics or physical fields, 
+revealing patterns of coherence, divergence, and functional rotation 
+in spaces where traditional differential or statistical models fail.
+
+\section{Field Surface and Volume Inference (FiSure, ``Eitri'')}
+
+\subsection{Motivation and Concept}
+
+To compare subfields or regions within Tensor Omics space, we often need 
+to quantify their \textit{geometric extent} --- the shape, surface, and volume 
+occupied by a field of vectors.  
+The \textbf{Field Surface and Volume Inference (FiSure)} method provides a 
+model-free procedure to estimate these quantities directly from the coordinates 
+and projections of field vectors.  
+
+Conceptually, FiSure treats a field as a set of vectors 
+\(\{\vec{x}_i\}\) distributed around a \textit{semantic axis} or 
+\textit{handle} (e.g. a Mjölnir manifold), and reconstructs the 
+outer surface that encloses them.  
+The method is analogous to measuring the radial extent of a 
+magnetic flux tube or a fluid jet along its main trajectory.
+
+\subsection{Algorithmic Outline}
+
+Assume a learned one-dimensional semantic axis 
+\(\vec{h}(t) \in \mathbb{R}^n\) (the \textbf{handle}) representing 
+the main trajectory of the field.  
+For a field consisting of coordinates 
+\(\{\vec{x}_i\}_{i=1}^{m}\), FiSure proceeds as follows:
+
+\begin{enumerate}
+  \item \textbf{Projection onto the Handle.}  
+  Each field point is projected onto the handle by nearest-point projection:
+  \[
+  t_i = \arg\min_t \| \vec{x}_i - \vec{h}(t) \|.
+  \]
+  This yields the axial coordinate \(t_i\) of each field vector.
+
+  \item \textbf{Handle Segmentation.}  
+  The handle is divided into \(k\) equal-percentile segments 
+  \(\{[t_j, t_{j+1}]\}\), such that each segment corresponds to 
+  an equal fraction of projected vectors.  
+  Each segment is approximated by a straight line between its 
+  endpoints \(\vec{h}(t_j)\) and \(\vec{h}(t_{j+1})\).
+
+  \item \textbf{Local Coordinate Frame.}  
+  For each segment, a local cylindrical coordinate system is constructed:
+  \[
+  \text{axis vector: } \vec{a}_j = \frac{\vec{h}(t_{j+1}) - \vec{h}(t_j)}
+                                   {\|\vec{h}(t_{j+1}) - \vec{h}(t_j)\|}.
+  \]
+  Orthogonal basis vectors are defined as 
+  \(\{\vec{u}_j, \vec{v}_j\}\), spanning the plane perpendicular to \(\vec{a}_j\).
+
+  \item \textbf{Angular Sampling.}  
+  The circular cross-section around the segment is divided into 
+  \(c\) angular bins:
+  \[
+  \theta_k = \frac{2\pi k}{c}, \quad k = 1,\ldots,c.
+  \]
+  A fixed global reference axis (e.g. the first axis of Tensor Omics space) 
+  is used to align the angular bins between segments.
+
+  \item \textbf{Radial Extent and Surface Extraction.}  
+  For each angular bin, FiSure computes the radial distance of all 
+  vectors whose projections fall within the segment and angle range:
+  \[
+  r_{j,k} = \max_{\vec{x}_i \in \mathcal{S}_{j,k}} 
+            \| (\vec{x}_i - \vec{h}(t_j)) - 
+            \langle \vec{x}_i - \vec{h}(t_j), \vec{a}_j \rangle \vec{a}_j \|.
+  \]
+  The point attaining this maximum is recorded as the local surface point:
+  \[
+  \vec{p}_{j,k} = \vec{h}(t_j) + r_{j,k} \,
+                 (\cos\theta_k \, \vec{u}_j + \sin\theta_k \, \vec{v}_j).
+  \]
+  The corresponding outward normal vector is
+  \[
+  \vec{n}_{j,k} = 
+     \frac{\vec{p}_{j,k} - \vec{h}(t_j)}
+          {\|\vec{p}_{j,k} - \vec{h}(t_j)\|}.
+  \]
+
+  \item \textbf{Surface and Volume Assembly.}  
+  The set of surface points 
+  \(\mathcal{P} = \{\vec{p}_{j,k}\}\) defines a discrete 
+  surface mesh.  
+  The local volume of the segment between 
+  \(t_j\) and \(t_{j+1}\) can be approximated as a truncated cylinder:
+  \[
+  V_j \approx 
+     \frac{\pi \, \Delta s_j}{c}
+     \sum_{k=1}^{c}
+     \frac{r_{j,k}^{2} + r_{j+1,k}^{2}}{2},
+  \]
+  where \(\Delta s_j = \|\vec{h}(t_{j+1}) - \vec{h}(t_j)\|\).
+  Summing over all segments yields the total field volume:
+  \[
+  V_{\text{field}} = \sum_{j=1}^{k-1} V_j.
+  \]
+\end{enumerate}
+
+\subsection{Interpretation of FiSure Quantities}
+
+FiSure yields several interpretable geometric measures:
+
+\begin{itemize}
+  \item \textbf{Surface Vectors:}  
+  Each \((\vec{p}_{j,k}, \vec{n}_{j,k})\) pair represents a point on the 
+  field’s boundary and its outward orientation.  
+  These can be analyzed as a secondary \textit{surface vector field}, 
+  quantifying how the field opens, closes, or bends in Tensor space.
+
+  \item \textbf{Local Volume Elements:}  
+  The segment volumes \(V_j\) allow normalization of other descriptors, 
+  such as energy or rank, by the spatial size of the field.
+
+  \item \textbf{Field Morphology:}  
+  Variations in \(r_{j,k}\) and curvature of the handle describe 
+  anisotropy and torsion of the field.  
+  A stable \(r_{j,k}\) profile implies a cylindrical, consistent field; 
+  strong local expansion or contraction indicates field divergence or collapse.
+\end{itemize}
+
+\subsection{Applications and Interpretation}
+
+FiSure provides a direct geometric connection between 
+field structure and function.  
+In the context of Tensor Omics, examples include:
+
+\begin{itemize}
+  \item Measuring the \textbf{semantic volume} occupied by gene families 
+        associated with aging or stress responses.
+  \item Quantifying whether such semantic volumes 
+        \textbf{expand, contract, or twist} along a 
+        developmental or disease axis.
+  \item Identifying rotational or asymmetrical \textbf{surface deformations} 
+        that indicate functional bifurcation (e.g., 
+        tissue-specific reprogramming).
+\end{itemize}
+
+The same principles apply to physical or environmental fields:
+for a wind field, FiSure reconstructs the shape of a coherent 
+airflow tube; for a magnetic field, it delineates regions of 
+strong magnetic flux concentration.
+
+\subsection{Summary}
+
+FiSure extends Tensor Omics by providing a quantitative 
+method for reconstructing the \textbf{shape} and 
+\textbf{extent} of a field.  
+By defining surfaces and volumes empirically from vector distributions, 
+it bridges local field descriptors (energy, rank, rotation) with 
+global geometric form, completing the description of 
+high-dimensional semantic dynamics in Tensor space.
 
 \end{document}
