@@ -173,12 +173,14 @@ tox_normalize_by_std_dev <- function(input_matrix) {
 #' normalized_matrix <- tox_quantile_normalization(input_matrix)
 tox_quantile_normalization <- function(input_matrix) {
   validate_matrix(input_matrix, "input_matrix")
+  n_genes <- nrow(input_matrix)
+  n_tissues <- ncol(input_matrix)
   result <- tox_quantile_normalization_rcpp(input_matrix)
 
   if (result$ierr != 0) {
     check_err_code(result$ierr)
   }
- 
+
   return(matrix(result$output_vector, nrow = n_genes, ncol = n_tissues, dimnames = dimnames(input_matrix)))
 }
 
@@ -199,6 +201,8 @@ tox_quantile_normalization <- function(input_matrix) {
 #' log_matrix <- tox_log2_transformation(input_matrix)
 tox_log2_transformation <- function(input_matrix) {
   validate_matrix(input_matrix, "input_matrix")
+  n_genes <- nrow(input_matrix)
+  n_tissues <- ncol(input_matrix)
   result <- tox_log2_transformation_rcpp(input_matrix)
   
   if (result$ierr != 0) {

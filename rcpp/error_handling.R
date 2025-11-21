@@ -73,6 +73,11 @@ validate_numeric_matrix <- function(m, name = deparse(substitute(m))) {
   invisible(TRUE)
 }
 
+# Backwards-compatible alias: some wrappers call `validate_matrix`
+validate_matrix <- function(m, name = deparse(substitute(m))) {
+  validate_numeric_matrix(m, name)
+}
+
 validate_logical_or_index_vector <- function(v, expected_length = NULL, name = deparse(substitute(v))) {
   if (!(is.logical(v) || is.numeric(v) || is.integer(v))) stop(sprintf("%s must be logical or numeric", name))
   if (!is.null(expected_length) && length(v) != expected_length) stop(sprintf("%s length must match expected length %d", name, expected_length))
