@@ -24,6 +24,7 @@ before_script:
   # set up git
   - git config --global user.email "ci-bot@yourdomain.com"
   - git config --global user.name "CI Bot"
+  - git remote set-url origin @gitlab.com/your-namespace/your-project.git
   - |
     function git-push() {
       git add -f "${@:2}"
