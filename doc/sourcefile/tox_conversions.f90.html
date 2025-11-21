@@ -61,6 +61,9 @@
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
                 </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
                 <form action="../search.html" role="search" class="ms-auto">
@@ -85,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.7% of total for source files.">93 statements</a>
+                 title=" 1.5% of total for source files.">123 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -166,8 +169,8 @@
         <h2><span class="anchor" id="src"></span>Source Code</h2>
         <div class="hl codehilite"><pre><span></span><a id="ln-1" name="ln-1" href="#ln-1"></a><span class="k">module </span><span class="n">tox_conversions</span>
 <a id="ln-2" name="ln-2" href="#ln-2"></a><span class="w">    </span><span class="k">use </span><span class="n">iso_fortran_env</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">int32</span><span class="p">,</span><span class="w"> </span><span class="n">real64</span>
-<a id="ln-3" name="ln-3" href="#ln-3"></a><span class="w">    </span><span class="k">use </span><span class="n">tox_errors</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">ERR_ALLOC_FAIL</span><span class="p">,</span><span class="w"> </span><span class="n">is_err</span><span class="p">,</span><span class="w"> </span><span class="n">set_ok</span><span class="p">,</span><span class="w"> </span><span class="n">set_err</span>
-<a id="ln-4" name="ln-4" href="#ln-4"></a><span class="w">    </span><span class="k">use </span><span class="nb">iso_c_binding</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="kt">c_int</span><span class="p">,</span><span class="w"> </span><span class="kt">c_double</span><span class="p">,</span><span class="w"> </span><span class="nb">c_null_char</span><span class="p">,</span><span class="w"> </span><span class="kt">c_double_complex</span><span class="p">,</span><span class="w"> </span><span class="kt">c_char</span><span class="p">,</span><span class="w"> </span><span class="kt">c_ptr</span>
+<a id="ln-3" name="ln-3" href="#ln-3"></a><span class="w">    </span><span class="k">use </span><span class="nb">iso_c_binding</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="kt">c_int</span><span class="p">,</span><span class="w"> </span><span class="kt">c_double</span><span class="p">,</span><span class="w"> </span><span class="nb">c_null_char</span><span class="p">,</span><span class="w"> </span><span class="kt">c_double_complex</span><span class="p">,</span><span class="w"> </span><span class="kt">c_char</span><span class="p">,</span><span class="w"> </span><span class="kt">c_int64_t</span><span class="p">,</span><span class="w"> </span><span class="kt">c_size_t</span>
+<a id="ln-4" name="ln-4" href="#ln-4"></a><span class="kt">    </span><span class="k">use </span><span class="n">tox_errors</span><span class="p">,</span><span class="w"> </span><span class="k">only</span><span class="p">:</span><span class="w"> </span><span class="n">ERR_ALLOC_FAIL</span><span class="p">,</span><span class="w"> </span><span class="n">is_err</span><span class="p">,</span><span class="w"> </span><span class="n">set_ok</span><span class="p">,</span><span class="w"> </span><span class="n">set_err</span>
 <a id="ln-5" name="ln-5" href="#ln-5"></a>
 <a id="ln-6" name="ln-6" href="#ln-6"></a><span class="k">contains</span>
 <a id="ln-7" name="ln-7" href="#ln-7"></a>
@@ -317,7 +320,67 @@
 <a id="ln-151" name="ln-151" href="#ln-151"></a><span class="w">        </span><span class="k">end do</span>
 <a id="ln-152" name="ln-152" href="#ln-152"></a><span class="k">    end subroutine </span><span class="n">string_as_c_char_2d</span>
 <a id="ln-153" name="ln-153" href="#ln-153"></a>
-<a id="ln-154" name="ln-154" href="#ln-154"></a><span class="k">end module </span><span class="n">tox_conversions</span>
+<a id="ln-154" name="ln-154" href="#ln-154"></a><span class="w">    </span><span class="c">!&gt; Converts int32 to c_int64_t, elemental -&gt; any shape</span>
+<a id="ln-155" name="ln-155" href="#ln-155"></a><span class="w">    </span><span class="k">elemental subroutine </span><span class="n">int32_as_c_int64</span><span class="p">(</span><span class="n">f_val</span><span class="p">,</span><span class="w"> </span><span class="n">c_val</span><span class="p">)</span>
+<a id="ln-156" name="ln-156" href="#ln-156"></a><span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">f_val</span>
+<a id="ln-157" name="ln-157" href="#ln-157"></a><span class="w">        </span><span class="c">!! the element containing the fortran variant of the number</span>
+<a id="ln-158" name="ln-158" href="#ln-158"></a><span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int64_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">c_val</span>
+<a id="ln-159" name="ln-159" href="#ln-159"></a><span class="w">        </span><span class="c">!! the element that will hold the c_int64_t representation</span>
+<a id="ln-160" name="ln-160" href="#ln-160"></a>
+<a id="ln-161" name="ln-161" href="#ln-161"></a><span class="w">        </span><span class="n">c_val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">f_val</span><span class="p">,</span><span class="w"> </span><span class="nb">kind</span><span class="o">=</span><span class="kt">c_int64_t</span><span class="p">)</span>
+<a id="ln-162" name="ln-162" href="#ln-162"></a><span class="w">    </span><span class="k">end subroutine </span><span class="n">int32_as_c_int64</span>
+<a id="ln-163" name="ln-163" href="#ln-163"></a>
+<a id="ln-164" name="ln-164" href="#ln-164"></a><span class="w">    </span><span class="c">!&gt; Converts c_int64_t to int32, elemental -&gt; any shape  </span>
+<a id="ln-165" name="ln-165" href="#ln-165"></a><span class="w">    </span><span class="k">elemental subroutine </span><span class="n">c_int64_as_int32</span><span class="p">(</span><span class="n">c_val</span><span class="p">,</span><span class="w"> </span><span class="n">f_val</span><span class="p">)</span>
+<a id="ln-166" name="ln-166" href="#ln-166"></a><span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int64_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">c_val</span>
+<a id="ln-167" name="ln-167" href="#ln-167"></a><span class="w">        </span><span class="c">!! the element containing the c variant of the number</span>
+<a id="ln-168" name="ln-168" href="#ln-168"></a><span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">f_val</span>
+<a id="ln-169" name="ln-169" href="#ln-169"></a><span class="w">        </span><span class="c">!! the element that will hold the int32 representation</span>
+<a id="ln-170" name="ln-170" href="#ln-170"></a>
+<a id="ln-171" name="ln-171" href="#ln-171"></a><span class="w">        </span><span class="n">f_val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">c_val</span><span class="p">,</span><span class="w"> </span><span class="nb">kind</span><span class="o">=</span><span class="n">int32</span><span class="p">)</span>
+<a id="ln-172" name="ln-172" href="#ln-172"></a><span class="w">    </span><span class="k">end subroutine </span><span class="n">c_int64_as_int32</span>
+<a id="ln-173" name="ln-173" href="#ln-173"></a>
+<a id="ln-174" name="ln-174" href="#ln-174"></a><span class="w">    </span><span class="c">!&gt; Converts int32 to c_size_t, elemental -&gt; any shape</span>
+<a id="ln-175" name="ln-175" href="#ln-175"></a><span class="w">    </span><span class="k">elemental subroutine </span><span class="n">int32_as_c_size</span><span class="p">(</span><span class="n">f_val</span><span class="p">,</span><span class="w"> </span><span class="n">c_val</span><span class="p">)</span>
+<a id="ln-176" name="ln-176" href="#ln-176"></a><span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">f_val</span>
+<a id="ln-177" name="ln-177" href="#ln-177"></a><span class="w">        </span><span class="c">!! the element containing the fortran variant of the number</span>
+<a id="ln-178" name="ln-178" href="#ln-178"></a><span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_size_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">c_val</span>
+<a id="ln-179" name="ln-179" href="#ln-179"></a><span class="w">        </span><span class="c">!! the element that will hold the c_size_t representation</span>
+<a id="ln-180" name="ln-180" href="#ln-180"></a>
+<a id="ln-181" name="ln-181" href="#ln-181"></a><span class="w">        </span><span class="n">c_val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">f_val</span><span class="p">,</span><span class="w"> </span><span class="nb">kind</span><span class="o">=</span><span class="kt">c_size_t</span><span class="p">)</span>
+<a id="ln-182" name="ln-182" href="#ln-182"></a><span class="w">    </span><span class="k">end subroutine </span><span class="n">int32_as_c_size</span>
+<a id="ln-183" name="ln-183" href="#ln-183"></a>
+<a id="ln-184" name="ln-184" href="#ln-184"></a><span class="w">    </span><span class="c">!&gt; Converts c_size_t to int32, elemental -&gt; any shape</span>
+<a id="ln-185" name="ln-185" href="#ln-185"></a><span class="w">    </span><span class="k">elemental subroutine </span><span class="n">c_size_as_int32</span><span class="p">(</span><span class="n">c_val</span><span class="p">,</span><span class="w"> </span><span class="n">f_val</span><span class="p">)</span>
+<a id="ln-186" name="ln-186" href="#ln-186"></a><span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_size_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">c_val</span>
+<a id="ln-187" name="ln-187" href="#ln-187"></a><span class="w">        </span><span class="c">!! the element containing the c variant of the number</span>
+<a id="ln-188" name="ln-188" href="#ln-188"></a><span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="n">int32</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">f_val</span>
+<a id="ln-189" name="ln-189" href="#ln-189"></a><span class="w">        </span><span class="c">!! the element that will hold the int32 representation</span>
+<a id="ln-190" name="ln-190" href="#ln-190"></a>
+<a id="ln-191" name="ln-191" href="#ln-191"></a><span class="w">        </span><span class="n">f_val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">c_val</span><span class="p">,</span><span class="w"> </span><span class="nb">kind</span><span class="o">=</span><span class="n">int32</span><span class="p">)</span>
+<a id="ln-192" name="ln-192" href="#ln-192"></a><span class="w">    </span><span class="k">end subroutine </span><span class="n">c_size_as_int32</span>
+<a id="ln-193" name="ln-193" href="#ln-193"></a>
+<a id="ln-194" name="ln-194" href="#ln-194"></a><span class="w">    </span><span class="c">!&gt; Converts c_int64_t to c_size_t, elemental -&gt; any shape</span>
+<a id="ln-195" name="ln-195" href="#ln-195"></a><span class="w">    </span><span class="k">elemental subroutine </span><span class="n">c_int64_as_c_size</span><span class="p">(</span><span class="n">c64_val</span><span class="p">,</span><span class="w"> </span><span class="n">csize_val</span><span class="p">)</span>
+<a id="ln-196" name="ln-196" href="#ln-196"></a><span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int64_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">c64_val</span>
+<a id="ln-197" name="ln-197" href="#ln-197"></a><span class="w">        </span><span class="c">!! the element containing the c_int64_t value</span>
+<a id="ln-198" name="ln-198" href="#ln-198"></a><span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_size_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">csize_val</span>
+<a id="ln-199" name="ln-199" href="#ln-199"></a><span class="w">        </span><span class="c">!! the element that will hold the c_size_t representation</span>
+<a id="ln-200" name="ln-200" href="#ln-200"></a>
+<a id="ln-201" name="ln-201" href="#ln-201"></a><span class="w">        </span><span class="n">csize_val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">c64_val</span><span class="p">,</span><span class="w"> </span><span class="nb">kind</span><span class="o">=</span><span class="kt">c_size_t</span><span class="p">)</span>
+<a id="ln-202" name="ln-202" href="#ln-202"></a><span class="w">    </span><span class="k">end subroutine </span><span class="n">c_int64_as_c_size</span>
+<a id="ln-203" name="ln-203" href="#ln-203"></a>
+<a id="ln-204" name="ln-204" href="#ln-204"></a><span class="w">    </span><span class="c">!&gt; Converts c_size_t to c_int64_t, elemental -&gt; any shape</span>
+<a id="ln-205" name="ln-205" href="#ln-205"></a><span class="w">    </span><span class="k">elemental subroutine </span><span class="n">c_size_as_c_int64</span><span class="p">(</span><span class="n">csize_val</span><span class="p">,</span><span class="w"> </span><span class="n">c64_val</span><span class="p">)</span>
+<a id="ln-206" name="ln-206" href="#ln-206"></a><span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_size_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">in</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">csize_val</span>
+<a id="ln-207" name="ln-207" href="#ln-207"></a><span class="w">        </span><span class="c">!! the element containing the c_size_t value</span>
+<a id="ln-208" name="ln-208" href="#ln-208"></a><span class="w">        </span><span class="kt">integer</span><span class="p">(</span><span class="kt">c_int64_t</span><span class="p">),</span><span class="w"> </span><span class="k">intent</span><span class="p">(</span><span class="n">out</span><span class="p">)</span><span class="w"> </span><span class="kd">::</span><span class="w"> </span><span class="n">c64_val</span>
+<a id="ln-209" name="ln-209" href="#ln-209"></a><span class="w">        </span><span class="c">!! the element that will hold the c_int64_t representation</span>
+<a id="ln-210" name="ln-210" href="#ln-210"></a>
+<a id="ln-211" name="ln-211" href="#ln-211"></a><span class="w">        </span><span class="n">c64_val</span><span class="w"> </span><span class="o">=</span><span class="w"> </span><span class="nb">int</span><span class="p">(</span><span class="n">csize_val</span><span class="p">,</span><span class="w"> </span><span class="nb">kind</span><span class="o">=</span><span class="kt">c_int64_t</span><span class="p">)</span>
+<a id="ln-212" name="ln-212" href="#ln-212"></a><span class="w">    </span><span class="k">end subroutine </span><span class="n">c_size_as_c_int64</span>
+<a id="ln-213" name="ln-213" href="#ln-213"></a>
+<a id="ln-214" name="ln-214" href="#ln-214"></a><span class="k">end module </span><span class="n">tox_conversions</span>
 </pre></div>
 
       </section>
@@ -339,7 +402,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-11-18 12:59 +0000"             </p>
+ on "2025-11-21 16:56 +0000"             </p>
           </div>
         </div>
         <br>
