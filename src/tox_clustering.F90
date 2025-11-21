@@ -1,6 +1,7 @@
 #include "macros.h"
 
 module tox_clustering
+    use safeguard
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_positive_inf, ieee_is_nan
     use tox_errors, only: is_err, set_err, set_ok, ERR_NAN_INF, ERR_INVALID_INPUT, validate_dimension_size, validate_distance_matrix, validate_all_in_range_real, validate_in_range_int
