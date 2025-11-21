@@ -2,7 +2,7 @@
 # This script demonstrates how to use distance_to_centroid with normalized TPM data,
 # orthogroup centroids and gene-to-family mapping
 
-library(readr)
+# Avoid requiring 'readr' in CI; use base R readers instead
 
 # Source the main functions
 source("rcpp/tensoromics_functions.R")
