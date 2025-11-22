@@ -61,6 +61,9 @@
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
                 </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
                 <form action="../search.html" role="search" class="ms-auto">
@@ -85,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 5.3% of total for modules and submodules.">182 statements</a>
+                 title=" 3.4% of total for modules and submodules.">182 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -168,9 +171,9 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='safeguard.html'>safeguard</a></li>
-                  <li class="list-inline-item"><a href='tox_errors.html'>tox_errors</a></li>
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
+                  <li class="list-inline-item"><a href='tox_errors.html'>tox_errors</a></li>
+                  <li class="list-inline-item"><a href='safeguard.html'>safeguard</a></li>
               </ul>
             </li>
         </ul>
@@ -211,7 +214,7 @@ Final result is in buf_log. If fold change is needed, call calc_fchange separate
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_genes~25"></span>
+              <span class="anchor" id="variable-n_genes~50"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -361,7 +364,7 @@ Final result is in buf_log. If fold change is needed, call calc_fchange separate
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stack_left~15"></span>
+              <span class="anchor" id="variable-stack_left~16"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -376,7 +379,7 @@ Final result is in buf_log. If fold change is needed, call calc_fchange separate
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stack_right~15"></span>
+              <span class="anchor" id="variable-stack_right~16"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -451,7 +454,7 @@ Final result is in buf_log. If fold change is needed, call calc_fchange separate
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~91"></span>
+              <span class="anchor" id="variable-ierr~231"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -492,7 +495,7 @@ across tissues (not classical standard deviation).</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_genes~26"></span>
+              <span class="anchor" id="variable-n_genes~51"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -552,7 +555,7 @@ across tissues (not classical standard deviation).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~92"></span>
+              <span class="anchor" id="variable-ierr~232"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -593,7 +596,7 @@ Computes average expression per rank across tissues.</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_genes~27"></span>
+              <span class="anchor" id="variable-n_genes~52"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -698,7 +701,7 @@ Computes average expression per rank across tissues.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stack_left~16"></span>
+              <span class="anchor" id="variable-stack_left~17"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -713,7 +716,7 @@ Computes average expression per rank across tissues.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-stack_right~16"></span>
+              <span class="anchor" id="variable-stack_right~17"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -743,7 +746,7 @@ Computes average expression per rank across tissues.</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~93"></span>
+              <span class="anchor" id="variable-ierr~233"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -787,7 +790,7 @@ non-portable <code>log2</code> intrinsic for compatibility with WebAssembly (WAS
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_genes~28"></span>
+              <span class="anchor" id="variable-n_genes~53"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -847,7 +850,7 @@ non-portable <code>log2</code> intrinsic for compatibility with WebAssembly (WAS
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~94"></span>
+              <span class="anchor" id="variable-ierr~234"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -979,7 +982,7 @@ expression per gene. The input matrix is column-major, flattened as a 1D array.<
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~95"></span>
+              <span class="anchor" id="variable-ierr~235"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1022,7 +1025,7 @@ value in the condition column, for all genes.</p><a href="../proc/calc_fchange.h
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_genes~29"></span>
+              <span class="anchor" id="variable-n_genes~54"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1127,7 +1130,7 @@ value in the condition column, for all genes.</p><a href="../proc/calc_fchange.h
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~96"></span>
+              <span class="anchor" id="variable-ierr~236"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1170,7 +1173,7 @@ value in the condition column, for all genes.</p><a href="../proc/calc_fchange.h
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-11-18 12:59 +0000"             </p>
+ on "2025-11-21 16:56 +0000"             </p>
           </div>
         </div>
         <br>

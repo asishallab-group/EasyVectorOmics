@@ -58,6 +58,16 @@ contains
     end if
   end function is_close
 
+  !> Find the next power of two greater than or equal to n
+  function next_power_of_two(n) result(power)
+      integer(int32), intent(in) :: n
+      !! input value
+      integer(int32) :: power
+      !! next greater value that is a power of two
+      
+      power = 2 ** (bit_size(n) - leadz(n - 1))
+  end function next_power_of_two
+
   !> Computes the radian angle between two vectors
   pure subroutine angle_between(v1, v2, n_dims, angle, ierr)
     integer(int32), intent(in) :: n_dims

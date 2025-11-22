@@ -16,6 +16,7 @@ program main
   use mod_test_clock_hand_angles
   use mod_test_relative_axis_contributions
   use mod_test_tissue_versatility
+  use mod_test_tox_data
   use mod_test_normalization_pipeline
   use mod_test_shift_vectors
   use mod_test_gene_centroids
@@ -102,6 +103,7 @@ contains
     call add_suite("clock_hand_angles", run_all_tests_clock_hand_angles, run_named_tests_clock_hand_angles)
     call add_suite("relative_axis_contributions", run_all_tests_relative_axis, run_named_tests_relative_axis)
     call add_suite("tissue_versatility", run_all_tests_tissue_versatility, run_named_tests_tissue_versatility)
+    call add_suite("tox_data", run_all_tests_tox_data, run_named_tests_tox_data)
     call add_suite("normalization_pipeline", run_all_tests_normalization_pipeline, run_named_tests_normalization_pipeline)
     call add_suite("shift_vectors", run_all_tests_shift_vectors, run_named_tests_shift_vectors)
     call add_suite("arrays", run_all_tests_array, run_named_tests_array)

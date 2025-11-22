@@ -61,6 +61,9 @@
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
                 </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
                 <form action="../search.html" role="search" class="ms-auto">
@@ -85,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 8.0% of total for modules and submodules.">274 statements</a>
+                 title=" 5.1% of total for modules and submodules.">274 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -187,8 +190,8 @@
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/ieee_arithmetic'>ieee_arithmetic</a></li>
                   <li class="list-inline-item"><a href='tox_errors.html'>tox_errors</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/ieee_arithmetic'>ieee_arithmetic</a></li>
               </ul>
             </li>
         </ul>
@@ -310,7 +313,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-trajectories"></span>
+              <span class="anchor" id="variable-trajectories~11"></span>
               real(kind=real64),
             </td>
 <td>intent(in),</td>
@@ -325,7 +328,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_factors"></span>
+              <span class="anchor" id="variable-n_factors~11"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -340,7 +343,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_samples"></span>
+              <span class="anchor" id="variable-n_samples~14"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -355,7 +358,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_timepoints"></span>
+              <span class="anchor" id="variable-n_timepoints~15"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -416,7 +419,7 @@ The centroids should be unique. This is not checked in this routine.</p><a href=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr"></span>
+              <span class="anchor" id="variable-ierr~129"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -501,7 +504,7 @@ The centroids should be unique. This is not checked in this routine.</p><a href=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_points"></span>
+              <span class="anchor" id="variable-n_points~2"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -516,7 +519,7 @@ The centroids should be unique. This is not checked in this routine.</p><a href=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_dims"></span>
+              <span class="anchor" id="variable-n_dims~8"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -577,7 +580,7 @@ The centroids should be unique. This is not checked in this routine.</p><a href=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~2"></span>
+              <span class="anchor" id="variable-ierr~130"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -647,7 +650,7 @@ The centroids should be unique. This is not checked in this routine.</p><a href=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_points~2"></span>
+              <span class="anchor" id="variable-n_points~3"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -662,7 +665,7 @@ The centroids should be unique. This is not checked in this routine.</p><a href=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_dims~2"></span>
+              <span class="anchor" id="variable-n_dims~9"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -808,7 +811,7 @@ The centroids should be unique. This is not checked in this routine.</p><a href=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_points~3"></span>
+              <span class="anchor" id="variable-n_points~4"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -823,7 +826,7 @@ The centroids should be unique. This is not checked in this routine.</p><a href=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_dims~3"></span>
+              <span class="anchor" id="variable-n_dims~10"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -894,7 +897,7 @@ The centroids should be unique. This is not checked in this routine.</p><a href=
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-distances"></span>
+              <span class="anchor" id="variable-distances~2"></span>
               real(kind=real64),
             </td>
 <td>intent(inout),</td>
@@ -904,12 +907,12 @@ The centroids should be unique. This is not checked in this routine.</p><a href=
             <td>::</td>
             <td><strong>distances</strong></td>
             <td>
-<p>symmetric distance matrix, holding the positive distances between points. Distance of X-&gt;X is always zero.</p><a href="../proc/linkage_clustering.html#variable-distances" class="pull-right"><emph>Read more&hellip;</emph></a>
+<p>symmetric distance matrix, holding the positive distances between points. Distance of X-&gt;X is always zero.</p><a href="../proc/linkage_clustering.html#variable-distances~2" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_points~4"></span>
+              <span class="anchor" id="variable-n_points~5"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -999,7 +1002,7 @@ The centroids should be unique. This is not checked in this routine.</p><a href=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~3"></span>
+              <span class="anchor" id="variable-ierr~131"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1039,7 +1042,7 @@ The centroids should be unique. This is not checked in this routine.</p><a href=
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-distances~2"></span>
+              <span class="anchor" id="variable-distances~3"></span>
               real(kind=real64),
             </td>
 <td>intent(inout),</td>
@@ -1054,7 +1057,7 @@ The centroids should be unique. This is not checked in this routine.</p><a href=
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_points~5"></span>
+              <span class="anchor" id="variable-n_points~6"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1095,7 +1098,7 @@ by using the self-distance as indicator in which iteration the cluster was merge
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-distances~3"></span>
+              <span class="anchor" id="variable-distances~4"></span>
               real(kind=real64),
             </td>
 <td>intent(in),</td>
@@ -1110,7 +1113,7 @@ by using the self-distance as indicator in which iteration the cluster was merge
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_points~6"></span>
+              <span class="anchor" id="variable-n_points~7"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1140,7 +1143,7 @@ by using the self-distance as indicator in which iteration the cluster was merge
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-idx"></span>
+              <span class="anchor" id="variable-idx~7"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1155,7 +1158,7 @@ by using the self-distance as indicator in which iteration the cluster was merge
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-weight"></span>
+              <span class="anchor" id="variable-weight~2"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1210,7 +1213,7 @@ by using the self-distance as indicator in which iteration the cluster was merge
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-distances~4"></span>
+              <span class="anchor" id="variable-distances~5"></span>
               real(kind=real64),
             </td>
 <td>intent(inout),</td>
@@ -1225,7 +1228,7 @@ by using the self-distance as indicator in which iteration the cluster was merge
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_points~7"></span>
+              <span class="anchor" id="variable-n_points~8"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1340,7 +1343,7 @@ by using the self-distance as indicator in which iteration the cluster was merge
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-distances~5"></span>
+              <span class="anchor" id="variable-distances~6"></span>
               real(kind=real64),
             </td>
 <td>intent(inout),</td>
@@ -1355,7 +1358,7 @@ by using the self-distance as indicator in which iteration the cluster was merge
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_points~8"></span>
+              <span class="anchor" id="variable-n_points~9"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1500,7 +1503,7 @@ by using the self-distance as indicator in which iteration the cluster was merge
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-distances~6"></span>
+              <span class="anchor" id="variable-distances~7"></span>
               real(kind=real64),
             </td>
 <td>intent(inout),</td>
@@ -1515,7 +1518,7 @@ by using the self-distance as indicator in which iteration the cluster was merge
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_points~9"></span>
+              <span class="anchor" id="variable-n_points~10"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1600,7 +1603,7 @@ by using the self-distance as indicator in which iteration the cluster was merge
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-distances~7"></span>
+              <span class="anchor" id="variable-distances~8"></span>
               real(kind=real64),
             </td>
 <td>intent(in),</td>
@@ -1615,7 +1618,7 @@ by using the self-distance as indicator in which iteration the cluster was merge
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n"></span>
+              <span class="anchor" id="variable-n~15"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1660,7 +1663,7 @@ by using the self-distance as indicator in which iteration the cluster was merge
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-min_dist"></span>
+              <span class="anchor" id="variable-min_dist~2"></span>
               real(kind=real64),
             </td>
 <td>intent(out)</td>
@@ -1703,7 +1706,7 @@ by using the self-distance as indicator in which iteration the cluster was merge
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-11-18 12:59 +0000"             </p>
+ on "2025-11-21 16:56 +0000"             </p>
           </div>
         </div>
         <br>

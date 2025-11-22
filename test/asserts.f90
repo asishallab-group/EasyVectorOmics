@@ -16,20 +16,7 @@ module asserts
   public :: assert_equal_array_char, assert_equal_array_logical
   public :: assert_equal_complex, assert_not_equal_complex, assert_equal_array_complex
 
-
 contains
-  
-  !> Asserts that two character arrays are equal
-  subroutine assert_equal_array_char(a, b, clen, n, msg)
-    integer(int32), INTENT(IN) :: clen
-    character(len=clen), intent(in) :: a(n), b(n)
-    character(*), intent(in) :: msg
-    integer, intent(in) :: n
-    if (any(a /= b)) then
-      write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (character arrays differ)"
-      stop 1
-    end if
-  end subroutine
 
   !> Assert that two complex numbers are equal within a tolerance.
   subroutine assert_equal_complex(a, b, tol, msg)
@@ -156,6 +143,18 @@ contains
     character(*), intent(in) :: msg
     if (any(abs(a-b) > tol)) then
       write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (real arrays differ, tol=", tol, ")"
+      stop 1
+    end if
+  end subroutine
+
+  !> Asserts that two character arrays are equal
+  subroutine assert_equal_array_char(a, b, clen, n, msg)
+    integer(int32), INTENT(IN) :: clen
+    character(len=clen), intent(in) :: a(n), b(n)
+    character(*), intent(in) :: msg
+    integer, intent(in) :: n
+    if (any(a /= b)) then
+      write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (character arrays differ)"
       stop 1
     end if
   end subroutine

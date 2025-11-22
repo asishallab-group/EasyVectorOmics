@@ -41,6 +41,14 @@ module tox_errors
     !! could not write character length
   integer(int32), parameter :: ERR_WRITE_DATA         = 117
     !! could not write array data
+  integer(int32), parameter :: ERR_FILE_ADD           = 121
+    !! Could not add file to archive
+  integer(int32), parameter :: ERR_FILE_EXTRACT       = 122
+    !! Could not extract file from archive
+  integer(int32), parameter :: ERR_MISSING_MANIFEST   = 123
+    !! Manifest in zip file is missing 
+  integer(int32), parameter :: ERR_FILE_CLOSE         = 124
+    !! Failed to close the file
   !------------------------------
   ! 2xx: Format / Input validation
   !------------------------------
@@ -58,6 +66,8 @@ module tox_errors
     !! unsupported data type encountered
   integer(int32), parameter :: ERR_SIZE_MISMATCH      = 206
     !! Array size mismatch
+  integer(int32), parameter :: ERR_STRING_TOO_LONG    = 207
+    !! String exceeds buffer size 
   integer(int32), parameter :: ERR_IDX_OUT_OF_BOUNDS  = 208
     !! Array index out of bounds
   integer(int32), parameter :: ERR_DIVISION_BY_ZERO   = 209
@@ -120,6 +130,13 @@ contains
     ok = .not. is_err(ierr)
   end function is_ok
 
+  !Checks if allocation is successful
+  pure subroutine check_io_stat(ios, ierr)
+    integer(int32), intent(in) :: ios
+    integer(int32), intent(out) :: ierr
+    if(is_err(ios)) call set_err(ierr, ERR_ALLOC_FAIL)
+  end subroutine check_io_stat
+  
   pure subroutine validate_dimension_size(n, ierr)
     integer(int32), intent(in), optional :: n
     integer(int32), intent(inout) :: ierr
