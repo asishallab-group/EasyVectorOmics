@@ -49,6 +49,18 @@ contains
       call set_err_once(ierr, ERR_EMPTY_INPUT)
       return
     end if
+    ! Handle edge case: when only one axis is selected, tissue versatility is always 0
+    if (n_selected_axes == 1) then
+      out_idx = 0
+      do i_vec = 1, n_vectors
+        if (.not. exp_vecs_selection_index(i_vec)) cycle
+        out_idx = out_idx + 1
+        tissue_versatilities(out_idx) = 0.0_real64
+        tissue_angles_deg(out_idx) = 0.0_real64
+      end do
+      return
+    end if
+
     norm_diag = sqrt(real(n_selected_axes, real64))
     ! Precompute normalization factor for tissue versatility
     norm_factor = 1.0_real64 - 1.0_real64 / norm_diag

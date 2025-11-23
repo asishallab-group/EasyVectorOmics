@@ -34,8 +34,8 @@ if [[ -z "$NO_BUILD" ]]; then
     if [[ $(bash build.sh "$@" "${directives}" 1>kinds.out 2>/dev/null; grep "Divi.*zero" kinds.out) ]]; then
       echo "success"
     else
-      cat kinds.out
       echo "failure"
+      cat kinds.out
       failed=1
     fi
   done
