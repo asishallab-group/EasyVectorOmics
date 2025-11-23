@@ -5,7 +5,7 @@
 # Avoid requiring 'readr' in CI; use base R readers instead
 
 # Source the main functions
-source("r/tensoromics_functions.R")
+source("rcpp/tensoromics_functions.R")
 
 # Function to generate gene_to_family mapping from Orthogroups.tsv file
 generate_gene_to_family_mapping <- function(orthogroups_file, centroids_file, gene_expression_file, 
@@ -14,6 +14,7 @@ generate_gene_to_family_mapping <- function(orthogroups_file, centroids_file, ge
   
   # Read orthogroups file
   orthogroups <- read.table(orthogroups_file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
+  
   # Read centroids file
   centroids <- read.table(centroids_file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
   

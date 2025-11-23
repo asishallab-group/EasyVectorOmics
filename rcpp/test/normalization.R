@@ -1,5 +1,5 @@
 # Load all TensorOmics helper functions
-source("r/tensoromics_functions.R")
+source("rcpp/tensoromics_functions.R")
 
 # === Example of full normalization pipeline ===
 
@@ -7,7 +7,7 @@ source("r/tensoromics_functions.R")
 input_file <- "material/kallisto_sex_data.tsv"  # Update the input file path if necessary
 output_file <- "results/normalization_sexdata.tsv"  # Output file path for normalized data
 
-df <- read.table(input_file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
+df <- read.table(input_file, header = TRUE, sep = "\t")
 print(head(df))  # Display the first few rows of the data
 # Prepare matrix for processing (removing the gene ID column)
 gene_ids <- df[[1]]              # Save gene identifiers
