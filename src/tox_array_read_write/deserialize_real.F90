@@ -3,15 +3,42 @@ module real_deserialize_mod
   use safeguard
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only : c_loc, c_f_pointer
-  use array_utils, only: ascii_to_string, read_file_header, check_okay_ndims
+  use array_utils, only: read_file_header, check_okay_ndims
   use tox_errors
   implicit none
 
   private
   public :: deserialize_real_1d, deserialize_real_2d, &
-           deserialize_real_3d, deserialize_real_4d, deserialize_real_5d
+           deserialize_real_3d, deserialize_real_4d, deserialize_real_5d, deserialize_real_flat
 
 contains
+
+  !> Deserializes any array into a flat real array
+  subroutine deserialize_real_flat(arr, filename, ierr)
+    real(real64), intent(out) :: arr(:)
+    !! Pre-allocated array to read the data into
+    character(len=*), intent(in) :: filename
+    !! Name of the file
+    integer(int32), intent(out) :: ierr
+    !! Error code
+
+    integer(int32) :: unit, type_code, ndims, clen, ioerror
+    integer(int32), allocatable :: dims(:)
+
+    call set_ok(ierr)
+    call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    if (.not. is_ok(ierr)) return
+
+    call validate_type_code(type_code, 2, unit, ierr)
+    if(.not. is_ok(ierr)) return
+
+    read(unit, iostat=ioerror) arr
+    close(unit)
+    if (.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_READ_DATA)
+      return
+    end if
+  end subroutine deserialize_real_flat
 
   !> Directly deserialize a 1D real array from a file (array already allocated)
   subroutine deserialize_real_1d(arr, filename, ierr)
@@ -173,12 +200,13 @@ contains
 
 end module real_deserialize_mod
 
-!> R binding for the subroutine to deserialize a flat real array from a file
+!> R binding for the subroutine to deserialize a flat real array from a file.
+!> Deserializes an array of any dimension into a flat buffer.
 !> @note It is assumed that the array is already allocated and passed together with its size
 subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
   use iso_fortran_env, only: real64, int32
   use iso_c_binding, only : c_char
-  use array_utils, only : read_file_header
+  use real_deserialize_mod, only : deserialize_real_flat
   use tox_conversions, only : c_char_1d_as_string
   use tox_errors, only : set_ok, set_err_once, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH, validate_type_code
   implicit none
@@ -206,37 +234,20 @@ subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_raw, fn_len, ier
   call set_ok(ioerror)
 
   call c_char_1d_as_string(filename_raw, filename, ierr)
-  write(*,*) 'Filename:', filename
   if (.not. is_ok(ierr)) return
 
-  call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
-  if(.not. is_ok(ierr)) return
-
-  call validate_type_code(type_code, 2, unit, ierr)
-  if(.not. is_ok(ierr)) return
-
-  if (product(dims) /= arr_size) then
-    call set_err_once(ierr, ERR_SIZE_MISMATCH)
-    close(unit)
-    return
-  end if
-
-  read(unit, iostat=ioerror) flat_arr
-  close(unit)
-  if (.not. is_ok(ioerror)) then
-    call set_err_once(ierr, ERR_READ_DATA)
-    return
-  end if
+  call deserialize_real_flat(flat_arr, filename, ierr)
 
 end subroutine
 
 
-!> C binding for the subroutine to deserialize a real array from a file
+!> C binding for the subroutine to deserialize a real array from a file.
+!> Deserializes an array of any dimension into a flat buffer.
 !> @note It is assumed that the array is already allocated and passed together with its size
 subroutine deserialize_real_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, name="deserialize_real_C")
     use iso_c_binding, only : c_int, c_double, c_char
     use iso_fortran_env, only: int32, real64
-    use array_utils, only: read_file_header
+    use real_deserialize_mod, only : deserialize_real_flat
     use tox_errors, only : set_ok, set_err_once, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH, validate_type_code
     use tox_conversions, only : c_char_1d_as_string
     implicit none
@@ -270,24 +281,5 @@ subroutine deserialize_real_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C,
     call c_char_1d_as_string(filename_raw, filename, ierr)
     if (.not. is_ok(ierr)) return
 
-    call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
-    if(.not. is_ok(ierr)) return
-
-    call validate_type_code(type_code, 2, unit, ierr)
-    if(.not. is_ok(ierr)) return
-
-    ! Safety check: ensure provided buffer matches size in file
-    if (product(dims) /= arr_size) then
-        call set_err_once(ierr, ERR_SIZE_MISMATCH)
-        close(unit)
-        return
-    end if
-
-    ! Read directly into provided buffer
-    read(unit, iostat=ioerror) arr
-    close(unit)
-    if (.not. is_ok(ioerror)) then
-        call set_err_once(ierr, ERR_READ_DATA)
-        return
-    end if
+    call deserialize_real_flat(arr, filename, ierr)
 end subroutine deserialize_real_C

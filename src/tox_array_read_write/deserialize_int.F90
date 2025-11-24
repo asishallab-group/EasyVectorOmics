@@ -3,15 +3,43 @@ module int_deserialize_mod
   use safeguard
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only : c_loc, c_f_pointer
-  use array_utils, only: ascii_to_string, read_file_header, check_okay_ndims
+  use array_utils, only: read_file_header, check_okay_ndims
   use tox_errors
   implicit none
 
   private
   public :: deserialize_int_1d, deserialize_int_2d, &
-           deserialize_int_3d, deserialize_int_4d, deserialize_int_5d
+           deserialize_int_3d, deserialize_int_4d, deserialize_int_5d, deserialize_int_flat
 
 contains
+
+  !> Deserializes any array inot a flat array
+  subroutine deserialize_int_flat(arr, filename, ierr)
+    integer(int32), intent(out) :: arr(:)
+    !! Pre-allocated array to read the data into
+    character(len=*), intent(in) :: filename
+    !! Name of the file
+    integer(int32), intent(out) :: ierr
+    !! Error code
+
+    integer(int32) :: unit, type_code, ndims, clen, ioerror
+    integer(int32), allocatable :: dims(:)
+
+    call set_ok(ierr)
+    call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    if (.not. is_ok(ierr)) return
+
+    call validate_type_code(type_code, 1, unit, ierr)
+    if(.not. is_ok(ierr)) return
+
+    read(unit, iostat=ioerror) arr
+    close(unit)
+    if (.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_READ_DATA)
+      return
+    end if
+  end subroutine deserialize_int_flat
+
   !> Deserialize a flat integer array from a file
   !> Directly deserialize a 1D integer array from a file
   subroutine deserialize_int_1d(arr, filename, ierr)
@@ -165,12 +193,13 @@ contains
 
 end module int_deserialize_mod
 
-!> R interface for deserializing an integer array from a file
+!> R interface for deserializing an integer array from a file.
+!> Deserializes an array of any dimension into a flat buffer.
 !> @note The output array is handled and preallocated by R
 subroutine deserialize_int_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
   use iso_fortran_env, only: int32
   use iso_c_binding, only : c_char
-  use array_utils, only : read_file_header
+  use int_deserialize_mod, only : deserialize_int_flat
   use tox_conversions, only : c_char_1d_as_string
   use tox_errors, only : set_err_once, set_ok, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH, validate_type_code
   implicit none
@@ -198,33 +227,16 @@ subroutine deserialize_int_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
 
   call c_char_1d_as_string(filename_raw, filename, ierr)
 
-  call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
-  if (.not. is_ok(ierr)) return
-
-  call validate_type_code(type_code, 1, unit, ierr)
-  if(.not. is_ok(ierr)) return
-
-  if (product(dims) /= arr_size) then
-    call set_err_once(ierr, ERR_SIZE_MISMATCH)
-    close(unit)
-    return
-  end if
-
-  ! Read directly into R buffer
-  read(unit, iostat=ioerror) flat_arr
-  close(unit)
-  if (.not. is_ok(ioerror)) then
-    call set_err_once(ierr, ERR_READ_DATA)
-    return
-  end if
+  call deserialize_int_flat(flat_arr, filename, ierr)
 end subroutine
 
 !> C binding for the subroutine to deserialize an integer array from a file
+!> Deserializes an array of any dimension into a flat buffer.
 !>@note It is assumed that the array is already allocated and passed together with its size
 subroutine deserialize_int_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, name="deserialize_int_C")
     use iso_c_binding, only: c_int, c_char
     use iso_fortran_env, only: int32
-    use array_utils, only: read_file_header
+    use int_deserialize_mod, only : deserialize_int_flat
     use tox_errors, only : set_err_once, set_ok, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH, validate_type_code
     use tox_conversions, only : c_char_1d_as_string
     implicit none
@@ -255,26 +267,5 @@ subroutine deserialize_int_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, 
     call c_char_1d_as_string(filename_raw, filename, ierr)
     if (.not. is_ok(ierr)) return
 
-    write(*,*) 'Filename: ', filename
-
-    call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
-    if (.not. is_ok(ierr)) return
-
-    call validate_type_code(type_code, 1, unit, ierr)
-    if(.not. is_ok(ierr)) return
-
-    ! Safety check: ensure provided buffer matches size in file
-    if (product(dims) /= arr_size) then
-        call set_err_once(ierr, ERR_SIZE_MISMATCH)
-        close(unit)
-        return
-    end if
-
-    ! Read directly into C/Python-provided buffer → ZERO COPY
-    read(unit, iostat=ioerror) arr
-    close(unit)
-    if (.not. is_ok(ioerror)) then
-        call set_err_once(ierr, ERR_READ_DATA)
-        return
-    end if
+    call deserialize_int_flat(arr, filename, ierr)
 end subroutine deserialize_int_C

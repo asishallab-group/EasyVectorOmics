@@ -8,9 +8,36 @@ module logical_deserialize_mod
 
   private
   public :: deserialize_logical_1d, deserialize_logical_2d, &
-           deserialize_logical_3d, deserialize_logical_4d, deserialize_logical_5d
+           deserialize_logical_3d, deserialize_logical_4d, deserialize_logical_5d, deserialize_logical_flat
 
 contains
+
+  subroutine deserialize_logical_flat(arr, filename, ierr)
+    logical, intent(out) :: arr(:)
+    !! Pre-allocated array to read the data into
+    character(len=*), intent(in) :: filename
+    !! Name of the file
+    integer(int32), intent(out) :: ierr
+    !! Error code
+
+    integer(int32) :: unit, type_code, ndims, clen, ioerror
+    integer(int32), allocatable :: dims(:)
+
+    call set_ok(ierr)
+    call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    if (.not. is_ok(ierr)) return
+
+    call validate_type_code(type_code, 4, unit, ierr)
+    if(.not. is_ok(ierr)) return
+
+    read(unit, iostat=ioerror) arr
+    close(unit)
+    if (.not. is_ok(ioerror)) then
+      call set_err_once(ierr, ERR_READ_DATA)
+      return
+    end if
+  end subroutine deserialize_logical_flat
+
   !> Deserialize a flat logical array from a file
   !> Directly deserialize a 1D logical array from a file
   subroutine deserialize_logical_1d(arr, filename, ierr)
@@ -165,12 +192,13 @@ contains
 end module logical_deserialize_mod
 
 !> R interface for deserializing a logical array from a file
+!> Deserializes an array of any dimension into a flat buffer.
 !> @note The output array is handled and preallocated by R
 subroutine deserialize_logical_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
   use iso_fortran_env, only: int32
   use iso_c_binding, only : c_char
   use tox_conversions, only: c_char_1d_as_string
-  use array_utils, only : read_file_header
+  use logical_deserialize_mod, only : deserialize_logical_flat
   use tox_errors, only : set_err_once, set_ok, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH, validate_type_code
   implicit none
 
@@ -198,35 +226,18 @@ subroutine deserialize_logical_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
   call c_char_1d_as_string(filename_raw, filename, ierr)
   if (.not. is_ok(ierr)) return
 
-  call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
-  if (.not. is_ok(ierr)) return
-
-  call validate_type_code(type_code, 4, unit, ierr)
-  if(.not. is_ok(ierr)) return
-
-  if (product(dims) /= arr_size) then
-    call set_err_once(ierr, ERR_SIZE_MISMATCH)
-    close(unit)
-    return
-  end if
-
-  ! Read directly into R buffer
-  read(unit, iostat=ioerror) flat_arr
-  close(unit)
-  if (.not. is_ok(ioerror)) then
-    call set_err_once(ierr, ERR_READ_DATA)
-    return
-  end if
+  call deserialize_logical_flat(flat_arr, filename, ierr)
 end subroutine
 
 
-!> C binding for the subroutine to deserialize a logical array from a file
+!> C binding for the subroutine to deserialize a logical array from a file.
+!> Deserializes an array of any dimension into a flat buffer.
 !>@note It is assumed that the array is already allocated and passed together with its size
 subroutine deserialize_logical_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, name="deserialize_logical_C")
     use iso_c_binding, only: c_int, c_char
     use tox_conversions, only: logical_as_c_int
     use iso_fortran_env, only: int32
-    use array_utils, only: read_file_header
+    use logical_deserialize_mod, only : deserialize_logical_flat
     use tox_errors, only : set_err_once, set_ok, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH, validate_type_code
     use tox_conversions, only : c_char_1d_as_string
     implicit none
@@ -260,27 +271,8 @@ subroutine deserialize_logical_C(arr, arr_size, filename_raw, fn_len, ierr) bind
     call c_char_1d_as_string(filename_raw, filename, ierr)
     if (.not. is_ok(ierr)) return
 
-    call read_file_header(filename, unit, type_code, ndims, dims, clen, ierr)
+    call deserialize_logical_flat(temp_arr, filename, ierr)
     if (.not. is_ok(ierr)) return
-
-    ! Check type code for logical (4)
-    call validate_type_code(type_code, 4, unit, ierr)
-    if(.not. is_ok(ierr)) return
-
-    ! Safety check: ensure provided buffer matches size in file
-    if (product(dims) /= arr_size) then
-        call set_err_once(ierr, ERR_SIZE_MISMATCH)
-        close(unit)
-        return
-    end if
-
-    ! Read directly into C/Python-provided buffer → ZERO COPY
-    read(unit, iostat=ioerror) temp_arr
-    close(unit)
-    if (.not. is_ok(ioerror)) then
-        call set_err_once(ierr, ERR_READ_DATA)
-        return
-    end if
 
     call logical_as_c_int(temp_arr, arr)
 end subroutine deserialize_logical_C

@@ -5,8 +5,7 @@ module array_utils
     use tox_errors
     implicit none
 
-    PUBLIC :: get_array_metadata, ascii_to_string, read_file_header, write_file_header, string_to_ascii_arr
-    public :: check_okay_ndims
+    public :: get_array_metadata, read_file_header, write_file_header, check_okay_ndims
 
     integer(int32), parameter :: ARRAY_FILE_MAGIC = int(z'46413230', int32) ! 'FA20' in hex
     !! Magic number for array files
@@ -220,50 +219,6 @@ module array_utils
       clen = local_clen
     end if
   end subroutine
-
-  !> subroutine to convert an ASCII array to a string
-  subroutine ascii_to_string(ascii_array, clen, str)
-    implicit none
-    integer(int32), intent(in) :: clen
-      !! Length of the ASCII array
-    integer(int32), intent(in) :: ascii_array(clen)
-      !! Array of ASCII characters
-    
-    character(len=:), allocatable, intent(out) :: str
-    !! Output string
-    integer(int32) :: i
-    !! loop variable
-
-    allocate(character(len=clen) :: str)
-    do i = 1, clen
-      str(i:i) = char(ascii_array(i))
-    end do
-  end subroutine ascii_to_string
-
-  !> converts a string array to an ascii array
-  subroutine string_to_ascii_arr(flat, array_size, ascii_arr, clen)
-    implicit none
-    integer(int32), intent(in) :: array_size
-    !! size of the input array
-    integer(int32), intent(in) :: clen
-    !! length of the longest string
-    integer(int32), intent(out) :: ascii_arr(array_size*clen)
-    !! ascii output array
-    character(len=*), intent(in) :: flat(array_size)
-    !! input array with characters
-    
-    integer(int32) :: i, j
-
-    do i = 1, array_size
-      do j = 1, clen
-        if (j <= len_trim(flat(i))) then
-          ascii_arr((i - 1) * clen + j) = iachar(flat(i)(j:j))
-        else
-          ascii_arr((i - 1) * clen + j) = 0
-        end if
-      end do
-    end do
-  end subroutine string_to_ascii_arr
 end module array_utils
 
 !> Subroutine to get the dimensions of an array file

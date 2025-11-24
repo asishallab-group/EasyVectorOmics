@@ -230,7 +230,6 @@ end subroutine
 
 subroutine serialize_real_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) bind(C, name="serialize_real_nd_C")
   use iso_c_binding, only: c_int, c_double, c_char
-  use array_utils, only: ascii_to_string
   use serialize_real, only: serialize_real_nd
   use tox_errors, only : set_ok, is_ok
   use iso_fortran_env, only : int32

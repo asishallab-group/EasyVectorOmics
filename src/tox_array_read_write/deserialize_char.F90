@@ -2,7 +2,7 @@
 module char_deserialize_mod
   use safeguard
   use, intrinsic :: iso_fortran_env, only: int32, real64
-  use array_utils, only : ascii_to_string, read_file_header, check_okay_ioerror, check_okay_ndims
+  use array_utils, only : read_file_header, check_okay_ioerror, check_okay_ndims
   use tox_errors
   implicit none
 
@@ -214,12 +214,12 @@ contains
   
 end module char_deserialize_mod
 
-!> Subroutine to deserialize a flat character array from a file and return it as an ASCII array callable by R
+!> Subroutine to deserialize a flat character array from a file and return it as a raw array callable by R
+!> Deserializes the array into a flat buffer.
 !> @note The array is returned flat and needs to be reshaped in R
 subroutine deserialize_char_flat_r(raw_arr, arr_size, filename_raw, fn_len, clen_in, ierr)
   use iso_fortran_env, only: int32
   use char_deserialize_mod, only: deserialize_char_flat
-  use array_utils, only: string_to_ascii_arr
   use tox_errors, only : set_ok, is_ok
   use tox_conversions, only : string_as_c_char_1d_r, c_char_1d_as_string
   use iso_c_binding, only : c_char
@@ -270,7 +270,8 @@ subroutine deserialize_char_flat_r(raw_arr, arr_size, filename_raw, fn_len, clen
   deallocate(flat)
 end subroutine deserialize_char_flat_r
 
-!> C binding for the subroutine to deserialize a flat character array from a file
+!> C binding for the subroutine to deserialize a flat character array from a file.
+!> Deserializes the array into a flat buffer.
 !> @note The array is returned flat and needs to be reshaped in C/python
 subroutine deserialize_char_flat_C(raw_chars, clen, total_array_size, &
                                    filename_c, fn_len, ierr) bind(C, name="deserialize_char_flat_C")
