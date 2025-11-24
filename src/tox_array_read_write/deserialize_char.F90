@@ -54,7 +54,7 @@ contains
 
   !> Directly deserialize a 1D character array from a file (array already allocated)
   subroutine deserialize_char_1d(arr, filename, ierr)
-    character(len=*), intent(out) :: arr(:)
+    character(len=*), contiguous, intent(out) :: arr(:)
     !! Pre-allocated array to read the data into
     character(len=*), intent(in)  :: filename
     !! Name of the file to read from

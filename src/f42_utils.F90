@@ -32,6 +32,16 @@ contains
     is_close = abs(a - b) <= EPS * max(abs(a), abs(b))
   end function is_close
 
+  !> Find the next power of two greater than or equal to n
+  function next_power_of_two(n) result(power)
+      integer(int32), intent(in) :: n
+      !! input value
+      integer(int32) :: power
+      !! next greater value that is a power of two
+      
+      power = 2 ** (bit_size(n) - leadz(n - 1))
+  end function next_power_of_two
+
   !> Sort a real array indirectly using quicksort.
   !| Creates a sorted version of the array by reordering the `perm` vector. The original data in `array` remains unchanged.
   pure subroutine sort_real(array, perm, stack_left, stack_right)

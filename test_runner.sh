@@ -24,20 +24,22 @@ if [[ -z "$NO_BUILD" ]]; then
 
   failed=0
   directives=()
-  directives+=("-DTEST_KIND_MISMATCH_C_INT $(get_directives integer int32 c_int)")
+  directives+=("-DTEST_KIND_MISMATCH_C_INT $(get_directives integer int32 c_int) -D'c_int64_t(KIND)=integer OPEN_PAREN KIND CLOSE_PAREN' -D'c_size_t(KIND)=integer OPEN_PAREN KIND CLOSE_PAREN'")
   directives+=("-DTEST_KIND_MISMATCH_C_DOUBLE $(get_directives real real64 c_double)")
   directives+=("-DTEST_KIND_MISMATCH_C_DOUBLE_COMPLEX $(get_directives complex real64 c_double_complex)")
   for d in "${directives[@]}"; do
     test_directive=${d%% *}
     test_directive=${test_directive#-DTEST_KIND_MISMATCH_}
     echo -en "Testing safeguard for mismatch for $test_directive: "
-    if [[ $(bash build.sh "$@" "${directives}" 2>&1 | grep "Divi.*zero") ]]; then
+    if [[ $(bash build.sh "$@" "${directives}" 1>kinds.out 2>/dev/null; grep "Divi.*zero" kinds.out) ]]; then
       echo "success"
     else
       echo "failure"
+      cat kinds.out
       failed=1
     fi
   done
+  rm kinds.out
   exit $failed
 EOF
   check_exit_code "Kind Mismatch Test failed"
@@ -78,6 +80,10 @@ $COMPILER $FLAGS -I$BUILD_DIR \
 
 check_exit_code "Executable compilation failed"
 
+rm -f test_*.bin
+rm -f test_*.zip
+rm -f manifest.txt
+
 echo "Running tests..."
 # Run the executable
 $EXECUTABLE $ARGS
@@ -89,4 +95,8 @@ if [[ -z "$KEEP_BIN" && -z "$KEEP_FILES" ]]; then
 fi
 if [[ -z "$KEEP_ZIP" && -z "$KEEP_FILES" ]]; then
   rm -f test_*.zip
+fi
+if [[ -z "$KEEP_TXT" && -z "$KEEP_FILES" ]]; then
+  rm -f test_*.txt
+  rm -f manifest.txt
 fi

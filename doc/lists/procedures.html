@@ -62,6 +62,9 @@
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
                 </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
                 <form action="../search.html" role="search" class="ms-auto">
@@ -80,6 +83,18 @@
 			 <table class="table table-striped">
 			 <thead><tr><th>Procedure</th><th>Location</th><th>Procedure Type</th><th>Description</th></tr></thead>
 			 <tbody>
+			   <tr>
+                 <td><a href='../proc/add_data_to_zip.html'>add_data_to_zip</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/apply_unassigned_mask.html'>apply_unassigned_mask</a></td>
+                 <td><a href='../module/tox_data_tools.html'>tox_data_tools</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Applies a precomputed mask to filter out unassigned genes</p></td>
+               </tr>
 			   <tr>
                  <td><a href='../proc/ascii_to_string.html'>ascii_to_string</a></td>
                  <td><a href='../module/array_utils.html'>array_utils</a></td>
@@ -176,10 +191,34 @@ Push right and left intervals onto stack</p></td>
                  <td><p>Converts a c_char value to fortran character, elemental -&gt; any shape</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/c_int64_as_c_size.html'>c_int64_as_c_size</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts c_int64_t to c_size_t, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/c_int64_as_int32.html'>c_int64_as_int32</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts c_int64_t to int32, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/c_int_as_logical.html'>c_int_as_logical</a></td>
                  <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
                  <td>Subroutine</td>
                  <td><p>Converts a c_int value to logical, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/c_size_as_c_int64.html'>c_size_as_c_int64</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts c_size_t to c_int64_t, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/c_size_as_int32.html'>c_size_as_int32</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts c_size_t to int32, elemental -&gt; any shape</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/calc_contributions.html'>calc_contributions</a></td>
@@ -323,6 +362,18 @@ Computes average expression per gene for each group of tissue replicates. Argume
                  <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
                  <td>Subroutine</td>
                  <td><p>Converts a character value to c_char, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/check_for_nan_inf.html'>check_for_nan_inf</a></td>
+                 <td><a href='../module/tox_data_validation.html'>tox_data_validation</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Check if an array of type real contains NaN or Inf values</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/check_io_stat.html'>check_io_stat</a></td>
+                 <td><a href='../module/tox_errors.html'>tox_errors</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/check_okay_dims.html'>check_okay_dims</a></td>
@@ -525,7 +576,7 @@ When using these R wrapper functions, copies of the arrays will be created. No d
                </tr>
 			   <tr>
                  <td><a href='../proc/compute_tissue_versatility.html'>compute_tissue_versatility</a></td>
-                 <td><a href='../module/avmod.html'>avmod</a></td>
+                 <td><a href='../module/tox_tissue_versatility.html'>tox_tissue_versatility</a></td>
                  <td>Subroutine</td>
                  <td><p>Computes normalized tissue versatility for selected expression vectors.
 The metric is based on the angle between each gene expression vector and the space diagonal.
@@ -546,10 +597,34 @@ Exposes compute_tissue_versatility to C via iso_c_binding types with explicit di
 Calls compute_tissue_versatility with standard Fortran types for R interface.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/create_zip_archive.html'>create_zip_archive</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Creates a zip archive with generic file lists</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/create_zip_archive_generic_c.html'>create_zip_archive_generic_c</a></td>
+                 <td><a href='../sourcefile/tox_archive.f90.html'>tox_archive.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C binding for generic archive creation with arrays of keys and filenames</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/create_zip_archive_generic_r.html'>create_zip_archive_generic_R</a></td>
+                 <td><a href='../sourcefile/tox_archive.f90.html'>tox_archive.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>R-callable generic archive creation with arrays of keys and filenames</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/cross_product_orientation_sign.html'>cross_product_orientation_sign</a></td>
                  <td><a href='../module/relative_axis_plane_tools.html'>relative_axis_plane_tools</a></td>
                  <td>Function</td>
                  <td><p>Compute orientation sign from cross product of two vectors, using selected axes</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/delete_file.html'>delete_file</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Delete a file from the disk</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_char_1d.html'>deserialize_char_1d</a></td>
@@ -772,6 +847,48 @@ Exposes euclidean_distance to C via iso_c_binding types.</p></td>
 Calls euclidean_distance with standard Fortran types for R interface.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/extract_and_parse_manifest.html'>extract_and_parse_manifest</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Extract and parse the manifest file for generic key-value pairs.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/extract_file_from_zip.html'>extract_file_from_zip</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Subroutine</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/extract_zip_archive.html'>extract_zip_archive</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Extract a zip archive and return all key-value pairs from manifest</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/extract_zip_archive_generic_c.html'>extract_zip_archive_generic_c</a></td>
+                 <td><a href='../sourcefile/tox_archive.f90.html'>tox_archive.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C binding for extract_zip_archive - can be called directly from Python via ctypes</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/extract_zip_archive_generic_r.html'>extract_zip_archive_generic_R</a></td>
+                 <td><a href='../sourcefile/tox_archive.f90.html'>tox_archive.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Wrapper to extract all files from a zip archive</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/filter_unassigned_genes_c.html'>filter_unassigned_genes_C</a></td>
+                 <td><a href='../sourcefile/tox_data_tools.f90.html'>tox_data_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C binding for filtering unassigned genes</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/free.html'>free</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/get_array_metadata.html'>get_array_metadata</a></td>
                  <td><a href='../module/array_utils.html'>array_utils</a></td>
                  <td>Subroutine</td>
@@ -797,6 +914,36 @@ Calls euclidean_distance with standard Fortran types for R interface.</p></td>
 by using the self-distance as indicator in which iteration the cluster was merged</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/get_expression_vector.html'>get_expression_vector</a></td>
+                 <td><a href='../module/tox_data_accessors.html'>tox_data_accessors</a></td>
+                 <td>Subroutine</td>
+                 <td><p>get expression vector for a specific gene id</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/get_family_centroid.html'>get_family_centroid</a></td>
+                 <td><a href='../module/tox_data_accessors.html'>tox_data_accessors</a></td>
+                 <td>Subroutine</td>
+                 <td><p>get family centroid for a specific family index</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/get_family_for_gene_index.html'>get_family_for_gene_index</a></td>
+                 <td><a href='../module/tox_data_accessors.html'>tox_data_accessors</a></td>
+                 <td>Subroutine</td>
+                 <td><p>returns family index for gene index</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/get_family_index.html'>get_family_index</a></td>
+                 <td><a href='../module/tox_data_accessors.html'>tox_data_accessors</a></td>
+                 <td>Function</td>
+                 <td><p>Helper function to find family index</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/get_gene_index.html'>get_gene_index</a></td>
+                 <td><a href='../module/tox_data_accessors.html'>tox_data_accessors</a></td>
+                 <td>Function</td>
+                 <td><p>Helper function to find gene index</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/get_kd_point.html'>get_kd_point</a></td>
                  <td><a href='../module/kd_tree.html'>kd_tree</a></td>
                  <td>Subroutine</td>
@@ -809,10 +956,22 @@ by using the self-distance as indicator in which iteration the cluster was merge
                  <td><p>Helper routine to find the indices of the minimum value a distance matrix.</p><a href="../proc/get_min_distance_indices_helper.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/get_shift_components.html'>get_shift_components</a></td>
+                 <td><a href='../module/tox_data_accessors.html'>tox_data_accessors</a></td>
+                 <td>Subroutine</td>
+                 <td><p>returns the centroid and the shift of a gene</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/get_sorted_value.html'>get_sorted_value</a></td>
                  <td><a href='../module/binary_search_tree.html'>binary_search_tree</a></td>
                  <td>Function</td>
                  <td><p>Get the value at the sorted position.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/get_unassigned_mask.html'>get_unassigned_mask</a></td>
+                 <td><a href='../module/tox_data_tools.html'>tox_data_tools</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Helper to create a mask of genes that are unassigned</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/get_vec_across_samples.html'>get_vec_across_samples</a></td>
@@ -825,6 +984,12 @@ by using the self-distance as indicator in which iteration the cluster was merge
                  <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
                  <td>Subroutine</td>
                  <td><p>Accessor routine to extract timepoint data for a specific factor and sample</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/get_zip_entry_name.html'>get_zip_entry_name</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Helper function to get the name of a ZIP entry</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/group_centroid.html'>group_centroid</a></td>
@@ -843,6 +1008,48 @@ by using the self-distance as indicator in which iteration the cluster was merge
                  <td><a href='../sourcefile/tox_gene_centroids.f90.html'>tox_gene_centroids.f90</a></td>
                  <td>Subroutine</td>
                  <td><p>R interface wrapper for group_centroid.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hashmap_create.html'>hashmap_create</a></td>
+                 <td><a href='../module/xxh3_hashmap_module.html'>xxh3_hashmap_module</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Create the hashmap</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hashmap_destroy.html'>hashmap_destroy</a></td>
+                 <td><a href='../module/xxh3_hashmap_module.html'>xxh3_hashmap_module</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Destroy the hashmap</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hashmap_get.html'>hashmap_get</a></td>
+                 <td><a href='../module/xxh3_hashmap_module.html'>xxh3_hashmap_module</a></td>
+                 <td>Function</td>
+                 <td><p>Lookup a key</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hashmap_put.html'>hashmap_put</a></td>
+                 <td><a href='../module/xxh3_hashmap_module.html'>xxh3_hashmap_module</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Insert a key-value pair</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hashset_create.html'>hashset_create</a></td>
+                 <td><a href='../module/xxh3_hashmap_module.html'>xxh3_hashmap_module</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Create the hashmap</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hashset_destroy.html'>hashset_destroy</a></td>
+                 <td><a href='../module/xxh3_hashmap_module.html'>xxh3_hashmap_module</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Destroy the set</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/hashset_put.html'>hashset_put</a></td>
+                 <td><a href='../module/xxh3_hashmap_module.html'>xxh3_hashmap_module</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Insert a key-value pair</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/heapsort_character.html'>heapsort_character</a></td>
@@ -887,6 +1094,18 @@ Calls identify_outliers with C-compatible types for external interface.</p></td>
 Calls identify_outliers with standard Fortran types for R interface.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/int32_as_c_int64.html'>int32_as_c_int64</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts int32 to c_int64_t, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/int32_as_c_size.html'>int32_as_c_size</a></td>
+                 <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Converts int32 to c_size_t, elemental -&gt; any shape</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/is_close.html'>is_close</a></td>
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Function</td>
@@ -897,6 +1116,12 @@ Calls identify_outliers with standard Fortran types for R interface.</p></td>
                  <td><a href='../module/tox_errors.html'>tox_errors</a></td>
                  <td>Function</td>
                  <td><p>check if the error code indicates error</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/is_in_hashset.html'>is_in_hashset</a></td>
+                 <td><a href='../module/xxh3_hashmap_module.html'>xxh3_hashmap_module</a></td>
+                 <td>Function</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/is_ok.html'>is_ok</a></td>
@@ -939,6 +1164,42 @@ Calls identify_outliers with standard Fortran types for R interface.</p></td>
                  <td><a href='../sourcefile/tox_clustering.f90.html'>tox_clustering.F90</a></td>
                  <td>Subroutine</td>
                  <td><p>C-compatible wrapper for linkage_clustering</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/load_expression_vectors.html'>load_expression_vectors</a></td>
+                 <td><a href='../module/tox_data_read_write.html'>tox_data_read_write</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Wrapper for deserialize_real_2D function</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/load_family_centroids.html'>load_family_centroids</a></td>
+                 <td><a href='../module/tox_data_read_write.html'>tox_data_read_write</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Wrapper for deserialize_real_2D function</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/load_family_ids.html'>load_family_ids</a></td>
+                 <td><a href='../module/tox_data_read_write.html'>tox_data_read_write</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Wrapper for deserialize_char_1D function</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/load_gene_ids.html'>load_gene_ids</a></td>
+                 <td><a href='../module/tox_data_read_write.html'>tox_data_read_write</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Wrapper for deserialize_char_1D function</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/load_gene_to_family.html'>load_gene_to_family</a></td>
+                 <td><a href='../module/tox_data_read_write.html'>tox_data_read_write</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Wrapper for deserialize_int_1D function</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/load_shift_vectors.html'>load_shift_vectors</a></td>
+                 <td><a href='../module/tox_data_read_write.html'>tox_data_read_write</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Wrapper for deserialize_real_2D function</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/loess_smooth_2d.html'>loess_smooth_2d</a></td>
@@ -996,6 +1257,12 @@ Applies log2(x+1) to each element of the input matrix. Arguments match R's .Fort
                  <td><p>Converts a logical value to c_int, elemental -&gt; any shape</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../interface/malloc.html'>malloc</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/mean_vector.html'>mean_vector</a></td>
                  <td><a href='../module/tox_gene_centroids.html'>tox_gene_centroids</a></td>
                  <td>Subroutine</td>
@@ -1024,6 +1291,12 @@ Applies log2(x+1) to each element of the input matrix. Arguments match R's .Fort
                  <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
                  <td>Subroutine</td>
                  <td><p>Helper for *PGMA algorithms for updating the distance matrix on merge of two clusters</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/next_power_of_two.html'>next_power_of_two</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Function</td>
+                 <td><p>Find the next power of two greater than or equal to n</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/normalization_pipeline.html'>normalization_pipeline</a></td>
@@ -1189,10 +1462,76 @@ Indirectly sorts <code>array</code> using <code>perm</code>, same algorithm as <
 Sorts indirectly using the permutation vector <code>perm</code>. Manual stack replaces recursion.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/read_expression_vectors_tsv.html'>read_expression_vectors_tsv</a></td>
+                 <td><a href='../module/tox_data_tools.html'>tox_data_tools</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Read expression vectors from csv/tsv files</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_expression_vectors_tsv_c.html'>read_expression_vectors_tsv_C</a></td>
+                 <td><a href='../sourcefile/tox_data_tools.f90.html'>tox_data_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C binding for reading expression vectors from files</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_expression_vectors_tsv_r.html'>read_expression_vectors_tsv_R</a></td>
+                 <td><a href='../sourcefile/tox_data_tools.f90.html'>tox_data_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>R binding to read expression vectors from files.</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/read_file_header.html'>read_file_header</a></td>
                  <td><a href='../module/array_utils.html'>array_utils</a></td>
                  <td>Subroutine</td>
                  <td><p>Opens unit and reads file header with all metadata from given file</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_gene_ids_from_tsv_file.html'>read_gene_ids_from_tsv_file</a></td>
+                 <td><a href='../module/tox_data_tools.html'>tox_data_tools</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Only read the gene ids from a tsv file</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_gene_ids_from_tsv_file_c.html'>read_gene_ids_from_tsv_file_C</a></td>
+                 <td><a href='../sourcefile/tox_data_tools.f90.html'>tox_data_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C binding for reading gene IDs from a gene expression tsv file</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_gene_ids_from_tsv_file_r.html'>read_gene_ids_from_tsv_file_R</a></td>
+                 <td><a href='../sourcefile/tox_data_tools.f90.html'>tox_data_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>R binding to read gene IDs from a file.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_manifest_generic.html'>read_manifest_generic</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Read manifest file and return key-value pairs</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_orthofinder_file.html'>read_orthofinder_file</a></td>
+                 <td><a href='../module/tox_data_tools.html'>tox_data_tools</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Read a family file (Orthofinder)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_orthofinder_file_c.html'>read_orthofinder_file_C</a></td>
+                 <td><a href='../sourcefile/tox_data_tools.f90.html'>tox_data_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C binding for reading family file</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_orthofinder_file_r.html'>read_orthofinder_file_R</a></td>
+                 <td><a href='../sourcefile/tox_data_tools.f90.html'>tox_data_tools.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>R Binding to read a family file</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/read_tox_data.html'>read_tox_data</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Read standard tox from a zip archive</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/real_greater.html'>real_greater</a></td>
@@ -1253,6 +1592,48 @@ Wrapper for single RAP-projected expression vectors</p></td>
                  <td><a href='../sourcefile/tox_relative_axis_plane_tools.f90.html'>tox_relative_axis_plane_tools.F90</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/save_expression_vectors.html'>save_expression_vectors</a></td>
+                 <td><a href='../module/tox_data_read_write.html'>tox_data_read_write</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Wrapper for serialize_real_2D function</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/save_family_centroids.html'>save_family_centroids</a></td>
+                 <td><a href='../module/tox_data_read_write.html'>tox_data_read_write</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Wrapper for serialize_real_2D function</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/save_family_ids.html'>save_family_ids</a></td>
+                 <td><a href='../module/tox_data_read_write.html'>tox_data_read_write</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Wrapper for serialize_char_1D function</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/save_gene_ids.html'>save_gene_ids</a></td>
+                 <td><a href='../module/tox_data_read_write.html'>tox_data_read_write</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Wrapper for serialize_char_1D function</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/save_gene_to_family.html'>save_gene_to_family</a></td>
+                 <td><a href='../module/tox_data_read_write.html'>tox_data_read_write</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Wrapper for serialize_int_1D function</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/save_shift_vectors.html'>save_shift_vectors</a></td>
+                 <td><a href='../module/tox_data_read_write.html'>tox_data_read_write</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Wrapper for serialize_real_2D function</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/save_tox_data.html'>save_tox_data</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Save standard tox data</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/serialize_char_1d.html'>serialize_char_1d</a></td>
@@ -1511,6 +1892,12 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
 There are two modes:</p><a href="../proc/spike_contribution_c.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/split_string.html'>split_string</a></td>
+                 <td><a href='../module/tox_data_tools.html'>tox_data_tools</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Helper subroutine to split strings</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/string_as_c_char_1d.html'>string_as_c_char_1d</a></td>
                  <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
                  <td>Subroutine</td>
@@ -1549,6 +1936,24 @@ There are two modes:</p><a href="../proc/trajectory_contribution.html" class="pu
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/validate_all_data.html'>validate_all_data</a></td>
+                 <td><a href='../module/tox_data_validation.html'>tox_data_validation</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Comprehensive validation routine, combining all checks</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_all_data_c.html'>validate_all_data_C</a></td>
+                 <td><a href='../sourcefile/tox_data_validation.f90.html'>tox_data_validation.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C Binding to validate all data</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_all_data_r.html'>validate_all_data_R</a></td>
+                 <td><a href='../sourcefile/tox_data_validation.f90.html'>tox_data_validation.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>R Binding to validate all data</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/validate_all_in_range_int.html'>validate_all_in_range_int</a></td>
                  <td><a href='../module/tox_errors.html'>tox_errors</a></td>
                  <td>Subroutine</td>
@@ -1559,6 +1964,24 @@ There are two modes:</p><a href="../proc/trajectory_contribution.html" class="pu
                  <td><a href='../module/tox_errors.html'>tox_errors</a></td>
                  <td>Subroutine</td>
                  <td><p>Validates min&lt;=e&lt;=max AND e/=NaN for all elements e of an array</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_data_structure.html'>validate_data_structure</a></td>
+                 <td><a href='../module/tox_data_validation.html'>tox_data_validation</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Validate full data structure</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_data_structure_c.html'>validate_data_structure_C</a></td>
+                 <td><a href='../sourcefile/tox_data_validation.f90.html'>tox_data_validation.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C Binding to validate data structure</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_data_structure_r.html'>validate_data_structure_R</a></td>
+                 <td><a href='../sourcefile/tox_data_validation.f90.html'>tox_data_validation.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>R Binding to validate data structure</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/validate_dimension_size.html'>validate_dimension_size</a></td>
@@ -1575,6 +1998,66 @@ This means that distance X-&gt;X is exactly zero (no tolerance)
 and X-&gt;Y is exactly the same as Y-&gt;X (no tolerance).</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/validate_empty_strings.html'>validate_empty_strings</a></td>
+                 <td><a href='../module/tox_data_validation.html'>tox_data_validation</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Validate that strings in an array are not empty</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_expression_data.html'>validate_expression_data</a></td>
+                 <td><a href='../module/tox_data_validation.html'>tox_data_validation</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Validate expresssion data</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_expression_data_c.html'>validate_expression_data_C</a></td>
+                 <td><a href='../sourcefile/tox_data_validation.f90.html'>tox_data_validation.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C Binding to validate expression data</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_expression_data_r.html'>validate_expression_data_R</a></td>
+                 <td><a href='../sourcefile/tox_data_validation.f90.html'>tox_data_validation.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>R Binding to validate expression data</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_family_centroids.html'>validate_family_centroids</a></td>
+                 <td><a href='../module/tox_data_validation.html'>tox_data_validation</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Validate the family centroids</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_family_centroids_c.html'>validate_family_centroids_C</a></td>
+                 <td><a href='../sourcefile/tox_data_validation.f90.html'>tox_data_validation.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C binding to validate family centroids</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_family_centroids_r.html'>validate_family_centroids_R</a></td>
+                 <td><a href='../sourcefile/tox_data_validation.f90.html'>tox_data_validation.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>R Binding to validate family centroids</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_gene_to_family_mapping.html'>validate_gene_to_family_mapping</a></td>
+                 <td><a href='../module/tox_data_validation.html'>tox_data_validation</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Validate gene to family mapping</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_gene_to_family_mapping_c.html'>validate_gene_to_family_mapping_C</a></td>
+                 <td><a href='../sourcefile/tox_data_validation.f90.html'>tox_data_validation.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C binding to validate gene to family mapping</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_gene_to_family_mapping_r.html'>validate_gene_to_family_mapping_R</a></td>
+                 <td><a href='../sourcefile/tox_data_validation.f90.html'>tox_data_validation.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>R binding for gene to family mapping validating</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/validate_in_range_int.html'>validate_in_range_int</a></td>
                  <td><a href='../module/tox_errors.html'>tox_errors</a></td>
                  <td>Subroutine</td>
@@ -1585,6 +2068,42 @@ and X-&gt;Y is exactly the same as Y-&gt;X (no tolerance).</p></td>
                  <td><a href='../module/tox_errors.html'>tox_errors</a></td>
                  <td>Subroutine</td>
                  <td><p>Validates min&lt;=e&lt;=max AND e/=NaN for all elements e of an array</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_shift_vectors.html'>validate_shift_vectors</a></td>
+                 <td><a href='../module/tox_data_validation.html'>tox_data_validation</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Validates shift vectors</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_shift_vectors_c.html'>validate_shift_vectors_C</a></td>
+                 <td><a href='../sourcefile/tox_data_validation.f90.html'>tox_data_validation.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C Binding to validate shift vectors</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_shift_vectors_r.html'>validate_shift_vectors_R</a></td>
+                 <td><a href='../sourcefile/tox_data_validation.f90.html'>tox_data_validation.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>R Binding to validate shift vectors</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_string_array_uniqueness.html'>validate_string_array_uniqueness</a></td>
+                 <td><a href='../module/tox_data_validation.html'>tox_data_validation</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Validate that no string appears more than once</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_string_array_uniqueness_c.html'>validate_string_array_uniqueness_C</a></td>
+                 <td><a href='../sourcefile/tox_data_validation.f90.html'>tox_data_validation.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C Binding to validate string array uniqueness</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/validate_string_array_uniqueness_r.html'>validate_string_array_uniqueness_R</a></td>
+                 <td><a href='../sourcefile/tox_data_validation.f90.html'>tox_data_validation.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>R Binding to validate string array uniqueness</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/which.html'>which</a></td>
@@ -1605,6 +2124,78 @@ Converts integer mask to logical and calls which.</p></td>
                  <td>Subroutine</td>
                  <td><p>Opens unit and writes fileheader with all metadata to the given filename</p></td>
                </tr>
+			   <tr>
+                 <td><a href='../proc/write_manifest.html'>write_manifest</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Write manifest from given key-value pairs</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/zip_close.html'>zip_close</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/zip_fclose.html'>zip_fclose</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/zip_file_add.html'>zip_file_add</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/zip_fopen.html'>zip_fopen</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/zip_fread.html'>zip_fread</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/zip_get_name.html'>zip_get_name</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/zip_get_num_entries.html'>zip_get_num_entries</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/zip_open.html'>zip_open</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/zip_set_file_compression.html'>zip_set_file_compression</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/zip_source_buffer.html'>zip_source_buffer</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/zip_source_free.html'>zip_source_free</a></td>
+                 <td><a href='../module/tox_archive.html'>tox_archive</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
 			 </tbody></table>
              
         </div>
@@ -1624,7 +2215,7 @@ Converts integer mask to logical and calls which.</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-11-18 12:59 +0000"             </p>
+ on "2025-11-23 17:36 +0000"             </p>
           </div>
         </div>
         <br>

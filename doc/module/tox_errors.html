@@ -61,6 +61,9 @@
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
                 </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
                 <form action="../search.html" role="search" class="ms-auto">
@@ -85,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 4.5% of total for modules and submodules.">153 statements</a>
+                 title=" 3.0% of total for modules and submodules.">163 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -140,6 +143,10 @@
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_write_dims">ERR_WRITE_DIMS</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_write_charlen">ERR_WRITE_CHARLEN</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_write_data">ERR_WRITE_DATA</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_file_add">ERR_FILE_ADD</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_file_extract">ERR_FILE_EXTRACT</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_missing_manifest">ERR_MISSING_MANIFEST</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_file_close">ERR_FILE_CLOSE</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_invalid_format">ERR_INVALID_FORMAT</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_invalid_input">ERR_INVALID_INPUT</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_empty_input">ERR_EMPTY_INPUT</a>
@@ -147,6 +154,7 @@
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_nan_inf">ERR_NAN_INF</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_unsupported_type">ERR_UNSUPPORTED_TYPE</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_size_mismatch">ERR_SIZE_MISMATCH</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_string_too_long">ERR_STRING_TOO_LONG</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_idx_out_of_bounds">ERR_IDX_OUT_OF_BOUNDS</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_division_by_zero">ERR_DIVISION_BY_ZERO</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_alloc_fail">ERR_ALLOC_FAIL</a>
@@ -190,6 +198,7 @@
             <a class="list-group-item" href="../module/tox_errors.html#proc-set_ok">set_ok</a>
             <a class="list-group-item" href="../module/tox_errors.html#proc-set_err">set_err</a>
             <a class="list-group-item" href="../module/tox_errors.html#proc-set_err_once">set_err_once</a>
+            <a class="list-group-item" href="../module/tox_errors.html#proc-check_io_stat">check_io_stat</a>
             <a class="list-group-item" href="../module/tox_errors.html#proc-validate_dimension_size">validate_dimension_size</a>
             <a class="list-group-item" href="../module/tox_errors.html#proc-validate_in_range_int">validate_in_range_int</a>
             <a class="list-group-item" href="../module/tox_errors.html#proc-validate_all_in_range_int">validate_all_in_range_int</a>
@@ -485,6 +494,74 @@ parameter
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-err_file_add"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_FILE_ADD</strong></td>
+<td> =</td>
+                <td>121</td>
+            <td>
+                <p>Could not add file to archive</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err_file_extract"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_FILE_EXTRACT</strong></td>
+<td> =</td>
+                <td>122</td>
+            <td>
+                <p>Could not extract file from archive</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err_missing_manifest"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_MISSING_MANIFEST</strong></td>
+<td> =</td>
+                <td>123</td>
+            <td>
+                <p>Manifest in zip file is missing</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err_file_close"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_FILE_CLOSE</strong></td>
+<td> =</td>
+                <td>124</td>
+            <td>
+                <p>Failed to close the file</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-err_invalid_format"></span>
               integer(kind=int32),
             </td>
@@ -600,6 +677,23 @@ parameter
                 <td>206</td>
             <td>
                 <p>Array size mismatch</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err_string_too_long"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_STRING_TOO_LONG</strong></td>
+<td> =</td>
+                <td>207</td>
+            <td>
+                <p>String exceeds buffer size</p>
             </td>
         </tr>
         <tr>
@@ -753,7 +847,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~171"></span>
+              <span class="anchor" id="variable-ierr~221"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -798,7 +892,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~172"></span>
+              <span class="anchor" id="variable-ierr~222"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -848,7 +942,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~168"></span>
+              <span class="anchor" id="variable-ierr~218"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -888,7 +982,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~169"></span>
+              <span class="anchor" id="variable-ierr~219"></span>
               integer(kind=int32),
             </td>
 <td>intent(inout)</td>
@@ -943,7 +1037,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~170"></span>
+              <span class="anchor" id="variable-ierr~220"></span>
               integer(kind=int32),
             </td>
 <td>intent(inout)</td>
@@ -979,6 +1073,61 @@ parameter
   </div>
 
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-check_io_stat"></span> <h3>public pure subroutine <a href='../proc/check_io_stat.html'>check_io_stat</a>(ios, ierr)  
+</h3></div>
+    <div class="card-body">
+          
+  
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ios~15"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ios</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~223"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ierr</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-validate_dimension_size"></span> <h3>public pure subroutine <a href='../proc/validate_dimension_size.html'>validate_dimension_size</a>(n, ierr)  
 </h3></div>
     <div class="card-body">
@@ -998,7 +1147,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~12"></span>
+              <span class="anchor" id="variable-n~14"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1013,7 +1162,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~173"></span>
+              <span class="anchor" id="variable-ierr~224"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1068,7 +1217,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~174"></span>
+              <span class="anchor" id="variable-ierr~225"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1138,7 +1287,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-array~18"></span>
+              <span class="anchor" id="variable-array~19"></span>
               integer(kind=int32),
             </td>
 <td>intent(in),</td>
@@ -1168,7 +1317,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~175"></span>
+              <span class="anchor" id="variable-ierr~226"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1253,7 +1402,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~176"></span>
+              <span class="anchor" id="variable-ierr~227"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1323,7 +1472,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-array~19"></span>
+              <span class="anchor" id="variable-array~20"></span>
               real(kind=real64),
             </td>
 <td>intent(in),</td>
@@ -1353,7 +1502,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~177"></span>
+              <span class="anchor" id="variable-ierr~228"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1440,7 +1589,7 @@ and X-&gt;Y is exactly the same as Y-&gt;X (no tolerance).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n~13"></span>
+              <span class="anchor" id="variable-n~15"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1455,7 +1604,7 @@ and X-&gt;Y is exactly the same as Y-&gt;X (no tolerance).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~178"></span>
+              <span class="anchor" id="variable-ierr~229"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1528,7 +1677,7 @@ and X-&gt;Y is exactly the same as Y-&gt;X (no tolerance).</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-11-18 12:59 +0000"             </p>
+ on "2025-11-23 17:36 +0000"             </p>
           </div>
         </div>
         <br>
