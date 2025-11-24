@@ -61,6 +61,9 @@
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
                 </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
                 <form action="../search.html" role="search" class="ms-auto">
@@ -85,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 2.8% of total for modules and submodules.">60 statements</a>
+                 title=" 3.0% of total for modules and submodules.">163 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -140,6 +143,10 @@
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_write_dims">ERR_WRITE_DIMS</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_write_charlen">ERR_WRITE_CHARLEN</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_write_data">ERR_WRITE_DATA</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_file_add">ERR_FILE_ADD</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_file_extract">ERR_FILE_EXTRACT</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_missing_manifest">ERR_MISSING_MANIFEST</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_file_close">ERR_FILE_CLOSE</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_invalid_format">ERR_INVALID_FORMAT</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_invalid_input">ERR_INVALID_INPUT</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_empty_input">ERR_EMPTY_INPUT</a>
@@ -147,6 +154,9 @@
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_nan_inf">ERR_NAN_INF</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_unsupported_type">ERR_UNSUPPORTED_TYPE</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_size_mismatch">ERR_SIZE_MISMATCH</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_string_too_long">ERR_STRING_TOO_LONG</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_idx_out_of_bounds">ERR_IDX_OUT_OF_BOUNDS</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_division_by_zero">ERR_DIVISION_BY_ZERO</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_alloc_fail">ERR_ALLOC_FAIL</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_pointer_null">ERR_POINTER_NULL</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_unit_not_connected">ERR_UNIT_NOT_CONNECTED</a>
@@ -188,7 +198,13 @@
             <a class="list-group-item" href="../module/tox_errors.html#proc-set_ok">set_ok</a>
             <a class="list-group-item" href="../module/tox_errors.html#proc-set_err">set_err</a>
             <a class="list-group-item" href="../module/tox_errors.html#proc-set_err_once">set_err_once</a>
+            <a class="list-group-item" href="../module/tox_errors.html#proc-check_io_stat">check_io_stat</a>
             <a class="list-group-item" href="../module/tox_errors.html#proc-validate_dimension_size">validate_dimension_size</a>
+            <a class="list-group-item" href="../module/tox_errors.html#proc-validate_in_range_int">validate_in_range_int</a>
+            <a class="list-group-item" href="../module/tox_errors.html#proc-validate_all_in_range_int">validate_all_in_range_int</a>
+            <a class="list-group-item" href="../module/tox_errors.html#proc-validate_in_range_real">validate_in_range_real</a>
+            <a class="list-group-item" href="../module/tox_errors.html#proc-validate_all_in_range_real">validate_all_in_range_real</a>
+            <a class="list-group-item" href="../module/tox_errors.html#proc-validate_distance_matrix">validate_distance_matrix</a>
         </div>
       </div>
     </div>
@@ -215,6 +231,7 @@
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/ieee_arithmetic'>ieee_arithmetic</a></li>
               </ul>
             </li>
         </ul>
@@ -477,6 +494,74 @@ parameter
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-err_file_add"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_FILE_ADD</strong></td>
+<td> =</td>
+                <td>121</td>
+            <td>
+                <p>Could not add file to archive</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err_file_extract"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_FILE_EXTRACT</strong></td>
+<td> =</td>
+                <td>122</td>
+            <td>
+                <p>Could not extract file from archive</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err_missing_manifest"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_MISSING_MANIFEST</strong></td>
+<td> =</td>
+                <td>123</td>
+            <td>
+                <p>Manifest in zip file is missing</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err_file_close"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_FILE_CLOSE</strong></td>
+<td> =</td>
+                <td>124</td>
+            <td>
+                <p>Failed to close the file</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-err_invalid_format"></span>
               integer(kind=int32),
             </td>
@@ -596,6 +681,57 @@ parameter
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-err_string_too_long"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_STRING_TOO_LONG</strong></td>
+<td> =</td>
+                <td>207</td>
+            <td>
+                <p>String exceeds buffer size</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err_idx_out_of_bounds"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_IDX_OUT_OF_BOUNDS</strong></td>
+<td> =</td>
+                <td>208</td>
+            <td>
+                <p>Array index out of bounds</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-err_division_by_zero"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_DIVISION_BY_ZERO</strong></td>
+<td> =</td>
+                <td>209</td>
+            <td>
+                <p>memory allocation failed</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-err_alloc_fail"></span>
               integer(kind=int32),
             </td>
@@ -711,7 +847,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~36"></span>
+              <span class="anchor" id="variable-ierr~221"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -756,7 +892,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~37"></span>
+              <span class="anchor" id="variable-ierr~222"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -806,7 +942,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~33"></span>
+              <span class="anchor" id="variable-ierr~218"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -846,7 +982,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~34"></span>
+              <span class="anchor" id="variable-ierr~219"></span>
               integer(kind=int32),
             </td>
 <td>intent(inout)</td>
@@ -901,7 +1037,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~35"></span>
+              <span class="anchor" id="variable-ierr~220"></span>
               integer(kind=int32),
             </td>
 <td>intent(inout)</td>
@@ -937,6 +1073,61 @@ parameter
   </div>
 
               <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-check_io_stat"></span> <h3>public pure subroutine <a href='../proc/check_io_stat.html'>check_io_stat</a>(ios, ierr)  
+</h3></div>
+    <div class="card-body">
+          
+  
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ios~15"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ios</strong></td>
+            <td>
+
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~223"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ierr</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-validate_dimension_size"></span> <h3>public pure subroutine <a href='../proc/validate_dimension_size.html'>validate_dimension_size</a>(n, ierr)  
 </h3></div>
     <div class="card-body">
@@ -956,7 +1147,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n"></span>
+              <span class="anchor" id="variable-n~14"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -971,7 +1162,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~38"></span>
+              <span class="anchor" id="variable-ierr~224"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -982,6 +1173,478 @@ parameter
             <td><strong>ierr</strong></td>
             <td>
 
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-validate_in_range_int"></span> <h3>public pure subroutine <a href='../proc/validate_in_range_int.html'>validate_in_range_int</a>(val, ierr, min, max)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Validates min&lt;=e&lt;=max for all elements e of an array</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-val"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>val</strong></td>
+            <td>
+<p>value to be validated</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~225"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ierr</strong></td>
+            <td>
+<p>Error code</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-min"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>min</strong></td>
+            <td>
+<p>lower bound for a value, default is lowest 32-bit integer -&gt; -huge(1_int32)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max</strong></td>
+            <td>
+<p>upper bound for a value, default is largest 32-bit integer -&gt; huge(1_int32)</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-validate_all_in_range_int"></span> <h3>public pure subroutine <a href='../proc/validate_all_in_range_int.html'>validate_all_in_range_int</a>(array, n_elements, ierr, min, max)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Validates min&lt;=e&lt;=max for all elements e of an array</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-array~19"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              dimension(n_elements)
+            </td>
+            <td>::</td>
+            <td><strong>array</strong></td>
+            <td>
+<p>Array to be validated</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_elements"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_elements</strong></td>
+            <td>
+<p>Size of <code>array</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~226"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ierr</strong></td>
+            <td>
+<p>Error code</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-min~2"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>min</strong></td>
+            <td>
+<p>lower bound for a value, default is lowest 32-bit integer -&gt; -huge(1_int32)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max~2"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max</strong></td>
+            <td>
+<p>upper bound for a value, default is largest 32-bit integer -&gt; huge(1_int32)</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-validate_in_range_real"></span> <h3>public pure subroutine <a href='../proc/validate_in_range_real.html'>validate_in_range_real</a>(val, ierr, min, max)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Validates min&lt;=e&lt;=max AND e/=NaN for all elements e of an array</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-val~2"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>val</strong></td>
+            <td>
+<p>value to be validated</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~227"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ierr</strong></td>
+            <td>
+<p>Error code</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-min~3"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>min</strong></td>
+            <td>
+<p>lower bound for a value, default is lowest 64-bit float -&gt; -huge(1.0_real64)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max~3"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max</strong></td>
+            <td>
+<p>upper bound for a value, default is largest 64-bit float -&gt; huge(1.0_real64)</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-validate_all_in_range_real"></span> <h3>public pure subroutine <a href='../proc/validate_all_in_range_real.html'>validate_all_in_range_real</a>(array, n_elements, ierr, min, max)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Validates min&lt;=e&lt;=max AND e/=NaN for all elements e of an array</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-array~20"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              dimension(n_elements)
+            </td>
+            <td>::</td>
+            <td><strong>array</strong></td>
+            <td>
+<p>Array to be validated</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_elements~2"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_elements</strong></td>
+            <td>
+<p>Size of <code>array</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~228"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ierr</strong></td>
+            <td>
+<p>Error code</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-min~4"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>min</strong></td>
+            <td>
+<p>lower bound for a value, default is lowest 64-bit float -&gt; -huge(1.0_real64)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max~4"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max</strong></td>
+            <td>
+<p>upper bound for a value, default is largest 64-bit float -&gt; huge(1.0_real64)</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-validate_distance_matrix"></span> <h3>public pure subroutine <a href='../proc/validate_distance_matrix.html'>validate_distance_matrix</a>(distances, n, ierr, min, max)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Strictly validates a distance matrix of euclidean distances.
+This means that distance X-&gt;X is exactly zero (no tolerance)
+and X-&gt;Y is exactly the same as Y-&gt;X (no tolerance).</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-distances~24"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              dimension(n, n)
+            </td>
+            <td>::</td>
+            <td><strong>distances</strong></td>
+            <td>
+<p>Matrix to be validated</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n~15"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n</strong></td>
+            <td>
+<p>Number of columns and rows of <code>distances</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~229"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ierr</strong></td>
+            <td>
+<p>Error code</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-min~5"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>min</strong></td>
+            <td>
+<p>lower bound for a distance value, default is zero to have only positives</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-max~5"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>max</strong></td>
+            <td>
+<p>upper bound for a distance value, default is largest 64-bit float -&gt; huge(1.0_real64)</p>
             </td>
         </tr>
     </tbody>
@@ -1014,7 +1677,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-09-22 15:07 +0000"             </p>
+ on "2025-11-23 17:36 +0000"             </p>
           </div>
         </div>
         <br>
