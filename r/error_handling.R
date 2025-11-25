@@ -15,7 +15,10 @@ check_err_code <- function(ierr) {
     '115' = "Could not write dimensions",
     '116' = "Could not write character length",
     '117' = "Could not write array data",
-    # ADD MORE HERE
+    '121' = "Could not add file to archive.",
+    '122' = "Could not extract file from archive.",
+    '123' = "Manifest in zip file is missing.",
+    '124' = "Failed to close the file.",
     
     # FORMAT ERRORS
     '200' = "Invalid format detected.",
@@ -25,6 +28,7 @@ check_err_code <- function(ierr) {
     '204' = "NaN or Inf found in input data.",
     '205' = "Unsupported data type encountered.",
     '206' = "Array size mismatch detected",
+    '207' = "String exceeds buffer size.",
 
     # MEMORY ERRORS
     '301' = "Memory allocation failed.",

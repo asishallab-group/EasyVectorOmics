@@ -61,6 +61,9 @@
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
                 </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
                 <form action="../search.html" role="search" class="ms-auto">
@@ -85,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 5.8% of total for modules and submodules.">124 statements</a>
+                 title=" 2.3% of total for modules and submodules.">123 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -137,12 +140,6 @@
       </a>
       <div id="subs-0" class="collapse">
         <div class="list-group list-group-flush">
-            <a class="list-group-item" href="../module/tox_conversions.html#proc-c_double_as_real64">c_double_as_real64</a>
-            <a class="list-group-item" href="../module/tox_conversions.html#proc-real64_as_c_double">real64_as_c_double</a>
-            <a class="list-group-item" href="../module/tox_conversions.html#proc-c_complex_as_complex">c_complex_as_complex</a>
-            <a class="list-group-item" href="../module/tox_conversions.html#proc-complex_as_c_complex">complex_as_c_complex</a>
-            <a class="list-group-item" href="../module/tox_conversions.html#proc-c_int_as_int32">c_int_as_int32</a>
-            <a class="list-group-item" href="../module/tox_conversions.html#proc-int32_as_c_int">int32_as_c_int</a>
             <a class="list-group-item" href="../module/tox_conversions.html#proc-c_int_as_logical">c_int_as_logical</a>
             <a class="list-group-item" href="../module/tox_conversions.html#proc-logical_as_c_int">logical_as_c_int</a>
             <a class="list-group-item" href="../module/tox_conversions.html#proc-c_char_as_char">c_char_as_char</a>
@@ -151,6 +148,12 @@
             <a class="list-group-item" href="../module/tox_conversions.html#proc-string_as_c_char_1d">string_as_c_char_1d</a>
             <a class="list-group-item" href="../module/tox_conversions.html#proc-c_char_2d_as_string">c_char_2d_as_string</a>
             <a class="list-group-item" href="../module/tox_conversions.html#proc-string_as_c_char_2d">string_as_c_char_2d</a>
+            <a class="list-group-item" href="../module/tox_conversions.html#proc-int32_as_c_int64">int32_as_c_int64</a>
+            <a class="list-group-item" href="../module/tox_conversions.html#proc-c_int64_as_int32">c_int64_as_int32</a>
+            <a class="list-group-item" href="../module/tox_conversions.html#proc-int32_as_c_size">int32_as_c_size</a>
+            <a class="list-group-item" href="../module/tox_conversions.html#proc-c_size_as_int32">c_size_as_int32</a>
+            <a class="list-group-item" href="../module/tox_conversions.html#proc-c_int64_as_c_size">c_int64_as_c_size</a>
+            <a class="list-group-item" href="../module/tox_conversions.html#proc-c_size_as_c_int64">c_size_as_c_int64</a>
         </div>
       </div>
     </div>
@@ -176,8 +179,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
                   <li class="list-inline-item"><a href='tox_errors.html'>tox_errors</a></li>
               </ul>
             </li>
@@ -198,336 +201,6 @@
         <section>
           <h2>Subroutines</h2>
               <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-c_double_as_real64"></span> <h3>public elemental subroutine <a href='../proc/c_double_as_real64.html'>c_double_as_real64</a>(c_val, f_val)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Converts a c_double value to real64, elemental -&gt; any shape</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-c_val"></span>
-              real(kind=c_double),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>c_val</strong></td>
-            <td>
-<p>the element containing the c variant of the number</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-f_val"></span>
-              real(kind=real64),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>f_val</strong></td>
-            <td>
-<p>the element that will hold the real64 representation of the c_double</p>
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-real64_as_c_double"></span> <h3>public elemental subroutine <a href='../proc/real64_as_c_double.html'>real64_as_c_double</a>(f_val, c_val)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Converts a real64 value to c_double, elemental -&gt; any shape</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-f_val~2"></span>
-              real(kind=real64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>f_val</strong></td>
-            <td>
-<p>the element containing the fortran variant of the number</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-c_val~2"></span>
-              real(kind=c_double),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>c_val</strong></td>
-            <td>
-<p>the element that will hold the c_double representation of the real64</p>
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-c_complex_as_complex"></span> <h3>public elemental subroutine <a href='../proc/c_complex_as_complex.html'>c_complex_as_complex</a>(c_val, f_val)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Converts a c_double_complex value to fortran complex(real64), elemental -&gt; any shape</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-c_val~3"></span>
-              complex(kind=c_double_complex),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>c_val</strong></td>
-            <td>
-<p>the element containing the c variant of the number</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-f_val~3"></span>
-              complex(kind=real64),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>f_val</strong></td>
-            <td>
-<p>the element that will hold the complex(real64) representation of the c_double_complex</p>
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-complex_as_c_complex"></span> <h3>public elemental subroutine <a href='../proc/complex_as_c_complex.html'>complex_as_c_complex</a>(f_val, c_val)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Converts a fortran complex(real64) value to c_double_complex, elemental -&gt; any shape</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-f_val~4"></span>
-              complex(kind=real64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>f_val</strong></td>
-            <td>
-<p>the element containing the fortran variant of the number</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-c_val~4"></span>
-              complex(kind=c_double_complex),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>c_val</strong></td>
-            <td>
-<p>the element that will hold the c_double_complex representation of the complex(real64)</p>
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-c_int_as_int32"></span> <h3>public elemental subroutine <a href='../proc/c_int_as_int32.html'>c_int_as_int32</a>(c_val, f_val)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Converts a c_int value to int32, elemental -&gt; any shape</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-c_val~5"></span>
-              integer(kind=c_int),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>c_val</strong></td>
-            <td>
-<p>the element containing the c variant of the number</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-f_val~5"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>f_val</strong></td>
-            <td>
-<p>the element that will hold the int32 representation of the c_int</p>
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-int32_as_c_int"></span> <h3>public elemental subroutine <a href='../proc/int32_as_c_int.html'>int32_as_c_int</a>(f_val, c_val)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>Converts a int32 value to c_int, elemental -&gt; any shape</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-f_val~6"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>f_val</strong></td>
-            <td>
-<p>the element containing the fortran variant of the number</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-c_val~6"></span>
-              integer(kind=c_int),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>c_val</strong></td>
-            <td>
-<p>the element that will hold the c_int representation of the int32</p>
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-c_int_as_logical"></span> <h3>public elemental subroutine <a href='../proc/c_int_as_logical.html'>c_int_as_logical</a>(c_val, f_val)  
 </h3></div>
     <div class="card-body">
@@ -547,7 +220,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-c_val~7"></span>
+              <span class="anchor" id="variable-c_val"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in)</td>
@@ -562,7 +235,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-f_val~7"></span>
+              <span class="anchor" id="variable-f_val"></span>
               logical,
             </td>
 <td>intent(out)</td>
@@ -602,7 +275,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-f_val~8"></span>
+              <span class="anchor" id="variable-f_val~2"></span>
               logical,
             </td>
 <td>intent(in)</td>
@@ -617,7 +290,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-c_val~8"></span>
+              <span class="anchor" id="variable-c_val~2"></span>
               integer(kind=c_int),
             </td>
 <td>intent(out)</td>
@@ -657,7 +330,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-c_val~9"></span>
+              <span class="anchor" id="variable-c_val~3"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(in)</td>
@@ -672,7 +345,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-f_val~9"></span>
+              <span class="anchor" id="variable-f_val~3"></span>
               character(len=1),
             </td>
 <td>intent(out)</td>
@@ -712,7 +385,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-f_val~10"></span>
+              <span class="anchor" id="variable-f_val~4"></span>
               character(len=1),
             </td>
 <td>intent(in)</td>
@@ -727,7 +400,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-c_val~10"></span>
+              <span class="anchor" id="variable-c_val~4"></span>
               character(kind=c_char, len=1),
             </td>
 <td>intent(out)</td>
@@ -797,7 +470,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~119"></span>
+              <span class="anchor" id="variable-ierr~37"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -837,7 +510,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-str~2"></span>
+              <span class="anchor" id="variable-str"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -922,7 +595,7 @@
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~120"></span>
+              <span class="anchor" id="variable-ierr~38"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -997,6 +670,336 @@
     </div>
   </div>
 
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-int32_as_c_int64"></span> <h3>public elemental subroutine <a href='../proc/int32_as_c_int64.html'>int32_as_c_int64</a>(f_val, c_val)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Converts int32 to c_int64_t, elemental -&gt; any shape</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-f_val~5"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>f_val</strong></td>
+            <td>
+<p>the element containing the fortran variant of the number</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-c_val~5"></span>
+              integer(kind=c_int64_t),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>c_val</strong></td>
+            <td>
+<p>the element that will hold the c_int64_t representation</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-c_int64_as_int32"></span> <h3>public elemental subroutine <a href='../proc/c_int64_as_int32.html'>c_int64_as_int32</a>(c_val, f_val)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Converts c_int64_t to int32, elemental -&gt; any shape</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-c_val~6"></span>
+              integer(kind=c_int64_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>c_val</strong></td>
+            <td>
+<p>the element containing the c variant of the number</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-f_val~6"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>f_val</strong></td>
+            <td>
+<p>the element that will hold the int32 representation</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-int32_as_c_size"></span> <h3>public elemental subroutine <a href='../proc/int32_as_c_size.html'>int32_as_c_size</a>(f_val, c_val)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Converts int32 to c_size_t, elemental -&gt; any shape</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-f_val~7"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>f_val</strong></td>
+            <td>
+<p>the element containing the fortran variant of the number</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-c_val~7"></span>
+              integer(kind=c_size_t),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>c_val</strong></td>
+            <td>
+<p>the element that will hold the c_size_t representation</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-c_size_as_int32"></span> <h3>public elemental subroutine <a href='../proc/c_size_as_int32.html'>c_size_as_int32</a>(c_val, f_val)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Converts c_size_t to int32, elemental -&gt; any shape</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-c_val~8"></span>
+              integer(kind=c_size_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>c_val</strong></td>
+            <td>
+<p>the element containing the c variant of the number</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-f_val~8"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>f_val</strong></td>
+            <td>
+<p>the element that will hold the int32 representation</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-c_int64_as_c_size"></span> <h3>public elemental subroutine <a href='../proc/c_int64_as_c_size.html'>c_int64_as_c_size</a>(c64_val, csize_val)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Converts c_int64_t to c_size_t, elemental -&gt; any shape</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-c64_val"></span>
+              integer(kind=c_int64_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>c64_val</strong></td>
+            <td>
+<p>the element containing the c_int64_t value</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-csize_val"></span>
+              integer(kind=c_size_t),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>csize_val</strong></td>
+            <td>
+<p>the element that will hold the c_size_t representation</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-c_size_as_c_int64"></span> <h3>public elemental subroutine <a href='../proc/c_size_as_c_int64.html'>c_size_as_c_int64</a>(csize_val, c64_val)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Converts c_size_t to c_int64_t, elemental -&gt; any shape</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-csize_val~2"></span>
+              integer(kind=c_size_t),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>csize_val</strong></td>
+            <td>
+<p>the element containing the c_size_t value</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-c64_val~2"></span>
+              integer(kind=c_int64_t),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>c64_val</strong></td>
+            <td>
+<p>the element that will hold the c_int64_t representation</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
         </section>
         <br>
 
@@ -1020,7 +1023,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-09-22 15:07 +0000"             </p>
+ on "2025-11-23 17:36 +0000"             </p>
           </div>
         </div>
         <br>

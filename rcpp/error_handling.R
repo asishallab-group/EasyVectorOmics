@@ -42,6 +42,8 @@ check_err_code <- function(ierr) {
   )
   stop(msg)
 }
+
+
 # -----------------------------
 # Validation helpers for R wrappers
 # -----------------------------

@@ -61,6 +61,9 @@
                 <li class="nav-item">
                   <a class="nav-link" href="../lists/procedures.html">Procedures</a>
                 </li>
+                <li class="nav-item">
+                  <a class="nav-link" href="../lists/types.html">Derived Types</a>
+                </li>
             </ul>
               <div class="d-flex align-items-end flex-grow-1">
                 <form action="../search.html" role="search" class="ms-auto">
@@ -85,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 5.7% of total for modules and submodules.">123 statements</a>
+                 title=" 2.3% of total for modules and submodules.">124 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -182,6 +185,7 @@ of up to 5 dimensions, arrays are serialized to a custom binary format with a ma
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
                   <li class="list-inline-item"><a href='array_utils.html'>array_utils</a></li>
+                  <li class="list-inline-item"><a href='safeguard.html'>safeguard</a></li>
                   <li class="list-inline-item"><a href='tox_errors.html'>tox_errors</a></li>
               </ul>
             </li>
@@ -256,12 +260,12 @@ The file will contain a magic number, type code, dimension, shape, character len
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr"></span>
+              <span class="anchor" id="variable-arr~34"></span>
               character(len=*),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              contiguous
             </td>
             <td>::</td>
             <td><strong>arr</strong>(:)</td>
@@ -271,7 +275,7 @@ The file will contain a magic number, type code, dimension, shape, character len
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename"></span>
+              <span class="anchor" id="variable-filename~62"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -286,7 +290,7 @@ The file will contain a magic number, type code, dimension, shape, character len
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~42"></span>
+              <span class="anchor" id="variable-ierr~195"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -327,7 +331,7 @@ The file will contain a magic number, type code, dimension, shape, character len
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~2"></span>
+              <span class="anchor" id="variable-arr~35"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -342,7 +346,7 @@ The file will contain a magic number, type code, dimension, shape, character len
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~2"></span>
+              <span class="anchor" id="variable-filename~63"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -357,7 +361,7 @@ The file will contain a magic number, type code, dimension, shape, character len
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~43"></span>
+              <span class="anchor" id="variable-ierr~196"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -398,7 +402,7 @@ The file will contain a magic number, type code, dimension, shape, character len
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~3"></span>
+              <span class="anchor" id="variable-arr~36"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -413,7 +417,7 @@ The file will contain a magic number, type code, dimension, shape, character len
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~3"></span>
+              <span class="anchor" id="variable-filename~64"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -428,7 +432,7 @@ The file will contain a magic number, type code, dimension, shape, character len
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~44"></span>
+              <span class="anchor" id="variable-ierr~197"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -469,7 +473,7 @@ The file will contain a magic number, type code, dimension, shape, character len
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~4"></span>
+              <span class="anchor" id="variable-arr~37"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -484,7 +488,7 @@ The file will contain a magic number, type code, dimension, shape, character len
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~4"></span>
+              <span class="anchor" id="variable-filename~65"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -499,7 +503,7 @@ The file will contain a magic number, type code, dimension, shape, character len
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~45"></span>
+              <span class="anchor" id="variable-ierr~198"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -540,7 +544,7 @@ The file will contain a magic number, type code, dimension, shape, character len
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~5"></span>
+              <span class="anchor" id="variable-arr~38"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -555,7 +559,7 @@ The file will contain a magic number, type code, dimension, shape, character len
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~5"></span>
+              <span class="anchor" id="variable-filename~66"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -570,7 +574,7 @@ The file will contain a magic number, type code, dimension, shape, character len
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~46"></span>
+              <span class="anchor" id="variable-ierr~199"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -596,7 +600,7 @@ The file will contain a magic number, type code, dimension, shape, character len
     <div class="card-body">
           
   <p>Serialize a character array of arbitrary dimensions to a binary file.
-The file will contain a magic number, type code, dimension, shape, character length, and the array data.</p><a href="../proc/serialize_char_nd.html" class="pull-right"><emph>Read more&hellip;</emph></a>
+The file will contain a magic number, type code, dimension, shape, character length, and the array data.</p>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -611,7 +615,7 @@ The file will contain a magic number, type code, dimension, shape, character len
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-flat"></span>
+              <span class="anchor" id="variable-flat~5"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -626,7 +630,7 @@ The file will contain a magic number, type code, dimension, shape, character len
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dims~6"></span>
+              <span class="anchor" id="variable-dims~48"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -641,7 +645,7 @@ The file will contain a magic number, type code, dimension, shape, character len
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndim"></span>
+              <span class="anchor" id="variable-ndim~9"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -656,7 +660,7 @@ The file will contain a magic number, type code, dimension, shape, character len
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-clen~6"></span>
+              <span class="anchor" id="variable-clen~35"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -671,7 +675,7 @@ The file will contain a magic number, type code, dimension, shape, character len
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~6"></span>
+              <span class="anchor" id="variable-filename~67"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -686,7 +690,7 @@ The file will contain a magic number, type code, dimension, shape, character len
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~47"></span>
+              <span class="anchor" id="variable-ierr~200"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -729,7 +733,7 @@ The file will contain a magic number, type code, dimension, shape, character len
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-09-22 15:07 +0000"             </p>
+ on "2025-11-23 17:36 +0000"             </p>
           </div>
         </div>
         <br>
