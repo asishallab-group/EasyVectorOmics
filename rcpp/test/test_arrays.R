@@ -1,16 +1,5 @@
 source("r/tensoromics_functions.R")
 
-# Ensure serializer/deserializer functions are available; try loading Rcpp wrappers if needed.
-if (!exists("tox_serialize_int_array", envir = .GlobalEnv)) {
-  if (file.exists("rcpp/tensoromics_functions.R")) {
-    try(source("rcpp/tensoromics_functions.R"), silent = TRUE)
-  }
-}
-if (!exists("tox_serialize_int_array", envir = .GlobalEnv)) {
-  cat("Skipping array tests: serializer/deserializer functions not available in this build\n")
-  quit(save = "no", status = 0)
-}
-
 # --- Testing for all functions ---
 test_array_wrapper <- function(tmpdir = tempdir()) {
   cat("Start Wrapper-Tests...\n")

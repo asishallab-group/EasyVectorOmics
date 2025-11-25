@@ -200,18 +200,22 @@ double tox_euclidean_distance_rcpp(NumericVector vec1, NumericVector vec2) {
  */
 // [[Rcpp::export]]
 NumericVector tox_distance_to_centroid_rcpp(NumericVector genes, NumericVector centroids, 
-                                                                             IntegerVector gene_to_fam, int d) {
-        int n_genes = genes.length() / d;
-        int n_families = centroids.length() / d;
+                                       IntegerVector gene_to_fam, int d) {
+    int n_genes = genes.length() / d;
+    int n_families = centroids.length() / d;
     
-        NumericVector distances(n_genes);
+    NumericVector distances(n_genes);
     
-        distance_to_centroid_c(n_genes, n_families, genes.begin(), 
-                                centroids.begin(), gene_to_fam.begin(), 
-                                distances.begin(), d);
+    distance_to_centroid_c(n_genes, n_families, genes.begin(), 
+                          centroids.begin(), gene_to_fam.begin(), 
+                          distances.begin(), d);
     
-        return distances;
+    return distances;
 }
+
+/**
+ * Calculate tissue versatility and angles
+ */
 
 
 // [[Rcpp::export]]
