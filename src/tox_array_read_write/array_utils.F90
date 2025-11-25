@@ -312,7 +312,7 @@ subroutine get_array_metadata_C(filename_ascii, fn_len, dims_out, dims_out_capac
     !! Length of the filename array
   integer(c_int), intent(in) :: filename_ascii(fn_len)
     !! Array of ASCII characters representing the filename
-  integer(c_int), value :: dims_out_capacity
+  integer(c_int), intent(in) :: dims_out_capacity
   
   ! Output
   integer(c_int), intent(out) :: dims_out(dims_out_capacity)
