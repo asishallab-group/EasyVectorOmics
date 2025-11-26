@@ -1,4 +1,4 @@
-source("r/tensoromics_functions.R")
+source("rcpp/tensoromics_functions.R")
 
 #' Comprehensive test function
 test_tree_functions <- function() {

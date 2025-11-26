@@ -1,4 +1,4 @@
-source("r/tensoromics_functions.R")
+source("rcpp/tensoromics_functions.R")
 
 # --- Testing for all functions ---
 test_array_wrapper <- function(tmpdir = tempdir()) {

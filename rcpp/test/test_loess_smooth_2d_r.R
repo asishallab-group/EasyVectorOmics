@@ -5,7 +5,7 @@
 # =====================
 
 # Source the main functions
-source("r/tensoromics_functions.R")
+source("rcpp/tensoromics_functions.R")
 
 cat("=== Testing loess_smooth_2d R wrapper function ===\n")
 cat("Based on Fortran test suite with 14 comprehensive test cases\n")
