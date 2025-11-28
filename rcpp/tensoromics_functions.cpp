@@ -100,17 +100,17 @@ extern "C" {
     );
                       
     void build_kd_index_C(
-        double* points,
-        int* num_dimensions,
-        int* num_points,
-        int* kd_indices,
-        int* dimension_order,
-        int* workspace,
-        double* value_buffer,
-        int* permutation,
-        int* left_stack,
-        int* right_stack,
-        int* ierr
+      double* points,
+      int num_dimensions,
+      int num_points,
+      int* kd_indices,
+      int* dimension_order,
+      int* workspace,
+      double* value_buffer,
+      int* permutation,
+      int* left_stack,
+      int* right_stack,
+      int* ierr
     );   
     void which_c(
             int* mask,
@@ -567,27 +567,23 @@ List tox_detect_outliers_rcpp(NumericVector distances, IntegerVector gene_to_fam
 }
 
 // [[Rcpp::export]]
-List tox_build_kd_index_rcpp(NumericMatrix points,
-int num_dimensions,
-int num_points,
-IntegerVector dimension_order) {
-        IntegerVector kd_indices(num_points);
-        IntegerVector workspace(num_points);
-        NumericVector value_buffer(num_points);
-        IntegerVector permutation(num_points);
-        IntegerVector left_stack(num_points);
-        IntegerVector right_stack(num_points);
-        int ierr = 0;
-        build_kd_index_C(points.begin(), &num_dimensions, &num_points, kd_indices.begin(), dimension_order.begin(), workspace.begin(), value_buffer.begin(), permutation.begin(), left_stack.begin(), right_stack.begin(), &ierr);
+List tox_build_kd_index_rcpp(NumericMatrix X, IntegerVector dim_order) {
+  int d = X.nrow();
+    int n = X.ncol();
+    
+    IntegerVector kd_ix(n);
+    IntegerVector work(n);
+    NumericVector subarray(n);
+    IntegerVector perm(n);
+    IntegerVector stack_left(n);
+    IntegerVector stack_right(n);
+    int ierr = 0;
+    
+  build_kd_index_C(X.begin(), d, n, kd_ix.begin(), dim_order.begin(), work.begin(), subarray.begin(), perm.begin(), stack_left.begin(), stack_right.begin(), &ierr);
         return List::create(
-        Named("kd_indices") = kd_indices,
-        Named("workspace") = workspace,
-        Named("value_buffer") = value_buffer,
-        Named("permutation") = permutation,
-        Named("left_stack") = left_stack,
-        Named("right_stack") = right_stack,
+        Named("kd_ix") = kd_ix,
         Named("ierr") = ierr
-        );
+    );
 }
 
 // [[Rcpp::export]]
@@ -673,7 +669,7 @@ int tox_serialize_char_flat_rcpp(IntegerVector ascii_arr, IntegerVector dims, in
     serialize_char_flat_C(ascii_arr.begin(), dims.begin(), ndim, clen, filename_ascii.begin(), fn_len, &ierr);
     return ierr;
 }
-  
+
 // [[Rcpp::export]]
 List get_array_metadata_rcpp(IntegerVector filename_ascii, int fn_len, int dims_out_capacity = 5, bool with_clen = false) {
     IntegerVector dims_res(dims_out_capacity);
@@ -725,27 +721,21 @@ List bst_range_query_rcpp(NumericVector values, IntegerVector sorted_indices, do
 }
 
 // [[Rcpp::export]]
-List build_spherical_kd_rcpp(NumericMatrix vectors) {
-    int num_dimensions = static_cast<int>(vectors.nrow());
-    int num_vectors = static_cast<int>(vectors.ncol());
-
-    IntegerVector sphere_indices(num_vectors);
-    IntegerVector dimension_order(num_dimensions);
-    IntegerVector workspace(num_vectors);
-    NumericVector value_buffer(num_vectors);
-    IntegerVector permutation(num_vectors);
-    IntegerVector left_stack(num_vectors);
-    IntegerVector right_stack(num_vectors);
+List tox_build_spherical_kd_rcpp(NumericMatrix V,IntegerVector dim_order) {
+    int d = V.nrow();
+    int n = V.ncol();
+    
+    IntegerVector sphere_ix(n);
+    IntegerVector work(n);
+    NumericVector subarray(n);
+    IntegerVector perm(n);
+    IntegerVector stack_left(n);
+    IntegerVector stack_right(n);
     int ierr = 0;
+    
 
-    build_spherical_kd_C(vectors.begin(), num_dimensions, num_vectors, sphere_indices.begin(), dimension_order.begin(), workspace.begin(), value_buffer.begin(), permutation.begin(), left_stack.begin(), right_stack.begin(), &ierr);
+    build_spherical_kd_C(V.begin(), d, n, sphere_ix.begin(), dim_order.begin(), work.begin(), subarray.begin(), perm.begin(), stack_left.begin(), stack_right.begin(), &ierr);
 
-    return List::create(Named("sphere_indices") = sphere_indices,
-                                            Named("dimension_order") = dimension_order,
-                                            Named("workspace") = workspace,
-                                            Named("value_buffer") = value_buffer,
-                                            Named("permutation") = permutation,
-                                            Named("left_stack") = left_stack,
-                                            Named("right_stack") = right_stack,
-                                            Named("ierr") = ierr);
-}
+    return List::create(Named("sphere_ix") = sphere_ix,
+                        Named("ierr") = ierr
+    );}

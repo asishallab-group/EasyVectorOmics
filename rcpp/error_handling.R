@@ -109,6 +109,44 @@ validate_string_scalar <- function(s, name = deparse(substitute(s))) {
   invisible(NULL)
 }
 
+# Backwards-compatible alias expected by some tests/wrappers
+validate_scalar_character <- function(x, name = deparse(substitute(x))) {
+  # Reuse validate_string_scalar behaviour
+  validate_string_scalar(x, name)
+}
+
+# Validate an index vector used for subsetting operations.
+# - `x` may be NULL (meaning all indices), a numeric/integer vector, or logical vector.
+# - `n_total` is the length of the full object (must be positive integer).
+# - `name` is the parameter name for error messages.
+validate_index_vector <- function(x, n_total, name = deparse(substitute(x))) {
+  if (missing(n_total) || !is.numeric(n_total) || length(n_total) != 1 || n_total <= 0) {
+    stop("Invalid input: n_total must be a positive integer scalar")
+  }
+  n_total <- as.integer(n_total)
+
+  # NULL => all indices
+  if (is.null(x)) return(seq_len(n_total))
+
+  # logical vector handling
+  if (is.logical(x)) {
+    if (length(x) == 1L) {
+      if (!isTRUE(x)) return(integer(0))
+      return(seq_len(n_total))
+    }
+    if (length(x) != n_total) stop(sprintf("Invalid input: %s logical vector length must match expected length %s", name, n_total))
+    return(which(x))
+  }
+
+  # numeric / integer indexing
+  if (!(is.numeric(x) || is.integer(x))) stop(sprintf("Invalid input: %s must be NULL, logical, or numeric index vector", name))
+  idx <- as.integer(x)
+  if (any(is.na(idx))) stop(sprintf("Invalid input: %s contains NA or non-finite values", name))
+  if (length(idx) == 0L) return(integer(0))
+  if (any(idx < 1L) || any(idx > n_total)) stop(sprintf("Invalid input: %s indices out of bounds: must be between 1 and %s", name, n_total))
+  return(idx)
+}
+
 # Validate character vector
 validate_character_vector <- function(cv, name = deparse(substitute(cv))) {
   if (!is.character(cv)) stop(sprintf("%s must be a character vector", name))
@@ -143,10 +181,29 @@ validate_positive_integer_scalar <- function(x, name = deparse(substitute(x))) {
   if (length(x) != 1 || is.na(x) || as.integer(x) <= 0) stop(sprintf("%s must be a positive integer scalar", name))
   invisible(TRUE)
 }
+
+# Validate a positive numeric scalar (non-integer allowed)
+validate_positive_numeric_scalar <- function(x, name = deparse(substitute(x))) {
+  if (!is.numeric(x)) stop(sprintf("Invalid input: %s must be numeric", name))
+  if (length(x) != 1 || is.na(x) || !is.finite(x) || x <= 0) stop(sprintf("Invalid input: %s must be a single positive numeric value", name))
+  invisible(TRUE)
+}
 validate_numeric_matrix <- function(x, name = deparse(substitute(x))) {
-  if (!is.matrix(x) || !is.numeric(x)) {
+  # Accept integer matrices as numeric too (R often uses integer storage)
+  if (!is.matrix(x) || !(is.numeric(x) || is.integer(x))) {
     stop(sprintf("%s must be a numeric matrix (must be numeric).", name))
   }
+  invisible(TRUE)
+}
+
+
+# Validate numeric array (vector or array of arbitrary dimensions)
+validate_numeric_array <- function(x, name = deparse(substitute(x))) {
+  # Accept integer or numeric storage for vectors/arrays of any dimension
+  if (!(is.atomic(x) && (is.numeric(x) || is.integer(x)))) {
+    stop(sprintf("%s must be a numeric (or integer) vector/array.", name))
+  }
+  if (length(x) == 0) stop(sprintf("%s must not be empty", name))
   invisible(TRUE)
 }
 
@@ -206,7 +263,6 @@ validate_nonempty_vector <- function(x, name = deparse(substitute(x))) {
  }
 
 
-
 # Validate that two matrices have the same number of rows
 validate_matching_rows <- function(A, B, name_A = deparse(substitute(A)), name_B = deparse(substitute(B))) {
   if (!is.matrix(A) || !is.matrix(B)) stop(sprintf("%s and %s must both be matrices.", name_A, name_B))
@@ -219,29 +275,62 @@ validate_length_equals_n <- function(x, n, name = deparse(substitute(x))) {
   if (length(x) != as.integer(n)) stop(sprintf("Length of %s must equal number of genes.", name))
   invisible(TRUE)
 }
-validate_filename <- function(x, name = deparse(substitute(x))) {
 
-  if (!is.character(x))stop(sprintf("%s must be a character vector", name))
-   if (length(x) != 1)stop(sprintf("%s must be a single string", name))
-  invisible(TRUE)
-}
-validate_character_array <- function(x, name = deparse(substitute(x))) {
-  if (!is.character(x)) {
-    stop(sprintf("%s must be a character vector or array", name), call. = FALSE)
-  }
-  if (length(x) == 0) {
-    stop(sprintf("%s must not be empty", name), call. = FALSE)
+validate_filename <- function(filename, name = deparse(substitute(filename))) {
+  if (!is.character(filename) || length(filename) != 1) {
+    stop(sprintf("%s must be a single character string", name))
   }
   invisible(TRUE)
 }
 
-# Validate filename and max_dims for array deserialize helpers
-validate_array_deserialize_inputs <- function(filename, max_dims = 5) {
-  validate_filename(filename, "filename")
-  if (!is.numeric(max_dims) && !is.integer(max_dims)) stop("max_dims must be numeric or integer")
-  if (length(max_dims) != 1 || as.integer(max_dims) <= 0) stop("max_dims must be a positive integer scalar")
+#' Validate that max_dims is a positive integer
+#'
+#' @param max_dims Object to validate
+#' @param name Name of the object for error messages
+#' @return invisible TRUE if valid, throws error otherwise
+validate_max_dims <- function(max_dims, name = deparse(substitute(max_dims))) {
+  if (!is.numeric(max_dims) || length(max_dims) != 1 || max_dims <= 0) {
+    stop(sprintf("%s must be a positive integer", name))
+  }
   invisible(TRUE)
 }
+
+#' Validate that arr is an array or vector
+#'
+#' @param arr Object to validate
+#' @param name Name of the object for error messages
+#' @return invisible TRUE if valid, throws error otherwise
+validate_array_or_vector <- function(arr, name = deparse(substitute(arr))) {
+  if (!is.array(arr) && !is.vector(arr)) {
+    stop(sprintf("%s must be an array or vector", name))
+  }
+  invisible(TRUE)
+}
+
+#' Validate that arr is a character array
+#'
+#' @param arr Object to validate
+#' @param name Name of the object for error messages
+#' @return invisible TRUE if valid, throws error otherwise
+validate_character_array <- function(arr, name = deparse(substitute(arr))) {
+  if (!is.character(arr)) {
+    stop(sprintf("%s must be a character array", name))
+  }
+  invisible(TRUE)
+}
+
+#' Validate that file exists
+#'
+#' @param filename Path to file to check
+#' @param name Name of the object for error messages
+#' @return invisible TRUE if valid, throws error otherwise
+validate_file_exists <- function(filename, name = deparse(substitute(filename))) {
+  if (!file.exists(filename)) {
+    stop(sprintf("File does not exist: %s", filename))
+  }
+  invisible(TRUE)
+}
+
 validate_loess_smooth_2d_inputs <- function(
     x_ref, y_ref, x_query, indices_used,
     kernel_sigma, kernel_cutoff) {
@@ -306,5 +395,21 @@ validate_loess_smooth_2d_inputs <- function(
       stop(sprintf("%s must be a single numeric value.", name))
   }
 
+  invisible(TRUE)
+}
+validate_index_vector_and_position <- function(ix, position, name = deparse(substitute(ix))) {
+  # Validate that ix is an array or vector
+  validate_array_or_vector(ix, name)
+  
+  # Check if index vector is empty
+  if (length(ix) == 0) {
+    stop(sprintf("Empty %s vector", name))
+  }
+  
+  # Validate position bounds
+  if (position < 1 || position > length(ix)) {
+    stop(sprintf("position out of bounds for %s", name))
+  }
+  
   invisible(TRUE)
 }

@@ -1,6 +1,7 @@
 library(Rcpp)
 
 # Get absolute path to build directory containing the compiled Fortran library
+
 lib_path <- shQuote(normalizePath("build"))
 
 # Set up compilation flags for linking with Fortran library
@@ -52,23 +53,31 @@ tox_euclidean_distance <- function(vec1, vec2) {
 #' @return Numeric vector of distances from each gene to its family centroid
 #' 
 tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
-  #Convert to appropriate types
+ #Convert to appropriate types
   genes <- as.numeric(genes)
   centroids <- as.numeric(centroids)
   gene_to_fam <- as.integer(gene_to_fam)
   d <- as.integer(d)
 
   # Input validation
+  validate_numeric_vector(genes, "genes")
+  validate_numeric_vector(centroids, "centroids")
   validate_positive_integer_scalar(d, "d")
+
+#  # Validate flattened lengths are compatible with d
   validate_divisible_length(genes, d, "genes")
   validate_divisible_length(centroids, d, "centroids")
-
+  # Calculate dimensions
   n_genes <- as.integer(length(genes) / d)
   n_families <- as.integer(length(centroids) / d)
-
   validate_gene_to_family(gene_to_fam, n_genes, n_families, "gene_to_fam")
-
-  # Call Rcpp wrapper
+  validate_length_equals_n(gene_to_fam, n_genes, "gene_to_fam")
+# Call Rcpp wrapper
+  # Ensure proper types and call low-level Rcpp helper which wraps the Fortran call
+  genes <- as.numeric(genes)
+  centroids <- as.numeric(centroids)
+  gene_to_fam <- as.integer(gene_to_fam)
+  d <- as.integer(d)
   return(tox_distance_to_centroid_rcpp(genes, centroids, gene_to_fam, d))
 }
 
@@ -91,6 +100,12 @@ tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
 #'   \item{n_selected_axes}{Number of axes used in calculation}
 #' 
 tox_calculate_tissue_versatility <- function(expression_vectors, vector_selection, axis_selection) {
+  # R-layer validation (kept in rcpp/ to avoid touching r/)
+  validate_numeric_matrix(expression_vectors, "expression_vectors")
+  n_axes <- nrow(as.matrix(expression_vectors))
+  n_vectors <- ncol(as.matrix(expression_vectors))
+
+  # Ensure selection vectors have correct lengths and types
   #Input validation
   validate_numeric_matrix(expression_vectors, "expression_vectors")
 
@@ -104,7 +119,6 @@ tox_calculate_tissue_versatility <- function(expression_vectors, vector_selectio
   } else {
     vector_selection <- as.integer(vector_selection)
   }
-  
   if (is.numeric(axis_selection)) {
     axis_selection <- as.integer(as.logical(axis_selection))
   } else {
@@ -115,9 +129,7 @@ tox_calculate_tissue_versatility <- function(expression_vectors, vector_selectio
   result <- tox_calculate_tissue_versatility_rcpp(expression_vectors, vector_selection, axis_selection)
   
   # Check for errors
-  
   check_err_code(result$ierr)
-
   
   # Return structured result 
   return(list(
@@ -839,6 +851,7 @@ tox_prepare_indices_by_patterns <- function(df, control_pattern, condition_patte
 }
 
 
+
 # ============================================================
 #  1) Array metadata wrapper
 # ============================================================
@@ -849,9 +862,7 @@ tox_get_array_metadata <- function(filename, max_dims = 5L, with_clen = FALSE) {
   max_dims  <- as.integer(max_dims)
   with_clen <- as.logical(with_clen)
 
-  # Input validation
-  validate_scalar_character(filename, "filename")
-
+ 
   # Expected to return a list with names dims, ndim, and optionally clen
   result <- tox_get_array_metadata_rcpp(filename, max_dims, with_clen)
 
@@ -879,7 +890,9 @@ tox_get_array_metadata <- function(filename, max_dims = 5L, with_clen = FALSE) {
 # ============================================================
 
 tox_deserialize_int_array <- function(filename, max_dims = 5) {
-  validate_array_deserialize_inputs(filename, max_dims)
+  # validate inputs
+  validate_filename(filename)
+  validate_max_dims(max_dims)
 
   meta <- tox_get_array_metadata(filename, max_dims)
   total_size <- prod(meta$dims)
@@ -895,6 +908,9 @@ tox_deserialize_int_array <- function(filename, max_dims = 5) {
 
 
 tox_deserialize_real_array <- function(filename, max_dims = 5L) {
+#validate inputs
+  validate_filename(filename)
+  validate_max_dims(max_dims)
 
   meta <- tox_get_array_metadata(filename, max_dims)
   total_size <- prod(meta$dims)
@@ -918,7 +934,9 @@ tox_deserialize_real_array <- function(filename, max_dims = 5L) {
   }
 
 tox_deserialize_char_array <- function(filename, max_dims = 5L) {
-
+  #validate inputs
+  validate_filename(filename)
+  validate_max_dims(max_dims)
   # Load metadata dimensions + clen
   meta <- tox_get_array_metadata(filename, max_dims, with_clen = TRUE)
   
@@ -946,13 +964,12 @@ tox_deserialize_char_array <- function(filename, max_dims = 5L) {
 # ============================================================
 
 tox_serialize_int_array <- function(arr, filename) {
+  #validate inputs
+  validate_filename(filename)
+  validate_max_dims(max_dims)
   # Coerce to base types
   filename <- as.character(filename)
   arr <- as.array(arr)
-
-  # Validation (new standardized style)
-  validate_scalar_character(filename, "filename")
-  validate_character_array(arr, "arr")   
 
 
   result <- tox_serialize_int_array_rcpp(arr, filename)
@@ -963,16 +980,24 @@ tox_serialize_int_array <- function(arr, filename) {
 
 
 tox_serialize_real_array <- function(arr, filename) {
+  #validate inputs
+  validate_filename(filename)
+  validate_max_dims(max_dims)
+
+  # Coerce to base types
+    filename <- as.character(filename)
+    arr <- as.array(arr)
+   
+
+    result <- tox_serialize_real_array_rcpp(arr, filename)
+  
+    check_err_code(result$ierr)
+    invisible(NULL)
  # Coerce to base types
   filename <- as.character(filename)
   arr <- as.array(arr)
 
-  # Validation (new standardized style)
-  validate_scalar_character(filename, "filename")
-  validate_character_array(arr, "arr")   
-
   
-
   result <- tox_serialize_real_array_rcpp(arr, filename)
 
   check_err_code(result$ierr)
@@ -981,14 +1006,14 @@ tox_serialize_real_array <- function(arr, filename) {
 
 
 tox_serialize_char_array <- function(arr, filename) {
+  #validate inputs
+  validate_filename(filename)
+  validate_max_dims(max_dims)
   # Coerce to base types
   filename <- as.character(filename)
   arr <- as.array(arr)
 
-  # Validation (new standardized style)
-  validate_scalar_character(filename, "filename")
-  validate_character_array(arr, "arr")   
-
+   
   # Call Rcpp wrapper
   result <- tox_serialize_char_array_rcpp(arr, filename)
 
@@ -1002,65 +1027,76 @@ tox_serialize_char_array <- function(arr, filename) {
 #  4) KD-tree index (multidimensional) + spherical KD
 # ============================================================
 
-#' Build KD-Tree index (multidimensional) 
+
 build_kd_index <- function(X, dim_order = NULL) {
-  # R-layer validation
+  # Input validation using standardized validation functions
   validate_numeric_matrix(X, "X")
-
-  # Dimensions
-  d <- nrow(X)
-  n <- ncol(X)
-
-  # Default dimension order: 1:d
+  
+  d <- as.integer(nrow(X))
+  n <- as.integer(ncol(X))
+  
   if (is.null(dim_order)) {
-    dim_order <- seq_len(d)
+    dim_order <- 1:d  # Default: use dimensions in order
   }
-
-  # Convert to types suitable for Rcpp
-  X <- as.matrix(X)
-  storage.mode(X) <- "double"
+  
+  # Convert and validate dim_order
   dim_order <- as.integer(dim_order)
-
-  # Call Rcpp wrapper (which does the Fortran call internally)
-  result <- build_kd_index_rcpp(X, dim_order)
-
+  
+  # Ensure X is a numeric (double) matrix with expected dimensions
+  X <- matrix(as.numeric(X), nrow = d, ncol = n)
+  
+  # Call low-level Rcpp wrapper with explicit dimensions (num_dimensions, num_points)
+  result <- tox_build_kd_index_rcpp(X, dim_order)
+  
   # Check backend error code
   check_err_code(result$ierr)
-
-  # Return KD index vector (same public API as old version)
+  
+  # Return KD index vector
   result$kd_ix
 }
 
-# Spherical KD-Tree index
+#' Build Spherical KD-Tree index (R-level wrapper)
 build_spherical_kd <- function(V, dim_order = NULL) {
   # R-layer validation
   validate_numeric_matrix(V, "V")
-
-  # Dimensions
-  d <- nrow(V)
-  n <- ncol(V)
-
-  # Default dimension order: 1:d
+  
+  d <- as.integer(nrow(V))
+  n <- as.integer(ncol(V))
+  
   if (is.null(dim_order)) {
-    dim_order <- seq_len(d)
+    dim_order <- 1:d  # Default: use dimensions in order
   }
-
-  # Validate dim_order against d
-  validate_dim_order(dim_order, d, "dim_order")
-
-  # Convert to types suitable for Rcpp / Fortran
-  V <- as.matrix(V)
+  
+  # Validate dim_order
+  validate_logical_or_index_vector(dim_order, NULL, "dim_order")
   dim_order <- as.integer(dim_order)
-
+  
+  # Ensure V is a numeric (double) matrix with expected dimensions
+  V <- matrix(as.numeric(V), nrow = d, ncol = n)
+  
   # Call Rcpp wrapper (which wraps the Fortran call)
-  result <- build_spherical_kd_rcpp(V, dim_order)
-
+  # Underlying Fortran computes and returns its own `dimension_order`.
+  # Do not pass `dim_order` to the low-level routine; it returns its own ordering.
+  result <- tox_build_spherical_kd_rcpp(V,dim_order)
+  
   # Check backend error code
   check_err_code(result$ierr)
-
-  # Same public return value as old version
+  
+  # Return sphere index vector
   result$sphere_ix
 }
+#' Get a point from the KD index (R-level helper)
+get_kd_point <- function(X, kd_ix, position) {
+  # Input validation using standardized validation functions
+  validate_numeric_matrix(X, "X")
+  validate_array_or_vector(kd_ix, "kd_ix")
+  
+  # Extract the point at the specified position
+  # Note: X is organized as (dimensions, points), so we need to extract column kd_ix[position]
+  X[, kd_ix[position], drop = FALSE]
+}
+  
+
 
 
 # ============================================================
@@ -1069,20 +1105,28 @@ build_spherical_kd <- function(V, dim_order = NULL) {
 
 #  BST index
 build_bst_index <- function(x) {
- Validate_numeric_matrix(X, "X")
+  # Accept either a numeric vector or a single-column numeric matrix
+  validate_numeric_vector(x, "x")
 
   # Convert to appropriate type for Rcpp
   x <- as.numeric(x)
 
-  # Call Rcpp wrapper
+  # Call Rcpp wrapper (returns IntegerVector of indices)
   result <- build_bst_index_rcpp(x)
 
-  # Check for errors
-  check_err_code(result$ierr)
-
   # Return index vector
-  result$ix
-  }
+  return(result)
+}
+ 
+#' Get sorted value by BST index (R helper)
+get_sorted_value <- function(x, ix, position) {
+  validate_numeric_vector(x, "x")
+  ix <- as.integer(ix)
+  position <- as.integer(position)
+  validate_array_or_vector(ix, "ix")
+  return(as.numeric(x)[ix[position]])
+}
+
 # ============================================================
 # BST range query
 bst_range_query <- function(x, ix, lo, hi) {
@@ -1144,6 +1188,11 @@ tox_loess_smooth_2d <- function(
 
 
   # 1) R-layer validation
+  # Early check: empty input arrays should produce the mapped error message
+  if (length(x_ref) == 0 || length(y_ref) == 0 || length(x_query) == 0) {
+    stop("Empty input arrays provided.")
+  }
+
   validate_numeric_vector(x_ref, "x_ref")
   validate_numeric_vector(x_query, "x_query")
 
@@ -1154,6 +1203,8 @@ tox_loess_smooth_2d <- function(
   validate_numeric_matrix(y_ref, "y_ref")
  
   # Indices used: default to all, then validate
+  # total number of reference points
+  n_total <- length(x_ref)
   if (is.null(indices_used)) {
     indices_used <- seq_len(n_total)
   }
@@ -1175,10 +1226,13 @@ tox_loess_smooth_2d <- function(
   ## 3) Call Rcpp wrapper
 
   result <- tox_loess_smooth_2d_rcpp(
+    n_total      = as.integer(n_total),
+    n_target     = as.integer(length(x_query)),
     x_ref        = x_ref,
     y_ref        = y_ref,
-    x_query      = x_query,
     indices_used = indices_used,
+    n_used       = as.integer(length(indices_used)),
+    x_query      = x_query,
     kernel_sigma = kernel_sigma,
     kernel_cutoff= kernel_cutoff
   )
