@@ -888,18 +888,18 @@ tox_get_array_metadata <- function(filename, max_dims = 5L, with_clen = FALSE) {
 # ============================================================
 #  2) Deserialization (int / real / char)
 # ============================================================
-
-tox_deserialize_int_array <- function(filename, max_dims = 5) {
+tox_deserialize_int_array <- function(filename, max_dims = 5L) {
   # validate inputs
   validate_filename(filename)
   validate_max_dims(max_dims)
+  validate_file_exists(filename)
 
   meta <- tox_get_array_metadata(filename, max_dims)
   total_size <- prod(meta$dims)
 
   filename_ascii <- utf8ToInt(filename)
-
-  result <- tox_deserialize_int_rcpp(filename, max_dims)
+ # Call Rcpp wrapper
+  result <- tox_deserialize_int_array_rcpp(filename, max_dims)
   
   check_err_code(result$ierr)
 
@@ -911,6 +911,7 @@ tox_deserialize_real_array <- function(filename, max_dims = 5L) {
 #validate inputs
   validate_filename(filename)
   validate_max_dims(max_dims)
+  validate_file_exists(filename)
 
   meta <- tox_get_array_metadata(filename, max_dims)
   total_size <- prod(meta$dims)
@@ -919,10 +920,7 @@ tox_deserialize_real_array <- function(filename, max_dims = 5L) {
   filename <- as.character(filename)
   max_dims <- as.integer(max_dims)
 
-  # Input validation
-  validate_scalar_character(filename, "filename")
-
-
+ 
   # Call Rcpp wrapper
   result <- tox_deserialize_real_array_rcpp(filename, max_dims)
 
@@ -937,16 +935,13 @@ tox_deserialize_char_array <- function(filename, max_dims = 5L) {
   #validate inputs
   validate_filename(filename)
   validate_max_dims(max_dims)
+  validate_file_exists(filename)
   # Load metadata dimensions + clen
   meta <- tox_get_array_metadata(filename, max_dims, with_clen = TRUE)
   
   # Coerce to base types
   filename <- as.character(filename)
   max_dims <- as.integer(max_dims)
-
-  # Input validation
-  validate_scalar_character(filename, "filename")
- 
 
   # Call Rcpp wrapper
   result <- tox_deserialize_char_array_rcpp(filename, max_dims)
@@ -965,8 +960,10 @@ tox_deserialize_char_array <- function(filename, max_dims = 5L) {
 
 tox_serialize_int_array <- function(arr, filename) {
   #validate inputs
+  validate_array_or_vector(arr)
   validate_filename(filename)
-  validate_max_dims(max_dims)
+  validate_directory_exists(filename)
+  
   # Coerce to base types
   filename <- as.character(filename)
   arr <- as.array(arr)
@@ -981,23 +978,16 @@ tox_serialize_int_array <- function(arr, filename) {
 
 tox_serialize_real_array <- function(arr, filename) {
   #validate inputs
+  validate_array_or_vector(arr)
   validate_filename(filename)
-  validate_max_dims(max_dims)
+  validate_directory_exists(filename)
+  
 
   # Coerce to base types
     filename <- as.character(filename)
     arr <- as.array(arr)
-   
 
-    result <- tox_serialize_real_array_rcpp(arr, filename)
-  
-    check_err_code(result$ierr)
-    invisible(NULL)
- # Coerce to base types
-  filename <- as.character(filename)
-  arr <- as.array(arr)
-
-  
+  # Call Rcpp wrapper
   result <- tox_serialize_real_array_rcpp(arr, filename)
 
   check_err_code(result$ierr)
@@ -1007,8 +997,10 @@ tox_serialize_real_array <- function(arr, filename) {
 
 tox_serialize_char_array <- function(arr, filename) {
   #validate inputs
+  validate_array_or_vector(arr)
   validate_filename(filename)
-  validate_max_dims(max_dims)
+  validate_directory_exists(filename)
+ 
   # Coerce to base types
   filename <- as.character(filename)
   arr <- as.array(arr)
