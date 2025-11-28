@@ -962,7 +962,6 @@ tox_serialize_int_array <- function(arr, filename) {
   #validate inputs
   validate_array_or_vector(arr)
   validate_filename(filename)
-  validate_directory_exists(filename)
   
   # Coerce to base types
   filename <- as.character(filename)
@@ -980,7 +979,7 @@ tox_serialize_real_array <- function(arr, filename) {
   #validate inputs
   validate_array_or_vector(arr)
   validate_filename(filename)
-  validate_directory_exists(filename)
+  validate_file_exists(filename)
   
 
   # Coerce to base types
@@ -999,7 +998,7 @@ tox_serialize_char_array <- function(arr, filename) {
   #validate inputs
   validate_array_or_vector(arr)
   validate_filename(filename)
-  validate_directory_exists(filename)
+  validate_file_exists(filename)
  
   # Coerce to base types
   filename <- as.character(filename)

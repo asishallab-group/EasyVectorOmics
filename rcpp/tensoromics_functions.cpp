@@ -648,7 +648,7 @@ int tox_deserialize_real_rcpp(NumericVector arr_out, IntegerVector filename_asci
 
 
 // [[Rcpp::export]]
-int tox_serialize_int_nd_rcpp(IntegerVector arr, IntegerVector dims, int ndim, IntegerVector filename_ascii, int fn_len) {
+int tox_serialize_int_array_rcpp(IntegerVector arr, IntegerVector dims, int ndim, IntegerVector filename_ascii, int fn_len) {
     int ierr = 0;
     serialize_int_nd_C((void*)arr.begin(), dims.begin(), ndim, filename_ascii.begin(), fn_len, &ierr);
     return ierr;
@@ -656,7 +656,7 @@ int tox_serialize_int_nd_rcpp(IntegerVector arr, IntegerVector dims, int ndim, I
 
 
 // [[Rcpp::export]]
-int tox_serialize_real_nd_rcpp(NumericVector arr, IntegerVector dims, int ndim, IntegerVector filename_ascii, int fn_len) {
+int tox_serialize_real_array_rcpp(NumericVector arr, IntegerVector dims, int ndim, IntegerVector filename_ascii, int fn_len) {
     int ierr = 0;
     serialize_real_nd_C((void*)arr.begin(), dims.begin(), ndim, filename_ascii.begin(), fn_len, &ierr);
     return ierr;
