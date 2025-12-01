@@ -10,6 +10,7 @@ Sys.setenv(PKG_LIBS = paste0("-Wl,-rpath,", lib_path, " -L", lib_path, " -ltenso
 # Compile and load all TensorOmics Rcpp wrapper functions (includes error_handling.cpp)
 sourceCpp("rcpp/tensoromics_functions.cpp", env = .GlobalEnv)
 
+
 cat("✓ TensorOmics Rcpp functions loaded successfully\n")
 
 source("rcpp/error_handling.R")
@@ -849,8 +850,92 @@ tox_prepare_indices_by_patterns <- function(df, control_pattern, condition_patte
 
   return(list(control_cols = control_cols, condition_cols = condition_cols, condition_labels = condition_labels))
 }
+# ===================================================================
+# SHIFT VECTOR FIELD FUNCTIONS
+# ===================================================================
+#' Calculate Shift Vector Field 
+#' Computes the shift vector field for each gene expression vector based on its family centroid.
+#' The shift vector is defined as the difference between the gene expression vector and its corresponding family centroid,
+#' starting at the expression vector and pointing to its family centroid.
+#' This function automatically checks for errors and throws informative exceptions.
+#'
+#' @param expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors)
+#' @param family_centroids: Matrix where each column is a family centroid vector (n_axes x n_families)
+#' @param gene_to_centroid: Array mapping each gene to its corresponding family centroid ID in family_centroids (length n_vectors)
+#' 
+#' @return List containing:
+#'   \item{shift_vectors}{The computed shift vectors for each gene expression vector}
+#'
+
+tox_compute_shift_vector_field <- function(expression_vectors, family_centroids, gene_to_centroid) {
+  # R-layer validation (kept in rcpp/)
+  validate_numeric_matrix(expression_vectors)
+  validate_numeric_matrix(family_centroids)
+  # Ensure matching axes (rows)
+  validate_matching_rows(expression_vectors, family_centroids)
+
+  # gene_to_centroid should be integer vector with length equal to number of vectors
+  gene_to_centroid <- as.integer(gene_to_centroid)
+  n_vectors <- ncol(as.matrix(expression_vectors))
+  validate_length_equals_n(gene_to_centroid, n_vectors)
+
+  if (any(is.na(gene_to_centroid))) stop("`gene_to_centroid` must not contain NA values.")
+  if (any(gene_to_centroid < 0L)) stop("`gene_to_centroid` must not contain negative indices.")
+
+  result <- tox_compute_shift_vector_field_rcpp(expression_vectors, family_centroids, gene_to_centroid)
+  check_err_code(result$ierr)
+  return(list(shift_vectors = result$shift_vectors))
+}
 
 
+
+# ===================================================================
+# GENE CENTROIDS FUNCTIONS
+# ===================================================================
+#' Calculate Gene Centroids
+
+#' Computes the centroids for each gene family based on the expression vectors of its member genes.
+#' This function automatically checks for errors and throws informative exceptions.
+#'
+#' @param expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors)
+#' @param gene_to_family: Array mapping each gene to its corresponding family ID (length n_vectors)
+#' @param n_families: Total number of gene families
+#' @param ortholog_set: Logical array indicating if a gene is part of a specific subset (e.g., orthologs)
+#' @param mode: Character string indicating the mode of operation ('all' or 'ortho')
+#'
+#' @return List containing:
+#'   \item{centroid_matrix}{The computed centroids for each gene family}
+#'
+
+ 
+tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, ortholog_set, mode = 'all') {
+  # R-layer validation (kept in rcpp/)
+  validate_group_centroid_inputs(expression_vectors, gene_to_family, n_families, ortholog_set, mode)
+
+  result <- tox_group_centroid_rcpp(expression_vectors, gene_to_family, n_families, ortholog_set, mode)
+  check_err_code(result$ierr)
+  return(result)
+}
+
+#' Compute the element-wise mean for a given set of gene expression vectors
+#'
+#' This function wraps the Fortran subroutine `mean_vector_r`
+#' to compute the centroid (mean vector) for a selected set of genes.
+#'
+#' @param expression_vectors Numeric matrix (n_axes x n_genes) of gene expression vectors
+#' @param gene_indices Integer vector of column indices of selected genes (1-based)
+#'
+#' @return Numeric vector of length n_axes representing the computed centroid
+#'
+
+tox_mean_vector <- function(expression_vectors, gene_indices) {
+  # R-layer validation (kept in rcpp/)
+  validate_mean_vector_inputs(expression_vectors, gene_indices)
+
+  result <- tox_mean_vector_rcpp(expression_vectors, gene_indices)
+  check_err_code(result$ierr)
+  return(result)
+}
 
 # ============================================================
 #  1) Array metadata wrapper
@@ -979,7 +1064,6 @@ tox_serialize_real_array <- function(arr, filename) {
   #validate inputs
   validate_array_or_vector(arr)
   validate_filename(filename)
-  validate_file_exists(filename)
   
 
   # Coerce to base types
@@ -998,7 +1082,7 @@ tox_serialize_char_array <- function(arr, filename) {
   #validate inputs
   validate_array_or_vector(arr)
   validate_filename(filename)
-  validate_file_exists(filename)
+
  
   # Coerce to base types
   filename <- as.character(filename)
@@ -1240,4 +1324,3 @@ tox_loess_smooth_2d <- function(
     smoothed_values = as.vector(y_out)
   )
 }
-

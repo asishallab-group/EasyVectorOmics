@@ -1,4 +1,5 @@
 #include <Rcpp.h>
+#include <vector>
 
 using namespace Rcpp;
 
@@ -135,32 +136,31 @@ extern "C" {
     );
          
     void deserialize_int_C(
-        int* arr_out, int arr_size, 
+        int* arr, int arr_size, 
         int* filename_ascii, int fn_len, int* ierr);
 
     void deserialize_real_C(
-        double* arr_out, int arr_size, 
+        double* arr, int arr_size, 
         int* filename_ascii, int fn_len, int* ierr);
 
     void deserialize_char_flat_C(
-        int* ascii_arr_out, int clen, 
+        int* ascii_arr, int clen, 
         int total_array_size, int* filename_ascii, int fn_len, int* ierr);
 
     void serialize_int_nd_C(
-        void* arr_ptr, int* dims, 
+        void* arr, int* dims, 
         int ndim, int* filename_ascii, int fn_len, int* ierr);
     void serialize_real_nd_C(
-        void* arr_ptr, int* dims, 
+        void* arr, int* dims, 
         int ndim, int* filename_ascii, int fn_len, int* ierr);
 
     void serialize_char_flat_C(
         int* ascii_arr, int* dims, 
         int ndim, int clen, int* filename_ascii, int fn_len, int* ierr);
-
     void get_array_metadata_C(
-        const int* filename_ascii, 
-        int fn_len, int* dims_out, int dims_out_capacity, 
-        int* ndims, int* ierr, int* clen);
+      const int* filename_ascii,
+      int fn_len, int* dims_out, int* dims_out_capacity,
+      int* ndims, int* ierr, int* clen);
 
     void build_bst_index_C(
         const double* values, 
@@ -566,6 +566,7 @@ List tox_detect_outliers_rcpp(NumericVector distances, IntegerVector gene_to_fam
   );
 }
 
+
 // [[Rcpp::export]]
 List tox_build_kd_index_rcpp(NumericMatrix X, IntegerVector dim_order) {
   int d = X.nrow();
@@ -620,76 +621,158 @@ double kernel_cutoff) {
 }
 
 
-
-// [[Rcpp::export]]
-int tox_deserialize_char_flat_rcpp(IntegerVector ascii_out, int clen, int total, IntegerVector filename_ascii, int fn_len) {
-    int ierr = 0;
-    deserialize_char_flat_C(ascii_out.begin(), clen, total, filename_ascii.begin(), fn_len, &ierr);
-    return ierr;
+static std::vector<int> filename_to_ascii(const std::string &filename) {
+  std::vector<int> v;
+  for (unsigned char c : filename) v.push_back((int)c);
+  return v;
 }
 
+// --- Serialize wrappers (match R signatures: arr, filename) ---
 
 // [[Rcpp::export]]
-int tox_deserialize_int_rcpp(IntegerVector arr_out, IntegerVector filename_ascii, int fn_len) {
-    int ierr = 0;
-    int total = arr_out.size();
-    deserialize_int_C(arr_out.begin(), total, filename_ascii.begin(), fn_len, &ierr);
-    return ierr;
-}
+List tox_serialize_int_array_rcpp(IntegerVector arr, std::string filename) {
+  IntegerVector dim = arr.hasAttribute("dim") ? as<IntegerVector>(arr.attr("dim")) : IntegerVector::create((int)arr.size());
+  int ndim = dim.size();
+  std::vector<int> dims(ndim);
+  for (int i = 0; i < ndim; ++i) dims[i] = dim[i];
 
-
-// [[Rcpp::export]]
-int tox_deserialize_real_rcpp(NumericVector arr_out, IntegerVector filename_ascii, int fn_len) {
-    int ierr = 0;
-    int total = arr_out.size();
-    deserialize_real_C(arr_out.begin(), total, filename_ascii.begin(), fn_len, &ierr);
-    return ierr;
-}
-
-
-// [[Rcpp::export]]
-int tox_serialize_int_array_rcpp(IntegerVector arr, IntegerVector dims, int ndim, IntegerVector filename_ascii, int fn_len) {
-    int ierr = 0;
-    serialize_int_nd_C((void*)arr.begin(), dims.begin(), ndim, filename_ascii.begin(), fn_len, &ierr);
-    return ierr;
-}
-
-
-// [[Rcpp::export]]
-int tox_serialize_real_array_rcpp(NumericVector arr, IntegerVector dims, int ndim, IntegerVector filename_ascii, int fn_len) {
-    int ierr = 0;
-    serialize_real_nd_C((void*)arr.begin(), dims.begin(), ndim, filename_ascii.begin(), fn_len, &ierr);
-    return ierr;
-}
-
-
-// [[Rcpp::export]]
-int tox_serialize_char_flat_rcpp(IntegerVector ascii_arr, IntegerVector dims, int ndim, int clen, IntegerVector filename_ascii, int fn_len) {
-    int ierr = 0;
-    serialize_char_flat_C(ascii_arr.begin(), dims.begin(), ndim, clen, filename_ascii.begin(), fn_len, &ierr);
-    return ierr;
+  auto fname = filename_to_ascii(filename);
+  int fn_len = static_cast<int>(fname.size());
+  int ierr = 0;
+  serialize_int_nd_C((void*)arr.begin(), dims.data(), ndim, fname.data(), fn_len, &ierr);
+  return List::create(Named("ierr") = ierr);
 }
 
 // [[Rcpp::export]]
-List get_array_metadata_rcpp(IntegerVector filename_ascii, int fn_len, int dims_out_capacity = 5, bool with_clen = false) {
-    IntegerVector dims_res(dims_out_capacity);
-    int ndims = 0;
-    int ierr = 0;
-    int clen = 0;
+List tox_serialize_real_array_rcpp(NumericVector arr, std::string filename) {
+  IntegerVector dim = arr.hasAttribute("dim") ? as<IntegerVector>(arr.attr("dim")) : IntegerVector::create((int)arr.size());
+  int ndim = dim.size();
+  std::vector<int> dims(ndim);
+  for (int i = 0; i < ndim; ++i) dims[i] = dim[i];
 
-    get_array_metadata_C(filename_ascii.begin(), fn_len, dims_res.begin(), dims_out_capacity, &ndims, &ierr, &clen);
+  auto fname = filename_to_ascii(filename);
+  int fn_len = static_cast<int>(fname.size());
+  int ierr = 0;
+  serialize_real_nd_C((void*)arr.begin(), dims.data(), ndim, fname.data(), fn_len, &ierr);
+  return List::create(Named("ierr") = ierr);
+}
 
-    if (with_clen) {
-        return List::create(Named("dims") = dims_res,
-                            Named("ndim") = ndims,
-                            Named("clen") = clen,
-                            Named("ierr") = ierr);
+// [[Rcpp::export]]
+List tox_serialize_char_array_rcpp(CharacterVector carr, std::string filename) {
+  IntegerVector dim = carr.hasAttribute("dim") ? as<IntegerVector>(carr.attr("dim")) : IntegerVector::create((int)carr.size());
+  int ndim = dim.size();
+  std::vector<int> dims(ndim);
+  for (int i = 0; i < ndim; ++i) dims[i] = dim[i];
+
+  int total = 1;
+  for (int i = 0; i < ndim; ++i) total *= dims[i];
+
+  int clen = 0;
+  for (int i = 0; i < total; ++i) {
+    std::string s = as<std::string>(carr[i]);
+    if ((int)s.size() > clen) clen = (int)s.size();
+  }
+  if (clen == 0) clen = 1;
+
+  std::vector<int> ascii_flat(total * clen, 0);
+  for (int i = 0; i < total; ++i) {
+    std::string s = as<std::string>(carr[i]);
+    for (int j = 0; j < (int)s.size() && j < clen; ++j) ascii_flat[i*clen + j] = (unsigned char)s[j];
+  }
+
+  auto fname = filename_to_ascii(filename);
+  int fn_len = static_cast<int>(fname.size());
+  int ierr = 0;
+  serialize_char_flat_C(ascii_flat.data(), dims.data(), ndim, clen, fname.data(), fn_len, &ierr);
+  return List::create(Named("ierr") = ierr);
+}
+
+// --- Deserialize wrappers (match R signatures: filename, max_dims=5) ---
+
+// [[Rcpp::export]]
+List tox_deserialize_int_array_rcpp(std::string filename, int max_dims = 5) {
+  auto fname = filename_to_ascii(filename);
+  int fn_len = static_cast<int>(fname.size());
+  std::vector<int> dims_out(max_dims);
+  int ndims = 0;
+  int ierr = 0;
+  int clen = 0;
+  get_array_metadata_C(fname.data(), fn_len, dims_out.data(), &max_dims, &ndims, &ierr, &clen);
+  if (ierr != 0) return List::create(Named("ierr") = ierr);
+
+  int total = 1;
+  for (int i = 0; i < ndims; ++i) total *= dims_out[i];
+
+  IntegerVector out(total);
+  deserialize_int_C(out.begin(), total, fname.data(), fn_len, &ierr);
+  return List::create(Named("values") = out, Named("dims") = IntegerVector(dims_out.begin(), dims_out.begin()+ndims), Named("ndim") = ndims, Named("ierr") = ierr);
+}
+
+// [[Rcpp::export]]
+List tox_deserialize_real_array_rcpp(std::string filename, int max_dims = 5) {
+  auto fname = filename_to_ascii(filename);
+  int fn_len = static_cast<int>(fname.size());
+  std::vector<int> dims_out(max_dims);
+  int ndims = 0;
+  int ierr = 0;
+  int clen = 0;
+  get_array_metadata_C(fname.data(), fn_len, dims_out.data(), &max_dims, &ndims, &ierr, &clen);
+  if (ierr != 0) return List::create(Named("ierr") = ierr);
+
+  int total = 1;
+  for (int i = 0; i < ndims; ++i) total *= dims_out[i];
+
+  NumericVector out(total);
+  deserialize_real_C(out.begin(), total, fname.data(), fn_len, &ierr);
+  return List::create(Named("values") = out, Named("dims") = IntegerVector(dims_out.begin(), dims_out.begin()+ndims), Named("ndim") = ndims, Named("ierr") = ierr);
+}
+
+// [[Rcpp::export]]
+List tox_deserialize_char_array_rcpp(std::string filename, int max_dims = 5) {
+  auto fname = filename_to_ascii(filename);
+  int fn_len = static_cast<int>(fname.size());
+  std::vector<int> dims_out(max_dims);
+  int ndims = 0;
+  int ierr = 0;
+  int clen = 0;
+  get_array_metadata_C(fname.data(), fn_len, dims_out.data(), &max_dims, &ndims, &ierr, &clen);
+  if (ierr != 0) return List::create(Named("ierr") = ierr);
+
+  int total = 1;
+  for (int i = 0; i < ndims; ++i) total *= dims_out[i];
+
+  std::vector<int> ascii_out(total * clen);
+  deserialize_char_flat_C(ascii_out.data(), clen, total, fname.data(), fn_len, &ierr);
+
+  CharacterVector out(total);
+  for (int i = 0; i < total; ++i) {
+    std::string s;
+    for (int j = 0; j < clen; ++j) {
+      int ch = ascii_out[i*clen + j];
+      if (ch == 0) break;
+      s.push_back((char)ch);
     }
-
-    return List::create(Named("dims") = dims_res,
-                        Named("ndim") = ndims,
-                        Named("ierr") = ierr);
+    out[i] = s;
+  }
+  return List::create(Named("values") = out, Named("dims") = IntegerVector(dims_out.begin(), dims_out.begin()+ndims), Named("ndim") = ndims, Named("ierr") = ierr);
 }
+
+// [[Rcpp::export]]
+List tox_get_array_metadata_rcpp(std::string filename, int dims_out_capacity = 5, bool with_clen = false) {
+  auto fname = filename_to_ascii(filename);
+  int fn_len = static_cast<int>(fname.size());
+  IntegerVector dims_res(dims_out_capacity);
+  int ndims = 0;
+  int ierr = 0;
+  int clen = 0;
+  get_array_metadata_C(fname.data(), fn_len, dims_res.begin(), &dims_out_capacity, &ndims, &ierr, &clen);
+  if (with_clen) {
+    return List::create(Named("dims") = dims_res, Named("ndim") = ndims, Named("clen") = clen, Named("ierr") = ierr);
+  }
+  return List::create(Named("dims") = dims_res, Named("ndim") = ndims, Named("ierr") = ierr);
+}
+
+
 
 // [[Rcpp::export]]
 IntegerVector build_bst_index_rcpp(NumericVector values) {
