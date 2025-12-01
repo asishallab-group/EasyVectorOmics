@@ -13,6 +13,11 @@
     citecolor=blue
 }
 
+% Allow `\paragraph` to function as "subsubsubsection":
+\setcounter{secnumdepth}{4}
+\setcounter{tocdepth}{4}
+
+% 2.5cm padding to page borders:
 \geometry{margin=2.5cm}
 
 \title{Tensor Omics: Core Preprocessing, Analysis Pipeline, and Geometric Tools
@@ -925,7 +930,8 @@ function gilgamesh_vector(subfield, mjolnir_handle, n_bins):
 \end{verbatim}
 
 
-\section{Density-Based Bobito Variant: Spherical and Conical Accretion}
+\section{Shape truthful clustering}%
+\label{bobito}%
 
 \subsection{Summary}
 \begin{itemize}
@@ -1290,17 +1296,37 @@ Further geometric insight is obtained by examining the principal flow vectors an
 
 Taken together, the group-level field descriptors provide a coherent geometric summary of development patterns across multiple entities. They reveal, for example, whether first-world countries undergo smooth, low-rank, high-coordination shifts, whether developing countries experience bursts of high-energy, multi-dimensional change, or whether global-south countries traverse distinct phases in their flow or rotation trajectories. These descriptors also highlight temporal regions of heightened rebalancing, shocks, or directional pivots, thereby offering a compact and interpretable characterisation of group-level dynamics in high-dimensional semantic spaces.
 
-\section{Tensor Omics Field Descriptors (Field-Descs)}
-\label{field-descs}
+\section{Module Descriptors (Tensor-Field Descriptors)}
+\label{module-descs}
 
-\subsection{Concept of Subfields and Vector Fields}
+\subsection{Concept of Modules (Sets of Vectors) and Vector Fields}
 
-In Tensor Omics, a \textit{vector field} consists of vectors together with the
-coordinates from which they originate,
+In Tensor Omics sets of vectors can inform about scientific questions. E.g.
+which gene expression vectors are linked to inflammatory response biological
+processes and what are their characteristics? Or, in socioeconomics which
+measures like vaccination-rate and highest-education-rate show a similar
+tendency of increase over the years and is this consistent for all countries?
+
+See section \ref{bobito} for details on how to find (learn) sets of vectors
+through shape truthful clustering methods. Note that metadata, i.e. vector
+labels like the biological process a gene is involved in, can also be used to
+define sets of vectors. Importantly, two types of vectors and vector sets exist
+in Tensor Omics: First class ambient vectors and vector fields. First class
+vectors are plain old vectors that originate at the vector space origin and
+point to a coordinate. These are e.g. gene expression vectors or literacy-rate.
+Vector (tensor) fields consist of vectors that have origin coordinates and a
+vector that indicates the local forces at that coordinate, very much like in
+magnetic fields or meteorological wind maps. In Tensor Omics those are shift
+vectors, e.g. the shift of gene expression from the gene family centroid to the
+paralog gene expression, or changes in literacy-rate between two subsequent
+years.
+
+Formally, in Tensor Omics, a \textit{vector (tensor) field} consists of vectors
+together with the coordinates from which they originate,
 \[
 \mathcal{F} = \{\, (\vec{x}_i, \vec{v}_i) \mid \vec{x}_i, \vec{v}_i \in \mathbb{R}^n \,\}.
 \]
-A \textit{subfield} is any subset of this field,
+A \textit{field module} is any subset of this field,
 \[
 \mathcal{K} \subseteq \mathcal{F},
 \]
@@ -1308,13 +1334,19 @@ selected according to biological, semantic, or geometric criteria
 (e.g.\ ``photosynthesis'', ``inflammatory response'', collinearity, or local density).
 
 When the original data consist only of vectors without explicit coordinates,
-the subfield refers simply to a subset of vectors 
+the subfield (\emph{module}) refers simply to a subset of vectors 
 \(\{\vec{v}_i\}_{i=1}^{m}\) extracted from an omics vector space.
 Such a subset can still be analyzed collectively by arranging its vectors into
 the matrix
-\[
-M = [\, \vec{v}_1, \vec{v}_2, \ldots, \vec{v}_m \,] \in \mathbb{R}^{n \times m}.
-\]
+$$
+M =
+\begin{bmatrix}
+| & | &        & | \\
+\vec{v}_1 & \vec{v}_2 & \cdots & \vec{v}_n \\
+| & | &        & |
+\end{bmatrix}
+\quad \in \mathbb{R}^{d \times n}
+$$
 
 The cumulative covariance structure of the subfield is then given by
 \[
@@ -1326,80 +1358,241 @@ the cumulative effect exerted on a virtual particle placed conceptually at its
 center, allowing the use of linear algebraic descriptors to quantify its
 structure, energy, and dynamics.
 
-\subsection{Four Descriptors of a Subfield}
-\label{sec:subfield_descriptor}
+\subsection{Four Descriptors of a Module / Set of Vectors}
+\label{field-descs}
+
+To describe the characteristics of a set of vectors (module), be it a module of
+first class vectors or a vector (tensor) field, we emulate the effect of the
+vectors onto a virtual particle. To do so, we aggregate the module's vectors
+into a Matrix $M$ and create its covariance matrix $C = M \cdot M^T$.
 
 From \(M\) and \(C\), we define four key descriptors that characterize the 
 aggregate effect of the subfield on the virtual particle:
 
-\begin{enumerate}
-  \item \textbf{Energy (Signal Strength)}  
+\subsubsection{Energy (Signal Strength)}  
   \[
   E = \|M\|_{F} = \sqrt{\sum_{i=1}^{n}\sum_{j=1}^{m} M_{ij}^{2}},
   \]
   the Frobenius norm of \(M\), measures the total intensity or activity within 
-  the subfield.  
+  the module.  
   In gene expression analysis, this reflects the cumulative divergence or 
   activity of genes; in a wind or magnetic field analogy, it corresponds to the 
   total kinetic or magnetic energy in the region.
 
-  \item \textbf{Rank (Dimensionality or Spread)}  
+\subsubsection{Rank (Dimensionality or Spread)}  
   \[
   R = \text{rank}(M),
   \]
-  quantifies the effective dimensionality of the subfield.  
-  A low rank indicates that vectors are nearly co-linear (a one-dimensional flow), 
-  whereas a high rank implies multi-directional or isotropic behavior.  
-  In biological terms, \(R\) measures the number of independent directions of 
-  functional or regulatory diversification within the subfield.
+  quantifies the effective dimensionality of the module in terms of the
+  dimensions of the \emph{image} of the linear function encoded in $M$. Thus,
+  a low rank indicates that vectors are nearly co-linear (a one-dimensional
+  flow), whereas a high rank implies multi-directional or isotropic behavior.
+  In biological terms, \(R\) measures the number of independent directions of
+  functional or regulatory diversification within the module.
 
-  \item \textbf{Principal Flow Direction}  
-  The first eigenvector of \(C\),
+\subsubsection{Principal Flow Direction}  
+  The dominant orientation of a module can be extracted in two closely related,
+  but conceptually distinct ways.  
+  Let 
   \[
-  \vec{f} = \text{eigvec}_1(C),
+    M \in \mathbb{R}^{d \times n}
   \]
-  indicates the main direction of flow or bias within the subfield.  
-  It defines the orientation along which the virtual particle would experience 
-  the strongest net force.  
-  In gene expression space, this represents the dominant tissue or condition 
-  toward which expression diverges; in a physical field, it corresponds to the 
-  prevailing wind or magnetic alignment.
+  denote the matrix of module vectors, and 
+  \[
+    C = M M^\top
+  \]
+  the corresponding covariance--like operator formed from the outer products of 
+  these vectors.
 
-  \item \textbf{Rotation Axis and Magnitude}  
-  The antisymmetric component of \(C\),
+  \paragraph{Geometric Principal Axis (from SVD of \(M\)).}
+  The left singular vectors of \(M\) obtained from
   \[
-  A = \tfrac{1}{2}(C - C^{\mathsf{T}}),
+    M = U \Sigma V^\top
   \]
-  encodes local rotational tendencies within the subfield.  
-  The magnitude of rotation can be quantified by
+  capture the directions along which the \emph{vectors themselves} exhibit 
+  maximal geometric spread in ambient space.  
+  The first singular vector,
   \[
-  \omega = \|A\|_{F},
+    \vec{u}_1 = \text{svdvec}_1(M),
   \]
-  and the rotation axis \(\vec{r}\) can be extracted from the 
-  principal eigenvector of \(A\) (or equivalently from its polar decomposition).  
-  This quantity distinguishes coherent directional rotation (e.g. circular shifts 
-  or spirals in semantic space) from purely divergent or convergent flows.
-\end{enumerate}
+  describes the orientation of greatest variance among the coordinates of the 
+  module vectors.  
+  This direction answers questions of the form:
+  \begin{quote}
+    ``Along which axis do the module's vectors \emph{lie} or 
+    \emph{spread out} the most?''  
+  \end{quote}
+  For gene expression modules, this corresponds for example to the dominant 
+  tissue or condition axis that best separates the expression patterns 
+  contained in the module.
+
+  \paragraph{Dynamical Principal Flow (from EigenDecomposition of \(C\)).}
+  Since
+  \[
+    C = M M^\top = U \Sigma^2 U^\top,
+  \]
+  the eigenvectors of \(C\) coincide exactly with the left singular vectors 
+  of \(M\), while their eigenvalues are the squared singular values.  
+  Thus,
+  \[
+    \vec{f} = \text{eigvec}_1(C)
+  \]
+  selects the same direction as $\vec{u}_1$, but interprets it through the 
+  lens of the \emph{force-like} operator \(C=\sum_j \vec{v}_j \vec{v}_j^\top\).  
+  In this formulation, vectors with large magnitude contribute  
+  disproportionately more, causing $\vec{f}$ to represent the direction along 
+  which a virtual particle would experience the strongest net push from the 
+  entire module.  
+  This dynamical perspective answers questions such as:
+  \begin{quote}
+    ``In which direction does the module collectively \emph{pull, push, or 
+    bias} the system?''  
+  \end{quote}
+  In transcriptomic modules, this flow direction reflects the dominant tissue 
+  or condition toward which the expression vectors are collectively drifting; 
+  in socioeconomic trajectories, it identifies the main axis along which 
+  countries in the module exhibit consistent directional change.
+
+  \paragraph{Interpretative Complementarity.}
+  Although the eigenvectors obtained from $M$ and $C$ coincide, they express 
+  different scientific concepts:  
+  the SVD of \(M\) reveals the \emph{geometric orientation} of the module 
+  (where the vectors reside), while the eigendecomposition of \(C\) reveals the 
+  \emph{dynamical orientation} (what the vectors collectively do).  
+  These two interpretations can diverge substantially in practice.  
+  A module may show low geometric spread but exert a strong directional push, 
+  or conversely, may occupy a broad geometric region while exerting little 
+  coherent dynamical flow.  
+  Distinguishing these cases is essential for understanding both 
+  structural and functional aspects of high-dimensional vector fields in 
+  Tensor Omics.
+
+  \paragraph{Mathematical Note on Coincidence of Eigenvectors (singular vectors)}
+  Since the singular value decomposition of the module matrix satisfies 
+  \[
+  M = U \Sigma V^\top,
+  \]
+  the operator \(C = M M^\top\) takes the form 
+  \[
+  C = U \Sigma^2 U^\top.
+  \]
+  Thus the eigenvectors of \(C\) are exactly the left singular vectors of \(M\), 
+  differing at most by a sign.  
+  In particular, the first eigenvector of \(C\) and the first left singular 
+  vector of \(M\) point in the same direction in ambient space, yielding a cosine 
+  similarity of \(\pm 1\).  
+  Throughout Tensor Omics we refer to such vectors as \emph{coinciding}, since 
+  their orientation is immaterial and only their direction in the vector space 
+  is conceptually relevant.
+
+  \subsubsection{Rotation Axis and Magnitude}  
+  The rotation contained in a module cannot be extracted from 
+  \(C = M M^{\mathsf{T}}\), since \(C\) is symmetric and therefore encodes no 
+  antisymmetric component.  
+  Instead, rotational behaviour is obtained from the orthogonal factor of the 
+  polar decomposition of the empirical linear operator \(M\).  
+  Using the singular value decomposition,
+  \[
+    M = U \Sigma V^{\mathsf{T}},
+  \]
+  the polar factors are given by  
+  \[
+    R = U V^{\mathsf{T}}, 
+    \qquad 
+    S = V \Sigma V^{\mathsf{T}},
+  \]
+  where \(R\) is orthogonal and represents the pure rotational (and possibly 
+  reflective) component of the module, while \(S\) contains all symmetric 
+  stretching.
+
+  To obtain a genuine rotational generator we take the matrix logarithm of 
+  \(R\),
+  \[
+    A = \log(R),
+  \]
+  which is guaranteed to be skew--symmetric for any orthogonal matrix with 
+  determinant \(+1\).  
+  The eigenvalues of \(A\) occur in purely imaginary conjugate pairs 
+  \(\pm i\omega\), and the dominant rotational frequency is defined as
+  \[
+    \omega_{\max} = \max_i\, \big| \operatorname{Im}(\lambda_i(A)) \big|.
+  \]
+  This quantity measures the angular velocity associated with the principal 
+  rotational mode of the module.
+
+  The eigenvectors corresponding to the pair \(\pm i\omega_{\max}\) span the 
+  \emph{principal rotation plane}.  
+  In three dimensions this plane collapses to a classical rotation axis; in 
+  higher dimensions it identifies a distinguished two--dimensional subspace 
+  in which the dominant twisting or swirling motion occurs.  
+  When visualised in reduced projection spaces (e.g.\ the RAP), this plane is 
+  represented by a canonical axis or arrow indicating the orientation of 
+  rotation.
+
+  Together, the rotation magnitude \(\omega_{\max}\) and the principal 
+  rotation plane provide a second, fully independent descriptor of the module's 
+  internal organisation.  
+  They distinguish coherent cyclic or twisting behaviour in the vector field 
+  from purely divergent, convergent, or noise-dominated structure, thereby 
+  complementing the principal flow direction extracted from the symmetric 
+  component.
+
+\paragraph{Approximate Rotation via the Antisymmetric Component of \(M\)}\mbox{}\\
+
+  In settings where computational resources are limited, an approximate measure 
+  of rotational tendency can be obtained directly from the antisymmetric part of 
+  the module matrix,
+  \[
+    A_{\mathrm{approx}} = \tfrac{1}{2}\bigl(M - M^{\mathsf{T}}\bigr).
+  \]
+  This operator is always skew--symmetric and therefore admits purely imaginary 
+  eigenvalues, which provide a fast surrogate for rotational strength:
+  \[
+    \omega_{\mathrm{approx}} = 
+      \max_i\, \big| \operatorname{Im}(\lambda_i(A_{\mathrm{approx}})) \big|.
+  \]
+  The corresponding eigenvector pair spans an approximate rotation plane.
+
+  Unlike the polar--decomposition method, this approximation does not 
+  isolate a genuine rotational component of the underlying linear operator 
+  and may conflate rotation with shear or asymmetric stretching.  
+  Nevertheless, it is inexpensive to compute, requires no matrix logarithm, 
+  and often provides a qualitatively useful indicator of swirling or twisting 
+  tendencies when analysing large numbers of modules or performing rapid 
+  exploratory screening.
+
+
+\subsection{Conclusion of the four module descriptors}
 
 Together, these four quantities --- energy, rank, principal direction, and 
-rotation --- form the Tensor Omics Field Descriptors (TOXFD).
+rotation --- form the Tensor Omics Module Descriptors (Mod-4-Desc).
 
-To enable comparison across subfields of varying size \( k \), the signal strength can be normalized by the root of the cardinality:
+\subsection{Normalization of module descriptors}
+
+To enable comparison across subfields of varying size \( k \), the signal
+strength can be normalized by the root of the cardinality:
 \[
 \text{RFI} = \frac{\|M\|_F}{\sqrt{k}}
 \]
-This Relative Frobenius Index (RFI) provides a density-independent measure of average vector magnitude per subfield.
+This Relative Frobenius Index (RFI) provides a density-independent measure of
+average vector magnitude per subfield.
 
-\textbf{Note:} All direction vectors \( \vec{v} \in \mathbb{R}^n \setminus \{ \vec{0} \} \) are assumed to be non-zero, as normalization and angular analysis are undefined for the zero vector. If an unscaled antisymmetric component \( A = C - C^T \) is used instead of the factorized form, this corresponds to measuring the total (unweighted) rotation strength. The scaled form \(\frac{1}{2}(C - C^T)\) is preferred for decomposition consistency and interpretability.
+\textbf{Note:} All direction vectors \( \vec{v} \in \mathbb{R}^n \setminus \{
+  \vec{0} \} \) are assumed to be non-zero, as normalization and angular
+analysis are undefined for the zero vector. If an unscaled antisymmetric
+component \( A = C - C^T \) is used instead of the factorized form, this
+corresponds to measuring the total (unweighted) rotation strength. The scaled
+form \(\frac{1}{2}(C - C^T)\) is preferred for decomposition consistency and
+interpretability.
 
 \subsection{Vector Sets versus Vector Fields}
 
 A \textit{vector set} (e.g.\ all expression vectors of a gene family) consists 
 only of vectors and their distribution in space.  
 
-When vectors additionally carry explicit coordinates---as in shift vectors 
-originating at gene-family centroids---they form a \textit{vector field}.  
-In such cases, TOXFDs can be applied either to the coordinates or to the 
+When vectors additionally carry explicit coordinates---as in shift vectors
+originating at gene-family centroids---they form a \textit{vector field}.  In
+such cases, Mod-4-Desc can be applied either to the coordinates or to the
 vectors themselves, yielding complementary information:
 
 \begin{itemize}
@@ -1423,7 +1616,7 @@ vectors themselves, yielding complementary information:
 
 \end{itemize}
 
-\textbf{Examples.}  
+\textbf{Examples:}  
 In transcriptomics, coordinates correspond to gene-family positions in 
 expression space, while shift vectors represent changes such as stress 
 responses.  
@@ -1431,12 +1624,12 @@ In physics, coordinates represent spatial positions, and vectors represent wind
 velocities or magnetic field directions.
 
 
-\subsection{Tracing a Field along its Semantic Axis}
+\subsection{Tracing a Module along its Semantic Axis}
 
-Assume a subfield has an associated \textit{semantic axis}
+Assume a module has an associated \textit{semantic axis}
 \(\vec{d}_{\text{sem}}\) (see Section~\ref{sec:semantic_axis} for its definition), 
 obtained for example by the Mjölnir manifold learning method.  
-We can then analyze how TOXFD quantities evolve along this axis.
+We can then analyze how Mod-4-Desc quantities evolve along this axis.
 
 A Gaussian kernel \(K(\vec{x}; \sigma)\) is moved along \(\vec{d}_{\text{sem}}\).  
 At each kernel center, the local subset of vectors 
