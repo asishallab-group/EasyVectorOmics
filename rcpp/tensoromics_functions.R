@@ -111,8 +111,8 @@ tox_calculate_tissue_versatility <- function(expression_vectors, vector_selectio
   validate_numeric_matrix(expression_vectors, "expression_vectors")
 
   # Ensure selectors have expected lengths
-  validate_logical_or_index_vector(vector_selection,  "vector_selection")
-  validate_logical_or_index_vector(axis_selection, "axis_selection")
+    validate_logical_or_index_vector(vector_selection, expected_length = n_vectors, name = "vector_selection")
+    validate_logical_or_index_vector(axis_selection, expected_length = n_axes, name = "axis_selection")
 
   #Convert to appropriate types for Rcpp
   if (is.numeric(vector_selection)) {
