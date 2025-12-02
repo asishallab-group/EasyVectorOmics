@@ -203,6 +203,15 @@ validate_equal_length <- function(a, b, name_a = deparse(substitute(a)), name_b 
   if (length(a) != length(b)) stop(sprintf("%s length must match length of %s (same length).", name_a, name_b))
   invisible(TRUE)
 }
+validate_gene_to_centroid <- function(gene_to_centroid) {
+  # Check for NA values
+  if (any(is.na(gene_to_centroid))) { stop("gene_to_centroid contains NA values.")}
+
+  # Check for negative indices
+  if (any(gene_to_centroid < 0L)) {stop("gene_to_centroid contains negative indices.")}
+  invisible(NULL)
+}
+
 
 # Ensure vector is non-empty
 validate_nonempty_vector <- function(x, name = deparse(substitute(x))) {

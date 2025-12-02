@@ -866,8 +866,8 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
   n_vectors <- ncol(as.matrix(expression_vectors))
   validate_length_equals_n(gene_to_centroid, n_vectors)
 
-  if (any(is.na(gene_to_centroid))) stop("`gene_to_centroid` must not contain NA values.")
-  if (any(gene_to_centroid < 0L)) stop("`gene_to_centroid` must not contain negative indices.")
+  validate_gene_to_centroid(gene_to_centroid)
+
 
   result <- tox_compute_shift_vector_field_rcpp(expression_vectors, family_centroids, gene_to_centroid)
   check_err_code(result$ierr)
