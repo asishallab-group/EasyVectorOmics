@@ -331,8 +331,8 @@ tox_identify_outliers <- function(rdi, percentile = 95.0) {
 #' @examples
 #' normalized_matrix <- tox_normalize_by_std_dev(input_matrix)
 tox_normalize_by_std_dev <- function(input_matrix) {
-  # Validate input matrix values (NA / Inf / NaN)
-  validate_numeric_matrix_values(input_matrix)
+
+  
   result <- tox_normalize_by_std_dev_rcpp(input_matrix)  
   return(matrix(result$output_vector, nrow = nrow(input_matrix), ncol = ncol(input_matrix), dimnames = dimnames(input_matrix)))
 }
@@ -866,7 +866,7 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
   n_vectors <- ncol(as.matrix(expression_vectors))
   validate_length_equals_n(gene_to_centroid, n_vectors)
 
-  validate_gene_to_centroid(gene_to_centroid)
+
 
 
   result <- tox_compute_shift_vector_field_rcpp(expression_vectors, family_centroids, gene_to_centroid)

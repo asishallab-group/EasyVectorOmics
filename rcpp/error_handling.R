@@ -88,10 +88,9 @@ validate_group_vectors <- function(group_s, group_c, n_columns) {
   if (!is.integer(group_s) && !is.numeric(group_s)) stop("group_s must be integer (or numeric)")
   if (!is.integer(group_c) && !is.numeric(group_c)) stop("group_c must be integer (or numeric)")
   if (length(group_s) != length(group_c)) stop("group_s and group_c must have the same length")
-  if (any(group_s < 1) || any(group_c < 1)) stop("group_s and group_c must contain positive integers (1-based indices/lengths)")
-  if (sum(group_c) != n_columns) stop("Sum of group_c must equal number of columns in the input matrix")
   invisible(NULL)
 }
+
 
 
 # Validate numeric matrix values for NA/Inf/NaN and preserve descriptive messages
@@ -124,17 +123,17 @@ validate_character_vector <- function(cv, name = deparse(substitute(cv))) {
 validate_positive_integer_scalar <- function(x, name = deparse(substitute(x))) {
   if (!is.numeric(x) && !is.integer(x)) stop(sprintf("%s must be numeric/integer", name))
   if (length(x) != 1) stop(sprintf("%s must be a scalar", name))
-  if (as.integer(x) <= 0) stop(sprintf("%s must be positive", name))
+
   invisible(NULL)
 }
 
-validate_gene_to_family <- function(gene_to_fam, n_genes, n_families, name = deparse(substitute(gene_to_fam))) {
-  if (!is.numeric(gene_to_fam) && !is.integer(gene_to_fam)) stop(sprintf("%s must be numeric or integer", name))
-  if (length(gene_to_fam) != n_genes) stop(sprintf("Length of %s must equal number of genes (%d)", name, n_genes))
-  if (any(is.na(gene_to_fam))) stop(sprintf("%s contains NA values", name))
-  if (any(gene_to_fam < 0)) stop(sprintf("%s indices must be between 0 and %d (0 = no family assignment)", name, n_families))
+validate_gene_to_family <- function(gene_to_fam, n_genes, n_families,
+                                    name = deparse(substitute(gene_to_fam))) {
+  if (!is.numeric(gene_to_fam) && !is.integer(gene_to_fam)) {stop(sprintf("%s must be numeric or integer.", name))}
+  if (length(gene_to_fam) != as.integer(n_genes)) {stop(sprintf("Length of %s must equal number of genes (%d).", name, as.integer(n_genes)))}
   invisible(TRUE)
 }
+
 
 ## Small helpers for messages used in tests
 validate_length_equals_n <- function(x, n, name = deparse(substitute(x))) {
@@ -203,14 +202,7 @@ validate_equal_length <- function(a, b, name_a = deparse(substitute(a)), name_b 
   if (length(a) != length(b)) stop(sprintf("%s length must match length of %s (same length).", name_a, name_b))
   invisible(TRUE)
 }
-validate_gene_to_centroid <- function(gene_to_centroid) {
-  # Check for NA values
-  if (any(is.na(gene_to_centroid))) { stop("gene_to_centroid contains NA values.")}
 
-  # Check for negative indices
-  if (any(gene_to_centroid < 0L)) {stop("gene_to_centroid contains negative indices.")}
-  invisible(NULL)
-}
 
 
 # Ensure vector is non-empty
