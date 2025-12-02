@@ -201,7 +201,7 @@ subroutine deserialize_int_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
   use iso_c_binding, only : c_char
   use int_deserialize_mod, only : deserialize_int_flat
   use tox_conversions, only : c_char_1d_as_string
-  use tox_errors, only : set_err_once, set_ok, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH, validate_type_code
+  use tox_errors, only : set_ok, is_ok
   implicit none
 
   integer(int32), intent(in)  :: arr_size
@@ -215,17 +215,13 @@ subroutine deserialize_int_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
   integer(int32), intent(out) :: ierr
   !! error code
   
-  integer(int32) :: ioerror
   character(len=:), allocatable :: filename
   !! filename in characters
-  integer(int32), allocatable   :: dims(:)
-  !! dimensions of the array
-  integer(int32)                :: unit, type_code, ndims, clen
 
   call set_ok(ierr)
-  call set_ok(ioerror)
 
   call c_char_1d_as_string(filename_raw, filename, ierr)
+  if( .not. is_ok(ierr)) return
 
   call deserialize_int_flat(flat_arr, filename, ierr)
 end subroutine
@@ -237,7 +233,7 @@ subroutine deserialize_int_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, 
     use iso_c_binding, only: c_int, c_char
     use iso_fortran_env, only: int32
     use int_deserialize_mod, only : deserialize_int_flat
-    use tox_errors, only : set_err_once, set_ok, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH, validate_type_code
+    use tox_errors, only : set_ok, is_ok
     use tox_conversions, only : c_char_1d_as_string
     implicit none
 

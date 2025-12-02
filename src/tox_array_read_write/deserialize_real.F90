@@ -208,7 +208,7 @@ subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_raw, fn_len, ier
   use iso_c_binding, only : c_char
   use real_deserialize_mod, only : deserialize_real_flat
   use tox_conversions, only : c_char_1d_as_string
-  use tox_errors, only : set_ok, set_err_once, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH, validate_type_code
+  use tox_errors, only : set_ok, is_ok
   implicit none
 
   integer(int32), intent(in) :: fn_len
@@ -221,17 +221,11 @@ subroutine deserialize_real_flat_r(flat_arr, arr_size, filename_raw, fn_len, ier
   !! filename in ascii
   integer(int32), intent(out) :: ierr
   !! error code
-  integer(int32) :: ioerror
-  !! internal fortran error
 
   character(len=:), allocatable :: filename
   !! filename
-  integer(int32), allocatable :: dims(:)
-  !! dimensions
-  integer(int32) :: unit, type_code, ndims, clen
 
   call set_ok(ierr)
-  call set_ok(ioerror)
 
   call c_char_1d_as_string(filename_raw, filename, ierr)
   if (.not. is_ok(ierr)) return
@@ -248,7 +242,7 @@ subroutine deserialize_real_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C,
     use iso_c_binding, only : c_int, c_double, c_char
     use iso_fortran_env, only: int32, real64
     use real_deserialize_mod, only : deserialize_real_flat
-    use tox_errors, only : set_ok, set_err_once, is_ok, ERR_SIZE_MISMATCH, ERR_READ_DATA, ERR_TYPE_MISMATCH, validate_type_code
+    use tox_errors, only : set_ok, is_ok
     use tox_conversions, only : c_char_1d_as_string
     implicit none
 
@@ -264,18 +258,11 @@ subroutine deserialize_real_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C,
     integer(c_int), intent(out)        :: ierr
     !! error code
 
-    integer(int32) :: ioerror
-    !! internal fortran error
-
     ! Locals
     character(len=:), allocatable :: filename
     !! filename
-    integer(int32), allocatable   :: dims(:)
-    !! dimensions
-    integer(int32)                :: unit
-    integer(int32)                :: type_code, ndims, clen
 
-    ierr = 0
+    call set_ok(ierr)
 
     ! ASCII to String
     call c_char_1d_as_string(filename_raw, filename, ierr)
