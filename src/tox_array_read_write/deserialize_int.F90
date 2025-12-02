@@ -251,13 +251,8 @@ subroutine deserialize_int_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, 
 
     ! Locals
     character(len=:), allocatable :: filename
-    integer(int32), allocatable   :: dims(:)
-    integer(int32)                :: unit
-    integer(int32)                :: ioerror
-    integer(int32)                :: type_code, ndims, clen
 
     call set_ok(ierr)
-    call set_ok(ioerror)
 
     ! raw → String
     call c_char_1d_as_string(filename_raw, filename, ierr)
