@@ -27,7 +27,7 @@ contains
     integer(int32) :: ioerror
       !! Internal I/O error code
 
-    integer(int32) :: unit, magic, type_code, ndim
+    integer(int32) :: unit, type_code, ndim
 
     call set_ok(ierr)
     call set_ok(ioerror)
@@ -299,7 +299,7 @@ subroutine deserialize_char_flat_C(raw_chars, clen, total_array_size, &
   character(len=:), allocatable :: filename
   character(len=:), pointer     :: flat(:)
   integer(c_int), allocatable   :: dims(:)
-  integer(int32) :: i, j, actual_clen, ioerror
+  integer(int32) :: i, j, actual_clen
 
   call set_ok(ierr)
   

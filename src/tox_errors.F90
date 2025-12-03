@@ -140,10 +140,13 @@ contains
   end subroutine check_io_stat
   
   pure subroutine validate_dimension_size(n, ierr)
-    integer(int32), intent(in) :: n
-    integer(int32), intent(out) :: ierr
-    if(n < 0) call set_err(ierr, ERR_INVALID_INPUT)  
-    if(n == 0) call set_err(ierr, ERR_EMPTY_INPUT)
+    integer(int32), intent(in), optional :: n
+    integer(int32), intent(inout) :: ierr
+
+    if (present(n)) then
+      if(n < 0) call set_err(ierr, ERR_INVALID_INPUT)  
+      if(n == 0) call set_err(ierr, ERR_EMPTY_INPUT)
+    end if
   end subroutine
 
   !> validate that the actual type code matches the expected type code
@@ -165,9 +168,9 @@ contains
 
   !> Validates min<=e<=max for all elements e of an array
   pure subroutine validate_in_range_int(val, ierr, min, max)
-    integer(int32), intent(in) :: val
+    integer(int32), intent(in), optional :: val
       !! value to be validated
-    integer(int32), intent(out) :: ierr
+    integer(int32), intent(inout) :: ierr
       !! Error code
     integer(int32), intent(in), optional :: min
       !! lower bound for a value, default is lowest 32-bit integer -> -huge(1_int32)
@@ -176,11 +179,13 @@ contains
 
     integer(int32) :: actual_min, actual_max
 
-    M_DEFAULT_VAL(min, actual_min, -huge(1_int32))
-    M_DEFAULT_VAL(max, actual_max, huge(1_int32))
-  
-    if ((val < actual_min) .or. (val > actual_max)) then
-      call set_err(ierr, ERR_INVALID_INPUT)
+    if (present(val)) then
+      M_DEFAULT_VAL(min, actual_min, -huge(1_int32))
+      M_DEFAULT_VAL(max, actual_max, huge(1_int32))
+    
+      if ((val < actual_min) .or. (val > actual_max)) then
+        call set_err(ierr, ERR_INVALID_INPUT)
+      end if
     end if
   end subroutine validate_in_range_int
 
@@ -188,9 +193,9 @@ contains
   pure subroutine validate_all_in_range_int(array, n_elements, ierr, min, max)
     integer(int32), intent(in) :: n_elements
       !! Size of `array`
-    integer(int32), dimension(n_elements), intent(in) :: array
+    integer(int32), dimension(n_elements), intent(in), optional :: array
       !! Array to be validated
-    integer(int32), intent(out) :: ierr
+    integer(int32), intent(inout) :: ierr
       !! Error code
     integer(int32), intent(in), optional :: min
       !! lower bound for a value, default is lowest 32-bit integer -> -huge(1_int32)
@@ -198,17 +203,25 @@ contains
       !! upper bound for a value, default is largest 32-bit integer -> huge(1_int32)
 
     integer(int32) :: i_element
-  
-    do i_element = 1, n_elements
-      call validate_in_range_int(array(i_element), ierr, min, max)
-    end do
+    
+    if (present(array)) then
+      do i_element = 1, n_elements
+        call validate_in_range_int(array(i_element), ierr, min, max)
+      end do
+    end if
   end subroutine validate_all_in_range_int
 
-  !> Validates min<=e<=max AND e/=NaN for all elements e of an array
+  !> Validates min<=e<=max AND e/=NaN for all elements e of an array.
+  !|
+  !| @note
+  !| This validation is inclusive: `min<=val<=max`<br>
+  !| To achieve exclusive bounds, us above/below from f42_utils,
+  !| like: `validate_in_range_real(x, ierr, min=above(0.0_real64), max=below(100.0_real64))` for `0<x<100`
+  !| @endnote
   pure subroutine validate_in_range_real(val, ierr, min, max)
-    real(real64), intent(in) :: val
+    real(real64), intent(in), optional :: val
       !! value to be validated
-    integer(int32), intent(out) :: ierr
+    integer(int32), intent(inout) :: ierr
       !! Error code
     real(real64), intent(in), optional :: min
       !! lower bound for a value, default is lowest 64-bit float -> -huge(1.0_real64)
@@ -217,16 +230,18 @@ contains
 
     real(real64) :: actual_min, actual_max
 
-    M_DEFAULT_VAL(min, actual_min, -huge(1.0_real64))
-    M_DEFAULT_VAL(max, actual_max, huge(1.0_real64))
-  
-    if (ieee_is_nan(val) .or. .not. ieee_is_finite(val)) then
-      call set_err(ierr, ERR_NAN_INF)
-      return
-    end if
+    if (present(val)) then
+      M_DEFAULT_VAL(min, actual_min, -huge(1.0_real64))
+      M_DEFAULT_VAL(max, actual_max, huge(1.0_real64))
+    
+      if (ieee_is_nan(val) .or. .not. ieee_is_finite(val)) then
+        call set_err(ierr, ERR_NAN_INF)
+        return
+      end if
 
-    if ((val < actual_min) .or. (val > actual_max)) then
-      call set_err(ierr, ERR_INVALID_INPUT)
+      if ((val < actual_min) .or. (val > actual_max)) then
+        call set_err(ierr, ERR_INVALID_INPUT)
+      end if
     end if
   end subroutine validate_in_range_real
 
@@ -234,9 +249,9 @@ contains
   pure subroutine validate_all_in_range_real(array, n_elements, ierr, min, max)
     integer(int32), intent(in) :: n_elements
       !! Size of `array`
-    real(real64), dimension(n_elements), intent(in) :: array
+    real(real64), dimension(n_elements), intent(in), optional :: array
       !! Array to be validated
-    integer(int32), intent(out) :: ierr
+    integer(int32), intent(inout) :: ierr
       !! Error code
     real(real64), intent(in), optional :: min
       !! lower bound for a value, default is lowest 64-bit float -> -huge(1.0_real64)
@@ -245,9 +260,11 @@ contains
 
     integer(int32) :: i_element
   
-    do i_element = 1, n_elements
-      call validate_in_range_real(array(i_element), ierr, min, max)
-    end do
+    if (present(array)) then
+      do i_element = 1, n_elements
+        call validate_in_range_real(array(i_element), ierr, min, max)
+      end do
+    end if
   end subroutine validate_all_in_range_real
 
   !> Strictly validates a distance matrix of euclidean distances.
@@ -256,9 +273,9 @@ contains
   pure subroutine validate_distance_matrix(distances, n, ierr, min, max)
     integer(int32), intent(in) :: n
       !! Number of columns and rows of `distances`
-    real(real64), dimension(n, n), intent(in) :: distances
+    real(real64), dimension(n, n), intent(in), optional :: distances
       !! Matrix to be validated
-    integer(int32), intent(out) :: ierr
+    integer(int32), intent(inout) :: ierr
       !! Error code
     real(real64), intent(in), optional :: min
       !! lower bound for a distance value, default is zero to have only positives
@@ -268,19 +285,21 @@ contains
     integer(int32) :: i_col, i_row
     real(real64) :: actual_min
 
-    M_DEFAULT_VAL(min, actual_min, 0.0_real64)
+    if (present(distances)) then
+      M_DEFAULT_VAL(min, actual_min, 0.0_real64)
 
-    call validate_all_in_range_real(distances, n * n, ierr, actual_min, max)
-    if (is_err(ierr)) return
+      call validate_all_in_range_real(distances, n * n, ierr, actual_min, max)
+      if (is_err(ierr)) return
 
-    do i_col = 1, n
-      if (distances(i_col, i_col) /= 0.0_real64) call set_err(ierr, ERR_INVALID_INPUT)
-      do i_row = 1, n
-        if (distances(i_row, i_col) /= distances(i_col, i_row)) then
-          call set_err(ierr, ERR_INVALID_INPUT)
-        end if
+      do i_col = 1, n
+        if (distances(i_col, i_col) /= 0.0_real64) call set_err(ierr, ERR_INVALID_INPUT)
+        do i_row = 1, n
+          if (distances(i_row, i_col) /= distances(i_col, i_row)) then
+            call set_err(ierr, ERR_INVALID_INPUT)
+          end if
+        end do
       end do
-    end do
+    end if
   end subroutine validate_distance_matrix
 
 end module tox_errors
