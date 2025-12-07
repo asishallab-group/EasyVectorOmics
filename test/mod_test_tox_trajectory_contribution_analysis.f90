@@ -25,7 +25,7 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(10)
+        type(test_case) :: all_tests(11)
 
         all_tests(1) = test_case("test_tox_trajectory_contribution_analysis_get_vec_across_samples", test_get_vec_across_samples)
         all_tests(2) = test_case("test_tox_trajectory_contribution_analysis_get_vec_across_timepoints", test_get_vec_across_timepoints)
@@ -37,6 +37,7 @@ contains
         all_tests(8) = test_case("test_process_trajectories_empty_input", test_process_trajectories_empty_input)
         all_tests(9) = test_case("test_process_trajectories_invalid_dependent", test_process_trajectories_invalid_dependent)
         all_tests(10) = test_case("test_process_trajectories_dependent_in_mask", test_process_trajectories_dependent_in_mask)
+        all_tests(11) = test_case("test_compute_baselines_factor_dependent", test_compute_baselines_factor_dependent)
     end function get_all_tests
 
     subroutine test_calc_contributions()
@@ -389,6 +390,46 @@ contains
 
         call assert_equal_int(ierr, ERR_INVALID_INPUT, 'Error when dependent_idx in factor_mask')
     end subroutine test_process_trajectories_dependent_in_mask
+
+    subroutine test_compute_baselines_factor_dependent()
+        integer(int32), parameter :: n_timepoints = 4
+        real(real64) :: F(n_timepoints), D(5)  ! D has 5 elements for mismatch test
+        real(real64) :: bF, bD, expected_bF, expected_bD
+        integer(int32) :: ierr
+
+        ! Case 1: BASELINE_RAW (no centering)
+        F = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64]
+        D(1:4) = [5.0_real64, 6.0_real64, 7.0_real64, 8.0_real64]
+        call compute_baselines_factor_dependent(F, D(1:4), BASELINE_RAW, bF, bD, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_compute_baselines_factor_dependent: BASELINE_RAW: expected OK status")
+        call assert_equal_real(bF, 0.0_real64, TOL, "test_compute_baselines_factor_dependent: BASELINE_RAW bF")
+        call assert_equal_real(bD, 0.0_real64, TOL, "test_compute_baselines_factor_dependent: BASELINE_RAW bD")
+
+        ! Case 2: BASELINE_MIN (minimum-centered)
+        call compute_baselines_factor_dependent(F, D(1:4), BASELINE_MIN, bF, bD, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_compute_baselines_factor_dependent: BASELINE_MIN: expected OK status")
+        call assert_equal_real(bF, minval(F), TOL, "test_compute_baselines_factor_dependent: BASELINE_MIN bF")
+        call assert_equal_real(bD, minval(D(1:4)), TOL, "test_compute_baselines_factor_dependent: BASELINE_MIN bD")
+
+        ! Case 3: BASELINE_MEAN (mean-centered)
+        expected_bF = sum(F) / real(n_timepoints, kind=real64)
+        expected_bD = sum(D(1:4)) / real(n_timepoints, kind=real64)
+        call compute_baselines_factor_dependent(F, D(1:4), BASELINE_MEAN, bF, bD, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_compute_baselines_factor_dependent: BASELINE_MEAN: expected OK status")
+        call assert_equal_real(bF, expected_bF, TOL, "test_compute_baselines_factor_dependent: BASELINE_MEAN bF")
+        call assert_equal_real(bD, expected_bD, TOL, "test_compute_baselines_factor_dependent: BASELINE_MEAN bD")
+
+        ! Case 4: mismatched input lengths
+        D = [5.0_real64, 6.0_real64, 7.0_real64, 8.0_real64, 9.0_real64]  ! length 5
+        call compute_baselines_factor_dependent(F, D(1:4), BASELINE_RAW, bF, bD, ierr)  ! valid
+        call assert_equal_int(ierr, ERR_OK, "test_compute_baselines_factor_dependent: valid lengths")
+        call compute_baselines_factor_dependent(F, D(1:5), BASELINE_RAW, bF, bD, ierr)  ! invalid
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_compute_baselines_factor_dependent: mismatched lengths")
+
+        ! Case 5: invalid mode
+        call compute_baselines_factor_dependent(F, D(1:4), 99_int32, bF, bD, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_compute_baselines_factor_dependent: invalid mode")
+    end subroutine test_compute_baselines_factor_dependent
 
     !> Run all tox_trajectory_contribution_analysis tests.
     subroutine run_all_tests_tox_trajectory_contribution_analysis

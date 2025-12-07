@@ -10,6 +10,11 @@ module tox_trajectory_contribution_analysis
 
     integer(int32), parameter :: MODE_NORMAL = 1
     integer(int32), parameter :: MODE_RAP    = 2
+
+    ! Baseline computation modes
+    integer(int32), parameter :: BASELINE_RAW  = 1
+    integer(int32), parameter :: BASELINE_MIN  = 2
+    integer(int32), parameter :: BASELINE_MEAN = 3
 contains
 
     !> Calculates trajectory contribution using cosine similarity
@@ -221,6 +226,63 @@ contains
 
         call calc_contributions(trajectories, n_factors, n_samples, n_timepoints, i_factor, dependent_idx, mode, spike_contribs, integrated_contribs, temp_factor_vector, temp_dependent_vector, ierr)
     end subroutine calc_contributions_alloc
+
+   !> Compute scalar baselines for a factor F_t and a dependent D_t.
+
+     pure subroutine compute_baselines_factor_dependent(F, D, mode, bF, bD, err)
+        real(real64), intent(in)  :: F(:)
+            !! Factor time series, length T
+        real(real64), intent(in)  :: D(:)
+            !! Dependent time series, length T
+        integer(int32), intent(in) :: mode
+            !! Baseline mode
+        real(real64), intent(out) :: bF
+            !! Baseline for factor
+        real(real64), intent(out) :: bD
+            !! Baseline for dependent
+        integer(int32), intent(out) :: err
+            !! Error code
+
+        integer(int32) :: nF, nD
+
+        call set_ok(err)
+        bF = 0.0_real64
+        bD = 0.0_real64
+
+        ! Infer time dimension from array sizes
+        nF = size(F)
+        nD = size(D)
+
+        ! F and D must have same length
+        if (nF /= nD) then
+            call set_err(err, ERR_INVALID_INPUT)
+            return
+        end if
+
+        select case (mode)
+
+        case (BASELINE_RAW)
+            ! No centring: reference 0
+            bF = 0.0_real64
+            bD = 0.0_real64
+
+        case (BASELINE_MIN)
+            ! Minimum-centred baseline
+            bF = minval(F)
+            bD = minval(D)
+
+        case (BASELINE_MEAN)
+            ! Mean-centred baseline
+            bF = sum(F) / real(nF, kind=real64)
+            bD = sum(D) / real(nF, kind=real64)
+
+        case default
+            call set_err(err, ERR_INVALID_INPUT)
+            return
+        end select
+
+    end subroutine compute_baselines_factor_dependent
+
 
     !> Accessor routine to extract sample data for a specific factor and timepoint
     pure subroutine get_vec_across_samples(trajectories, n_factors, n_samples, n_timepoints, i_factor, i_timepoint, result_vector, ierr)
@@ -670,7 +732,8 @@ subroutine process_trajectories_C(trajectories, n_factors, n_samples, n_timepoin
                                       integrated_contribs, spike_contribs, &
                                       thresholds_integrated_contrib, outliers_integrated_contrib_int, &
                                       thresholds_spike_contrib, outliers_spike_contrib_int, ierr) &
-                                      bind(C, name="process_trajectories_C")
+                                      bind(C, name="process_trajectories_C")   
+
     use tox_conversions, only: logical_as_c_int, c_int_as_logical
     use, intrinsic :: iso_c_binding, only: c_double, c_int
     use tox_errors, only: set_ok, set_err, is_err, ERR_ALLOC_FAIL, validate_dimension_size
@@ -898,3 +961,52 @@ subroutine process_trajectories_flat_C(trajectories, n_factors, n_samples, n_tim
         call logical_as_c_int(outliers_spike_contrib, outliers_spike_contrib_int)
     end if    
 end subroutine process_trajectories_flat_C
+subroutine compute_baselines_factor_dependent_c(F, D, n_timepoints, mode, bF, bD, ierr) &
+    bind(C, name="tox_compute_baselines_factor_dependent")
+
+    use tox_trajectory_contribution_analysis, only: compute_baselines_factor_dependent
+    use, intrinsic :: iso_c_binding, only: c_double, c_int
+    use, intrinsic :: iso_fortran_env, only: int32, real64
+    use tox_errors, only: set_ok, set_err, is_err, ERR_ALLOC_FAIL
+
+    ! C-visible arguments
+    real(c_double), intent(in)  :: F(*)
+    real(c_double), intent(in)  :: D(*)
+    integer(c_int), intent(in)  :: n_timepoints
+    integer(c_int), intent(in)  :: mode
+    real(c_double), intent(out) :: bF
+    real(c_double), intent(out) :: bD
+    integer(c_int), intent(out) :: ierr
+
+    ! Internal variables
+    integer(int32) :: nt_int32, mode_int32, ierr_int32
+    integer(int32) :: i
+    real(real64), allocatable :: F_f(:), D_f(:)
+    real(real64) :: bF_f, bD_f
+
+    call set_ok(ierr_int32)
+
+    nt_int32   = int(n_timepoints, kind=int32)
+    mode_int32 = int(mode,         kind=int32)
+
+    allocate(F_f(nt_int32), D_f(nt_int32), stat=ierr_int32)
+    if (ierr_int32 /= 0) then
+        call set_err(ierr_int32, ERR_ALLOC_FAIL)
+        ierr = int(ierr_int32, kind=c_int)
+        return
+    end if
+
+    do i = 1, nt_int32
+        F_f(i) = real(F(i), kind=real64)
+        D_f(i) = real(D(i), kind=real64)
+    end do
+
+    call compute_baselines_factor_dependent(F_f, D_f, mode_int32, bF_f, bD_f, ierr_int32)
+
+    bF   = real(bF_f, kind=c_double)
+    bD   = real(bD_f, kind=c_double)
+    ierr = int(ierr_int32, kind=c_int)
+
+    deallocate(F_f, D_f)
+
+end subroutine compute_baselines_factor_dependent_c
