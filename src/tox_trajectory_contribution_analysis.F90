@@ -5,7 +5,9 @@ module tox_trajectory_contribution_analysis
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
     use f42_utils, only: is_close
-    use tox_errors, only: set_ok, set_err, is_err, ERR_IDX_OUT_OF_BOUNDS, ERR_DIVISION_BY_ZERO, ERR_INVALID_INPUT, ERR_NAN_INF, ERR_ALLOC_FAIL, validate_dimension_size
+    use tox_errors, only: set_ok, set_err, is_err, ERR_IDX_OUT_OF_BOUNDS, ERR_DIVISION_BY_ZERO, &
+                          ERR_INVALID_INPUT, ERR_NAN_INF, ERR_ALLOC_FAIL, validate_dimension_size, &
+                          validate_in_range_real
     implicit none
 
     integer(int32), parameter :: MODE_NORMAL = 1
@@ -227,76 +229,61 @@ contains
         call calc_contributions(trajectories, n_factors, n_samples, n_timepoints, i_factor, dependent_idx, mode, spike_contribs, integrated_contribs, temp_factor_vector, temp_dependent_vector, ierr)
     end subroutine calc_contributions_alloc
 
-   !> Compute scalar baselines for a factor F_t and a dependent D_t.
+   !> Compute scalar baselines for a factor and dependent variable time series.
 
-     pure subroutine compute_baselines_factor_dependent(F, D, mode, bF, bD, err)
-    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
-    real(real64), intent(in)  :: F(:)
-        !! Factor time series, length T
-    real(real64), intent(in)  :: D(:)
-        !! Dependent time series, length T
-    integer(int32), intent(in) :: mode
-        !! Baseline mode: 1=RAW, 2=MIN, 3=MEAN
-    real(real64), intent(out) :: bF
-        !! Baseline for factor
-    real(real64), intent(out) :: bD
-        !! Baseline for dependent
-    integer(int32), intent(out) :: err
-        !! Error code
+    pure subroutine compute_baselines_factor_dependent(n_timepoints, factor, dependent, mode, &
+                                                       factor_baseline, dependent_baseline, ierr)
+        
+        integer(int32), intent(in) :: n_timepoints
+            !! Number of timepoints in both factor and dependent arrays
+        real(real64), intent(in)  :: factor(n_timepoints)
+            !! Factor time series, length n_timepoints
+        real(real64), intent(in)  :: dependent(n_timepoints)
+            !! Dependent variable time series, length n_timepoints
+        integer(int32), intent(in) :: mode
+            !! Baseline mode: 1=RAW, 2=MIN, 3=MEAN
+        real(real64), intent(out) :: factor_baseline
+            !! Computed baseline for factor
+        real(real64), intent(out) :: dependent_baseline
+            !! Computed baseline for dependent variable
+        integer(int32), intent(out) :: ierr
+            !! Error code
 
-    integer(int32) :: nF, nD
+        call set_ok(ierr)
+        factor_baseline = 0.0_real64
+        dependent_baseline = 0.0_real64
 
-    call set_ok(err)
-    bF = 0.0_real64
-    bD = 0.0_real64
+        ! Validate that n_timepoints > 0
+        call validate_dimension_size(n_timepoints, ierr)
+        if (is_err(ierr)) return
 
-    ! Infer time dimension from array sizes
-    nF = size(F)
-    nD = size(D)
+        select case (mode)
 
-    ! F and D must have same length
-    if (nF /= nD) then
-        call set_err(err, ERR_INVALID_INPUT)
-        return
-    end if
+        case (BASELINE_RAW)
+            ! Raw contributions: no centering
+            factor_baseline = 0.0_real64
+            dependent_baseline = 0.0_real64
 
-    ! Validate that T > 0 etc.
-    call validate_dimension_size(nF, err)
-    if (is_err(err)) return
+        case (BASELINE_MIN)
+            ! Minimum-centered contributions
+            factor_baseline = minval(factor)
+            dependent_baseline = minval(dependent)
 
-    select case (mode)
+        case (BASELINE_MEAN)
+            ! Mean-centered contributions
+            factor_baseline = sum(factor) / real(n_timepoints, kind=real64)
+            dependent_baseline = sum(dependent) / real(n_timepoints, kind=real64)
 
-    case (BASELINE_RAW)
-        ! Raw contributions: bF = 0, bD = 0
-        bF = 0.0_real64
-        bD = 0.0_real64
+        case default
+            call set_err(ierr, ERR_INVALID_INPUT)
+            return
+        end select
 
-    case (BASELINE_MIN)
-        ! Minimum-centred contributions:
-        ! bF = min_t(F_t), bD = min_t(D_t)
-        bF = minval(F)
-        bD = minval(D)
+        ! Validate that baselines are finite (non-NaN, non-Inf)
+        call validate_in_range_real(factor_baseline, ierr)
+        call validate_in_range_real(dependent_baseline, ierr)
 
-    case (BASELINE_MEAN)
-        ! Mean-centred contributions:
-        ! bF = mean_t(F_t), bD = mean_t(D_t)
-        bF = sum(F) / real(nF, kind=real64)
-        bD = sum(D) / real(nF, kind=real64)
-
-    case default
-        call set_err(err, ERR_INVALID_INPUT)
-        return
-    end select
-
-    ! NaN guard (propagate ERR_NAN_INF like other routines)
-    if (ieee_is_nan(bF) .or. ieee_is_nan(bD)) then
-        call set_err(err, ERR_NAN_INF)
-        bF = 0.0_real64
-        bD = 0.0_real64
-        return
-    end if
-
-end subroutine compute_baselines_factor_dependent
+    end subroutine compute_baselines_factor_dependent
 
 
 
@@ -977,73 +964,35 @@ subroutine process_trajectories_flat_C(trajectories, n_factors, n_samples, n_tim
         call logical_as_c_int(outliers_spike_contrib, outliers_spike_contrib_int)
     end if    
 end subroutine process_trajectories_flat_C
-subroutine compute_baselines_factor_dependent_c(F, D, n_timepoints, mode, bF, bD, ierr) &
+subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints, mode, &
+                                               factor_baseline, dependent_baseline, ierr) &
     bind(C, name="tox_compute_baselines_factor_dependent")
 
     use tox_trajectory_contribution_analysis, only: compute_baselines_factor_dependent
-    use, intrinsic :: iso_c_binding,   only: c_double, c_int
-    use, intrinsic :: iso_fortran_env, only: int32, real64
-    use tox_errors, only: set_ok, set_err, ERR_ALLOC_FAIL
+    use, intrinsic :: iso_c_binding, only: c_double, c_int
     M_USE_NULL_VALIDATION
     implicit none
 
-    !! ------------------------------
-    !! C-visible arguments
-    !! ------------------------------
-    integer(c_int), intent(in),  target :: n_timepoints
-    real(c_double), intent(in),  target :: F(n_timepoints)
-    real(c_double), intent(in),  target :: D(n_timepoints)
-    integer(c_int), intent(in),  target :: mode
-    real(c_double), intent(out), target :: bF
-    real(c_double), intent(out), target :: bD
-    integer(c_int), intent(out), target :: ierr
 
-    !! ------------------------------
-    !! Internal
-    !! ------------------------------
-    integer(int32) :: nt_int32, mode_int32, ierr_int32
-    integer(int32) :: i
-    real(real64), allocatable :: F_f(:), D_f(:)
-    real(real64) :: bF_f, bD_f
+    integer(c_int), intent(in),  target :: n_timepoints
+    real(c_double), intent(in),  target :: factor(n_timepoints)
+    real(c_double), intent(in),  target :: dependent(n_timepoints)
+    integer(c_int), intent(in),  target :: mode
+    real(c_double), intent(out), target :: factor_baseline
+    real(c_double), intent(out), target :: dependent_baseline
+    integer(c_int), intent(out), target :: ierr
 
     !! Null-pointer validation 
     M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_timepoints)
-    M_CHECK_NON_NULL(F)
-    M_CHECK_NON_NULL(D)
+    M_CHECK_NON_NULL(factor)
+    M_CHECK_NON_NULL(dependent)
     M_CHECK_NON_NULL(mode)
-    M_CHECK_NON_NULL(bF)
-    M_CHECK_NON_NULL(bD)
+    M_CHECK_NON_NULL(factor_baseline)
+    M_CHECK_NON_NULL(dependent_baseline)
 
-    call set_ok(ierr_int32)
-
-    !! Convert from C integers to Fortran
-    nt_int32   = int(n_timepoints, kind=int32)
-    mode_int32 = int(mode,         kind=int32)
-
-    !! Allocate Fortran copies
-    allocate(F_f(nt_int32), D_f(nt_int32), stat=ierr_int32)
-    if (ierr_int32 /= 0) then
-        call set_err(ierr_int32, ERR_ALLOC_FAIL)
-        ierr = int(ierr_int32, kind=c_int)
-        return
-    end if
-
-    !! Copy raw C memory → Fortran real64 precision
-    do i = 1, nt_int32
-        F_f(i) = real(F(i), kind=real64)
-        D_f(i) = real(D(i), kind=real64)
-    end do
-
-    !! Call the pure Fortran implementation
-    call compute_baselines_factor_dependent(F_f, D_f, mode_int32, bF_f, bD_f, ierr_int32)
-
-    !! Return results to C
-    bF   = real(bF_f, kind=c_double)
-    bD   = real(bD_f, kind=c_double)
-    ierr = int(ierr_int32, kind=c_int)
-
-    !! Cleanup
-    deallocate(F_f, D_f)
+    !! Call Fortran subroutine directly (no type conversion needed)
+    call compute_baselines_factor_dependent(n_timepoints, factor, dependent, mode, &
+                                           factor_baseline, dependent_baseline, ierr)
 
 end subroutine compute_baselines_factor_dependent_c

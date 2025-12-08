@@ -2534,6 +2534,7 @@ def tox_compute_baselines_factor_dependent(factor, dependent, mode):
         raise ValueError("factor and dependent must be 1D arrays")
     
     # Prepare C wrapper arguments
+    n_timepoints_c = ctypes.c_int(len(factor))
     mode_c = ctypes.c_int(mode)
     baseline_factor = ctypes.c_double(0.0)
     baseline_dependent = ctypes.c_double(0.0)
@@ -2542,11 +2543,12 @@ def tox_compute_baselines_factor_dependent(factor, dependent, mode):
     # Setup C wrapper with proper type annotations
     compute_baselines_c = lib.tox_compute_baselines_factor_dependent
     compute_baselines_c.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # factor F
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # dependent D
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # factor
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # dependent
+        ctypes.POINTER(ctypes.c_int),                                     # n_timepoints
         ctypes.POINTER(ctypes.c_int),                                     # mode
-        ctypes.POINTER(ctypes.c_double),                                  # baseline_factor bF
-        ctypes.POINTER(ctypes.c_double),                                  # baseline_dependent bD
+        ctypes.POINTER(ctypes.c_double),                                  # baseline_factor
+        ctypes.POINTER(ctypes.c_double),                                  # baseline_dependent
         ctypes.POINTER(ctypes.c_int)                                      # error code ierr
     ]
     compute_baselines_c.restype = None
@@ -2555,6 +2557,7 @@ def tox_compute_baselines_factor_dependent(factor, dependent, mode):
     compute_baselines_c(
         factor,
         dependent,
+        ctypes.byref(n_timepoints_c),
         ctypes.byref(mode_c),
         ctypes.byref(baseline_factor),
         ctypes.byref(baseline_dependent),
