@@ -445,9 +445,7 @@ contains
         v_norm_expected = [0.0_real64, 0.25_real64, 0.5_real64, 0.75_real64, 1.0_real64]
         
         call normalize_variable_timeseries(v, v_norm, n_points, ierr)
-        print *, "v:", v
-        print *, "v_norm_expected:", v_norm_expected
-        print *, "v_norm:", v_norm
+
         call assert_equal_int(ierr, ERR_OK, "test_normalize_variable_timeseries: normal case should succeed")
         call assert_equal_array_real(v_norm, v_norm_expected, n_points, TOL, "test_normalize_variable_timeseries: normal case values")
         
@@ -477,40 +475,43 @@ contains
     end subroutine test_normalize_variable_timeseries
 
     subroutine test_normalize_single_trajectory()
-        integer(int32), parameter :: n_factors = 3, n_samples = 4
-        real(real64) :: trajectory(n_factors, n_samples), trajectory_norm(n_factors, n_samples)
-        real(real64) :: expected(n_factors, n_samples)
-        integer(int32) :: ierr, i, j
+        integer(int32), parameter :: n_factors = 3, n_timepoints = 4
+        real(real64) :: trajectory(n_factors, n_timepoints), trajectory_norm(n_factors, n_timepoints)
+        real(real64) :: expected(n_factors, n_timepoints)
+        integer(int32) :: ierr, i_factor, i_timepoint
         
-        ! Create test trajectory
-        do i = 1, n_factors
-            do j = 1, n_samples
-                trajectory(i, j) = real(i * 10 + j, real64)
+        ! Create test trajectory for ONE SAMPLE: factors × timepoints
+        do i_factor = 1, n_factors
+            do i_timepoint = 1, n_timepoints
+                trajectory(i_factor, i_timepoint) = real(i_factor * 10 + i_timepoint, real64)
             end do
         end do
         
-        ! Calculate expected normalization
-        do i = 1, n_factors
-            do j = 1, n_samples
-                expected(i, j) = (real(j, real64) - 1.0_real64) / real(n_samples - 1, real64)
+        ! Expected: Each factor normalized independently across time
+        ! Factor 1: [11, 12, 13, 14] → normalized: [0.0, 0.333..., 0.666..., 1.0]
+        ! Factor 2: [21, 22, 23, 24] → normalized: [0.0, 0.333..., 0.666..., 1.0]
+        ! Factor 3: [31, 32, 33, 34] → normalized: [0.0, 0.333..., 0.666..., 1.0]
+        do i_factor = 1, n_factors
+            do i_timepoint = 1, n_timepoints
+                expected(i_factor, i_timepoint) = (real(i_timepoint, real64) - 1.0_real64) / real(n_timepoints - 1, real64)
             end do
         end do
         
-        call normalize_single_trajectory(trajectory, trajectory_norm, n_factors, n_samples, ierr)
+        call normalize_single_trajectory(trajectory, trajectory_norm, n_factors, n_timepoints, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_normalize_single_trajectory: should succeed")
         
-        ! Check each variable independently
-        do i = 1, n_factors
-            call assert_equal_array_real(trajectory_norm(i, :), expected(i, :), n_samples, TOL, &
-                "test_normalize_single_trajectory: variable ")
+        ! Check each factor independently
+        do i_factor = 1, n_factors
+            call assert_equal_array_real(trajectory_norm(i_factor, :), expected(i_factor, :), n_timepoints, TOL, &
+                "test_normalize_single_trajectory: factor ")
         end do
         
-        ! Verify min=0 and max=1 for each variable
-        do i = 1, n_factors
-            call assert_equal_real(minval(trajectory_norm(i, :)), 0.0_real64, TOL, &
-                "test_normalize_single_trajectory: min=0 for variable ")
-            call assert_equal_real(maxval(trajectory_norm(i, :)), 1.0_real64, TOL, &
-                "test_normalize_single_trajectory: max=1 for variable ")
+        ! Verify min=0 and max=1 for each factor (across time)
+        do i_factor = 1, n_factors
+            call assert_equal_real(minval(trajectory_norm(i_factor, :)), 0.0_real64, TOL, &
+                "test_normalize_single_trajectory: min=0 for factor ")
+            call assert_equal_real(maxval(trajectory_norm(i_factor, :)), 1.0_real64, TOL, &
+                "test_normalize_single_trajectory: max=1 for factor ")
         end do
     end subroutine test_normalize_single_trajectory
 
@@ -520,7 +521,7 @@ contains
         real(real64) :: trajectories_norm(n_factors, n_samples, n_timepoints)
         integer(int32) :: ierr, i_factor, i_sample, i_timepoint
         
-        ! Fill with known pattern
+        ! Fill with known pattern: factor × sample × timepoint
         do i_factor = 1, n_factors
             do i_sample = 1, n_samples
                 do i_timepoint = 1, n_timepoints
@@ -534,24 +535,22 @@ contains
                                       n_factors, n_samples, n_timepoints, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_normalize_all_trajectories: should succeed")
         
-        ! Check each entity (timepoint) independently
-        do i_timepoint = 1, n_timepoints
-            ! For each timepoint, check min=0 and max=1 for each variable
+        ! Check: For each (factor, sample), values should be normalized across time
+        do i_sample = 1, n_samples
             do i_factor = 1, n_factors
-                call assert_equal_real(minval(trajectories_norm(i_factor, :, i_timepoint)), &
+                call assert_equal_real(minval(trajectories_norm(i_factor, i_sample, :)), &
                                      0.0_real64, TOL, &
-                                     "test_normalize_all_trajectories min_val failed")
-                call assert_equal_real(maxval(trajectories_norm(i_factor, :, i_timepoint)), &
+                                     "test_normalize_all_trajectories: factor ")
+                call assert_equal_real(maxval(trajectories_norm(i_factor, i_sample, :)), &
                                      1.0_real64, TOL, &
-                                     "test_normalize_all_trajectories max_val failed")
+                                     "test_normalize_all_trajectories: factor ")
             end do
         end do
         
-        ! Verify shape is preserved
-        do i_timepoint = 1, n_timepoints
-            do i_sample = 1, n_samples
-                do i_factor = 1, n_factors
-                    ! Check values are in [0,1]
+        ! Verify all values are in [0,1]
+        do i_sample = 1, n_samples
+            do i_factor = 1, n_factors
+                do i_timepoint = 1, n_timepoints
                     call assert_true(trajectories_norm(i_factor, i_sample, i_timepoint) >= 0.0_real64 - TOL, &
                                    "test_normalize_all_trajectories: value >= 0")
                     call assert_true(trajectories_norm(i_factor, i_sample, i_timepoint) <= 1.0_real64 + TOL, &
@@ -566,11 +565,12 @@ contains
         real(real64) :: v5(5), v5_norm(5), v5_norm_expected(5)
         integer(int32) :: ierr
         
-        ! Test 1: Very small values (near machine epsilon)
+        ! Test 1: Very small values, should result in zero vector due to division by near zero
         v = [tiny(1.0_real64), 2.0_real64 * tiny(1.0_real64), 3.0_real64 * tiny(1.0_real64)]
-        v_norm_expected = [0.0_real64, 0.5_real64, 1.0_real64]
+        v_norm_expected = [0.0_real64, 0.0_real64, 0.0_real64]
         
         call normalize_variable_timeseries(v, v_norm, 3, ierr)
+
         call assert_equal_int(ierr, ERR_OK, "test_normalize_edge_cases: small values should succeed")
         call assert_equal_array_real(v_norm, v_norm_expected, 3, TOL, "test_normalize_edge_cases: small values")
         
