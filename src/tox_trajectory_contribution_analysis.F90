@@ -227,6 +227,7 @@ pure subroutine compute_all_contributions_c(trajectories, n_factors, n_samples, 
     use tox_conversions, only: c_char_1d_as_string
     use tox_errors, only: is_err
     M_USE_NULL_VALIDATION
+    implicit none
 
     integer(c_int), intent(in), target :: n_factors
         !! number of factors
@@ -295,6 +296,7 @@ pure subroutine compute_contributions_c(factor, dependent, n_dims, mode, local_c
     use tox_conversions, only: c_char_1d_as_string
     use tox_errors, only: is_err
     M_USE_NULL_VALIDATION
+    implicit none
 
     ! Arguments mapped to C types
     integer(c_int), intent(in), target :: n_dims
