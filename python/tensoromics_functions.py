@@ -3393,3 +3393,117 @@ def tox_detect_dosage_effect(ancestor, genes,
         "n_results": n_results.value,
         "results": results
     }
+
+def tox_normalize_variable_timeseries(v):
+    """
+    Normalize a single variable across time using min-max scaling.
+    
+    Args:
+        v (array-like): 1D time series to normalize (length = n_points)
+        
+    Returns:
+        np.ndarray: Normalized time series in [0,1]
+        
+    Raises:
+        RuntimeError: If normalization fails
+    """
+    v_arr = np.asfortranarray(v, dtype=np.float64)
+    n_points = ctypes.c_int(len(v_arr))
+    v_norm = np.empty_like(v_arr)
+    ierr = ctypes.c_int(0)
+    
+    normalize_c = lib.normalize_variable_timeseries_C
+    normalize_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # v
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # v_norm
+        ctypes.POINTER(ctypes.c_int),                                    # n_points
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
+    ]
+    normalize_c.restype = None
+    
+    normalize_c(v_arr, v_norm, ctypes.byref(n_points), ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    _readonly(v_norm)
+    return v_norm
+
+
+def tox_normalize_single_trajectory(trajectory):
+    """
+    Normalize all factors in a single trajectory independently across time.
+    
+    Args:
+        trajectory (array-like): 2D array (n_factors × n_timepoints) for one sample
+        
+    Returns:
+        np.ndarray: Normalized trajectory (n_factors × n_timepoints) in [0,1]
+        
+    Raises:
+        RuntimeError: If normalization fails
+    """
+    traj_arr = np.asfortranarray(trajectory, dtype=np.float64)
+    n_factors, n_timepoints = traj_arr.shape
+    
+    n_factors_c = ctypes.c_int(n_factors)
+    n_timepoints_c = ctypes.c_int(n_timepoints)
+    traj_norm = np.empty_like(traj_arr)
+    ierr = ctypes.c_int(0)
+    
+    normalize_c = lib.normalize_single_trajectory_C
+    normalize_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # trajectory
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # trajectory_norm
+        ctypes.POINTER(ctypes.c_int),                                    # n_factors
+        ctypes.POINTER(ctypes.c_int),                                    # n_timepoints
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
+    ]
+    normalize_c.restype = None
+    
+    normalize_c(traj_arr, traj_norm, ctypes.byref(n_factors_c), 
+                ctypes.byref(n_timepoints_c), ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    _readonly(traj_norm)
+    return traj_norm
+
+
+def tox_normalize_all_trajectories(trajectories):
+    """
+    Normalize all trajectories across multiple entities.
+    
+    Args:
+        trajectories (array-like): 3D array (n_factors × n_samples × n_timepoints)
+        
+    Returns:
+        np.ndarray: Normalized trajectories (n_factors × n_samples × n_timepoints) in [0,1]
+        
+    Raises:
+        RuntimeError: If normalization fails
+    """
+    traj_arr = np.asfortranarray(trajectories, dtype=np.float64)
+    n_factors, n_samples, n_timepoints = traj_arr.shape
+    
+    n_factors_c = ctypes.c_int(n_factors)
+    n_samples_c = ctypes.c_int(n_samples)
+    n_timepoints_c = ctypes.c_int(n_timepoints)
+    traj_norm = np.empty_like(traj_arr)
+    ierr = ctypes.c_int(0)
+    
+    normalize_c = lib.normalize_all_trajectories_C
+    normalize_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # trajectories
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # trajectories_norm
+        ctypes.POINTER(ctypes.c_int),                                    # n_factors
+        ctypes.POINTER(ctypes.c_int),                                    # n_samples
+        ctypes.POINTER(ctypes.c_int),                                    # n_timepoints
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
+    ]
+    normalize_c.restype = None
+    
+    normalize_c(traj_arr, traj_norm, ctypes.byref(n_factors_c), 
+                ctypes.byref(n_samples_c), ctypes.byref(n_timepoints_c), 
+                ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    _readonly(traj_norm)
+    return traj_norm

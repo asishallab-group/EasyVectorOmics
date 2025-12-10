@@ -8,7 +8,7 @@
 doc/
 
 # ignore test files
-test_*
+# test_*
 manifest.txt
 
 *.zip
