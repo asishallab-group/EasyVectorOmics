@@ -2497,6 +2497,82 @@ def tox_spike_contribution(factor, dependent, mode):
     return contribution
 
 
+def tox_compute_baselines_factor_dependent(factor, dependent, mode):
+    """
+    Compute scalar baselines for a factor and dependent variable.
+    
+    Calculates baseline values for two time series based on the specified mode:
+    - BASELINE_RAW (1): No centering, baseline = 0
+    - BASELINE_MIN (2): Minimum-centered baseline
+    - BASELINE_MEAN (3): Mean-centered baseline
+
+    Args:
+        factor (np.ndarray): 1D array of shape (n_timepoints,) — factor time series
+        dependent (np.ndarray): 1D array of shape (n_timepoints,) — dependent time series
+        mode (int): Baseline computation mode:
+            - 1 (BASELINE_RAW): No centering, reference 0
+            - 2 (BASELINE_MIN): Minimum-centered baseline
+            - 3 (BASELINE_MEAN): Mean-centered baseline
+
+    Returns:
+        dict: Dictionary containing:
+            - 'baseline_factor': float, baseline value for factor
+            - 'baseline_dependent': float, baseline value for dependent variable
+
+    Raises:
+        ValueError: If factor and dependent have different lengths
+        RuntimeError: If error occurs during computation (invalid mode, etc.)
+    """
+    # Input validation and conversion
+    factor = np.ascontiguousarray(factor, dtype=np.float64)
+    dependent = np.ascontiguousarray(dependent, dtype=np.float64)
+    
+    if factor.shape != dependent.shape:
+        raise ValueError("factor and dependent must have the same shape")
+    
+    if factor.ndim != 1:
+        raise ValueError("factor and dependent must be 1D arrays")
+    
+    # Prepare C wrapper arguments
+    n_timepoints_c = ctypes.c_int(len(factor))
+    mode_c = ctypes.c_int(mode)
+    baseline_factor = ctypes.c_double(0.0)
+    baseline_dependent = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper with proper type annotations
+    compute_baselines_c = lib.tox_compute_baselines_factor_dependent
+    compute_baselines_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # factor
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # dependent
+        ctypes.POINTER(ctypes.c_int),                                     # n_timepoints
+        ctypes.POINTER(ctypes.c_int),                                     # mode
+        ctypes.POINTER(ctypes.c_double),                                  # baseline_factor
+        ctypes.POINTER(ctypes.c_double),                                  # baseline_dependent
+        ctypes.POINTER(ctypes.c_int)                                      # error code ierr
+    ]
+    compute_baselines_c.restype = None
+    
+    # Call Fortran routine via C wrapper
+    compute_baselines_c(
+        factor,
+        dependent,
+        ctypes.byref(n_timepoints_c),
+        ctypes.byref(mode_c),
+        ctypes.byref(baseline_factor),
+        ctypes.byref(baseline_dependent),
+        ctypes.byref(ierr)
+    )
+    
+    # Error handling
+    check_err_code(ierr.value)
+    
+    return {
+        'baseline_factor': baseline_factor.value,
+        'baseline_dependent': baseline_dependent.value
+    }
+
+
 def tox_calc_contributions(trajectories, i_factor, dependent_idx, mode):
     """
     Wrapper for calc_contributions_c: calculates spike and integrated contributions using internal allocation.
