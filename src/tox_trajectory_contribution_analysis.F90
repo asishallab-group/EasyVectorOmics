@@ -12,14 +12,22 @@ module tox_trajectory_contribution_analysis
     integer(int32), parameter :: BASELINE_MEAN = 3
 contains
 
+    !> This routine performs contribution analysis for a specific factor–dependent pair, no input validation
     pure subroutine compute_contributions_helper(factor, dependent, n_dims, mode, local_contributions, total_contribution, ierr)
         integer(int32), intent(in) :: n_dims
+            !! Number of elements in `factor` and `dependent`
         real(real64), dimension(n_dims), intent(in) :: factor
+            !! Factor time series, length n_timepoints
         real(real64), dimension(n_dims), intent(in) :: dependent
+            !! Dependent variable time series, length n_timepoints
         integer(int32), intent(in) :: mode
+            !! Baseline mode: 1=RAW, 2=MIN, 3=MEAN
         real(real64), dimension(n_dims), intent(out) :: local_contributions
+            !! Per-element contributions
         real(real64), intent(out) :: total_contribution
+            !! Total contribution (`sum(local_contributions)`)
         integer(int32), intent(out) :: ierr
+            !! Error code
 
         integer(int32) :: i_dim
         real(real64) :: factor_baseline, dependent_baseline
@@ -36,14 +44,22 @@ contains
         end do
     end subroutine compute_contributions_helper
 
+    !> This routine performs contribution analysis for a specific factor–dependent pair, including input validation
     pure subroutine compute_contributions(factor, dependent, n_dims, mode, local_contributions, total_contribution, ierr)
         integer(int32), intent(in) :: n_dims
+            !! Number of elements in `factor` and `dependent`
         real(real64), dimension(n_dims), intent(in) :: factor
+            !! Factor time series, length n_timepoints
         real(real64), dimension(n_dims), intent(in) :: dependent
+            !! Dependent variable time series, length n_timepoints
         integer(int32), intent(in) :: mode
+            !! Baseline mode: 1=RAW, 2=MIN, 3=MEAN
         real(real64), dimension(n_dims), intent(out) :: local_contributions
+            !! Per-element contributions
         real(real64), intent(out) :: total_contribution
+            !! Total contribution (`sum(local_contributions)`)
         integer(int32), intent(out) :: ierr
+            !! Error code
 
         call set_ok(ierr)
 
@@ -56,21 +72,35 @@ contains
         call compute_contributions_helper(factor, dependent, n_dims, mode, local_contributions, total_contribution, ierr)
     end subroutine compute_contributions
 
+    !> This routine performs contribution analysis for every selected factor–dependent pair
     pure subroutine compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, mode, local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
         integer(int32), intent(in) :: n_factors
+            !! number of factors
         integer(int32), intent(in) :: n_samples
+            !! number of samples
         integer(int32), intent(in) :: n_timepoints
+            !! number of timepoints
         integer(int32), intent(in) :: n_selected_factors
+            !! number of selected factors in `factor_indices`
         integer(int32), intent(in) :: n_selected_dependents
+            !! number of selected dependents in `dependent_indices`
         real(real64), dimension(n_factors, n_samples, n_timepoints), intent(in) :: trajectories
         integer(int32), dimension(n_selected_factors), intent(in) :: factor_indices
+            !! indices of factors to compute the contributions for
         integer(int32), dimension(n_selected_dependents), intent(in) :: dependent_indices
+            !! indices of dependents to compute the contributions for
         integer(int32), intent(in) :: mode
-        real(real64), dimension(n_samples, n_selected_dependents, n_timepoints), intent(out) :: local_contributions
-        real(real64), dimension(n_selected_dependents, n_timepoints), intent(out) :: total_contributions
-        real(real64), dimension(n_samples), intent(out) :: temp_factor
-        real(real64), dimension(n_samples), intent(out) :: temp_dependent
+            !! Baseline mode: 1=RAW, 2=MIN, 3=MEAN
+        real(real64), dimension(n_timepoints, n_selected_factors, n_selected_dependents, n_samples), intent(out) :: local_contributions
+            !! Per-timepoint contributions per sample-dependent-factor combination
+        real(real64), dimension(n_selected_factors, n_selected_dependents, n_samples), intent(out) :: total_contributions
+            !! Total contribution (`sum(local_contributions)`) per sample-dependent-factor combination
+        real(real64), dimension(n_timepoints), intent(out) :: temp_factor
+            !! Working array to hold the current handled factor in contiguous memory
+        real(real64), dimension(n_timepoints), intent(out) :: temp_dependent
+            !! Working array to hold the current handled dependent in contiguous memory
         integer(int32), intent(out) :: ierr
+            !! Error code
 
         integer(int32) :: i_timepoint, i_dependent, i_factor, i_sel_factor, i_sel_dependent, i_sample
 
@@ -81,25 +111,25 @@ contains
         call validate_dimension_size(n_timepoints, ierr)
         call validate_dimension_size(n_selected_factors, ierr)
         call validate_dimension_size(n_selected_dependents, ierr)
-        call validate_all_in_range_real(trajectories, n_timepoints * n_samples * n_samples, ierr)
+        call validate_all_in_range_real(trajectories, size(trajectories, kind=int32), ierr)
         call validate_all_in_range_int(factor_indices, n_selected_factors, ierr, min=1, max=n_factors)
         call validate_all_in_range_int(dependent_indices, n_selected_dependents, ierr, min=1, max=n_factors)
 
         if (is_err(ierr)) return
 
-        do i_timepoint = 1, n_timepoints
+        do i_sample = 1, n_samples
             do i_sel_dependent = 1, n_selected_dependents
                 i_dependent = dependent_indices(i_sel_dependent)
-                do i_sample = 1, n_samples
-                    temp_dependent = trajectories(i_dependent, i_sample, i_timepoint)
+                do i_timepoint = 1, n_timepoints
+                    temp_dependent(i_timepoint) = trajectories(i_dependent, i_sample, i_timepoint)
                 end do
                 do i_sel_factor = 1, n_selected_factors
                     i_factor = factor_indices(i_sel_factor)
-                    do i_sample = 1, n_samples
-                        temp_factor = trajectories(i_factor, i_sample, i_timepoint)
+                    do i_timepoint = 1, n_timepoints
+                        temp_factor(i_timepoint) = trajectories(i_factor, i_sample, i_timepoint)
                     end do
 
-                    call compute_contributions_helper(temp_factor, temp_dependent, n_samples, mode, local_contributions(:, i_dependent, i_timepoint), total_contributions(i_dependent, i_timepoint), ierr)
+                    call compute_contributions_helper(temp_factor, temp_dependent, n_timepoints, mode, local_contributions(:, i_sel_factor, i_sel_dependent, i_sample), total_contributions(i_sel_factor, i_sel_dependent, i_sample), ierr)
                     if (is_err(ierr)) return
                 end do
             end do
@@ -162,13 +192,150 @@ contains
     end subroutine compute_baselines_factor_dependent
 end module tox_trajectory_contribution_analysis
 
+!> C-compatible wrapper for [[tox_trajectory_contribution_analysis(module):compute_all_contributions(subroutine)]]
+pure subroutine compute_all_contributions_c(trajectories, n_factors, n_samples, n_timepoints, &
+    factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, mode, &
+    local_contributions, total_contributions, temp_factor, temp_dependent, ierr) &
+    bind(C, name="compute_all_contributions_c")
+
+    use, intrinsic :: iso_c_binding, only: c_int, c_double, c_char
+    use tox_trajectory_contribution_analysis, only: compute_all_contributions, BASELINE_RAW, BASELINE_MIN, BASELINE_MEAN
+    use tox_conversions, only: c_char_1d_as_string
+    use tox_errors, only: set_err, is_err, ERR_INVALID_INPUT, set_ok
+    M_USE_NULL_VALIDATION
+
+    integer(c_int), intent(in), target :: n_factors
+        !! number of factors
+    integer(c_int), intent(in), target :: n_samples
+        !! number of samples
+    integer(c_int), intent(in), target :: n_timepoints
+        !! number of timepoints
+    integer(c_int), intent(in), target :: n_selected_factors
+        !! number of selected factors in `factor_indices`
+    integer(c_int), intent(in), target :: n_selected_dependents
+        !! number of selected dependents in `dependent_indices`
+    real(c_double), dimension(n_factors, n_samples, n_timepoints), intent(in), target :: trajectories
+        !! trajectories array: (n_factors, n_samples, n_timepoints)
+    integer(c_int), dimension(n_selected_factors), intent(in), target :: factor_indices
+        !! indices of factors to compute the contributions for
+    integer(c_int), dimension(n_selected_dependents), intent(in), target :: dependent_indices
+        !! indices of dependents to compute the contributions for
+    character(len=1, kind=c_char), dimension(4), intent(in), target :: mode
+        !! Baseline mode: "raw", "min", "mean"
+    real(c_double), dimension(n_timepoints, n_selected_factors, n_selected_dependents, n_samples), intent(out), target :: local_contributions
+        !! Per-timepoint contributions per sample-dependent-factor combination
+    real(c_double), dimension(n_selected_factors, n_selected_dependents, n_samples), intent(out), target :: total_contributions
+        !! Total contribution (`sum(local_contributions)`) per sample-dependent-factor combination
+    real(c_double), dimension(n_timepoints), intent(out), target :: temp_factor
+        !! Working array to hold the current handled factor in contiguous memory
+    real(c_double), dimension(n_timepoints), intent(out), target :: temp_dependent
+        !! Working array to hold the current handled dependent in contiguous memory
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    character(len=:), allocatable :: mode_f
+
+    ! -------------------------------
+    ! Null checks
+    ! -------------------------------
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_factors)
+    M_CHECK_NON_NULL(n_samples)
+    M_CHECK_NON_NULL(n_timepoints)
+    M_CHECK_NON_NULL(n_selected_factors)
+    M_CHECK_NON_NULL(n_selected_dependents)
+    M_CHECK_NON_NULL(trajectories)
+    M_CHECK_NON_NULL(factor_indices)
+    M_CHECK_NON_NULL(dependent_indices)
+    M_CHECK_NON_NULL(mode)
+    M_CHECK_NON_NULL(local_contributions)
+    M_CHECK_NON_NULL(total_contributions)
+    M_CHECK_NON_NULL(temp_factor)
+    M_CHECK_NON_NULL(temp_dependent)
+
+    call set_ok(ierr)
+    call c_char_1d_as_string(mode, mode_f, ierr)
+    if (is_err(ierr)) return
+
+    select case (trim(mode_f))
+        case ("raw")
+            call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
+                factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, BASELINE_RAW, &
+                local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+        case ("min")
+            call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
+                factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, BASELINE_MIN, &
+                local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+        case ("mean")
+            call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
+                factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, BASELINE_MEAN, &
+                local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+        case default
+            call set_err(ierr, ERR_INVALID_INPUT)
+    end select
+end subroutine compute_all_contributions_c
+
+!> C-compatible wrapper for [[tox_trajectory_contribution_analysis(module):compute_contributions(subroutine)]]
+pure subroutine compute_contributions_c(factor, dependent, n_dims, mode, local_contributions, total_contribution, ierr) &
+    bind(C, name="compute_contributions_c")
+    use, intrinsic :: iso_c_binding, only: c_int, c_double, c_char
+    use tox_trajectory_contribution_analysis, only: compute_contributions, BASELINE_RAW, BASELINE_MIN, BASELINE_MEAN
+    use tox_conversions, only: c_char_1d_as_string
+    use tox_errors, only: is_err, set_err, ERR_INVALID_INPUT, set_ok
+    M_USE_NULL_VALIDATION
+
+    ! Arguments mapped to C types
+    integer(c_int), intent(in), target :: n_dims
+        !! Number of elements in `factor` and `dependent`
+    real(c_double), dimension(n_dims), intent(in), target :: factor
+        !! Factor time series
+    real(c_double), dimension(n_dims), intent(in), target :: dependent
+        !! Dependent variable time series
+    character(len=1, kind=c_char), dimension(4), intent(in), target :: mode
+        !! Baseline mode: "raw", "min", "mean"
+    real(c_double), dimension(n_dims), intent(out), target :: local_contributions
+        !! Per-element contributions
+    real(c_double), intent(out), target :: total_contribution
+        !! Total contribution
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    character(len=:), allocatable :: mode_f
+
+    ! Null checks
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_dims)
+    M_CHECK_NON_NULL(factor)
+    M_CHECK_NON_NULL(dependent)
+    M_CHECK_NON_NULL(mode)
+    M_CHECK_NON_NULL(local_contributions)
+    M_CHECK_NON_NULL(total_contribution)
+
+    call set_ok(ierr)
+    call c_char_1d_as_string(mode, mode_f, ierr)
+    if (is_err(ierr)) return
+
+    select case (trim(mode_f))
+        case ("raw")
+            call compute_contributions(factor, dependent, n_dims, BASELINE_RAW, local_contributions, total_contribution, ierr)
+        case ("min")
+            call compute_contributions(factor, dependent, n_dims, BASELINE_MIN, local_contributions, total_contribution, ierr)
+        case ("mean")
+            call compute_contributions(factor, dependent, n_dims, BASELINE_MEAN, local_contributions, total_contribution, ierr)
+        case default
+            call set_err(ierr, ERR_INVALID_INPUT)
+    end select
+end subroutine compute_contributions_c
+
 !> C-compatible wrapper for [[tox_trajectory_contribution_analysis(module):compute_baselines_factor_dependent(subroutine)]]
 subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints, mode, &
                                                factor_baseline, dependent_baseline, ierr) &
     bind(C, name="tox_compute_baselines_factor_dependent")
 
-    use tox_trajectory_contribution_analysis, only: compute_baselines_factor_dependent
-    use, intrinsic :: iso_c_binding, only: c_double, c_int
+    use tox_trajectory_contribution_analysis, only: compute_baselines_factor_dependent, BASELINE_RAW, BASELINE_MIN, BASELINE_MEAN
+    use, intrinsic :: iso_c_binding, only: c_double, c_int, c_char
+    use tox_conversions, only: c_char_1d_as_string
+    use tox_errors, only: is_err, set_err, ERR_INVALID_INPUT, set_ok
     M_USE_NULL_VALIDATION
     implicit none
 
@@ -178,14 +345,16 @@ subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints,
         !! Factor time series, length n_timepoints
     real(c_double), intent(in),  target :: dependent(n_timepoints)
         !! Dependent variable time series, length n_timepoints
-    integer(c_int), intent(in),  target :: mode
-        !! Baseline mode: 1=RAW, 2=MIN, 3=MEAN
+    character(len=1, kind=c_char), dimension(4), intent(in), target :: mode
+        !! Baseline mode: "raw", "min", "mean"
     real(c_double), intent(out), target :: factor_baseline
         !! Computed baseline for factor
     real(c_double), intent(out), target :: dependent_baseline
         !! Computed baseline for dependent variable
     integer(c_int), intent(out), target :: ierr
         !! Error code
+
+    character(len=:), allocatable :: mode_f
 
     !! Null-pointer validation 
     M_CHECK_IERR_NON_NULL
@@ -196,8 +365,18 @@ subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints,
     M_CHECK_NON_NULL(factor_baseline)
     M_CHECK_NON_NULL(dependent_baseline)
 
-    !! Call Fortran subroutine directly (no type conversion needed)
-    call compute_baselines_factor_dependent(n_timepoints, factor, dependent, mode, &
-                                           factor_baseline, dependent_baseline, ierr)
+    call set_ok(ierr)
+    call c_char_1d_as_string(mode, mode_f, ierr)
+    if (is_err(ierr)) return
 
+    select case (trim(mode_f))
+        case ("raw")
+            call compute_baselines_factor_dependent(n_timepoints, factor, dependent, BASELINE_RAW, factor_baseline, dependent_baseline, ierr)
+        case ("min")
+            call compute_baselines_factor_dependent(n_timepoints, factor, dependent, BASELINE_MIN, factor_baseline, dependent_baseline, ierr)
+        case ("mean")
+            call compute_baselines_factor_dependent(n_timepoints, factor, dependent, BASELINE_MEAN, factor_baseline, dependent_baseline, ierr)
+        case default
+            call set_err(ierr, ERR_INVALID_INPUT)
+    end select
 end subroutine compute_baselines_factor_dependent_c

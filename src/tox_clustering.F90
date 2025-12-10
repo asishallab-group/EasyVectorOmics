@@ -531,7 +531,7 @@ end subroutine k_means_clustering_c
 subroutine linkage_clustering_c(distances, n_points, merge_i, merge_j, heights, cluster_sizes, method, ierr) bind(C, name="linkage_clustering_c")
     use tox_clustering, only: linkage_clustering, METHOD_WARD, METHOD_AVERAGE, METHOD_WEIGHTED
     use, intrinsic :: iso_c_binding, only: c_int, c_double, c_char
-    use tox_errors, only: is_err, set_err, ERR_INVALID_INPUT
+    use tox_errors, only: is_err, set_err, ERR_INVALID_INPUT, set_ok
     use tox_conversions, only: c_char_1d_as_string
     M_USE_NULL_VALIDATION
     implicit none
@@ -575,6 +575,7 @@ subroutine linkage_clustering_c(distances, n_points, merge_i, merge_j, heights, 
     M_CHECK_NON_NULL(cluster_sizes)
     M_CHECK_NON_NULL(method)
 
+    call set_ok(ierr)
     call c_char_1d_as_string(method, method_f, ierr)
     if (is_err(ierr)) return
 
