@@ -197,7 +197,7 @@ contains
             !! mode string ("min", "mean", "raw")
         integer(int32), intent(out) :: mode
             !! integer representation for the mode passed by `str`
-        integer(int32), intent(in) :: ierr
+        integer(int32), intent(out) :: ierr
             !! Error code
 
         call set_ok(ierr)
