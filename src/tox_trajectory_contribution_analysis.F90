@@ -190,6 +190,29 @@ contains
         call validate_in_range_real(dependent_baseline, ierr)
 
     end subroutine compute_baselines_factor_dependent
+
+    !> Helper to map baseline mode string ("min", "mean", "raw") to integer constant
+    pure subroutine get_baseline_mode(str, mode, ierr)
+        character(len=*), intent(in) :: str
+            !! mode string ("min", "mean", "raw")
+        integer(int32), intent(out) :: mode
+            !! integer representation for the mode passed by `str`
+        integer(int32), intent(in) :: ierr
+            !! Error code
+
+        call set_ok(ierr)
+
+        select case (trim(str))
+            case ("raw")
+                mode = BASELINE_RAW
+            case ("min")
+                mode = BASELINE_MIN
+            case ("mean")
+                mode = BASELINE_MEAN
+            case default
+                call set_err(ierr, ERR_INVALID_INPUT)
+        end select
+    end subroutine get_baseline_mode
 end module tox_trajectory_contribution_analysis
 
 !> C-compatible wrapper for [[tox_trajectory_contribution_analysis(module):compute_all_contributions(subroutine)]]
@@ -198,10 +221,11 @@ pure subroutine compute_all_contributions_c(trajectories, n_factors, n_samples, 
     local_contributions, total_contributions, temp_factor, temp_dependent, ierr) &
     bind(C, name="compute_all_contributions_c")
 
+    use, intrinsic :: iso_fortran_env, only: int32
     use, intrinsic :: iso_c_binding, only: c_int, c_double, c_char
-    use tox_trajectory_contribution_analysis, only: compute_all_contributions, BASELINE_RAW, BASELINE_MIN, BASELINE_MEAN
+    use tox_trajectory_contribution_analysis, only: compute_all_contributions, get_baseline_mode
     use tox_conversions, only: c_char_1d_as_string
-    use tox_errors, only: set_err, is_err, ERR_INVALID_INPUT, set_ok
+    use tox_errors, only: is_err
     M_USE_NULL_VALIDATION
 
     integer(c_int), intent(in), target :: n_factors
@@ -234,10 +258,8 @@ pure subroutine compute_all_contributions_c(trajectories, n_factors, n_samples, 
         !! Error code
 
     character(len=:), allocatable :: mode_f
+    integer(int32) :: mode_int
 
-    ! -------------------------------
-    ! Null checks
-    ! -------------------------------
     M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_factors)
     M_CHECK_NON_NULL(n_samples)
@@ -253,35 +275,25 @@ pure subroutine compute_all_contributions_c(trajectories, n_factors, n_samples, 
     M_CHECK_NON_NULL(temp_factor)
     M_CHECK_NON_NULL(temp_dependent)
 
-    call set_ok(ierr)
     call c_char_1d_as_string(mode, mode_f, ierr)
     if (is_err(ierr)) return
 
-    select case (trim(mode_f))
-        case ("raw")
-            call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
-                factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, BASELINE_RAW, &
-                local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
-        case ("min")
-            call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
-                factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, BASELINE_MIN, &
-                local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
-        case ("mean")
-            call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
-                factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, BASELINE_MEAN, &
-                local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
-        case default
-            call set_err(ierr, ERR_INVALID_INPUT)
-    end select
+    call get_baseline_mode(mode_f, mode_int, ierr)
+    if (is_err(ierr)) return
+    
+    call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
+        factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, mode_int, &
+        local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
 end subroutine compute_all_contributions_c
 
 !> C-compatible wrapper for [[tox_trajectory_contribution_analysis(module):compute_contributions(subroutine)]]
 pure subroutine compute_contributions_c(factor, dependent, n_dims, mode, local_contributions, total_contribution, ierr) &
     bind(C, name="compute_contributions_c")
+    use, intrinsic :: iso_fortran_env, only: int32
     use, intrinsic :: iso_c_binding, only: c_int, c_double, c_char
-    use tox_trajectory_contribution_analysis, only: compute_contributions, BASELINE_RAW, BASELINE_MIN, BASELINE_MEAN
+    use tox_trajectory_contribution_analysis, only: compute_contributions, get_baseline_mode
     use tox_conversions, only: c_char_1d_as_string
-    use tox_errors, only: is_err, set_err, ERR_INVALID_INPUT, set_ok
+    use tox_errors, only: is_err
     M_USE_NULL_VALIDATION
 
     ! Arguments mapped to C types
@@ -301,6 +313,7 @@ pure subroutine compute_contributions_c(factor, dependent, n_dims, mode, local_c
         !! Error code
 
     character(len=:), allocatable :: mode_f
+    integer(int32) :: mode_int
 
     ! Null checks
     M_CHECK_IERR_NON_NULL
@@ -311,20 +324,13 @@ pure subroutine compute_contributions_c(factor, dependent, n_dims, mode, local_c
     M_CHECK_NON_NULL(local_contributions)
     M_CHECK_NON_NULL(total_contribution)
 
-    call set_ok(ierr)
     call c_char_1d_as_string(mode, mode_f, ierr)
     if (is_err(ierr)) return
 
-    select case (trim(mode_f))
-        case ("raw")
-            call compute_contributions(factor, dependent, n_dims, BASELINE_RAW, local_contributions, total_contribution, ierr)
-        case ("min")
-            call compute_contributions(factor, dependent, n_dims, BASELINE_MIN, local_contributions, total_contribution, ierr)
-        case ("mean")
-            call compute_contributions(factor, dependent, n_dims, BASELINE_MEAN, local_contributions, total_contribution, ierr)
-        case default
-            call set_err(ierr, ERR_INVALID_INPUT)
-    end select
+    call get_baseline_mode(mode_f, mode_int, ierr)
+    if (is_err(ierr)) return
+
+    call compute_contributions(factor, dependent, n_dims, mode_int, local_contributions, total_contribution, ierr)
 end subroutine compute_contributions_c
 
 !> C-compatible wrapper for [[tox_trajectory_contribution_analysis(module):compute_baselines_factor_dependent(subroutine)]]
@@ -332,10 +338,11 @@ subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints,
                                                factor_baseline, dependent_baseline, ierr) &
     bind(C, name="tox_compute_baselines_factor_dependent")
 
-    use tox_trajectory_contribution_analysis, only: compute_baselines_factor_dependent, BASELINE_RAW, BASELINE_MIN, BASELINE_MEAN
+    use tox_trajectory_contribution_analysis, only: compute_baselines_factor_dependent, get_baseline_mode
+    use, intrinsic :: iso_fortran_env, only: int32
     use, intrinsic :: iso_c_binding, only: c_double, c_int, c_char
     use tox_conversions, only: c_char_1d_as_string
-    use tox_errors, only: is_err, set_err, ERR_INVALID_INPUT, set_ok
+    use tox_errors, only: is_err
     M_USE_NULL_VALIDATION
     implicit none
 
@@ -355,6 +362,7 @@ subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints,
         !! Error code
 
     character(len=:), allocatable :: mode_f
+    integer(int32) :: mode_int
 
     !! Null-pointer validation 
     M_CHECK_IERR_NON_NULL
@@ -365,18 +373,11 @@ subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints,
     M_CHECK_NON_NULL(factor_baseline)
     M_CHECK_NON_NULL(dependent_baseline)
 
-    call set_ok(ierr)
     call c_char_1d_as_string(mode, mode_f, ierr)
     if (is_err(ierr)) return
 
-    select case (trim(mode_f))
-        case ("raw")
-            call compute_baselines_factor_dependent(n_timepoints, factor, dependent, BASELINE_RAW, factor_baseline, dependent_baseline, ierr)
-        case ("min")
-            call compute_baselines_factor_dependent(n_timepoints, factor, dependent, BASELINE_MIN, factor_baseline, dependent_baseline, ierr)
-        case ("mean")
-            call compute_baselines_factor_dependent(n_timepoints, factor, dependent, BASELINE_MEAN, factor_baseline, dependent_baseline, ierr)
-        case default
-            call set_err(ierr, ERR_INVALID_INPUT)
-    end select
+    call get_baseline_mode(mode_f, mode_int, ierr)
+    if (is_err(ierr)) return
+
+    call compute_baselines_factor_dependent(n_timepoints, factor, dependent, mode_int, factor_baseline, dependent_baseline, ierr)
 end subroutine compute_baselines_factor_dependent_c
