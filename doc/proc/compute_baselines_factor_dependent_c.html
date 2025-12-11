@@ -10,7 +10,7 @@
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>serialize_complex_4d &ndash; TensorOmics</title>
+    <title>compute_baselines_factor_dependent_c &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -77,7 +77,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>serialize_complex_4d
+    <h1>compute_baselines_factor_dependent_c
       <small>Subroutine</small>
       
     </h1>
@@ -88,21 +88,20 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">18 statements</a>
+                 title=" 0.4% of total for procedures.">40 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/serialize_complex.F90"> Source File</a>
+              <a href="../src/tox_trajectory_contribution_analysis.F90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/serialize_complex.f90.html'>serialize_complex.F90</a></li>
-                <li class="breadcrumb-item"><a href='../module/serialize_complex.html'>serialize_complex</a></li>
-            <li class="breadcrumb-item active" aria-current="page">serialize_complex_4d</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">compute_baselines_factor_dependent_c</li>
           </ol>
         </nav>
       </div>
@@ -149,12 +148,25 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine serialize_complex_4d(arr, filename, ierr)  
+    <h2> subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints, mode, factor_baseline, dependent_baseline, ierr) bind(C, name="tox_compute_baselines_factor_dependent")  
 </h2>
-    
+        <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></li>
+                  <li class="list-inline-item"><a href='../module/tox_errors.html'>tox_errors</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
+              </ul>
+            </li>
+        </ul>
+      </div>
+    </div>
 
-    <p>Serialize a 4D complex(real64) array to a binary file.
-The file will contain a magic number, type code, dimension, shape, and the array data.</p>
+
+    <p>Call Fortran subroutine directly (no type conversion needed)</p>
 
 
     <h3>Arguments</h3>
@@ -170,47 +182,107 @@ The file will contain a magic number, type code, dimension, shape, and the array
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~47"></span>
-              complex(kind=real64),
+              <span class="anchor" id="variable-factor~6"></span>
+              real(kind=c_double),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              target
             </td>
             <td>::</td>
-            <td><strong>arr</strong>(:,:,:,:)</td>
+            <td><strong>factor</strong>(n_timepoints)</td>
             <td>
-                <p>array to save</p>
+                
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~69"></span>
-              character(len=*),
+              <span class="anchor" id="variable-dependent~6"></span>
+              real(kind=c_double),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              target
             </td>
             <td>::</td>
-            <td><strong>filename</strong></td>
+            <td><strong>dependent</strong>(n_timepoints)</td>
             <td>
-                <p>output filename</p>
+                
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~225"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-n_timepoints~22"></span>
+              integer(kind=c_int),
             </td>
-<td>intent(out)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              target
+            </td>
+            <td>::</td>
+            <td><strong>n_timepoints</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mode~16"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              target
+            </td>
+            <td>::</td>
+            <td><strong>mode</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-factor_baseline~2"></span>
+              real(kind=c_double),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              target
+            </td>
+            <td>::</td>
+            <td><strong>factor_baseline</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dependent_baseline~2"></span>
+              real(kind=c_double),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              target
+            </td>
+            <td>::</td>
+            <td><strong>dependent_baseline</strong></td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~133"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              target
             </td>
             <td>::</td>
             <td><strong>ierr</strong></td>
             <td>
-                <p>error code</p>
+                <p>Null-pointer validation</p>
             </td>
         </tr>
     </tbody>

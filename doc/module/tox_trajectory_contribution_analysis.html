@@ -88,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 4.2% of total for modules and submodules.">276 statements</a>
+                 title=" 4.7% of total for modules and submodules.">309 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -131,6 +131,9 @@
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/tox_trajectory_contribution_analysis.html#variable-mode_normal">MODE_NORMAL</a>
             <a class="list-group-item" href="../module/tox_trajectory_contribution_analysis.html#variable-mode_rap">MODE_RAP</a>
+            <a class="list-group-item" href="../module/tox_trajectory_contribution_analysis.html#variable-baseline_raw">BASELINE_RAW</a>
+            <a class="list-group-item" href="../module/tox_trajectory_contribution_analysis.html#variable-baseline_min">BASELINE_MIN</a>
+            <a class="list-group-item" href="../module/tox_trajectory_contribution_analysis.html#variable-baseline_mean">BASELINE_MEAN</a>
         </div>
       </div>
     </div>
@@ -156,6 +159,7 @@
             <a class="list-group-item" href="../module/tox_trajectory_contribution_analysis.html#proc-spike_contribution">spike_contribution</a>
             <a class="list-group-item" href="../module/tox_trajectory_contribution_analysis.html#proc-calc_contributions">calc_contributions</a>
             <a class="list-group-item" href="../module/tox_trajectory_contribution_analysis.html#proc-calc_contributions_alloc">calc_contributions_alloc</a>
+            <a class="list-group-item" href="../module/tox_trajectory_contribution_analysis.html#proc-compute_baselines_factor_dependent">compute_baselines_factor_dependent</a>
             <a class="list-group-item" href="../module/tox_trajectory_contribution_analysis.html#proc-get_vec_across_samples">get_vec_across_samples</a>
             <a class="list-group-item" href="../module/tox_trajectory_contribution_analysis.html#proc-get_vec_across_timepoints">get_vec_across_timepoints</a>
             <a class="list-group-item" href="../module/tox_trajectory_contribution_analysis.html#proc-process_trajectories_alloc">process_trajectories_alloc</a>
@@ -188,8 +192,8 @@
                   <li class="list-inline-item"><a href='f42_utils.html'>f42_utils</a></li>
                   <li class="list-inline-item"><a href='safeguard.html'>safeguard</a></li>
                   <li class="list-inline-item"><a href='tox_errors.html'>tox_errors</a></li>
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/ieee_arithmetic'>ieee_arithmetic</a></li>
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/ieee_arithmetic'>ieee_arithmetic</a></li>
               </ul>
             </li>
         </ul>
@@ -242,6 +246,57 @@ parameter
             <td><strong>MODE_RAP</strong></td>
 <td> =</td>
                 <td>2</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-baseline_raw"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>BASELINE_RAW</strong></td>
+<td> =</td>
+                <td>1</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-baseline_min"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>BASELINE_MIN</strong></td>
+<td> =</td>
+                <td>2</td>
+            <td>
+                
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-baseline_mean"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>BASELINE_MEAN</strong></td>
+<td> =</td>
+                <td>3</td>
             <td>
                 
             </td>
@@ -311,7 +366,7 @@ There are two modes:</p><a href="../proc/trajectory_contribution.html" class="pu
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_timepoints~2"></span>
+              <span class="anchor" id="variable-n_timepoints~7"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -326,7 +381,7 @@ There are two modes:</p><a href="../proc/trajectory_contribution.html" class="pu
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mode"></span>
+              <span class="anchor" id="variable-mode~3"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -336,7 +391,7 @@ There are two modes:</p><a href="../proc/trajectory_contribution.html" class="pu
             <td>::</td>
             <td><strong>mode</strong></td>
             <td>
-<a href="../proc/trajectory_contribution.html#variable-mode" class="pull-right"><emph>Read more&hellip;</emph></a>
+<a href="../proc/trajectory_contribution.html#variable-mode~3" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -356,7 +411,7 @@ There are two modes:</p><a href="../proc/trajectory_contribution.html" class="pu
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~70"></span>
+              <span class="anchor" id="variable-ierr~118"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -431,7 +486,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_timepoints~3"></span>
+              <span class="anchor" id="variable-n_timepoints~8"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -446,7 +501,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mode~2"></span>
+              <span class="anchor" id="variable-mode~4"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -456,7 +511,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
             <td>::</td>
             <td><strong>mode</strong></td>
             <td>
-<a href="../proc/spike_contribution.html#variable-mode~2" class="pull-right"><emph>Read more&hellip;</emph></a>
+<a href="../proc/spike_contribution.html#variable-mode~4" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
@@ -476,7 +531,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~71"></span>
+              <span class="anchor" id="variable-ierr~119"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -516,7 +571,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-trajectories~2"></span>
+              <span class="anchor" id="variable-trajectories"></span>
               real(kind=real64),
             </td>
 <td>intent(in),</td>
@@ -531,7 +586,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_factors~2"></span>
+              <span class="anchor" id="variable-n_factors"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -546,7 +601,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_samples~2"></span>
+              <span class="anchor" id="variable-n_samples~26"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -561,7 +616,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_timepoints~4"></span>
+              <span class="anchor" id="variable-n_timepoints~9"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -606,7 +661,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mode~3"></span>
+              <span class="anchor" id="variable-mode~5"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -616,12 +671,12 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
             <td>::</td>
             <td><strong>mode</strong></td>
             <td>
-<a href="../proc/calc_contributions.html#variable-mode~3" class="pull-right"><emph>Read more&hellip;</emph></a>
+<a href="../proc/calc_contributions.html#variable-mode~5" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spike_contribs"></span>
+              <span class="anchor" id="variable-spike_contribs~7"></span>
               real(kind=real64),
             </td>
 <td>intent(out),</td>
@@ -681,7 +736,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~72"></span>
+              <span class="anchor" id="variable-ierr~120"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -721,7 +776,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-trajectories~3"></span>
+              <span class="anchor" id="variable-trajectories~2"></span>
               real(kind=real64),
             </td>
 <td>intent(in),</td>
@@ -736,7 +791,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_factors~3"></span>
+              <span class="anchor" id="variable-n_factors~2"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -751,7 +806,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_samples~3"></span>
+              <span class="anchor" id="variable-n_samples~27"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -766,7 +821,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_timepoints~5"></span>
+              <span class="anchor" id="variable-n_timepoints~10"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -811,7 +866,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mode~4"></span>
+              <span class="anchor" id="variable-mode~6"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -821,12 +876,12 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
             <td>::</td>
             <td><strong>mode</strong></td>
             <td>
-<a href="../proc/calc_contributions_alloc.html#variable-mode~4" class="pull-right"><emph>Read more&hellip;</emph></a>
+<a href="../proc/calc_contributions_alloc.html#variable-mode~6" class="pull-right"><emph>Read more&hellip;</emph></a>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spike_contribs~2"></span>
+              <span class="anchor" id="variable-spike_contribs~8"></span>
               real(kind=real64),
             </td>
 <td>intent(out),</td>
@@ -856,7 +911,137 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~73"></span>
+              <span class="anchor" id="variable-ierr~121"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ierr</strong></td>
+            <td>
+<p>Error code</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-compute_baselines_factor_dependent"></span> <h3>public pure subroutine <a href='../proc/compute_baselines_factor_dependent.html'>compute_baselines_factor_dependent</a>(n_timepoints, factor, dependent, mode, factor_baseline, dependent_baseline, ierr)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Compute scalar baselines for a factor and dependent variable time series.</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_timepoints~11"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_timepoints</strong></td>
+            <td>
+<p>Number of timepoints in both factor and dependent arrays</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-factor~3"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>factor</strong>(n_timepoints)</td>
+            <td>
+<p>Factor time series, length n_timepoints</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dependent~3"></span>
+              real(kind=real64),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dependent</strong>(n_timepoints)</td>
+            <td>
+<p>Dependent variable time series, length n_timepoints</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mode~7"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mode</strong></td>
+            <td>
+<p>Baseline mode: 1=RAW, 2=MIN, 3=MEAN</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-factor_baseline"></span>
+              real(kind=real64),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>factor_baseline</strong></td>
+            <td>
+<p>Computed baseline for factor</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dependent_baseline"></span>
+              real(kind=real64),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>dependent_baseline</strong></td>
+            <td>
+<p>Computed baseline for dependent variable</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~122"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -896,7 +1081,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-trajectories~4"></span>
+              <span class="anchor" id="variable-trajectories~3"></span>
               real(kind=real64),
             </td>
 <td>intent(in),</td>
@@ -911,7 +1096,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_factors~4"></span>
+              <span class="anchor" id="variable-n_factors~3"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -926,7 +1111,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_samples~4"></span>
+              <span class="anchor" id="variable-n_samples~28"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -941,7 +1126,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_timepoints~6"></span>
+              <span class="anchor" id="variable-n_timepoints~12"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1001,7 +1186,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~74"></span>
+              <span class="anchor" id="variable-ierr~123"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1041,7 +1226,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-trajectories~5"></span>
+              <span class="anchor" id="variable-trajectories~4"></span>
               real(kind=real64),
             </td>
 <td>intent(in),</td>
@@ -1056,7 +1241,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_factors~5"></span>
+              <span class="anchor" id="variable-n_factors~4"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1071,7 +1256,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_samples~5"></span>
+              <span class="anchor" id="variable-n_samples~29"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1086,7 +1271,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_timepoints~7"></span>
+              <span class="anchor" id="variable-n_timepoints~13"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1146,7 +1331,7 @@ There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-ri
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~75"></span>
+              <span class="anchor" id="variable-ierr~124"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1187,7 +1372,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-trajectories~6"></span>
+              <span class="anchor" id="variable-trajectories~5"></span>
               real(kind=real64),
             </td>
 <td>intent(in),</td>
@@ -1202,7 +1387,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_factors~6"></span>
+              <span class="anchor" id="variable-n_factors~5"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1217,7 +1402,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_samples~6"></span>
+              <span class="anchor" id="variable-n_samples~30"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1232,7 +1417,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_timepoints~8"></span>
+              <span class="anchor" id="variable-n_timepoints~14"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1292,7 +1477,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mode~5"></span>
+              <span class="anchor" id="variable-mode~8"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1307,7 +1492,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-percentile~7"></span>
+              <span class="anchor" id="variable-percentile~3"></span>
               real(kind=real64),
             </td>
 <td>intent(in)</td>
@@ -1337,7 +1522,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spike_contribs~3"></span>
+              <span class="anchor" id="variable-spike_contribs~9"></span>
               real(kind=real64),
             </td>
 <td>intent(out),</td>
@@ -1412,7 +1597,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~76"></span>
+              <span class="anchor" id="variable-ierr~125"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1453,7 +1638,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-trajectories~7"></span>
+              <span class="anchor" id="variable-trajectories~6"></span>
               real(kind=real64),
             </td>
 <td>intent(in),</td>
@@ -1468,7 +1653,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_factors~7"></span>
+              <span class="anchor" id="variable-n_factors~6"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1483,7 +1668,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_samples~7"></span>
+              <span class="anchor" id="variable-n_samples~31"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1498,7 +1683,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_timepoints~9"></span>
+              <span class="anchor" id="variable-n_timepoints~15"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1558,7 +1743,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mode~6"></span>
+              <span class="anchor" id="variable-mode~9"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -1573,7 +1758,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-percentile~8"></span>
+              <span class="anchor" id="variable-percentile~4"></span>
               real(kind=real64),
             </td>
 <td>intent(in)</td>
@@ -1603,7 +1788,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spike_contribs~4"></span>
+              <span class="anchor" id="variable-spike_contribs~10"></span>
               real(kind=real64),
             </td>
 <td>intent(out),</td>
@@ -1678,7 +1863,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~77"></span>
+              <span class="anchor" id="variable-ierr~126"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1721,7 +1906,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-12-11 07:12 +0000"             </p>
+ on "2025-12-11 11:30 +0000"             </p>
           </div>
         </div>
         <br>
