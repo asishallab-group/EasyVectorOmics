@@ -1,6 +1,6 @@
 module tox_trajectory_normalization
     use, intrinsic :: iso_fortran_env, only: real64, int32
-    use tox_errors
+    use tox_errors, only: ERR_NAN_INF, set_ok, set_err, is_err, validate_dimension_size
     use safeguard
     use ieee_arithmetic, only: ieee_is_nan, ieee_is_finite
     implicit none
@@ -46,13 +46,12 @@ contains
         min_val = minval(v)
         max_val = maxval(v)
         
-        ! Calculate denominator with epsilon for numerical stability
+        ! Calculate denominator
         denominator = max_val - min_val
         
-        ! Check for division by zero (should be prevented by epsilon)
+        ! Check for division by zero
         if (abs(denominator) < epsilon_val) then
-            v_norm = 0.0_real64
-            return
+            denominator = denominator + epsilon_val
         end if
         
         ! Apply min-max normalization
@@ -82,7 +81,6 @@ contains
         call set_ok(ierr)
         
         call validate_dimension_size(n_factors, ierr)
-        call validate_dimension_size(n_timepoints, ierr)
         if (is_err(ierr)) return
         
         ! Normalize each factor independently across time
@@ -120,9 +118,7 @@ contains
         ! Initialize
         call set_ok(ierr)
 
-        call validate_dimension_size(n_factors, ierr)
         call validate_dimension_size(n_samples, ierr)
-        call validate_dimension_size(n_timepoints, ierr)
         if (is_err(ierr)) return
         
         ! Normalize each sample/entity independently
@@ -144,7 +140,6 @@ end module tox_trajectory_normalization
 pure subroutine normalize_variable_timeseries_C(v, v_norm, n_points, ierr) bind(C, name="normalize_variable_timeseries_C")
     use, intrinsic :: iso_c_binding, only: c_double, c_int
     use tox_trajectory_normalization, only: normalize_variable_timeseries
-    use safeguard
     implicit none
 
     integer(c_int), intent(in) :: n_points
@@ -163,7 +158,6 @@ end subroutine normalize_variable_timeseries_C
 pure subroutine normalize_single_trajectory_C(trajectory, trajectory_norm, n_factors, n_timepoints, ierr) bind(C, name="normalize_single_trajectory_C")
     use, intrinsic :: iso_c_binding, only: c_double, c_int
     use tox_trajectory_normalization, only: normalize_single_trajectory
-    use safeguard
     implicit none
 
     integer(c_int), intent(in) :: n_factors
@@ -184,7 +178,6 @@ end subroutine normalize_single_trajectory_C
 pure subroutine normalize_all_trajectories_C(trajectories, trajectories_norm, n_factors, n_samples, n_timepoints, ierr) bind(C, name="normalize_all_trajectories_C")
     use, intrinsic :: iso_c_binding, only: c_double, c_int
     use tox_trajectory_normalization, only: normalize_all_trajectories
-    use safeguard
     implicit none
 
     integer(c_int), intent(in) :: n_factors
