@@ -73,7 +73,7 @@ contains
     end subroutine compute_contributions
 
     !> This routine performs contribution analysis for every selected factor–dependent pair
-    pure subroutine compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, mode, local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+    pure subroutine compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, mode, local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
         integer(int32), intent(in) :: n_factors
             !! number of factors
         integer(int32), intent(in) :: n_samples
@@ -95,10 +95,10 @@ contains
             !! Per-timepoint contributions per sample-dependent-factor combination
         real(real64), dimension(n_selected_factors, n_selected_dependents, n_samples), intent(out) :: total_contributions
             !! Total contribution (`sum(local_contributions)`) per sample-dependent-factor combination
-        real(real64), dimension(n_timepoints), intent(out) :: temp_factor
-            !! Working array to hold the current handled factor in contiguous memory
+        real(real64), dimension(n_timepoints, n_selected_factors), intent(out) :: temp_factors
+            !! Working array to hold the currently handled sample's factors in contiguous memory
         real(real64), dimension(n_timepoints), intent(out) :: temp_dependent
-            !! Working array to hold the current handled dependent in contiguous memory
+            !! Working array to hold the currently handled dependent in contiguous memory
         integer(int32), intent(out) :: ierr
             !! Error code
 
@@ -118,18 +118,24 @@ contains
         if (is_err(ierr)) return
 
         do i_sample = 1, n_samples
+            ! create factor vectors for current sample
+            do i_sel_factor = 1, n_selected_factors
+                i_factor = factor_indices(i_sel_factor)
+                do i_timepoint = 1, n_timepoints
+                    temp_factors(i_timepoint, i_sel_factor) = trajectories(i_factor, i_sample, i_timepoint)
+                end do
+            end do
+
+            ! calculate contributions for each factor-dependent combination
             do i_sel_dependent = 1, n_selected_dependents
+                ! create dependent vector for current sample
                 i_dependent = dependent_indices(i_sel_dependent)
                 do i_timepoint = 1, n_timepoints
                     temp_dependent(i_timepoint) = trajectories(i_dependent, i_sample, i_timepoint)
                 end do
-                do i_sel_factor = 1, n_selected_factors
-                    i_factor = factor_indices(i_sel_factor)
-                    do i_timepoint = 1, n_timepoints
-                        temp_factor(i_timepoint) = trajectories(i_factor, i_sample, i_timepoint)
-                    end do
 
-                    call compute_contributions_helper(temp_factor, temp_dependent, n_timepoints, mode, local_contributions(:, i_sel_factor, i_sel_dependent, i_sample), total_contributions(i_sel_factor, i_sel_dependent, i_sample), ierr)
+                do i_sel_factor = 1, n_selected_factors
+                    call compute_contributions_helper(temp_factors(:, i_sel_factor), temp_dependent, n_timepoints, mode, local_contributions(:, i_sel_factor, i_sel_dependent, i_sample), total_contributions(i_sel_factor, i_sel_dependent, i_sample), ierr)
                     if (is_err(ierr)) return
                 end do
             end do
@@ -218,7 +224,7 @@ end module tox_trajectory_contribution_analysis
 !> C-compatible wrapper for [[tox_trajectory_contribution_analysis(module):compute_all_contributions(subroutine)]]
 pure subroutine compute_all_contributions_c(trajectories, n_factors, n_samples, n_timepoints, &
     factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, mode, &
-    local_contributions, total_contributions, temp_factor, temp_dependent, ierr) &
+    local_contributions, total_contributions, temp_factors, temp_dependent, ierr) &
     bind(C, name="compute_all_contributions_c")
 
     use, intrinsic :: iso_fortran_env, only: int32
@@ -251,10 +257,10 @@ pure subroutine compute_all_contributions_c(trajectories, n_factors, n_samples, 
         !! Per-timepoint contributions per sample-dependent-factor combination
     real(c_double), dimension(n_selected_factors, n_selected_dependents, n_samples), intent(out), target :: total_contributions
         !! Total contribution (`sum(local_contributions)`) per sample-dependent-factor combination
-    real(c_double), dimension(n_timepoints), intent(out), target :: temp_factor
-        !! Working array to hold the current handled factor in contiguous memory
+    real(c_double), dimension(n_timepoints, n_selected_factors), intent(out), target :: temp_factors
+        !! Working array to hold the currently handled sample's factors in contiguous memory
     real(c_double), dimension(n_timepoints), intent(out), target :: temp_dependent
-        !! Working array to hold the current handled dependent in contiguous memory
+        !! Working array to hold the currently handled dependent in contiguous memory
     integer(c_int), intent(out), target :: ierr
         !! Error code
 
@@ -273,7 +279,7 @@ pure subroutine compute_all_contributions_c(trajectories, n_factors, n_samples, 
     M_CHECK_NON_NULL(mode)
     M_CHECK_NON_NULL(local_contributions)
     M_CHECK_NON_NULL(total_contributions)
-    M_CHECK_NON_NULL(temp_factor)
+    M_CHECK_NON_NULL(temp_factors)
     M_CHECK_NON_NULL(temp_dependent)
 
     call c_char_1d_as_string(mode, mode_f, ierr)
@@ -284,7 +290,7 @@ pure subroutine compute_all_contributions_c(trajectories, n_factors, n_samples, 
     
     call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
         factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, mode_int, &
-        local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+        local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
 end subroutine compute_all_contributions_c
 
 !> C-compatible wrapper for [[tox_trajectory_contribution_analysis(module):compute_contributions(subroutine)]]

@@ -111,9 +111,7 @@ def test_compute_all_contributions():
     factor_indices = np.array([1], dtype=np.int32, order="F")
     dependent_indices = np.array([2], dtype=np.int32, order="F")
 
-    result = tox_compute_all_contributions(trajectories, factor_indices, dependent_indices, mode="mean")
-    local = result["local_contributions"]
-    total = result["total_contributions"]
+    local, total = tox_compute_all_contributions(trajectories, factor_indices, dependent_indices, mode="mean").values()
 
     # Baselines: mean(factor)=2.0, mean(dependent)=5.0
     expected_local = np.array([1.0, 0.0, 1.0], dtype=np.float64, order="F")
@@ -128,18 +126,16 @@ def test_compute_all_contributions():
     # Factor trajectory: [2,4,6]
     # Dependent trajectory: [1,3,5]
     trajectories[0, 0, :] = [2.0, 4.0, 6.0]
-    trajectories[1, 0, :] = [1.0, 3.0, 5.0]
+    trajectories[1, 0, :] = [5.0, 3.0, 5.0]
 
     factor_indices = np.array([1], dtype=np.int32, order="F")
     dependent_indices = np.array([2], dtype=np.int32, order="F")
 
-    result = tox_compute_all_contributions(trajectories, factor_indices, dependent_indices, mode="min")
-    local = result["local_contributions"]
-    total = result["total_contributions"]
+    local, total = tox_compute_all_contributions(trajectories, factor_indices, dependent_indices, mode="min").values()
 
     # Baselines: min(factor)=2.0, min(dependent)=1.0
-    expected_local = np.array([0.0, 4.0, 16.0], dtype=np.float64, order="F")
-    expected_total = 20.0
+    expected_local = np.array([0.0, 0.0, 8.0], dtype=np.float64, order="F")
+    expected_total = 8.0
 
     assert np.allclose(local[:, 0, 0, 0], expected_local, atol=TOL), "Case 2 local contributions mismatch"
     assert abs(total[0, 0, 0] - expected_total) < TOL, "Case 2 total contribution mismatch"

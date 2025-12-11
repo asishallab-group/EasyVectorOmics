@@ -41,7 +41,7 @@ contains
         integer(int32) :: dependent_indices(n_factors)
         real(real64) :: local_contributions(n_timepoints, n_factors, n_factors, n_samples)
         real(real64) :: total_contributions(n_factors, n_factors, n_samples)
-        real(real64) :: temp_factor(n_timepoints), temp_dependent(n_timepoints)
+        real(real64) :: temp_factors(n_timepoints, n_factors), temp_dependent(n_timepoints)
         real(real64) :: expected_local(n_timepoints)
         real(real64) :: expected_total
 
@@ -58,27 +58,27 @@ contains
 
         call compute_all_contributions(trajectories, 0_int32, n_samples, n_timepoints, &
             factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MIN, &
-            local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
         call assert_equal_int(ierr, ERR_EMPTY_INPUT, "test_compute_all_contributions: Case 1 expected error for n_factors=0")
 
         call compute_all_contributions(trajectories, n_factors, 0_int32, n_timepoints, &
             factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MIN, &
-            local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
         call assert_equal_int(ierr, ERR_EMPTY_INPUT, "test_compute_all_contributions: Case 1 expected error for n_samples=0")
 
         call compute_all_contributions(trajectories, n_factors, n_samples, 0_int32, &
             factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MIN, &
-            local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
         call assert_equal_int(ierr, ERR_EMPTY_INPUT, "test_compute_all_contributions: Case 1 expected error for n_timepoints=0")
 
         call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
             factor_indices(:n_selected_factors), 0_int32, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MIN, &
-            local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
         call assert_equal_int(ierr, ERR_EMPTY_INPUT, "test_compute_all_contributions: Case 1 expected error for n_selected_factors=0")
 
         call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
             factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), 0_int32, BASELINE_MIN, &
-            local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
         call assert_equal_int(ierr, ERR_EMPTY_INPUT, "test_compute_all_contributions: Case 1 expected error for n_selected_dependents=0")
 
         ! -------------------------------
@@ -87,7 +87,7 @@ contains
 
         call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
             factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MEAN, &
-            local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
 
         call assert_equal_int(ierr, ERR_OK, "test_compute_all_contributions: Case 2 ierr")
 
@@ -110,7 +110,7 @@ contains
 
         call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
             factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MIN, &
-            local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
 
         call assert_equal_int(ierr, ERR_OK, "test_compute_all_contributions: Case 3 ierr")
 
@@ -130,7 +130,7 @@ contains
 
         call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
             factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MIN, &
-            local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
 
         call assert_equal_int(ierr, ERR_OK, "test_compute_all_contributions: Case 4 ierr zero factor")
 
@@ -145,7 +145,7 @@ contains
 
         call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
             factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MIN, &
-            local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
 
         call assert_equal_int(ierr, ERR_OK, "test_compute_all_contributions: Case 4 ierr zero dependent")
 
@@ -165,7 +165,7 @@ contains
 
         call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
             factor_indices, n_factors, dependent_indices, n_factors, BASELINE_MIN, &
-            local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
 
         call assert_equal_int(ierr, ERR_OK, "test_compute_all_contributions: Case 5 ierr")
 

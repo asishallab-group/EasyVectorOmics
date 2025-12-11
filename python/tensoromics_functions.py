@@ -3264,7 +3264,7 @@ def tox_compute_all_contributions(trajectories, factor_indices, dependent_indice
         (n_selected_factors.value, n_selected_dependents.value, n_samples.value),
         dtype=np.float64, order="F"
     )
-    temp_factor = np.empty(n_timepoints.value, dtype=np.float64)
+    temp_factors = np.empty((n_timepoints.value, n_selected_factors.value), dtype=np.float64, order="F")
     temp_dependent = np.empty(n_timepoints.value, dtype=np.float64)
     ierr = ctypes.c_int(0)
 
@@ -3282,7 +3282,7 @@ def tox_compute_all_contributions(trajectories, factor_indices, dependent_indice
         ctypes.c_char_p,                                    # mode
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # local_contributions
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # total_contributions
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # temp_factor
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # temp_factors
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # temp_dependent
         ctypes.POINTER(ctypes.c_int)                                     # ierr
     ]
@@ -3292,7 +3292,7 @@ def tox_compute_all_contributions(trajectories, factor_indices, dependent_indice
     compute_all_contrib_c(trajectories, ctypes.byref(n_factors), ctypes.byref(n_samples),
                           ctypes.byref(n_timepoints), factor_indices, ctypes.byref(n_selected_factors),
                           dependent_indices, ctypes.byref(n_selected_dependents), ctypes.c_char_p(mode.encode("utf-8")),
-                          local_contributions, total_contributions, temp_factor, temp_dependent,
+                          local_contributions, total_contributions, temp_factors, temp_dependent,
                           ctypes.byref(ierr))
     check_err_code(ierr.value)
 
