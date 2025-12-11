@@ -34,11 +34,11 @@ contains
 
         call set_ok(ierr)
 
+        call compute_baselines_factor_dependent(n_dims, factor, dependent, mode, factor_baseline, dependent_baseline, ierr)
+        if (is_err(ierr)) return
+
         total_contribution = 0.0_real64
         do i_dim = 1, n_dims
-            call compute_baselines_factor_dependent(n_dims, factor, dependent, mode, factor_baseline, dependent_baseline, ierr)
-            if (is_err(ierr)) return
-
             local_contributions(i_dim) = (factor(i_dim) - factor_baseline) * (dependent(i_dim) - dependent_baseline)
             total_contribution = total_contribution + local_contributions(i_dim)
         end do
