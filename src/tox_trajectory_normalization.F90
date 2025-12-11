@@ -140,6 +140,7 @@ end module tox_trajectory_normalization
 pure subroutine normalize_variable_timeseries_C(v, v_norm, n_points, ierr) bind(C, name="normalize_variable_timeseries_C")
     use, intrinsic :: iso_c_binding, only: c_double, c_int
     use tox_trajectory_normalization, only: normalize_variable_timeseries
+    M_USE_NULL_VALIDATION
     implicit none
 
     integer(c_int), intent(in) :: n_points
@@ -151,6 +152,11 @@ pure subroutine normalize_variable_timeseries_C(v, v_norm, n_points, ierr) bind(
     integer(c_int), intent(out) :: ierr
     !! Error code
 
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_points)
+    M_CHECK_NON_NULL(v)
+    M_CHECK_NON_NULL(v_norm)
+
     call normalize_variable_timeseries(v, v_norm, n_points, ierr)
 
 end subroutine normalize_variable_timeseries_C
@@ -158,6 +164,7 @@ end subroutine normalize_variable_timeseries_C
 pure subroutine normalize_single_trajectory_C(trajectory, trajectory_norm, n_factors, n_timepoints, ierr) bind(C, name="normalize_single_trajectory_C")
     use, intrinsic :: iso_c_binding, only: c_double, c_int
     use tox_trajectory_normalization, only: normalize_single_trajectory
+    M_USE_NULL_VALIDATION
     implicit none
 
     integer(c_int), intent(in) :: n_factors
@@ -171,6 +178,12 @@ pure subroutine normalize_single_trajectory_C(trajectory, trajectory_norm, n_fac
     integer(c_int), intent(out) :: ierr
     !! Error code
 
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_factors)
+    M_CHECK_NON_NULL(n_timepoints)
+    M_CHECK_NON_NULL(trajectory)
+    M_CHECK_NON_NULL(trajectory_norm)
+
     call normalize_single_trajectory(trajectory, trajectory_norm, n_factors, n_timepoints, ierr)
 
 end subroutine normalize_single_trajectory_C
@@ -178,6 +191,7 @@ end subroutine normalize_single_trajectory_C
 pure subroutine normalize_all_trajectories_C(trajectories, trajectories_norm, n_factors, n_samples, n_timepoints, ierr) bind(C, name="normalize_all_trajectories_C")
     use, intrinsic :: iso_c_binding, only: c_double, c_int
     use tox_trajectory_normalization, only: normalize_all_trajectories
+    M_USE_NULL_VALIDATION
     implicit none
 
     integer(c_int), intent(in) :: n_factors
@@ -192,6 +206,13 @@ pure subroutine normalize_all_trajectories_C(trajectories, trajectories_norm, n_
     !! Normalized trajectories
     integer(c_int), intent(out) :: ierr
     !! Error code
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_factors)
+    M_CHECK_NON_NULL(n_samples)
+    M_CHECK_NON_NULL(n_timepoints)
+    M_CHECK_NON_NULL(trajectories)
+    M_CHECK_NON_NULL(trajectories_norm)
 
     call normalize_all_trajectories(trajectories, trajectories_norm, n_factors, n_samples, n_timepoints, ierr)
 
