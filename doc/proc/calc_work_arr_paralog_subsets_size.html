@@ -10,7 +10,7 @@
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>string_to_ascii_arr &ndash; TensorOmics</title>
+    <title>calc_work_arr_paralog_subsets_size &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -77,7 +77,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>string_to_ascii_arr
+    <h1>calc_work_arr_paralog_subsets_size
       <small>Subroutine</small>
       
     </h1>
@@ -88,21 +88,21 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">17 statements</a>
+                 title=" 0.5% of total for procedures.">51 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/array_utils.F90"> Source File</a>
+              <a href="../src/tox_paralog_analysis.F90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/array_utils.f90.html'>array_utils.F90</a></li>
-                <li class="breadcrumb-item"><a href='../module/array_utils.html'>array_utils</a></li>
-            <li class="breadcrumb-item active" aria-current="page">string_to_ascii_arr</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/tox_paralog_analysis.f90.html'>tox_paralog_analysis.F90</a></li>
+                <li class="breadcrumb-item"><a href='../module/tox_paralog_analysis.html'>tox_paralog_analysis</a></li>
+            <li class="breadcrumb-item active" aria-current="page">calc_work_arr_paralog_subsets_size</li>
           </ol>
         </nav>
       </div>
@@ -149,11 +149,14 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine string_to_ascii_arr(flat, array_size, ascii_arr, clen)  
+    <h2>public pure subroutine calc_work_arr_paralog_subsets_size(max_subset_size, n_genes, work_array_size, filtered_paralogs_mask, n_mask_chunks, ierr)  
 </h2>
     
 
-    <p>converts a string array to an ascii array</p>
+    <p>The <code>detect_*</code> subroutines need a work array for the to be tested subsets.
+In worst case, all need to be tried and subsets that cannot be extended will be kept as results.
+This is the reason why the work array holds the results as well, as all subsets that are stored in the array can be results as well.</p>
+<p>This subroutine calculates the needed size for the work array.</p>
 
 
     <h3>Arguments</h3>
@@ -169,22 +172,27 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-flat"></span>
-              character(len=*),
+              <span class="anchor" id="variable-max_subset_size~4"></span>
+              integer(kind=int32),
             </td>
-<td>intent(in)</td>
+<td>intent(inout)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>flat</strong>(array_size)</td>
+            <td><strong>max_subset_size</strong></td>
             <td>
-                <p>input array with characters</p>
+                <p>maximum size that a subset must not exceed.</p>
+<div class="alert alert-warning">
+<p class="alert-title h4">Warning</p>
+<p>If the desired size is too large and leads to an integer overflow, <code>max_subset_size</code> will be set to the maximum valid size.</p>
+<p>Also, size will be set to number of genes in <code>filtered_paralogs_mask</code> if larger.</p>
+</div>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-array_size~3"></span>
+              <span class="anchor" id="variable-n_genes~25"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -192,14 +200,14 @@
               
             </td>
             <td>::</td>
-            <td><strong>array_size</strong></td>
+            <td><strong>n_genes</strong></td>
             <td>
-                <p>size of the input array</p>
+                <p>number of genes</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ascii_arr"></span>
+              <span class="anchor" id="variable-work_array_size"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -207,14 +215,29 @@
               
             </td>
             <td>::</td>
-            <td><strong>ascii_arr</strong>(array_size*clen)</td>
+            <td><strong>work_array_size</strong></td>
             <td>
-                <p>ascii output array</p>
+                <p>The calculated needed work array size in absolute worst case scenario. Look into source for details.</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-clen~12"></span>
+              <span class="anchor" id="variable-filtered_paralogs_mask~5"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              dimension(n_mask_chunks)
+            </td>
+            <td>::</td>
+            <td><strong>filtered_paralogs_mask</strong></td>
+            <td>
+                <p>Output mask with all genes disabled that did not pass the filter</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_mask_chunks~11"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -222,9 +245,24 @@
               
             </td>
             <td>::</td>
-            <td><strong>clen</strong></td>
+            <td><strong>n_mask_chunks</strong></td>
             <td>
-                <p>length of the longest string</p>
+                <p>number of 32 bit chunks a mask needs to encode <code>n_genes</code> genes</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~34"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ierr</strong></td>
+            <td>
+                <p>Error code</p>
             </td>
         </tr>
     </tbody>
@@ -261,7 +299,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-11-23 17:36 +0000"             </p>
+ on "2025-12-11 07:12 +0000"             </p>
           </div>
         </div>
         <br>
