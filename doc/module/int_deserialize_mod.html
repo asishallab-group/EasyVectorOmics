@@ -88,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.9% of total for modules and submodules.">101 statements</a>
+                 title=" 2.0% of total for modules and submodules.">129 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -140,6 +140,7 @@
       </a>
       <div id="subs-0" class="collapse">
         <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../module/int_deserialize_mod.html#proc-deserialize_int_flat">deserialize_int_flat</a>
             <a class="list-group-item" href="../module/int_deserialize_mod.html#proc-deserialize_int_1d">deserialize_int_1d</a>
             <a class="list-group-item" href="../module/int_deserialize_mod.html#proc-deserialize_int_2d">deserialize_int_2d</a>
             <a class="list-group-item" href="../module/int_deserialize_mod.html#proc-deserialize_int_3d">deserialize_int_3d</a>
@@ -171,10 +172,10 @@
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
                   <li class="list-inline-item"><a href='safeguard.html'>safeguard</a></li>
-                  <li class="list-inline-item"><a href='array_utils.html'>array_utils</a></li>
                   <li class="list-inline-item"><a href='tox_errors.html'>tox_errors</a></li>
+                  <li class="list-inline-item"><a href='array_utils.html'>array_utils</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
               </ul>
             </li>
         </ul>
@@ -193,6 +194,76 @@
 
         <section>
           <h2>Subroutines</h2>
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-deserialize_int_flat"></span> <h3>public  subroutine <a href='../proc/deserialize_int_flat.html'>deserialize_int_flat</a>(arr, filename, ierr)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Deserializes any array inot a flat array</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-arr~6"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>arr</strong>(:)</td>
+            <td>
+<p>Pre-allocated array to read the data into</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-filename~14"></span>
+              character(len=*),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>filename</strong></td>
+            <td>
+<p>Name of the file</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~60"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ierr</strong></td>
+            <td>
+<p>Error code</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
               <div class="card">
     <div class="card-header codesum"><span class="anchor" id="proc-deserialize_int_1d"></span> <h3>public  subroutine <a href='../proc/deserialize_int_1d.html'>deserialize_int_1d</a>(arr, filename, ierr)  
 </h3></div>
@@ -214,7 +285,7 @@ Directly deserialize a 1D integer array from a file</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~9"></span>
+              <span class="anchor" id="variable-arr~7"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -229,7 +300,7 @@ Directly deserialize a 1D integer array from a file</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~9"></span>
+              <span class="anchor" id="variable-filename~15"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -244,7 +315,7 @@ Directly deserialize a 1D integer array from a file</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~9"></span>
+              <span class="anchor" id="variable-ierr~61"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -284,7 +355,7 @@ Directly deserialize a 1D integer array from a file</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~10"></span>
+              <span class="anchor" id="variable-arr~8"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -299,7 +370,7 @@ Directly deserialize a 1D integer array from a file</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~10"></span>
+              <span class="anchor" id="variable-filename~16"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -314,7 +385,7 @@ Directly deserialize a 1D integer array from a file</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~10"></span>
+              <span class="anchor" id="variable-ierr~62"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -354,7 +425,7 @@ Directly deserialize a 1D integer array from a file</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~11"></span>
+              <span class="anchor" id="variable-arr~9"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -369,7 +440,7 @@ Directly deserialize a 1D integer array from a file</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~11"></span>
+              <span class="anchor" id="variable-filename~17"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -384,7 +455,7 @@ Directly deserialize a 1D integer array from a file</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~11"></span>
+              <span class="anchor" id="variable-ierr~63"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -424,7 +495,7 @@ Directly deserialize a 1D integer array from a file</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~12"></span>
+              <span class="anchor" id="variable-arr~10"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -439,7 +510,7 @@ Directly deserialize a 1D integer array from a file</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~12"></span>
+              <span class="anchor" id="variable-filename~18"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -454,7 +525,7 @@ Directly deserialize a 1D integer array from a file</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~12"></span>
+              <span class="anchor" id="variable-ierr~64"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -494,7 +565,7 @@ Directly deserialize a 1D integer array from a file</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-arr~13"></span>
+              <span class="anchor" id="variable-arr~11"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -509,7 +580,7 @@ Directly deserialize a 1D integer array from a file</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~13"></span>
+              <span class="anchor" id="variable-filename~19"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -524,7 +595,7 @@ Directly deserialize a 1D integer array from a file</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~13"></span>
+              <span class="anchor" id="variable-ierr~65"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -567,7 +638,7 @@ Directly deserialize a 1D integer array from a file</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-11-23 17:36 +0000"             </p>
+ on "2025-12-11 07:12 +0000"             </p>
           </div>
         </div>
         <br>

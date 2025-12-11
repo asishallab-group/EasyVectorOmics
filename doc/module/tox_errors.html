@@ -88,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 3.0% of total for modules and submodules.">163 statements</a>
+                 title=" 2.8% of total for modules and submodules.">186 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -154,6 +154,7 @@
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_nan_inf">ERR_NAN_INF</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_unsupported_type">ERR_UNSUPPORTED_TYPE</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_size_mismatch">ERR_SIZE_MISMATCH</a>
+            <a class="list-group-item" href="../module/tox_errors.html#variable-err_type_mismatch">ERR_TYPE_MISMATCH</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_string_too_long">ERR_STRING_TOO_LONG</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_idx_out_of_bounds">ERR_IDX_OUT_OF_BOUNDS</a>
             <a class="list-group-item" href="../module/tox_errors.html#variable-err_division_by_zero">ERR_DIVISION_BY_ZERO</a>
@@ -200,6 +201,7 @@
             <a class="list-group-item" href="../module/tox_errors.html#proc-set_err_once">set_err_once</a>
             <a class="list-group-item" href="../module/tox_errors.html#proc-check_io_stat">check_io_stat</a>
             <a class="list-group-item" href="../module/tox_errors.html#proc-validate_dimension_size">validate_dimension_size</a>
+            <a class="list-group-item" href="../module/tox_errors.html#proc-validate_type_code">validate_type_code</a>
             <a class="list-group-item" href="../module/tox_errors.html#proc-validate_in_range_int">validate_in_range_int</a>
             <a class="list-group-item" href="../module/tox_errors.html#proc-validate_all_in_range_int">validate_all_in_range_int</a>
             <a class="list-group-item" href="../module/tox_errors.html#proc-validate_in_range_real">validate_in_range_real</a>
@@ -230,8 +232,8 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/ieee_arithmetic'>ieee_arithmetic</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
               </ul>
             </li>
         </ul>
@@ -681,6 +683,23 @@ parameter
         </tr>
         <tr>
             <td>
+              <span class="anchor" id="variable-err_type_mismatch"></span>
+              integer(kind=int32),
+            </td>
+              <td>public,</td>
+            <td>
+parameter               
+            </td>
+            <td>::</td>
+            <td><strong>ERR_TYPE_MISMATCH</strong></td>
+<td> =</td>
+                <td>207</td>
+            <td>
+                <p>Array type read does not match expected type</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
               <span class="anchor" id="variable-err_string_too_long"></span>
               integer(kind=int32),
             </td>
@@ -691,7 +710,7 @@ parameter
             <td>::</td>
             <td><strong>ERR_STRING_TOO_LONG</strong></td>
 <td> =</td>
-                <td>207</td>
+                <td>208</td>
             <td>
                 <p>String exceeds buffer size</p>
             </td>
@@ -708,7 +727,7 @@ parameter
             <td>::</td>
             <td><strong>ERR_IDX_OUT_OF_BOUNDS</strong></td>
 <td> =</td>
-                <td>208</td>
+                <td>209</td>
             <td>
                 <p>Array index out of bounds</p>
             </td>
@@ -725,9 +744,9 @@ parameter
             <td>::</td>
             <td><strong>ERR_DIVISION_BY_ZERO</strong></td>
 <td> =</td>
-                <td>209</td>
+                <td>210</td>
             <td>
-                <p>memory allocation failed</p>
+                <p>Division by zero encountered</p>
             </td>
         </tr>
         <tr>
@@ -847,7 +866,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~221"></span>
+              <span class="anchor" id="variable-ierr~225"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -892,7 +911,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~222"></span>
+              <span class="anchor" id="variable-ierr~226"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -942,7 +961,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~218"></span>
+              <span class="anchor" id="variable-ierr~222"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -982,7 +1001,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~219"></span>
+              <span class="anchor" id="variable-ierr~223"></span>
               integer(kind=int32),
             </td>
 <td>intent(inout)</td>
@@ -1037,7 +1056,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~220"></span>
+              <span class="anchor" id="variable-ierr~224"></span>
               integer(kind=int32),
             </td>
 <td>intent(inout)</td>
@@ -1107,7 +1126,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~223"></span>
+              <span class="anchor" id="variable-ierr~227"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1150,8 +1169,8 @@ parameter
               <span class="anchor" id="variable-n~14"></span>
               integer(kind=int32),
             </td>
-<td>intent(in)</td>
-              <td></td>            <td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
               
             </td>
             <td>::</td>
@@ -1162,7 +1181,93 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~224"></span>
+              <span class="anchor" id="variable-ierr~228"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(inout)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>ierr</strong></td>
+            <td>
+
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+              <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-validate_type_code"></span> <h3>public  subroutine <a href='../proc/validate_type_code.html'>validate_type_code</a>(actual, expected, unit, ierr)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>validate that the actual type code matches the expected type code
+Closes the connected unit in case of an error</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-actual"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>actual</strong></td>
+            <td>
+<p>Actual type code read from file</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-expected~2"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>expected</strong></td>
+            <td>
+<p>Expected type code</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-unit~63"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>unit</strong></td>
+            <td>
+<p>Unit connection</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~229"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -1172,7 +1277,7 @@ parameter
             <td>::</td>
             <td><strong>ierr</strong></td>
             <td>
-
+<p>Error code</p>
             </td>
         </tr>
     </tbody>
@@ -1202,11 +1307,11 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-val"></span>
+              <span class="anchor" id="variable-val~3"></span>
               integer(kind=int32),
             </td>
-<td>intent(in)</td>
-              <td></td>            <td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
               
             </td>
             <td>::</td>
@@ -1217,10 +1322,10 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~225"></span>
+              <span class="anchor" id="variable-ierr~230"></span>
               integer(kind=int32),
             </td>
-<td>intent(out)</td>
+<td>intent(inout)</td>
               <td></td>            <td>
               
             </td>
@@ -1291,7 +1396,7 @@ parameter
               integer(kind=int32),
             </td>
 <td>intent(in),</td>
-              <td></td>            <td>
+              <td>optional,</td>            <td>
               dimension(n_elements)
             </td>
             <td>::</td>
@@ -1317,10 +1422,10 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~226"></span>
+              <span class="anchor" id="variable-ierr~231"></span>
               integer(kind=int32),
             </td>
-<td>intent(out)</td>
+<td>intent(inout)</td>
               <td></td>            <td>
               
             </td>
@@ -1372,7 +1477,7 @@ parameter
 </h3></div>
     <div class="card-body">
           
-  <p>Validates min&lt;=e&lt;=max AND e/=NaN for all elements e of an array</p>
+  <p>Validates min&lt;=e&lt;=max AND e/=NaN for all elements e of an array.</p><a href="../proc/validate_in_range_real.html" class="pull-right"><emph>Read more&hellip;</emph></a>
 
   <h4>Arguments</h4>
       <table class="table table-striped varlist">
@@ -1387,11 +1492,11 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-val~2"></span>
+              <span class="anchor" id="variable-val~4"></span>
               real(kind=real64),
             </td>
-<td>intent(in)</td>
-              <td></td>            <td>
+<td>intent(in),</td>
+              <td>optional</td>            <td>
               
             </td>
             <td>::</td>
@@ -1402,10 +1507,10 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~227"></span>
+              <span class="anchor" id="variable-ierr~232"></span>
               integer(kind=int32),
             </td>
-<td>intent(out)</td>
+<td>intent(inout)</td>
               <td></td>            <td>
               
             </td>
@@ -1476,7 +1581,7 @@ parameter
               real(kind=real64),
             </td>
 <td>intent(in),</td>
-              <td></td>            <td>
+              <td>optional,</td>            <td>
               dimension(n_elements)
             </td>
             <td>::</td>
@@ -1502,10 +1607,10 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~228"></span>
+              <span class="anchor" id="variable-ierr~233"></span>
               integer(kind=int32),
             </td>
-<td>intent(out)</td>
+<td>intent(inout)</td>
               <td></td>            <td>
               
             </td>
@@ -1574,11 +1679,11 @@ and X-&gt;Y is exactly the same as Y-&gt;X (no tolerance).</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-distances~24"></span>
+              <span class="anchor" id="variable-distances~21"></span>
               real(kind=real64),
             </td>
 <td>intent(in),</td>
-              <td></td>            <td>
+              <td>optional,</td>            <td>
               dimension(n, n)
             </td>
             <td>::</td>
@@ -1604,10 +1709,10 @@ and X-&gt;Y is exactly the same as Y-&gt;X (no tolerance).</p>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~229"></span>
+              <span class="anchor" id="variable-ierr~234"></span>
               integer(kind=int32),
             </td>
-<td>intent(out)</td>
+<td>intent(inout)</td>
               <td></td>            <td>
               
             </td>
@@ -1677,7 +1782,7 @@ and X-&gt;Y is exactly the same as Y-&gt;X (no tolerance).</p>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-11-23 17:36 +0000"             </p>
+ on "2025-12-11 07:12 +0000"             </p>
           </div>
         </div>
         <br>
