@@ -330,6 +330,14 @@ validate_file_exists <- function(filename, name = deparse(substitute(filename)))
   }
   invisible(TRUE)
 }
+# Ensure string is a non-empty scalar
+validate_non_empty_string <- function(x, name = deparse(substitute(x))) {
+  if (!is.character(x) || length(x) != 1L || nchar(x) == 0L) {
+    stop(sprintf("Type mismatch: %s must be a non-empty string", name))
+  }
+  invisible(TRUE)
+}
+
 
 validate_loess_smooth_2d_inputs <- function(
     x_ref, y_ref, x_query, indices_used,

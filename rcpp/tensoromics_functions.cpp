@@ -1,5 +1,5 @@
 #include <Rcpp.h>
-#include <vector>
+#include <algorithm>
 
 using namespace Rcpp;
 
@@ -8,9 +8,7 @@ using namespace Rcpp;
 // FORTRAN FUNCTIONS
 // ===================================================================
 
-
 extern "C" {
-
     void normalize_by_std_dev_c(int n_genes, int n_tissues,
                                 double *input_matrix, double *output_matrix, int *ierr);                                    
     void quantile_normalization_c(int n_genes, int n_tissues, double *input_matrix, double *output_matrix,
@@ -32,7 +30,7 @@ extern "C" {
                                   int *stack_right, int max_stack,
                                   int *group_s, int *group_c, int n_grps, int *ierr);
 
-      void compute_family_scaling_c(
+    void compute_family_scaling_c(
         int n_genes, int n_families,
         double* distances, int* gene_to_fam,
         double* dscale,
@@ -40,7 +38,7 @@ extern "C" {
         int* ierr
       );
       
-      void compute_family_scaling_expert_c(
+  void compute_family_scaling_expert_c(
         int n_genes, int n_families,
         double* distances, int* gene_to_fam,
         double* dscale,
@@ -50,7 +48,7 @@ extern "C" {
         int* ierr
       );
       
-      void compute_rdi_c(
+  void compute_rdi_c(
         int n_genes, int n_families,
         double* distances, int* gene_to_fam,
         double* dscale,
@@ -58,7 +56,7 @@ extern "C" {
         int* perm, int* stack_left, int* stack_right
       );
       
-      void identify_outliers_c(
+  void identify_outliers_c(
         int n_genes,
         double* rdi, double* sorted_rdi,
         int* is_outlier_int,
@@ -66,7 +64,7 @@ extern "C" {
         double percentile
       );
       
-      void detect_outliers_c(
+  void detect_outliers_c(
         int n_genes, int n_families,
         double* distances, int* gene_to_fam,
         double* work_array,
@@ -78,7 +76,7 @@ extern "C" {
       );
 
       
-      void euclidean_distance_c(double* vec1, double* vec2, int d, double* result);
+  void euclidean_distance_c(double* vec1, double* vec2, int d, double* result);
 
       void distance_to_centroid_c(
         int n_genes, int n_families,
@@ -88,7 +86,7 @@ extern "C" {
         int d
       );
 
-      void compute_tissue_versatility_c(
+void compute_tissue_versatility_c(
         int n_axes, int n_vectors,
         double* expression_vectors,
         int* exp_vecs_selection_index,
@@ -98,9 +96,22 @@ extern "C" {
         double* tissue_versatilities,
         double* tissue_angles_deg,
         int* ierr
-    );
-                      
-    void build_kd_index_C(
+      );
+void compute_shift_vector_field_c(int d, int n_genes, int n_families,
+                                      double* expression_vectors, double* family_centroids,
+                                      int* gene_to_centroid, double* shift_vectors,
+                                      int* ierr);
+
+void mean_vector_c(double* expression_vectors, int n_axes, int n_genes,
+                       int* gene_indices, int n_selected_genes,
+                       double* centroid_col, int* ierr);
+
+void group_centroid_c(double* expression_vectors, int n_axes, int n_genes,
+                         int* gene_to_family, int n_families,
+                         double* centroid_matrix, const char* mode,
+                         int* ortholog_set, int* selected_indices, int selected_indices_len, int* ierr);
+
+void build_kd_index_C(
       double* points,
       int num_dimensions,
       int num_points,
@@ -178,9 +189,123 @@ extern "C" {
         int num_vectors, int* sphere_indices, int* dimension_order, 
         int* workspace, double* value_buffer, int* permutation, 
         int* left_stack, int* right_stack, int* ierr);
-}                                  
+                                 
+
+    void read_expression_vectors_tsv_C(const char* file_list_raw,
+                                   int file_list_len,
+                                   int n_files,
+                                   const char* gene_ids_raw,
+                                   int gene_ids_len,
+                                   int n_genes,
+                                   double* expression_vectors,
+                                   int n_samples,
+                                   int n_header_rows,
+                                   int gene_col,
+                                   const int* value_cols,
+                                   int n_value_cols,
+                                   int* ierr,
+                                   const char* delimiter_raw);
+
+void read_gene_ids_from_tsv_file_C(const char* filename_raw,
+                                   int fn_len,
+                                   char* gene_ids_raw,
+                                   int gene_ids_len,
+                                   int n_genes,
+                                   int n_header_rows,
+                                   int gene_col,
+                                   int* ierr);
 
 
+void read_orthofinder_file_C(const char* filename_raw,
+                             int fn_len,
+                             const char* gene_ids_raw,
+                             int gene_ids_len,
+                             int n_genes,
+                             char* family_ids_raw,
+                             int family_ids_len,
+                             int n_families,
+                             int* gene_to_fam,
+                             int* ierr);
+        
+void filter_unassigned_genes_C(const char* gene_ids_raw,
+                               int gene_ids_len,
+                               int n_genes,
+                               const int* gene_to_fam,
+                               int* mask,
+                               int* n_genes_kept,
+                               int* ierr);
+
+void validate_data_structure_C(int n_genes,
+                               int n_families,
+                               int n_samples,
+                               const char* gene_ids_raw,
+                               int gene_ids_len,
+                               const char* gene_family_ids_raw,
+                               int fam_len,
+                               const int* gene_to_fam,
+                               const double* expression_vectors,
+                               const double* family_centroids,
+                               const double* shift_vectors,
+                               int* ierr);
+
+void validate_gene_to_family_mapping_C(const int* gene_to_fam,
+                                       int n_genes,
+                                       int n_families,
+                                       int* ierr);
+
+void validate_expression_data_C(const double* expression_vectors,
+                                int n_genes,
+                                int n_samples,
+                                int check_non_negative,
+                                int* ierr);
+
+void validate_family_centroids_C(const double* family_centroids,
+                                 int n_families,
+                                 int n_samples,
+                                 int* ierr);
+
+void validate_shift_vectors_C(const double* shift_vectors,
+                              const double* expression_vectors,
+                              const double* family_centroids,
+                              const int* gene_to_fam,
+                              int n_genes,
+                              int n_samples,
+                              int n_families,
+                              int* ierr);
+
+void validate_string_array_uniqueness_C(const char* str_arr,
+                                        int str_len,
+                                        int n_strings,
+                                        int* ierr);
+
+void validate_all_data_C(int n_genes,
+                         int n_families,
+                         int n_samples,
+                         const char* gene_ids_raw,
+                         int gene_len,
+                         const char* gene_family_ids_raw,
+                         int fam_len,
+                         const int* gene_to_fam,
+                         const double* expression_vectors,
+                         const double* family_centroids,
+                         const double* shift_vectors,
+                         int* ierr);
+
+void create_zip_archive_generic_c(const char* zip_filename,
+                                  int zip_len,
+                                  const char* keys,
+                                  int keys_len,
+                                  int keys_count,
+                                  const char* filenames,
+                                  int filenames_len,
+                                  int filenames_count,
+                                  int* ierr);
+
+void extract_zip_archive_generic_c(const char* zip_filename,
+                                   int filename_len,
+                                   int* ierr);
+
+}
 
 
 /**
@@ -214,41 +339,27 @@ NumericVector tox_distance_to_centroid_rcpp(NumericVector genes, NumericVector c
 }
 
 /**
- * Calculate tissue versatility and angles
+ * Calculate Tissue Versatility
  */
-
-
 // [[Rcpp::export]]
-List tox_calculate_tissue_versatility_rcpp(NumericMatrix expression_vectors, IntegerVector exp_vecs_selection_index, IntegerVector axes_selection) {
+List tox_calculate_tissue_versatility_rcpp(NumericMatrix expression_vectors, 
+                                      IntegerVector vector_selection, 
+                                      IntegerVector axis_selection) {
     int n_axes = expression_vectors.nrow();
     int n_vectors = expression_vectors.ncol();
-
-    // Count selected vectors / axes (exp_vecs_selection_index & axes_selection are 0/1 ints)
-    int n_selected_vectors = 0;
-    for (int i = 0; i < exp_vecs_selection_index.size(); ++i) {
-        if (exp_vecs_selection_index[i] != 0) ++n_selected_vectors;
-    }
-    int n_selected_axes = 0;
-    for (int i = 0; i < axes_selection.size(); ++i) {
-        if (axes_selection[i] != 0) ++n_selected_axes;
-    }
-
+    int n_selected_vectors = sum(vector_selection);
+    int n_selected_axes = sum(axis_selection);
+    
     NumericVector tissue_versatilities(n_selected_vectors);
     NumericVector tissue_angles_deg(n_selected_vectors);
     int ierr = 0;
-
-    compute_tissue_versatility_c(
-        n_axes, n_vectors,
-        expression_vectors.begin(),
-        exp_vecs_selection_index.begin(),
-        n_selected_vectors,
-        axes_selection.begin(),
-        n_selected_axes,
-        tissue_versatilities.begin(),
-        tissue_angles_deg.begin(),
-        &ierr
-    );
-
+    
+    compute_tissue_versatility_c(n_axes, n_vectors, expression_vectors.begin(),
+                                vector_selection.begin(), n_selected_vectors,
+                                axis_selection.begin(), n_selected_axes,
+                                tissue_versatilities.begin(), 
+                                tissue_angles_deg.begin(), &ierr);
+    
     return List::create(
         Named("tissue_versatilities") = tissue_versatilities,
         Named("tissue_angles_deg") = tissue_angles_deg,
@@ -325,6 +436,8 @@ List tox_log2_transformation_rcpp(NumericMatrix input) {
     );
 }
 
+
+
 /**
  * Calculate tissue averages
  */
@@ -359,6 +472,7 @@ List tox_calc_fchange_rcpp(NumericMatrix input, IntegerVector control_cols, Inte
         Named("ierr") = ierr
     );
 }
+
 
 /**
  * Perform normalization pipeline
@@ -400,13 +514,74 @@ List tox_normalization_pipeline_rcpp(NumericMatrix input, IntegerVector group_s,
         Named("ierr") = ierr
     );
 }
+// [[Rcpp::export]]
+List tox_compute_shift_vector_field_rcpp(NumericMatrix expression_vectors, NumericMatrix family_centroids, IntegerVector gene_to_centroid) {
+    int n_axes_genes = expression_vectors.nrow();
+    int n_vectors = expression_vectors.ncol();
+    int n_axes_centroids = family_centroids.nrow();
+    int n_families = family_centroids.ncol();
+
+    NumericMatrix shift_vectors(2 * n_axes_genes, n_vectors);
+    int ierr = 0;
+
+    compute_shift_vector_field_c(n_axes_genes, n_vectors, n_families,
+                                 expression_vectors.begin(), family_centroids.begin(),
+                                 gene_to_centroid.begin(), shift_vectors.begin(), &ierr);
+
+    NumericVector flat(shift_vectors.begin(), shift_vectors.end());
+
+    return List::create(
+        Named("shift_vectors") = flat,
+        Named("ierr") = ierr
+    );
+}
 
 
+/**
+ * Calculate mean vector
+ */
+// [[Rcpp::export]]
+List tox_mean_vector_rcpp(NumericMatrix expression_vectors, IntegerVector gene_indices) {
+    int n_axes = expression_vectors.nrow();
+    int n_genes = expression_vectors.ncol();
+    int n_selected_genes = gene_indices.length();
+
+    NumericVector centroid_col(n_axes);
+    int ierr = 0;
+
+    mean_vector_c(expression_vectors.begin(), n_axes, n_genes,
+                  gene_indices.begin(), n_selected_genes,
+                  centroid_col.begin(), &ierr);
+
+    return List::create(
+        Named("centroid_col") = centroid_col,
+        Named("ierr") = ierr
+    );
+}
+
+// [[Rcpp::export]]
+List tox_group_centroid_rcpp(NumericMatrix expression_vectors, IntegerVector gene_to_family, int n_families, IntegerVector ortholog_set, String mode) {
+    int n_axes = expression_vectors.nrow();
+    int n_genes = expression_vectors.ncol();
+
+    NumericMatrix centroid_matrix(n_axes, n_families);
+    IntegerVector selected_indices(n_genes);
+    int selected_indices_len = n_genes;
+    int ierr = 0;
+
+    group_centroid_c(expression_vectors.begin(), n_axes, n_genes,
+                     gene_to_family.begin(), n_families,
+                     centroid_matrix.begin(), mode.get_cstring(),
+                     ortholog_set.begin(), selected_indices.begin(),
+                     selected_indices_len, &ierr);
+
+    return List::create(
+        Named("centroid_matrix") = centroid_matrix,
+        Named("ierr") = ierr
+    );
+}
 
 
-// ===================================================================
-// OUTLIER DETECTION WRAPPERS
-// ===================================================================
 
 // [[Rcpp::export]]
 List tox_compute_family_scaling_rcpp(NumericVector distances, IntegerVector gene_to_fam, int n_families) {
@@ -566,7 +741,7 @@ List tox_detect_outliers_rcpp(NumericVector distances, IntegerVector gene_to_fam
   );
 }
 
-
+// ===================================================================
 // [[Rcpp::export]]
 List tox_build_kd_index_rcpp(NumericMatrix X, IntegerVector dim_order) {
   int d = X.nrow();
@@ -822,3 +997,297 @@ List tox_build_spherical_kd_rcpp(NumericMatrix V,IntegerVector dim_order) {
     return List::create(Named("sphere_ix") = sphere_ix,
                         Named("ierr") = ierr
     );}
+
+// ===================================================================
+// TOX DATA RCPP FORWARDERS
+// ===================================================================
+
+
+// [[Rcpp::export]]
+List tox_read_expression_vectors_tsv_rcpp(RawMatrix file_list_raw,
+                                          RawMatrix gene_ids_raw,
+                                          IntegerVector value_cols,
+                                          RawVector delimiter_raw,
+                                          int n_samples,
+                                          int n_header_rows,
+                                          int gene_col) {
+    int file_list_len = file_list_raw.nrow();
+    int n_files = file_list_raw.ncol();
+    int gene_ids_len = gene_ids_raw.nrow();
+    int n_genes = gene_ids_raw.ncol();
+    int n_value_cols = value_cols.size();
+
+    NumericMatrix expression_vectors(n_samples, n_genes);
+    int ierr = 0;
+
+    read_expression_vectors_tsv_C(reinterpret_cast<const char*>(file_list_raw.begin()),
+                                  file_list_len,
+                                  n_files,
+                                  reinterpret_cast<const char*>(gene_ids_raw.begin()),
+                                  gene_ids_len,
+                                  n_genes,
+                                  expression_vectors.begin(),
+                                  n_samples,
+                                  n_header_rows,
+                                  gene_col,
+                                  value_cols.begin(),
+                                  n_value_cols,
+                                  &ierr,
+                                  reinterpret_cast<const char*>(delimiter_raw.begin()));
+
+    return List::create(Named("expression_vectors") = expression_vectors,
+                        Named("ierr") = ierr);
+}
+
+// [[Rcpp::export]]
+List tox_read_gene_ids_from_tsv_file_rcpp(RawVector filename_raw,
+                                          int n_genes,
+                                          int gene_ids_len,
+                                          int n_header_rows,
+                                          int gene_col) {
+    RawMatrix gene_ids_raw(gene_ids_len, n_genes);
+    std::fill(gene_ids_raw.begin(), gene_ids_raw.end(), static_cast<Rbyte>(0));
+
+    int ierr = 0;
+
+    read_gene_ids_from_tsv_file_C(reinterpret_cast<const char*>(filename_raw.begin()),
+                                  static_cast<int>(filename_raw.size()),
+                                  reinterpret_cast<char*>(gene_ids_raw.begin()),
+                                  gene_ids_len,
+                                  n_genes,
+                                  n_header_rows,
+                                  gene_col,
+                                  &ierr);
+
+    return List::create(Named("gene_ids_raw") = gene_ids_raw,
+                        Named("ierr") = ierr);
+}
+
+// [[Rcpp::export]]
+List tox_read_orthofinder_file_rcpp(RawVector filename_raw,
+                                    RawMatrix gene_ids_raw,
+                                    int n_families,
+                                    int family_ids_len) {
+    int gene_ids_len = gene_ids_raw.nrow();
+    int n_genes = gene_ids_raw.ncol();
+
+    RawMatrix family_ids_raw(family_ids_len, n_families);
+    std::fill(family_ids_raw.begin(), family_ids_raw.end(), static_cast<Rbyte>(0));
+    IntegerVector gene_to_fam(n_genes);
+    int ierr = 0;
+
+    read_orthofinder_file_C(reinterpret_cast<const char*>(filename_raw.begin()),
+                            static_cast<int>(filename_raw.size()),
+                            reinterpret_cast<const char*>(gene_ids_raw.begin()),
+                            gene_ids_len,
+                            n_genes,
+                            reinterpret_cast<char*>(family_ids_raw.begin()),
+                            family_ids_len,
+                            n_families,
+                            gene_to_fam.begin(),
+                            &ierr);
+
+    return List::create(Named("family_ids_raw") = family_ids_raw,
+                        Named("gene_to_fam") = gene_to_fam,
+                        Named("ierr") = ierr);
+}
+
+// [[Rcpp::export]]
+List tox_validate_data_structure_rcpp(RawMatrix gene_ids_raw,
+                                      RawMatrix gene_family_ids_raw,
+                                      IntegerVector gene_to_fam,
+                                      NumericMatrix expression_vectors,
+                                      NumericMatrix family_centroids,
+                                      NumericMatrix shift_vectors) {
+    int n_genes = gene_ids_raw.ncol();
+    int gene_ids_len = gene_ids_raw.nrow();
+    int n_families = gene_family_ids_raw.ncol();
+    int fam_len = gene_family_ids_raw.nrow();
+    int n_samples = expression_vectors.nrow();
+    int ierr = 0;
+
+    validate_data_structure_C(n_genes,
+                              n_families,
+                              n_samples,
+                              reinterpret_cast<const char*>(gene_ids_raw.begin()),
+                              gene_ids_len,
+                              reinterpret_cast<const char*>(gene_family_ids_raw.begin()),
+                              fam_len,
+                              gene_to_fam.begin(),
+                              expression_vectors.begin(),
+                              family_centroids.begin(),
+                              shift_vectors.begin(),
+                              &ierr);
+
+    return List::create(Named("ierr") = ierr);
+}
+
+// [[Rcpp::export]]
+List tox_filter_unassigned_genes_rcpp(RawMatrix gene_ids_raw,
+                                      IntegerVector gene_to_fam) {
+    int gene_ids_len = gene_ids_raw.nrow();
+    int n_genes = gene_ids_raw.ncol();
+    IntegerVector mask(n_genes);
+    int n_genes_kept = 0;
+    int ierr = 0;
+
+    filter_unassigned_genes_C(reinterpret_cast<const char*>(gene_ids_raw.begin()),
+                              gene_ids_len,
+                              n_genes,
+                              gene_to_fam.begin(),
+                              mask.begin(),
+                              &n_genes_kept,
+                              &ierr);
+
+    return List::create(Named("mask") = mask,
+                        Named("n_genes_kept") = n_genes_kept,
+                        Named("ierr") = ierr);
+}
+
+// [[Rcpp::export]]
+List tox_validate_gene_to_family_mapping_rcpp(IntegerVector gene_to_fam,
+                                              int n_families) {
+    int n_genes = gene_to_fam.size();
+    int ierr = 0;
+
+    validate_gene_to_family_mapping_C(gene_to_fam.begin(),
+                                      n_genes,
+                                      n_families,
+                                      &ierr);
+
+    return List::create(Named("ierr") = ierr);
+}
+
+// [[Rcpp::export]]
+List tox_validate_expression_data_rcpp(NumericMatrix expression_vectors,
+                                       bool check_non_negative) {
+    int n_samples = expression_vectors.nrow();
+    int n_genes = expression_vectors.ncol();
+    int flag = check_non_negative ? 1 : 0;
+    int ierr = 0;
+
+    validate_expression_data_C(expression_vectors.begin(),
+                               n_genes,
+                               n_samples,
+                               flag,
+                               &ierr);
+
+    return List::create(Named("ierr") = ierr);
+}
+
+// [[Rcpp::export]]
+List tox_validate_family_centroids_rcpp(NumericMatrix family_centroids) {
+    int n_samples = family_centroids.nrow();
+    int n_families = family_centroids.ncol();
+    int ierr = 0;
+
+    validate_family_centroids_C(family_centroids.begin(),
+                                 n_families,
+                                 n_samples,
+                                 &ierr);
+
+    return List::create(Named("ierr") = ierr);
+}
+
+// [[Rcpp::export]]
+List tox_validate_shift_vectors_rcpp(NumericMatrix shift_vectors,
+                                     NumericMatrix expression_vectors,
+                                     NumericMatrix family_centroids,
+                                     IntegerVector gene_to_fam) {
+    int n_samples = expression_vectors.nrow();
+    int n_genes = expression_vectors.ncol();
+    int n_families = family_centroids.ncol();
+    int ierr = 0;
+
+    validate_shift_vectors_C(shift_vectors.begin(),
+                             expression_vectors.begin(),
+                             family_centroids.begin(),
+                             gene_to_fam.begin(),
+                             n_genes,
+                             n_samples,
+                             n_families,
+                             &ierr);
+
+    return List::create(Named("ierr") = ierr);
+}
+
+// [[Rcpp::export]]
+List tox_validate_string_array_uniqueness_rcpp(RawMatrix string_arr_raw) {
+    int str_len = string_arr_raw.nrow();
+    int n_strings = string_arr_raw.ncol();
+    int ierr = 0;
+
+    validate_string_array_uniqueness_C(reinterpret_cast<const char*>(string_arr_raw.begin()),
+                                       str_len,
+                                       n_strings,
+                                       &ierr);
+
+    return List::create(Named("ierr") = ierr);
+}
+
+// [[Rcpp::export]]
+List tox_validate_all_data_rcpp(RawMatrix gene_ids_raw,
+                                RawMatrix gene_family_ids_raw,
+                                IntegerVector gene_to_fam,
+                                NumericMatrix expression_vectors,
+                                NumericMatrix family_centroids,
+                                NumericMatrix shift_vectors) {
+    int n_genes = gene_ids_raw.ncol();
+    int gene_len = gene_ids_raw.nrow();
+    int n_families = gene_family_ids_raw.ncol();
+    int fam_len = gene_family_ids_raw.nrow();
+    int n_samples = expression_vectors.nrow();
+    int ierr = 0;
+
+    validate_all_data_C(n_genes,
+                        n_families,
+                        n_samples,
+                        reinterpret_cast<const char*>(gene_ids_raw.begin()),
+                        gene_len,
+                        reinterpret_cast<const char*>(gene_family_ids_raw.begin()),
+                        fam_len,
+                        gene_to_fam.begin(),
+                        expression_vectors.begin(),
+                        family_centroids.begin(),
+                        shift_vectors.begin(),
+                        &ierr);
+
+    return List::create(Named("ierr") = ierr);
+}
+
+// [[Rcpp::export]]
+List tox_create_zip_archive_generic_rcpp(RawVector zip_filename_raw,
+                                         RawMatrix keys_raw,
+                                         RawMatrix filenames_raw) {
+    int zip_len = zip_filename_raw.size();
+    int keys_len = keys_raw.nrow();
+    int keys_count = keys_raw.ncol();
+    int filenames_len = filenames_raw.nrow();
+    int filenames_count = filenames_raw.ncol();
+    int ierr = 0;
+
+    create_zip_archive_generic_c(reinterpret_cast<const char*>(zip_filename_raw.begin()),
+                                 zip_len,
+                                 reinterpret_cast<const char*>(keys_raw.begin()),
+                                 keys_len,
+                                 keys_count,
+                                 reinterpret_cast<const char*>(filenames_raw.begin()),
+                                 filenames_len,
+                                 filenames_count,
+                                 &ierr);
+
+    return List::create(Named("ierr") = ierr);
+}
+
+// [[Rcpp::export]]
+List tox_extract_zip_archive_generic_rcpp(RawVector zip_filename_raw) {
+    int zip_len = zip_filename_raw.size();
+    int ierr = 0;
+
+    extract_zip_archive_generic_c(reinterpret_cast<const char*>(zip_filename_raw.begin()),
+                                  zip_len,
+                                  &ierr);
+
+    return List::create(Named("ierr") = ierr);
+}
+// ===================================================================
