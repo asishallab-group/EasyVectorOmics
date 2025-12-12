@@ -1,6 +1,6 @@
 dyn.load("build/libtensor-omics.so")
-source("r/tensoromics_functions.R")
-source("r/error_handling.R")
+source("rcpp/tensoromics_functions.R")
+source("rcpp/error_handling.R")
 
 debug <- FALSE
 
