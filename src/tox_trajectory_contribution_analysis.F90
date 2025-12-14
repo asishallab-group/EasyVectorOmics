@@ -3,7 +3,8 @@
 module tox_trajectory_contribution_analysis
     use safeguard
     use, intrinsic :: iso_fortran_env, only: int32, real64
-    use tox_errors, only: set_ok, is_err, set_err, ERR_INVALID_INPUT, validate_dimension_size, validate_all_in_range_real, validate_all_in_range_int, validate_in_range_real
+    use tox_errors, only: set_ok, is_err, set_err, ERR_INVALID_INPUT, validate_dimension_size, validate_all_in_range_real, validate_all_in_range_int, validate_in_range_real, validate_in_range_int
+    use f42_utils, only: init_random, rand_range
     implicit none
 
     ! Baseline computation modes
@@ -11,6 +12,155 @@ module tox_trajectory_contribution_analysis
     integer(int32), parameter :: BASELINE_MIN  = 2
     integer(int32), parameter :: BASELINE_MEAN = 3
 contains
+
+    integer(int32) function select_random_sample_helper(n_samples, current_sample) result(sample)
+        integer(int32), intent(in) :: n_samples
+        integer(int32), intent(in) :: current_sample
+
+        ! pick random sample in range [1,n_samples-1], so a set without `current_sample`
+        sample = int(rand_range(1.0_real64, real(n_samples, real64)), kind=int32)
+
+        ! adjust picked sample for excluded `current_sample`
+        if (sample >= current_sample) then
+            sample = sample + 1
+        end if
+    end function select_random_sample_helper
+
+    !> Selects a random sample different to `current_sample`. For reproducibility call [[f42_utils(module):init_random(subroutine)]] beforehand.
+    subroutine select_random_sample(n_samples, current_sample, random_sample, ierr)
+        integer(int32), intent(in) :: n_samples
+        integer(int32), intent(in) :: current_sample
+        integer(int32), intent(out) :: random_sample
+        integer(int32), intent(out) :: ierr
+
+        call set_ok(ierr)
+
+        call validate_in_range_int(n_samples, ierr, min=2_int32)
+        call validate_in_range_int(current_sample, ierr, min=1_int32, max=n_samples)
+
+        if (is_err(ierr)) return
+
+        random_sample = select_random_sample_helper(n_samples, current_sample)
+    end subroutine select_random_sample
+
+    subroutine perform_permutation_test(trajectories, n_factors, n_samples, n_timepoints, factor_idx, dependent_idx, sample_idx, mode, n_permutations, local_contributions, total_contributions, temp_factor, temp_dependent, ierr, random_seed)
+        integer(int32), intent(in) :: n_factors
+            !! number of factors
+        integer(int32), intent(in) :: n_samples
+            !! number of samples
+        integer(int32), intent(in) :: n_timepoints
+            !! number of timepoints
+        real(real64), dimension(n_factors, n_samples, n_timepoints), intent(in) :: trajectories
+            !! expression vectors across different samples over time
+        integer(int32), intent(in) :: factor_idx
+            !! index of factor to compute the permutation contributions for
+        integer(int32), intent(in) :: dependent_idx
+            !! index of dependent to compute the permutation contributions for
+        integer(int32), intent(in) :: sample_idx
+            !! index of sample to compute the permutation contributions for
+        integer(int32), intent(in) :: mode
+            !! Baseline mode: 1=RAW, 2=MIN, 3=MEAN
+        integer(int32), intent(in) :: n_permutations
+            !! number of permutations to perform
+        real(real64), dimension(n_timepoints, n_permutations), intent(out) :: local_contributions
+            !! Per-timepoint contributions per permutation
+        real(real64), dimension(n_permutations), intent(out) :: total_contributions
+            !! Total contribution (`sum(local_contributions)`) per permutation
+        real(real64), dimension(n_timepoints), intent(out) :: temp_factor
+            !! Working array to hold the factor in contiguous memory
+        real(real64), dimension(n_timepoints), intent(out) :: temp_dependent
+            !! Working array to hold the random dependent in contiguous memory
+        integer(int32), intent(out) :: ierr
+            !! Error code
+        integer(int32), intent(in), optional :: random_seed
+            !! Seed to use for random number generation, default: 42
+
+        integer(int32) :: random_sample, i_perm, i_timepoint
+
+        call set_ok(ierr)
+
+        call validate_dimension_size(n_factors, ierr)
+        call validate_dimension_size(n_samples, ierr)
+        call validate_dimension_size(n_timepoints, ierr)
+        call validate_dimension_size(n_permutations, ierr)
+        call validate_all_in_range_real(trajectories, size(trajectories, kind=int32), ierr)
+        call validate_in_range_int(factor_idx, ierr, min=1, max=n_factors)
+        call validate_in_range_int(dependent_idx, ierr, min=1, max=n_factors)
+        call validate_in_range_int(sample_idx, ierr, min=1, max=n_samples)
+
+        if (is_err(ierr)) return
+
+        call init_random(random_seed)
+
+        do i_timepoint = 1, n_timepoints
+            temp_factor(i_timepoint) = trajectories(factor_idx, sample_idx, i_timepoint)
+        end do
+
+        do i_perm = 1, n_permutations
+            random_sample = select_random_sample_helper(n_samples, sample_idx)
+            do i_timepoint = 1, n_timepoints
+                temp_dependent(i_timepoint) = trajectories(dependent_idx, random_sample, i_timepoint)
+            end do
+
+            call compute_contributions_helper(temp_factor, temp_dependent, n_timepoints, mode, local_contributions(:, i_perm), total_contributions(i_perm), ierr)
+            if (is_err(ierr)) return
+        end do
+    end subroutine perform_permutation_test
+
+    pure subroutine compute_p_values(local_contributions_observed, total_contribution_observed, local_contributions_perm, total_contributions_perm, n_timepoints, n_permutations, local_p_values, total_p_value, ierr)
+        integer(int32), intent(in) :: n_timepoints
+            !! number of timepoints
+        integer(int32), intent(in) :: n_permutations
+            !! number of permutations to perform
+        real(real64), dimension(n_timepoints), intent(in) :: local_contributions_observed
+            !! Per-timepoint contributions for the observed factor-dependent-sample combination
+        real(real64), intent(in) :: total_contribution_observed
+            !! Total contribution (`sum(local_contributions)`) for the observed factor-dependent-sample combination
+        real(real64), dimension(n_timepoints, n_permutations), intent(in) :: local_contributions_perm
+            !! Per-timepoint contributions for the factor-dependent-random_sample combinations from [[tox_trajectory_contribution_analysis(module):perform_permutation_test(subroutine)]]
+        real(real64), dimension(n_permutations), intent(in) :: total_contributions_perm
+            !! Total contribution (`sum(local_contributions)`) for the factor-dependent-random_sample combinations from [[tox_trajectory_contribution_analysis(module):perform_permutation_test(subroutine)]]
+        real(real64), dimension(n_permutations), intent(out) :: local_p_values
+            !! calculated p values for local contributions, like: `(local_contributions_perm >= local_contributions_observed)/n_permutations`
+        real(real64), intent(out) :: total_p_value
+            !! calculated p values for total contributions, like: `(total_contributions_perm >= total_contribution_observed)/n_permutations`
+        integer(int32), intent(out) :: ierr
+            !! Error code
+
+        integer(int32) :: i_perm, i_timepoint
+
+        call set_ok(ierr)
+
+        call validate_dimension_size(n_timepoints, ierr)
+        call validate_dimension_size(n_permutations, ierr)
+        call validate_all_in_range_real(local_contributions_observed, size(local_contributions_observed, kind=int32), ierr)
+        call validate_in_range_real(total_contribution_observed, ierr)
+        call validate_all_in_range_real(local_contributions_perm, size(local_contributions_perm, kind=int32), ierr)
+        call validate_all_in_range_real(total_contributions_perm, size(total_contributions_perm, kind=int32), ierr)
+
+        if (is_err(ierr)) return
+
+        total_p_value = 0.0_real64
+        local_p_values = 0.0_real64
+
+        do i_perm = 1, n_permutations
+            if (total_contributions_perm(i_perm) >= total_contribution_observed) then
+                total_p_value = total_p_value + 1.0_real64
+            end if
+
+            do i_timepoint = 1, n_timepoints
+                if (local_contributions_perm(i_timepoint, i_perm) >= local_contributions_observed(i_timepoint)) then
+                    local_p_values(i_timepoint) = local_p_values(i_timepoint) + 1.0_real64
+                end if
+            end do
+        end do
+
+        do i_timepoint = 1, n_timepoints
+            local_p_values(i_timepoint) = real(nint(local_p_values(i_timepoint), kind=int32), kind=real64) / real(n_permutations, kind=real64)
+        end do
+
+        total_p_value = real(nint(total_p_value, kind=int32), kind=real64) / real(n_permutations, kind=real64)
+    end subroutine compute_p_values
 
     !> This routine performs contribution analysis for a specific factor–dependent pair, no input validation
     pure subroutine compute_contributions_helper(factor, dependent, n_dims, mode, local_contributions, total_contribution, ierr)
@@ -85,6 +235,7 @@ contains
         integer(int32), intent(in) :: n_selected_dependents
             !! number of selected dependents in `dependent_indices`
         real(real64), dimension(n_factors, n_samples, n_timepoints), intent(in) :: trajectories
+            !! expression vectors across different samples over time
         integer(int32), dimension(n_selected_factors), intent(in) :: factor_indices
             !! indices of factors to compute the contributions for
         integer(int32), dimension(n_selected_dependents), intent(in) :: dependent_indices
