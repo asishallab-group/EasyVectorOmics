@@ -3300,3 +3300,159 @@ def tox_compute_all_contributions(trajectories, factor_indices, dependent_indice
         "local_contributions": local_contributions,
         "total_contributions": total_contributions
     }
+
+
+def tox_perform_permutation_test(trajectories, factor_idx, dependent_idx, sample_idx,
+                                 mode, n_permutations, random_seed):
+    """
+    Perform permutation test for a given factor–dependent pair.
+
+    Args:
+        trajectories (np.ndarray): 3D array of shape (n_factors, n_samples, n_timepoints).
+        factor_idx (int): Index of factor (1-based, Fortran convention).
+        dependent_idx (int): Index of dependent (1-based).
+        sample_idx (int): Index of sample (1-based).
+        mode (int): Baseline mode (1=RAW, 2=MIN, 3=MEAN).
+        n_permutations (int): Number of permutations to perform.
+        random_seed (int): Seed for RNG.
+
+    Returns:
+        dict: {
+            "local_contributions": np.ndarray of shape (n_timepoints, n_permutations),
+            "total_contributions": np.ndarray of shape (n_permutations,)
+        }
+    """
+
+    # Ensure Fortran-order contiguous arrays
+    trajectories = np.asfortranarray(trajectories, dtype=np.float64)
+
+    n_factors = ctypes.c_int(trajectories.shape[0])
+    n_samples = ctypes.c_int(trajectories.shape[1])
+    n_timepoints = ctypes.c_int(trajectories.shape[2])
+    factor_idx_c = ctypes.c_int(factor_idx)
+    dependent_idx_c = ctypes.c_int(dependent_idx)
+    sample_idx_c = ctypes.c_int(sample_idx)
+    mode_c = ctypes.c_int(mode)
+    n_permutations_c = ctypes.c_int(n_permutations)
+
+    # Allocate outputs
+    local_contributions = np.empty((n_timepoints.value, n_permutations), dtype=np.float64, order="F")
+    total_contributions = np.empty(n_permutations, dtype=np.float64, order="F")
+    temp_factor = np.empty(n_timepoints.value, dtype=np.float64, order="F")
+    temp_dependent = np.empty(n_timepoints.value, dtype=np.float64, order="F")
+    ierr = ctypes.c_int(0)
+
+    # Setup C wrapper
+    perform_perm_c = lib.perform_permutation_test_c
+    perform_perm_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # trajectories
+        ctypes.POINTER(ctypes.c_int),                                    # n_factors
+        ctypes.POINTER(ctypes.c_int),                                    # n_samples
+        ctypes.POINTER(ctypes.c_int),                                    # n_timepoints
+        ctypes.POINTER(ctypes.c_int),                                    # factor_idx
+        ctypes.POINTER(ctypes.c_int),                                    # dependent_idx
+        ctypes.POINTER(ctypes.c_int),                                    # sample_idx
+        ctypes.POINTER(ctypes.c_int),                                    # mode
+        ctypes.POINTER(ctypes.c_int),                                    # n_permutations
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # local_contributions
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # total_contributions
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # temp_factor
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # temp_dependent
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+        ctypes.POINTER(ctypes.c_int)                                     # random_seed
+    ]
+    perform_perm_c.restype = None
+
+    random_seed_c = ctypes.c_int(random_seed)
+
+    # Call Fortran routine
+    perform_perm_c(trajectories, ctypes.byref(n_factors), ctypes.byref(n_samples),
+                   ctypes.byref(n_timepoints), ctypes.byref(factor_idx_c),
+                   ctypes.byref(dependent_idx_c), ctypes.byref(sample_idx_c),
+                   ctypes.byref(mode_c), ctypes.byref(n_permutations_c),
+                   local_contributions, total_contributions,
+                   temp_factor, temp_dependent,
+                   ctypes.byref(ierr), ctypes.byref(random_seed_c))
+
+    check_err_code(ierr.value)
+
+    _readonly(local_contributions, total_contributions)
+
+    return {
+        "local_contributions": local_contributions,
+        "total_contributions": total_contributions
+    }
+
+
+def tox_compute_p_values(local_contributions_observed,
+                         total_contribution_observed,
+                         local_contributions_perm,
+                         total_contributions_perm,
+                         n_timepoints,
+                         n_permutations):
+    """
+    Compute p-values for observed contributions compared to permutation contributions.
+
+    Args:
+        local_contributions_observed (np.ndarray): 1D array of shape (n_timepoints,)
+        total_contribution_observed (float): Observed total contribution
+        local_contributions_perm (np.ndarray): 2D array of shape (n_timepoints, n_permutations)
+        total_contributions_perm (np.ndarray): 1D array of shape (n_permutations,)
+        n_timepoints (int): Number of timepoints
+        n_permutations (int): Number of permutations
+
+    Returns:
+        dict: {
+            "local_p_values": np.ndarray of shape (n_timepoints,),
+            "total_p_value": float
+        }
+    """
+
+    # Ensure Fortran-order arrays
+    local_contributions_observed = np.asfortranarray(local_contributions_observed, dtype=np.float64)
+    local_contributions_perm = np.asfortranarray(local_contributions_perm, dtype=np.float64)
+    total_contributions_perm = np.asfortranarray(total_contributions_perm, dtype=np.float64)
+
+    n_timepoints_c = ctypes.c_int(n_timepoints)
+    n_permutations_c = ctypes.c_int(n_permutations)
+    total_contribution_observed_c = ctypes.c_double(total_contribution_observed)
+
+    # Allocate outputs
+    local_p_values = np.empty(n_timepoints, dtype=np.float64, order="F")
+    total_p_value = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+
+    # Setup C wrapper
+    compute_p_values_c = lib.compute_p_values_c
+    compute_p_values_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # local_contributions_observed
+        ctypes.POINTER(ctypes.c_double),                                 # total_contribution_observed
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # local_contributions_perm
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # total_contributions_perm
+        ctypes.POINTER(ctypes.c_int),                                    # n_timepoints
+        ctypes.POINTER(ctypes.c_int),                                    # n_permutations
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # local_p_values
+        ctypes.POINTER(ctypes.c_double),                                 # total_p_value
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
+    ]
+    compute_p_values_c.restype = None
+
+    # Call Fortran routine
+    compute_p_values_c(local_contributions_observed,
+                       ctypes.byref(total_contribution_observed_c),
+                       local_contributions_perm,
+                       total_contributions_perm,
+                       ctypes.byref(n_timepoints_c),
+                       ctypes.byref(n_permutations_c),
+                       local_p_values,
+                       ctypes.byref(total_p_value),
+                       ctypes.byref(ierr))
+
+    check_err_code(ierr.value)
+
+    _readonly(local_p_values)
+
+    return {
+        "local_p_values": local_p_values,
+        "total_p_value": total_p_value.value
+    }

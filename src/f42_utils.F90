@@ -50,7 +50,7 @@ contains
     call random_seed(size=size)
 
     ! create the seeding array, has negligible size
-    call random_seed(put=[(seed,i=1,size)])
+    call random_seed(put=[(seed_default_kind,i=1,size)])
   end subroutine init_random
 
   !> Returns a random real number `min <= rand_num < max`. If `min > max`, it will be `max <= rand_num < min`. If `min == max`, it will be `min`.
