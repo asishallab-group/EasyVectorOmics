@@ -124,7 +124,7 @@ contains
             !! Per-timepoint contributions for the factor-dependent-random_sample combinations from [[tox_trajectory_contribution_analysis(module):perform_permutation_test(subroutine)]]
         real(real64), dimension(n_permutations), intent(in) :: total_contributions_perm
             !! Total contribution (`sum(local_contributions)`) for the factor-dependent-random_sample combinations from [[tox_trajectory_contribution_analysis(module):perform_permutation_test(subroutine)]]
-        real(real64), dimension(n_permutations), intent(out) :: local_p_values
+        real(real64), dimension(n_timepoints), intent(out) :: local_p_values
             !! calculated p values for local contributions, like: `(local_contributions_perm >= local_contributions_observed)/n_permutations`
         real(real64), intent(out) :: total_p_value
             !! calculated p values for total contributions, like: `(total_contributions_perm >= total_contribution_observed)/n_permutations`
@@ -608,7 +608,7 @@ subroutine perform_permutation_test_c(trajectories, n_factors, n_samples, n_time
 end subroutine perform_permutation_test_c
 
 !> C-compatible wrapper for [[tox_trajectory_contribution_analysis(module):compute_p_values(subroutine)]]
-subroutine compute_p_values_c(local_contributions_observed, total_contribution_observed, &
+pure subroutine compute_p_values_c(local_contributions_observed, total_contribution_observed, &
     local_contributions_perm, total_contributions_perm, n_timepoints, n_permutations, &
     local_p_values, total_p_value, ierr) bind(C, name="compute_p_values_c")
 

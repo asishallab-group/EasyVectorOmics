@@ -227,8 +227,7 @@ def test_compute_p_values():
     local_perm[:,2] = [3.0, 1.0, 3.0]; total_perm[2] = 7.0
     local_perm[:,3] = [0.0, 0.0, 0.0]; total_perm[3] = 0.0
 
-    result = tox_compute_p_values(local_obs, total_obs, local_perm, total_perm,
-                                  n_timepoints, n_permutations)
+    result = tox_compute_p_values(local_obs, total_obs, local_perm, total_perm)
     local_p = result["local_p_values"]
     total_p = result["total_p_value"]
 
@@ -243,8 +242,7 @@ def test_compute_p_values():
     # -------------------------------
     local_obs_nan = np.array([2.0, 0.0, np.nan], dtype=np.float64, order="F")
     try:
-        tox_compute_p_values(local_obs_nan, total_obs, local_perm, total_perm,
-                             n_timepoints, n_permutations)
+        tox_compute_p_values(local_obs_nan, total_obs, local_perm, total_perm)
     except RuntimeError:
         pass  # Expected error
 
@@ -254,17 +252,7 @@ def test_compute_p_values():
     local_perm_inf = local_perm.copy(order="F")
     local_perm_inf[2,3] = np.inf
     try:
-        tox_compute_p_values(local_obs, total_obs, local_perm_inf, total_perm,
-                             n_timepoints, n_permutations)
-    except RuntimeError:
-        pass  # Expected error
-
-    # -------------------------------
-    # Case 4: Wrong dimension size
-    # -------------------------------
-    try:
-        tox_compute_p_values(local_obs, total_obs, local_perm, total_perm,
-                             n_timepoints+1, n_permutations)
+        tox_compute_p_values(local_obs, total_obs, local_perm_inf, total_perm)
     except RuntimeError:
         pass  # Expected error
 

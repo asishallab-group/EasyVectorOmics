@@ -3387,9 +3387,7 @@ def tox_perform_permutation_test(trajectories, factor_idx, dependent_idx, sample
 def tox_compute_p_values(local_contributions_observed,
                          total_contribution_observed,
                          local_contributions_perm,
-                         total_contributions_perm,
-                         n_timepoints,
-                         n_permutations):
+                         total_contributions_perm):
     """
     Compute p-values for observed contributions compared to permutation contributions.
 
@@ -3398,7 +3396,6 @@ def tox_compute_p_values(local_contributions_observed,
         total_contribution_observed (float): Observed total contribution
         local_contributions_perm (np.ndarray): 2D array of shape (n_timepoints, n_permutations)
         total_contributions_perm (np.ndarray): 1D array of shape (n_permutations,)
-        n_timepoints (int): Number of timepoints
         n_permutations (int): Number of permutations
 
     Returns:
@@ -3413,12 +3410,12 @@ def tox_compute_p_values(local_contributions_observed,
     local_contributions_perm = np.asfortranarray(local_contributions_perm, dtype=np.float64)
     total_contributions_perm = np.asfortranarray(total_contributions_perm, dtype=np.float64)
 
-    n_timepoints_c = ctypes.c_int(n_timepoints)
-    n_permutations_c = ctypes.c_int(n_permutations)
+    n_timepoints_c = ctypes.c_int(len(local_contributions_observed))
+    n_permutations_c = ctypes.c_int(len(total_contributions_perm))
     total_contribution_observed_c = ctypes.c_double(total_contribution_observed)
 
     # Allocate outputs
-    local_p_values = np.empty(n_timepoints, dtype=np.float64, order="F")
+    local_p_values = np.empty(n_timepoints_c.value, dtype=np.float64, order="F")
     total_p_value = ctypes.c_double(0.0)
     ierr = ctypes.c_int(0)
 
