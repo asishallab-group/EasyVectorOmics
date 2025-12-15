@@ -1276,23 +1276,7 @@ w_{t,s_{7G}}\,\vec{p}_{s_{7G}}^{(G)} \big],
 \]
 where $\vec{p}_{s}^{(i)}$ denotes the trajectory vector of country $i$ at time point $s$.
 
-From each module matrix $M_{\mathrm{group},t}$ we compute the four Tensor Omics field descriptors introduced previously: \textbf{(i)} the signal strength (energy), \textbf{(ii)} the principal direction of flow, \textbf{(iii)} the effective dimensionality (rank), and \textbf{(iv)} the rotation vector. The energy is defined as the Frobenius norm
-\[
-E(t) = \|M_{\mathrm{group},t}\|_F,
-\]
-representing the square root of the total signal energy in the module. To obtain the flow and rotational components we first compute the covariance-like matrix
-\[
-C(t) = M_{\mathrm{group},t}\,M_{\mathrm{group},t}^{T}.
-\]
-The principal flow direction at time $t$ is the first eigenvector of $C(t)$, denoted $\vec{d}_{\mathrm{flow}}(t)$. The rotational behaviour is obtained from the antisymmetric part
-\[
-A(t) = C(t) - C(t)^{T},
-\]
-from which we derive the rotation vector $\vec{r}(t)$. Its direction encodes the axis of rotation, its magnitude the rotation strength, and its sign determines the orientation of rotation. The effective rank of $M_{\mathrm{group},t}$ provides a measure of the module's directional spread or intrinsic dimensionality at time $t$. See section \ref{field-descs} for more details.
-
-To allow direct comparison across indicators with different units and scales, the individual measurement axes are standardised by dividing each axis by its empirical standard deviation prior to constructing the module matrices. With this scaling, the temporal profiles $E(t)$ and $\mathrm{rank}(M_{\mathrm{group},t})$ can be plotted together as two aligned curves: one describing the overall strength of the group's developmental movement and the other describing the complexity or multi-dimensionality of that movement. For example, a high-energy, low-rank regime indicates strong but coordinated group-wide development, whereas a high-energy, high-rank regime reflects strong but heterogeneous changes.
-
-Further geometric insight is obtained by examining the principal flow vectors and rotation vectors in the Relative Axes Plane (RAP). For this purpose, we project $\vec{d}_{\mathrm{flow}}(t)$ and $\vec{r}(t)$ orthogonally to the space diagonal, obtaining $\vec{d}^{\mathrm{RAP}}_{\mathrm{flow}}(t)$ and $\vec{r}^{\mathrm{RAP}}(t)$. These projected vectors can be plotted in a clock-plot representation, in which the axes of the semantic space are arranged at equal angular intervals. The resulting time series of projected flow vectors traces out how the dominant direction of group-level development shifts among the semantic axes, while the series of projected rotation vectors shows how trade-offs or rebalancing dynamics evolve through time.
+From each module matrix $M_{\mathrm{group},t}$ we compute the four Tensor Omics field descriptors introduced in section \ref{field-descs}.
 
 Taken together, the group-level field descriptors provide a coherent geometric summary of development patterns across multiple entities. They reveal, for example, whether first-world countries undergo smooth, low-rank, high-coordination shifts, whether developing countries experience bursts of high-energy, multi-dimensional change, or whether global-south countries traverse distinct phases in their flow or rotation trajectories. These descriptors also highlight temporal regions of heightened rebalancing, shocks, or directional pivots, thereby offering a compact and interpretable characterisation of group-level dynamics in high-dimensional semantic spaces.
 
