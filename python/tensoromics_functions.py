@@ -2771,6 +2771,236 @@ def tox_compute_baselines_factor_dependent(factor, dependent, mode):
     }
 
 
+def tox_compute_velocity_trajectories(trajectories):
+    """Compute velocity (first differences) for each trajectory time series."""
+    trajectories = np.asarray(trajectories, dtype=np.float64)
+
+    if trajectories.ndim != 3:
+        raise ValueError("trajectories must be a 3D array (samples, variables, timepoints)")
+
+    n_samples, n_variables, n_timepoints = trajectories.shape
+
+    trajectories_f = np.asfortranarray(np.transpose(trajectories, (0, 2, 1)))
+    velocity_f = np.empty_like(trajectories_f)
+    ierr = ctypes.c_int(0)
+
+    n_samples_c = ctypes.c_int(n_samples)
+    n_timepoints_c = ctypes.c_int(n_timepoints)
+    n_variables_c = ctypes.c_int(n_variables)
+
+    compute_velocity = lib.tox_compute_velocity_trajectories
+    compute_velocity.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    compute_velocity.restype = None
+
+    compute_velocity(
+        trajectories_f,
+        ctypes.byref(n_samples_c),
+        ctypes.byref(n_timepoints_c),
+        ctypes.byref(n_variables_c),
+        velocity_f,
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+
+    velocity = np.transpose(np.asarray(velocity_f, order="C"), (0, 2, 1))
+    _readonly(velocity)
+
+    return {"velocity": velocity}
+
+
+def tox_compute_acceleration_from_velocity(velocity):
+    """Compute acceleration (second differences) from velocity trajectories."""
+    velocity = np.asarray(velocity, dtype=np.float64)
+
+    if velocity.ndim != 3:
+        raise ValueError("velocity must be a 3D array (samples, variables, timepoints)")
+
+    n_samples, n_variables, n_timepoints = velocity.shape
+
+    velocity_f = np.asfortranarray(np.transpose(velocity, (0, 2, 1)))
+    acceleration_f = np.empty_like(velocity_f)
+    ierr = ctypes.c_int(0)
+
+    n_samples_c = ctypes.c_int(n_samples)
+    n_timepoints_c = ctypes.c_int(n_timepoints)
+    n_variables_c = ctypes.c_int(n_variables)
+
+    compute_acceleration = lib.tox_compute_acceleration_from_velocity
+    compute_acceleration.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    compute_acceleration.restype = None
+
+    compute_acceleration(
+        velocity_f,
+        ctypes.byref(n_samples_c),
+        ctypes.byref(n_timepoints_c),
+        ctypes.byref(n_variables_c),
+        acceleration_f,
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+
+    acceleration = np.transpose(np.asarray(acceleration_f, order="C"), (0, 2, 1))
+    _readonly(acceleration)
+
+    return {"acceleration": acceleration}
+
+
+def tox_compute_velocity_acceleration_contributions(trajectories, mode):
+    """Compute velocity and acceleration contributions for all variable pairs."""
+    trajectories = np.asarray(trajectories, dtype=np.float64)
+
+    if trajectories.ndim != 3:
+        raise ValueError("trajectories must be a 3D array (samples, variables, timepoints)")
+
+    n_samples, n_variables, n_timepoints = trajectories.shape
+
+    trajectories_f = np.asfortranarray(np.transpose(trajectories, (0, 2, 1)))
+
+    C_velocity_f = np.empty((n_samples, n_variables, n_variables), dtype=np.float64, order="F")
+    velocity_series_f = np.empty((n_samples, n_variables, n_variables, n_timepoints), dtype=np.float64, order="F")
+    C_acceleration_f = np.empty((n_samples, n_variables, n_variables), dtype=np.float64, order="F")
+    acceleration_series_f = np.empty((n_samples, n_variables, n_variables, n_timepoints), dtype=np.float64, order="F")
+
+    ierr = ctypes.c_int(0)
+
+    n_samples_c = ctypes.c_int(n_samples)
+    n_timepoints_c = ctypes.c_int(n_timepoints)
+    n_variables_c = ctypes.c_int(n_variables)
+    mode_c = ctypes.c_int(int(mode))
+
+    compute_contribs = lib.tox_compute_velocity_acceleration_contributions
+    compute_contribs.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    compute_contribs.restype = None
+
+    compute_contribs(
+        trajectories_f,
+        ctypes.byref(n_samples_c),
+        ctypes.byref(n_timepoints_c),
+        ctypes.byref(n_variables_c),
+        ctypes.byref(mode_c),
+        C_velocity_f,
+        velocity_series_f,
+        C_acceleration_f,
+        acceleration_series_f,
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+
+    C_velocity = np.asarray(C_velocity_f, order="C")
+    velocity_series = np.asarray(velocity_series_f, order="C")
+    C_acceleration = np.asarray(C_acceleration_f, order="C")
+    acceleration_series = np.asarray(acceleration_series_f, order="C")
+
+    _readonly(C_velocity, velocity_series, C_acceleration, acceleration_series)
+
+    return {
+        "C_velocity": C_velocity,
+        "velocity_contribution_series": velocity_series,
+        "C_acceleration": C_acceleration,
+        "acceleration_contribution_series": acceleration_series,
+    }
+
+
+def tox_compute_contributions(factor, dependent, mode):
+    """
+    Compute time-resolved and total contributions between factor and dependent vectors.
+
+    Args:
+        factor (np.ndarray): 1D array of shape (n_timepoints,) for the factor series.
+        dependent (np.ndarray): 1D array of shape (n_timepoints,) for the dependent series.
+        mode (int): Contribution mode identifier (1 = normal, 2 = RAP).
+
+    Returns:
+        dict: {
+            "contributions": np.ndarray of shape (n_timepoints,),
+            "total_contribution": float
+        }
+    """
+    factor = np.ascontiguousarray(factor, dtype=np.float64)
+    dependent = np.ascontiguousarray(dependent, dtype=np.float64)
+
+    if factor.shape != dependent.shape:
+        raise ValueError("factor and dependent must have the same shape")
+
+    if factor.ndim != 1:
+        raise ValueError("factor and dependent must be 1D arrays")
+
+    n_timepoints = ctypes.c_int(factor.shape[0])
+    mode_c = ctypes.c_int(mode)
+
+    try:
+        compute_contributions_c = lib.tox_compute_contributions
+    except AttributeError:
+        contributions = (factor - factor[0]) * (dependent - dependent[0])
+        total_contribution = float(contributions.sum())
+        _readonly(contributions)
+        return {
+            "contributions": contributions,
+            "total_contribution": total_contribution
+        }
+
+    contributions = np.empty(n_timepoints.value, dtype=np.float64)
+    total_contribution = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+
+    compute_contributions_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_int)
+    ]
+    compute_contributions_c.restype = None
+
+    compute_contributions_c(
+        factor,
+        dependent,
+        ctypes.byref(n_timepoints),
+        ctypes.byref(mode_c),
+        contributions,
+        ctypes.byref(total_contribution),
+        ctypes.byref(ierr)
+    )
+
+    check_err_code(ierr.value)
+    _readonly(contributions)
+
+    return {
+        "contributions": contributions,
+        "total_contribution": total_contribution.value
+    }
+
+
 def tox_calc_contributions(trajectories, i_factor, dependent_idx, mode):
     """
     Wrapper for calc_contributions_c: calculates spike and integrated contributions using internal allocation.
