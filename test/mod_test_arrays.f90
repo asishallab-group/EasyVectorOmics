@@ -621,7 +621,6 @@ contains
     complex(real64), allocatable :: carr(:,:,:,:), carr2(:,:,:,:)
     character(len=100) :: fname
     integer(int32) :: ierr, ndims, dims(5)
-    integer(int32) :: i
     call set_ok(ierr)
     allocate(carr(2,2,1,2))
     
@@ -650,7 +649,6 @@ contains
     complex(real64), allocatable :: carr(:,:,:,:,:), carr2(:,:,:,:,:)
     character(len=100) :: fname
     integer(int32) :: ierr, ndims, dims(5)
-    integer(int32) :: i
     call set_ok(ierr)
 
     allocate(carr(2,1,2,1,2))
