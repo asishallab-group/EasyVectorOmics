@@ -19,13 +19,143 @@ from tensoromics_functions import (
     tox_calc_contributions_expert,
     tox_process_trajectories,
     tox_process_trajectories_flat,
-    tox_compute_baselines_factor_dependent
+    tox_compute_baselines_factor_dependent,
+    tox_compute_contributions,
+    tox_compute_velocity_trajectories,
+    tox_compute_acceleration_from_velocity,
+    tox_compute_velocity_acceleration_contributions,
 )
+
+
 
 # Constants
 TOL = 1e-12
 MODE_NORMAL = 1
 MODE_RAP = 2
+
+
+
+
+def _expected_velocity(trajectories: np.ndarray) -> np.ndarray:
+    trajectories = np.asarray(trajectories, dtype=np.float64)
+    if trajectories.ndim != 3:
+        raise ValueError("trajectories must be 3D")
+
+    traj_f = np.transpose(trajectories, (0, 2, 1))
+    velocity_f = np.zeros_like(traj_f)
+    if traj_f.shape[1] > 1:
+        velocity_f[:, 1:, :] = traj_f[:, 1:, :] - traj_f[:, :-1, :]
+    return np.transpose(velocity_f, (0, 2, 1))
+
+
+def _expected_acceleration(velocity: np.ndarray) -> np.ndarray:
+    velocity = np.asarray(velocity, dtype=np.float64)
+    if velocity.ndim != 3:
+        raise ValueError("velocity must be 3D")
+
+    vel_f = np.transpose(velocity, (0, 2, 1))
+    acceleration_f = np.zeros_like(vel_f)
+    if vel_f.shape[1] > 2:
+        acceleration_f[:, 2:, :] = vel_f[:, 2:, :] - 2.0 * vel_f[:, 1:-1, :] + vel_f[:, :-2, :]
+    return np.transpose(acceleration_f, (0, 2, 1))
+
+
+def test_tox_compute_velocity_trajectories():
+    """Test velocity computation wrapper."""
+    trajectories = np.array(
+        [[[1.0, 2.0, 4.0, 7.0],
+          [0.0, -1.0, -1.0,  0.0]]],
+        dtype=np.float64,
+    )
+
+    result = tox_compute_velocity_trajectories(trajectories)
+    velocity = result["velocity"]
+
+    expected = _expected_velocity(trajectories)
+
+    assert velocity.shape == trajectories.shape
+    assert np.allclose(velocity, expected, atol=TOL)
+
+    print("✅ tox_compute_velocity_trajectories passed.")
+
+
+def test_tox_compute_acceleration_from_velocity():
+    """Test acceleration computation wrapper."""
+    velocity = np.array(
+        [[[0.0, 1.0, 2.0, 3.0],
+          [0.0, -1.0, 0.0, 1.0]]],
+        dtype=np.float64,
+    )
+
+    result = tox_compute_acceleration_from_velocity(velocity)
+    acceleration = result["acceleration"]
+
+    expected = _expected_acceleration(velocity)
+
+    assert acceleration.shape == velocity.shape
+    assert np.allclose(acceleration, expected, atol=TOL)
+
+    print("✅ tox_compute_acceleration_from_velocity passed.")
+
+
+def test_tox_compute_velocity_acceleration_contributions():
+    
+    """Test velocity and acceleration contribution computation wrapper."""
+    trajectories = np.array(
+        [[[1.0, 3.0, 6.0, 10.0],
+          [1.0, 2.0, 2.0, 1.0]]],
+        dtype=np.float64,
+    )
+    mode = MODE_NORMAL
+
+    result = tox_compute_velocity_acceleration_contributions(trajectories, mode)
+
+    C_vel = result["C_velocity"]
+    series_vel = result["velocity_contribution_series"]
+    C_acc = result["C_acceleration"]
+    series_acc = result["acceleration_contribution_series"]
+
+    assert C_vel.shape == (1, 2, 2)
+    assert series_vel.shape == (1, 2, 2, 4)
+    assert C_acc.shape == (1, 2, 2)
+    assert series_acc.shape == (1, 2, 2, 4)
+
+    expected_velocity = _expected_velocity(trajectories)
+    expected_acceleration = _expected_acceleration(expected_velocity)
+
+    factor_velocity = expected_velocity[0, 0, 1:]
+    dependent_velocity = expected_velocity[0, 1, 1:]
+    factor_acceleration = expected_acceleration[0, 0, 2:]
+    dependent_acceleration = expected_acceleration[0, 1, 2:]
+
+    expected_series_vel = np.zeros(4)
+    if factor_velocity.size > 0:
+        vel_factor_centered = factor_velocity - factor_velocity[0]
+        vel_dependent_centered = dependent_velocity - dependent_velocity[0]
+        vel_contribs = vel_factor_centered * vel_dependent_centered
+        expected_total_vel = vel_contribs.sum()
+        expected_series_vel[1:] = vel_contribs
+    else:
+        expected_total_vel = 0.0
+
+    expected_series_acc = np.zeros(4)
+    if factor_acceleration.size > 0:
+        acc_factor_centered = factor_acceleration - factor_acceleration[0]
+        acc_dependent_centered = dependent_acceleration - dependent_acceleration[0]
+        acc_contribs = acc_factor_centered * acc_dependent_centered
+        expected_total_acc = acc_contribs.sum()
+        expected_series_acc[2:] = acc_contribs
+    else:
+        expected_total_acc = 0.0
+
+    assert np.isclose(C_vel[0, 0, 1], expected_total_vel, atol=TOL)
+    assert np.allclose(series_vel[0, 0, 1, :], expected_series_vel, atol=TOL)
+    assert np.isclose(C_acc[0, 0, 1], expected_total_acc, atol=TOL)
+    assert np.allclose(series_acc[0, 0, 1, :], expected_series_acc, atol=TOL)
+
+    print("✅ tox_compute_velocity_acceleration_contributions passed.")
+
+
 
 
 def test_tox_compute_baselines_factor_dependent():
@@ -64,6 +194,24 @@ def test_tox_compute_baselines_factor_dependent():
         pass
 
     print("✅ tox_compute_baselines_factor_dependent passed all tests.")
+
+
+def test_tox_compute_contributions():
+    factor = np.array([1.0, 3.0, 6.0, 10.0], dtype=np.float64)
+    dependent = np.array([2.0, 2.5, 3.5, 5.0], dtype=np.float64)
+
+    result = tox_compute_contributions(factor, dependent, MODE_NORMAL)
+    contributions = result["contributions"]
+    total = result["total_contribution"]
+
+    expected_contributions = (factor - factor[0]) * (dependent - dependent[0])
+    expected_total = expected_contributions.sum()
+
+    assert contributions.shape == factor.shape
+    assert np.allclose(contributions, expected_contributions, atol=TOL)
+    assert np.isclose(total, expected_total, atol=TOL)
+
+    print("✅ tox_compute_contributions passed.")
 
 
 def test_tox_trajectory_contribution():
@@ -320,11 +468,15 @@ def main():
     test_tox_spike_contribution()
     test_tox_trajectory_contribution()
     test_tox_compute_baselines_factor_dependent()
+    test_tox_compute_contributions()
     test_tox_calc_contributions()
     test_tox_process_trajectories()
     test_tox_process_trajectories_flat()
     test_process_trajectories_edge_cases()
     test_process_trajectories_consistency()
+    test_tox_compute_velocity_trajectories()
+    test_tox_compute_acceleration_from_velocity()
+    test_tox_compute_velocity_acceleration_contributions()
 
 if __name__ == "__main__":
     main()
