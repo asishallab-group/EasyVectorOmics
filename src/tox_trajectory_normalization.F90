@@ -1,8 +1,7 @@
 module tox_trajectory_normalization
     use, intrinsic :: iso_fortran_env, only: real64, int32
-    use tox_errors, only: ERR_NAN_INF, set_ok, set_err, is_err, validate_dimension_size
+    use tox_errors, only: ERR_NAN_INF, set_ok, set_err, is_err, validate_dimension_size, validate_all_in_range_real
     use safeguard
-    use ieee_arithmetic, only: ieee_is_nan, ieee_is_finite
     implicit none
     
     private
@@ -29,12 +28,8 @@ contains
         ! Initialize
         call set_ok(ierr)
 
-        do i = 1, n_points
-            if(ieee_is_nan(v(i)) .or. .not. ieee_is_finite(v(i))) then
-                call set_err(ierr, ERR_NAN_INF)
-                return
-            end if
-        end do
+        call validate_all_in_range_real(v, n_points, ierr)
+        if(is_err(ierr)) return
         
         ! Check for empty array
         call validate_dimension_size(n_points, ierr)
@@ -76,6 +71,8 @@ contains
         !! Error code
         
         integer(int32) :: i_factor
+
+        real(real64), dimension(n_timepoints) :: temp_series, temp_series_norm
         
         ! Initialize
         call set_ok(ierr)
@@ -85,10 +82,12 @@ contains
         
         ! Normalize each factor independently across time
         do i_factor = 1, n_factors
+            temp_series = trajectory(i_factor, :)
             call normalize_variable_timeseries( &
-                trajectory(i_factor, :), &           ! Time series for this factor
-                trajectory_norm(i_factor, :), &      ! Normalized time series
+                temp_series, &           ! Time series for this factor
+                temp_series_norm, &      ! Normalized time series
                 n_timepoints, ierr)
+            trajectory_norm(i_factor, :) = temp_series_norm
             
             if (is_err(ierr)) return
         end do
@@ -113,7 +112,9 @@ contains
         integer(int32), intent(out) :: ierr
         !! Error code
         
-        integer(int32) :: i_sample
+        integer(int32) :: i_sample, i_factor
+
+        real(real64), dimension(n_timepoints) :: temp_series, temp_series_norm
         
         call set_ok(ierr)
 
@@ -122,13 +123,14 @@ contains
         
         ! Normalize each sample/entity independently
         do i_sample = 1, n_samples
-            ! Normalize each factor across time for this sample
-            call normalize_single_trajectory( &
-                trajectories(:, i_sample, :), &
-                trajectories_norm(:, i_sample, :), &
-                n_factors, n_timepoints, ierr)
-            
-            if (is_err(ierr)) return
+            do i_factor = 1, n_factors
+                temp_series = trajectories(i_factor, i_sample, :)
+
+                call normalize_variable_timeseries(temp_series, temp_series_norm, n_timepoints, ierr)
+                
+                if (is_err(ierr)) return
+                trajectories_norm(i_factor, i_sample, :) = temp_series_norm
+            end do
         end do
         
     end subroutine normalize_all_trajectories
