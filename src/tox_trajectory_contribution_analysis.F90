@@ -557,6 +557,269 @@ contains
         end do
         
     end subroutine process_trajectories_flat_alloc
+    !> Compute time-resolved contributions and total contribution from factor and dependent variable time series.
+    subroutine compute_contributions( factor_vector, dependent_vector, n_timepoints, mode, &
+        contributions, total_contribution, ierr )
+
+    use tox_errors, only : set_ok, set_err, is_err, ERR_ALLOC_FAIL, validate_dimension_size
+    implicit none
+
+    integer(int32), intent(in) :: n_timepoints
+    integer(int32), intent(in) :: mode
+    real(real64), intent(in)  :: factor_vector(n_timepoints)
+    real(real64), intent(in)  :: dependent_vector(n_timepoints)
+    real(real64), intent(out) :: contributions(n_timepoints)
+    real(real64), intent(out) :: total_contribution
+    integer(int32), intent(out) :: ierr
+
+    integer(int32) :: time_index
+
+    !> Baseline value for the factor variable.
+    real(real64) :: baseline_factor
+    !> Baseline value for the dependent variable.
+    real(real64) :: baseline_dependent
+
+
+    call set_ok(ierr)
+
+  
+    ! Ensure the dependent vector has the same length.
+    if (size(dependent_vector) /= n_timepoints .or. size(factor_vector) /= n_timepoints) then
+        ! There is no dedicated "dimension mismatch" error code in this context,
+        ! so we reuse ERR_ALLOC_FAIL as a generic failure.
+        call set_err(ierr, ERR_ALLOC_FAIL)
+        return
+    end if
+
+    ! Use the common dimension validation utility.
+    call validate_dimension_size(n_timepoints, ierr)
+    if (is_err(ierr)) return
+
+
+    baseline_factor    = factor_vector(1)
+    baseline_dependent = dependent_vector(1)
+
+    contributions      = 0.0_real64
+    total_contribution = 0.0_real64
+
+    do time_index = 1, n_timepoints
+
+        contributions(time_index) = ( factor_vector(time_index)    - baseline_factor ) &
+                                  * ( dependent_vector(time_index) - baseline_dependent )
+
+        total_contribution = total_contribution + contributions(time_index)
+
+    end do
+
+end subroutine compute_contributions
+
+
+!> Compute velocity trajectories from position trajectories
+
+subroutine compute_velocity_trajectories(trajectories, velocity, &
+                                         n_samples, n_timepoints, n_variables, ierr)
+    use tox_errors, only : set_ok, validate_dimension_size
+    implicit none
+
+    integer(int32), intent(in)  :: n_samples, n_timepoints, n_variables
+    integer(int32), intent(out) :: ierr
+    real(real64), intent(in)  :: trajectories(n_samples, n_timepoints, n_variables)
+    real(real64), intent(out) :: velocity(n_samples, n_timepoints, n_variables)
+
+    integer(int32) :: sample, var, t
+
+    call set_ok(ierr)
+    call validate_dimension_size(n_samples, ierr)
+    call validate_dimension_size(n_timepoints, ierr)
+    call validate_dimension_size(n_variables, ierr)
+    if (is_err(ierr)) return
+
+    velocity = 0.0_real64
+    do sample = 1, n_samples
+        do var = 1, n_variables
+            do t = 2, n_timepoints
+                velocity(sample, t, var) = trajectories(sample, t, var) - &
+                                           trajectories(sample, t - 1, var)
+            end do
+        end do
+    end do
+end subroutine compute_velocity_trajectories
+
+!> Compute acceleration trajectories from velocity trajectories
+subroutine compute_acceleration_from_velocity(velocity, acceleration, &
+                                              n_samples, n_timepoints, n_variables, ierr)
+    use tox_errors, only : set_ok, validate_dimension_size
+    implicit none
+
+    integer(int32), intent(in)  :: n_samples, n_timepoints, n_variables
+    integer(int32), intent(out) :: ierr
+    real(real64), intent(in)  :: velocity(n_samples, n_timepoints, n_variables)
+    real(real64), intent(out) :: acceleration(n_samples, n_timepoints, n_variables)
+
+    integer(int32) :: sample, var, t
+
+    call set_ok(ierr)
+
+    call validate_dimension_size(n_samples, ierr)
+    call validate_dimension_size(n_timepoints, ierr)
+    call validate_dimension_size(n_variables, ierr)
+    if (is_err(ierr)) return
+
+    acceleration = 0.0_real64
+    if (n_timepoints <= 2) return
+
+    do sample = 1, n_samples
+        do var = 1, n_variables
+            do t = 3, n_timepoints
+                acceleration(sample, t, var) = velocity(sample, t, var) - &
+                                               2.0_real64 * velocity(sample, t - 1, var) + &
+                                               velocity(sample, t - 2, var)
+            end do
+        end do
+    end do
+end subroutine compute_acceleration_from_velocity
+
+!> Compute velocity and acceleration contributions for all variable pairs in the trajectories
+subroutine compute_velocity_acceleration_contributions( trajectories, n_samples, n_timepoints, n_variables, mode, &
+        C_velocity, velocity_contribution_series, &
+        C_acceleration, acceleration_contribution_series, ierr)
+
+    use tox_errors, only : set_ok, set_err, is_err, ERR_ALLOC_FAIL, validate_dimension_size
+    implicit none
+
+    integer(int32), intent(in)  :: n_samples, n_timepoints, n_variables
+    integer(int32), intent(in)  :: mode
+    real(real64),   intent(in)  :: trajectories(n_samples, n_timepoints, n_variables)
+    real(real64),   intent(out) :: C_velocity(n_samples, n_variables, n_variables)
+    real(real64),   intent(out) :: velocity_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+    real(real64),   intent(out) :: C_acceleration(n_samples, n_variables, n_variables)
+    real(real64),   intent(out) :: acceleration_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+    integer(int32), intent(out) :: ierr
+
+    real(real64), allocatable :: velocity(:,:,:)
+    real(real64), allocatable :: acceleration(:,:,:)
+    real(real64), allocatable :: factor_velocity(:)
+    real(real64), allocatable :: dependent_velocity(:)
+    real(real64), allocatable :: velocity_contributions(:)
+    real(real64), allocatable :: factor_acceleration(:)
+    real(real64), allocatable :: dependent_acceleration(:)
+    real(real64), allocatable :: acceleration_contributions(:)
+    real(real64) :: total_velocity_contribution
+    real(real64) :: total_acceleration_contribution
+    integer(int32) :: sample, factor_index, dependent_index, time_index
+    integer :: stat_alloc
+
+    call set_ok(ierr)
+
+    call validate_dimension_size(n_samples, ierr)
+    call validate_dimension_size(n_timepoints, ierr)
+    call validate_dimension_size(n_variables, ierr)
+    if (is_err(ierr)) return
+
+    C_velocity                     = 0.0_real64
+    velocity_contribution_series   = 0.0_real64
+    C_acceleration                 = 0.0_real64
+    acceleration_contribution_series = 0.0_real64
+
+    allocate(velocity(n_samples, n_timepoints, n_variables), stat=stat_alloc)
+    if (stat_alloc /= 0) then
+        call set_err(ierr, ERR_ALLOC_FAIL)
+        return
+    end if
+
+    allocate(acceleration(n_samples, n_timepoints, n_variables), stat=stat_alloc)
+    if (stat_alloc /= 0) then
+        call set_err(ierr, ERR_ALLOC_FAIL)
+        deallocate(velocity)
+        return
+    end if
+
+    call compute_velocity_trajectories(trajectories, velocity, n_samples, n_timepoints, n_variables, ierr)
+    if (is_err(ierr)) then
+        deallocate(acceleration, velocity)
+        return
+    end if
+
+    call compute_acceleration_from_velocity(velocity, acceleration, n_samples, n_timepoints, n_variables, ierr)
+    if (is_err(ierr)) then
+        deallocate(acceleration, velocity)
+        return
+    end if
+
+    do sample = 1, n_samples
+        do factor_index = 1, n_variables
+            do dependent_index = 1, n_variables
+
+                if (n_timepoints > 1) then
+                    allocate(factor_velocity(n_timepoints-1), dependent_velocity(n_timepoints-1), &
+                             velocity_contributions(n_timepoints-1), stat=stat_alloc)
+                    if (stat_alloc /= 0) then
+                        call set_err(ierr, ERR_ALLOC_FAIL)
+                        deallocate(acceleration, velocity)
+                        return
+                    end if
+
+                    do time_index = 2, n_timepoints
+                        factor_velocity(time_index-1)    = velocity(sample, time_index, factor_index)
+                        dependent_velocity(time_index-1) = velocity(sample, time_index, dependent_index)
+                    end do
+
+                    call compute_contributions(factor_velocity, dependent_velocity, size(factor_velocity), mode, &
+                                               velocity_contributions, total_velocity_contribution, ierr)
+                    if (is_err(ierr)) then
+                        deallocate(factor_velocity, dependent_velocity, velocity_contributions)
+                        deallocate(acceleration, velocity)
+                        return
+                    end if
+
+                    C_velocity(sample, factor_index, dependent_index) = total_velocity_contribution
+                    do time_index = 2, n_timepoints
+                        velocity_contribution_series(sample, factor_index, dependent_index, time_index) = &
+                            velocity_contributions(time_index-1)
+                    end do
+
+                    deallocate(factor_velocity, dependent_velocity, velocity_contributions)
+                end if
+
+                if (n_timepoints > 2) then
+                    allocate(factor_acceleration(n_timepoints-2), dependent_acceleration(n_timepoints-2), &
+                             acceleration_contributions(n_timepoints-2), stat=stat_alloc)
+                    if (stat_alloc /= 0) then
+                        call set_err(ierr, ERR_ALLOC_FAIL)
+                        deallocate(acceleration, velocity)
+                        return
+                    end if
+
+                    do time_index = 3, n_timepoints
+                        factor_acceleration(time_index-2)    = acceleration(sample, time_index, factor_index)
+                        dependent_acceleration(time_index-2) = acceleration(sample, time_index, dependent_index)
+                    end do
+
+                    call compute_contributions(factor_acceleration, dependent_acceleration, size(factor_acceleration), mode, &
+                                               acceleration_contributions, total_acceleration_contribution, ierr)
+                    if (is_err(ierr)) then
+                        deallocate(factor_acceleration, dependent_acceleration, acceleration_contributions)
+                        deallocate(acceleration, velocity)
+                        return
+                    end if
+
+                    C_acceleration(sample, factor_index, dependent_index) = total_acceleration_contribution
+                    do time_index = 3, n_timepoints
+                        acceleration_contribution_series(sample, factor_index, dependent_index, time_index) = &
+                            acceleration_contributions(time_index-2)
+                    end do
+
+                    deallocate(factor_acceleration, dependent_acceleration, acceleration_contributions)
+                end if
+
+            end do
+        end do
+    end do
+
+    deallocate(acceleration, velocity)
+end subroutine compute_velocity_acceleration_contributions
+
+
 end module tox_trajectory_contribution_analysis
 
 pure subroutine trajectory_contribution_c(factor, dependent, n_timepoints, mode, contribution, ierr) bind(C, name="trajectory_contribution_c")
@@ -964,6 +1227,7 @@ subroutine process_trajectories_flat_C(trajectories, n_factors, n_samples, n_tim
         call logical_as_c_int(outliers_spike_contrib, outliers_spike_contrib_int)
     end if    
 end subroutine process_trajectories_flat_C
+!> C wrapper for compute_baselines_factor_dependent
 subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints, mode, &
                                                factor_baseline, dependent_baseline, ierr) &
     bind(C, name="tox_compute_baselines_factor_dependent")
@@ -996,3 +1260,122 @@ subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints,
                                            factor_baseline, dependent_baseline, ierr)
 
 end subroutine compute_baselines_factor_dependent_c
+!> C wrapper for compute_velocity_trajectories
+subroutine tox_compute_velocity_trajectories_c(trajectories, n_samples, n_timepoints, n_variables, &
+                                               velocity, ierr) &
+    bind(C, name="tox_compute_velocity_trajectories")
+    use tox_trajectory_contribution_analysis, only : compute_velocity_trajectories
+    use, intrinsic :: iso_c_binding, only : c_int, c_double
+    M_USE_NULL_VALIDATION
+    implicit none
+
+    integer(c_int), intent(in),  target :: n_samples
+    integer(c_int), intent(in),  target :: n_timepoints
+    integer(c_int), intent(in),  target :: n_variables
+    real(c_double), intent(in),  target :: trajectories(n_samples, n_timepoints, n_variables)
+    real(c_double), intent(out), target :: velocity(n_samples, n_timepoints, n_variables)
+    integer(c_int), intent(out), target :: ierr
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_samples)
+    M_CHECK_NON_NULL(n_timepoints)
+    M_CHECK_NON_NULL(n_variables)
+    M_CHECK_NON_NULL(trajectories)
+    M_CHECK_NON_NULL(velocity)
+
+    call compute_velocity_trajectories(trajectories, velocity, &
+                                       n_samples, n_timepoints, n_variables, ierr)
+end subroutine tox_compute_velocity_trajectories_c
+
+!> C wrapper for compute_acceleration_from_velocity
+subroutine tox_compute_acceleration_from_velocity_c(velocity, n_samples, n_timepoints, n_variables, &
+                                                    acceleration, ierr) &
+    bind(C, name="tox_compute_acceleration_from_velocity")
+    use tox_trajectory_contribution_analysis, only : compute_acceleration_from_velocity
+    use, intrinsic :: iso_c_binding, only : c_int, c_double
+    M_USE_NULL_VALIDATION
+    implicit none
+
+    integer(c_int), intent(in),  target :: n_samples
+    integer(c_int), intent(in),  target :: n_timepoints
+    integer(c_int), intent(in),  target :: n_variables
+    real(c_double), intent(in),  target :: velocity(n_samples, n_timepoints, n_variables)
+    real(c_double), intent(out), target :: acceleration(n_samples, n_timepoints, n_variables)
+    integer(c_int), intent(out), target :: ierr
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_samples)
+    M_CHECK_NON_NULL(n_timepoints)
+    M_CHECK_NON_NULL(n_variables)
+    M_CHECK_NON_NULL(velocity)
+    M_CHECK_NON_NULL(acceleration)
+
+    call compute_acceleration_from_velocity(velocity, acceleration, &
+                                            n_samples, n_timepoints, n_variables, ierr)
+end subroutine tox_compute_acceleration_from_velocity_c
+!> C wrapper for compute_contributions
+subroutine tox_compute_contributions_c(factor_vector, dependent_vector, n_timepoints, mode, &
+                                       contributions, total_contribution, ierr) &
+    bind(C, name="tox_compute_contributions")
+    use tox_trajectory_contribution_analysis, only : compute_contributions
+    use, intrinsic :: iso_c_binding, only : c_int, c_double
+    M_USE_NULL_VALIDATION
+    implicit none
+
+    integer(c_int), intent(in),  target :: n_timepoints
+    real(c_double), intent(in),  target :: factor_vector(n_timepoints)
+    real(c_double), intent(in),  target :: dependent_vector(n_timepoints)
+    integer(c_int), intent(in),  target :: mode
+    real(c_double), intent(out), target :: contributions(n_timepoints)
+    real(c_double), intent(out), target :: total_contribution
+    integer(c_int), intent(out), target :: ierr
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_timepoints)
+    M_CHECK_NON_NULL(factor_vector)
+    M_CHECK_NON_NULL(dependent_vector)
+    M_CHECK_NON_NULL(mode)
+    M_CHECK_NON_NULL(contributions)
+    M_CHECK_NON_NULL(total_contribution)
+
+    call compute_contributions(factor_vector, dependent_vector, n_timepoints, mode, &
+                               contributions, total_contribution, ierr)
+end subroutine tox_compute_contributions_c
+
+!> C wrapper for compute_velocity_and_acceleration_contributions
+subroutine tox_compute_velocity_acceleration_contributions_c( &
+    trajectories, n_samples, n_timepoints, n_variables, mode, &
+    C_velocity, velocity_contribution_series, &
+    C_acceleration, acceleration_contribution_series, ierr) &
+    bind(C, name="tox_compute_velocity_acceleration_contributions")
+
+    use tox_trajectory_contribution_analysis, only: compute_velocity_acceleration_contributions
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
+    M_USE_NULL_VALIDATION
+    implicit none
+
+    integer(c_int), intent(in),  target :: n_samples
+    integer(c_int), intent(in),  target :: n_timepoints
+    integer(c_int), intent(in),  target :: n_variables
+    real(c_double), intent(in),  target :: trajectories(n_samples, n_timepoints, n_variables)
+    integer(c_int), intent(in),  target :: mode
+    real(c_double), intent(out), target :: C_velocity(n_samples, n_variables, n_variables)
+    real(c_double), intent(out), target :: velocity_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+    real(c_double), intent(out), target :: C_acceleration(n_samples, n_variables, n_variables)
+    real(c_double), intent(out), target :: acceleration_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+    integer(c_int), intent(out), target :: ierr
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_samples)
+    M_CHECK_NON_NULL(n_timepoints)
+    M_CHECK_NON_NULL(n_variables)
+    M_CHECK_NON_NULL(trajectories)
+    M_CHECK_NON_NULL(mode)
+    M_CHECK_NON_NULL(C_velocity)
+    M_CHECK_NON_NULL(velocity_contribution_series)
+    M_CHECK_NON_NULL(C_acceleration)
+    M_CHECK_NON_NULL(acceleration_contribution_series)
+
+    call compute_velocity_acceleration_contributions(trajectories, n_samples, n_timepoints, n_variables, mode, &
+        C_velocity, velocity_contribution_series, C_acceleration, acceleration_contribution_series, ierr)
+end subroutine tox_compute_velocity_acceleration_contributions_c
