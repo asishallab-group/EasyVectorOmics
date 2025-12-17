@@ -43,7 +43,7 @@ contains
   !> Complete normalization pipeline for gene expression data.
   !! Performs: std dev normalization, quantile normalization, replicate averaging, log2(x+1) transformation.
   !! Final result is in buf_log. If fold change is needed, call calc_fchange separately.
-  pure subroutine normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ierr)
+  subroutine normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ierr)
 
     !| Number of genes (rows)
     integer(int32), intent(in) :: n_genes
@@ -100,7 +100,7 @@ contains
     if (is_err(ierr)) return
 
     ! Step 4: Log2(x+1) transformation
-    call log2_transformation(n_genes, n_tissues, buf_avg, buf_log, ierr)
+    call log2_transformation(n_genes, n_grps, buf_avg, buf_log, ierr)
     if (is_err(ierr)) return
 
   end subroutine normalization_pipeline
@@ -240,17 +240,17 @@ contains
   !| `log(x + 1) / log(2)`, which is numerically equivalent and avoids the
   !| non-portable `log2` intrinsic for compatibility with WebAssembly (WASM).
 
-  pure subroutine log2_transformation(n_genes, n_tissues, input_matrix, output_matrix, ierr)
+  subroutine log2_transformation(n_genes, n_grps, input_matrix, output_matrix, ierr)
       implicit none
 
       !| Number of genes (rows)
       integer(int32), intent(in) :: n_genes
       !| Number of tissues (columns)
-      integer(int32), intent(in) :: n_tissues
-      !| Flattened input matrix (size: n_genes * n_tissues)
-      real(real64), intent(in) :: input_matrix(n_genes * n_tissues)
+      integer(int32), intent(in) :: n_grps
+      !| Flattened input matrix (size: n_genes * n_grps)
+      real(real64), intent(in) :: input_matrix(n_genes * n_grps)
       !| Output matrix (same size as input)
-      real(real64), intent(out) :: output_matrix(n_genes * n_tissues)
+      real(real64), intent(out) :: output_matrix(n_genes * n_grps)
       !| Error code
       integer(int32), intent(out) :: ierr
       ! Locals
@@ -259,13 +259,13 @@ contains
 
       ! Error handling
       call set_ok(ierr)
-      if (n_genes <= 0 .or. n_tissues <= 0) then
+      if (n_genes <= 0 .or. n_grps <= 0) then
         call set_err(ierr, ERR_EMPTY_INPUT)
         return
       end if
 
       ! Loop through all elements in the flattened input matrix
-      do i_elem = 1, n_genes * n_tissues
+      do i_elem = 1, n_genes * n_grps
           ! Apply the log2(x + 1) transformation
           output_matrix(i_elem) = log(input_matrix(i_elem) + 1.0d0) / LOG2
       end do
