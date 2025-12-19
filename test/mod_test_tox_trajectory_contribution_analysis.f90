@@ -25,7 +25,7 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(14)
+        type(test_case) :: all_tests(15)
 
         all_tests(1) = test_case("test_tox_trajectory_contribution_analysis_get_vec_across_samples", test_get_vec_across_samples)
         all_tests(2) = test_case("test_tox_trajectory_contribution_analysis_get_vec_across_timepoints", test_get_vec_across_timepoints)
@@ -41,6 +41,7 @@ contains
         all_tests(12) = test_case("test_compute_velocity_trajectories", test_compute_velocity_trajectories)
         all_tests(13) = test_case("test_compute_acceleration_from_velocity", test_compute_acceleration_from_velocity)
         all_tests(14) = test_case("test_compute_velocity_acceleration_contributions", test_compute_velocity_acceleration_contributions)
+        all_tests(15) = test_case("test_compute_velocity_acceleration_contributions_alloc", test_compute_velocity_acceleration_contributions_alloc)
     end function get_all_tests
 
     subroutine test_calc_contributions()
@@ -486,8 +487,7 @@ contains
         do sample = 1, 2
             do var = 1, 2
                 do t = 3, 4
-                    expected(sample, t, var) = velocity(sample, t, var) - &
-                        2.0_real64 * velocity(sample, t - 1, var) + velocity(sample, t - 2, var)
+                    expected(sample, t, var) = velocity(sample, t, var) - velocity(sample, t - 1, var)
                 end do
             end do
         end do
@@ -529,8 +529,11 @@ contains
 
         mode = MODE_NORMAL
 
-           call compute_velocity_acceleration_contributions(trajectories, 1, 4, 2, mode, &
-               C_vel, series_vel, C_acc, series_acc, ierr)
+         call compute_velocity_acceleration_contributions(trajectories, 1, 4, 2, mode, &
+             velocity, acceleration, &
+             factor_velocity, dependent_velocity, raw_velocity_contrib, &
+             factor_acceleration, dependent_acceleration, raw_acceleration_contrib, &
+             C_vel, series_vel, C_acc, series_acc, ierr)
         call assert_equal_int(ierr, ERR_OK, "compute_velocity_acceleration_contributions: expected OK status")
 
            call compute_velocity_trajectories(trajectories, velocity, 1, 4, 2, ierr)
@@ -571,6 +574,62 @@ contains
         call assert_equal_array_real(series_acc(1,1,2,:), expected_series_acc, size(expected_series_acc), TOL, &
                 "compute_velocity_acceleration_contributions: acceleration series")
             end subroutine test_compute_velocity_acceleration_contributions
+
+    subroutine test_compute_velocity_acceleration_contributions_alloc()
+        real(real64) :: trajectories(1,4,2)
+        real(real64) :: velocity_ws(1,4,2)
+        real(real64) :: acceleration_ws(1,4,2)
+        real(real64) :: factor_velocity(3)
+        real(real64) :: dependent_velocity(3)
+        real(real64) :: velocity_contrib(3)
+        real(real64) :: factor_acceleration(2)
+        real(real64) :: dependent_acceleration(2)
+        real(real64) :: acceleration_contrib(2)
+        real(real64) :: C_vel_ref(1,2,2)
+        real(real64) :: C_acc_ref(1,2,2)
+        real(real64) :: series_vel_ref(1,2,2,4)
+        real(real64) :: series_acc_ref(1,2,2,4)
+        real(real64) :: C_vel_alloc(1,2,2)
+        real(real64) :: C_acc_alloc(1,2,2)
+        real(real64) :: series_vel_alloc(1,2,2,4)
+        real(real64) :: series_acc_alloc(1,2,2,4)
+        integer(int32) :: ierr
+        integer(int32) :: mode
+
+        trajectories = reshape([ &
+            1.0_real64, 3.0_real64, 6.0_real64, 10.0_real64, &
+            1.0_real64, 2.0_real64, 2.0_real64, 1.0_real64], &
+            shape=[1,4,2])
+
+        mode = MODE_NORMAL
+
+        call compute_velocity_acceleration_contributions(trajectories, 1, 4, 2, mode, &
+            velocity_ws, acceleration_ws, &
+            factor_velocity, dependent_velocity, velocity_contrib, &
+            factor_acceleration, dependent_acceleration, acceleration_contrib, &
+            C_vel_ref, series_vel_ref, C_acc_ref, series_acc_ref, ierr)
+        call assert_equal_int(ierr, ERR_OK, "compute_velocity_acceleration_contributions_alloc: reference call")
+
+        call compute_velocity_acceleration_contributions_alloc(trajectories, 1, 4, 2, mode, &
+            C_vel_alloc, series_vel_alloc, C_acc_alloc, series_acc_alloc, ierr)
+        call assert_equal_int(ierr, ERR_OK, "compute_velocity_acceleration_contributions_alloc: expected OK status")
+
+        call assert_equal_array_real(reshape(C_vel_alloc, [size(C_vel_alloc)]), &
+            reshape(C_vel_ref, [size(C_vel_ref)]), size(C_vel_alloc), TOL, &
+            "compute_velocity_acceleration_contributions_alloc: velocity totals")
+
+        call assert_equal_array_real(reshape(series_vel_alloc, [size(series_vel_alloc)]), &
+            reshape(series_vel_ref, [size(series_vel_ref)]), size(series_vel_alloc), TOL, &
+            "compute_velocity_acceleration_contributions_alloc: velocity series")
+
+        call assert_equal_array_real(reshape(C_acc_alloc, [size(C_acc_alloc)]), &
+            reshape(C_acc_ref, [size(C_acc_ref)]), size(C_acc_alloc), TOL, &
+            "compute_velocity_acceleration_contributions_alloc: acceleration totals")
+
+        call assert_equal_array_real(reshape(series_acc_alloc, [size(series_acc_alloc)]), &
+            reshape(series_acc_ref, [size(series_acc_ref)]), size(series_acc_alloc), TOL, &
+            "compute_velocity_acceleration_contributions_alloc: acceleration series")
+    end subroutine test_compute_velocity_acceleration_contributions_alloc
     !> Run all tox_trajectory_contribution_analysis tests.
     subroutine run_all_tests_tox_trajectory_contribution_analysis
         type(test_case), allocatable :: all_tests(:)

@@ -24,6 +24,7 @@ from tensoromics_functions import (
     tox_compute_velocity_trajectories,
     tox_compute_acceleration_from_velocity,
     tox_compute_velocity_acceleration_contributions,
+    tox_compute_velocity_acceleration_contributions_expert,
 )
 
 
@@ -56,7 +57,7 @@ def _expected_acceleration(velocity: np.ndarray) -> np.ndarray:
     vel_f = np.transpose(velocity, (0, 2, 1))
     acceleration_f = np.zeros_like(vel_f)
     if vel_f.shape[1] > 2:
-        acceleration_f[:, 2:, :] = vel_f[:, 2:, :] - 2.0 * vel_f[:, 1:-1, :] + vel_f[:, :-2, :]
+        acceleration_f[:, 2:, :] = vel_f[:, 2:, :] - vel_f[:, 1:-1, :]
     return np.transpose(acceleration_f, (0, 2, 1))
 
 
@@ -130,9 +131,7 @@ def test_tox_compute_velocity_acceleration_contributions():
 
     expected_series_vel = np.zeros(4)
     if factor_velocity.size > 0:
-        vel_factor_centered = factor_velocity - factor_velocity[0]
-        vel_dependent_centered = dependent_velocity - dependent_velocity[0]
-        vel_contribs = vel_factor_centered * vel_dependent_centered
+        vel_contribs = factor_velocity * dependent_velocity
         expected_total_vel = vel_contribs.sum()
         expected_series_vel[1:] = vel_contribs
     else:
@@ -140,9 +139,7 @@ def test_tox_compute_velocity_acceleration_contributions():
 
     expected_series_acc = np.zeros(4)
     if factor_acceleration.size > 0:
-        acc_factor_centered = factor_acceleration - factor_acceleration[0]
-        acc_dependent_centered = dependent_acceleration - dependent_acceleration[0]
-        acc_contribs = acc_factor_centered * acc_dependent_centered
+        acc_contribs = factor_acceleration * dependent_acceleration
         expected_total_acc = acc_contribs.sum()
         expected_series_acc[2:] = acc_contribs
     else:
@@ -156,8 +153,22 @@ def test_tox_compute_velocity_acceleration_contributions():
     print("✅ tox_compute_velocity_acceleration_contributions passed.")
 
 
+def test_tox_compute_velocity_acceleration_contributions_alloc():
+    trajectories = np.array([
+        [[1.0, 2.0, 3.0, 4.0],
+         [2.0, 4.0, 6.0, 8.0]]
+    ], dtype=np.float64)
 
+    result_alloc = tox_compute_velocity_acceleration_contributions(trajectories, MODE_NORMAL)
+    result_expert = tox_compute_velocity_acceleration_contributions_expert(trajectories, MODE_NORMAL)
 
+    for key in result_alloc:
+        assert key in result_expert, f"Missing key {key} in expert result"
+        assert result_alloc[key].shape == result_expert[key].shape
+        assert np.allclose(result_alloc[key], result_expert[key], atol=TOL)
+
+    print("✅ tox_compute_velocity_acceleration_contributions_alloc passed.")
+    
 def test_tox_compute_baselines_factor_dependent():
     """Test baseline computation wrapper across all supported modes and error cases."""
 
@@ -477,6 +488,7 @@ def main():
     test_tox_compute_velocity_trajectories()
     test_tox_compute_acceleration_from_velocity()
     test_tox_compute_velocity_acceleration_contributions()
+    test_tox_compute_velocity_acceleration_contributions_alloc()
 
 if __name__ == "__main__":
     main()

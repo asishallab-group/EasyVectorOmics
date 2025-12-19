@@ -2743,8 +2743,8 @@ def tox_compute_baselines_factor_dependent(factor, dependent, mode):
     compute_baselines_c.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # factor
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # dependent
-        ctypes.POINTER(ctypes.c_int),                                     # n_timepoints
-        ctypes.POINTER(ctypes.c_int),                                     # mode
+        ctypes.c_int,                                                    # n_timepoints
+        ctypes.c_int,                                                    # mode
         ctypes.POINTER(ctypes.c_double),                                  # baseline_factor
         ctypes.POINTER(ctypes.c_double),                                  # baseline_dependent
         ctypes.POINTER(ctypes.c_int)                                      # error code ierr
@@ -2755,8 +2755,8 @@ def tox_compute_baselines_factor_dependent(factor, dependent, mode):
     compute_baselines_c(
         factor,
         dependent,
-        ctypes.byref(n_timepoints_c),
-        ctypes.byref(mode_c),
+        n_timepoints_c,
+        mode_c,
         ctypes.byref(baseline_factor),
         ctypes.byref(baseline_dependent),
         ctypes.byref(ierr)
@@ -2884,7 +2884,7 @@ def tox_compute_velocity_acceleration_contributions(trajectories, mode):
     n_variables_c = ctypes.c_int(n_variables)
     mode_c = ctypes.c_int(int(mode))
 
-    compute_contribs = lib.tox_compute_velocity_acceleration_contributions
+    compute_contribs = lib.tox_compute_velocity_acceleration_contributions_alloc
     compute_contribs.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
         ctypes.POINTER(ctypes.c_int),
@@ -2905,6 +2905,104 @@ def tox_compute_velocity_acceleration_contributions(trajectories, mode):
         ctypes.byref(n_timepoints_c),
         ctypes.byref(n_variables_c),
         ctypes.byref(mode_c),
+        C_velocity_f,
+        velocity_series_f,
+        C_acceleration_f,
+        acceleration_series_f,
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+
+    C_velocity = np.asarray(C_velocity_f, order="C")
+    velocity_series = np.asarray(velocity_series_f, order="C")
+    C_acceleration = np.asarray(C_acceleration_f, order="C")
+    acceleration_series = np.asarray(acceleration_series_f, order="C")
+
+    _readonly(C_velocity, velocity_series, C_acceleration, acceleration_series)
+
+    return {
+        "C_velocity": C_velocity,
+        "velocity_contribution_series": velocity_series,
+        "C_acceleration": C_acceleration,
+        "acceleration_contribution_series": acceleration_series,
+    }
+
+
+def tox_compute_velocity_acceleration_contributions_expert(trajectories, mode):
+    """Compute velocity and acceleration contributions using the Fortran allocating helper."""
+    trajectories = np.asarray(trajectories, dtype=np.float64)
+
+    if trajectories.ndim != 3:
+        raise ValueError("trajectories must be a 3D array (samples, variables, timepoints)")
+
+    n_samples, n_variables, n_timepoints = trajectories.shape
+
+    trajectories_f = np.asfortranarray(np.transpose(trajectories, (0, 2, 1)))
+
+    C_velocity_f = np.empty((n_samples, n_variables, n_variables), dtype=np.float64, order="F")
+    velocity_series_f = np.empty((n_samples, n_variables, n_variables, n_timepoints), dtype=np.float64, order="F")
+    C_acceleration_f = np.empty((n_samples, n_variables, n_variables), dtype=np.float64, order="F")
+    acceleration_series_f = np.empty((n_samples, n_variables, n_variables, n_timepoints), dtype=np.float64, order="F")
+
+    ierr = ctypes.c_int(0)
+
+    n_samples_c = ctypes.c_int(n_samples)
+    n_timepoints_c = ctypes.c_int(n_timepoints)
+    n_variables_c = ctypes.c_int(n_variables)
+    mode_c = ctypes.c_int(int(mode))
+
+    velocity_ws = np.empty((n_samples, n_timepoints, n_variables), dtype=np.float64, order="F")
+    acceleration_ws = np.empty_like(velocity_ws)
+
+    vel_len = max(1, n_timepoints - 1)
+    acc_len = max(1, n_timepoints - 2)
+
+    factor_velocity_ws = np.zeros(vel_len, dtype=np.float64, order="F")
+    dependent_velocity_ws = np.zeros(vel_len, dtype=np.float64, order="F")
+    velocity_contrib_ws = np.zeros(vel_len, dtype=np.float64, order="F")
+
+    factor_acceleration_ws = np.zeros(acc_len, dtype=np.float64, order="F")
+    dependent_acceleration_ws = np.zeros(acc_len, dtype=np.float64, order="F")
+    acceleration_contrib_ws = np.zeros(acc_len, dtype=np.float64, order="F")
+
+    compute_contribs_expert = lib.tox_compute_velocity_acceleration_contributions
+    compute_contribs_expert.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    compute_contribs_expert.restype = None
+
+    compute_contribs_expert(
+        trajectories_f,
+        ctypes.byref(n_samples_c),
+        ctypes.byref(n_timepoints_c),
+        ctypes.byref(n_variables_c),
+        ctypes.byref(mode_c),
+        velocity_ws,
+        acceleration_ws,
+        factor_velocity_ws,
+        dependent_velocity_ws,
+        velocity_contrib_ws,
+        factor_acceleration_ws,
+        dependent_acceleration_ws,
+        acceleration_contrib_ws,
         C_velocity_f,
         velocity_series_f,
         C_acceleration_f,
