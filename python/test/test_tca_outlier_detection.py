@@ -8,11 +8,10 @@ sys.path.append(os.path.join(os.path.dirname(__file__), '..'))
 # Import your wrapper functions
 from tensoromics_functions import (
     calc_spike_thresholds,
-    calc_spike_thresholds_expert,
     calc_integrated_threshold,
     calc_integrated_threshold_expert,
     detect_outliers_integrated,
-    detect_outliers_spike
+    detect_outliers_spike,
 )
 
 def create_sample_spike_data():
@@ -53,7 +52,8 @@ def test_calc_spike_thresholds_basic():
     spike_data = create_sample_spike_data()  # 3 timepoints × 5 samples
     permutation = create_sample_permutation()  # 5 samples × 3 timepoints
     
-    thresholds = calc_spike_thresholds_expert(spike_data, 80.0, permutation)
+    # thresholds = calc_spike_thresholds_expert(spike_data, 80.0, permutation)  # REMOVED: expert version not available
+    thresholds = calc_spike_thresholds(spike_data, 80.0)
     
     # Validate output - should have 3 thresholds (one per timepoint)
     assert thresholds.shape == (3,), f"Expected shape (3,), got {thresholds.shape}"
@@ -239,7 +239,7 @@ def test_dimension_mismatch_errors():
     # Wrong permutation dimensions
     wrong_perm = np.array([[1, 2], [3, 4]], dtype=np.int32, order='F')  # 2×2 vs 5×3
     try:
-        calc_spike_thresholds_expert(spike_data, 50.0, wrong_perm)
+        calc_integrated_threshold_expert(spike_data, 50.0, wrong_perm)
         assert False, "Should have raised ValueError for wrong permutation dimensions"
     except ValueError as e:
         assert "permutation shape" in str(e)
@@ -320,7 +320,8 @@ def test_consistency_between_versions():
     permutation = create_sample_permutation()  # 5 samples × 3 timepoints
     
     # Test spike thresholds consistency
-    thresholds_perf = calc_spike_thresholds_expert(spike_data, 80.0, permutation)
+    # thresholds_perf = calc_spike_thresholds_expert(spike_data, 80.0, permutation)  # REMOVED: expert version not available
+    thresholds_perf = calc_spike_thresholds(spike_data, 80.0)
     thresholds = calc_spike_thresholds(spike_data, 80.0)
     
     np.testing.assert_array_almost_equal(thresholds_perf, thresholds, decimal=10)

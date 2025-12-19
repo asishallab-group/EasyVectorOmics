@@ -676,10 +676,15 @@ def create_zip_archive(zip_filename: str, keys, filenames) -> None:
     """
     if len(keys) != len(filenames):
         raise ValueError("Keys and filenames must have the same length")
-    
+
+    # Remove existing zip file if it exists to avoid file open errors
+    if os.path.exists(zip_filename):
+        os.remove(zip_filename)
+        print(f"Removed existing archive: {zip_filename}")
+
     # Prepare arrays for C interface
     zip_b, zip_len = _prepare_string(zip_filename)
-    
+
     # Convert keys and filenames to 2D numpy arrays with Fortran order
     max_key_len = max(len(key) for key in keys) + 1  # +1 for null terminator
     max_filename_len = max(len(fname) for fname in filenames) + 1  # +1 for null terminator
@@ -833,6 +838,11 @@ def save_tox_data(zip_filename: str,
         gene_ids, expression_vectors, etc.: Data arrays
         gene_ids_name, expression_vectors_name, etc.: Temporary filenames
     """
+    # Remove existing zip file if it exists to avoid file open errors
+    if os.path.exists(zip_filename):
+        os.remove(zip_filename)
+        print(f"Removed existing archive: {zip_filename}")
+
     # First serialize the arrays to files
     temp_files = []
     keys = []
