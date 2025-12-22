@@ -1,3 +1,4 @@
+
 library(Rcpp)
 
 # Get absolute path to build directory containing the compiled Fortran library
@@ -1262,11 +1263,7 @@ tox_loess_smooth_2d <- function(
 ) {
 
 
-  # 1) R-layer validation
-  # Early check: empty input arrays should produce the mapped error message
-  if (length(x_ref) == 0 || length(y_ref) == 0 || length(x_query) == 0) {
-    stop("Empty input arrays provided.")
-  }
+
 
   validate_numeric_vector(x_ref, "x_ref")
   validate_numeric_vector(x_query, "x_query")
@@ -1323,4 +1320,160 @@ tox_loess_smooth_2d <- function(
     y_out           = y_out,
     smoothed_values = as.vector(y_out)
   )
+}
+
+# Relative Axis Plane (RAP) Projection
+
+
+#' Project selected vectors onto a Relative Axis Plane (RAP)
+#' 
+#' This function validates inputs and calls the C/Rcpp RAP projection wrapper.
+#' @param vecs Numeric matrix (n_axes x n_vecs)
+#' @param vecs_selection_mask Logical or integer vector (length n_vecs)
+#' @param axes_selection_mask Logical or integer vector (length n_axes)
+#' @return Matrix of projections (n_selected_axes x n_selected_vecs)
+#' @export
+tox_omics_vector_RAP_projection <- function(vecs, vecs_selection_mask, axes_selection_mask) {
+  validate_numeric_matrix(vecs, "vecs")
+  n_axes <- nrow(vecs)
+  n_vecs <- ncol(vecs)
+
+  validate_logical_or_index_vector(vecs_selection_mask, expecte, name = "vecs_selection_mask")
+  validate_logical_or_index_vector(axes_selection_mask, name = "axes_selection_mask")
+  vecs_selection_mask <- as.integer(vecs_selection_mask)
+  axes_selection_mask <- as.integer(axes_selection_mask)
+
+  res <- tox_omics_vector_RAP_projection_rcpp(vecs, vecs_selection_mask, axes_selection_mask)
+  check_err_code(res$ierr)
+  return(res$projections)
+}
+
+#' Project selected vector fields onto a Relative Axis Plane (RAP)
+#' 
+#' This function validates inputs and calls the C/Rcpp RAP field projection wrapper.
+#' @param vecs Numeric matrix (2*n_axes x n_vecs)
+#' @param vecs_selection_mask Logical or integer vector (length n_vecs)
+#' @param axes_selection_mask Logical or integer vector (length n_axes)
+#' @return Matrix of projections (n_selected_axes x n_selected_vecs)
+#' @export
+tox_omics_field_RAP_projection <- function(vecs, vecs_selection_mask, axes_selection_mask) {
+  validate_numeric_matrix(vecs, "vecs")
+  n_axes <- nrow(vecs) / 2
+  n_vecs <- ncol(vecs)
+  validate_logical_or_index_vector(vecs_selection_mask,  name = "vecs_selection_mask")
+  validate_logical_or_index_vector(axes_selection_mask,  name = "axes_selection_mask")
+  vecs_selection_mask <- as.integer(vecs_selection_mask)
+  axes_selection_mask <- as.integer(axes_selection_mask)
+  res <- tox_omics_field_RAP_projection_rcpp(vecs, vecs_selection_mask, axes_selection_mask)
+  check_err_code(res$ierr)
+  return(res$projections)
+}
+
+#' Compute relative axis changes from a RAP-projected and normalized shift vector
+#' 
+#' @param vec Numeric vector (RAP-projected and normalized shift vector)
+#' @return Numeric vector of fractional axis contributions (sums to 1)
+#' @export
+tox_relative_axes_changes_from_shift_vector <- function(vec) {
+  validate_numeric_vector(vec, "vec")
+  res <- tox_relative_axes_changes_from_shift_vector_rcpp(vec)
+  return(res)
+}
+
+#' Compute relative axis contributions from a RAP-projected and normalized expression vector
+#' 
+#' @param vec Numeric vector (RAP-projected and normalized expression vector)
+#' @return Numeric vector of fractional axis contributions (sums to 1)
+#' @export
+tox_relative_axes_expression_from_expression_vector <- function(vec) {
+  validate_numeric_vector(vec, "vec")
+  res <- tox_relative_axes_expression_from_expression_vector_rcpp(vec)
+  return(res)
+}
+
+#' Compute signed clock hand angle between two RAP-projected and normalized vectors
+#' 
+#' @param v1 Numeric vector (first normalized vector in RAP space)
+#' @param v2 Numeric vector (second normalized vector in RAP space)
+#' @param selected_axes_for_signed Integer vector of length 3 (axes for directionality, ignored if length(v1) <= 3)
+#' @return Signed angle in radians [-pi, pi]
+#' @export
+tox_clock_hand_angle_between_vectors <- function(v1, v2, selected_axes_for_signed) {
+  validate_numeric_vector(v1, "v1")
+  validate_numeric_vector(v2, "v2")
+  validate_same_length(v1, v2, "v1", "v2")
+  validate_integer_vector(selected_axes_for_signed, "selected_axes_for_signed", expected_length = 3)
+  res <- tox_clock_hand_angle_between_vectors_rcpp(v1, v2, selected_axes_for_signed)
+  return(res)
+}
+
+#' Compute signed rotation angles for pairs of RAP-projected and normalized vectors
+#' 
+#' @param origins Numeric matrix (n_dims x n_vecs), first set of vectors
+#' @param targets Numeric matrix (n_dims x n_vecs), second set of vectors
+#' @param vecs_selection_mask Integer or logical vector (length n_vecs)
+#' @param selected_axes_for_signed Integer vector of length 3 (axes for directionality)
+#' @return Numeric vector of signed angles (radians)
+#' @export
+tox_clock_hand_angles_for_shift_vectors <- function(origins, targets, vecs_selection_mask, selected_axes_for_signed) {
+  validate_numeric_matrix(origins, "origins")
+  validate_numeric_matrix(targets, "targets")
+  validate_same_length(vecs_selection_mask, rep(0, ncol(origins)), "vecs_selection_mask", "origins columns")
+  validate_integer_vector(selected_axes_for_signed, "selected_axes_for_signed", expected_length = 3)
+  res <- tox_clock_hand_angles_for_shift_vectors_rcpp(origins, targets, as.integer(vecs_selection_mask), selected_axes_for_signed)
+  return(res)
+}
+#' K-means clustering on factor trajectories
+#'
+#' Performs k-means clustering on factor trajectories (factor evolution over time).
+#' All validation is performed in R. Returns centroids, labels, label_counts, and ierr.
+#' @param n_clusters Number of clusters (integer)
+#' @param trajectories Numeric vector (flattened, n_factors * n_samples * n_timepoints)
+#' @param n_factors Number of factors (integer)
+#' @param n_samples Number of samples (integer)
+#' @param n_timepoints Number of timepoints (integer)
+#' @param centroids Numeric matrix (n_factors x n_clusters)
+#' @param max_iterations Maximum number of iterations (integer)
+#' @return List with centroids, labels, label_counts, ierr
+#' @export
+tox_cluster_factor_trajectories_k_means <- function(n_clusters, trajectories, n_factors, n_samples, n_timepoints, centroids, max_iterations = 300) {
+  validate_positive_integer_scalar(n_clusters, "n_clusters")
+  validate_numeric_vector(trajectories, "trajectories")
+  validate_positive_integer_scalar(n_factors, "n_factors")
+  validate_positive_integer_scalar(n_samples, "n_samples")
+  validate_positive_integer_scalar(n_timepoints, "n_timepoints")
+  validate_numeric_matrix(centroids, "centroids")
+  validate_positive_integer_scalar(max_iterations, "max_iterations")
+  # Check dimensions
+  if (length(trajectories) != n_factors * n_samples * n_timepoints) stop("trajectories length mismatch")
+  validate_matrix_shape_factor_centroids(centroids, n_factors, n_clusters)
+  res <- tox_cluster_factor_trajectories_k_means_rcpp(n_clusters, as.numeric(trajectories), n_factors, n_samples, n_timepoints, centroids, max_iterations)
+  check_err_code(res$ierr)
+  return(res)
+}
+
+#' K-means clustering (general)
+#'
+#' Performs k-means clustering on general data points.
+#' All validation is performed in R. Returns centroids, labels, label_counts, and ierr.
+#' @param n_clusters Number of clusters (integer)
+#' @param data_points Numeric matrix (n_dims x n_points)
+#' @param n_points Number of points (integer)
+#' @param n_dims Number of dimensions (integer)
+#' @param centroids Numeric matrix (n_dims x n_clusters)
+#' @param max_iterations Maximum number of iterations (integer)
+#' @return List with centroids, labels, label_counts, ierr
+#' @export
+tox_k_means_clustering <- function(n_clusters, data_points, n_points, n_dims, centroids, max_iterations = 300) {
+  validate_positive_integer_scalar(n_clusters, "n_clusters")
+  validate_numeric_matrix(data_points, "data_points")
+  validate_positive_integer_scalar(n_points, "n_points")
+  validate_positive_integer_scalar(n_dims, "n_dims")
+  validate_numeric_matrix(centroids, "centroids")
+  validate_positive_integer_scalar(max_iterations, "max_iterations")
+  validate_matrix_shape_data_points(data_points, n_dims, n_points)
+  validate_matrix_shape_centroids(centroids, n_dims, n_clusters)
+  res <- tox_k_means_clustering_rcpp(n_clusters, data_points, n_points, n_dims, centroids, max_iterations)
+  check_err_code(res$ierr)
+  return(res)
 }

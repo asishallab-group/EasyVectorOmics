@@ -1,8 +1,22 @@
-dyn.load("build/libtensor-omics.so")
-source("rcpp/tensoromics_functions.R")
+
+library(Rcpp)
+
+# Get absolute path to build directory containing the compiled Fortran library
+
+lib_path <- shQuote(normalizePath("build"))
+
+# Set up compilation flags for linking with Fortran library
+Sys.setenv(PKG_LIBS = paste0("-Wl,-rpath,", lib_path, " -L", lib_path, " -ltensor-omics -lgfortran"))
+
+# Compile and load all TensorOmics Rcpp wrapper functions (includes error_handling.cpp)
+sourceCpp("rcpp/tensoromics_functions.cpp", env = .GlobalEnv)
+
+
+cat("✓ TensorOmics Rcpp functions loaded successfully\n")
+
 source("rcpp/error_handling.R")
 
-debug <- FALSE
+
 
 # Helper functions for string to raw conversions
 strings_to_raw_matrix <- function(arr, clen) {
@@ -61,6 +75,48 @@ string_to_raw <- function(s, len) {
   raw_bytes[1:len]  # Ensure exact length
 }
 
+#' Read gene IDs from a TSV file (R wrapper)
+#' @param filename Path to TSV file
+#' @param n_genes Number of genes (rows)
+#' @param gene_ids_len Max length of gene ID string
+#' @param n_header_rows Number of header rows
+#' @param gene_col Column index for gene IDs
+#' @return List with gene_ids (character vector) and ierr
+read_gene_ids_from_tsv_file <- function(filename, n_genes, gene_ids_len, n_header_rows, gene_col) {
+  filename_raw <- charToRaw(filename)
+  res <- tox_read_gene_ids_from_tsv_file_rcpp(filename_raw, n_genes, gene_ids_len, n_header_rows, gene_col)
+  gene_ids <- raw_matrix_to_strings(res$gene_ids_raw, gene_ids_len)
+  check_err_code(res$ierr)
+  list(gene_ids = gene_ids, ierr = res$ierr)
+}
+
+#' Read expression vectors from TSV file(s) (R wrapper)
+#' @param file_list Character vector of file paths (length 1 for single file)
+#' @param gene_ids Character vector of gene IDs (order to match)
+#' @param n_samples Number of samples (rows)
+#' @param n_header_rows Number of header rows
+#' @param gene_col Column index for gene IDs
+#' @param value_cols Integer vector of value column indices
+#' @param delimiter Delimiter (default tab)
+#' @return List with expression_vectors (matrix) and ierr
+read_expression_vectors_tsv <- function(file_list, gene_ids, n_samples, n_header_rows, gene_col, value_cols, delimiter = "\t") {
+  # Convert file_list and gene_ids to raw matrices
+  file_list_raw <- strings_to_raw_matrix(file_list, max(nchar(file_list)))
+  gene_ids_raw <- strings_to_raw_matrix(gene_ids, max(nchar(gene_ids)))
+  delimiter_raw <- charToRaw(delimiter)
+  res <- tox_read_expression_vectors_tsv_rcpp(
+    file_list_raw,
+    gene_ids_raw,
+    as.integer(value_cols),
+    delimiter_raw,
+    as.integer(n_samples),
+    as.integer(n_header_rows),
+    as.integer(gene_col)
+  )
+  check_err_code(res$ierr)
+  list(expression_vectors = res$expression_vectors, ierr = res$ierr)
+}
+
 #' Read gene family assignments from a file
 #' @param filename Character string of the filename
 #' @param gene_ids Character vector of gene IDs to match
@@ -96,12 +152,15 @@ read_orthofinder_file <- function(filename, gene_ids, n_families, family_len) {
 #'   - gene_to_fam: Filtered integer vector mapping each gene to its family index
 filter_unassigned_genes <- function(gene_ids, expression_vectors, gene_to_fam) {
   
- mask <- gene_to_fam != 0L
-  
+  mask <- gene_to_fam != 0L
+  filtered_gene_ids <- gene_ids[mask]
+  filtered_expression_vectors <- expression_vectors[, mask, drop = FALSE]
+  filtered_gene_to_fam <- gene_to_fam[mask]
+  n_genes_kept <- sum(mask)
   list(
-    gene_ids = gene_ids,
-    expression_vectors = expression_vectors,
-    gene_to_fam = gene_to_fam,
+    gene_ids = filtered_gene_ids,
+    expression_vectors = filtered_expression_vectors,
+    gene_to_fam = filtered_gene_to_fam,
     n_genes_kept = n_genes_kept
   )
 }
@@ -247,6 +306,7 @@ validate_all_data <- function(n_genes, n_families, n_samples,
   list(ierr = result$ierr)
 }
 
+
 #' Low-level function to create zip archive from keys and filenames.
 #' Directly calls the C wrapper around the Fortran routine.
 #'
@@ -254,11 +314,10 @@ validate_all_data <- function(n_genes, n_families, n_samples,
 #' @param keys Vector of keys for the manifest
 #' @param filenames Vector of filenames to include in archive
 create_zip_archive <- function(zip_filename, keys, filenames) {
-  validate_character_vector(keys, "keys")
-  validate_character_vector(filenames, "filenames")
-
-  # Length check 
-  validate_same_length(keys, filenames, "keys", "filenames")
+  # Validation moved to error_handling.R
+  validate_character_vector(keys)
+  validate_character_vector(filenames)
+  validate_same_length(keys, filenames)
   
   
   result <- tox_create_zip_archive_generic_rcpp(zip_filename, keys, filenames)
@@ -290,13 +349,14 @@ save_tox_data <- function(zip_filename,
                                  shift_vectors = NULL, shift_vectors_name = NULL) {
   
  
-  validate_non_empty_string(zip_filename, "zip_filename")
-  validate_character_vector(gene_ids, "gene_ids"))
-  validate_numeric_matrix(expression_vectors, "expression_vectors"))
-  validate_integer_vector(gene_to_fam, "gene_to_fam"))
-  validate_character_vector(family_ids, "family_ids"))
-  validate_numeric_matrix(family_centroids, "family_centroids"))
-  validate_numeric_matrix(shift_vectors, "shift_vectors")
+  # Validation moved to error_handling.R
+  validate_non_empty_string(zip_filename)
+  validate_character_vector(gene_ids)
+  validate_numeric_matrix(expression_vectors)
+  validate_integer_vector(gene_to_fam)
+  validate_character_vector(family_ids)
+  validate_numeric_matrix(family_centroids)
+  validate_numeric_matrix(shift_vectors)
     
     # Write files to temporary directory
   temp_files <- character(0)
@@ -428,3 +488,6 @@ extract_zip_archive <- function(zip_filename) {
   
   return(file_mapping)
 }
+
+
+

@@ -1,14 +1,122 @@
 #include <Rcpp.h>
-#include <algorithm>
-
 using namespace Rcpp;
 
+
+ 
 
 // ===================================================================
 // FORTRAN FUNCTIONS
 // ===================================================================
 
 extern "C" {
+    void cluster_factor_trajectories_k_means_c(
+      int *n_clusters,
+      double *trajectories,
+      int *n_factors,
+      int *n_samples,
+      int *n_timepoints,
+      double *centroids,
+      int *labels,
+      int *label_counts,
+      int *ierr,
+      int *max_iterations
+    );
+// [[Rcpp::export]]
+List tox_cluster_factor_trajectories_k_means_rcpp(int n_clusters,
+                                 NumericVector trajectories,
+                                 int n_factors,
+                                 int n_samples,
+                                 int n_timepoints,
+                                 NumericMatrix centroids,
+                                 int max_iterations = 300) {
+    int n_points = n_samples * n_timepoints;
+    IntegerVector labels(n_points);
+    IntegerVector label_counts(n_clusters);
+    int ierr = 0;
+    // Fortran expects column-major, R matrices are column-major
+    cluster_factor_trajectories_k_means_c(&n_clusters,
+                        trajectories.begin(),
+                        &n_factors,
+                        &n_samples,
+                        &n_timepoints,
+                        centroids.begin(),
+                        labels.begin(),
+                        label_counts.begin(),
+                        &ierr,
+                        &max_iterations);
+    centroids.attr("dim") = Dimension(n_factors, n_clusters);
+    return List::create(Named("centroids") = centroids,
+              Named("labels") = labels,
+              Named("label_counts") = label_counts,
+              Named("ierr") = ierr);
+}
+
+    void k_means_clustering_c(
+    int *n_clusters,
+    double *data_points,
+    int *n_points,
+    int *n_dims,
+    double *centroids,
+    int *labels,
+    int *label_counts,
+    int *ierr,
+    int *max_iterations
+  );
+
+
+
+    void cluster_factor_trajectories_k_means_c(
+    int *n_clusters,
+    double *trajectories,
+    int *n_factors,
+    int *n_samples,
+    int *n_timepoints,
+    double *centroids,
+    int *labels,
+    int *label_counts,
+    int *ierr,
+    int *max_iterations
+  );
+  void k_means_clustering_c(
+    int *n_clusters,
+    double *data_points,
+    int *n_points,
+    int *n_dims,
+    double *centroids,
+    int *labels,
+    int *label_counts,
+    int *ierr,
+    int *max_iterations
+  );
+
+    void relative_axes_changes_from_shift_vector_c(
+      double* vec, int* n_axes, double* contributions, int* ierr
+    );
+    void relative_axes_expression_from_expression_vector_c(
+      double* vec, int* n_axes, double* contributions, int* ierr
+    );
+    void clock_hand_angle_between_vectors_c(
+      double* v1, double* v2, int* n_dims, double* signed_angle, int* selected_axes_for_signed, int* ierr
+    );
+    void clock_hand_angles_for_shift_vectors_c(
+      double* origins, double* targets, int* n_dims, int* n_vecs,
+      int* vecs_selection_mask, int* n_selected_vecs, int* selected_axes_for_signed,
+      double* signed_angles, int* ierr
+    );
+   
+  void omics_vector_RAP_projection_c(
+    double* vecs, int* n_axes, int* n_vecs,
+    int* vecs_selection_mask, int* n_selected_vecs,
+    int* axes_selection_mask, int* n_selected_axes,
+    double* projections, int* ierr
+  );
+  void omics_field_RAP_projection_c(
+    double* vecs, int* n_axes, int* n_vecs,
+    int* vecs_selection_mask, int* n_selected_vecs,
+    int* axes_selection_mask, int* n_selected_axes,
+    double* projections, int* ierr
+  );
+
     void normalize_by_std_dev_c(int n_genes, int n_tissues,
                                 double *input_matrix, double *output_matrix, int *ierr);                                    
     void quantile_normalization_c(int n_genes, int n_tissues, double *input_matrix, double *output_matrix,
@@ -24,11 +132,11 @@ extern "C" {
                         double *input_matrix, double *output_matrix, int *ierr);
 
     void normalization_pipeline_c(int n_genes, int n_tissues,
-                                  double *input_matrix, double *buf_stddev, double *buf_quant,
-                                  double *buf_avg, double *buf_log, double *temp_col,
-                                  double *rank_means, int *perm, int *stack_left,
-                                  int *stack_right, int max_stack,
-                                  int *group_s, int *group_c, int n_grps, int *ierr);
+                    double *input_matrix, double *buf_stddev, double *buf_quant,
+                    double *buf_avg, double *buf_log, double *temp_col,
+                    double *rank_means, int *perm, int *stack_left,
+                    int *stack_right, int max_stack,
+                    int *group_s, int *group_c, int n_grps, int *ierr);
 
     void compute_family_scaling_c(
         int n_genes, int n_families,
@@ -78,7 +186,7 @@ extern "C" {
       
   void euclidean_distance_c(double* vec1, double* vec2, int d, double* result);
 
-      void distance_to_centroid_c(
+  void distance_to_centroid_c(
         int n_genes, int n_families,
         double* genes, double* centroids,
         int* gene_to_fam,
@@ -124,7 +232,7 @@ void build_kd_index_C(
       int* right_stack,
       int* ierr
     );   
-    void which_c(
+void which_c(
             int* mask,
             int n,
             int* idx_out,
@@ -132,7 +240,8 @@ void build_kd_index_C(
             int* m_out,
             int* ierr
     );
-    void loess_smooth_2d_c(
+
+void loess_smooth_2d_c(
             int n_total,
             int n_target,
             double* x_ref,
@@ -146,52 +255,52 @@ void build_kd_index_C(
             int* ierr
     );
          
-    void deserialize_int_C(
+void deserialize_int_C(
         int* arr, int arr_size, 
         int* filename_ascii, int fn_len, int* ierr);
 
-    void deserialize_real_C(
+void deserialize_real_C(
         double* arr, int arr_size, 
         int* filename_ascii, int fn_len, int* ierr);
 
-    void deserialize_char_flat_C(
+void deserialize_char_flat_C(
         int* ascii_arr, int clen, 
         int total_array_size, int* filename_ascii, int fn_len, int* ierr);
 
-    void serialize_int_nd_C(
+void serialize_int_nd_C(
         void* arr, int* dims, 
         int ndim, int* filename_ascii, int fn_len, int* ierr);
-    void serialize_real_nd_C(
+void serialize_real_nd_C(
         void* arr, int* dims, 
         int ndim, int* filename_ascii, int fn_len, int* ierr);
 
-    void serialize_char_flat_C(
+void serialize_char_flat_C(
         int* ascii_arr, int* dims, 
         int ndim, int clen, int* filename_ascii, int fn_len, int* ierr);
-    void get_array_metadata_C(
+void get_array_metadata_C(
       const int* filename_ascii,
       int fn_len, int* dims_out, int* dims_out_capacity,
       int* ndims, int* ierr, int* clen);
 
-    void build_bst_index_C(
+void build_bst_index_C(
         const double* values, 
         int num_values, int* sorted_indices, int* left_stack, 
         int* right_stack, int* ierr);
 
-    void bst_range_query_C(
+void bst_range_query_C(
         const double* values, 
         const int* sorted_indices, int num_values, 
         double lower_bound, double upper_bound, int* output_indices, 
         int* num_matches, int* ierr);
 
-    void build_spherical_kd_C(
+void build_spherical_kd_C(
         const double* vectors, int num_dimensions, 
         int num_vectors, int* sphere_indices, int* dimension_order, 
         int* workspace, double* value_buffer, int* permutation, 
         int* left_stack, int* right_stack, int* ierr);
                                  
 
-    void read_expression_vectors_tsv_C(const char* file_list_raw,
+void read_expression_vectors_tsv_C(const char* file_list_raw,
                                    int file_list_len,
                                    int n_files,
                                    const char* gene_ids_raw,
@@ -307,6 +416,33 @@ void extract_zip_archive_generic_c(const char* zip_filename,
 
 }
 
+
+// [[Rcpp::export]]
+List tox_k_means_clustering_rcpp(int n_clusters,
+                                 NumericMatrix data_points,
+                                 int n_points,
+                                 int n_dims,
+                                 NumericMatrix centroids,
+                                 int max_iterations = 300) {
+    IntegerVector labels(n_points);
+    IntegerVector label_counts(n_clusters);
+    int ierr = 0;
+    // Fortran expects column-major, R matrices are column-major
+    k_means_clustering_c(&n_clusters,
+                        data_points.begin(),
+                        &n_points,
+                        &n_dims,
+                        centroids.begin(),
+                        labels.begin(),
+                        label_counts.begin(),
+                        &ierr,
+                        &max_iterations);
+    centroids.attr("dim") = Dimension(n_dims, n_clusters);
+    return List::create(Named("centroids") = centroids,
+              Named("labels") = labels,
+              Named("label_counts") = label_counts,
+              Named("ierr") = ierr);
+}
 
 /**
  * Calculate Euclidean distance between two vectors
@@ -1291,3 +1427,46 @@ List tox_extract_zip_archive_generic_rcpp(RawVector zip_filename_raw) {
     return List::create(Named("ierr") = ierr);
 }
 // ===================================================================
+
+// [[Rcpp::export]]
+List tox_omics_vector_RAP_projection_rcpp(NumericMatrix vecs, IntegerVector vecs_selection_mask, IntegerVector axes_selection_mask) {
+  int n_axes = vecs.nrow();
+  int n_vecs = vecs.ncol();
+  int n_selected_vecs = sum(vecs_selection_mask);
+  int n_selected_axes = sum(axes_selection_mask);
+  NumericMatrix projections(n_selected_axes, n_selected_vecs);
+  int ierr = 0;
+  // Convert logical mask to int (Fortran expects int mask)
+  std::vector<int> vecs_mask(vecs_selection_mask.begin(), vecs_selection_mask.end());
+  std::vector<int> axes_mask(axes_selection_mask.begin(), axes_selection_mask.end());
+  omics_vector_RAP_projection_c(
+    vecs.begin(), &n_axes, &n_vecs,
+    vecs_mask.data(), &n_selected_vecs,
+    axes_mask.data(), &n_selected_axes,
+    projections.begin(), &ierr
+  );
+  return List::create(Named("projections") = projections,
+   Named("ierr") = ierr);
+}
+
+// [[Rcpp::export]]
+List tox_omics_field_RAP_projection_rcpp(NumericMatrix vecs, IntegerVector vecs_selection_mask, IntegerVector axes_selection_mask) {
+  int n_axes = vecs.nrow() / 2; // field matrix: 2*n_axes x n_vecs
+  int n_vecs = vecs.ncol();
+  int n_selected_vecs = sum(vecs_selection_mask);
+  int n_selected_axes = sum(axes_selection_mask);
+  NumericMatrix projections(n_selected_axes, n_selected_vecs);
+  int ierr = 0;
+  std::vector<int> vecs_mask(vecs_selection_mask.begin(), vecs_selection_mask.end());
+  std::vector<int> axes_mask(axes_selection_mask.begin(), axes_selection_mask.end());
+  omics_field_RAP_projection_c(
+    vecs.begin(), &n_axes, &n_vecs,
+    vecs_mask.data(), &n_selected_vecs,
+    axes_mask.data(), &n_selected_axes,
+    projections.begin(), &ierr
+  );
+  return List::create(Named("projections") = projections,
+   Named("ierr") = ierr);
+}
+
+  // [[Rcpp::export]]
