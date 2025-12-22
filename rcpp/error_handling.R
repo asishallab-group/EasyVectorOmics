@@ -70,7 +70,7 @@ validate_divisible_length <- function(x, d, name = deparse(substitute(x))) {
 }
 
 validate_matrix <- function(m, name = deparse(substitute(m))) {
-  validate_numeric_matrix(m, name)
+  validate_numeric_matrix(m)
 }
 
 validate_logical_or_index_vector <- function(v, expected_length = NULL, name = deparse(substitute(v))) {
@@ -112,7 +112,7 @@ validate_string_scalar <- function(s, name = deparse(substitute(s))) {
 # Backwards-compatible alias expected by some tests/wrappers
 validate_scalar_character <- function(x, name = deparse(substitute(x))) {
   # Reuse validate_string_scalar behaviour
-  validate_string_scalar(x, name)
+  validate_string_scalar(x)
 }
 
 # Validate an index vector used for subsetting operations.
@@ -230,18 +230,18 @@ validate_mode <- function(mode, allowed = c('all', 'ortho')) {
 
 # Higher-level validators for specific wrappers
 validate_group_centroid_inputs <- function(expression_vectors, gene_to_family, n_families, ortholog_set, mode = 'all') {
-  validate_numeric_matrix(expression_vectors, "expression_vectors")
+  validate_numeric_matrix(expression_vectors)
   n_axes <- nrow(expression_vectors)
   n_genes <- ncol(expression_vectors)
-  validate_integer_vector(as.integer(gene_to_family), "gene_to_family", expected_length = n_genes)
-  validate_logical_vector(as.logical(ortholog_set), "ortholog_set", expected_length = n_genes)
+  validate_integer_vector(as.integer(gene_to_family), expected_length = n_genes)
+  validate_logical_vector(as.logical(ortholog_set), expected_length = n_genes)
   if (!is.numeric(n_families) || length(n_families) != 1 || as.integer(n_families) < 1) stop("`n_families` must be a positive integer scalar.")
   validate_mode(mode)
   invisible(NULL)
 }
 
 validate_mean_vector_inputs <- function(expression_vectors, gene_indices) {
-  validate_numeric_matrix(expression_vectors, "expression_vectors")
+  validate_numeric_matrix(expression_vectors)
   n_genes <- ncol(expression_vectors)
   if (!is.integer(gene_indices)) stop("gene_indices must be an integer vector of 1-based column indices.")
   if (any(gene_indices < 1) || any(gene_indices > n_genes)) stop("gene_indices must contain indices between 1 and ncol(expression_vectors).")
@@ -419,5 +419,28 @@ validate_index_vector_and_position <- function(ix, position, name = deparse(subs
     stop(sprintf("position out of bounds for %s", name))
   }
   
+  invisible(TRUE)
+}
+# Validate matrix shape for k-means clustering (data_points)
+validate_matrix_shape_data_points <- function(data_points, n_dims, n_points, name = "data_points") {
+  if (nrow(data_points) != n_dims || ncol(data_points) != n_points) {
+    stop(sprintf("%s matrix shape mismatch: expected %%d x %%d, got %%d x %%d", name, n_dims, n_points, nrow(data_points), ncol(data_points)))
+  }
+  invisible(TRUE)
+}
+
+# Validate matrix shape for centroids
+validate_matrix_shape_centroids <- function(centroids, n_dims, n_clusters, name = "centroids") {
+  if (nrow(centroids) != n_dims || ncol(centroids) != n_clusters) {
+    stop(sprintf("%s matrix shape mismatch: expected %%d x %%d, got %%d x %%d", name, n_dims, n_clusters, nrow(centroids), ncol(centroids)))
+  }
+  invisible(TRUE)
+}
+
+# Validate matrix shape for factor clustering centroids
+validate_matrix_shape_factor_centroids <- function(centroids, n_factors, n_clusters, name = "centroids") {
+  if (nrow(centroids) != n_factors || ncol(centroids) != n_clusters) {
+    stop(sprintf("%s matrix shape mismatch: expected %%d x %%d, got %%d x %%d", name, n_factors, n_clusters, nrow(centroids), ncol(centroids)))
+  }
   invisible(TRUE)
 }
