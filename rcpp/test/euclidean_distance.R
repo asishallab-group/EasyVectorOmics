@@ -1,5 +1,5 @@
 
-# Simple Rcpp-Fortran integration
+library(Rcpp)
 
 # Set library path and compile
 source("rcpp/tensoromics_functions.R")

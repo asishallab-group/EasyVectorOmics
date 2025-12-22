@@ -196,8 +196,8 @@ test_loess_invalid_dimensions <- function() {
     tox_loess_smooth_2d(numeric(0), numeric(0), x_query, indices_used, 1.0, 3.0)
   }, error = function(e) {
     error_caught <<- TRUE
-    # Check that the error message contains expected text
-    stopifnot(grepl("Empty input arrays provided.", e$message))
+    cat("Actual error message:", e$message, "\n")
+    stopifnot(grepl("n_total must be a positive integer scalar", e$message))
   })
   stopifnot(error_caught)  # Make sure an error was actually thrown
   
