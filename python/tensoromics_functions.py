@@ -3411,21 +3411,27 @@ def tox_normalize_variable_timeseries(v):
     n_points = ctypes.c_int(len(v_arr))
     v_norm = np.empty_like(v_arr)
     ierr = ctypes.c_int(0)
+    status = ctypes.c_int(0)
     
     normalize_c = lib.normalize_variable_timeseries_C
     normalize_c.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # v
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # v_norm
         ctypes.POINTER(ctypes.c_int),                                    # n_points
-        ctypes.POINTER(ctypes.c_int)                                     # ierr
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+        ctypes.POINTER(ctypes.c_int)                                     # status
     ]
     normalize_c.restype = None
-    
-    normalize_c(v_arr, v_norm, ctypes.byref(n_points), ctypes.byref(ierr))
+
+    normalize_c(v_arr, v_norm, ctypes.byref(n_points), ctypes.byref(ierr), ctypes.byref(status))
     check_err_code(ierr.value)
     
     _readonly(v_norm)
-    return v_norm
+    result = {
+        "v_norm": v_norm,
+        "status": status.value
+    }
+    return result
 
 
 def tox_normalize_single_trajectory(trajectory):
@@ -3448,6 +3454,7 @@ def tox_normalize_single_trajectory(trajectory):
     n_timepoints_c = ctypes.c_int(n_timepoints)
     traj_norm = np.empty_like(traj_arr)
     ierr = ctypes.c_int(0)
+    status = ctypes.c_int(0)
     
     normalize_c = lib.normalize_single_trajectory_C
     normalize_c.argtypes = [
@@ -3455,16 +3462,21 @@ def tox_normalize_single_trajectory(trajectory):
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # trajectory_norm
         ctypes.POINTER(ctypes.c_int),                                    # n_factors
         ctypes.POINTER(ctypes.c_int),                                    # n_timepoints
-        ctypes.POINTER(ctypes.c_int)                                     # ierr
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+        ctypes.POINTER(ctypes.c_int)                                     # status
     ]
     normalize_c.restype = None
     
     normalize_c(traj_arr, traj_norm, ctypes.byref(n_factors_c), 
-                ctypes.byref(n_timepoints_c), ctypes.byref(ierr))
+                ctypes.byref(n_timepoints_c), ctypes.byref(ierr), ctypes.byref(status))
     check_err_code(ierr.value)
     
     _readonly(traj_norm)
-    return traj_norm
+    result = {
+        "traj_norm": traj_norm,
+        "status": status.value
+    }
+    return result
 
 
 def tox_normalize_all_trajectories(trajectories):
@@ -3488,6 +3500,7 @@ def tox_normalize_all_trajectories(trajectories):
     n_timepoints_c = ctypes.c_int(n_timepoints)
     traj_norm = np.empty_like(traj_arr)
     ierr = ctypes.c_int(0)
+    status = ctypes.c_int(0)
     
     normalize_c = lib.normalize_all_trajectories_C
     normalize_c.argtypes = [
@@ -3496,14 +3509,20 @@ def tox_normalize_all_trajectories(trajectories):
         ctypes.POINTER(ctypes.c_int),                                    # n_factors
         ctypes.POINTER(ctypes.c_int),                                    # n_samples
         ctypes.POINTER(ctypes.c_int),                                    # n_timepoints
-        ctypes.POINTER(ctypes.c_int)                                     # ierr
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+        ctypes.POINTER(ctypes.c_int)                                     # status
     ]
     normalize_c.restype = None
     
     normalize_c(traj_arr, traj_norm, ctypes.byref(n_factors_c), 
                 ctypes.byref(n_samples_c), ctypes.byref(n_timepoints_c), 
-                ctypes.byref(ierr))
+                ctypes.byref(ierr), ctypes.byref(status))
     check_err_code(ierr.value)
     
     _readonly(traj_norm)
-    return traj_norm
+
+    result = {
+        "traj_norm": traj_norm,
+        "status": status.value
+    }
+    return result

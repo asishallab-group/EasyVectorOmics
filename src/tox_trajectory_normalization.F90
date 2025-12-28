@@ -1,7 +1,7 @@
 #include "macros.h"
 module tox_trajectory_normalization
     use, intrinsic :: iso_fortran_env, only: real64, int32
-    use tox_errors, only: ERR_NAN_INF, set_ok, set_err, is_err, validate_dimension_size, validate_all_in_range_real
+    use tox_errors, only: ERR_NAN_INF, set_ok, set_err, is_err, validate_dimension_size, validate_all_in_range_real, ERR_DIVISION_BY_ZERO
     use safeguard
     implicit none
     
@@ -13,7 +13,8 @@ module tox_trajectory_normalization
 contains
     
     !> Normalize a single variable across time using min-max scaling
-    pure subroutine normalize_variable_timeseries(v, v_norm, n_points, ierr)
+    pure subroutine normalize_variable_timeseries(v, v_norm, n_points, ierr, status)
+        use ieee_arithmetic, only: ieee_is_finite, ieee_is_nan
         integer(int32), intent(in) :: n_points
         !! Vector length (number of time points)
         real(real64), intent(in) :: v(n_points)
@@ -22,12 +23,15 @@ contains
         !! Normalized time series        
         integer(int32), intent(out) :: ierr
         !! Error code
+        integer(int32), intent(out) :: status
+        !! Status code for specific warnings
         
         real(real64) :: min_val, max_val, denominator, epsilon_val
         integer(int32) :: i
         
         ! Initialize
         call set_ok(ierr)
+        call set_ok(status)
 
         call validate_all_in_range_real(v, n_points, ierr)
         if(is_err(ierr)) return
@@ -39,15 +43,27 @@ contains
         epsilon_val = 1.0e-12_real64
         
         ! Find min and max values
+
+        if(.not. all(ieee_is_finite(v))) then
+            v_norm = 0.0_real64
+            call set_err(ierr, ERR_NAN_INF)
+            return
+        end if
+
+        !! THIS IS THE TOPIC OF A CURRENT DISCUSSION -- Issue 102, see comments
+        !!! -------------------------------
         min_val = minval(v)
         max_val = maxval(v)
+        !!! -------------------------------
         
         ! Calculate denominator
         denominator = max_val - min_val
         
-        ! Check for division by zero
+        ! Check for division by zero (min approximately equal to max)
         if (abs(denominator) < epsilon_val) then
-            denominator = denominator + epsilon_val
+            v_norm = 0.0_real64
+            call set_err(status, ERR_DIVISION_BY_ZERO)
+            return
         end if
         
         ! Apply min-max normalization
@@ -59,7 +75,7 @@ contains
     
     !> Normalize all factors in a single trajectory independently across time
     !! Input: trajectory(n_factors, n_timepoints) for ONE sample/entity
-    pure subroutine normalize_single_trajectory(trajectory, trajectory_norm, n_factors, n_timepoints, ierr)
+    pure subroutine normalize_single_trajectory(trajectory, trajectory_norm, n_factors, n_timepoints, ierr, status)
         integer(int32), intent(in) :: n_factors
         !! Number of factors/variables
         integer(int32), intent(in) :: n_timepoints
@@ -70,6 +86,8 @@ contains
         !! Normalized trajectory for one sample
         integer(int32), intent(out) :: ierr
         !! Error code
+        integer(int32), intent(out) :: status
+        !! Status code for specific warnings
         
         integer(int32) :: i_factor
 
@@ -77,6 +95,7 @@ contains
         
         ! Initialize
         call set_ok(ierr)
+        call set_ok(status)
         
         call validate_dimension_size(n_factors, ierr)
         if (is_err(ierr)) return
@@ -87,7 +106,7 @@ contains
             call normalize_variable_timeseries( &
                 temp_series, &           ! Time series for this factor
                 temp_series_norm, &      ! Normalized time series
-                n_timepoints, ierr)
+                n_timepoints, ierr, status)
             trajectory_norm(i_factor, :) = temp_series_norm
             
             if (is_err(ierr)) return
@@ -99,7 +118,7 @@ contains
     !! Input: trajectories(n_factors, n_samples, n_timepoints)
     !! Normalizes each factor independently across time for each sample
     pure subroutine normalize_all_trajectories(trajectories, trajectories_norm, &
-                                          n_factors, n_samples, n_timepoints, ierr)
+                                          n_factors, n_samples, n_timepoints, ierr, status)
         integer(int32), intent(in) :: n_factors
         !! Number of factors
         integer(int32), intent(in) :: n_samples
@@ -112,12 +131,15 @@ contains
         !! Normalized trajectories
         integer(int32), intent(out) :: ierr
         !! Error code
-        
+        integer(int32), intent(out) :: status
+        !! Status code for specific warnings
+
         integer(int32) :: i_sample, i_factor
 
         real(real64), dimension(n_timepoints) :: temp_series, temp_series_norm
         
         call set_ok(ierr)
+        call set_ok(status)
 
         call validate_dimension_size(n_samples, ierr)
         if (is_err(ierr)) return
@@ -127,7 +149,7 @@ contains
             do i_factor = 1, n_factors
                 temp_series = trajectories(i_factor, i_sample, :)
 
-                call normalize_variable_timeseries(temp_series, temp_series_norm, n_timepoints, ierr)
+                call normalize_variable_timeseries(temp_series, temp_series_norm, n_timepoints, ierr, status)
                 
                 if (is_err(ierr)) return
                 trajectories_norm(i_factor, i_sample, :) = temp_series_norm
@@ -138,7 +160,7 @@ contains
 
 end module tox_trajectory_normalization
 
-pure subroutine normalize_variable_timeseries_C(v, v_norm, n_points, ierr) bind(C, name="normalize_variable_timeseries_C")
+pure subroutine normalize_variable_timeseries_C(v, v_norm, n_points, ierr, status) bind(C, name="normalize_variable_timeseries_C")
     use, intrinsic :: iso_c_binding, only: c_double, c_int
     use tox_trajectory_normalization, only: normalize_variable_timeseries
     M_USE_NULL_VALIDATION
@@ -152,17 +174,19 @@ pure subroutine normalize_variable_timeseries_C(v, v_norm, n_points, ierr) bind(
     !! Normalized time series        
     integer(c_int), intent(out), target :: ierr
     !! Error code
+    integer(c_int), intent(out), target :: status
+    !! Status code for specific warnings
 
     M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_points)
     M_CHECK_NON_NULL(v)
     M_CHECK_NON_NULL(v_norm)
 
-    call normalize_variable_timeseries(v, v_norm, n_points, ierr)
+    call normalize_variable_timeseries(v, v_norm, n_points, ierr, status)
 
 end subroutine normalize_variable_timeseries_C
 
-pure subroutine normalize_single_trajectory_C(trajectory, trajectory_norm, n_factors, n_timepoints, ierr) bind(C, name="normalize_single_trajectory_C")
+pure subroutine normalize_single_trajectory_C(trajectory, trajectory_norm, n_factors, n_timepoints, ierr, status) bind(C, name="normalize_single_trajectory_C")
     use, intrinsic :: iso_c_binding, only: c_double, c_int
     use tox_trajectory_normalization, only: normalize_single_trajectory
     M_USE_NULL_VALIDATION
@@ -178,6 +202,8 @@ pure subroutine normalize_single_trajectory_C(trajectory, trajectory_norm, n_fac
     !! Normalized trajectory for one sample
     integer(c_int), intent(out), target :: ierr
     !! Error code
+    integer(c_int), intent(out), target :: status
+    !! Status code for specific warnings
 
     M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_factors)
@@ -185,11 +211,11 @@ pure subroutine normalize_single_trajectory_C(trajectory, trajectory_norm, n_fac
     M_CHECK_NON_NULL(trajectory)
     M_CHECK_NON_NULL(trajectory_norm)
 
-    call normalize_single_trajectory(trajectory, trajectory_norm, n_factors, n_timepoints, ierr)
+    call normalize_single_trajectory(trajectory, trajectory_norm, n_factors, n_timepoints, ierr, status)
 
 end subroutine normalize_single_trajectory_C
 
-pure subroutine normalize_all_trajectories_C(trajectories, trajectories_norm, n_factors, n_samples, n_timepoints, ierr) bind(C, name="normalize_all_trajectories_C")
+pure subroutine normalize_all_trajectories_C(trajectories, trajectories_norm, n_factors, n_samples, n_timepoints, ierr, status) bind(C, name="normalize_all_trajectories_C")
     use, intrinsic :: iso_c_binding, only: c_double, c_int
     use tox_trajectory_normalization, only: normalize_all_trajectories
     M_USE_NULL_VALIDATION
@@ -207,6 +233,8 @@ pure subroutine normalize_all_trajectories_C(trajectories, trajectories_norm, n_
     !! Normalized trajectories
     integer(c_int), intent(out), target :: ierr
     !! Error code
+    integer(c_int), intent(out), target :: status
+    !! Status code for specific warnings
 
     M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_factors)
@@ -215,6 +243,6 @@ pure subroutine normalize_all_trajectories_C(trajectories, trajectories_norm, n_
     M_CHECK_NON_NULL(trajectories)
     M_CHECK_NON_NULL(trajectories_norm)
 
-    call normalize_all_trajectories(trajectories, trajectories_norm, n_factors, n_samples, n_timepoints, ierr)
+    call normalize_all_trajectories(trajectories, trajectories_norm, n_factors, n_samples, n_timepoints, ierr, status)
 
 end subroutine normalize_all_trajectories_C

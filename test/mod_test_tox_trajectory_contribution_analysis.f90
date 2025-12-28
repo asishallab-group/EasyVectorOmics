@@ -438,13 +438,13 @@ contains
     subroutine test_normalize_variable_timeseries()
         integer(int32) :: n_points = 5
         real(real64) :: v(5), v_norm(5), v_norm_expected(5), v1_norm(1), v1_norm_expected(1), v1(1)
-        integer(int32) :: ierr
+        integer(int32) :: ierr, status
         
         ! Test 1: Normal case
         v = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64, 5.0_real64]
         v_norm_expected = [0.0_real64, 0.25_real64, 0.5_real64, 0.75_real64, 1.0_real64]
         
-        call normalize_variable_timeseries(v, v_norm, n_points, ierr)
+        call normalize_variable_timeseries(v, v_norm, n_points, ierr, status)
 
         call assert_equal_int(ierr, ERR_OK, "test_normalize_variable_timeseries: normal case should succeed")
         call assert_equal_array_real(v_norm, v_norm_expected, n_points, TOL, "test_normalize_variable_timeseries: normal case values")
@@ -453,7 +453,7 @@ contains
         v = [2.0_real64, 2.0_real64, 2.0_real64, 2.0_real64, 2.0_real64]
         v_norm_expected = [0.0_real64, 0.0_real64, 0.0_real64, 0.0_real64, 0.0_real64]
         
-        call normalize_variable_timeseries(v, v_norm, n_points, ierr)
+        call normalize_variable_timeseries(v, v_norm, n_points, ierr, status)
         call assert_equal_int(ierr, ERR_OK, "test_normalize_variable_timeseries: constant vector should succeed")
         call assert_equal_array_real(v_norm, v_norm_expected, n_points, TOL, "test_normalize_variable_timeseries: constant vector values")
         
@@ -461,7 +461,7 @@ contains
         v = [-5.0_real64, -2.0_real64, 0.0_real64, 3.0_real64, 6.0_real64]
         v_norm_expected = [0.0_real64, 0.27272727_real64, 0.45454545_real64, 0.72727273_real64, 1.0_real64]
         
-        call normalize_variable_timeseries(v, v_norm, n_points, ierr)
+        call normalize_variable_timeseries(v, v_norm, n_points, ierr, status)
         call assert_equal_int(ierr, ERR_OK, "test_normalize_variable_timeseries: negative values should succeed")
         call assert_equal_array_real(v_norm, v_norm_expected, n_points, 1.0e-8_real64, "test_normalize_variable_timeseries: negative values")
         
@@ -469,7 +469,7 @@ contains
         v1 = [3.14_real64]
         v1_norm_expected = [0.0_real64]  ! Single value normalized to 0
         
-        call normalize_variable_timeseries(v1, v1_norm, 1, ierr)
+        call normalize_variable_timeseries(v1, v1_norm, 1, ierr, status)
         call assert_equal_int(ierr, ERR_OK, "test_normalize_variable_timeseries: single point should succeed")
         call assert_equal_array_real(v1_norm, v1_norm_expected, 1, TOL, "test_normalize_variable_timeseries: single point")
     end subroutine test_normalize_variable_timeseries
@@ -478,7 +478,7 @@ contains
         integer(int32), parameter :: n_factors = 3, n_timepoints = 4
         real(real64) :: trajectory(n_factors, n_timepoints), trajectory_norm(n_factors, n_timepoints)
         real(real64) :: expected(n_factors, n_timepoints)
-        integer(int32) :: ierr, i_factor, i_timepoint
+        integer(int32) :: ierr, i_factor, i_timepoint, status
         
         ! Create test trajectory for ONE SAMPLE: factors × timepoints
         do i_factor = 1, n_factors
@@ -497,7 +497,7 @@ contains
             end do
         end do
         
-        call normalize_single_trajectory(trajectory, trajectory_norm, n_factors, n_timepoints, ierr)
+        call normalize_single_trajectory(trajectory, trajectory_norm, n_factors, n_timepoints, ierr, status)
         call assert_equal_int(ierr, ERR_OK, "test_normalize_single_trajectory: should succeed")
         
         ! Check each factor independently
@@ -519,7 +519,7 @@ contains
         integer(int32), parameter :: n_factors = 2, n_samples = 3, n_timepoints = 4
         real(real64) :: trajectories(n_factors, n_samples, n_timepoints)
         real(real64) :: trajectories_norm(n_factors, n_samples, n_timepoints)
-        integer(int32) :: ierr, i_factor, i_sample, i_timepoint
+        integer(int32) :: ierr, i_factor, i_sample, i_timepoint, status
         
         ! Fill with known pattern: factor × sample × timepoint
         do i_factor = 1, n_factors
@@ -532,7 +532,7 @@ contains
         end do
         
         call normalize_all_trajectories(trajectories, trajectories_norm, &
-                                      n_factors, n_samples, n_timepoints, ierr)
+                                      n_factors, n_samples, n_timepoints, ierr, status)
         call assert_equal_int(ierr, ERR_OK, "test_normalize_all_trajectories: should succeed")
         
         ! Check: For each (factor, sample), values should be normalized across time
@@ -563,13 +563,13 @@ contains
     subroutine test_normalize_edge_cases()
         real(real64) :: v(3), v_norm(3), v_norm_expected(3)
         real(real64) :: v5(5), v5_norm(5), v5_norm_expected(5)
-        integer(int32) :: ierr
+        integer(int32) :: ierr, status
         
         ! Test 1: Very small values, should result in zero vector due to division by near zero
         v = [tiny(1.0_real64), 2.0_real64 * tiny(1.0_real64), 3.0_real64 * tiny(1.0_real64)]
         v_norm_expected = [0.0_real64, 0.0_real64, 0.0_real64]
         
-        call normalize_variable_timeseries(v, v_norm, 3, ierr)
+        call normalize_variable_timeseries(v, v_norm, 3, ierr, status)
 
         call assert_equal_int(ierr, ERR_OK, "test_normalize_edge_cases: small values should succeed")
         call assert_equal_array_real(v_norm, v_norm_expected, 3, TOL, "test_normalize_edge_cases: small values")
@@ -578,7 +578,7 @@ contains
         v = [1.0e10_real64, 2.0e10_real64, 3.0e10_real64]
         v_norm_expected = [0.0_real64, 0.5_real64, 1.0_real64]
         
-        call normalize_variable_timeseries(v, v_norm, 3, ierr)
+        call normalize_variable_timeseries(v, v_norm, 3, ierr, status)
         call assert_equal_int(ierr, ERR_OK, "test_normalize_edge_cases: large values should succeed")
         call assert_equal_array_real(v_norm, v_norm_expected, 3, TOL, "test_normalize_edge_cases: large values")
         
@@ -586,7 +586,7 @@ contains
         v5 = [-10.0_real64, -5.0_real64, 0.0_real64, 5.0_real64, 10.0_real64]
         v5_norm_expected = [0.0_real64, 0.25_real64, 0.5_real64, 0.75_real64, 1.0_real64]
         
-        call normalize_variable_timeseries(v5, v5_norm, 5, ierr)
+        call normalize_variable_timeseries(v5, v5_norm, 5, ierr, status)
         call assert_equal_int(ierr, ERR_OK, "test_normalize_edge_cases: mixed values should succeed")
         call assert_equal_array_real(v5_norm, v5_norm_expected, 5, 1.0e-8_real64, "test_normalize_edge_cases: mixed values")
         
@@ -594,7 +594,7 @@ contains
         v5 = [0.0_real64, 0.25_real64, 0.5_real64, 0.75_real64, 1.0_real64]
         v5_norm_expected = v5  ! Should stay the same
         
-        call normalize_variable_timeseries(v5, v5_norm, 5, ierr)
+        call normalize_variable_timeseries(v5, v5_norm, 5, ierr, status)
         call assert_equal_int(ierr, ERR_OK, "test_normalize_edge_cases: already normalized should succeed")
         call assert_equal_array_real(v5_norm, v5_norm_expected, 5, TOL, "test_normalize_edge_cases: already normalized")
     end subroutine test_normalize_edge_cases
@@ -602,19 +602,19 @@ contains
     subroutine test_normalize_invalid_inputs()
         real(real64) :: v(5), v_norm(5)
         real(real64) :: v3(3), v3_norm(3)
-        integer(int32) :: ierr
+        integer(int32) :: ierr, status
         
         ! Test 1: Empty array (n_points = 0)
-        call normalize_variable_timeseries(v, v_norm, 0, ierr)
+        call normalize_variable_timeseries(v, v_norm, 0, ierr, status)
         call assert_equal_int(ierr, ERR_EMPTY_INPUT, "test_normalize_invalid_inputs: empty array should return ERR_EMPTY_INPUT")
         
         ! Test 2: Negative n_points
-        call normalize_variable_timeseries(v, v_norm, -1, ierr)
+        call normalize_variable_timeseries(v, v_norm, -1, ierr, status)
         call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_normalize_invalid_inputs: negative n_points should return ERR_INVALID_INPUT")
         
         ! Test 3: NaN in input
         v3 = [1.0_real64, ieee_value(0.0_real64, ieee_quiet_nan), 3.0_real64]
-        call normalize_variable_timeseries(v3, v3_norm, 3, ierr)
+        call normalize_variable_timeseries(v3, v3_norm, 3, ierr, status)
         ! Note: NaN handling depends on minval/maxval behavior - check if error is set
         if (ierr /= ERR_OK) then
             ! If error is set, it should be ERR_NAN_INF
@@ -623,7 +623,7 @@ contains
         
         ! Test 4: Infinity in input
         v3 = [1.0_real64, 2.0_real64, huge(1.0_real64)]
-        call normalize_variable_timeseries(v3, v3_norm, 3, ierr)
+        call normalize_variable_timeseries(v3, v3_norm, 3, ierr, status)
         ! Similar to NaN case
         if (ierr /= ERR_OK) then
             call assert_equal_int(ierr, ERR_NAN_INF, "test_normalize_invalid_inputs: Infinity should return ERR_NAN_INF")

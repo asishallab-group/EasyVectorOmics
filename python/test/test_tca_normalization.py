@@ -40,7 +40,7 @@ def test_tox_normalize_variable_timeseries():
     v = np.array([1.0, 2.0, 3.0, 4.0, 5.0], dtype=np.float64)
     print_array_info("Input", v)
     
-    result = tox_normalize_variable_timeseries(v)
+    result = tox_normalize_variable_timeseries(v)["v_norm"]
     print_array_info("Output", result)
     
     expected = np.array([0.0, 0.25, 0.5, 0.75, 1.0], dtype=np.float64)
@@ -54,10 +54,13 @@ def test_tox_normalize_variable_timeseries():
     # -------------------------------
     print("\nCase 2: Constant vector")
     v = np.array([3.14, 3.14, 3.14, 3.14], dtype=np.float64)
-    result = tox_normalize_variable_timeseries(v)
+    result = tox_normalize_variable_timeseries(v)["v_norm"]
+    res_stat = tox_normalize_variable_timeseries(v)["status"]
+    print(f"Status code: {res_stat}")
     print_array_info("Output", result)
     
     expected = np.zeros_like(v)
+    assert np.equal(res_stat, 209), "Constant case: status code mismatch"
     assert np.allclose(result, expected, atol=TOL), "Constant case: result mismatch"
     print("✓ Constant case passed")
     
@@ -66,7 +69,7 @@ def test_tox_normalize_variable_timeseries():
     # -------------------------------
     print("\nCase 3: Negative values")
     v = np.array([-10.0, -5.0, 0.0, 5.0, 10.0], dtype=np.float64)
-    result = tox_normalize_variable_timeseries(v)
+    result = tox_normalize_variable_timeseries(v)["v_norm"]
     print_array_info("Output", result)
     
     expected = np.array([0.0, 0.25, 0.5, 0.75, 1.0], dtype=np.float64)
@@ -78,7 +81,7 @@ def test_tox_normalize_variable_timeseries():
     # -------------------------------
     print("\nCase 4: Single point")
     v = np.array([42.0], dtype=np.float64)
-    result = tox_normalize_variable_timeseries(v)
+    result = tox_normalize_variable_timeseries(v)["v_norm"]
     print_array_info("Output", result)
     
     assert np.abs(result[0]) < TOL, "Single point should normalize to 0"
@@ -90,7 +93,7 @@ def test_tox_normalize_variable_timeseries():
     print("\nCase 5: Zero vector")
     v = np.zeros(5, dtype=np.float64)
     try:
-        result = tox_normalize_variable_timeseries(v)
+        result = tox_normalize_variable_timeseries(v)["v_norm"]
         assert np.all(v == 0.0), "Zero vector should remain zero"
         print("Zero vector case passed")
     except RuntimeError:
@@ -115,7 +118,7 @@ def test_tox_normalize_single_trajectory():
                           dtype=np.float64, order='C')
     print_array_info("Input", trajectory)
     
-    result = tox_normalize_single_trajectory(trajectory)
+    result = tox_normalize_single_trajectory(trajectory)["traj_norm"]
     print_array_info("Output", result)
     
     # Check each factor is normalized across time
@@ -133,7 +136,7 @@ def test_tox_normalize_single_trajectory():
                            [2.0, 4.0, 8.0, 16.0, 32.0],        # Exponential
                            [5.0, 5.0, 5.0, 5.0, 5.0]],         # Constant
                           dtype=np.float64, order='C')
-    result = tox_normalize_single_trajectory(trajectory)
+    result = tox_normalize_single_trajectory(trajectory)["traj_norm"]
     
     # Factor 0: Should have min=0 at time 0, max=1 at time 2
     assert np.abs(result[0, 0]) < TOL, "Factor 1: time 0 should be min"
@@ -170,7 +173,7 @@ def test_tox_normalize_all_trajectories():
                             dtype=np.float64, order='C')
     print_array_info("Input", trajectories)
     
-    result = tox_normalize_all_trajectories(trajectories)
+    result = tox_normalize_all_trajectories(trajectories)["traj_norm"]
     print_array_info("Output", result)
     
     # Check normalization for each (factor, sample) pair
@@ -190,7 +193,7 @@ def test_tox_normalize_all_trajectories():
     trajectories = np.random.randn(5, 10, 20).astype(np.float64) * 100 + 500
     trajectories = np.ascontiguousarray(trajectories)
     
-    result = tox_normalize_all_trajectories(trajectories)
+    result = tox_normalize_all_trajectories(trajectories)["traj_norm"]
     
     # Verify all values in [0,1]
     assert np.all(result >= 0.0 - TOL), "All values should be >= 0"
@@ -217,7 +220,7 @@ def test_tox_normalize_all_trajectories():
     trajectories = np.ones((3, 4, 5), dtype=np.float64) * 7.0
     trajectories[1, :, :] = np.arange(5).reshape(1, 1, 5)  # Make factor 1 vary
     
-    result = tox_normalize_all_trajectories(trajectories)
+    result = tox_normalize_all_trajectories(trajectories)["traj_norm"]
     
     # Factor 0 and 2 should be all zeros (constant)
     assert np.all(np.abs(result[0, :, :]) < TOL), "Constant factor 0 should be all zeros"
