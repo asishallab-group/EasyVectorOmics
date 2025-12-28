@@ -181,6 +181,7 @@ pure subroutine normalize_variable_timeseries_C(v, v_norm, n_points, ierr, statu
     M_CHECK_NON_NULL(n_points)
     M_CHECK_NON_NULL(v)
     M_CHECK_NON_NULL(v_norm)
+    M_CHECK_NON_NULL(status)
 
     call normalize_variable_timeseries(v, v_norm, n_points, ierr, status)
 
@@ -210,6 +211,7 @@ pure subroutine normalize_single_trajectory_C(trajectory, trajectory_norm, n_fac
     M_CHECK_NON_NULL(n_timepoints)
     M_CHECK_NON_NULL(trajectory)
     M_CHECK_NON_NULL(trajectory_norm)
+    M_CHECK_NON_NULL(status)
 
     call normalize_single_trajectory(trajectory, trajectory_norm, n_factors, n_timepoints, ierr, status)
 
@@ -242,6 +244,7 @@ pure subroutine normalize_all_trajectories_C(trajectories, trajectories_norm, n_
     M_CHECK_NON_NULL(n_samples)
     M_CHECK_NON_NULL(trajectories)
     M_CHECK_NON_NULL(trajectories_norm)
+    M_CHECK_NON_NULL(status)
 
     call normalize_all_trajectories(trajectories, trajectories_norm, n_factors, n_samples, n_timepoints, ierr, status)
 
