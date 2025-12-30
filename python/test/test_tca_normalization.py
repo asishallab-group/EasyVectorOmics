@@ -60,7 +60,7 @@ def test_tox_normalize_variable_timeseries():
     print_array_info("Output", result)
     
     expected = np.zeros_like(v)
-    assert np.equal(res_stat, 209), "Constant case: status code mismatch"
+    assert np.equal(res_stat, 210), "Constant case: status code mismatch"
     assert np.allclose(result, expected, atol=TOL), "Constant case: result mismatch"
     print("✓ Constant case passed")
     

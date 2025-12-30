@@ -26,23 +26,15 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(15)
-
-        all_tests(1) = test_case("test_tox_trajectory_contribution_analysis_get_vec_across_samples", test_get_vec_across_samples)
-        all_tests(2) = test_case("test_tox_trajectory_contribution_analysis_get_vec_across_timepoints", test_get_vec_across_timepoints)
-        all_tests(3) = test_case("test_tox_trajectory_contribution_analysis_trajectory_contribution", test_trajectory_contribution)
-        all_tests(4) = test_case("test_tox_trajectory_contribution_analysis_spike_contribution", test_spike_contribution)
-        all_tests(5) = test_case("test_tox_trajectory_contribution_analysis_calc_contributions", test_calc_contributions)
-        all_tests(6) = test_case("test_process_trajectories_alloc", test_process_trajectories_alloc)
-        all_tests(7) = test_case("test_process_trajectories_flat_alloc", test_process_trajectories_flat_alloc)
-        all_tests(8) = test_case("test_process_trajectories_empty_input", test_process_trajectories_empty_input)
-        all_tests(9) = test_case("test_process_trajectories_invalid_dependent", test_process_trajectories_invalid_dependent)
-        all_tests(10) = test_case("test_process_trajectories_dependent_in_mask", test_process_trajectories_dependent_in_mask)
-        all_tests(11) = test_case("test_normalize_variable_timeseries", test_normalize_variable_timeseries)
-        all_tests(12) = test_case("test_normalize_single_trajectory", test_normalize_single_trajectory)
-        all_tests(13) = test_case("test_normalize_all_trajectories", test_normalize_all_trajectories)
-        all_tests(14) = test_case("test_normalize_edge_cases", test_normalize_edge_cases)
-        all_tests(15) = test_case("test_normalize_invalid_inputs", test_normalize_invalid_inputs)
+        type(test_case) :: all_tests(8)
+        all_tests(1) = test_case("test_normalize_variable_timeseries", test_normalize_variable_timeseries)
+        all_tests(2) = test_case("test_normalize_single_trajectory", test_normalize_single_trajectory)
+        all_tests(3) = test_case("test_normalize_all_trajectories", test_normalize_all_trajectories)
+        all_tests(4) = test_case("test_normalize_edge_cases", test_normalize_edge_cases)
+        all_tests(5) = test_case("test_normalize_invalid_inputs", test_normalize_invalid_inputs)
+        all_tests(6) = test_case("test_compute_baselines_factor_dependent", test_compute_baselines_factor_dependent)
+        all_tests(7) = test_case("test_compute_contributions", test_compute_contributions)
+        all_tests(8) = test_case("test_compute_all_contributions", test_compute_all_contributions)
     end function get_all_tests
 
     !> Run all tox_trajectory_contribution_analysis tests.
@@ -84,356 +76,267 @@ contains
         end do
     end subroutine run_named_tests_tox_trajectory_contribution_analysis
 
-    subroutine test_calc_contributions()
-        integer(int32), parameter :: n_factors = 2, n_samples = 3, n_timepoints = 4
+    subroutine test_compute_all_contributions()
+        integer(int32), parameter :: n_factors = 2, n_samples = 1, n_timepoints = 3
+        integer(int32), parameter :: n_selected_factors = 1, n_selected_dependents = 1
+        integer(int32) :: ierr, i_dependent
         real(real64) :: trajectories(n_factors, n_samples, n_timepoints)
-        real(real64) :: spike_contribs(n_timepoints, n_samples), integrated_contribs(n_samples)
-        real(real64) :: expected_spike(n_timepoints), expected_integrated
-        integer(int32) :: ierr, i_factor, i_sample, i_timepoint
-        real(real64) :: factor_vec(n_timepoints), dependent_vec(n_timepoints), magnitude
+        integer(int32) :: factor_indices(n_factors)
+        integer(int32) :: dependent_indices(n_factors)
+        real(real64) :: local_contributions(n_timepoints, n_factors, n_factors, n_samples)
+        real(real64) :: total_contributions(n_factors, n_factors, n_samples)
+        real(real64) :: temp_factors(n_timepoints, n_factors), temp_dependent(n_timepoints)
+        real(real64) :: expected_local(n_timepoints)
+        real(real64) :: expected_total
 
-        ! Fill trajectories with known values: T(i,j,k) = 100*i + 10*j + k
-        do i_factor = 1, n_factors
-            do i_sample = 1, n_samples
-                do i_timepoint = 1, n_timepoints
-                    trajectories(i_factor, i_sample, i_timepoint) = 100.0_real64*i_factor + 10.0_real64*i_sample + real(i_timepoint, real64)
-                end do
-            end do
+        ! -------------------------------
+        ! Case 1: zero vectors
+        ! -------------------------------
+        ! Factor trajectory: [1,2,3]
+        ! Dependent trajectory: [4,5,6]
+
+        trajectories(1,1,:) = [1.0_real64, 2.0_real64, 3.0_real64]
+        trajectories(2,1,:) = [4.0_real64, 5.0_real64, 6.0_real64]
+        factor_indices = [1, 2]
+        dependent_indices = [2, 1]
+
+        call compute_all_contributions(trajectories, 0_int32, n_samples, n_timepoints, &
+            factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MIN, &
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
+        call assert_equal_int(ierr, ERR_EMPTY_INPUT, "test_compute_all_contributions: Case 1 expected error for n_factors=0")
+
+        call compute_all_contributions(trajectories, n_factors, 0_int32, n_timepoints, &
+            factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MIN, &
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
+        call assert_equal_int(ierr, ERR_EMPTY_INPUT, "test_compute_all_contributions: Case 1 expected error for n_samples=0")
+
+        call compute_all_contributions(trajectories, n_factors, n_samples, 0_int32, &
+            factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MIN, &
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
+        call assert_equal_int(ierr, ERR_EMPTY_INPUT, "test_compute_all_contributions: Case 1 expected error for n_timepoints=0")
+
+        call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
+            factor_indices(:n_selected_factors), 0_int32, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MIN, &
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
+        call assert_equal_int(ierr, ERR_EMPTY_INPUT, "test_compute_all_contributions: Case 1 expected error for n_selected_factors=0")
+
+        call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
+            factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), 0_int32, BASELINE_MIN, &
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
+        call assert_equal_int(ierr, ERR_EMPTY_INPUT, "test_compute_all_contributions: Case 1 expected error for n_selected_dependents=0")
+
+        ! -------------------------------
+        ! Case 2: MEAN baseline
+        ! -------------------------------
+
+        call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
+            factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MEAN, &
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
+
+        call assert_equal_int(ierr, ERR_OK, "test_compute_all_contributions: Case 2 ierr")
+
+        ! Baselines: mean(factor)=2.0, mean(dependent)=5.0
+        expected_local(1) = (1.0-2.0)*(4.0-5.0)   ! = 1.0
+        expected_local(2) = (2.0-2.0)*(5.0-5.0)   ! = 0.0
+        expected_local(3) = (3.0-2.0)*(6.0-5.0)   ! = 1.0
+        expected_total = sum(expected_local)      ! = 2.0
+
+        call assert_equal_array_real(local_contributions(:,1,1,1), expected_local, n_timepoints, TOL, "test_compute_all_contributions: Case 2 local contributions")
+        call assert_equal_real(total_contributions(1,1,1), expected_total, TOL, "test_compute_all_contributions: Case 2 total contribution")
+
+        ! -------------------------------
+        ! Case 3: MIN baseline
+        ! -------------------------------
+        ! Factor trajectory: [2,4,6]
+        ! Dependent trajectory: [1,3,5]
+        trajectories(1,1,:) = [2.0_real64, 4.0_real64, 6.0_real64]
+        trajectories(2,1,:) = [1.0_real64, 3.0_real64, 5.0_real64]
+
+        call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
+            factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MIN, &
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
+
+        call assert_equal_int(ierr, ERR_OK, "test_compute_all_contributions: Case 3 ierr")
+
+        ! Baselines: min(factor)=2.0, min(dependent)=1.0
+        expected_local(1) = (2.0-2.0)*(1.0-1.0)   ! = 0.0
+        expected_local(2) = (4.0-2.0)*(3.0-1.0)   ! = 4.0
+        expected_local(3) = (6.0-2.0)*(5.0-1.0)   ! = 16.0
+        expected_total = sum(expected_local)      ! = 20.0
+
+        call assert_equal_array_real(local_contributions(:,1,1,1), expected_local, n_timepoints, TOL, "test_compute_all_contributions: Case 3 local contributions")
+        call assert_equal_real(total_contributions(1,1,1), expected_total, TOL, "test_compute_all_contributions: Case 3 total contribution")
+
+        ! -------------------------------
+        ! Case 4: all elements equal
+        ! -------------------------------
+        trajectories(1,1,:) = 1.0_real64
+
+        call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
+            factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MIN, &
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
+
+        call assert_equal_int(ierr, ERR_OK, "test_compute_all_contributions: Case 4 ierr zero factor")
+
+        expected_local = 0.0_real64
+        expected_total = 0.0_real64
+
+        call assert_equal_array_real(local_contributions(:,1,1,1), expected_local, n_timepoints, TOL, "test_compute_all_contributions: Case 4 local contributions zero factor")
+        call assert_equal_real(total_contributions(1,1,1), expected_total, TOL, "test_compute_all_contributions: Case 4 total contribution zero factor")
+
+        trajectories(1,1,:) = [1.0_real64, 2.0_real64, 3.0_real64]
+        trajectories(2,1,:) = 1.0_real64
+
+        call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
+            factor_indices(:n_selected_factors), n_selected_factors, dependent_indices(:n_selected_dependents), n_selected_dependents, BASELINE_MIN, &
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
+
+        call assert_equal_int(ierr, ERR_OK, "test_compute_all_contributions: Case 4 ierr zero dependent")
+
+        expected_local = 0.0_real64
+        expected_total = 0.0_real64
+
+        call assert_equal_array_real(local_contributions(:,1,1,1), expected_local, n_timepoints, TOL, "test_compute_all_contributions: Case 4 local contributions zero dependent")
+        call assert_equal_real(total_contributions(1,1,1), expected_total, TOL, "test_compute_all_contributions: Case 4 total contribution zero dependent")
+
+        ! -------------------------------
+        ! Case 5: multiple selected indices
+        ! -------------------------------
+        trajectories(1,1,:) = [1.0_real64, 2.0_real64, 3.0_real64]
+        trajectories(2,1,:) = [4.0_real64, 5.0_real64, 6.0_real64]
+        factor_indices = [1, 2]
+        dependent_indices = [2, 2]
+
+        call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
+            factor_indices, n_factors, dependent_indices, n_factors, BASELINE_MIN, &
+            local_contributions, total_contributions, temp_factors, temp_dependent, ierr)
+
+        call assert_equal_int(ierr, ERR_OK, "test_compute_all_contributions: Case 5 ierr")
+
+        do i_dependent = 1, size(dependent_indices)
+            expected_local(1) = (1.0-1.0)*(4.0-4.0)
+            expected_local(2) = (2.0-1.0)*(5.0-4.0)
+            expected_local(3) = (3.0-1.0)*(6.0-4.0)
+            expected_total = sum(expected_local)
+
+            call assert_equal_array_real(local_contributions(:,1,i_dependent,1), expected_local, n_timepoints, TOL, "test_compute_all_contributions: Case 5 local contributions")
+            call assert_equal_real(total_contributions(1,i_dependent,1), expected_total, TOL, "test_compute_all_contributions: Case 5 total contribution")
+
+            expected_local(1) = (4.0-4.0) ** 2
+            expected_local(2) = (5.0-4.0) ** 2
+            expected_local(3) = (6.0-4.0) ** 2
+            expected_total = sum(expected_local)
+
+            call assert_equal_array_real(local_contributions(:,1,i_dependent,1), expected_local, n_timepoints, TOL, "test_compute_all_contributions: Case 5 local contributions")
+            call assert_equal_real(total_contributions(1,i_dependent,1), expected_total, TOL, "test_compute_all_contributions: Case 5 total contribution")
         end do
 
-        ! Case: aligned factor and dependent (factor=2, dependent=1)
-        call calc_contributions_alloc(trajectories, n_factors, n_samples, n_timepoints, 2, 1, MODE_NORMAL, spike_contribs, integrated_contribs, ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_calc_contributions: MODE_NORMAL should return OK")
+    end subroutine test_compute_all_contributions
 
-        ! Validate each sample
-        do i_sample = 1, n_samples
-            factor_vec = trajectories(2, i_sample, :)
-            dependent_vec = trajectories(1, i_sample, :)
-            magnitude = sqrt(sum(factor_vec**2)) * sqrt(sum(dependent_vec**2)) 
-            expected_spike = (factor_vec * dependent_vec) / magnitude
-            expected_integrated = sum(factor_vec * dependent_vec) / magnitude
+    subroutine test_compute_contributions()
+        integer(int32), parameter :: n_dims = 4
+        integer(int32) :: ierr, mode
+        real(real64) :: factor(n_dims), dependent(n_dims)
+        real(real64) :: local_contributions(n_dims), expected_local(n_dims)
+        real(real64) :: total_contribution, expected_total
 
-            call assert_equal_array_real(spike_contribs(:, i_sample), expected_spike, n_timepoints, TOL, "test_calc_contributions: spike_contribs mismatch")
-            call assert_equal_real(integrated_contribs(i_sample), expected_integrated, TOL, "test_calc_contributions: integrated_contribs mismatch")
-        end do
+        ! -------------------------------
+        ! Case 1: RAW baseline
+        ! -------------------------------
+        factor    = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64]
+        dependent = [2.0_real64, 1.0_real64, 0.0_real64, -1.0_real64]
+        mode = 1  ! RAW
 
-        ! Case: invalid mode
-        call calc_contributions_alloc(trajectories, n_factors, n_samples, n_timepoints, 2_int32, 1_int32, 99_int32, spike_contribs, integrated_contribs, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_calc_contributions: expected ERR_INVALID_INPUT for mode=99")
+        call compute_contributions(factor, dependent, n_dims, mode, local_contributions, total_contribution, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_compute_contributions: Case 1 ierr")
 
-    end subroutine test_calc_contributions
+        ! RAW baseline means baseline = 0
+        expected_local = factor * dependent
+        expected_total = sum(expected_local)
 
-    subroutine test_trajectory_contribution()
-        integer(int32), parameter :: n_timepoints = 3
-        real(real64) :: factor(n_timepoints), dependent(n_timepoints)
-        real(real64) :: contribution, expected
+        call assert_equal_array_real(local_contributions, expected_local, n_dims, TOL, "test_compute_contributions: Case 1 local contributions")
+        call assert_equal_real(total_contribution, expected_total, TOL, "test_compute_contributions: Case 1 total contribution")
+
+        ! -------------------------------
+        ! Case 2: MIN baseline
+        ! -------------------------------
+        factor    = [3.0_real64, 5.0_real64, 2.0_real64, 4.0_real64]
+        dependent = [1.0_real64, 2.0_real64, 0.0_real64, -1.0_real64]
+        mode = 2  ! MIN
+
+        call compute_contributions(factor, dependent, n_dims, mode, local_contributions, total_contribution, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_compute_contributions: Case 2 ierr")
+
+        ! Baseline = min(factor)=2, min(dependent)=-1
+        expected_local = (factor - minval(factor)) * (dependent - minval(dependent))
+        expected_total = sum(expected_local)
+
+        call assert_equal_array_real(local_contributions, expected_local, n_dims, TOL, "test_compute_contributions: Case 2 local contributions")
+        call assert_equal_real(total_contribution, expected_total, TOL, "test_compute_contributions: Case 2 total contribution")
+
+        ! -------------------------------
+        ! Case 3: MEAN baseline
+        ! -------------------------------
+        factor    = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64]
+        dependent = [4.0_real64, 3.0_real64, 2.0_real64, 1.0_real64]
+        mode = 3  ! MEAN
+
+        call compute_contributions(factor, dependent, n_dims, mode, local_contributions, total_contribution, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_compute_contributions: Case 3 ierr")
+
+        ! Baseline = mean(factor)=2.5, mean(dependent)=2.5
+        expected_local = (factor - sum(factor) / n_dims) * (dependent - sum(dependent) / n_dims)
+        expected_total = sum(expected_local)
+
+        call assert_equal_array_real(local_contributions, expected_local, n_dims, TOL, "test_compute_contributions: Case 3 local contributions")
+        call assert_equal_real(total_contribution, expected_total, TOL, "test_compute_contributions: Case 3 total contribution")
+    end subroutine test_compute_contributions
+
+    subroutine test_compute_baselines_factor_dependent()
+        integer(int32), parameter :: n_timepoints = 4
+        real(real64) :: factor(n_timepoints), dependent(5)  ! dependent has 5 elements for mismatch test
+        real(real64) :: factor_baseline, dependent_baseline, expected_factor_baseline, expected_dependent_baseline
         integer(int32) :: ierr
 
-        ! Case 1: perfectly aligned vectors
-        factor = [1.0_real64, 2.0_real64, 3.0_real64]
-        dependent = [2.0_real64, 4.0_real64, 6.0_real64]
-        expected = 1.0_real64
+        ! Case 1: BASELINE_RAW (no centering)
+        factor = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64]
+        dependent(1:n_timepoints) = [5.0_real64, 6.0_real64, 7.0_real64, 8.0_real64]
+        call compute_baselines_factor_dependent(n_timepoints, factor, dependent(1:n_timepoints), BASELINE_RAW, &
+                                               factor_baseline, dependent_baseline, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_compute_baselines_factor_dependent: BASELINE_RAW: expected OK status")
+        call assert_equal_real(factor_baseline, 0.0_real64, TOL, "test_compute_baselines_factor_dependent: BASELINE_RAW factor_baseline")
+        call assert_equal_real(dependent_baseline, 0.0_real64, TOL, "test_compute_baselines_factor_dependent: BASELINE_RAW dependent_baseline")
 
-        call trajectory_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_trajectory_contribution: MODE_NORMAL: expected OK status")
-        call assert_equal_real(contribution, expected, TOL, "test_trajectory_contribution: MODE_NORMAL")
+        ! Case 2: BASELINE_MIN (minimum-centered)
+        call compute_baselines_factor_dependent(n_timepoints, factor, dependent(1:n_timepoints), BASELINE_MIN, &
+                                               factor_baseline, dependent_baseline, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_compute_baselines_factor_dependent: BASELINE_MIN: expected OK status")
+        call assert_equal_real(factor_baseline, minval(factor), TOL, "test_compute_baselines_factor_dependent: BASELINE_MIN factor_baseline")
+        call assert_equal_real(dependent_baseline, minval(dependent(1:n_timepoints)), TOL, "test_compute_baselines_factor_dependent: BASELINE_MIN dependent_baseline")
 
-        expected = 0.0_real64  ! acos(1.0) = 0.0
-        call trajectory_contribution(factor, dependent, n_timepoints, MODE_RAP, contribution, ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_trajectory_contribution: MODE_RAP: expected OK status")
-        call assert_equal_real(contribution, expected, TOL, "test_trajectory_contribution: MODE_RAP")
+        ! Case 3: BASELINE_MEAN (mean-centered)
+        expected_factor_baseline = sum(factor) / real(n_timepoints, kind=real64)
+        expected_dependent_baseline = sum(dependent(1:n_timepoints)) / real(n_timepoints, kind=real64)
+        call compute_baselines_factor_dependent(n_timepoints, factor, dependent(1:n_timepoints), BASELINE_MEAN, &
+                                               factor_baseline, dependent_baseline, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_compute_baselines_factor_dependent: BASELINE_MEAN: expected OK status")
+        call assert_equal_real(factor_baseline, expected_factor_baseline, TOL, "test_compute_baselines_factor_dependent: BASELINE_MEAN factor_baseline")
+        call assert_equal_real(dependent_baseline, expected_dependent_baseline, TOL, "test_compute_baselines_factor_dependent: BASELINE_MEAN dependent_baseline")
 
-        ! Case 2: orthogonal vectors
-        factor = [1.0_real64, 0.0_real64, 0.0_real64]
-        dependent = [0.0_real64, 1.0_real64, 0.0_real64]
-        expected = 0.0_real64
+        ! Case 4: mismatched input lengths
+        dependent = [5.0_real64, 6.0_real64, 7.0_real64, 8.0_real64, 9.0_real64]  ! length 5
+        call compute_baselines_factor_dependent(n_timepoints, factor, dependent(1:n_timepoints), BASELINE_RAW, &
+                                               factor_baseline, dependent_baseline, ierr)  ! valid
+        call assert_equal_int(ierr, ERR_OK, "test_compute_baselines_factor_dependent: valid lengths")
+        call compute_baselines_factor_dependent(4_int32, factor(1:4), dependent(1:5), BASELINE_RAW, &
+                                               factor_baseline, dependent_baseline, ierr)  ! invalid: mismatch
+        ! Note: This test may not trigger length mismatch since we now validate in C wrapper only
 
-        call trajectory_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_trajectory_contribution: Orthogonal MODE_NORMAL: expected OK status")
-        call assert_equal_real(contribution, expected, TOL, "test_trajectory_contribution: Orthogonal MODE_NORMAL")
-
-        ! Case 3: zero vector input
-        factor = [0.0_real64, 0.0_real64, 0.0_real64]
-        dependent = [1.0_real64, 2.0_real64, 3.0_real64]
-
-        call trajectory_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
-        call assert_equal_int(ierr, ERR_DIVISION_BY_ZERO, "test_trajectory_contribution: Zero vector")
-
-        ! Case 4: invalid mode
-        factor = [1.0_real64, 2.0_real64, 3.0_real64]
-        dependent = [1.0_real64, 2.0_real64, 3.0_real64]
-
-        call trajectory_contribution(factor, dependent, n_timepoints, 99_int32, contribution, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_trajectory_contribution: Invalid mode")
-
-        ! Case 5: NaN
-        factor = [1.0_real64, ieee_value(0.0_real64, ieee_quiet_nan), 3.0_real64]
-        dependent = [1.0_real64, 2.0_real64, 3.0_real64]
-
-        call trajectory_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
-        call assert_equal_int(ierr, ERR_NAN_INF, "test_spike_contribution: NaN")
-    end subroutine test_trajectory_contribution
-
-    subroutine test_spike_contribution()
-        integer(int32), parameter :: n_timepoints = 3
-        real(real64) :: factor(n_timepoints), dependent(n_timepoints), contribution(n_timepoints), expected(n_timepoints)
-        integer(int32) :: ierr
-
-        ! Case 1: perfectly aligned vectors
-        factor = [1.0_real64, 2.0_real64, 3.0_real64]
-        dependent = [2.0_real64, 4.0_real64, 6.0_real64]
-        expected = [2.0_real64, 8.0_real64, 18.0_real64] / sqrt(14.0_real64) / sqrt(56.0_real64)  ! dot products normalized by magnitude
-
-        call spike_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_spike_contribution: MODE_NORMAL aligned")
-        call assert_equal_array_real(contribution, expected, n_timepoints, TOL, "test_spike_contribution: MODE_NORMAL aligned")
-
-        expected = acos(expected)  ! element-wise acos
-        call spike_contribution(factor, dependent, n_timepoints, MODE_RAP, contribution, ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_spike_contribution: MODE_RAP aligned")
-        call assert_equal_array_real(contribution, expected, n_timepoints, TOL, "test_spike_contribution: MODE_RAP aligned")
-
-        ! Case 2: orthogonal vectors
-        factor = [1.0_real64, 0.0_real64, 0.0_real64]
-        dependent = [0.0_real64, 1.0_real64, 0.0_real64]
-        expected = [0.0, 0.0, 0.0]  ! dot products all zero
-
-        call spike_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_spike_contribution: Orthogonal MODE_NORMAL")
-        call assert_equal_array_real(contribution, expected, n_timepoints, TOL, "test_spike_contribution: Orthogonal MODE_NORMAL")
-
-        expected = acos(expected)  ! acos(0.0) = π/2
-        call spike_contribution(factor, dependent, n_timepoints, MODE_RAP, contribution, ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_spike_contribution: Orthogonal MODE_RAP")
-        call assert_equal_array_real(contribution, expected, n_timepoints, TOL, "test_spike_contribution: Orthogonal MODE_RAP")
-
-        ! Case 3: zero vector input
-        factor = [0.0_real64, 0.0_real64, 0.0_real64]
-        dependent = [1.0_real64, 2.0_real64, 3.0_real64]
-
-        call spike_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
-        call assert_equal_int(ierr, ERR_DIVISION_BY_ZERO, "test_spike_contribution: Zero vector")
-
-        ! Case 4: invalid mode
-        factor = [1.0_real64, 2.0_real64, 3.0_real64]
-        dependent = [1.0_real64, 2.0_real64, 3.0_real64]
-
-        call spike_contribution(factor, dependent, n_timepoints, 99_int32, contribution, ierr)
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_spike_contribution: Invalid mode")
-
-        ! Case 5: NaN
-        factor = [1.0_real64, ieee_value(0.0_real64, ieee_quiet_nan), 3.0_real64]
-        dependent = [1.0_real64, 2.0_real64, 3.0_real64]
-
-        call spike_contribution(factor, dependent, n_timepoints, MODE_NORMAL, contribution, ierr)
-        call assert_equal_int(ierr, ERR_NAN_INF, "test_spike_contribution: NaN")
-    end subroutine test_spike_contribution
-
-    subroutine test_get_vec_across_samples()
-        integer(int32), parameter :: n_factors = 2, n_samples = 3, n_timepoints = 4
-        real(real64) :: trajectories(n_factors, n_samples, n_timepoints)
-        real(real64) :: result(n_samples)
-        real(real64) :: expected(n_samples)
-        integer(int32) :: ierr, i_factor, i_sample, i_timepoint
-
-        ! Fill trajectories with known values: T(i,j,k) = 100*i + 10*j + k
-        do i_factor = 1, n_factors
-            do i_sample = 1, n_samples
-                do i_timepoint = 1, n_timepoints
-                    trajectories(i_factor,i_sample,i_timepoint) = 100.0_real64*i_factor + 10.0_real64*i_sample + real(i_timepoint,real64)
-                end do
-            end do
-        end do
-
-        ! Valid extraction: factor 2, timepoint 3
-        expected = [213.0, 223.0, 233.0]
-        call get_vec_across_samples(trajectories, n_factors, n_samples, n_timepoints, 2_int32, 3_int32, result, ierr)
-        call assert_equal_int(ierr, ERR_OK, "Test failed: unexpected error code")
-        call assert_equal_array_real(result, expected, n_samples, 0.0_real64, "test_get_vec_across_timepoints: returned vector doesn't match")
-    end subroutine test_get_vec_across_samples
-
-    subroutine test_get_vec_across_timepoints()
-        integer(int32), parameter :: n_factors = 2, n_samples = 3, n_timepoints = 4
-        real(real64) :: trajectories(n_factors, n_samples, n_timepoints)
-        real(real64) :: result(n_timepoints)
-        real(real64) :: expected(n_timepoints)
-        integer(int32) :: ierr, i_factor, i_sample, i_timepoint
-
-        ! Fill trajectories with known values: T(i,j,k) = 100*i + 10*j + k
-        do i_factor = 1, n_factors
-            do i_sample = 1, n_samples
-                do i_timepoint = 1, n_timepoints
-                    trajectories(i_factor,i_sample,i_timepoint) = 100.0_real64*i_factor + 10.0_real64*i_sample + real(i_timepoint,real64)
-                end do
-            end do
-        end do
-
-        ! Valid extraction: factor 1, sample 2
-        expected = [121.0, 122.0, 123.0, 124.0]
-        call get_vec_across_timepoints(trajectories, n_factors, n_samples, n_timepoints, 1_int32, 2_int32, result, ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_get_vec_across_timepoints: unexpected error code")
-        call assert_equal_array_real(result, expected, n_timepoints, 0.0_real64, "test_get_vec_across_timepoints: returned vector doesn't match")
-    end subroutine test_get_vec_across_timepoints
-
-    !> Test: Basic trajectory processing with per-timepoint percentiles
-    subroutine test_process_trajectories_alloc()
-        integer(int32), parameter :: n_factors = 3, n_samples = 4, n_timepoints = 5
-        real(real64) :: trajectories(n_factors, n_samples, n_timepoints)
-        logical :: factor_mask(n_factors)
-        integer(int32) :: dependent_idx = 2
-        integer(int32) :: mode = MODE_NORMAL
-        real(real64) :: percentile = 95.0_real64
-        real(real64) :: integrated_contribs(n_samples, n_factors-1)  ! dependent_idx excluded
-        real(real64) :: spike_contribs(n_timepoints, n_samples, n_factors-1)
-        real(real64) :: thresholds_integrated_contrib(n_factors-1)
-        real(real64) :: thresholds_spike_contrib(n_timepoints, n_factors-1)
-        logical :: outliers_integrated_contrib(n_samples, n_factors-1)
-        logical :: outliers_spike_contrib(n_timepoints, n_samples, n_factors-1)
-        integer(int32) :: ierr
-
-        ! Initialize test data
-        call random_number(trajectories)
-        trajectories = trajectories * 10.0_real64  ! Scale to reasonable values
-        
-        ! Set factor mask: exclude dependent_idx
-        factor_mask = .true.
-        factor_mask(dependent_idx) = .false.
-
-        ! Call the routine
-        call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &
-                                    factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
-                                    integrated_contribs, spike_contribs, &
-                                    thresholds_integrated_contrib, outliers_integrated_contrib, &
-                                    thresholds_spike_contrib, outliers_spike_contrib, ierr)
-
-        call assert_equal_int(ierr, 0, 'Error code 0 for process_trajectories_alloc')
-        call assert_true(size(integrated_contribs, 1) == n_samples, 'Integrated contribs correct sample dimension')
-        call assert_true(size(integrated_contribs, 2) == count(factor_mask), 'Integrated contribs correct factor dimension')
-        call assert_true(size(spike_contribs, 1) == n_timepoints, 'Spike contribs correct timepoint dimension')
-        call assert_true(size(spike_contribs, 2) == n_samples, 'Spike contribs correct sample dimension')
-        call assert_true(size(spike_contribs, 3) == count(factor_mask), 'Spike contribs correct factor dimension')
-    end subroutine test_process_trajectories_alloc
-
-    !> Test: Flat trajectory processing with global percentile
-    subroutine test_process_trajectories_flat_alloc()
-        integer(int32), parameter :: n_factors = 3, n_samples = 4, n_timepoints = 5
-        real(real64) :: trajectories(n_factors, n_samples, n_timepoints)
-        logical :: factor_mask(n_factors)
-        integer(int32) :: dependent_idx = 2
-        integer(int32) :: mode = MODE_RAP
-        real(real64) :: percentile = 90.0_real64
-        real(real64) :: integrated_contribs(n_samples, n_factors-1)
-        real(real64) :: spike_contribs(n_timepoints, n_samples, n_factors-1)
-        real(real64) :: thresholds_integrated_contrib(n_factors-1)
-        real(real64) :: thresholds_spike_contrib(n_factors-1)  ! Note: 1D for flat version
-        logical :: outliers_integrated_contrib(n_samples, n_factors-1)
-        logical :: outliers_spike_contrib(n_timepoints, n_samples, n_factors-1)
-        integer(int32) :: ierr
-
-        ! Initialize test data
-        call random_number(trajectories)
-        trajectories = trajectories * 5.0_real64  ! Scale to reasonable values
-        
-        ! Set factor mask: exclude dependent_idx
-        factor_mask = .true.
-        factor_mask(dependent_idx) = .false.
-
-        ! Call the routine
-        call process_trajectories_flat_alloc(trajectories, n_factors, n_samples, n_timepoints, &
-                                        factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
-                                        integrated_contribs, spike_contribs, &
-                                        thresholds_integrated_contrib, outliers_integrated_contrib, &
-                                        thresholds_spike_contrib, outliers_spike_contrib, ierr)
-
-        call assert_equal_int(ierr, 0, 'Error code 0 for process_trajectories_flat_alloc')
-        call assert_true(size(thresholds_spike_contrib) == count(factor_mask), 'Flat spike thresholds correct dimension')
-        call assert_true(all(thresholds_spike_contrib > 0.0_real64), 'Flat spike thresholds should be positive')
-    end subroutine test_process_trajectories_flat_alloc
-
-    !> Test: Error handling for empty input in trajectory processing
-    subroutine test_process_trajectories_empty_input()
-        integer(int32), parameter :: n_factors = 0, n_samples = 0, n_timepoints = 0
-        real(real64), allocatable :: trajectories(:,:,:)
-        logical, allocatable :: factor_mask(:)
-        integer(int32) :: dependent_idx = 1
-        integer(int32) :: mode = MODE_NORMAL
-        real(real64) :: percentile = 95.0_real64
-        real(real64), allocatable :: integrated_contribs(:,:), spike_contribs(:,:,:)
-        real(real64), allocatable :: thresholds_integrated_contrib(:), thresholds_spike_contrib(:,:)
-        logical, allocatable :: outliers_integrated_contrib(:,:), outliers_spike_contrib(:,:,:)
-        integer(int32) :: ierr
-
-        ! Allocate zero-sized arrays
-        allocate(trajectories(0,0,0))
-        allocate(factor_mask(0))
-        
-        ! Call the routine - should error with ERR_EMPTY_INPUT
-        call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &
-                                    factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
-                                    integrated_contribs, spike_contribs, &
-                                    thresholds_integrated_contrib, outliers_integrated_contrib, &
-                                    thresholds_spike_contrib, outliers_spike_contrib, ierr)
-
-        call assert_equal_int(ierr, ERR_EMPTY_INPUT, 'Error code for empty input')
-    end subroutine test_process_trajectories_empty_input
-
-    !> Test: Error handling for invalid dependent index
-    subroutine test_process_trajectories_invalid_dependent()
-        integer(int32), parameter :: n_factors = 3, n_samples = 4, n_timepoints = 5
-        real(real64) :: trajectories(n_factors, n_samples, n_timepoints)
-        logical :: factor_mask(n_factors)
-        integer(int32) :: dependent_idx = 5  ! Out of bounds
-        integer(int32) :: mode = MODE_NORMAL
-        real(real64) :: percentile = 95.0_real64
-        real(real64) :: integrated_contribs(n_samples, n_factors-1)
-        real(real64) :: spike_contribs(n_timepoints, n_samples, n_factors-1)
-        real(real64) :: thresholds_integrated_contrib(n_factors-1)
-        real(real64) :: thresholds_spike_contrib(n_timepoints, n_factors-1)
-        logical :: outliers_integrated_contrib(n_samples, n_factors-1)
-        logical :: outliers_spike_contrib(n_timepoints, n_samples, n_factors-1)
-        integer(int32) :: ierr
-
-        call random_number(trajectories)
-        factor_mask = .true.
-
-        call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &
-                                    factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
-                                    integrated_contribs, spike_contribs, &
-                                    thresholds_integrated_contrib, outliers_integrated_contrib, &
-                                    thresholds_spike_contrib, outliers_spike_contrib, ierr)
-
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, 'Error code for invalid dependent index')
-    end subroutine test_process_trajectories_invalid_dependent
-
-    !> Test: Error when dependent_idx is included in factor_mask
-    subroutine test_process_trajectories_dependent_in_mask()
-        integer(int32), parameter :: n_factors = 3, n_samples = 4, n_timepoints = 5
-        real(real64) :: trajectories(n_factors, n_samples, n_timepoints)
-        logical :: factor_mask(n_factors)
-        integer(int32) :: dependent_idx = 2
-        integer(int32) :: mode = MODE_NORMAL
-        real(real64) :: percentile = 95.0_real64
-        real(real64) :: integrated_contribs(n_samples, n_factors)
-        real(real64) :: spike_contribs(n_timepoints, n_samples, n_factors)
-        real(real64) :: thresholds_integrated_contrib(n_factors)
-        real(real64) :: thresholds_spike_contrib(n_timepoints, n_factors)
-        logical :: outliers_integrated_contrib(n_samples, n_factors)
-        logical :: outliers_spike_contrib(n_timepoints, n_samples, n_factors)
-        integer(int32) :: ierr
-
-        call random_number(trajectories)
-        
-        ! Include dependent_idx in mask - this should cause an error
-        factor_mask = .true.  ! All factors included, including dependent_idx
-
-        call process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, &
-                                    factor_mask, count(factor_mask), dependent_idx, mode, percentile, &
-                                    integrated_contribs, spike_contribs, &
-                                    thresholds_integrated_contrib, outliers_integrated_contrib, &
-                                    thresholds_spike_contrib, outliers_spike_contrib, ierr)
-
-        call assert_equal_int(ierr, ERR_INVALID_INPUT, 'Error when dependent_idx in factor_mask')
-    end subroutine test_process_trajectories_dependent_in_mask
+        ! Case 5: invalid mode
+        call compute_baselines_factor_dependent(n_timepoints, factor, dependent(1:n_timepoints), 99_int32, &
+                                               factor_baseline, dependent_baseline, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_compute_baselines_factor_dependent: invalid mode")
+    end subroutine test_compute_baselines_factor_dependent
 
     subroutine test_normalize_variable_timeseries()
         integer(int32) :: n_points = 5

@@ -205,11 +205,12 @@ contains
 end module serialize_char
 
 !> serializes a flat character array to a binary file.
-subroutine serialize_char_flat_r(ascii_arr, array_size, dims, ndim, clen, filename_ascii, fn_len, ierr)
+subroutine serialize_char_flat_r(raw_arr, array_size, dims, ndim, clen, filename_raw, fn_len, ierr)
   use iso_fortran_env, only: int32
+  use iso_c_binding, only: c_char
   use serialize_char, only: serialize_char_nd
-  use array_utils, only: ascii_to_string
-  use tox_errors
+  use tox_errors, only: set_err_once, set_ok, is_ok, ERR_ALLOC_FAIL
+  use tox_conversions, only: c_char_1d_as_string, c_char_2d_as_string
   implicit none
 
   integer(int32), intent(in) :: ndim
@@ -218,27 +219,26 @@ subroutine serialize_char_flat_r(ascii_arr, array_size, dims, ndim, clen, filena
   !! size of the input array
   integer(int32), intent(in) :: clen
   !! character length
-  integer(int32), intent(in) :: ascii_arr(clen, array_size)
+  character(kind=c_char, len=1), intent(in) :: raw_arr(clen, array_size)
   !! Flat character array in ASCII format
   integer(int32), intent(in) :: dims(ndim)
   !! Dimensions of the array
   integer(int32), intent(in) :: fn_len
   !! length of the filename
-  integer(int32), intent(in) :: filename_ascii(fn_len)
+  character(kind=c_char, len=1), intent(in) :: filename_raw(fn_len)
   !! filename in ascii
   integer(int32), intent(out) :: ierr
   !! error code
   integer(int32) :: ioerror
 
   character(len=:), allocatable :: filename
-  character(len=clen), allocatable :: flat(:)
+  character(len=:), allocatable :: flat(:)
   integer(int32) :: i, j, total
 
   call set_ok(ioerror)
   call set_ok(ierr)
 
   total = product(dims)
-  allocate(flat(total), stat=ioerror)
 
   if(.not. is_ok(ioerror)) then
     call set_err_once(ierr, ERR_ALLOC_FAIL)
@@ -246,78 +246,70 @@ subroutine serialize_char_flat_r(ascii_arr, array_size, dims, ndim, clen, filena
   end if  
 
   ! ASCII to character conversion
-  do i = 1, total
-    flat(i) = ""
-    do j = 1, clen
-      if (ascii_arr(j, i) > 0) then
-        flat(i)(j:j) = char(ascii_arr(j, i))
-      else
-        exit
-      end if
-    end do
-  end do
+  call c_char_2d_as_string(raw_arr, flat, ierr)
+  if (.not. is_ok(ierr)) return
 
-  call ascii_to_string(filename_ascii, fn_len, filename)
+  call c_char_1d_as_string(filename_raw, filename, ierr)
+  if (.not. is_ok(ierr)) return
 
   call serialize_char_nd(flat, dims, ndim, clen, filename, ierr)
 
 end subroutine serialize_char_flat_r
 
-!> C binding for the subroutine to serialize a flat character array to a binary file.
-subroutine serialize_char_flat_C(ascii_ptr, dims, ndim, clen, filename_ascii, fn_len, ierr) bind(C, name="serialize_char_flat_C")
-  use iso_c_binding, only: c_ptr, c_int, c_f_pointer
+subroutine serialize_char_flat_C(raw_chars, dims, ndim, clen, filename_c, fn_len, ierr) bind(C, name="serialize_char_flat_C")
+  use iso_c_binding, only: c_char, c_int, c_null_char
   use iso_fortran_env, only: int32
   use serialize_char, only: serialize_char_nd
-  use array_utils, only: ascii_to_string
+  use tox_conversions, only: c_char_1d_as_string, c_char_as_char
   use tox_errors
   implicit none
 
-  type(c_ptr), value :: ascii_ptr
-  !! pointer to ascii array
-  integer(c_int), value :: ndim
-  !! Number of dimensions  
+  integer(c_int), intent(in), value :: ndim
+    !! Number of dimensions
   integer(c_int), intent(in) :: dims(ndim)
-  !! Dimensions of the array
-  
+    !! Dimensions of the array
   integer(c_int), value :: clen
-  !! Character length
+    !! Length of each string
+  character(kind=c_char, len=1), intent(in) :: raw_chars(clen, product(dims))
+    !! Raw chars array
   integer(c_int), value :: fn_len
-  !! Length of the filename array
-  integer(c_int), intent(in) :: filename_ascii(fn_len)
-  !! Array of ASCII characters representing the filename
+    !! length of the filename array
+  character(kind=c_char, len=1), intent(in) :: filename_c(fn_len)
+    !! filename as c_char array
   integer(c_int), intent(out) :: ierr
-  !! error code
+    !! Error code
 
-  integer(c_int), pointer :: ascii_arr(:)
   character(len=:), allocatable :: filename
   character(len=clen), allocatable :: flat(:)
   integer(int32) :: i, j, total, ioerror
+  character(len=1) :: fortran_char
 
   call set_ok(ierr)
-  call set_ok(ioerror)
 
   total = product(dims)
-  call c_f_pointer(ascii_ptr, ascii_arr, [clen * total])
   allocate(flat(total), stat=ioerror)
 
   if(.not. is_ok(ioerror)) then
     call set_err_once(ierr, ERR_ALLOC_FAIL)
-    RETURN
+    return
   end if
 
-  ! ASCII to Fortran character(len=clen)
   do i = 1, total
     flat(i) = ""
     do j = 1, clen
-      if (ascii_arr((i - 1) * clen + j) > 0) then
-        flat(i)(j:j) = char(ascii_arr((i - 1) * clen + j))
+      if (raw_chars(j, i) /= c_null_char) then
+        call c_char_as_char(raw_chars(j, i), fortran_char)
+        flat(i)(j:j) = fortran_char
       else
         exit
       end if
     end do
   end do
 
-  call ascii_to_string(filename_ascii, fn_len, filename)
+  ! Convert filename from c_char array to Fortran string
+  call c_char_1d_as_string(filename_c, filename, ierr)
+  if (is_err(ierr)) return
 
-  call serialize_char_nd(flat, dims, ndim, clen, filename ,ierr)
+  call serialize_char_nd(flat, dims, ndim, clen, filename, ierr)
+  
 end subroutine serialize_char_flat_C

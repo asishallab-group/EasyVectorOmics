@@ -88,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 3.2% of total for modules and submodules.">171 statements</a>
+                 title=" 2.2% of total for modules and submodules.">145 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -152,13 +152,10 @@
       <div id="subs-0" class="collapse">
         <div class="list-group list-group-flush">
             <a class="list-group-item" href="../module/array_utils.html#proc-check_okay_ioerror">check_okay_ioerror</a>
-            <a class="list-group-item" href="../module/array_utils.html#proc-check_okay_dims">check_okay_dims</a>
             <a class="list-group-item" href="../module/array_utils.html#proc-check_okay_ndims">check_okay_ndims</a>
             <a class="list-group-item" href="../module/array_utils.html#proc-write_file_header">write_file_header</a>
             <a class="list-group-item" href="../module/array_utils.html#proc-read_file_header">read_file_header</a>
             <a class="list-group-item" href="../module/array_utils.html#proc-get_array_metadata">get_array_metadata</a>
-            <a class="list-group-item" href="../module/array_utils.html#proc-ascii_to_string">ascii_to_string</a>
-            <a class="list-group-item" href="../module/array_utils.html#proc-string_to_ascii_arr">string_to_ascii_arr</a>
         </div>
       </div>
     </div>
@@ -259,7 +256,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ioerror~20"></span>
+              <span class="anchor" id="variable-ioerror~13"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -274,7 +271,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~39"></span>
+              <span class="anchor" id="variable-ierr~88"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -304,7 +301,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~20"></span>
+              <span class="anchor" id="variable-unit~16"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -315,76 +312,6 @@ parameter
             <td><strong>unit</strong></td>
             <td>
 <p>pass unit allowing it to be closed</p>
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-check_okay_dims"></span> <h3>public  subroutine <a href='../proc/check_okay_dims.html'>check_okay_dims</a>(dims, expected, ierr)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>check if array dimensions match the expected dimensions</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-dims~24"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>dims</strong>(:)</td>
-            <td>
-<p>array of actual dimensions</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-expected"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>expected</strong></td>
-            <td>
-<p>expected number of dimensions</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-ierr~40"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>ierr</strong></td>
-            <td>
-<p>error code</p>
             </td>
         </tr>
     </tbody>
@@ -414,7 +341,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndims~8"></span>
+              <span class="anchor" id="variable-ndims~6"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -429,7 +356,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expected~2"></span>
+              <span class="anchor" id="variable-expected"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -444,7 +371,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~21"></span>
+              <span class="anchor" id="variable-unit~17"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -459,7 +386,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~41"></span>
+              <span class="anchor" id="variable-ierr~89"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -499,7 +426,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~24"></span>
+              <span class="anchor" id="variable-filename~23"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -514,7 +441,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~22"></span>
+              <span class="anchor" id="variable-unit~18"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -529,7 +456,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-type_code~8"></span>
+              <span class="anchor" id="variable-type_code~7"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -544,7 +471,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndim~7"></span>
+              <span class="anchor" id="variable-ndim~5"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -559,7 +486,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dims~25"></span>
+              <span class="anchor" id="variable-dims~17"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -574,7 +501,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~42"></span>
+              <span class="anchor" id="variable-ierr~90"></span>
               integer(kind=int32),
             </td>
 <td>intent(inout)</td>
@@ -589,7 +516,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-clen~8"></span>
+              <span class="anchor" id="variable-clen~9"></span>
               integer(kind=int32),
             </td>
 <td>intent(in),</td>
@@ -629,7 +556,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~25"></span>
+              <span class="anchor" id="variable-filename~24"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -644,7 +571,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-unit~23"></span>
+              <span class="anchor" id="variable-unit~19"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -659,7 +586,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-type_code~9"></span>
+              <span class="anchor" id="variable-type_code~8"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -669,12 +596,12 @@ parameter
             <td>::</td>
             <td><strong>type_code</strong></td>
             <td>
-<p>type code of the array (1=int, 2=real, 3=char)</p>
+<p>type code of the array (1=int, 2=real, 3=char, 4=logical, 5=complex)</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndims~9"></span>
+              <span class="anchor" id="variable-ndims~7"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -689,7 +616,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dims~26"></span>
+              <span class="anchor" id="variable-dims~18"></span>
               integer(kind=int32),
             </td>
 <td></td>
@@ -704,7 +631,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-clen~9"></span>
+              <span class="anchor" id="variable-clen~10"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -719,7 +646,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~43"></span>
+              <span class="anchor" id="variable-ierr~91"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -759,7 +686,7 @@ parameter
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-filename~26"></span>
+              <span class="anchor" id="variable-filename~25"></span>
               character(len=*),
             </td>
 <td>intent(in)</td>
@@ -804,7 +731,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ndims~10"></span>
+              <span class="anchor" id="variable-ndims~8"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -819,7 +746,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~44"></span>
+              <span class="anchor" id="variable-ierr~92"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -834,7 +761,7 @@ parameter
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-clen~10"></span>
+              <span class="anchor" id="variable-clen~11"></span>
               integer(kind=int32),
             </td>
 <td>intent(out),</td>
@@ -845,161 +772,6 @@ parameter
             <td><strong>clen</strong></td>
             <td>
 <p>length of each string (needed for char arrays)</p>
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-ascii_to_string"></span> <h3>public  subroutine <a href='../proc/ascii_to_string.html'>ascii_to_string</a>(ascii_array, clen, str)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>subroutine to convert an ASCII array to a string</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-ascii_array"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>ascii_array</strong>(clen)</td>
-            <td>
-<p>Array of ASCII characters</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-clen~11"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>clen</strong></td>
-            <td>
-<p>Length of the ASCII array</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-str~2"></span>
-              character(len=:),
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              allocatable
-            </td>
-            <td>::</td>
-            <td><strong>str</strong></td>
-            <td>
-<p>Output string</p>
-            </td>
-        </tr>
-    </tbody>
-  </table>
-
-
-    </div>
-  </div>
-
-              <div class="card">
-    <div class="card-header codesum"><span class="anchor" id="proc-string_to_ascii_arr"></span> <h3>public  subroutine <a href='../proc/string_to_ascii_arr.html'>string_to_ascii_arr</a>(flat, array_size, ascii_arr, clen)  
-</h3></div>
-    <div class="card-body">
-          
-  <p>converts a string array to an ascii array</p>
-
-  <h4>Arguments</h4>
-      <table class="table table-striped varlist">
-    <thead>
-      <tr>
-        <th scope="col">Type</th>
-<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
-        <th scope="col"></th>
-        <th scope="col">Name</th>
-        <th scope="col"></th>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-flat"></span>
-              character(len=*),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>flat</strong>(array_size)</td>
-            <td>
-<p>input array with characters</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-array_size~3"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>array_size</strong></td>
-            <td>
-<p>size of the input array</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-ascii_arr"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>ascii_arr</strong>(array_size*clen)</td>
-            <td>
-<p>ascii output array</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-clen~12"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>clen</strong></td>
-            <td>
-<p>length of the longest string</p>
             </td>
         </tr>
     </tbody>
@@ -1032,7 +804,7 @@ parameter
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-11-23 17:36 +0000"             </p>
+ on "2025-12-15 09:15 +0000"             </p>
           </div>
         </div>
         <br>
