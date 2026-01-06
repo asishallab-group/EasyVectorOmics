@@ -1178,107 +1178,154 @@ Urd provides an efficient and explainable framework for:
 \end{enumerate}
 The method is linear-algebraic, computationally efficient, and applicable to both univariate and multivariate factor/response settings.
 
+\section{Tensor Omics Module Descriptors (TOXMD)}
+\label{sec:module_descriptors}
 
-\section{Tensor Omics Field Descriptors (TOXFD)}
+\subsection{Concept of Modules in Semantic Vector Spaces}
 
-\subsection{Concept of Subfields and Vector Fields}
-
-In Tensor Omics, a \textit{vector field} consists of vectors together with the
-coordinates from which they originate,
+In Tensor Omics, a \textit{module} is defined as a set of vectors
 \[
-\mathcal{F} = \{\, (\vec{x}_i, \vec{v}_i) \mid \vec{x}_i, \vec{v}_i \in \mathbb{R}^n \,\}.
-\]
-A \textit{subfield} is any subset of this field,
-\[
-\mathcal{K} \subseteq \mathcal{F},
+\mathcal{M} = \{ \vec{v}_1, \vec{v}_2, \ldots, \vec{v}_m \}, \quad
+\vec{v}_i \in \mathbb{R}^n,
 \]
 selected according to biological, semantic, or geometric criteria
-(e.g.\ ``photosynthesis'', ``inflammatory response'', collinearity, or local density).
+(e.g.\ shared molecular function, evolutionary relationship, collinearity,
+local density, or signal strength).
 
-When the original data consist only of vectors without explicit coordinates,
-the subfield refers simply to a subset of vectors 
-\(\{\vec{v}_i\}_{i=1}^{m}\) extracted from an omics vector space.
-Such a subset can still be analyzed collectively by arranging its vectors into
-the matrix
+Modules may originate from vector fields with explicit coordinates
+(e.g.\ spatial or temporal data), but in the most general Tensor Omics setting
+they consist solely of vectors embedded in a semantic omics space.
+Such a module can be represented compactly by the matrix
 \[
 M = [\, \vec{v}_1, \vec{v}_2, \ldots, \vec{v}_m \,] \in \mathbb{R}^{n \times m}.
 \]
 
-The cumulative covariance structure of the subfield is then given by
+The matrix
 \[
-C = M M^{\mathsf{T}},
+C = M M^{\mathsf{T}}
 \]
-which captures both the magnitude and directional coherence among the vectors.
-This formulation enables describing the collective influence of the subfield as
-the cumulative effect exerted on a virtual particle placed conceptually at its
-center, allowing the use of linear algebraic descriptors to quantify its
-structure, energy, and dynamics.
+captures the cumulative second-order structure of the module and serves as the
+basis for several global geometric descriptors.
 
-\subsection{Four Descriptors of a Subfield}
-\label{sec:subfield_descriptor}
+\subsection{Canonical Descriptors of a Module}
+\label{ssec:canonical_module_descriptors}
 
-From \(M\) and \(C\), we define four key descriptors that characterize the 
-aggregate effect of the subfield on the virtual particle:
+From the module matrix \(M\), we define the following canonical descriptors.
 
 \begin{enumerate}
-  \item \textbf{Energy (Signal Strength)}  
-  \[
-  E = \|M\|_{F} = \sqrt{\sum_{i=1}^{n}\sum_{j=1}^{m} M_{ij}^{2}},
-  \]
-  the Frobenius norm of \(M\), measures the total intensity or activity within 
-  the subfield.  
-  In gene expression analysis, this reflects the cumulative divergence or 
-  activity of genes; in a wind or magnetic field analogy, it corresponds to the 
-  total kinetic or magnetic energy in the region.
 
-  \item \textbf{Rank (Dimensionality or Spread)}  
-  \[
-  R = \text{rank}(M),
-  \]
-  quantifies the effective dimensionality of the subfield.  
-  A low rank indicates that vectors are nearly co-linear (a one-dimensional flow), 
-  whereas a high rank implies multi-directional or isotropic behavior.  
-  In biological terms, \(R\) measures the number of independent directions of 
-  functional or regulatory diversification within the subfield.
+\item \textbf{Signal Strength (Energy)}  
+\[
+E = \|M\|_{F}
+= \sqrt{\sum_{i=1}^{n}\sum_{j=1}^{m} M_{ij}^{2}}.
+\]
+The Frobenius norm measures the total magnitude of all vectors in the module.
+In gene expression analysis, this reflects cumulative expression divergence or
+activity across all genes in the module.
 
-  \item \textbf{Principal Flow Direction}  
-  The first eigenvector of \(C\),
-  \[
-  \vec{f} = \text{eigvec}_1(C),
-  \]
-  indicates the main direction of flow or bias within the subfield.  
-  It defines the orientation along which the virtual particle would experience 
-  the strongest net force.  
-  In gene expression space, this represents the dominant tissue or condition 
-  toward which expression diverges; in a physical field, it corresponds to the 
-  prevailing wind or magnetic alignment.
+To enable comparison across modules of different sizes \(m\), we define the
+Relative Frobenius Index
+\[
+\mathrm{RFI} = \frac{\|M\|_F}{\sqrt{m}},
+\]
+which measures average vector magnitude independent of module cardinality.
 
-  \item \textbf{Rotation Axis and Magnitude}  
-  The antisymmetric component of \(C\),
-  \[
-  A = \tfrac{1}{2}(C - C^{\mathsf{T}}),
-  \]
-  encodes local rotational tendencies within the subfield.  
-  The magnitude of rotation can be quantified by
-  \[
-  \omega = \|A\|_{F},
-  \]
-  and the rotation axis \(\vec{r}\) can be extracted from the 
-  principal eigenvector of \(A\) (or equivalently from its polar decomposition).  
-  This quantity distinguishes coherent directional rotation (e.g. circular shifts 
-  or spirals in semantic space) from purely divergent or convergent flows.
+\item \textbf{Rank (Subspace Dimensionality)}  
+\[
+R = \mathrm{rank}(M).
+\]
+The rank quantifies the dimensionality of the subspace spanned by the module.
+Low rank indicates near-collinearity (coherent behavior), whereas higher rank
+indicates multi-directional or heterogeneous structure.
+
+\item \textbf{Principal Direction of Spread}  
+Let
+\[
+C = U \Sigma U^{\mathsf{T}}
+\]
+be the eigendecomposition of \(C\).
+The first eigenvector
+\[
+\vec{f} = U_{\cdot 1}
+\]
+defines the dominant direction of variance within the module.
+In semantic omics spaces, this corresponds to the primary axis of coordinated
+expression or functional divergence.
+
+\item \textbf{Net Vector (Cumulative Direction)}  
+\[
+\vec{s}_{\mathrm{net}} = \sum_{i=1}^{m} \vec{v}_i.
+\]
+The net vector summarizes the aggregate directional tendency of the module.
+Unlike the principal direction, which reflects variance structure, the net
+vector captures directional bias and asymmetry.
+Its magnitude vanishes for directionally balanced modules and increases when
+vectors align coherently in one direction.
+
+\item \textbf{Angular Dispersion}  
+All vectors are first normalized to unit length,
+\[
+\hat{\vec{v}}_i = \frac{\vec{v}_i}{\|\vec{v}_i\|}.
+\]
+The spherical mean direction is
+\[
+\vec{\mu} =
+\frac{1}{m} \sum_{i=1}^{m} \hat{\vec{v}}_i,
+\quad
+R_{\mathcal{M}} = \|\vec{\mu}\|.
+\]
+The scalar \(R_{\mathcal{M}} \in [0,1]\) measures directional coherence.
+Values near 1 indicate strong alignment; values near 0 indicate isotropy.
+
+A proxy for angular dispersion is given by
+\[
+\sigma_{\mathrm{ang}} = \sqrt{-2 \ln(R_{\mathcal{M}})},
+\]
+which is monotonic in dispersion and widely used in directional statistics.
+
+\item \textbf{Axis Footprint (Semantic Support)}  
+For each axis \(a \in \{1,\ldots,n\}\), let \(v_{a,i}\) denote the \(a\)-th
+coordinate of vector \(\vec{v}_i\).
+The footprint of the module along axis \(a\) is defined as
+\[
+\left[
+Q_{\alpha}(v_{a,\cdot}),
+\;
+Q_{1-\alpha}(v_{a,\cdot})
+\right],
+\]
+where \(Q_p\) denotes the empirical \(p\)-quantile and
+\(\alpha \in [0,0.5)\) is a user-defined offset.
+Setting \(\alpha = 0\) yields the full min--max range; typical values such as
+\(\alpha = 0.05\) provide robust footprints resistant to outliers.
+
+This descriptor localizes the module within the semantic axes of the ambient
+omics space.
+
+\item \textbf{Axis Mass (Histogram Representation)}  
+For each axis, the distribution of \(v_{a,i}\) is summarized by a histogram with
+a user-defined number of bins \(B\) (default \(B=5\)).
+Bin boundaries are computed globally from the full ambient space to ensure
+comparability across modules.
+
+Optionally, histogram counts may be weighted by vector magnitudes
+\(\|\vec{v}_i\|\).
+Magnitude weighting emphasizes high-expression or high-shift vectors but is
+generally discouraged in Tensor Omics, as expression magnitude already defines
+module location in semantic space and additional weighting can obscure
+directional structure.
+Unweighted histograms therefore represent the preferred default.
+
 \end{enumerate}
 
-Together, these four quantities --- energy, rank, principal direction, and 
-rotation --- form the Tensor Omics Field Descriptors (TOXFD).
+\subsection*{Remarks}
 
-To enable comparison across subfields of varying size \( k \), the signal strength can be normalized by the root of the cardinality:
-\[
-\text{RFI} = \frac{\|M\|_F}{\sqrt{k}}
-\]
-This Relative Frobenius Index (RFI) provides a density-independent measure of average vector magnitude per subfield.
-
-\textbf{Note:} All direction vectors \( \vec{v} \in \mathbb{R}^n \setminus \{ \vec{0} \} \) are assumed to be non-zero, as normalization and angular analysis are undefined for the zero vector. If an unscaled antisymmetric component \( A = C - C^T \) is used instead of the factorized form, this corresponds to measuring the total (unweighted) rotation strength. The scaled form \(\frac{1}{2}(C - C^T)\) is preferred for decomposition consistency and interpretability.
+All descriptors are defined for non-zero vectors.
+Modules failing basic validity checks (e.g.\ vanishing angular coherence or
+degenerate dimensionality) should return informative error codes rather than
+numerical values.
+Together, these descriptors form a multi-scale geometric and semantic summary of
+modules in Tensor Omics.
 
 \subsection{Vector Sets versus Vector Fields}
 
@@ -1317,7 +1364,6 @@ expression space, while shift vectors represent changes such as stress
 responses.  
 In physics, coordinates represent spatial positions, and vectors represent wind 
 velocities or magnetic field directions.
-
 
 \subsection{Tracing a Field along its Semantic Axis}
 
