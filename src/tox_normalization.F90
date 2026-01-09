@@ -43,7 +43,7 @@ contains
   !> Complete normalization pipeline for gene expression data.
   !! Performs: std dev normalization, quantile normalization, replicate averaging, log2(x+1) transformation.
   !! Final result is in buf_log. If fold change is needed, call calc_fchange separately.
-  subroutine normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ierr)
+  pure subroutine normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ierr)
 
     !| Number of genes (rows)
     integer(int32), intent(in) :: n_genes
@@ -240,7 +240,7 @@ contains
   !| `log(x + 1) / log(2)`, which is numerically equivalent and avoids the
   !| non-portable `log2` intrinsic for compatibility with WebAssembly (WASM).
 
-  subroutine log2_transformation(n_genes, n_grps, input_matrix, output_matrix, ierr)
+  pure subroutine log2_transformation(n_genes, n_grps, input_matrix, output_matrix, ierr)
       implicit none
 
       !| Number of genes (rows)
@@ -749,7 +749,7 @@ subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev
 end subroutine normalization_pipeline_c
 
 !> C-compatible wrapper for normalize_unit_length
-pure subroutine normalize_unit_length_c(vector, n_dims, ierr) bind(C, name="normalize_unit_length_c")
+subroutine normalize_unit_length_c(vector, n_dims, ierr) bind(C, name="normalize_unit_length_c")
     use tox_normalization, only: normalize_unit_length
     use, intrinsic :: iso_c_binding, only: c_int, c_double
     M_USE_NULL_VALIDATION
