@@ -167,7 +167,7 @@ def test_perform_permutation_test():
     factor_idx    = 1   # Fortran-style 1-based
     dependent_idx = 2
     sample_idx    = 1
-    mode          = 3   # MEAN baseline
+    mode          = "mean"   # MEAN baseline
 
     # -------------------------------
     # Call wrapper with fixed seed
@@ -243,6 +243,7 @@ def test_compute_p_values():
     local_obs_nan = np.array([2.0, 0.0, np.nan], dtype=np.float64, order="F")
     try:
         tox_compute_p_values(local_obs_nan, total_obs, local_perm, total_perm)
+        raise AssertionError("Expected RuntimeError for NaN input")
     except RuntimeError:
         pass  # Expected error
 
@@ -253,6 +254,7 @@ def test_compute_p_values():
     local_perm_inf[2,3] = np.inf
     try:
         tox_compute_p_values(local_obs, total_obs, local_perm_inf, total_perm)
+        raise AssertionError("Expected RuntimeError for Infinity input")
     except RuntimeError:
         pass  # Expected error
 

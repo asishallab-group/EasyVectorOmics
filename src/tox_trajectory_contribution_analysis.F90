@@ -353,17 +353,24 @@ contains
     end subroutine compute_baselines_factor_dependent
 
     !> Helper to map baseline mode string ("min", "mean", "raw") to integer constant
-    pure subroutine get_baseline_mode(str, mode, ierr)
-        character(len=*), intent(in) :: str
+    pure subroutine get_baseline_mode(c_mode_str, mode, ierr)
+        use, intrinsic :: iso_c_binding, only: c_char
+        use tox_conversions, only: c_char_1d_as_string
+        character(len=1, kind=c_char), dimension(4), intent(in) :: c_mode_str
             !! mode string ("min", "mean", "raw")
         integer(int32), intent(out) :: mode
-            !! integer representation for the mode passed by `str`
+            !! integer representation for the mode passed by `c_mode_str`
         integer(int32), intent(out) :: ierr
             !! Error code
 
+        character(len=:), allocatable :: mode_str_f
+
         call set_ok(ierr)
 
-        select case (trim(str))
+        call c_char_1d_as_string(c_mode_str, mode_str_f, ierr)
+        if (is_err(ierr)) return
+
+        select case (trim(mode_str_f))
             case ("raw")
                 mode = BASELINE_RAW
             case ("min")
@@ -385,7 +392,6 @@ pure subroutine compute_all_contributions_c(trajectories, n_factors, n_samples, 
     use, intrinsic :: iso_fortran_env, only: int32
     use, intrinsic :: iso_c_binding, only: c_int, c_double, c_char
     use tox_trajectory_contribution_analysis, only: compute_all_contributions, get_baseline_mode
-    use tox_conversions, only: c_char_1d_as_string
     use tox_errors, only: is_err
     M_USE_NULL_VALIDATION
     implicit none
@@ -406,7 +412,7 @@ pure subroutine compute_all_contributions_c(trajectories, n_factors, n_samples, 
         !! indices of factors to compute the contributions for
     integer(c_int), dimension(n_selected_dependents), intent(in), target :: dependent_indices
         !! indices of dependents to compute the contributions for
-    character(len=1, kind=c_char), dimension(4), intent(in), target :: mode
+    character(len=1, kind=c_char), dimension(*), intent(in), target :: mode
         !! Baseline mode: "raw", "min", "mean"
     real(c_double), dimension(n_timepoints, n_selected_factors, n_selected_dependents, n_samples), intent(out), target :: local_contributions
         !! Per-timepoint contributions per sample-dependent-factor combination
@@ -419,7 +425,6 @@ pure subroutine compute_all_contributions_c(trajectories, n_factors, n_samples, 
     integer(c_int), intent(out), target :: ierr
         !! Error code
 
-    character(len=:), allocatable :: mode_f
     integer(int32) :: mode_int
 
     M_CHECK_IERR_NON_NULL
@@ -437,10 +442,7 @@ pure subroutine compute_all_contributions_c(trajectories, n_factors, n_samples, 
     M_CHECK_NON_NULL(temp_factors)
     M_CHECK_NON_NULL(temp_dependent)
 
-    call c_char_1d_as_string(mode, mode_f, ierr)
-    if (is_err(ierr)) return
-
-    call get_baseline_mode(mode_f, mode_int, ierr)
+    call get_baseline_mode(mode, mode_int, ierr)
     if (is_err(ierr)) return
     
     call compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, &
@@ -454,7 +456,6 @@ pure subroutine compute_contributions_c(factor, dependent, n_dims, mode, local_c
     use, intrinsic :: iso_fortran_env, only: int32
     use, intrinsic :: iso_c_binding, only: c_int, c_double, c_char
     use tox_trajectory_contribution_analysis, only: compute_contributions, get_baseline_mode
-    use tox_conversions, only: c_char_1d_as_string
     use tox_errors, only: is_err
     M_USE_NULL_VALIDATION
     implicit none
@@ -466,7 +467,7 @@ pure subroutine compute_contributions_c(factor, dependent, n_dims, mode, local_c
         !! Factor time series
     real(c_double), dimension(n_dims), intent(in), target :: dependent
         !! Dependent variable time series
-    character(len=1, kind=c_char), dimension(4), intent(in), target :: mode
+    character(len=1, kind=c_char), dimension(*), intent(in), target :: mode
         !! Baseline mode: "raw", "min", "mean"
     real(c_double), dimension(n_dims), intent(out), target :: local_contributions
         !! Per-element contributions
@@ -475,7 +476,6 @@ pure subroutine compute_contributions_c(factor, dependent, n_dims, mode, local_c
     integer(c_int), intent(out), target :: ierr
         !! Error code
 
-    character(len=:), allocatable :: mode_f
     integer(int32) :: mode_int
 
     ! Null checks
@@ -487,24 +487,20 @@ pure subroutine compute_contributions_c(factor, dependent, n_dims, mode, local_c
     M_CHECK_NON_NULL(local_contributions)
     M_CHECK_NON_NULL(total_contribution)
 
-    call c_char_1d_as_string(mode, mode_f, ierr)
-    if (is_err(ierr)) return
-
-    call get_baseline_mode(mode_f, mode_int, ierr)
+    call get_baseline_mode(mode, mode_int, ierr)
     if (is_err(ierr)) return
 
     call compute_contributions(factor, dependent, n_dims, mode_int, local_contributions, total_contribution, ierr)
 end subroutine compute_contributions_c
 
 !> C-compatible wrapper for [[tox_trajectory_contribution_analysis(module):compute_baselines_factor_dependent(subroutine)]]
-subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints, mode, &
+pure subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints, mode, &
                                                factor_baseline, dependent_baseline, ierr) &
     bind(C, name="tox_compute_baselines_factor_dependent")
 
     use tox_trajectory_contribution_analysis, only: compute_baselines_factor_dependent, get_baseline_mode
     use, intrinsic :: iso_fortran_env, only: int32
     use, intrinsic :: iso_c_binding, only: c_double, c_int, c_char
-    use tox_conversions, only: c_char_1d_as_string
     use tox_errors, only: is_err
     M_USE_NULL_VALIDATION
     implicit none
@@ -515,7 +511,7 @@ subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints,
         !! Factor time series, length n_timepoints
     real(c_double), intent(in),  target :: dependent(n_timepoints)
         !! Dependent variable time series, length n_timepoints
-    character(len=1, kind=c_char), dimension(4), intent(in), target :: mode
+    character(len=1, kind=c_char), dimension(*), intent(in), target :: mode
         !! Baseline mode: "raw", "min", "mean"
     real(c_double), intent(out), target :: factor_baseline
         !! Computed baseline for factor
@@ -524,7 +520,6 @@ subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints,
     integer(c_int), intent(out), target :: ierr
         !! Error code
 
-    character(len=:), allocatable :: mode_f
     integer(int32) :: mode_int
 
     !! Null-pointer validation 
@@ -536,10 +531,7 @@ subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints,
     M_CHECK_NON_NULL(factor_baseline)
     M_CHECK_NON_NULL(dependent_baseline)
 
-    call c_char_1d_as_string(mode, mode_f, ierr)
-    if (is_err(ierr)) return
-
-    call get_baseline_mode(mode_f, mode_int, ierr)
+    call get_baseline_mode(mode, mode_int, ierr)
     if (is_err(ierr)) return
 
     call compute_baselines_factor_dependent(n_timepoints, factor, dependent, mode_int, factor_baseline, dependent_baseline, ierr)
@@ -551,8 +543,9 @@ subroutine perform_permutation_test_c(trajectories, n_factors, n_samples, n_time
     local_contributions, total_contributions, temp_factor, temp_dependent, ierr, random_seed) &
     bind(C, name="perform_permutation_test_c")
 
-    use, intrinsic :: iso_c_binding, only: c_int, c_double
-    use tox_trajectory_contribution_analysis, only: perform_permutation_test
+    use, intrinsic :: iso_fortran_env, only: int32
+    use, intrinsic :: iso_c_binding, only: c_int, c_double, c_char
+    use tox_trajectory_contribution_analysis, only: perform_permutation_test, get_baseline_mode
     M_USE_NULL_VALIDATION
 
     integer(c_int), intent(in), target :: n_factors
@@ -569,7 +562,7 @@ subroutine perform_permutation_test_c(trajectories, n_factors, n_samples, n_time
         !! index of dependent to compute the permutation contributions for
     integer(c_int), intent(in), target :: sample_idx
         !! index of sample to compute the permutation contributions for
-    integer(c_int), intent(in), target :: mode
+    character(len=1, kind=c_char), dimension(*), intent(in), target :: mode
         !! Baseline mode: 1=RAW, 2=MIN, 3=MEAN
     integer(c_int), intent(in), target :: n_permutations
         !! number of permutations to perform
@@ -585,6 +578,8 @@ subroutine perform_permutation_test_c(trajectories, n_factors, n_samples, n_time
         !! Error code
     integer(c_int), intent(in), target :: random_seed
         !! Seed to use for random number generation.
+
+    integer(int32) :: mode_int
 
     M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_factors)
@@ -602,8 +597,10 @@ subroutine perform_permutation_test_c(trajectories, n_factors, n_samples, n_time
     M_CHECK_NON_NULL(temp_dependent)
     M_CHECK_NON_NULL(random_seed)
 
+    call get_baseline_mode(mode, mode_int, ierr)
+
     call perform_permutation_test(trajectories, n_factors, n_samples, n_timepoints, &
-        factor_idx, dependent_idx, sample_idx, mode, n_permutations, &
+        factor_idx, dependent_idx, sample_idx, mode_int, n_permutations, &
         local_contributions, total_contributions, temp_factor, temp_dependent, ierr, random_seed)
 end subroutine perform_permutation_test_c
 

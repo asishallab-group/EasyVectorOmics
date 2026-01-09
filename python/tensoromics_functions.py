@@ -3206,7 +3206,7 @@ def tox_compute_contributions(factor, dependent, mode):
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # factor
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # dependent
         ctypes.POINTER(ctypes.c_int),                                    # n_dims
-        ctypes.c_char_p,                                    # mode
+        ctypes.c_char_p,                                                 # mode
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # local_contributions
         ctypes.POINTER(ctypes.c_double),                                 # total_contribution
         ctypes.POINTER(ctypes.c_int)                                     # ierr
@@ -3279,7 +3279,7 @@ def tox_compute_all_contributions(trajectories, factor_indices, dependent_indice
         ctypes.POINTER(ctypes.c_int),                                    # n_selected_factors
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # dependent_indices
         ctypes.POINTER(ctypes.c_int),                                    # n_selected_dependents
-        ctypes.c_char_p,                                    # mode
+        ctypes.c_char_p,                                                 # mode
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # local_contributions
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # total_contributions
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # temp_factors
@@ -3332,7 +3332,6 @@ def tox_perform_permutation_test(trajectories, factor_idx, dependent_idx, sample
     factor_idx_c = ctypes.c_int(factor_idx)
     dependent_idx_c = ctypes.c_int(dependent_idx)
     sample_idx_c = ctypes.c_int(sample_idx)
-    mode_c = ctypes.c_int(mode)
     n_permutations_c = ctypes.c_int(n_permutations)
 
     # Allocate outputs
@@ -3352,7 +3351,7 @@ def tox_perform_permutation_test(trajectories, factor_idx, dependent_idx, sample
         ctypes.POINTER(ctypes.c_int),                                    # factor_idx
         ctypes.POINTER(ctypes.c_int),                                    # dependent_idx
         ctypes.POINTER(ctypes.c_int),                                    # sample_idx
-        ctypes.POINTER(ctypes.c_int),                                    # mode
+        ctypes.c_char_p,                                                 # mode
         ctypes.POINTER(ctypes.c_int),                                    # n_permutations
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # local_contributions
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # total_contributions
@@ -3369,7 +3368,7 @@ def tox_perform_permutation_test(trajectories, factor_idx, dependent_idx, sample
     perform_perm_c(trajectories, ctypes.byref(n_factors), ctypes.byref(n_samples),
                    ctypes.byref(n_timepoints), ctypes.byref(factor_idx_c),
                    ctypes.byref(dependent_idx_c), ctypes.byref(sample_idx_c),
-                   ctypes.byref(mode_c), ctypes.byref(n_permutations_c),
+                   ctypes.c_char_p(mode.encode("utf-8")), ctypes.byref(n_permutations_c),
                    local_contributions, total_contributions,
                    temp_factor, temp_dependent,
                    ctypes.byref(ierr), ctypes.byref(random_seed_c))
