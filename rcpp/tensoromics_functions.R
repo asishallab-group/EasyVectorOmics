@@ -18,7 +18,7 @@ source("rcpp/error_handling.R")
 # EUCLIDEAN DISTANCE FUNCTIONS
 # ===================================================================
 
-#> tox_euclidean_distance_rcpp:Calculate Euclidean distance between two vectors
+#> tox_euclidean_distance:tox_euclidean_distance_rcpp:Calculate Euclidean distance between two vectors
 #' 
 #' Computes the Euclidean distance between two vectors of the same dimension.
 #' This function automatically checks for errors and throws informative exceptions.
