@@ -898,7 +898,7 @@ contains
     subroutine read_tox_data(zip_filename, ierr, gene_ids, gene_ids_file, expression, expression_file, &
                         gene_to_family, gene_to_family_file, family_ids, family_ids_file, &
                         family_centroids, family_centroids_file, shift_vectors, shift_vectors_file)
-        use array_utils, only: get_array_metadata
+        use f42_array_utils, only: get_array_metadata
         use tox_data_read_write
         use iso_fortran_env, only: real64, int32
         implicit none

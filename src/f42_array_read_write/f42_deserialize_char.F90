@@ -1,8 +1,8 @@
 !> Module for deserializing character arrays from files
-module char_deserialize_mod
+module f42_deserialize_char
   use safeguard
   use, intrinsic :: iso_fortran_env, only: int32, real64
-  use array_utils, only : read_file_header, check_okay_ioerror, check_okay_ndims
+  use f42_array_utils, only : read_file_header, check_okay_ioerror, check_okay_ndims
   use tox_errors
   implicit none
 
@@ -212,14 +212,14 @@ contains
     end if
   end subroutine deserialize_char_5d
   
-end module char_deserialize_mod
+end module f42_deserialize_char
 
 !> Subroutine to deserialize a flat character array from a file and return it as a raw array callable by R
 !> Deserializes the array into a flat buffer.
 !> @note The array is returned flat and needs to be reshaped in R
 subroutine deserialize_char_flat_r(raw_arr, arr_size, filename_raw, fn_len, clen_in, ierr)
   use iso_fortran_env, only: int32
-  use char_deserialize_mod, only: deserialize_char_flat
+  use f42_deserialize_char, only: deserialize_char_flat
   use tox_errors, only : set_ok, is_ok
   use tox_conversions, only : string_as_c_char_1d_r, c_char_1d_as_string
   use iso_c_binding, only : c_char
@@ -277,7 +277,7 @@ subroutine deserialize_char_flat_C(raw_chars, clen, total_array_size, &
                                    filename_c, fn_len, ierr) bind(C, name="deserialize_char_flat_C")
   use iso_c_binding, only: c_char, c_int, c_null_char
   use iso_fortran_env, only: int32
-  use char_deserialize_mod, only: deserialize_char_flat
+  use f42_deserialize_char, only: deserialize_char_flat
   use tox_conversions, only: c_char_1d_as_string, string_as_c_char_1d
   use tox_errors, only : is_ok, set_ok, set_err_once, ERR_ALLOC_FAIL
   implicit none

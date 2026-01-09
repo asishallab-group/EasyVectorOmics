@@ -1,5 +1,5 @@
 !> Module for array utilities
-module array_utils
+module f42_array_utils
     use safeguard
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use tox_errors
@@ -219,13 +219,13 @@ module array_utils
       clen = local_clen
     end if
   end subroutine
-end module array_utils
+end module f42_array_utils
 
 !> Subroutine to get the dimensions of an array file
 subroutine get_array_metadata_r(filename_raw, fn_len, dims_out, dims_out_capacity, ndims, ierr, clen)
   use iso_fortran_env, only: int32
   use iso_c_binding, only: c_char
-  use array_utils, only: get_array_metadata
+  use f42_array_utils, only: get_array_metadata
   use tox_conversions, only: c_char_1d_as_string
   use tox_errors, only : set_ok, is_ok
   implicit none
@@ -261,7 +261,7 @@ end subroutine get_array_metadata_r
 subroutine get_array_metadata_C(filename_raw, fn_len, dims_out, dims_out_capacity, ndims, ierr, clen) bind(C, name="get_array_metadata_C")
   use iso_c_binding, only: c_int, c_char
   use iso_fortran_env, only : int32
-  use array_utils, only : get_array_metadata
+  use f42_array_utils, only : get_array_metadata
   use tox_conversions, only : c_char_1d_as_string
   use tox_errors, only : set_ok, is_ok
   implicit none

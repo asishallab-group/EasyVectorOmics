@@ -1,8 +1,8 @@
-module serialize_real
+module f42_serialize_real
   use safeguard
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only: c_loc
-  use array_utils, only: write_file_header
+  use f42_array_utils, only: write_file_header
   use tox_errors
   implicit none
 
@@ -185,13 +185,13 @@ contains
     close(unit)
   end subroutine
  
-end module serialize_real
+end module f42_serialize_real
 
 !> Serialize a flat integer array with specified dimensions and number of dimensions to a binary file.
 !! R can not pass a multidimensional array directly, so we use a flat array and dimensions. Therefore, exposing serialize_int_*d to R is not needed.
 subroutine serialize_real_flat_r(arr, array_size, dims, ndim, filename_raw, fn_len, ierr)
   use iso_fortran_env, only: int32, real64
-  use serialize_real, only: serialize_real_nd
+  use f42_serialize_real, only: serialize_real_nd
   use tox_errors, only : set_ok, is_ok
   use tox_conversions, only: c_char_1d_as_string
   use iso_c_binding, only: c_char
@@ -230,7 +230,7 @@ end subroutine
 
 subroutine serialize_real_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) bind(C, name="serialize_real_nd_C")
   use iso_c_binding, only: c_int, c_double, c_char
-  use serialize_real, only: serialize_real_nd
+  use f42_serialize_real, only: serialize_real_nd
   use tox_errors, only : set_ok, is_ok
   use iso_fortran_env, only : int32
   use tox_conversions, only: c_char_1d_as_string

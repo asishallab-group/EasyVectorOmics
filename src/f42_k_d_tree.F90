@@ -1,4 +1,4 @@
-module kd_tree
+module f42_kd_tree
     use safeguard
     use f42_utils, only: sort_array
     use, intrinsic :: iso_fortran_env, only: int32, real64
@@ -252,12 +252,12 @@ contains
         point_values = points(:, kd_indices(position))
     end subroutine get_kd_point
 
-end module kd_tree
+end module f42_kd_tree
 
 !> R interface for building KD index
 subroutine build_kd_index_r(points, num_dimensions, num_points, kd_indices, dimension_order, &
                           workspace, value_buffer, permutation, left_stack, right_stack, ierr)
-    use kd_tree, only: build_kd_index
+    use f42_kd_tree, only: build_kd_index
     use, intrinsic :: iso_fortran_env, only: int32, real64
     implicit none
     integer(int32), intent(in) :: num_dimensions      
@@ -293,7 +293,7 @@ end subroutine build_kd_index_r
 subroutine build_spherical_kd_r(vectors, num_dimensions, num_vectors, sphere_indices, &
                               dimension_order, workspace, value_buffer, permutation, &
                               left_stack, right_stack, ierr)
-    use kd_tree, only: build_spherical_kd
+    use f42_kd_tree, only: build_spherical_kd
     use, intrinsic :: iso_fortran_env, only: int32, real64
     implicit none
     integer(int32), intent(in) :: num_dimensions      
@@ -331,7 +331,7 @@ subroutine build_kd_index_C(points, num_dimensions, num_points, kd_indices, dime
                           bind(C, name="build_kd_index_C")
     use, intrinsic :: iso_c_binding, only: c_int, c_double
     use, intrinsic :: iso_fortran_env, only : int32
-    use kd_tree, only: build_kd_index
+    use f42_kd_tree, only: build_kd_index
     implicit none
     integer(c_int), value :: num_dimensions
     integer(c_int), value :: num_points

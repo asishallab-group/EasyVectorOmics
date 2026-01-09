@@ -1,4 +1,4 @@
-module xxh3_hashmap_module
+module f42_xxh3_hashmap
     use safeguard
     use, intrinsic :: iso_c_binding, only: c_loc
     use iso_fortran_env, only: int32, int64
@@ -418,4 +418,4 @@ subroutine resize_hashset(set)
     nullify(new_set%buckets)
 end subroutine resize_hashset
 
-end module xxh3_hashmap_module
+end module f42_xxh3_hashmap

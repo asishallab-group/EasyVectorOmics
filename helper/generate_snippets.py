@@ -5,20 +5,24 @@ from sys import stderr
 
 
 def main():
-    generate_interfacing_snippets("python/*.py", "Python", ["python/error_handling.py"])
-    generate_interfacing_snippets("rcpp/*.R", "R", ["rcpp/error_handling.R"])
-    generate_fortran_snippets("src/**/*.[fF]90", "Fortran_tox_snippets", ["src/f42_utils.F90", "src/config.F90", "src/safeguard.F90"])
-    generate_fortran_snippets("src/f42_utils.F90", "Fortran_f42_snippets")
+    # generate_interfacing_snippets("python/*.py", "Python", ["python/error_handling.py"])
+    # generate_interfacing_snippets("rcpp/*.R", "R", ["rcpp/error_handling.R"])
+    generate_fortran_snippets("src/**/*.[fF]90", ["src/config.F90", "src/safeguard.F90"])
 
 
-def generate_fortran_snippets(file_pattern, outfile_basename, ignored_files=[]):
-    snippets = {}
+def get_initial_snippet_dicts():
+    return {"_kind": "tox"}, {"_kind": "f42"}
+
+
+def generate_fortran_snippets(file_pattern, ignored_files=[]):
+    tox_snippets, f42_snippets = get_initial_snippet_dicts()
 
     for file_name in glob.glob(file_pattern, recursive=True):
         if all(map(lambda f: f != file_name, ignored_files)):
             with open(file_name) as file:
                 multiline = None
                 module = None
+                module_snippets = None
                 func_name = None
                 args = None
                 def_kind = None
@@ -31,6 +35,7 @@ def generate_fortran_snippets(file_pattern, outfile_basename, ignored_files=[]):
                         module_def = re.search(r"^module\s+([a-z_1-9]+)", line)
                         if module_def is not None:
                             module, = module_def.groups()
+                            module_snippets = get_module_snippets(module, f42_snippets, tox_snippets)
                     else:
                         if not multiline:
                             func_def = re.search(r"\b(?P<def_kind>function|subroutine)\s+(?P<func_name>[a-z_0-9]\w*)\s*\((?P<args>[a-z_0-9,\s]*)(?P<continuation_char>&|\))?", line)
@@ -46,8 +51,10 @@ def generate_fortran_snippets(file_pattern, outfile_basename, ignored_files=[]):
                             call_str = "call " if def_kind == "subroutine" else "result = "
                             arg_list_string = arg_list_to_string(map(str.strip, args.split(",")))
 
-                            snippets[f"Fortran call of {def_kind} {func_name}"] = {
-                                "prefix": f"tox:{func_name}",
+                            if module.startswith("f42"):
+                                pass
+                            module_snippets[f"Fortran call of {def_kind} {func_name}"] = {
+                                "prefix": f"{module_snippets["_kind"]}:{func_name}",
                                 "body": f"{call_str} {func_name}({arg_list_string})",
                                 "description": f"Call of Fortran {def_kind} {func_name} from module {module}"
                             }
@@ -63,12 +70,20 @@ def generate_fortran_snippets(file_pattern, outfile_basename, ignored_files=[]):
                 if snippet_count == 0:
                     raise RuntimeError(f"No snippets generated for file: {file_name}")
 
-    with open(f"snippets/{outfile_basename}.json", "w") as f:
-        json.dump(snippets, f, indent=2)
+    write_snippets(f42_snippets, tox_snippets, "Fortran")
+
+
+def get_module_snippets(module_name, f42_snippets, tox_snippets):
+    if module_name.startswith("f42"):
+        return f42_snippets
+    if module_name.startswith("tox"):
+        return tox_snippets
+    else:
+        raise RuntimeError(f"module name '{module_name}' does not start with 'tox' or 'f42'")
 
 
 def generate_interfacing_snippets(file_pattern, lang, ignored_files=[]):
-    snippets = {}
+    tox_snippets, f42_snippets = get_initial_snippet_dicts()
 
     for file_name in glob.glob(file_pattern, recursive=True):
         if all(map(lambda f: f != file_name, ignored_files)):
@@ -77,12 +92,14 @@ def generate_interfacing_snippets(file_pattern, lang, ignored_files=[]):
                 description = None
                 wrapped_func_name = None
                 module = None
+                module_snippets = None
                 indentation_state = "unset"
                 for line_number, line in enumerate(file, 1):
                     if line.startswith("#>"):
-                        update_interfacing_snippets(snippets, body, module, wrapped_func_name, description, lang)
+                        update_interfacing_snippets(module_snippets, body, module, wrapped_func_name, description, lang)
                         body = []
                         module, wrapped_func_name, description = get_interfacing_metadata(line, file_name, line_number)
+                        module_snippets = get_module_snippets(module, f42_snippets, tox_snippets)
                         indentation = "unset"
                     elif module is not None:
                         # treat line as body (without line break)
@@ -99,10 +116,19 @@ def generate_interfacing_snippets(file_pattern, lang, ignored_files=[]):
                             elif indentation_state == "indented":
                                 indentation_state = "unindented"
 
-                update_interfacing_snippets(snippets, body, module, wrapped_func_name, description, lang)
+                update_interfacing_snippets(module_snippets, body, module, wrapped_func_name, description, lang)
 
-    with open(f"snippets/{lang}_snippets.json", "w") as f:
-        json.dump(snippets, f, indent=2)
+    write_snippets(f42_snippets, tox_snippets, lang)
+
+
+def write_snippets(f42_snippets, tox_snippets, lang):
+    for snippets in ["tox_snippets", "f42_snippets"]:
+        with open(f"snippets/{lang}_{snippets}.json", "w") as f:
+            snippets_dict = locals()[snippets]
+            kind = snippets_dict["_kind"]
+            del snippets_dict["_kind"]
+            json.dump(snippets_dict, f, indent=2)
+            snippets_dict["_kind"] = kind
 
 
 def error_in_line(msg, file_name, line_number, post_msg=None):
@@ -122,14 +148,14 @@ def get_interfacing_metadata(initial_line, file_name, line_number):
 def update_interfacing_snippets(snippets, body, module, wrapped_func_name, description, lang):
     if module is not None:
         func_name, args = get_interfacing_function_definition(body, lang)
-        snippets.update(generate_definition_snippet(body, description, module, wrapped_func_name, lang))
-        snippets.update(generate_interfacing_call_snippet(func_name, module, wrapped_func_name, args, lang))
+        snippets.update(generate_definition_snippet(body, description, module, wrapped_func_name, lang, snippets["_kind"]))
+        snippets.update(generate_interfacing_call_snippet(func_name, module, wrapped_func_name, args, lang, snippets["_kind"]))
 
 
-def generate_definition_snippet(body, description, module, wrapped_func_name, lang):
+def generate_definition_snippet(body, description, module, wrapped_func_name, lang, snippet_kind):
     return {
         f"{lang} setup for {wrapped_func_name} from module '{module}'": {
-            "prefix": f"tox:{lang[:2].lower()}_setup_{wrapped_func_name}",
+            "prefix": f"{snippet_kind}:{lang[:2].lower()}_setup_{wrapped_func_name}",
             "body": body,
             "description": description
         }
@@ -140,7 +166,7 @@ def arg_list_to_string(args):
     return ", ".join(f"${{{i}:{arg}}}" for i, arg in enumerate(args, 1))
 
 
-def generate_interfacing_call_snippet(func_name, module, wrapped_func_name, args, lang):
+def generate_interfacing_call_snippet(func_name, module, wrapped_func_name, args, lang, snippet_kind):
     match lang:
         case "Python":
             assignment_operator = "="
@@ -152,7 +178,7 @@ def generate_interfacing_call_snippet(func_name, module, wrapped_func_name, args
     arg_list_string = arg_list_to_string(args)
     return {
         f"{lang} call of {func_name}": {
-            "prefix": f"tox:{lang[:2].lower()}_{func_name}",
+            "prefix": f"{snippet_kind}:{lang[:2].lower()}_{func_name}",
             "body": f"result {assignment_operator} {func_name}({arg_list_string})",
             "description": f"Call of {lang} wrapper for {wrapped_func_name} from module {module}"
         }
@@ -229,36 +255,6 @@ def _get_r_definition(body):
                 args.append(a)
 
     return func_name, args
-
-
-def get_fortran_definition(body):
-    cleaned = []
-    for line in body:
-        # remove comments
-        line = re.sub(r"!.*", "", line)
-        # remove continuation markers
-        line = line.replace("&", "")
-        cleaned.append(line)
-
-    text = "".join(cleaned).lower()
-
-    # function foo(a,b,c)
-    m = re.search(r"\b(function|subroutine)\s+([a-z_]\w*)\s*\((.*?)\)", text, re.S)
-    if not m:
-        raise ValueError("No Fortran function definition found")
-
-    kind = m.group(1)
-    func_name = m.group(2)
-    arglist = m.group(3).replace("&", "").strip()
-
-    args = []
-    if arglist:
-        for a in arglist.split(","):
-            a = a.strip()
-            if a:
-                args.append(a)
-
-    return func_name, args, kind
 
 
 if __name__ == '__main__':

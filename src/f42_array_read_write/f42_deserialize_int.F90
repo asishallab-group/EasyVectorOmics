@@ -1,9 +1,9 @@
 !> Module for deserializing integer arrays from files
-module int_deserialize_mod
+module f42_deserialize_int
   use safeguard
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only : c_loc, c_f_pointer
-  use array_utils, only: read_file_header, check_okay_ndims
+  use f42_array_utils, only: read_file_header, check_okay_ndims
   use tox_errors
   implicit none
 
@@ -191,7 +191,7 @@ contains
     end if
   end subroutine deserialize_int_5d
 
-end module int_deserialize_mod
+end module f42_deserialize_int
 
 !> R interface for deserializing an integer array from a file.
 !> Deserializes an array of any dimension into a flat buffer.
@@ -199,7 +199,7 @@ end module int_deserialize_mod
 subroutine deserialize_int_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
   use iso_fortran_env, only: int32
   use iso_c_binding, only : c_char
-  use int_deserialize_mod, only : deserialize_int_flat
+  use f42_deserialize_int, only : deserialize_int_flat
   use tox_conversions, only : c_char_1d_as_string
   use tox_errors, only : set_ok, is_ok
   implicit none
@@ -232,7 +232,7 @@ end subroutine
 subroutine deserialize_int_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, name="deserialize_int_C")
     use iso_c_binding, only: c_int, c_char
     use iso_fortran_env, only: int32
-    use int_deserialize_mod, only : deserialize_int_flat
+    use f42_deserialize_int, only : deserialize_int_flat
     use tox_errors, only : set_ok, is_ok
     use tox_conversions, only : c_char_1d_as_string
     implicit none

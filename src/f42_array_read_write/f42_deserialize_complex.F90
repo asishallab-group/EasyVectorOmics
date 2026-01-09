@@ -1,8 +1,8 @@
 !> Module for deserializing complex arrays from files
-module complex_deserialize_mod
+module f42_deserialize_complex
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only : c_loc, c_f_pointer
-  use array_utils, only: read_file_header, check_okay_ndims
+  use f42_array_utils, only: read_file_header, check_okay_ndims
   use tox_errors
   implicit none
 
@@ -189,14 +189,14 @@ contains
     end if
   end subroutine deserialize_complex_5d
 
-end module complex_deserialize_mod
+end module f42_deserialize_complex
 
 !> R interface for deserializing a complex array from a file
 !> Deserializes an array of any dimension into a flat buffer.
 !> @note The output array is handled and preallocated by R
 subroutine deserialize_complex_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
   use iso_fortran_env, only: int32, real64
-  use complex_deserialize_mod, only : deserialize_complex_flat
+  use f42_deserialize_complex, only : deserialize_complex_flat
   use tox_errors, only : set_ok, is_ok
   use tox_conversions, only : c_char_1d_as_string
   use iso_c_binding, only : c_char
@@ -231,7 +231,7 @@ end subroutine
 subroutine deserialize_complex_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, name="deserialize_complex_C")
     use iso_c_binding, only: c_int, c_char
     use iso_fortran_env, only: int32, real64
-    use complex_deserialize_mod, only : deserialize_complex_flat
+    use f42_deserialize_complex, only : deserialize_complex_flat
     use tox_errors, only : set_ok, is_ok
     use tox_conversions, only : c_char_1d_as_string
     implicit none

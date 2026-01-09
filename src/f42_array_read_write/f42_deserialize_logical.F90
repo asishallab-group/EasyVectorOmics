@@ -1,8 +1,8 @@
 !> Module for deserializing logical arrays from files
-module logical_deserialize_mod
+module f42_deserialize_logical
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only : c_loc, c_f_pointer
-  use array_utils, only: read_file_header, check_okay_ndims
+  use f42_array_utils, only: read_file_header, check_okay_ndims
   use tox_errors
   implicit none
 
@@ -189,7 +189,7 @@ contains
     end if
   end subroutine deserialize_logical_5d
 
-end module logical_deserialize_mod
+end module f42_deserialize_logical
 
 !> R interface for deserializing a logical array from a file
 !> Deserializes an array of any dimension into a flat buffer.
@@ -198,7 +198,7 @@ subroutine deserialize_logical_r(flat_arr, arr_size, filename_raw, fn_len, ierr)
   use iso_fortran_env, only: int32
   use iso_c_binding, only : c_char
   use tox_conversions, only: c_char_1d_as_string
-  use logical_deserialize_mod, only : deserialize_logical_flat
+  use f42_deserialize_logical, only : deserialize_logical_flat
   use tox_errors, only : set_ok, is_ok
   implicit none
 
@@ -232,7 +232,7 @@ subroutine deserialize_logical_C(arr, arr_size, filename_raw, fn_len, ierr) bind
     use iso_c_binding, only: c_int, c_char
     use tox_conversions, only: logical_as_c_int
     use iso_fortran_env, only: int32
-    use logical_deserialize_mod, only : deserialize_logical_flat
+    use f42_deserialize_logical, only : deserialize_logical_flat
     use tox_errors, only : set_ok, is_ok
     use tox_conversions, only : c_char_1d_as_string
     implicit none
