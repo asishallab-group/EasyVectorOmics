@@ -14,7 +14,8 @@ def _filename_to_ascii_array(filename):
     ascii_arr = np.array([ord(c) for c in filename], dtype=np.int32)
     return ascii_arr, np.int32(len(ascii_arr))
 
-# Helper function to read dimensions of integer/real array
+
+#> get_array_metadata_C:Helper function to read dimensions of integer/real array
 def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
     """
     Reads dimensions (and optionally character length) of an array file.
