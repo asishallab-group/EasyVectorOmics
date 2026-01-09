@@ -1,6 +1,7 @@
 stages:
   - run-tests
   - generate-docs
+  - generate-snippets
   - done
 
 image: archlinux:latest
@@ -85,6 +86,9 @@ run-tests:
         for i in python/test/*.py; do echo ; echo $i ; python $i ; done
       done
 
+    # test snippet generation
+    - python helper/generate_snippets.py
+
 generate-docs:  # generate documentation after tests have passed
   stage: generate-docs
   rules:
@@ -110,12 +114,39 @@ generate-docs:  # generate documentation after tests have passed
     - *install-git
     - git-push "Update generated documentation" doc
 
+generate-snippets:  # generate snippets after tests have passed
+  stage: generate-snippets
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main"'
+      changes:
+        - src/**/*.[fF90]
+        - python/*.py
+        - rcpp/*.R
+        - helper/generate_snippets.py
+    - when: never
+  needs:
+    - job: run-tests
+      optional: true
+  script:
+    # install python
+    - *install-python
+
+    # generate snippets
+    - python helper/generate_snippets.py
+    - echo "generated snippets successfully"
+
+    # add and commit changes to snippets folder
+    - *install-git
+    - git-push "Update generated snippets" snippets
+
 done: # Final stage that will always be in a pipeline and succeeds when all other stages pass
   stage: done
   needs:
     - job: run-tests
       optional: true
     - job: generate-docs
+      optional: true
+    - job: generate-snippets
       optional: true
   script:
     - echo "All jobs passed"
