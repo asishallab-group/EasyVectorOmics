@@ -8,7 +8,12 @@
 doc/
 
 # ignore test files
-# test_*
+test_*
+!test_runner.sh
+!python/test/test_*
+!r/test/test_*
+!rcpp/test/test_*
+
 manifest.txt
 
 *.zip
