@@ -13,15 +13,97 @@ from tensoromics_functions import (
     tox_deserialize_int_nd,
     tox_serialize_real_nd,
     tox_deserialize_real_nd,
-    _string_to_c_char_array,
-    _strings_to_c_char_matrix,
-    _c_char_matrix_to_strings
 )
 
 # Load library
 dll_path = os.path.abspath("build/libtensor-omics.so")
 ctypes.CDLL("libgomp.so.1", mode=ctypes.RTLD_GLOBAL)
 lib = ctypes.CDLL(dll_path)
+
+
+# converts a given string to a c_char array of given length
+def string_to_c_char_array(s, length):
+    """Convert string to c_char array with null termination"""
+    if s is None:
+        s = ""
+    # Create array of c_char with specified length
+    arr = (ctypes.c_char * length)()
+    # Encode string and copy to array
+    encoded = s.encode('ascii')
+    for i in range(min(length, len(encoded))):
+        arr[i] = encoded[i]
+    # Ensure null termination if there's space
+    if len(encoded) < length:
+        arr[len(encoded)] = b'\x00'
+    return arr
+
+def strings_to_c_char_matrix(strings, max_length):
+    """Convert list of strings to flat c_char array (Fortran-compatible, NumPy-wrapped)"""
+    import numpy as np
+    n_strings = len(strings)
+    total_size = n_strings * max_length
+    
+    # create flat c-types array
+    matrix_type = ctypes.c_char * total_size
+    matrix = matrix_type()
+
+    # Initialize with all null bytes
+    for i in range(total_size):
+        matrix[i] = b'\x00'
+
+    for i, s in enumerate(strings):
+        encoded = s.encode('ascii')
+        for j in range(min(max_length, len(encoded))):
+            index = j + i * max_length
+            matrix[index] = encoded[j:j+1]
+        if len(encoded) < max_length:
+            matrix[len(encoded) + i * max_length] = b'\x00'
+
+    arr = np.ctypeslib.as_array(matrix)
+    arr = arr.reshape((n_strings, max_length), order='F')
+
+    return arr
+
+def c_char_matrix_to_strings(matrix, max_length, n_strings):
+    """Convert 2D c_char matrix or NumPy array back to list of strings (Fortran order)"""
+    import numpy as np
+
+    if isinstance(matrix, np.ndarray):
+        flat = matrix.ravel(order='F')
+    else:
+        flat = matrix
+
+    strings = []
+    for i in range(n_strings):
+        chars = []
+        for j in range(max_length):
+            index = j + i * max_length
+            if index >= len(flat):
+                break
+
+            char = flat[index]
+
+            if isinstance(char, np.ndarray):
+                char = char.item()
+            
+            if isinstance(char, (np.integer, int)):
+                char = bytes([char])
+            elif isinstance(char, (bytes, bytearray)):
+                pass
+            elif isinstance(char, str):
+                char = char.encode('ascii')
+            else:
+                char = bytes([int(char)])
+
+            if char == b'\x00':
+                break
+
+            chars.append(char)
+
+        s = b''.join(chars).decode('ascii')
+        strings.append(s)
+
+    return strings
 
 
 def _prepare_string(s) -> tuple:
@@ -76,7 +158,7 @@ def read_gene_ids_from_tsv_file(filename, n_genes, gene_ids_len, n_header_rows, 
             raise ValueError("filename cannot be an empty list for read_gene_ids_from_tsv_file")
 
     # Convert filename to c_char array
-    fn_array = _string_to_c_char_array(filename, len(filename))
+    fn_array = string_to_c_char_array(filename, len(filename))
 
     # Create output array for gene IDs - proper 2D array
     matrix_size = gene_ids_len * n_genes
@@ -114,7 +196,7 @@ def read_gene_ids_from_tsv_file(filename, n_genes, gene_ids_len, n_header_rows, 
     check_err_code(ierr.value)
 
     # Convert result back to strings
-    gene_ids = _c_char_matrix_to_strings(gene_ids_array, gene_ids_len, n_genes)
+    gene_ids = c_char_matrix_to_strings(gene_ids_array, gene_ids_len, n_genes)
 
     return np.array(gene_ids, dtype='U')
 
@@ -142,15 +224,15 @@ def read_expression_vectors_tsv(file_list, gene_ids, n_samples, n_header_rows,
 
     # Convert inputs to c_char matrices
     max_file_len = max(len(f) for f in file_list)
-    file_list_matrix = _strings_to_c_char_matrix(file_list, max_file_len)
+    file_list_matrix = strings_to_c_char_matrix(file_list, max_file_len)
 
     max_gene_len = max(len(g) for g in gene_ids)
-    gene_ids_matrix = _strings_to_c_char_matrix(gene_ids, max_gene_len)
+    gene_ids_matrix = strings_to_c_char_matrix(gene_ids, max_gene_len)
 
     # Prepare output arrays
     expression_vectors = np.zeros((n_samples, len(gene_ids)), dtype=np.float64, order='F')
     ierr = ctypes.c_int()
-    delimiter_array = _string_to_c_char_array(delimiter, len(delimiter))
+    delimiter_array = string_to_c_char_array(delimiter, len(delimiter))
 
     # Convert value_cols to ctypes array
     value_cols_ct = (ctypes.c_int * len(value_cols))(*value_cols)
@@ -218,13 +300,13 @@ def read_orthofinder_file(filename, gene_ids, family_ids_len, n_families):
     gene_ids = _ensure_string_array(gene_ids)
 
     # Convert inputs to c_char arrays
-    fn_array = _string_to_c_char_array(filename, len(filename))
+    fn_array = string_to_c_char_array(filename, len(filename))
 
     max_gene_len = max(len(g) for g in gene_ids)
-    gene_ids_matrix = _strings_to_c_char_matrix(gene_ids, max_gene_len)
+    gene_ids_matrix = strings_to_c_char_matrix(gene_ids, max_gene_len)
 
     # Prepare output arrays
-    family_ids_matrix = _strings_to_c_char_matrix([""] * n_families, family_ids_len)
+    family_ids_matrix = strings_to_c_char_matrix([""] * n_families, family_ids_len)
     gene_to_fam = np.zeros(len(gene_ids), dtype=np.int32, order='F')
     ierr = ctypes.c_int()
 
@@ -260,7 +342,7 @@ def read_orthofinder_file(filename, gene_ids, family_ids_len, n_families):
     check_err_code(ierr.value)
 
     # Convert result back to strings as numpy array
-    family_ids = _c_char_matrix_to_strings(family_ids_matrix, family_ids_len, n_families)
+    family_ids = c_char_matrix_to_strings(family_ids_matrix, family_ids_len, n_families)
 
     return {
         'family_ids': np.array(family_ids, dtype='U'),
@@ -439,7 +521,7 @@ def validate_string_array_uniqueness(strings):
     strings = _ensure_string_array(strings)
     string_len = max(len(g) for g in strings)
     n_strings = len(strings)
-    gene_ids_raw = _strings_to_c_char_matrix(strings, string_len)
+    gene_ids_raw = strings_to_c_char_matrix(strings, string_len)
     ierr = ctypes.c_int()
 
     lib.validate_string_array_uniqueness_C.argtypes = [
@@ -482,8 +564,8 @@ def validate_data_structure(n_genes, n_families, n_samples, gene_ids, gene_famil
 
     gene_ids_len = max(len(g) for g in gene_ids)
     fam_len = max(len(f) for f in gene_family_ids)
-    gene_ids_raw = _strings_to_c_char_matrix(gene_ids, gene_ids_len)
-    gene_family_ids_raw = _strings_to_c_char_matrix(gene_family_ids, fam_len)
+    gene_ids_raw = strings_to_c_char_matrix(gene_ids, gene_ids_len)
+    gene_family_ids_raw = strings_to_c_char_matrix(gene_family_ids, fam_len)
 
     gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
     expression_vectors = np.asfortranarray(expression_vectors, dtype=np.float64)
@@ -547,8 +629,8 @@ def validate_all_data(n_genes, n_families, n_samples, gene_ids, gene_family_ids,
 
     gene_ids_len = max(len(g) for g in gene_ids)
     fam_len = max(len(f) for f in gene_family_ids)
-    gene_ids_raw = _strings_to_c_char_matrix(gene_ids, gene_ids_len)
-    gene_family_ids_raw = _strings_to_c_char_matrix(gene_family_ids, fam_len)
+    gene_ids_raw = strings_to_c_char_matrix(gene_ids, gene_ids_len)
+    gene_family_ids_raw = strings_to_c_char_matrix(gene_family_ids, fam_len)
 
     gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
     expression_vectors = np.asfortranarray(expression_vectors, dtype=np.float64)
@@ -589,7 +671,7 @@ def validate_all_data(n_genes, n_families, n_samples, gene_ids, gene_family_ids,
     check_err_code(ierr.value)
 
 
-#> tox_archive:create_zip_archive_C: Low-level function to create zip archive from keys and filenames.
+#> tox_archive:create_zip_archive_c: Low-level function to create zip archive from keys and filenames.
 def create_zip_archive(zip_filename: str, keys, filenames) -> None:
     """
     Low-level function to create zip archive from keys and filenames.
@@ -640,7 +722,7 @@ def create_zip_archive(zip_filename: str, keys, filenames) -> None:
             filenames_array[max_filename_len - 1, i] = 0  # null terminator at last position
 
     # Set up argument types to match Fortran subroutine
-    lib.create_zip_archive_C.argtypes = [
+    lib.create_zip_archive_c.argtypes = [
         ctypes.POINTER(ctypes.c_char), ctypes.c_int,                    # zip_filename, zip_len
         np.ctypeslib.ndpointer(dtype=np.byte, ndim=2, flags='F_CONTIGUOUS'),  # keys
         ctypes.c_int, ctypes.c_int,                                     # keys_len, keys_count
@@ -652,7 +734,7 @@ def create_zip_archive(zip_filename: str, keys, filenames) -> None:
     ierr = ctypes.c_int()
 
     # Call Fortran function - arrays are already in Fortran order
-    lib.create_zip_archive_C(
+    lib.create_zip_archive_c(
         zip_b, 
         ctypes.c_int(zip_len),
         keys_array,
@@ -695,7 +777,7 @@ def extract_zip_archive(zip_filename):
     if not os.path.exists(zip_filename):
         raise FileNotFoundError(f"Zip file not found: {zip_filename}")
 
-    lib.extract_zip_archive_generic_c.argtypes = [
+    lib.extract_zip_archive_c.argtypes = [
         ctypes.POINTER(ctypes.c_char), 
         ctypes.c_int,
         ctypes.POINTER(ctypes.c_int)
@@ -709,7 +791,7 @@ def extract_zip_archive(zip_filename):
         zip_b = (ctypes.c_char * len(zip_filename))(*zip_filename.encode('utf-8'))
 
         # Call the C extraction function
-        lib.extract_zip_archive_generic_c(
+        lib.extract_zip_archive_c(
             ctypes.cast(zip_b, ctypes.POINTER(ctypes.c_char)),
             ctypes.c_int(len(zip_filename)),
             ctypes.byref(ierr)

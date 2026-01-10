@@ -46,3 +46,10 @@ The snippet expands into a unified parallel loop structure that automatically se
 This allows backend-independent parallel execution using preprocessor directives.
 
 ---
+
+The Snippets are being generated automatically from the repository's code, using this:
+```bash
+# current directory is snippets/, so move to root
+cd ..
+python3 helper/generate_snippets.py
+```

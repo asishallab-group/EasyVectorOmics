@@ -1,7 +1,9 @@
+from error_handling import check_err_code
+
+#> f42_helper-import_libs: Import necessary packages
 import numpy as np
 import ctypes
 import os
-from error_handling import check_err_code
 
 # Load library
 dll_path = os.path.abspath("build/libtensor-omics.so")
@@ -245,16 +247,16 @@ def tox_deserialize_int_nd(filename):
     fn_len = len(filename_c)
     ierr = ctypes.c_int()
 
-    lib.deserialize_int_C.argtypes = [
+    lib.deserialize_int_nd_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="F_CONTIGUOUS"),  # arr
         ctypes.c_int,                                                          # total size
         np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"),  # filename_c
         ctypes.c_int,                                                          # fn_len
         ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
-    lib.deserialize_int_C.restype = None
+    lib.deserialize_int_nd_C.restype = None
 
-    lib.deserialize_int_C(arr, total_size, filename_c, fn_len, ctypes.byref(ierr))
+    lib.deserialize_int_nd_C(arr, total_size, filename_c, fn_len, ctypes.byref(ierr))
     check_err_code(ierr.value)
     return arr.reshape(dims, order='F')  # Reshape to original dimensions
 
@@ -320,16 +322,16 @@ def tox_deserialize_real_nd(filename):
     fn_len = len(filename_c)
     ierr = ctypes.c_int()
 
-    lib.deserialize_real_C.argtypes = [
+    lib.deserialize_real_nd_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, ndim=1, flags="F_CONTIGUOUS"),  # arr
         ctypes.c_int,                                                          # total size
         np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"),  # filename_c
         ctypes.c_int,                                                           # fn_len
         ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
-    lib.deserialize_real_C.restype = None
+    lib.deserialize_real_nd_C.restype = None
 
-    lib.deserialize_real_C(arr, total_size, filename_c, fn_len, ctypes.byref(ierr))
+    lib.deserialize_real_nd_C(arr, total_size, filename_c, fn_len, ctypes.byref(ierr))
     check_err_code(ierr.value)
     return arr.reshape(dims, order='F')  # Reshape
 
@@ -358,7 +360,7 @@ def tox_serialize_char_nd(arr: np.ndarray, filename: str):
     fn_len = len(filename_c)
 
     # Update argument types
-    lib.serialize_char_flat_C.argtypes = [
+    lib.serialize_char_nd_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags='F_CONTIGUOUS'),  # raw_chars
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags='C_CONTIGUOUS'),  # dims
         ctypes.c_int,                                                          # ndim
@@ -367,9 +369,9 @@ def tox_serialize_char_nd(arr: np.ndarray, filename: str):
         ctypes.c_int,                                                          # fn_len
         ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
-    lib.serialize_char_flat_C.restype = None
+    lib.serialize_char_nd_C.restype = None
 
-    lib.serialize_char_flat_C(
+    lib.serialize_char_nd_C(
         raw_chars,
         dims,
         ndim,
@@ -401,7 +403,7 @@ def tox_deserialize_char_nd(filename):
 
     ierr = ctypes.c_int()
 
-    lib.deserialize_char_flat_C.argtypes = [
+    lib.deserialize_char_nd_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.byte, ndim=2, flags="F_CONTIGUOUS"),  # raw_chars (2D!)
         ctypes.c_int,                                                         # clen
         ctypes.c_int,                                                         # total_array_size
@@ -409,9 +411,9 @@ def tox_deserialize_char_nd(filename):
         ctypes.c_int,                                                         # fn_len
         ctypes.POINTER(ctypes.c_int)                                          # ierr
     ]
-    lib.deserialize_char_flat_C.restype = None
+    lib.deserialize_char_nd_C.restype = None
 
-    lib.deserialize_char_flat_C(
+    lib.deserialize_char_nd_C(
         raw_chars,
         clen,
         total_size,
@@ -492,16 +494,16 @@ def tox_deserialize_logical_nd(filename):
     fn_len = len(filename_c)
     ierr = ctypes.c_int()
 
-    lib.deserialize_logical_C.argtypes = [
+    lib.deserialize_logical_nd_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.int32, ndim=1, flags="C_CONTIGUOUS"),  # arr (as int32)
         ctypes.c_int,                                                          # total size
         np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"),  # filename_c
         ctypes.c_int,                                                          # fn_len
         ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
-    lib.deserialize_logical_C.restype = None
+    lib.deserialize_logical_nd_C.restype = None
 
-    lib.deserialize_logical_C(arr_int, total_size, filename_c, fn_len, ctypes.byref(ierr))
+    lib.deserialize_logical_nd_C(arr_int, total_size, filename_c, fn_len, ctypes.byref(ierr))
     check_err_code(ierr.value)
 
     # Convert integer array back to boolean array (non-zero = True)
@@ -570,16 +572,16 @@ def tox_deserialize_complex_nd(filename):
     fn_len = len(filename_c)
     ierr = ctypes.c_int()
 
-    lib.deserialize_complex_C.argtypes = [
+    lib.deserialize_complex_nd_C.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.complex128, ndim=1, flags="C_CONTIGUOUS"),  # arr
         ctypes.c_int,                                                          # total size
         np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"),  # filename_c
         ctypes.c_int,                                                           # fn_len
         ctypes.POINTER(ctypes.c_int)                                           # ierr
     ]
-    lib.deserialize_complex_C.restype = None
+    lib.deserialize_complex_nd_C.restype = None
 
-    lib.deserialize_complex_C(arr, total_size, filename_c, fn_len, ctypes.byref(ierr))
+    lib.deserialize_complex_nd_C(arr, total_size, filename_c, fn_len, ctypes.byref(ierr))
     check_err_code(ierr.value)
     return arr.reshape(dims, order='F')  # Reshape
 
