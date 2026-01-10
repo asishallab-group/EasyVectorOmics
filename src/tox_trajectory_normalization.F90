@@ -34,21 +34,10 @@ contains
         call set_ok(status)
 
         call validate_all_in_range_real(v, n_points, ierr)
-        if(is_err(ierr)) return
-        
-        ! Check for empty array
         call validate_dimension_size(n_points, ierr)
         if (is_err(ierr)) return
 
         epsilon_val = 1.0e-12_real64
-        
-        ! Find min and max values
-
-        if(.not. all(ieee_is_finite(v))) then
-            v_norm = 0.0_real64
-            call set_err(ierr, ERR_NAN_INF)
-            return
-        end if
 
         !! THIS IS THE TOPIC OF A CURRENT DISCUSSION -- Issue 102, see comments
         !!! -------------------------------
