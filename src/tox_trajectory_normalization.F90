@@ -3,6 +3,7 @@ module tox_trajectory_normalization
     use, intrinsic :: iso_fortran_env, only: real64, int32
     use tox_errors, only: ERR_NAN_INF, set_ok, set_err, is_err, validate_dimension_size, validate_all_in_range_real, ERR_DIVISION_BY_ZERO
     use safeguard
+    use f42_utils, only: is_close
     implicit none
     
     private
@@ -49,7 +50,7 @@ contains
         denominator = max_val - min_val
         
         ! Check for division by zero (min approximately equal to max)
-        if (abs(denominator) < epsilon_val) then
+        if (is_close(denominator, 0.0_real64)) then
             v_norm = 0.0_real64
             call set_err(status, ERR_DIVISION_BY_ZERO)
             return
