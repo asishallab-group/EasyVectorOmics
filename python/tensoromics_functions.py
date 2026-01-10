@@ -11,12 +11,13 @@ ctypes.CDLL("libgomp.so.1", mode=ctypes.RTLD_GLOBAL)
 lib = ctypes.CDLL(dll_path)
 
 
-# helper to convert a filename to ASCII chars to transfer it as integer to fortran
+#> f42_helper: convert a filename to ASCII chars to transfer it as integer to fortran
 def _filename_to_ascii_array(filename):
     ascii_arr = np.array([ord(c) for c in filename], dtype=np.int32)
     return ascii_arr, np.int32(len(ascii_arr))
 
 
+#> f42_helper: Mark all given NumPy arrays as read-only
 def _readonly(*arrays: np.ndarray) -> None:
     """Mark all given NumPy arrays as read-only."""
     for a in arrays:
@@ -26,7 +27,7 @@ def _readonly(*arrays: np.ndarray) -> None:
             # If you need to modify them (e.g., for plotting), use `.copy()`.
 
 
-# converts a c_char array back to a string
+#> f42_helper: converts a c_char array back to a string
 def _c_char_array_to_string(c_array):
     """Convert c_char array back to string"""
     # Find null terminator or use full length
@@ -39,6 +40,7 @@ def _c_char_array_to_string(c_array):
     return b''.join(bytes_list).decode('ascii').strip()
 
 
+#> f42_helper: Convert list of strings to flat c_char array
 def _strings_to_c_char_matrix(strings, max_length):
     """Convert list of strings to flat c_char array (Fortran-compatible, NumPy-wrapped)"""
     import numpy as np
@@ -67,6 +69,7 @@ def _strings_to_c_char_matrix(strings, max_length):
     return arr
 
 
+#> f42_helper: Convert numpy string array to c_char matrix
 def _string_array_to_c_char_matrix(string_array, max_length):
     """Convert numpy string array to c_char matrix"""
     import numpy as np
@@ -89,6 +92,7 @@ def _string_array_to_c_char_matrix(string_array, max_length):
     return matrix
 
 
+#> f42_helper: Faster version using bytes operations
 def _c_char_matrix_to_strings(matrix, n_strings):
     """Faster version using bytes operations"""
     import numpy as np
@@ -119,6 +123,7 @@ def _c_char_matrix_to_strings(matrix, n_strings):
     return strings
 
 
+#> f42_helper: Convert string to c_char array with null termination
 def _string_to_c_char_array(s, length):
     """Convert string to c_char array with null termination"""
     if s is None:
@@ -1707,7 +1712,7 @@ def tox_compute_family_scaling(distances, gene_to_fam):
     }
 
 
-#> tox_get_outliers:compute_family_scaling_expert_c: """
+#> tox_get_outliers:compute_family_scaling_expert_c: Compute family scaling factors using LOESS smoothing (Expert Version)
 def tox_compute_family_scaling_expert(distances, gene_to_fam, perm_tmp, stack_left_tmp, 
                                  stack_right_tmp, family_distances):
     """
