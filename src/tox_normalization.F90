@@ -382,7 +382,7 @@ end module tox_normalization
 
 !> R/Fortran wrapper for normalization by standard deviation.
 !| Provides an interface for R (.Fortran) and Fortran code to call the normalization routine.
-subroutine normalize_by_std_dev_r(n_genes, n_tissues, input_matrix, output_matrix, ierr)
+pure subroutine normalize_by_std_dev_r(n_genes, n_tissues, input_matrix, output_matrix, ierr)
   use tox_normalization, only: normalize_by_std_dev
   use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
@@ -404,7 +404,7 @@ end subroutine normalize_by_std_dev_r
 
 !> C/Python wrapper for normalization by standard deviation.
 !| Provides a C/Python-compatible interface to the normalization routine.
-subroutine normalize_by_std_dev_c(n_genes, n_tissues, input_matrix, output_matrix, ierr) bind(C, name="normalize_by_std_dev_c")
+pure subroutine normalize_by_std_dev_c(n_genes, n_tissues, input_matrix, output_matrix, ierr) bind(C, name="normalize_by_std_dev_c")
   use, intrinsic :: iso_c_binding, only : c_int, c_double, c_f_pointer, c_loc
   use tox_normalization, only: normalize_by_std_dev
   implicit none
@@ -427,7 +427,7 @@ end subroutine normalize_by_std_dev_c
 
 !> R/Fortran wrapper for quantile normalization.
 !| Provides an interface for R (.Fortran) and Fortran code to call the quantile normalization routine.
-subroutine quantile_normalization_r(n_genes, n_tissues, input_matrix, output_matrix, &
+pure subroutine quantile_normalization_r(n_genes, n_tissues, input_matrix, output_matrix, &
                                         temp_col, rank_means, perm, stack_left, stack_right, max_stack, ierr)
   use tox_normalization, only: quantile_normalization
   use, intrinsic :: iso_fortran_env, only: real64, int32
@@ -462,7 +462,7 @@ end subroutine quantile_normalization_r
 
 !> C/Python wrapper for quantile normalization.
 !| Provides a C/Python-compatible interface to the quantile normalization routine.
-subroutine quantile_normalization_c(n_genes, n_tissues, input_matrix, output_matrix, &
+pure subroutine quantile_normalization_c(n_genes, n_tissues, input_matrix, output_matrix, &
                                     temp_col, rank_means, perm, stack_left, stack_right, max_stack, ierr) &
                                     bind(C, name="quantile_normalization_c")
   use, intrinsic :: iso_c_binding, only : c_int, c_double
@@ -499,7 +499,7 @@ end subroutine quantile_normalization_c
 !> R/Fortran wrapper for log2 transformation.
 !| Provides an interface for R (.Fortran) and Fortran code to call the log2 transformation routine.
 !| Applies log2(x+1) to each element of the input matrix. Arguments match R's .Fortran calling convention and expect flat arrays.
-subroutine log2_transformation_r(n_genes, n_tissues, input_matrix, output_matrix, ierr)
+pure subroutine log2_transformation_r(n_genes, n_tissues, input_matrix, output_matrix, ierr)
   use tox_normalization, only: log2_transformation
   use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
@@ -523,7 +523,7 @@ end subroutine log2_transformation_r
 !| Provides a C/Python-compatible interface to the log2 transformation routine.
 !| Expects flat arrays, matching C calling conventions. Suitable for use with ctypes.
 !| Applies log2(x+1) to each element of the input matrix.
-subroutine log2_transformation_c(n_genes, n_tissues, input_matrix, output_matrix, ierr) bind(C, name="log2_transformation_c")
+pure subroutine log2_transformation_c(n_genes, n_tissues, input_matrix, output_matrix, ierr) bind(C, name="log2_transformation_c")
   use, intrinsic :: iso_c_binding, only : c_int, c_double
   use tox_normalization, only: log2_transformation
   implicit none
@@ -545,7 +545,7 @@ end subroutine log2_transformation_c
 !> R/Fortran wrapper for tissue average calculation.
 !| Provides an interface for R (.Fortran) and Fortran code to call the tissue average calculation routine.
 !| Computes average expression per gene for each group of tissue replicates. Arguments match R's .Fortran calling convention.
-subroutine calc_tiss_avg_r(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix, ierr)
+pure subroutine calc_tiss_avg_r(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix, ierr)
   use tox_normalization, only: calc_tiss_avg
   use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
@@ -572,7 +572,7 @@ end subroutine calc_tiss_avg_r
 !> C/Python wrapper for tissue average calculation.
 !| Provides a C/Python-compatible interface to the tissue average calculation routine.
 !| Suitable for use with ctypes. Computes average expression per gene for each group of tissue replicates.
-subroutine calc_tiss_avg_c(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix, ierr) bind(C, name="calc_tiss_avg_c")
+pure subroutine calc_tiss_avg_c(n_gene, n_grps, group_s, group_c, input_matrix, output_matrix, ierr) bind(C, name="calc_tiss_avg_c")
   use, intrinsic :: iso_c_binding, only : c_int, c_double
   use tox_normalization, only: calc_tiss_avg
   implicit none
@@ -598,7 +598,7 @@ end subroutine calc_tiss_avg_c
 !> R/Fortran wrapper for fold change calculation.
 !| Provides an interface for R (.Fortran) and Fortran code to call the fold change calculation routine.
 !| Computes log2 fold changes between condition and control columns for all genes. Arguments match R's .Fortran calling convention.
-subroutine calc_fchange_r(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix, ierr)
+pure subroutine calc_fchange_r(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix, ierr)
   use tox_normalization, only: calc_fchange
   use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
@@ -626,7 +626,7 @@ end subroutine calc_fchange_r
 !> C/Python wrapper for fold change calculation.
 !| Provides a C/Python-compatible interface to the fold change calculation routine.
 !| Suitable for use with ctypes. Computes log2 fold changes between condition and control columns for all genes.
-subroutine calc_fchange_c(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix, ierr) bind(C, name="calc_fchange_c")
+pure subroutine calc_fchange_c(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix, ierr) bind(C, name="calc_fchange_c")
   use, intrinsic :: iso_c_binding, only : c_int, c_double
   use tox_normalization, only: calc_fchange
   implicit none
@@ -656,7 +656,7 @@ end subroutine calc_fchange_c
 !| Performs: std dev normalization, quantile normalization, replicate averaging, log2(x+1) transformation.
 !| Final result is in buf_log. If fold change is needed, call calc_fchange separately.
 
-subroutine normalization_pipeline_r(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ierr)
+pure subroutine normalization_pipeline_r(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ierr)
   use tox_normalization, only: normalization_pipeline
   use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
@@ -705,7 +705,7 @@ end subroutine normalization_pipeline_r
 !| Suitable for use with ctypes. Performs: std dev normalization, quantile normalization, replicate averaging, log2(x+1) transformation.
 !| Final result is in buf_log. If fold change is needed, call calc_fchange separately.
 
-subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ierr) bind(C, name="normalization_pipeline_c")
+pure subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ierr) bind(C, name="normalization_pipeline_c")
   use, intrinsic :: iso_c_binding, only : c_int, c_double
   use tox_normalization, only: normalization_pipeline
   implicit none
@@ -749,7 +749,7 @@ subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev
 end subroutine normalization_pipeline_c
 
 !> C-compatible wrapper for normalize_unit_length
-subroutine normalize_unit_length_c(vector, n_dims, ierr) bind(C, name="normalize_unit_length_c")
+pure subroutine normalize_unit_length_c(vector, n_dims, ierr) bind(C, name="normalize_unit_length_c")
     use tox_normalization, only: normalize_unit_length
     use, intrinsic :: iso_c_binding, only: c_int, c_double
     M_USE_NULL_VALIDATION
