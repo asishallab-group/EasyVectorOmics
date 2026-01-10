@@ -1178,10 +1178,10 @@ subroutine extract_zip_archive_generic_R(zip_filename, filename_len, ierr)
 end subroutine extract_zip_archive_generic_R
 
 !> C binding for generic archive creation with arrays of keys and filenames
-subroutine create_zip_archive_generic_c(zip_filename, zip_len, &
+subroutine create_zip_archive_c(zip_filename, zip_len, &
                                              keys, keys_len, keys_count, &
                                              filenames, filenames_len, filenames_count, &
-                                             ierr) bind(C, name="create_zip_archive_generic_c")
+                                             ierr) bind(C, name="create_zip_archive_c")
     use tox_archive, only: create_zip_archive
     use tox_conversions, only: c_char_2d_as_string, c_char_1d_as_string
     use iso_c_binding, only: c_int, c_char
@@ -1232,11 +1232,11 @@ subroutine create_zip_archive_generic_c(zip_filename, zip_len, &
     
     call create_zip_archive(f_zip_filename, f_keys, f_filenames, ierr)
     
-end subroutine create_zip_archive_generic_c
+end subroutine create_zip_archive_c
 
 !> C binding for extract_zip_archive - can be called directly from Python via ctypes
-subroutine extract_zip_archive_generic_c(zip_filename, filename_len, ierr) &
-                                bind(C, name="extract_zip_archive_generic_c")
+subroutine extract_zip_archive_c(zip_filename, filename_len, ierr) &
+                                bind(C, name="extract_zip_archive_c")
     use tox_archive, only: extract_zip_archive
     use tox_conversions, only: c_char_1d_as_string
     use tox_errors, only: set_ok, is_err
@@ -1263,4 +1263,4 @@ subroutine extract_zip_archive_generic_c(zip_filename, filename_len, ierr) &
     
     call extract_zip_archive(f_zip_filename, keys, filenames, ierr)
     
-end subroutine extract_zip_archive_generic_c
+end subroutine extract_zip_archive_c

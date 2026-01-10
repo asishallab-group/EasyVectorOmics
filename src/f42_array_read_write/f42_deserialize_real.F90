@@ -238,7 +238,7 @@ end subroutine
 !> C binding for the subroutine to deserialize a real array from a file.
 !> Deserializes an array of any dimension into a flat buffer.
 !> @note It is assumed that the array is already allocated and passed together with its size
-subroutine deserialize_real_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, name="deserialize_real_C")
+subroutine deserialize_real_nd_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, name="deserialize_real_nd_C")
     use iso_c_binding, only : c_int, c_double, c_char
     use iso_fortran_env, only: int32, real64
     use f42_deserialize_real, only : deserialize_real_flat
@@ -269,4 +269,4 @@ subroutine deserialize_real_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C,
     if (.not. is_ok(ierr)) return
 
     call deserialize_real_flat(arr, filename, ierr)
-end subroutine deserialize_real_C
+end subroutine deserialize_real_nd_C

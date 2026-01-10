@@ -229,7 +229,7 @@ end subroutine
 !> C binding for the subroutine to deserialize an integer array from a file
 !> Deserializes an array of any dimension into a flat buffer.
 !>@note It is assumed that the array is already allocated and passed together with its size
-subroutine deserialize_int_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, name="deserialize_int_C")
+subroutine deserialize_int_nd_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, name="deserialize_int_nd_C")
     use iso_c_binding, only: c_int, c_char
     use iso_fortran_env, only: int32
     use f42_deserialize_int, only : deserialize_int_flat
@@ -259,4 +259,4 @@ subroutine deserialize_int_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, 
     if (.not. is_ok(ierr)) return
 
     call deserialize_int_flat(arr, filename, ierr)
-end subroutine deserialize_int_C
+end subroutine deserialize_int_nd_C

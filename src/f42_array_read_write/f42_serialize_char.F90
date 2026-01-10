@@ -256,7 +256,7 @@ subroutine serialize_char_flat_r(raw_arr, array_size, dims, ndim, clen, filename
 
 end subroutine serialize_char_flat_r
 
-subroutine serialize_char_flat_C(raw_chars, dims, ndim, clen, filename_c, fn_len, ierr) bind(C, name="serialize_char_flat_C")
+subroutine serialize_char_nd_C(raw_chars, dims, ndim, clen, filename_c, fn_len, ierr) bind(C, name="serialize_char_nd_C")
   use iso_c_binding, only: c_char, c_int, c_null_char
   use iso_fortran_env, only: int32
   use f42_serialize_char, only: serialize_char_nd
@@ -312,4 +312,4 @@ subroutine serialize_char_flat_C(raw_chars, dims, ndim, clen, filename_c, fn_len
 
   call serialize_char_nd(flat, dims, ndim, clen, filename, ierr)
   
-end subroutine serialize_char_flat_C
+end subroutine serialize_char_nd_C

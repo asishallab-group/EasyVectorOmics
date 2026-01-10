@@ -52,7 +52,7 @@ def generate_fortran_snippets(file_pattern, ignored_files=[]):
                             multiline = continuation_char == "&"
 
                         if not multiline and multiline is not None:
-                            if is_wrapper_section:
+                            if is_wrapper_section and func_name[-1].lower() == "c":
                                 fortran_wrappers.add(func_name.lower())
                             else:
                                 call_str = "call " if def_kind == "subroutine" else "result = "
@@ -103,13 +103,16 @@ def generate_interfacing_snippets(file_pattern, lang, fortran_modules, ignored_f
                 indentation_state = "unset"
                 for line_number, line in enumerate(file, 1):
                     if line.startswith("#>"):
-                        update_interfacing_snippets(module_snippets, body, module, wrapped_func_name, description, lang, fortran_wrappers)
+                        update_interfacing_snippets(module_snippets, body, module, wrapped_func_name, description, lang, fortran_wrappers, file_name, line_number)
                         body = []
                         module, wrapped_func_name, description = get_interfacing_metadata(line, file_name, line_number)
-                        if module not in fortran_modules:
-                            raise error_in_line(f"Unknown module '{module}'", file_name, line_number)
+                        if not module.endswith(":helper"):
+                            if module.lower() not in fortran_modules:
+                                raise error_in_line(f"Unknown module '{module}'", file_name, line_number)
+                            if wrapped_func_name.lower() not in fortran_wrappers:
+                                raise error_in_line(f"Unknown interfacing subroutine '{wrapped_func_name}' for module '{module}'", file_name, line_number, "(Could also be duplicate)")
                         module_snippets = get_module_snippets(module, f42_snippets, tox_snippets)
-                        indentation = "unset"
+                        indentation_state = "unset"
                     elif module is not None:
                         # treat line as body (without line break)
                         body.append(line[:-1])
@@ -125,7 +128,7 @@ def generate_interfacing_snippets(file_pattern, lang, fortran_modules, ignored_f
                             elif indentation_state == "indented":
                                 indentation_state = "unindented"
 
-                update_interfacing_snippets(module_snippets, body, module, wrapped_func_name, description, lang)
+                update_interfacing_snippets(module_snippets, body, module, wrapped_func_name, description, lang, fortran_wrappers, file_name, line_number)
 
     if lang == "Python" and len(fortran_wrappers) > 0:
         raise RuntimeError(f"Missing Python wrappers for: {", ".join(fortran_wrappers)}")
@@ -152,24 +155,38 @@ def error_in_line(msg, file_name, line_number, post_msg=None):
 
 def get_interfacing_metadata(initial_line, file_name, line_number):
     metadata = re.search(r"^#> *(?P<module>[a-z_1-9A-Z]+):(?P<wrapped_func_name>[a-z_1-9A-Z]+):(?P<description>.*)", initial_line)
-    if metadata is None:
-        error_in_line("Invalid snippet header", file_name, line_number, "Should match pattern: '#> <fortran_module_name>:<fortran_subroutine_name>:<description>'")
-    return metadata.groups()
+    if metadata is not None:
+        return metadata.groups()
+
+    metadata = re.search(r"^#> (?P<kind>f42|tox)_helper:(?P<description>.*)", initial_line)
+    if metadata is not None:
+        return f"{metadata.group("kind")}:helper", None, metadata.group("description")
+
+    error_in_line("Invalid snippet header", file_name, line_number, "Should match pattern: '#> <fortran_module_name>:<fortran_subroutine_name>:<description>' OR '#> [tox|f42]_helper:<description>' ")
 
 
-def update_interfacing_snippets(snippets, body, module, wrapped_func_name, description, lang, fortran_wrappers):
+def update_interfacing_snippets(snippets, body, module, wrapped_func_name, description, lang, fortran_wrappers, file_name, line_number):
     if module is not None:
-        if lang == "Python":
-            fortran_wrappers.discard(wrapped_func_name.lower())
         func_name, args = get_interfacing_function_definition(body, lang)
+        if module.endswith(":helper"):
+            wrapped_func_name = func_name
+        elif lang == "Python":
+            fortran_wrappers.discard(wrapped_func_name.lower())
         snippets.update(generate_definition_snippet(body, description, module, wrapped_func_name, lang, snippets["_kind"]))
         snippets.update(generate_interfacing_call_snippet(func_name, module, wrapped_func_name, args, lang, snippets["_kind"]))
 
 
 def generate_definition_snippet(body, description, module, wrapped_func_name, lang, snippet_kind):
+    if module.endswith(":helper"):
+        key = f"{lang} Helper function '{wrapped_func_name}'"
+        prefix = f"{snippet_kind}:{lang[:2].lower()}_helper_{wrapped_func_name}"
+    else:
+        key = f"{lang} setup for '{wrapped_func_name}' from module '{module}'"
+        prefix = f"{snippet_kind}:{lang[:2].lower()}_setup_{wrapped_func_name}"
+
     return {
-        f"{lang} setup for '{wrapped_func_name}' from module '{module}'": {
-            "prefix": f"{snippet_kind}:{lang[:2].lower()}_setup_{wrapped_func_name}",
+        key: {
+            "prefix": prefix,
             "body": body,
             "description": description
         }
@@ -189,12 +206,17 @@ def generate_interfacing_call_snippet(func_name, module, wrapped_func_name, args
         case _:
             raise ValueError(f"Unsupported interfacing language: {lang}")
 
+    if module.endswith(":helper"):
+        description = f"Call of {lang} helper '{wrapped_func_name}'"
+    else:
+        description = f"Call of {lang} wrapper for '{wrapped_func_name}' from module '{module}'"
+
     arg_list_string = arg_list_to_string(args)
     return {
         f"{lang} call of '{func_name}'": {
             "prefix": f"{snippet_kind}:{lang[:2].lower()}_{func_name}",
             "body": f"result {assignment_operator} {func_name}({arg_list_string})",
-            "description": f"Call of {lang} wrapper for '{wrapped_func_name}' from module '{module}'"
+            "description": description
         }
     }
 

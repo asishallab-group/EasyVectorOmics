@@ -344,7 +344,7 @@ end subroutine compute_contributions_c
 !> C-compatible wrapper for [[tox_trajectory_contribution_analysis(module):compute_baselines_factor_dependent(subroutine)]]
 subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints, mode, &
                                                factor_baseline, dependent_baseline, ierr) &
-    bind(C, name="tox_compute_baselines_factor_dependent")
+    bind(C, name="tox_compute_baselines_factor_dependent_c")
 
     use tox_trajectory_contribution_analysis, only: compute_baselines_factor_dependent, get_baseline_mode
     use, intrinsic :: iso_fortran_env, only: int32

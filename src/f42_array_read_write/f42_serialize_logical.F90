@@ -223,7 +223,7 @@ subroutine serialize_logical_flat_r(arr, array_size, dims, ndim, filename_raw, f
   end do
 
   call serialize_logical_nd(arr(1:total_len), dims(1:ndim), ndim, filename, ierr)
-end subroutine
+end subroutine serialize_logical_flat_r
 
 !> C binding for the subroutine to serialize a flat logical array to a binary file.
 subroutine serialize_logical_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) bind(C, name="serialize_logical_nd_C")
@@ -264,4 +264,4 @@ subroutine serialize_logical_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) b
 
   ! save
   call serialize_logical_nd(tmp_arr, dims, ndim, filename, ierr)
-end subroutine
+end subroutine serialize_logical_nd_C

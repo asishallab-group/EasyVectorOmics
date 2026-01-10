@@ -228,7 +228,7 @@ end subroutine
 !> C binding for the subroutine to deserialize a logical array from a file.
 !> Deserializes an array of any dimension into a flat buffer.
 !>@note It is assumed that the array is already allocated and passed together with its size
-subroutine deserialize_logical_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, name="deserialize_logical_C")
+subroutine deserialize_logical_nd_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, name="deserialize_logical_nd_C")
     use iso_c_binding, only: c_int, c_char
     use tox_conversions, only: logical_as_c_int
     use iso_fortran_env, only: int32
@@ -265,4 +265,4 @@ subroutine deserialize_logical_C(arr, arr_size, filename_raw, fn_len, ierr) bind
     if (.not. is_ok(ierr)) return
 
     call logical_as_c_int(temp_arr, arr)
-end subroutine deserialize_logical_C
+end subroutine deserialize_logical_nd_C

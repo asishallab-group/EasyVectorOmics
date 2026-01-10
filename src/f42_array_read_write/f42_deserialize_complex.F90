@@ -228,7 +228,7 @@ end subroutine
 !> C binding for the subroutine to deserialize a complex array from a file.
 !> The array is read into a flat buffer and reshaped in the calling language.
 !>@note It is assumed that the array is already allocated and passed together with its size
-subroutine deserialize_complex_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, name="deserialize_complex_C")
+subroutine deserialize_complex_nd_C(arr, arr_size, filename_raw, fn_len, ierr) bind(C, name="deserialize_complex_nd_C")
     use iso_c_binding, only: c_int, c_char
     use iso_fortran_env, only: int32, real64
     use f42_deserialize_complex, only : deserialize_complex_flat
@@ -258,4 +258,4 @@ subroutine deserialize_complex_C(arr, arr_size, filename_raw, fn_len, ierr) bind
     if (.not. is_ok(ierr)) return
 
     call deserialize_complex_flat(arr, filename, ierr)
-end subroutine deserialize_complex_C
+end subroutine deserialize_complex_nd_C

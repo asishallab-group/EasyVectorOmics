@@ -224,7 +224,7 @@ subroutine serialize_int_flat_r(arr, array_size, dims, ndim, filename_raw, fn_le
   end do
 
   call serialize_int_nd(arr(1:total_len), dims(1:ndim), ndim, filename, ierr)
-end subroutine
+end subroutine serialize_int_flat_r
 
 !> C binding for the subroutine to serialize a flat integer array to a binary file.
 subroutine serialize_int_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) bind(C, name="serialize_int_nd_C")
@@ -258,4 +258,4 @@ subroutine serialize_int_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) bind(
   if (.not. is_ok(ierr)) return
   ! save
   call serialize_int_nd(arr, dims, ndim, filename, ierr)
-end subroutine
+end subroutine serialize_int_nd_C

@@ -273,8 +273,8 @@ end subroutine deserialize_char_flat_r
 !> C binding for the subroutine to deserialize a flat character array from a file.
 !> Deserializes the array into a flat buffer.
 !> @note The array is returned flat and needs to be reshaped in C/python
-subroutine deserialize_char_flat_C(raw_chars, clen, total_array_size, &
-                                   filename_c, fn_len, ierr) bind(C, name="deserialize_char_flat_C")
+subroutine deserialize_char_nd_C(raw_chars, clen, total_array_size, &
+                                   filename_c, fn_len, ierr) bind(C, name="deserialize_char_nd_C")
   use iso_c_binding, only: c_char, c_int, c_null_char
   use iso_fortran_env, only: int32
   use f42_deserialize_char, only: deserialize_char_flat
@@ -333,4 +333,4 @@ subroutine deserialize_char_flat_C(raw_chars, clen, total_array_size, &
   end do
 
   deallocate(flat)
-end subroutine deserialize_char_flat_C
+end subroutine deserialize_char_nd_C

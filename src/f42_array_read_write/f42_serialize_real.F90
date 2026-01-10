@@ -226,7 +226,7 @@ subroutine serialize_real_flat_r(arr, array_size, dims, ndim, filename_raw, fn_l
   end do
 
   call serialize_real_nd(arr(1:total_len), dims(1:ndim), ndim, filename, ierr)
-end subroutine
+end subroutine serialize_real_flat_r
 
 subroutine serialize_real_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) bind(C, name="serialize_real_nd_C")
   use iso_c_binding, only: c_int, c_double, c_char
@@ -257,4 +257,4 @@ subroutine serialize_real_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) bind
   if(.not. is_ok(ierr)) return
   ! save
   call serialize_real_nd(arr, dims, ndim, filename, ierr)
-end subroutine
+end subroutine serialize_real_nd_C
