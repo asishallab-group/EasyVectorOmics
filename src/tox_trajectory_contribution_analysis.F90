@@ -227,7 +227,7 @@ contains
 
 !> Compute velocity trajectories from position trajectories
 
-subroutine compute_velocity_trajectories(trajectories, velocity, &
+pure subroutine compute_velocity_trajectories(trajectories, velocity, &
                                          n_samples, n_timepoints, n_variables, ierr)
 
     integer(int32), intent(in)  :: n_samples, n_timepoints, n_variables
@@ -257,7 +257,7 @@ if (n_timepoints <= 1) return
 end subroutine compute_velocity_trajectories
 
 !> Compute acceleration trajectories from velocity trajectories
-subroutine compute_acceleration_from_velocity(velocity, acceleration, &
+pure subroutine compute_acceleration_from_velocity(velocity, acceleration, &
                                               n_samples, n_timepoints, n_variables, ierr)
 
     integer(int32), intent(in)  :: n_samples, n_timepoints, n_variables
@@ -287,7 +287,7 @@ subroutine compute_acceleration_from_velocity(velocity, acceleration, &
 end subroutine compute_acceleration_from_velocity
 
 !> Compute velocity and acceleration contributions for all variable pairs in the trajectories
-subroutine compute_velocity_acceleration_contributions(trajectories, n_samples, n_timepoints, n_variables, mode, velocity, acceleration, &
+pure subroutine compute_velocity_acceleration_contributions(trajectories, n_samples, n_timepoints, n_variables, mode, velocity, acceleration, &
     factor_velocity, dependent_velocity, velocity_contributions, &
     factor_acceleration, dependent_acceleration, acceleration_contributions, &
     C_velocity, velocity_contribution_series, &
