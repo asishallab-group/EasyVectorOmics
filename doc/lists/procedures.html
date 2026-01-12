@@ -582,6 +582,19 @@ Calls compute_family_scaling_alloc with standard Fortran types for R interface.
 This is the recommended version for most users as it handles memory allocation automatically.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/compute_p_values.html'>compute_p_values</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Once the permutation tests are calculated (<a href="../proc/perform_permutation_test.html">perform_permutation_test</a>),
+this subroutine calculates the p values for the contributions, i.e. how many of the permutation contributions were at least as high as the real contributions.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_p_values_c.html'>compute_p_values_c</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../proc/compute_p_values.html">compute_p_values</a></p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/compute_rdi.html'>compute_rdi</a></td>
                  <td><a href='../module/tox_get_outliers.html'>tox_get_outliers</a></td>
                  <td>Subroutine</td>
@@ -1356,6 +1369,12 @@ Calls identify_outliers with C-compatible types for external interface.</p></td>
 Calls identify_outliers with standard Fortran types for R interface.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/init_random.html'>init_random</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Initialize Fortran's random number generator</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/int32_as_c_int64.html'>int32_as_c_int64</a></td>
                  <td><a href='../module/tox_conversions.html'>tox_conversions</a></td>
                  <td>Subroutine</td>
@@ -1698,6 +1717,18 @@ Provides an interface for R (.Fortran) and Fortran code to call the normalizatio
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/perform_permutation_test.html'>perform_permutation_test</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>For a given factor-dependent pair, this subroutine calculates the contributions by taking the same dependent but from a random different sample.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/perform_permutation_test_c.html'>perform_permutation_test_c</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../proc/perform_permutation_test.html">perform_permutation_test</a></p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/post_merge_distances_helper.html'>post_merge_distances_helper</a></td>
                  <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
                  <td>Subroutine</td>
@@ -1756,6 +1787,12 @@ Sorts indirectly using the permutation vector <code>perm</code>. Manual stack re
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Function</td>
                  <td><p>Returns the given degrees in positive radian value (-90deg -&gt; 3*PI/2, not -PI/2)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/rand_range.html'>rand_range</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Function</td>
+                 <td><p>Returns a random real number <code>min &lt;= rand_num &lt; max</code>. If <code>min &gt; max</code>, it will be <code>max &lt;= rand_num &lt; min</code>. If <code>min == max</code>, it will be <code>min</code>.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/read_expression_vectors_tsv.html'>read_expression_vectors_tsv</a></td>
@@ -1930,6 +1967,12 @@ Wrapper for single RAP-projected expression vectors</p></td>
                  <td><a href='../module/tox_archive.html'>tox_archive</a></td>
                  <td>Subroutine</td>
                  <td><p>Save standard tox data</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/select_random_sample_helper.html'>select_random_sample_helper</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Selects a random sample different to <code>current_sample</code>. For reproducibility call <a href="../proc/init_random.html">init_random</a> beforehand.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/serialize_char_1d.html'>serialize_char_1d</a></td>
@@ -2597,14 +2640,14 @@ Converts integer mask to logical and calls which.</p></td>
           <div class="col">
             <p>
               TensorOmics
- was developed by TensorOmics Developers<br>              &copy; 2025 
+ was developed by TensorOmics Developers<br>              &copy; 2026 
 </p>
           </div>
           <div class="col">
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-12-15 09:15 +0000"             </p>
+ on "2026-01-12 06:38 +0000"             </p>
           </div>
         </div>
         <br>
