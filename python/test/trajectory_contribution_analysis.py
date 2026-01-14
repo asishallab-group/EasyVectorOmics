@@ -1,4 +1,3 @@
-
 """
 Test script for clock hand angle functions
 Python equivalent of the R and Fortran clock hand angle tests
@@ -15,16 +14,18 @@ from tensoromics_functions import (
     tox_compute_contributions,
     tox_compute_all_contributions,
     tox_compute_baselines_factor_dependent,
+    tox_perform_permutation_test,
+    tox_compute_p_values,
     tox_compute_velocity_trajectories,
     tox_compute_acceleration_from_velocity,
     tox_compute_velocity_acceleration_contributions,
-    tox_compute_velocity_acceleration_contributions_expert,
+    tox_compute_velocity_acceleration_contributions_expert
 )
 
 
 # Constants
-MODE_NORMAL = 1
 TOL = 1e-12
+
 
 def _expected_velocity(trajectories: np.ndarray) -> np.ndarray:
     trajectories = np.asarray(trajectories, dtype=np.float64)
@@ -89,14 +90,13 @@ def test_tox_compute_acceleration_from_velocity():
 
 
 def test_tox_compute_velocity_acceleration_contributions():
-    
     """Test velocity and acceleration contribution computation wrapper."""
     trajectories = np.array(
         [[[1.0, 3.0, 6.0, 10.0],
           [1.0, 2.0, 2.0, 1.0]]],
         dtype=np.float64,
     )
-    mode = MODE_NORMAL
+    mode = "raw"
 
     result = tox_compute_velocity_acceleration_contributions(trajectories, mode)
 
@@ -148,8 +148,8 @@ def test_tox_compute_velocity_acceleration_contributions_expert():
          [2.0, 4.0, 6.0, 8.0]]
     ], dtype=np.float64)
 
-    result_base = tox_compute_velocity_acceleration_contributions(trajectories, MODE_NORMAL)
-    result_expert = tox_compute_velocity_acceleration_contributions_expert(trajectories, MODE_NORMAL)
+    result_base = tox_compute_velocity_acceleration_contributions(trajectories, "raw")
+    result_expert = tox_compute_velocity_acceleration_contributions_expert(trajectories, "raw")
 
     for key in result_base:
         assert key in result_expert, f"Missing key {key} in expert result"
@@ -157,6 +157,7 @@ def test_tox_compute_velocity_acceleration_contributions_expert():
         assert np.allclose(result_base[key], result_expert[key], atol=TOL)
 
     print("✅ tox_compute_velocity_acceleration_contributions_expert passed.")
+
 
 def test_tox_compute_baselines_factor_dependent():
     """Test baseline computation wrapper across all supported modes and error cases."""
@@ -281,6 +282,122 @@ def test_compute_all_contributions():
     print("✅ Compute all contributions test passed.")
 
 
+def test_perform_permutation_test():
+    # -------------------------------
+    # Setup synthetic trajectories
+    # -------------------------------
+    n_factors, n_samples, n_timepoints = 2, 3, 3
+    n_permutations = 3
+
+    trajectories = np.empty((n_factors, n_samples, n_timepoints), dtype=np.float64, order="F")
+
+    # Factor 1 values across samples/timepoints
+    trajectories[0,0,:] = [1.0, 2.0, 3.0]
+    trajectories[0,1,:] = [2.0, 4.0, 6.0]
+    trajectories[0,2,:] = [3.0, 6.0, 9.0]
+
+    # Dependent 2 values across samples/timepoints
+    trajectories[1,0,:] = [4.0, 5.0, 6.0]
+    trajectories[1,1,:] = [1.0, 3.0, 5.0]
+    trajectories[1,2,:] = [2.0, 4.0, 6.0]
+
+    factor_idx    = 1   # Fortran-style 1-based
+    dependent_idx = 2
+    sample_idx    = 1
+    mode          = "mean"   # MEAN baseline
+
+    # -------------------------------
+    # Call wrapper with fixed seed
+    # -------------------------------
+    result = tox_perform_permutation_test(
+        trajectories,
+        factor_idx=factor_idx,
+        dependent_idx=dependent_idx,
+        sample_idx=sample_idx,
+        mode=mode,
+        n_permutations=n_permutations,
+        random_seed=12345
+    )
+
+    local, total = result.values()
+
+    # -------------------------------
+    # Expected values for one known permutation
+    # -------------------------------
+    # Factor trajectory (sample 1): [1,2,3], mean=2.0
+    # Suppose RNG picks dependent sample 2: [1,3,5], mean=3.0
+    expected_local = np.array([
+        (1.0-2.0)*(1.0-3.0),   # 2.0
+        (2.0-2.0)*(3.0-3.0),   # 0.0
+        (3.0-2.0)*(5.0-3.0)    # 2.0
+    ], dtype=np.float64, order="F")
+    expected_total = expected_local.sum()  # 4.0
+
+    # -------------------------------
+    # Assertions
+    # -------------------------------
+    # With fixed seed, first permutation is reproducible → check against sample 2
+    assert np.allclose(local[:,0], expected_local, atol=TOL), "Permutation 1 local contributions mismatch"
+    assert abs(total[0] - expected_total) < TOL, "Permutation 1 total contribution mismatch"
+
+    # For permutations 2 and 3, RNG may pick sample 2 or 3.
+    # We assert that totals are finite and contributions are not all zero.
+    assert np.all(np.isfinite(total)), "Permutation totals must be finite"
+    assert not np.allclose(local, 0.0, atol=TOL), "Local contributions should not all be zero"
+
+    print("✅ Permutation test test passed.")
+
+
+def test_compute_p_values():
+    # -------------------------------
+    # Case 1: Valid inputs
+    # -------------------------------
+    n_timepoints, n_permutations = 3, 4
+    local_obs = np.array([2.0, 0.0, 2.0], dtype=np.float64, order="F")
+    total_obs = 4.0
+
+    local_perm = np.empty((n_timepoints, n_permutations), dtype=np.float64, order="F")
+    total_perm = np.empty(n_permutations, dtype=np.float64, order="F")
+
+    local_perm[:,0] = [1.0, 0.0, 1.0]; total_perm[0] = 2.0
+    local_perm[:,1] = [2.0, 0.0, 2.0]; total_perm[1] = 4.0
+    local_perm[:,2] = [3.0, 1.0, 3.0]; total_perm[2] = 7.0
+    local_perm[:,3] = [0.0, 0.0, 0.0]; total_perm[3] = 0.0
+
+    result = tox_compute_p_values(local_obs, total_obs, local_perm, total_perm)
+    local_p = result["local_p_values"]
+    total_p = result["total_p_value"]
+
+    expected_local = np.array([0.5, 1.0, 0.5], dtype=np.float64)
+    expected_total = 0.5
+
+    assert np.allclose(local_p, expected_local, atol=TOL), "Valid local p-values mismatch"
+    assert abs(total_p - expected_total) < TOL, "Valid total p-value mismatch"
+
+    # -------------------------------
+    # Case 2: NaN in observed contributions
+    # -------------------------------
+    local_obs_nan = np.array([2.0, 0.0, np.nan], dtype=np.float64, order="F")
+    try:
+        tox_compute_p_values(local_obs_nan, total_obs, local_perm, total_perm)
+        raise AssertionError("Expected RuntimeError for NaN input")
+    except RuntimeError:
+        pass  # Expected error
+
+    # -------------------------------
+    # Case 3: Inf in permutation contributions
+    # -------------------------------
+    local_perm_inf = local_perm.copy(order="F")
+    local_perm_inf[2,3] = np.inf
+    try:
+        tox_compute_p_values(local_obs, total_obs, local_perm_inf, total_perm)
+        raise AssertionError("Expected RuntimeError for Infinity input")
+    except RuntimeError:
+        pass  # Expected error
+
+    print("✅ Compute p values test passed.")
+
+
 def main():
     print("=================================================")
     print("    TRAJECTORY CONTRIBUTION ANALYSIS PYTHON INTERFACE TESTS")
@@ -290,6 +407,8 @@ def main():
     test_tox_compute_baselines_factor_dependent()
     test_compute_contributions()
     test_compute_all_contributions()
+    test_perform_permutation_test()
+    test_compute_p_values()
     test_tox_compute_velocity_trajectories()
     test_tox_compute_acceleration_from_velocity()
     test_tox_compute_velocity_acceleration_contributions()

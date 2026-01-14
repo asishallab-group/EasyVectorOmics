@@ -10,7 +10,7 @@
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>trajectory_contribution &ndash; TensorOmics</title>
+    <title>compute_p_values_c &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -77,7 +77,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>trajectory_contribution
+    <h1>compute_p_values_c
       <small>Subroutine</small>
       
     </h1>
@@ -88,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.4% of total for procedures.">37 statements</a>
+                 title=" 0.5% of total for procedures.">49 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -101,8 +101,7 @@
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
                 <li class="breadcrumb-item"><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></li>
-                <li class="breadcrumb-item"><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></li>
-            <li class="breadcrumb-item active" aria-current="page">trajectory_contribution</li>
+            <li class="breadcrumb-item active" aria-current="page">compute_p_values_c</li>
           </ol>
         </nav>
       </div>
@@ -149,17 +148,25 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public pure subroutine trajectory_contribution(factor, dependent, n_timepoints, mode, contribution, ierr)  
+    <h2>pure subroutine compute_p_values_c(local_contributions_observed, total_contribution_observed, local_contributions_perm, total_contributions_perm, n_timepoints, n_permutations, local_p_values, total_p_value, ierr) bind(C, name="compute_p_values_c")  
 </h2>
-    
+        <div class="card mb-4">
+      <h3 class="card-header card-title bg-light">Uses</h3>
+      <div class="card-body">
+        <ul class="list-group list-group-flush">
+            <li class="list-group-item">
+              <ul class="list-inline">
+                  <li class="list-inline-item"><a href='../module/tox_errors.html'>tox_errors</a></li>
+                  <li class="list-inline-item"><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
+              </ul>
+            </li>
+        </ul>
+      </div>
+    </div>
 
-    <p>Calculates trajectory contribution using cosine similarity
-<script type="math/tex; mode=display"> contribution = \frac{factor \cdot dependent}{\left \Vert factor \right \Vert \cdot \left \Vert dependent \right \Vert} </script>
-There are two modes:</p>
-<ol>
-<li><strong>Normal Mode</strong>: meant for normal vectors, it returns the cosine similarity</li>
-<li><strong>RAP Mode</strong>: meant for RAP projected vectors, it focusses only on angular similarity and returns the <code>arccos</code> of the cosine similarity</li>
-</ol>
+
+    <p>C-compatible wrapper for <a href="../proc/compute_p_values.html">compute_p_values</a></p>
 
 
     <h3>Arguments</h3>
@@ -175,109 +182,137 @@ There are two modes:</p>
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-factor"></span>
-              real(kind=real64),
+              <span class="anchor" id="variable-local_contributions_observed~2"></span>
+              real(kind=c_double),
             </td>
 <td>intent(in),</td>
               <td></td>            <td>
-              dimension(n_timepoints)
+              dimension(n_timepoints), target
             </td>
             <td>::</td>
-            <td><strong>factor</strong></td>
+            <td><strong>local_contributions_observed</strong></td>
             <td>
-                <p>Vector of independent variable that contributes to <code>dependent</code></p>
+                <p>observed local contributions</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dependent"></span>
-              real(kind=real64),
+              <span class="anchor" id="variable-total_contribution_observed~2"></span>
+              real(kind=c_double),
             </td>
 <td>intent(in),</td>
               <td></td>            <td>
-              dimension(n_timepoints)
+              target
             </td>
             <td>::</td>
-            <td><strong>dependent</strong></td>
+            <td><strong>total_contribution_observed</strong></td>
             <td>
-                <p>Vector of dependent variable</p>
+                <p>observed total contribution</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_timepoints~7"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-local_contributions_perm~2"></span>
+              real(kind=c_double),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              dimension(n_timepoints, n_permutations), target
+            </td>
+            <td>::</td>
+            <td><strong>local_contributions_perm</strong></td>
+            <td>
+                <p>permutation local contributions</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_contributions_perm~2"></span>
+              real(kind=c_double),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              dimension(n_permutations), target
+            </td>
+            <td>::</td>
+            <td><strong>total_contributions_perm</strong></td>
+            <td>
+                <p>permutation total contributions</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_timepoints~15"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              target
             </td>
             <td>::</td>
             <td><strong>n_timepoints</strong></td>
             <td>
-                <p>Number of timepoints included in <code>factor</code> and <code>dependent</code></p>
+                <p>number of timepoints</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mode~3"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-n_permutations~4"></span>
+              integer(kind=c_int),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              target
             </td>
             <td>::</td>
-            <td><strong>mode</strong></td>
+            <td><strong>n_permutations</strong></td>
             <td>
-                <table>
-<thead>
-<tr>
-<th>Mode</th>
-<th>Value</th>
-</tr>
-</thead>
-<tbody>
-<tr>
-<td>Normal</td>
-<td>1</td>
-</tr>
-<tr>
-<td>RAP</td>
-<td>2</td>
-</tr>
-</tbody>
-</table>
+                <p>number of permutations</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-contribution"></span>
-              real(kind=real64),
+              <span class="anchor" id="variable-local_p_values~2"></span>
+              real(kind=c_double),
             </td>
-<td>intent(out)</td>
+<td>intent(out),</td>
               <td></td>            <td>
-              
+              dimension(n_timepoints), target
             </td>
             <td>::</td>
-            <td><strong>contribution</strong></td>
+            <td><strong>local_p_values</strong></td>
             <td>
-                <p>Contribution value</p>
+                <p>output local p-values</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~118"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-total_p_value~2"></span>
+              real(kind=c_double),
             </td>
-<td>intent(out)</td>
+<td>intent(out),</td>
               <td></td>            <td>
-              
+              target
+            </td>
+            <td>::</td>
+            <td><strong>total_p_value</strong></td>
+            <td>
+                <p>output total p-value</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~309"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              target
             </td>
             <td>::</td>
             <td><strong>ierr</strong></td>
             <td>
-                <p>Error code</p>
+                <p>error code</p>
             </td>
         </tr>
     </tbody>
@@ -307,14 +342,14 @@ There are two modes:</p>
           <div class="col">
             <p>
               TensorOmics
- was developed by TensorOmics Developers<br>              &copy; 2025 
+ was developed by TensorOmics Developers<br>              &copy; 2026 
 </p>
           </div>
           <div class="col">
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-12-11 11:30 +0000"             </p>
+ on "2026-01-12 06:38 +0000"             </p>
           </div>
         </div>
         <br>

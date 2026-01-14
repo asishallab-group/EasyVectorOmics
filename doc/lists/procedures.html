@@ -255,30 +255,6 @@ Push right and left intervals onto stack</p></td>
                  <td><p>Converts c_size_t to int32, elemental -&gt; any shape</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/calc_contributions.html'>calc_contributions</a></td>
-                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Calculates both spike and integrated contributions for a given factor against a dependent variable</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/calc_contributions_alloc.html'>calc_contributions_alloc</a></td>
-                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Calculates both spike and integrated contributions for a given factor against a dependent variable</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/calc_contributions_c.html'>calc_contributions_c</a></td>
-                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Calculates both spike and integrated contributions for a given factor against a dependent variable</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/calc_contributions_expert_c.html'>calc_contributions_expert_c</a></td>
-                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Calculates both spike and integrated contributions for a given factor against a dependent variable</p></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/calc_fchange.html'>calc_fchange</a></td>
                  <td><a href='../module/tox_normalization.html'>tox_normalization</a></td>
                  <td>Subroutine</td>
@@ -482,6 +458,18 @@ This measures both magnitude and directionality of angular separation in RAP spa
                  <td><p>Performs k-means clustering on factor trajectories, so factor evolution over time</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/compute_all_contributions.html'>compute_all_contributions</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>This routine performs contribution analysis for every selected factor–dependent pair</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_all_contributions_c.html'>compute_all_contributions_c</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../proc/compute_all_contributions.html">compute_all_contributions</a></p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/compute_baselines_factor_dependent.html'>compute_baselines_factor_dependent</a></td>
                  <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
                  <td>Subroutine</td>
@@ -491,7 +479,25 @@ This measures both magnitude and directionality of angular separation in RAP spa
                  <td><a href='../proc/compute_baselines_factor_dependent_c.html'>compute_baselines_factor_dependent_c</a></td>
                  <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
                  <td>Subroutine</td>
-                 <td><p>Call Fortran subroutine directly (no type conversion needed)</p></td>
+                 <td><p>C-compatible wrapper for <a href="../proc/compute_baselines_factor_dependent.html">compute_baselines_factor_dependent</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_contributions.html'>compute_contributions</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>This routine performs contribution analysis for a specific factor–dependent pair, including input validation</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_contributions_c.html'>compute_contributions_c</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../proc/compute_contributions.html">compute_contributions</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_contributions_helper.html'>compute_contributions_helper</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>This routine performs contribution analysis for a specific factor–dependent pair, no input validation</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/compute_edf.html'>compute_edf</a></td>
@@ -574,6 +580,19 @@ This version requires pre-allocated work arrays for maximum performance and cont
                  <td><p>R wrapper for compute_family_scaling (main version with automatic allocation).
 Calls compute_family_scaling_alloc with standard Fortran types for R interface.
 This is the recommended version for most users as it handles memory allocation automatically.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_p_values.html'>compute_p_values</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Once the permutation tests are calculated (<a href="../proc/perform_permutation_test.html">perform_permutation_test</a>),
+this subroutine calculates the p values for the contributions, i.e. how many of the permutation contributions were at least as high as the real contributions.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_p_values_c.html'>compute_p_values_c</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../proc/compute_p_values.html">compute_p_values</a></p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/compute_rdi.html'>compute_rdi</a></td>
@@ -1169,6 +1188,12 @@ others will be added to the work array, either as new active subset that will be
                  <td><p>Subroutine to get the dimensions of an array file</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/get_baseline_mode.html'>get_baseline_mode</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Helper to map baseline mode string ("min", "mean", "raw") to integer constant</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/get_cluster_data_linkage_helper.html'>get_cluster_data_linkage_helper</a></td>
                  <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
                  <td>Subroutine</td>
@@ -1234,18 +1259,6 @@ by using the self-distance as indicator in which iteration the cluster was merge
                  <td><a href='../module/tox_data_tools.html'>tox_data_tools</a></td>
                  <td>Subroutine</td>
                  <td><p>Helper to create a mask of genes that are unassigned</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/get_vec_across_samples.html'>get_vec_across_samples</a></td>
-                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Accessor routine to extract sample data for a specific factor and timepoint</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/get_vec_across_timepoints.html'>get_vec_across_timepoints</a></td>
-                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Accessor routine to extract timepoint data for a specific factor and sample</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/get_zip_entry_name.html'>get_zip_entry_name</a></td>
@@ -1354,6 +1367,12 @@ Calls identify_outliers with C-compatible types for external interface.</p></td>
                  <td>Subroutine</td>
                  <td><p>R wrapper for identify_outliers.
 Calls identify_outliers with standard Fortran types for R interface.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/init_random.html'>init_random</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Initialize Fortran's random number generator</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/int32_as_c_int64.html'>int32_as_c_int64</a></td>
@@ -1698,36 +1717,22 @@ Provides an interface for R (.Fortran) and Fortran code to call the normalizatio
                  <td></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/perform_permutation_test.html'>perform_permutation_test</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>For a given factor-dependent pair, this subroutine calculates the contributions by taking the same dependent but from a random different sample.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/perform_permutation_test_c.html'>perform_permutation_test_c</a></td>
+                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../proc/perform_permutation_test.html">perform_permutation_test</a></p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/post_merge_distances_helper.html'>post_merge_distances_helper</a></td>
                  <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
                  <td>Subroutine</td>
                  <td><p>Helper for doing last updates after merge: disable merged cluster, update self-distance to current iteration</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/process_trajectories_alloc.html'>process_trajectories_alloc</a></td>
-                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Process trajectories with one percentile per timepoint for spike contributions.
-This subroutine uses multiple allocations. If you want to avoid this, you need to do the full pipeline manually step-by-step.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/process_trajectories_c.html'>process_trajectories_C</a></td>
-                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
-                 <td>Subroutine</td>
-                 <td><p>C wrapper for process_trajectories_alloc</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/process_trajectories_flat_alloc.html'>process_trajectories_flat_alloc</a></td>
-                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Process trajectories with global percentile for spike contributions (flattened)
-This subroutine uses multiple allocations. If you want to avoid this, you need to do the full pipeline manually step-by-step.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/process_trajectories_flat_c.html'>process_trajectories_flat_C</a></td>
-                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
-                 <td>Subroutine</td>
-                 <td><p>C wrapper for process_trajectories_flat_alloc</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/project_selected_vecs_onto_rap.html'>project_selected_vecs_onto_rap</a></td>
@@ -1782,6 +1787,12 @@ Sorts indirectly using the permutation vector <code>perm</code>. Manual stack re
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Function</td>
                  <td><p>Returns the given degrees in positive radian value (-90deg -&gt; 3*PI/2, not -PI/2)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/rand_range.html'>rand_range</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Function</td>
+                 <td><p>Returns a random real number <code>min &lt;= rand_num &lt; max</code>. If <code>min &gt; max</code>, it will be <code>max &lt;= rand_num &lt; min</code>. If <code>min == max</code>, it will be <code>min</code>.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/read_expression_vectors_tsv.html'>read_expression_vectors_tsv</a></td>
@@ -1956,6 +1967,12 @@ Wrapper for single RAP-projected expression vectors</p></td>
                  <td><a href='../module/tox_archive.html'>tox_archive</a></td>
                  <td>Subroutine</td>
                  <td><p>Save standard tox data</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/select_random_sample_helper.html'>select_random_sample_helper</a></td>
+                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Selects a random sample different to <code>current_sample</code>. For reproducibility call <a href="../proc/init_random.html">init_random</a> beforehand.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/serialize_char_1d.html'>serialize_char_1d</a></td>
@@ -2300,28 +2317,6 @@ Creates a sorted version of the array by reordering the <code>perm</code> vector
 Creates a sorted version of the array by reordering the <code>perm</code> vector. The original data in <code>array</code> remains unchanged.</p></td>
                </tr>
 			   <tr>
-                 <td><a href='../proc/spike_contribution.html'>spike_contribution</a></td>
-                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Calculates spike contributions using cosine similarity for specific indices
-<script type="math/tex; mode=display"> contributions(i) =
-        \frac{factor(i) \cdot dependent(i)}
-             {\left \Vert factor \right \Vert \cdot \left \Vert dependent \right \Vert}
-        \; | \; 1 \le i \le n\_timepoints </script>
-There are two modes:</p><a href="../proc/spike_contribution.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/spike_contribution_c.html'>spike_contribution_c</a></td>
-                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Calculates spike contributions using cosine similarity for specific indices
-<script type="math/tex; mode=display"> contributions(i) =
-        \frac{factor(i) \cdot dependent(i)}
-             {\left \Vert factor \right \Vert \cdot \left \Vert dependent \right \Vert}
-        \; | \; 1 \le i \le n\_timepoints </script>
-There are two modes:</p><a href="../proc/spike_contribution_c.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
                  <td><a href='../proc/split_string.html'>split_string</a></td>
                  <td><a href='../module/tox_data_tools.html'>tox_data_tools</a></td>
                  <td>Subroutine</td>
@@ -2364,20 +2359,6 @@ There are two modes:</p><a href="../proc/spike_contribution_c.html" class="pull-
                  <td><p>For memory efficiency this subroutine helps holding different kinds of masks in a single array.
 To achieve this, <code>subsets</code> has this structure: [...results, ...active_masks, ...new_active_masks]
 This routine removes an active mask from the <code>subsets</code> array and returns it in <code>active_mask</code>.</p></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/trajectory_contribution.html'>trajectory_contribution</a></td>
-                 <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
-                 <td>Subroutine</td>
-                 <td><p>Calculates trajectory contribution using cosine similarity
-<script type="math/tex; mode=display"> contribution = \frac{factor \cdot dependent}{\left \Vert factor \right \Vert \cdot \left \Vert dependent \right \Vert} </script>
-There are two modes:</p><a href="../proc/trajectory_contribution.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
-               </tr>
-			   <tr>
-                 <td><a href='../proc/trajectory_contribution_c.html'>trajectory_contribution_c</a></td>
-                 <td><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></td>
-                 <td>Subroutine</td>
-                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/validate_all_data.html'>validate_all_data</a></td>
@@ -2659,14 +2640,14 @@ Converts integer mask to logical and calls which.</p></td>
           <div class="col">
             <p>
               TensorOmics
- was developed by TensorOmics Developers<br>              &copy; 2025 
+ was developed by TensorOmics Developers<br>              &copy; 2026 
 </p>
           </div>
           <div class="col">
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-12-11 11:30 +0000"             </p>
+ on "2026-01-12 06:38 +0000"             </p>
           </div>
         </div>
         <br>

@@ -10,7 +10,7 @@
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>process_trajectories_alloc &ndash; TensorOmics</title>
+    <title>compute_contributions &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -77,7 +77,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>process_trajectories_alloc
+    <h1>compute_contributions
       <small>Subroutine</small>
       
     </h1>
@@ -88,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.5% of total for procedures.">49 statements</a>
+                 title=" 0.1% of total for procedures.">15 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -102,7 +102,7 @@
           <ol class="breadcrumb justify-content-end mb-0">
                 <li class="breadcrumb-item"><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></li>
                 <li class="breadcrumb-item"><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></li>
-            <li class="breadcrumb-item active" aria-current="page">process_trajectories_alloc</li>
+            <li class="breadcrumb-item active" aria-current="page">compute_contributions</li>
           </ol>
         </nav>
       </div>
@@ -149,24 +149,11 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public  subroutine process_trajectories_alloc(trajectories, n_factors, n_samples, n_timepoints, factor_mask, factor_mask_count, dependent_idx, mode, percentile, integrated_contribs, spike_contribs, thresholds_integrated_contrib, outliers_integrated_contrib, thresholds_spike_contrib, outliers_spike_contrib, ierr)  
+    <h2>public pure subroutine compute_contributions(factor, dependent, n_dims, mode, local_contributions, total_contribution, ierr)  
 </h2>
-        <div class="card mb-4">
-      <h3 class="card-header card-title bg-light">Uses</h3>
-      <div class="card-body">
-        <ul class="list-group list-group-flush">
-            <li class="list-group-item">
-              <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/tox_trajectory_contribution_analysis_outlier_detection.html'>tox_trajectory_contribution_analysis_outlier_detection</a></li>
-              </ul>
-            </li>
-        </ul>
-      </div>
-    </div>
+    
 
-
-    <p>Process trajectories with one percentile per timepoint for spike contributions.
-This subroutine uses multiple allocations. If you want to avoid this, you need to do the full pipeline manually step-by-step.</p>
+    <p>This routine performs contribution analysis for a specific factor–dependent pair, including input validation</p>
 
 
     <h3>Arguments</h3>
@@ -182,82 +169,37 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-trajectories~5"></span>
+              <span class="anchor" id="variable-factor~2"></span>
               real(kind=real64),
             </td>
 <td>intent(in),</td>
               <td></td>            <td>
-              dimension(n_factors, n_samples, n_timepoints)
+              dimension(n_dims)
             </td>
             <td>::</td>
-            <td><strong>trajectories</strong></td>
+            <td><strong>factor</strong></td>
             <td>
-                <p>Trajectories array</p>
+                <p>Factor time series, length n_timepoints</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_factors~5"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>n_factors</strong></td>
-            <td>
-                <p>Number of factors</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-n_samples~30"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>n_samples</strong></td>
-            <td>
-                <p>Number of samples</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-n_timepoints~14"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>n_timepoints</strong></td>
-            <td>
-                <p>Number of timepoints</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-factor_mask"></span>
-              logical,
+              <span class="anchor" id="variable-dependent~2"></span>
+              real(kind=real64),
             </td>
 <td>intent(in),</td>
               <td></td>            <td>
-              dimension(n_factors)
+              dimension(n_dims)
             </td>
             <td>::</td>
-            <td><strong>factor_mask</strong></td>
+            <td><strong>dependent</strong></td>
             <td>
-                <p>Mask for what factors should be included</p>
+                <p>Dependent variable time series, length n_timepoints</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-factor_mask_count"></span>
+              <span class="anchor" id="variable-n_dims~22"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -265,29 +207,14 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
               
             </td>
             <td>::</td>
-            <td><strong>factor_mask_count</strong></td>
+            <td><strong>n_dims</strong></td>
             <td>
-                <p>Number of true values in the factor mask</p>
+                <p>Number of elements in <code>factor</code> and <code>dependent</code></p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dependent_idx~3"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>dependent_idx</strong></td>
-            <td>
-                <p>Index of the dependend factor</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-mode~8"></span>
+              <span class="anchor" id="variable-mode~5"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -297,117 +224,42 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
             <td>::</td>
             <td><strong>mode</strong></td>
             <td>
-                <p>Mode for contribution calculation</p>
+                <p>Baseline mode: 1=RAW, 2=MIN, 3=MEAN</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-percentile~3"></span>
+              <span class="anchor" id="variable-local_contributions~3"></span>
               real(kind=real64),
             </td>
-<td>intent(in)</td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_dims)
+            </td>
+            <td>::</td>
+            <td><strong>local_contributions</strong></td>
+            <td>
+                <p>Per-element contributions</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_contribution~2"></span>
+              real(kind=real64),
+            </td>
+<td>intent(out)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>percentile</strong></td>
+            <td><strong>total_contribution</strong></td>
             <td>
-                <p>Percentile (0-100)</p>
+                <p>Total contribution (<code>sum(local_contributions)</code>)</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-integrated_contribs~3"></span>
-              real(kind=real64),
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              dimension(n_samples, factor_mask_count)
-            </td>
-            <td>::</td>
-            <td><strong>integrated_contribs</strong></td>
-            <td>
-                <p>Integrated contributions</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-spike_contribs~9"></span>
-              real(kind=real64),
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              dimension(n_timepoints, n_samples, factor_mask_count)
-            </td>
-            <td>::</td>
-            <td><strong>spike_contribs</strong></td>
-            <td>
-                <p>Spike contributions</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-thresholds_integrated_contrib"></span>
-              real(kind=real64),
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              dimension(factor_mask_count)
-            </td>
-            <td>::</td>
-            <td><strong>thresholds_integrated_contrib</strong></td>
-            <td>
-                <p>Thresholds of integrated contributions based on the provided percentile</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-outliers_integrated_contrib"></span>
-              logical,
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              dimension(n_samples, factor_mask_count)
-            </td>
-            <td>::</td>
-            <td><strong>outliers_integrated_contrib</strong></td>
-            <td>
-                <p>Detected outliers of the integrated contributions</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-thresholds_spike_contrib"></span>
-              real(kind=real64),
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              dimension(n_timepoints, factor_mask_count)
-            </td>
-            <td>::</td>
-            <td><strong>thresholds_spike_contrib</strong></td>
-            <td>
-                <p>Thresholds of spike contributions based on the provided percentile</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-outliers_spike_contrib"></span>
-              logical,
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              dimension(n_timepoints, n_samples, factor_mask_count)
-            </td>
-            <td>::</td>
-            <td><strong>outliers_spike_contrib</strong></td>
-            <td>
-                <p>Detected outliers of the spike contributions</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-ierr~125"></span>
+              <span class="anchor" id="variable-ierr~301"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -417,7 +269,7 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
             <td>::</td>
             <td><strong>ierr</strong></td>
             <td>
-                
+                <p>Error code</p>
             </td>
         </tr>
     </tbody>
@@ -447,14 +299,14 @@ This subroutine uses multiple allocations. If you want to avoid this, you need t
           <div class="col">
             <p>
               TensorOmics
- was developed by TensorOmics Developers<br>              &copy; 2025 
+ was developed by TensorOmics Developers<br>              &copy; 2026 
 </p>
           </div>
           <div class="col">
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-12-11 11:30 +0000"             </p>
+ on "2026-01-12 06:38 +0000"             </p>
           </div>
         </div>
         <br>

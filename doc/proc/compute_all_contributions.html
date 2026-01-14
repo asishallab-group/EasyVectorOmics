@@ -10,7 +10,7 @@
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>get_vec_across_timepoints &ndash; TensorOmics</title>
+    <title>compute_all_contributions &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -77,7 +77,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>get_vec_across_timepoints
+    <h1>compute_all_contributions
       <small>Subroutine</small>
       
     </h1>
@@ -88,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">23 statements</a>
+                 title=" 0.4% of total for procedures.">45 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -102,7 +102,7 @@
           <ol class="breadcrumb justify-content-end mb-0">
                 <li class="breadcrumb-item"><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></li>
                 <li class="breadcrumb-item"><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></li>
-            <li class="breadcrumb-item active" aria-current="page">get_vec_across_timepoints</li>
+            <li class="breadcrumb-item active" aria-current="page">compute_all_contributions</li>
           </ol>
         </nav>
       </div>
@@ -149,11 +149,11 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2>public pure subroutine get_vec_across_timepoints(trajectories, n_factors, n_samples, n_timepoints, i_factor, i_sample, result_vector, ierr)  
+    <h2>public pure subroutine compute_all_contributions(trajectories, n_factors, n_samples, n_timepoints, factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, mode, local_contributions, total_contributions, temp_factors, temp_dependent, ierr)  
 </h2>
     
 
-    <p>Accessor routine to extract timepoint data for a specific factor and sample</p>
+    <p>This routine performs contribution analysis for every selected factor–dependent pair</p>
 
 
     <h3>Arguments</h3>
@@ -169,7 +169,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-trajectories~4"></span>
+              <span class="anchor" id="variable-trajectories~3"></span>
               real(kind=real64),
             </td>
 <td>intent(in),</td>
@@ -179,12 +179,12 @@
             <td>::</td>
             <td><strong>trajectories</strong></td>
             <td>
-                <p>Trajectories of expression data</p>
+                <p>expression vectors across different samples over time</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_factors~4"></span>
+              <span class="anchor" id="variable-n_factors~3"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -194,12 +194,12 @@
             <td>::</td>
             <td><strong>n_factors</strong></td>
             <td>
-                <p>Number of factors in <code>trajectories</code></p>
+                <p>number of factors</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_samples~29"></span>
+              <span class="anchor" id="variable-n_samples~32"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -209,12 +209,12 @@
             <td>::</td>
             <td><strong>n_samples</strong></td>
             <td>
-                <p>Number of samples in <code>trajectories</code></p>
+                <p>number of samples</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_timepoints~13"></span>
+              <span class="anchor" id="variable-n_timepoints~10"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -224,12 +224,27 @@
             <td>::</td>
             <td><strong>n_timepoints</strong></td>
             <td>
-                <p>Number of timepoints in <code>trajectories</code></p>
+                <p>number of timepoints</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i_factor~4"></span>
+              <span class="anchor" id="variable-factor_indices"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              dimension(n_selected_factors)
+            </td>
+            <td>::</td>
+            <td><strong>factor_indices</strong></td>
+            <td>
+                <p>indices of factors to compute the contributions for</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_selected_factors"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -237,14 +252,29 @@
               
             </td>
             <td>::</td>
-            <td><strong>i_factor</strong></td>
+            <td><strong>n_selected_factors</strong></td>
             <td>
-                <p>Factor index the retrieved timepoints should be related to</p>
+                <p>number of selected factors in <code>factor_indices</code></p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-i_sample~3"></span>
+              <span class="anchor" id="variable-dependent_indices"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              dimension(n_selected_dependents)
+            </td>
+            <td>::</td>
+            <td><strong>dependent_indices</strong></td>
+            <td>
+                <p>indices of dependents to compute the contributions for</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_selected_dependents"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -252,14 +282,74 @@
               
             </td>
             <td>::</td>
-            <td><strong>i_sample</strong></td>
+            <td><strong>n_selected_dependents</strong></td>
             <td>
-                <p>Timepoint index the retrieved timepoints should be related to</p>
+                <p>number of selected dependents in <code>dependent_indices</code></p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-result_vector~2"></span>
+              <span class="anchor" id="variable-mode~6"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>mode</strong></td>
+            <td>
+                <p>Baseline mode: 1=RAW, 2=MIN, 3=MEAN</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-local_contributions~4"></span>
+              real(kind=real64),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_timepoints, n_selected_factors, n_selected_dependents, n_samples)
+            </td>
+            <td>::</td>
+            <td><strong>local_contributions</strong></td>
+            <td>
+                <p>Per-timepoint contributions per sample-dependent-factor combination</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-total_contributions~2"></span>
+              real(kind=real64),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_selected_factors, n_selected_dependents, n_samples)
+            </td>
+            <td>::</td>
+            <td><strong>total_contributions</strong></td>
+            <td>
+                <p>Total contribution (<code>sum(local_contributions)</code>) per sample-dependent-factor combination</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temp_factors"></span>
+              real(kind=real64),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_timepoints, n_selected_factors)
+            </td>
+            <td>::</td>
+            <td><strong>temp_factors</strong></td>
+            <td>
+                <p>Working array to hold the currently handled sample's factors in contiguous memory</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-temp_dependent~2"></span>
               real(kind=real64),
             </td>
 <td>intent(out),</td>
@@ -267,14 +357,14 @@
               dimension(n_timepoints)
             </td>
             <td>::</td>
-            <td><strong>result_vector</strong></td>
+            <td><strong>temp_dependent</strong></td>
             <td>
-                <p>Result vector, equivalent to <code>trajectories(i_factor, i_sample, :)</code></p>
+                <p>Working array to hold the currently handled dependent in contiguous memory</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~124"></span>
+              <span class="anchor" id="variable-ierr~302"></span>
               integer(kind=int32),
             </td>
 <td>intent(out)</td>
@@ -314,14 +404,14 @@
           <div class="col">
             <p>
               TensorOmics
- was developed by TensorOmics Developers<br>              &copy; 2025 
+ was developed by TensorOmics Developers<br>              &copy; 2026 
 </p>
           </div>
           <div class="col">
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-12-11 11:30 +0000"             </p>
+ on "2026-01-12 06:38 +0000"             </p>
           </div>
         </div>
         <br>

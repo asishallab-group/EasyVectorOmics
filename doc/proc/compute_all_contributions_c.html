@@ -10,7 +10,7 @@
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>process_trajectories_flat_C &ndash; TensorOmics</title>
+    <title>compute_all_contributions_c &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -77,7 +77,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>process_trajectories_flat_C
+    <h1>compute_all_contributions_c
       <small>Subroutine</small>
       
     </h1>
@@ -88,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 1.1% of total for procedures.">117 statements</a>
+                 title=" 0.8% of total for procedures.">80 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -101,7 +101,7 @@
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
                 <li class="breadcrumb-item"><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></li>
-            <li class="breadcrumb-item active" aria-current="page">process_trajectories_flat_C</li>
+            <li class="breadcrumb-item active" aria-current="page">compute_all_contributions_c</li>
           </ol>
         </nav>
       </div>
@@ -148,7 +148,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2> subroutine process_trajectories_flat_C(trajectories, n_factors, n_samples, n_timepoints, n_processed, factor_mask_int, dependent_idx, mode, percentile, integrated_contribs, spike_contribs, thresholds_integrated_contrib, outliers_integrated_contrib_int, thresholds_spike_contrib, outliers_spike_contrib_int, ierr) bind(C, name="process_trajectories_flat_C")  
+    <h2>pure subroutine compute_all_contributions_c(trajectories, n_factors, n_samples, n_timepoints, factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, mode, local_contributions, total_contributions, temp_factors, temp_dependent, ierr) bind(C, name="compute_all_contributions_c")  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -156,10 +156,10 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></li>
-                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
-                  <li class="list-inline-item"><a href='../module/tox_conversions.html'>tox_conversions</a></li>
                   <li class="list-inline-item"><a href='../module/tox_errors.html'>tox_errors</a></li>
+                  <li class="list-inline-item"><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
               </ul>
             </li>
         </ul>
@@ -167,7 +167,7 @@
     </div>
 
 
-    <p>C wrapper for process_trajectories_flat_alloc</p>
+    <p>C-compatible wrapper for <a href="../proc/compute_all_contributions.html">compute_all_contributions</a></p>
 
 
     <h3>Arguments</h3>
@@ -183,22 +183,22 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-trajectories~10"></span>
+              <span class="anchor" id="variable-trajectories~4"></span>
               real(kind=c_double),
             </td>
 <td>intent(in),</td>
               <td></td>            <td>
-              target
+              dimension(n_factors, n_samples, n_timepoints), target
             </td>
             <td>::</td>
-            <td><strong>trajectories</strong>(n_factors,n_samples,n_timepoints)</td>
+            <td><strong>trajectories</strong></td>
             <td>
-                <p>Trajectories array</p>
+                <p>trajectories array: (n_factors, n_samples, n_timepoints)</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_factors~10"></span>
+              <span class="anchor" id="variable-n_factors~4"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in),</td>
@@ -208,12 +208,12 @@
             <td>::</td>
             <td><strong>n_factors</strong></td>
             <td>
-                <p>Number of factors</p>
+                <p>number of factors</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_samples~35"></span>
+              <span class="anchor" id="variable-n_samples~33"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in),</td>
@@ -223,12 +223,12 @@
             <td>::</td>
             <td><strong>n_samples</strong></td>
             <td>
-                <p>Number of samples</p>
+                <p>number of samples</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_timepoints~21"></span>
+              <span class="anchor" id="variable-n_timepoints~12"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in),</td>
@@ -238,12 +238,27 @@
             <td>::</td>
             <td><strong>n_timepoints</strong></td>
             <td>
-                <p>Number of timepoints</p>
+                <p>number of timepoints</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_processed~2"></span>
+              <span class="anchor" id="variable-factor_indices~2"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              dimension(n_selected_factors), target
+            </td>
+            <td>::</td>
+            <td><strong>factor_indices</strong></td>
+            <td>
+                <p>indices of factors to compute the contributions for</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_selected_factors~2"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in),</td>
@@ -251,14 +266,29 @@
               target
             </td>
             <td>::</td>
-            <td><strong>n_processed</strong></td>
+            <td><strong>n_selected_factors</strong></td>
             <td>
-                <p>Number of processed factors</p>
+                <p>number of selected factors in <code>factor_indices</code></p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-factor_mask_int~2"></span>
+              <span class="anchor" id="variable-dependent_indices~2"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              dimension(n_selected_dependents), target
+            </td>
+            <td>::</td>
+            <td><strong>dependent_indices</strong></td>
+            <td>
+                <p>indices of dependents to compute the contributions for</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_selected_dependents~2"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in),</td>
@@ -266,149 +296,89 @@
               target
             </td>
             <td>::</td>
-            <td><strong>factor_mask_int</strong>(n_factors)</td>
+            <td><strong>n_selected_dependents</strong></td>
             <td>
-                <p>Mask for factors as C integers (0=false, 1=true)</p>
+                <p>number of selected dependents in <code>dependent_indices</code></p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dependent_idx~8"></span>
-              integer(kind=c_int),
+              <span class="anchor" id="variable-mode~9"></span>
+              character(kind=c_char, len=1),
             </td>
 <td>intent(in),</td>
               <td></td>            <td>
-              target
-            </td>
-            <td>::</td>
-            <td><strong>dependent_idx</strong></td>
-            <td>
-                <p>Index of the dependent factor (0-based from C)</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-mode~15"></span>
-              integer(kind=c_int),
-            </td>
-<td>intent(in),</td>
-              <td></td>            <td>
-              target
+              dimension(*), target
             </td>
             <td>::</td>
             <td><strong>mode</strong></td>
             <td>
-                <p>Mode for contribution calculation</p>
+                <p>Baseline mode: "raw", "min", "mean"</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-percentile~6"></span>
-              real(kind=c_double),
-            </td>
-<td>intent(in),</td>
-              <td></td>            <td>
-              target
-            </td>
-            <td>::</td>
-            <td><strong>percentile</strong></td>
-            <td>
-                <p>Percentile (0-100)</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-integrated_contribs~8"></span>
+              <span class="anchor" id="variable-local_contributions~5"></span>
               real(kind=c_double),
             </td>
 <td>intent(out),</td>
               <td></td>            <td>
-              target
+              dimension(n_timepoints, n_selected_factors, n_selected_dependents, n_samples), target
             </td>
             <td>::</td>
-            <td><strong>integrated_contribs</strong>(n_samples,n_processed)</td>
+            <td><strong>local_contributions</strong></td>
             <td>
-                <p>Integrated contributions</p>
+                <p>Per-timepoint contributions per sample-dependent-factor combination</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-spike_contribs~14"></span>
+              <span class="anchor" id="variable-total_contributions~3"></span>
               real(kind=c_double),
             </td>
 <td>intent(out),</td>
               <td></td>            <td>
-              target
+              dimension(n_selected_factors, n_selected_dependents, n_samples), target
             </td>
             <td>::</td>
-            <td><strong>spike_contribs</strong>(n_timepoints,n_samples,n_processed)</td>
+            <td><strong>total_contributions</strong></td>
             <td>
-                <p>Spike contributions</p>
+                <p>Total contribution (<code>sum(local_contributions)</code>) per sample-dependent-factor combination</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-thresholds_integrated_contrib~4"></span>
+              <span class="anchor" id="variable-temp_factors~2"></span>
               real(kind=c_double),
             </td>
 <td>intent(out),</td>
               <td></td>            <td>
-              target
+              dimension(n_timepoints, n_selected_factors), target
             </td>
             <td>::</td>
-            <td><strong>thresholds_integrated_contrib</strong>(n_processed)</td>
+            <td><strong>temp_factors</strong></td>
             <td>
-                <p>Thresholds for integrated contributions</p>
+                <p>Working array to hold the currently handled sample's factors in contiguous memory</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-outliers_integrated_contrib_int~2"></span>
-              integer(kind=c_int),
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              target
-            </td>
-            <td>::</td>
-            <td><strong>outliers_integrated_contrib_int</strong>(n_samples,n_processed)</td>
-            <td>
-                <p>Outliers for integrated contributions as C integers</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-thresholds_spike_contrib~4"></span>
+              <span class="anchor" id="variable-temp_dependent~3"></span>
               real(kind=c_double),
             </td>
 <td>intent(out),</td>
               <td></td>            <td>
-              target
+              dimension(n_timepoints), target
             </td>
             <td>::</td>
-            <td><strong>thresholds_spike_contrib</strong>(n_processed)</td>
+            <td><strong>temp_dependent</strong></td>
             <td>
-                <p>Thresholds for spike contributions (1D for flat version)</p>
+                <p>Working array to hold the currently handled dependent in contiguous memory</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-outliers_spike_contrib_int~2"></span>
-              integer(kind=c_int),
-            </td>
-<td>intent(out),</td>
-              <td></td>            <td>
-              target
-            </td>
-            <td>::</td>
-            <td><strong>outliers_spike_contrib_int</strong>(n_timepoints,n_samples,n_processed)</td>
-            <td>
-                <p>Outliers for spike contributions as C integers</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-ierr~132"></span>
+              <span class="anchor" id="variable-ierr~305"></span>
               integer(kind=c_int),
             </td>
 <td>intent(out),</td>
@@ -448,14 +418,14 @@
           <div class="col">
             <p>
               TensorOmics
- was developed by TensorOmics Developers<br>              &copy; 2025 
+ was developed by TensorOmics Developers<br>              &copy; 2026 
 </p>
           </div>
           <div class="col">
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-12-11 11:30 +0000"             </p>
+ on "2026-01-12 06:38 +0000"             </p>
           </div>
         </div>
         <br>

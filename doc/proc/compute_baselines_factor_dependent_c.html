@@ -88,7 +88,7 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.4% of total for procedures.">40 statements</a>
+                 title=" 0.4% of total for procedures.">45 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
@@ -148,7 +148,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2> subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints, mode, factor_baseline, dependent_baseline, ierr) bind(C, name="tox_compute_baselines_factor_dependent")  
+    <h2>pure subroutine compute_baselines_factor_dependent_c(factor, dependent, n_timepoints, mode, factor_baseline, dependent_baseline, ierr) bind(C, name="tox_compute_baselines_factor_dependent")  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -156,8 +156,9 @@
         <ul class="list-group list-group-flush">
             <li class="list-group-item">
               <ul class="list-inline">
-                  <li class="list-inline-item"><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></li>
                   <li class="list-inline-item"><a href='../module/tox_errors.html'>tox_errors</a></li>
+                  <li class="list-inline-item"><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
               </ul>
             </li>
@@ -166,7 +167,7 @@
     </div>
 
 
-    <p>Call Fortran subroutine directly (no type conversion needed)</p>
+    <p>C-compatible wrapper for <a href="../proc/compute_baselines_factor_dependent.html">compute_baselines_factor_dependent</a></p>
 
 
     <h3>Arguments</h3>
@@ -182,7 +183,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-factor~6"></span>
+              <span class="anchor" id="variable-factor~5"></span>
               real(kind=c_double),
             </td>
 <td>intent(in),</td>
@@ -192,12 +193,12 @@
             <td>::</td>
             <td><strong>factor</strong>(n_timepoints)</td>
             <td>
-                
+                <p>Factor time series, length n_timepoints</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dependent~6"></span>
+              <span class="anchor" id="variable-dependent~5"></span>
               real(kind=c_double),
             </td>
 <td>intent(in),</td>
@@ -207,12 +208,12 @@
             <td>::</td>
             <td><strong>dependent</strong>(n_timepoints)</td>
             <td>
-                
+                <p>Dependent variable time series, length n_timepoints</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_timepoints~22"></span>
+              <span class="anchor" id="variable-n_timepoints~13"></span>
               integer(kind=c_int),
             </td>
 <td>intent(in),</td>
@@ -222,27 +223,27 @@
             <td>::</td>
             <td><strong>n_timepoints</strong></td>
             <td>
-                
+                <p>Number of timepoints in both factor and dependent arrays</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-mode~16"></span>
-              integer(kind=c_int),
+              <span class="anchor" id="variable-mode~11"></span>
+              character(kind=c_char, len=1),
             </td>
 <td>intent(in),</td>
               <td></td>            <td>
-              target
+              dimension(*), target
             </td>
             <td>::</td>
             <td><strong>mode</strong></td>
             <td>
-                
+                <p>Baseline mode: "raw", "min", "mean"</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-factor_baseline~2"></span>
+              <span class="anchor" id="variable-factor_baseline~3"></span>
               real(kind=c_double),
             </td>
 <td>intent(out),</td>
@@ -252,12 +253,12 @@
             <td>::</td>
             <td><strong>factor_baseline</strong></td>
             <td>
-                
+                <p>Computed baseline for factor</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-dependent_baseline~2"></span>
+              <span class="anchor" id="variable-dependent_baseline~3"></span>
               real(kind=c_double),
             </td>
 <td>intent(out),</td>
@@ -267,12 +268,12 @@
             <td>::</td>
             <td><strong>dependent_baseline</strong></td>
             <td>
-                
+                <p>Computed baseline for dependent variable</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~133"></span>
+              <span class="anchor" id="variable-ierr~307"></span>
               integer(kind=c_int),
             </td>
 <td>intent(out),</td>
@@ -282,7 +283,7 @@
             <td>::</td>
             <td><strong>ierr</strong></td>
             <td>
-                <p>Null-pointer validation</p>
+                <p>Error code</p>
             </td>
         </tr>
     </tbody>
@@ -312,14 +313,14 @@
           <div class="col">
             <p>
               TensorOmics
- was developed by TensorOmics Developers<br>              &copy; 2025 
+ was developed by TensorOmics Developers<br>              &copy; 2026 
 </p>
           </div>
           <div class="col">
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2025-12-11 11:30 +0000"             </p>
+ on "2026-01-12 06:38 +0000"             </p>
           </div>
         </div>
         <br>
