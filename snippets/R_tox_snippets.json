@@ -50,7 +50,9 @@
   },
   "R call of 'check_err_code'": {
     "prefix": "tox:r_check_err_code",
-    "body": "check_err_code(${1:ierr})",
+    "body": [
+      "${1:result} <- check_err_code(${2:ierr})"
+    ],
     "description": "Call of R helper 'check_err_code'"
   },
   "R setup for 'euclidean_distance_c' from module 'tox_euclidean_distance'": {
@@ -81,7 +83,9 @@
   },
   "R call of 'tox_euclidean_distance'": {
     "prefix": "tox:r_tox_euclidean_distance",
-    "body": "${1:result} <- tox_euclidean_distance(${2:vec1}, ${3:vec2})",
+    "body": [
+      "${1:result} <- tox_euclidean_distance(${2:vec1}, ${3:vec2})"
+    ],
     "description": "Call of R wrapper for 'euclidean_distance_c' from module 'tox_euclidean_distance'"
   },
   "R setup for 'distance_to_centroid_c' from module 'tox_euclidean_distance'": {
@@ -122,7 +126,9 @@
   },
   "R call of 'tox_distance_to_centroid'": {
     "prefix": "tox:r_tox_distance_to_centroid",
-    "body": "${1:result} <- tox_distance_to_centroid(${2:genes}, ${3:centroids}, ${4:gene_to_fam}, ${5:d})",
+    "body": [
+      "${1:result} <- tox_distance_to_centroid(${2:genes}, ${3:centroids}, ${4:gene_to_fam}, ${5:d})"
+    ],
     "description": "Call of R wrapper for 'distance_to_centroid_c' from module 'tox_euclidean_distance'"
   },
   "R setup for 'compute_tissue_versatility_c' from module 'tox_tissue_versatility'": {
@@ -192,7 +198,9 @@
   },
   "R call of 'tox_calculate_tissue_versatility'": {
     "prefix": "tox:r_tox_calculate_tissue_versatility",
-    "body": "${1:result} <- tox_calculate_tissue_versatility(${2:expression_vectors}, ${3:vector_selection}, ${4:axis_selection})",
+    "body": [
+      "${1:result} <- tox_calculate_tissue_versatility(${2:expression_vectors}, ${3:vector_selection}, ${4:axis_selection})"
+    ],
     "description": "Call of R wrapper for 'compute_tissue_versatility_c' from module 'tox_tissue_versatility'"
   },
   "R setup for 'detect_outliers_c' from module 'tox_get_outliers'": {
@@ -240,7 +248,9 @@
   },
   "R call of 'tox_detect_outliers'": {
     "prefix": "tox:r_tox_detect_outliers",
-    "body": "${1:result} <- tox_detect_outliers(${2:distances}, ${3:gene_to_fam}, ${4:n_families}, ${5:percentile})",
+    "body": [
+      "${1:result} <- tox_detect_outliers(${2:distances}, ${3:gene_to_fam}, ${4:n_families}, ${5:percentile})"
+    ],
     "description": "Call of R wrapper for 'detect_outliers_c' from module 'tox_get_outliers'"
   },
   "R setup for 'compute_family_scaling_c' from module 'tox_get_outliers'": {
@@ -287,7 +297,9 @@
   },
   "R call of 'tox_compute_family_scaling'": {
     "prefix": "tox:r_tox_compute_family_scaling",
-    "body": "${1:result} <- tox_compute_family_scaling(${2:distances}, ${3:gene_to_fam}, ${4:n_families})",
+    "body": [
+      "${1:result} <- tox_compute_family_scaling(${2:distances}, ${3:gene_to_fam}, ${4:n_families})"
+    ],
     "description": "Call of R wrapper for 'compute_family_scaling_c' from module 'tox_get_outliers'"
   },
   "R setup for 'compute_family_scaling_expert_c' from module 'tox_get_outliers'": {
@@ -356,7 +368,9 @@
   },
   "R call of 'tox_compute_family_scaling_expert'": {
     "prefix": "tox:r_tox_compute_family_scaling_expert",
-    "body": "${1:result} <- tox_compute_family_scaling_expert(${2:distances}, ${3:gene_to_fam}, ${4:n_families}, ${5:perm_tmp}, ${6:stack_left_tmp}, ${7:stack_right_tmp}, ${8:family_distances})",
+    "body": [
+      "${1:result} <- tox_compute_family_scaling_expert(${2:distances}, ${3:gene_to_fam}, ${4:n_families}, ${5:perm_tmp}, ${6:stack_left_tmp}, ${7:stack_right_tmp}, ${8:family_distances})"
+    ],
     "description": "Call of R wrapper for 'compute_family_scaling_expert_c' from module 'tox_get_outliers'"
   },
   "R setup for 'compute_rdi_c' from module 'tox_get_outliers'": {
@@ -395,7 +409,9 @@
   },
   "R call of 'tox_compute_rdi'": {
     "prefix": "tox:r_tox_compute_rdi",
-    "body": "${1:result} <- tox_compute_rdi(${2:distances}, ${3:gene_to_fam}, ${4:dscale})",
+    "body": [
+      "${1:result} <- tox_compute_rdi(${2:distances}, ${3:gene_to_fam}, ${4:dscale})"
+    ],
     "description": "Call of R wrapper for 'compute_rdi_c' from module 'tox_get_outliers'"
   },
   "R setup for 'identify_outliers_c' from module 'tox_get_outliers'": {
@@ -429,7 +445,9 @@
   },
   "R call of 'tox_identify_outliers'": {
     "prefix": "tox:r_tox_identify_outliers",
-    "body": "${1:result} <- tox_identify_outliers(${2:rdi}, ${3:percentile})",
+    "body": [
+      "${1:result} <- tox_identify_outliers(${2:rdi}, ${3:percentile})"
+    ],
     "description": "Call of R wrapper for 'identify_outliers_c' from module 'tox_get_outliers'"
   },
   "R setup for 'normalize_by_std_dev_c' from module 'tox_normalization'": {
@@ -461,7 +479,9 @@
   },
   "R call of 'tox_normalize_by_std_dev'": {
     "prefix": "tox:r_tox_normalize_by_std_dev",
-    "body": "${1:result} <- tox_normalize_by_std_dev(${2:input_matrix})",
+    "body": [
+      "${1:result} <- tox_normalize_by_std_dev(${2:input_matrix})"
+    ],
     "description": "Call of R wrapper for 'normalize_by_std_dev_c' from module 'tox_normalization'"
   },
   "R setup for 'quantile_normalization_c' from module 'tox_normalization'": {
@@ -497,7 +517,9 @@
   },
   "R call of 'tox_quantile_normalization'": {
     "prefix": "tox:r_tox_quantile_normalization",
-    "body": "${1:result} <- tox_quantile_normalization(${2:input_matrix})",
+    "body": [
+      "${1:result} <- tox_quantile_normalization(${2:input_matrix})"
+    ],
     "description": "Call of R wrapper for 'quantile_normalization_c' from module 'tox_normalization'"
   },
   "R setup for 'log2_transformation_c' from module 'tox_normalization'": {
@@ -534,7 +556,9 @@
   },
   "R call of 'tox_log2_transformation'": {
     "prefix": "tox:r_tox_log2_transformation",
-    "body": "${1:result} <- tox_log2_transformation(${2:input_matrix})",
+    "body": [
+      "${1:result} <- tox_log2_transformation(${2:input_matrix})"
+    ],
     "description": "Call of R wrapper for 'log2_transformation_c' from module 'tox_normalization'"
   },
   "R setup for 'calc_tiss_avg_c' from module 'tox_normalization'": {
@@ -598,7 +622,9 @@
   },
   "R call of 'tox_calculate_tissue_averages'": {
     "prefix": "tox:r_tox_calculate_tissue_averages",
-    "body": "${1:result} <- tox_calculate_tissue_averages(${2:df})",
+    "body": [
+      "${1:result} <- tox_calculate_tissue_averages(${2:df})"
+    ],
     "description": "Call of R wrapper for 'calc_tiss_avg_c' from module 'tox_normalization'"
   },
   "R setup for 'calc_fchange_c' from module 'tox_normalization'": {
@@ -639,7 +665,9 @@
   },
   "R call of 'tox_calculate_fold_changes'": {
     "prefix": "tox:r_tox_calculate_fold_changes",
-    "body": "${1:result} <- tox_calculate_fold_changes(${2:df}, ${3:control_pattern}, ${4:condition_patterns})",
+    "body": [
+      "${1:result} <- tox_calculate_fold_changes(${2:df}, ${3:control_pattern}, ${4:condition_patterns})"
+    ],
     "description": "Call of R wrapper for 'calc_fchange_c' from module 'tox_normalization'"
   },
   "R setup for 'normalization_pipeline_c' from module 'tox_normalization'": {
@@ -668,7 +696,9 @@
   },
   "R call of 'tox_normalization_pipeline'": {
     "prefix": "tox:r_tox_normalization_pipeline",
-    "body": "${1:result} <- tox_normalization_pipeline(${2:input_matrix}, ${3:group_s}, ${4:group_c})",
+    "body": [
+      "${1:result} <- tox_normalization_pipeline(${2:input_matrix}, ${3:group_s}, ${4:group_c})"
+    ],
     "description": "Call of R wrapper for 'normalization_pipeline_c' from module 'tox_normalization'"
   },
   "R setup for 'compute_shift_vector_field_c' from module 'tox_shift_vectors'": {
@@ -712,7 +742,9 @@
   },
   "R call of 'tox_compute_shift_vector_field'": {
     "prefix": "tox:r_tox_compute_shift_vector_field",
-    "body": "${1:result} <- tox_compute_shift_vector_field(${2:expression_vectors}, ${3:family_centroids}, ${4:gene_to_centroid})",
+    "body": [
+      "${1:result} <- tox_compute_shift_vector_field(${2:expression_vectors}, ${3:family_centroids}, ${4:gene_to_centroid})"
+    ],
     "description": "Call of R wrapper for 'compute_shift_vector_field_c' from module 'tox_shift_vectors'"
   },
   "R setup for 'group_centroid_c' from module 'tox_gene_centroids'": {
@@ -745,7 +777,9 @@
   },
   "R call of 'tox_group_centroid'": {
     "prefix": "tox:r_tox_group_centroid",
-    "body": "${1:result} <- tox_group_centroid(${2:expression_vectors}, ${3:gene_to_family}, ${4:n_families}, ${5:ortholog_set}, ${6:mode})",
+    "body": [
+      "${1:result} <- tox_group_centroid(${2:expression_vectors}, ${3:gene_to_family}, ${4:n_families}, ${5:ortholog_set}, ${6:mode})"
+    ],
     "description": "Call of R wrapper for 'group_centroid_c' from module 'tox_gene_centroids'"
   },
   "R setup for 'mean_vector_c' from module 'tox_gene_centroids'": {
@@ -775,7 +809,9 @@
   },
   "R call of 'tox_mean_vector'": {
     "prefix": "tox:r_tox_mean_vector",
-    "body": "${1:result} <- tox_mean_vector(${2:expression_vectors}, ${3:gene_indices})",
+    "body": [
+      "${1:result} <- tox_mean_vector(${2:expression_vectors}, ${3:gene_indices})"
+    ],
     "description": "Call of R wrapper for 'mean_vector_c' from module 'tox_gene_centroids'"
   }
 }

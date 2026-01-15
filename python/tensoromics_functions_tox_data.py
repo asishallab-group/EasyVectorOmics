@@ -21,7 +21,7 @@ ctypes.CDLL("libgomp.so.1", mode=ctypes.RTLD_GLOBAL)
 lib = ctypes.CDLL(dll_path)
 
 
-# converts a given string to a c_char array of given length
+#> f42_helper: Convert string to c_char array with null termination
 def string_to_c_char_array(s, length):
     """Convert string to c_char array with null termination"""
     if s is None:
@@ -37,12 +37,14 @@ def string_to_c_char_array(s, length):
         arr[len(encoded)] = b'\x00'
     return arr
 
+
+#> f42_helper: Convert list of strings to flat c_char array (Fortran-compatible, NumPy-wrapped)
 def strings_to_c_char_matrix(strings, max_length):
     """Convert list of strings to flat c_char array (Fortran-compatible, NumPy-wrapped)"""
     import numpy as np
     n_strings = len(strings)
     total_size = n_strings * max_length
-    
+
     # create flat c-types array
     matrix_type = ctypes.c_char * total_size
     matrix = matrix_type()
@@ -64,6 +66,8 @@ def strings_to_c_char_matrix(strings, max_length):
 
     return arr
 
+
+#> f42_helper: Convert 2D c_char matrix or NumPy array back to list of strings (Fortran order)
 def c_char_matrix_to_strings(matrix, max_length, n_strings):
     """Convert 2D c_char matrix or NumPy array back to list of strings (Fortran order)"""
     import numpy as np
@@ -85,7 +89,7 @@ def c_char_matrix_to_strings(matrix, max_length, n_strings):
 
             if isinstance(char, np.ndarray):
                 char = char.item()
-            
+
             if isinstance(char, (np.integer, int)):
                 char = bytes([char])
             elif isinstance(char, (bytes, bytearray)):
@@ -106,6 +110,7 @@ def c_char_matrix_to_strings(matrix, max_length, n_strings):
     return strings
 
 
+#> f42_helper: Prepare string for C interface (bytes + length)
 def _prepare_string(s) -> tuple:
     """Prepare string for C interface (bytes + length)"""
     if s is None or s == "":
@@ -116,6 +121,7 @@ def _prepare_string(s) -> tuple:
     return b, len(b)
 
 
+#> f42_helper: Ensure input is a numpy array of strings
 def _ensure_string_array(arr):
     """Ensure input is a numpy array of strings"""
     if not isinstance(arr, np.ndarray):
@@ -123,6 +129,7 @@ def _ensure_string_array(arr):
     return arr
 
 
+#> f42_helper: Ensure input is a numpy array of floats
 def _ensure_float_array(arr):
     """Ensure input is a numpy array of floats"""
     if not isinstance(arr, np.ndarray):
@@ -130,6 +137,7 @@ def _ensure_float_array(arr):
     return arr
 
 
+#> f42_helper: Ensure input is a numpy array of ints
 def _ensure_int_array(arr):
     """Ensure input is a numpy array of ints"""
     if not isinstance(arr, np.ndarray):
@@ -139,7 +147,7 @@ def _ensure_int_array(arr):
 
 #' Function for read_gene_ids_from_tsv_file_C
 #> tox_data_read_write:read_gene_ids_from_tsv_file_C: Read gene ids from a tsv file
-def read_gene_ids_from_tsv_file(filename, n_genes, gene_ids_len, n_header_rows, gene_col):
+def read_gene_ids_from_tsv_file(filename,n_genes, gene_ids_len, n_header_rows, gene_col):
     """
     Read gene ids from a tsv file
 

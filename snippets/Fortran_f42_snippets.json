@@ -6,23 +6,13 @@
   },
   "Fortran Call of function 'get_sorted_value'": {
     "prefix": "f42:get_sorted_value",
-    "body": "${{0:result}} = get_sorted_value(${1:values}, ${2:sorted_indices}, ${3:position}, ${4:ierr})",
+    "body": "${{1:result}} = get_sorted_value(${2:values}, ${3:sorted_indices}, ${4:position}, ${5:ierr})",
     "description": "Call of Fortran function 'get_sorted_value' from module 'f42_binary_search_tree'"
   },
   "Fortran Call of subroutine 'bst_range_query'": {
     "prefix": "f42:bst_range_query",
     "body": "call bst_range_query(${1:values}, ${2:sorted_indices}, ${3:num_values}, ${4:lower_bound}, ${5:upper_bound}, ${6:output_indices}, ${7:num_matches}, ${8:ierr})",
     "description": "Call of Fortran subroutine 'bst_range_query' from module 'f42_binary_search_tree'"
-  },
-  "Fortran Call of subroutine 'bst_range_query_r'": {
-    "prefix": "f42:bst_range_query_r",
-    "body": "call bst_range_query_r(${1:values}, ${2:sorted_indices}, ${3:num_values}, ${4:lower_bound}, ${5:upper_bound}, ${6:output_indices}, ${7:num_matches}, ${8:ierr})",
-    "description": "Call of Fortran subroutine 'bst_range_query_r' from module 'f42_binary_search_tree'"
-  },
-  "Fortran Call of subroutine 'build_bst_index_r'": {
-    "prefix": "f42:build_bst_index_r",
-    "body": "call build_bst_index_r(${1:values}, ${2:num_values}, ${3:sorted_indices}, ${4:left_stack}, ${5:right_stack}, ${6:ierr})",
-    "description": "Call of Fortran subroutine 'build_bst_index_r' from module 'f42_binary_search_tree'"
   },
   "Fortran Call of subroutine 'build_kd_index'": {
     "prefix": "f42:build_kd_index",
@@ -44,34 +34,24 @@
     "body": "call get_kd_point(${1:points}, ${2:kd_indices}, ${3:position}, ${4:point_values}, ${5:ierr})",
     "description": "Call of Fortran subroutine 'get_kd_point' from module 'f42_kd_tree'"
   },
-  "Fortran Call of subroutine 'build_kd_index_r'": {
-    "prefix": "f42:build_kd_index_r",
-    "body": "call build_kd_index_r(${1:points}, ${2:num_dimensions}, ${3:num_points}, ${4:kd_indices}, ${5:dimension_order}, ${6:workspace}, ${7:value_buffer}, ${8:permutation}, ${9:left_stack}, ${10:right_stack}, ${11:ierr})",
-    "description": "Call of Fortran subroutine 'build_kd_index_r' from module 'f42_kd_tree'"
-  },
-  "Fortran Call of subroutine 'build_spherical_kd_r'": {
-    "prefix": "f42:build_spherical_kd_r",
-    "body": "call build_spherical_kd_r(${1:vectors}, ${2:num_dimensions}, ${3:num_vectors}, ${4:sphere_indices}, ${5:dimension_order}, ${6:workspace}, ${7:value_buffer}, ${8:permutation}, ${9:left_stack}, ${10:right_stack}, ${11:ierr})",
-    "description": "Call of Fortran subroutine 'build_spherical_kd_r' from module 'f42_kd_tree'"
-  },
   "Fortran Call of function 'below'": {
     "prefix": "f42:below",
-    "body": "${{0:result}} = below(${1:val})",
+    "body": "${{1:result}} = below(${2:val})",
     "description": "Call of Fortran function 'below' from module 'f42_utils'"
   },
   "Fortran Call of function 'above'": {
     "prefix": "f42:above",
-    "body": "${{0:result}} = above(${1:val})",
+    "body": "${{1:result}} = above(${2:val})",
     "description": "Call of Fortran function 'above' from module 'f42_utils'"
   },
   "Fortran Call of function 'is_close'": {
     "prefix": "f42:is_close",
-    "body": "${{0:result}} = is_close(${1:a}, ${2:b})",
+    "body": "${{1:result}} = is_close(${2:a}, ${3:b})",
     "description": "Call of Fortran function 'is_close' from module 'f42_utils'"
   },
   "Fortran Call of function 'next_power_of_two'": {
     "prefix": "f42:next_power_of_two",
-    "body": "${{0:result}} = next_power_of_two(${1:n})",
+    "body": "${{1:result}} = next_power_of_two(${2:n})",
     "description": "Call of Fortran function 'next_power_of_two' from module 'f42_utils'"
   },
   "Fortran Call of subroutine 'angle_between'": {
@@ -81,12 +61,12 @@
   },
   "Fortran Call of function 'radians'": {
     "prefix": "f42:radians",
-    "body": "${{0:result}} = radians(${1:degrees})",
+    "body": "${{1:result}} = radians(${2:degrees})",
     "description": "Call of Fortran function 'radians' from module 'f42_utils'"
   },
   "Fortran Call of function 'norm'": {
     "prefix": "f42:norm",
-    "body": "${{0:result}} = norm(${1:vector})",
+    "body": "${{1:result}} = norm(${2:vector})",
     "description": "Call of Fortran function 'norm' from module 'f42_utils'"
   },
   "Fortran Call of subroutine 'add_vector'": {
@@ -181,12 +161,12 @@
   },
   "Fortran Call of function 'real_less'": {
     "prefix": "f42:real_less",
-    "body": "${{0:result}} = real_less(${1:a}, ${2:b})",
+    "body": "${{1:result}} = real_less(${2:a}, ${3:b})",
     "description": "Call of Fortran function 'real_less' from module 'f42_utils'"
   },
   "Fortran Call of function 'real_greater'": {
     "prefix": "f42:real_greater",
-    "body": "${{0:result}} = real_greater(${1:a}, ${2:b})",
+    "body": "${{1:result}} = real_greater(${2:a}, ${3:b})",
     "description": "Call of Fortran function 'real_greater' from module 'f42_utils'"
   },
   "Fortran Call of subroutine 'which'": {
@@ -219,11 +199,6 @@
     "body": "call calc_percentile_alloc(${1:array}, ${2:percentile}, ${3:value}, ${4:ierr})",
     "description": "Call of Fortran subroutine 'calc_percentile_alloc' from module 'f42_utils'"
   },
-  "Fortran Call of subroutine 'loess_smooth_2d_r'": {
-    "prefix": "f42:loess_smooth_2d_r",
-    "body": "call loess_smooth_2d_r(${1:n_total}, ${2:n_target}, ${3:x_ref}, ${4:y_ref}, ${5:indices_used}, ${6:n_used}, ${7:x_query}, ${8:kernel_sigma}, ${9:kernel_cutoff}, ${10:y_out}, ${11:ierr})",
-    "description": "Call of Fortran subroutine 'loess_smooth_2d_r' from module 'f42_utils'"
-  },
   "Fortran Call of subroutine 'check_okay_ioerror'": {
     "prefix": "f42:check_okay_ioerror",
     "body": "call check_okay_ioerror(${1:ioerror}, ${2:ierr}, ${3:msg}, ${4:unit})",
@@ -248,11 +223,6 @@
     "prefix": "f42:get_array_metadata",
     "body": "call get_array_metadata(${1:filename}, ${2:dims_out}, ${3:dims_out_capacity}, ${4:ndims}, ${5:ierr}, ${6:clen})",
     "description": "Call of Fortran subroutine 'get_array_metadata' from module 'f42_array_utils'"
-  },
-  "Fortran Call of subroutine 'get_array_metadata_r'": {
-    "prefix": "f42:get_array_metadata_r",
-    "body": "call get_array_metadata_r(${1:filename_raw}, ${2:fn_len}, ${3:dims_out}, ${4:dims_out_capacity}, ${5:ndims}, ${6:ierr}, ${7:clen})",
-    "description": "Call of Fortran subroutine 'get_array_metadata_r' from module 'f42_array_utils'"
   },
   "Fortran Call of subroutine 'deserialize_char_flat'": {
     "prefix": "f42:deserialize_char_flat",
@@ -284,11 +254,6 @@
     "body": "call deserialize_char_5d(${1:arr}, ${2:filename}, ${3:ierr})",
     "description": "Call of Fortran subroutine 'deserialize_char_5d' from module 'f42_deserialize_char'"
   },
-  "Fortran Call of subroutine 'deserialize_char_flat_r'": {
-    "prefix": "f42:deserialize_char_flat_r",
-    "body": "call deserialize_char_flat_r(${1:raw_arr}, ${2:arr_size}, ${3:filename_raw}, ${4:fn_len}, ${5:clen_in}, ${6:ierr})",
-    "description": "Call of Fortran subroutine 'deserialize_char_flat_r' from module 'f42_deserialize_char'"
-  },
   "Fortran Call of subroutine 'deserialize_complex_flat'": {
     "prefix": "f42:deserialize_complex_flat",
     "body": "call deserialize_complex_flat(${1:arr}, ${2:filename}, ${3:ierr})",
@@ -318,11 +283,6 @@
     "prefix": "f42:deserialize_complex_5d",
     "body": "call deserialize_complex_5d(${1:arr}, ${2:filename}, ${3:ierr})",
     "description": "Call of Fortran subroutine 'deserialize_complex_5d' from module 'f42_deserialize_complex'"
-  },
-  "Fortran Call of subroutine 'deserialize_complex_r'": {
-    "prefix": "f42:deserialize_complex_r",
-    "body": "call deserialize_complex_r(${1:flat_arr}, ${2:arr_size}, ${3:filename_raw}, ${4:fn_len}, ${5:ierr})",
-    "description": "Call of Fortran subroutine 'deserialize_complex_r' from module 'f42_deserialize_complex'"
   },
   "Fortran Call of subroutine 'deserialize_int_flat'": {
     "prefix": "f42:deserialize_int_flat",
@@ -354,11 +314,6 @@
     "body": "call deserialize_int_5d(${1:arr}, ${2:filename}, ${3:ierr})",
     "description": "Call of Fortran subroutine 'deserialize_int_5d' from module 'f42_deserialize_int'"
   },
-  "Fortran Call of subroutine 'deserialize_int_r'": {
-    "prefix": "f42:deserialize_int_r",
-    "body": "call deserialize_int_r(${1:flat_arr}, ${2:arr_size}, ${3:filename_raw}, ${4:fn_len}, ${5:ierr})",
-    "description": "Call of Fortran subroutine 'deserialize_int_r' from module 'f42_deserialize_int'"
-  },
   "Fortran Call of subroutine 'deserialize_logical_flat'": {
     "prefix": "f42:deserialize_logical_flat",
     "body": "call deserialize_logical_flat(${1:arr}, ${2:filename}, ${3:ierr})",
@@ -388,11 +343,6 @@
     "prefix": "f42:deserialize_logical_5d",
     "body": "call deserialize_logical_5d(${1:arr}, ${2:filename}, ${3:ierr})",
     "description": "Call of Fortran subroutine 'deserialize_logical_5d' from module 'f42_deserialize_logical'"
-  },
-  "Fortran Call of subroutine 'deserialize_logical_r'": {
-    "prefix": "f42:deserialize_logical_r",
-    "body": "call deserialize_logical_r(${1:flat_arr}, ${2:arr_size}, ${3:filename_raw}, ${4:fn_len}, ${5:ierr})",
-    "description": "Call of Fortran subroutine 'deserialize_logical_r' from module 'f42_deserialize_logical'"
   },
   "Fortran Call of subroutine 'deserialize_real_flat'": {
     "prefix": "f42:deserialize_real_flat",
@@ -424,11 +374,6 @@
     "body": "call deserialize_real_5d(${1:arr}, ${2:filename}, ${3:ierr})",
     "description": "Call of Fortran subroutine 'deserialize_real_5d' from module 'f42_deserialize_real'"
   },
-  "Fortran Call of subroutine 'deserialize_real_flat_r'": {
-    "prefix": "f42:deserialize_real_flat_r",
-    "body": "call deserialize_real_flat_r(${1:flat_arr}, ${2:arr_size}, ${3:filename_raw}, ${4:fn_len}, ${5:ierr})",
-    "description": "Call of Fortran subroutine 'deserialize_real_flat_r' from module 'f42_deserialize_real'"
-  },
   "Fortran Call of subroutine 'serialize_char_1d'": {
     "prefix": "f42:serialize_char_1d",
     "body": "call serialize_char_1d(${1:arr}, ${2:filename}, ${3:ierr})",
@@ -458,11 +403,6 @@
     "prefix": "f42:serialize_char_nd",
     "body": "call serialize_char_nd(${1:flat}, ${2:dims}, ${3:ndim}, ${4:clen}, ${5:filename}, ${6:ierr})",
     "description": "Call of Fortran subroutine 'serialize_char_nd' from module 'f42_serialize_char'"
-  },
-  "Fortran Call of subroutine 'serialize_char_flat_r'": {
-    "prefix": "f42:serialize_char_flat_r",
-    "body": "call serialize_char_flat_r(${1:raw_arr}, ${2:array_size}, ${3:dims}, ${4:ndim}, ${5:clen}, ${6:filename_raw}, ${7:fn_len}, ${8:ierr})",
-    "description": "Call of Fortran subroutine 'serialize_char_flat_r' from module 'f42_serialize_char'"
   },
   "Fortran Call of subroutine 'serialize_complex_1d'": {
     "prefix": "f42:serialize_complex_1d",
@@ -494,11 +434,6 @@
     "body": "call serialize_complex_nd(${1:arr}, ${2:dims}, ${3:ndim}, ${4:filename}, ${5:ierr})",
     "description": "Call of Fortran subroutine 'serialize_complex_nd' from module 'f42_serialize_complex'"
   },
-  "Fortran Call of subroutine 'serialize_complex_flat_r'": {
-    "prefix": "f42:serialize_complex_flat_r",
-    "body": "call serialize_complex_flat_r(${1:arr}, ${2:array_size}, ${3:dims}, ${4:ndim}, ${5:filename_raw}, ${6:fn_len}, ${7:ierr})",
-    "description": "Call of Fortran subroutine 'serialize_complex_flat_r' from module 'f42_serialize_complex'"
-  },
   "Fortran Call of subroutine 'serialize_int_1d'": {
     "prefix": "f42:serialize_int_1d",
     "body": "call serialize_int_1d(${1:arr}, ${2:filename}, ${3:ierr})",
@@ -528,11 +463,6 @@
     "prefix": "f42:serialize_int_nd",
     "body": "call serialize_int_nd(${1:arr}, ${2:dims}, ${3:ndim}, ${4:filename}, ${5:ierr})",
     "description": "Call of Fortran subroutine 'serialize_int_nd' from module 'f42_serialize_int'"
-  },
-  "Fortran Call of subroutine 'serialize_int_flat_r'": {
-    "prefix": "f42:serialize_int_flat_r",
-    "body": "call serialize_int_flat_r(${1:arr}, ${2:array_size}, ${3:dims}, ${4:ndim}, ${5:filename_raw}, ${6:fn_len}, ${7:ierr})",
-    "description": "Call of Fortran subroutine 'serialize_int_flat_r' from module 'f42_serialize_int'"
   },
   "Fortran Call of subroutine 'serialize_logical_1d'": {
     "prefix": "f42:serialize_logical_1d",
@@ -564,11 +494,6 @@
     "body": "call serialize_logical_nd(${1:arr}, ${2:dims}, ${3:ndim}, ${4:filename}, ${5:ierr})",
     "description": "Call of Fortran subroutine 'serialize_logical_nd' from module 'f42_serialize_logical'"
   },
-  "Fortran Call of subroutine 'serialize_logical_flat_r'": {
-    "prefix": "f42:serialize_logical_flat_r",
-    "body": "call serialize_logical_flat_r(${1:arr}, ${2:array_size}, ${3:dims}, ${4:ndim}, ${5:filename_raw}, ${6:fn_len}, ${7:ierr})",
-    "description": "Call of Fortran subroutine 'serialize_logical_flat_r' from module 'f42_serialize_logical'"
-  },
   "Fortran Call of subroutine 'serialize_real_1d'": {
     "prefix": "f42:serialize_real_1d",
     "body": "call serialize_real_1d(${1:arr}, ${2:filename}, ${3:ierr})",
@@ -599,14 +524,9 @@
     "body": "call serialize_real_nd(${1:arr}, ${2:dims}, ${3:ndim}, ${4:filename}, ${5:ierr})",
     "description": "Call of Fortran subroutine 'serialize_real_nd' from module 'f42_serialize_real'"
   },
-  "Fortran Call of subroutine 'serialize_real_flat_r'": {
-    "prefix": "f42:serialize_real_flat_r",
-    "body": "call serialize_real_flat_r(${1:arr}, ${2:array_size}, ${3:dims}, ${4:ndim}, ${5:filename_raw}, ${6:fn_len}, ${7:ierr})",
-    "description": "Call of Fortran subroutine 'serialize_real_flat_r' from module 'f42_serialize_real'"
-  },
   "Fortran Call of function 'xxh3_hash_c'": {
     "prefix": "f42:xxh3_hash_c",
-    "body": "${{0:result}} = xxh3_hash_c(${1:key}, ${2:length})",
+    "body": "${{1:result}} = xxh3_hash_c(${2:key}, ${3:length})",
     "description": "Call of Fortran function 'xxh3_hash_c' from module 'f42_xxh3_hashmap'"
   },
   "Fortran Call of subroutine 'hashmap_create'": {
@@ -631,7 +551,7 @@
   },
   "Fortran Call of function 'xxh3_hash_fortran'": {
     "prefix": "f42:xxh3_hash_fortran",
-    "body": "${{0:result}} = xxh3_hash_fortran(${1:key}, ${2:table_size})",
+    "body": "${{1:result}} = xxh3_hash_fortran(${2:key}, ${3:table_size})",
     "description": "Call of Fortran function 'xxh3_hash_fortran' from module 'f42_xxh3_hashmap'"
   },
   "Fortran Call of subroutine 'hashmap_put'": {
@@ -646,12 +566,12 @@
   },
   "Fortran Call of function 'is_in_hashset'": {
     "prefix": "f42:is_in_hashset",
-    "body": "${{0:result}} = is_in_hashset(${1:hashset}, ${2:key})",
+    "body": "${{1:result}} = is_in_hashset(${2:hashset}, ${3:key})",
     "description": "Call of Fortran function 'is_in_hashset' from module 'f42_xxh3_hashmap'"
   },
   "Fortran Call of function 'hashmap_get'": {
     "prefix": "f42:hashmap_get",
-    "body": "${{0:result}} = hashmap_get(${1:map}, ${2:key})",
+    "body": "${{1:result}} = hashmap_get(${2:map}, ${3:key})",
     "description": "Call of Fortran function 'hashmap_get' from module 'f42_xxh3_hashmap'"
   },
   "Fortran Call of subroutine 'resize_hashmap'": {

@@ -55,7 +55,9 @@
   },
   "Python call of 'check_err_code'": {
     "prefix": "tox:py_check_err_code",
-    "body": "${1:result} = check_err_code(${2:ierr: int})",
+    "body": [
+      "check_err_code(${1:ierr: int})"
+    ],
     "description": "Call of Python helper 'check_err_code'"
   },
   "Python setup for 'omics_vector_RAP_projection_c' from module 'tox_relative_axis_plane_tools'": {
@@ -113,7 +115,9 @@
   },
   "Python call of 'tox_vector_RAP_projection'": {
     "prefix": "tox:py_tox_vector_RAP_projection",
-    "body": "${1:result} = tox_vector_RAP_projection(${2:vecs}, ${3:vecs_selection_mask}, ${4:axes_selection_mask})",
+    "body": [
+      "${1:result} = tox_vector_RAP_projection(${2:vecs}, ${3:vecs_selection_mask}, ${4:axes_selection_mask})"
+    ],
     "description": "Call of Python wrapper for 'omics_vector_RAP_projection_c' from module 'tox_relative_axis_plane_tools'"
   },
   "Python setup for 'omics_field_RAP_projection_c' from module 'tox_relative_axis_plane_tools'": {
@@ -172,7 +176,9 @@
   },
   "Python call of 'tox_field_RAP_projection'": {
     "prefix": "tox:py_tox_field_RAP_projection",
-    "body": "${1:result} = tox_field_RAP_projection(${2:vecs}, ${3:vecs_selection_mask}, ${4:axes_selection_mask})",
+    "body": [
+      "${1:result} = tox_field_RAP_projection(${2:vecs}, ${3:vecs_selection_mask}, ${4:axes_selection_mask})"
+    ],
     "description": "Call of Python wrapper for 'omics_field_RAP_projection_c' from module 'tox_relative_axis_plane_tools'"
   },
   "Python setup for 'clock_hand_angle_between_vectors_c' from module 'tox_relative_axis_plane_tools'": {
@@ -235,7 +241,9 @@
   },
   "Python call of 'tox_clock_hand_angle_between_vectors'": {
     "prefix": "tox:py_tox_clock_hand_angle_between_vectors",
-    "body": "${1:result} = tox_clock_hand_angle_between_vectors(${2:v1}, ${3:v2}, ${4:selected_axes_for_signed})",
+    "body": [
+      "${1:result} = tox_clock_hand_angle_between_vectors(${2:v1}, ${3:v2}, ${4:selected_axes_for_signed})"
+    ],
     "description": "Call of Python wrapper for 'clock_hand_angle_between_vectors_c' from module 'tox_relative_axis_plane_tools'"
   },
   "Python setup for 'clock_hand_angles_for_shift_vectors_c' from module 'tox_relative_axis_plane_tools'": {
@@ -305,7 +313,9 @@
   },
   "Python call of 'tox_clock_hand_angles_for_shift_vectors'": {
     "prefix": "tox:py_tox_clock_hand_angles_for_shift_vectors",
-    "body": "${1:result} = tox_clock_hand_angles_for_shift_vectors(${2:origins}, ${3:targets}, ${4:vecs_selection_mask}, ${5:selected_axes_for_signed})",
+    "body": [
+      "${1:result} = tox_clock_hand_angles_for_shift_vectors(${2:origins}, ${3:targets}, ${4:vecs_selection_mask}, ${5:selected_axes_for_signed})"
+    ],
     "description": "Call of Python wrapper for 'clock_hand_angles_for_shift_vectors_c' from module 'tox_relative_axis_plane_tools'"
   },
   "Python setup for 'relative_axes_changes_from_shift_vector_c' from module 'tox_relative_axis_plane_tools'": {
@@ -349,7 +359,9 @@
   },
   "Python call of 'relative_axes_changes_from_shift_vector'": {
     "prefix": "tox:py_relative_axes_changes_from_shift_vector",
-    "body": "${1:result} = relative_axes_changes_from_shift_vector(${2:shift_vector})",
+    "body": [
+      "${1:result} = relative_axes_changes_from_shift_vector(${2:shift_vector})"
+    ],
     "description": "Call of Python wrapper for 'relative_axes_changes_from_shift_vector_c' from module 'tox_relative_axis_plane_tools'"
   },
   "Python setup for 'relative_axes_expression_from_expression_vector_c' from module 'tox_relative_axis_plane_tools'": {
@@ -393,7 +405,9 @@
   },
   "Python call of 'relative_axes_expression_from_expression_vector'": {
     "prefix": "tox:py_relative_axes_expression_from_expression_vector",
-    "body": "${1:result} = relative_axes_expression_from_expression_vector(${2:expression_vector})",
+    "body": [
+      "${1:result} = relative_axes_expression_from_expression_vector(${2:expression_vector})"
+    ],
     "description": "Call of Python wrapper for 'relative_axes_expression_from_expression_vector_c' from module 'tox_relative_axis_plane_tools'"
   },
   "Python setup for 'normalize_by_std_dev_c' from module 'tox_normalization'": {
@@ -450,7 +464,9 @@
   },
   "Python call of 'tox_normalize_by_std_dev'": {
     "prefix": "tox:py_tox_normalize_by_std_dev",
-    "body": "${1:result} = tox_normalize_by_std_dev(${2:input_matrix})",
+    "body": [
+      "${1:result} = tox_normalize_by_std_dev(${2:input_matrix})"
+    ],
     "description": "Call of Python wrapper for 'normalize_by_std_dev_c' from module 'tox_normalization'"
   },
   "Python setup for 'quantile_normalization_c' from module 'tox_normalization'": {
@@ -514,7 +530,9 @@
   },
   "Python call of 'tox_quantile_normalization'": {
     "prefix": "tox:py_tox_quantile_normalization",
-    "body": "${1:result} = tox_quantile_normalization(${2:input_matrix})",
+    "body": [
+      "${1:result} = tox_quantile_normalization(${2:input_matrix})"
+    ],
     "description": "Call of Python wrapper for 'quantile_normalization_c' from module 'tox_normalization'"
   },
   "Python setup for 'log2_transformation_c' from module 'tox_normalization'": {
@@ -565,7 +583,9 @@
   },
   "Python call of 'tox_log2_transformation'": {
     "prefix": "tox:py_tox_log2_transformation",
-    "body": "${1:result} = tox_log2_transformation(${2:input_matrix})",
+    "body": [
+      "${1:result} = tox_log2_transformation(${2:input_matrix})"
+    ],
     "description": "Call of Python wrapper for 'log2_transformation_c' from module 'tox_normalization'"
   },
   "Python setup for 'calc_tiss_avg_c' from module 'tox_normalization'": {
@@ -627,7 +647,9 @@
   },
   "Python call of 'tox_calculate_tissue_averages'": {
     "prefix": "tox:py_tox_calculate_tissue_averages",
-    "body": "${1:result} = tox_calculate_tissue_averages(${2:input_matrix}, ${3:group_starts}, ${4:group_counts})",
+    "body": [
+      "${1:result} = tox_calculate_tissue_averages(${2:input_matrix}, ${3:group_starts}, ${4:group_counts})"
+    ],
     "description": "Call of Python wrapper for 'calc_tiss_avg_c' from module 'tox_normalization'"
   },
   "Python setup for 'normalization_pipeline_c' from module 'tox_normalization'": {
@@ -708,7 +730,9 @@
   },
   "Python call of 'tox_normalization_pipeline'": {
     "prefix": "tox:py_tox_normalization_pipeline",
-    "body": "${1:result} = tox_normalization_pipeline(${2:input_matrix}, ${3:group_starts}, ${4:group_counts})",
+    "body": [
+      "${1:result} = tox_normalization_pipeline(${2:input_matrix}, ${3:group_starts}, ${4:group_counts})"
+    ],
     "description": "Call of Python wrapper for 'normalization_pipeline_c' from module 'tox_normalization'"
   },
   "Python setup for 'calc_fchange_c' from module 'tox_normalization'": {
@@ -771,7 +795,9 @@
   },
   "Python call of 'tox_calculate_fold_changes'": {
     "prefix": "tox:py_tox_calculate_fold_changes",
-    "body": "${1:result} = tox_calculate_fold_changes(${2:input_matrix}, ${3:control_cols}, ${4:condition_cols})",
+    "body": [
+      "${1:result} = tox_calculate_fold_changes(${2:input_matrix}, ${3:control_cols}, ${4:condition_cols})"
+    ],
     "description": "Call of Python wrapper for 'calc_fchange_c' from module 'tox_normalization'"
   },
   "Python setup for 'compute_tissue_versatility_c' from module 'tox_tissue_versatility'": {
@@ -881,7 +907,9 @@
   },
   "Python call of 'tox_calculate_tissue_versatility'": {
     "prefix": "tox:py_tox_calculate_tissue_versatility",
-    "body": "${1:result} = tox_calculate_tissue_versatility(${2:expression_vectors}, ${3:vector_selection}, ${4:axis_selection})",
+    "body": [
+      "${1:result} = tox_calculate_tissue_versatility(${2:expression_vectors}, ${3:vector_selection}, ${4:axis_selection})"
+    ],
     "description": "Call of Python wrapper for 'compute_tissue_versatility_c' from module 'tox_tissue_versatility'"
   },
   "Python setup for 'euclidean_distance_c' from module 'tox_euclidean_distance'": {
@@ -941,7 +969,9 @@
   },
   "Python call of 'tox_euclidean_distance'": {
     "prefix": "tox:py_tox_euclidean_distance",
-    "body": "${1:result} = tox_euclidean_distance(${2:vec1}, ${3:vec2})",
+    "body": [
+      "${1:result} = tox_euclidean_distance(${2:vec1}, ${3:vec2})"
+    ],
     "description": "Call of Python wrapper for 'euclidean_distance_c' from module 'tox_euclidean_distance'"
   },
   "Python setup for 'distance_to_centroid_c' from module 'tox_euclidean_distance'": {
@@ -1020,7 +1050,9 @@
   },
   "Python call of 'tox_distance_to_centroid'": {
     "prefix": "tox:py_tox_distance_to_centroid",
-    "body": "${1:result} = tox_distance_to_centroid(${2:genes}, ${3:centroids}, ${4:gene_to_fam}, ${5:d})",
+    "body": [
+      "${1:result} = tox_distance_to_centroid(${2:genes}, ${3:centroids}, ${4:gene_to_fam}, ${5:d})"
+    ],
     "description": "Call of Python wrapper for 'distance_to_centroid_c' from module 'tox_euclidean_distance'"
   },
   "Python setup for 'compute_family_scaling_c' from module 'tox_get_outliers'": {
@@ -1092,7 +1124,9 @@
   },
   "Python call of 'tox_compute_family_scaling'": {
     "prefix": "tox:py_tox_compute_family_scaling",
-    "body": "${1:result} = tox_compute_family_scaling(${2:distances}, ${3:gene_to_fam})",
+    "body": [
+      "${1:result} = tox_compute_family_scaling(${2:distances}, ${3:gene_to_fam})"
+    ],
     "description": "Call of Python wrapper for 'compute_family_scaling_c' from module 'tox_get_outliers'"
   },
   "Python setup for 'compute_family_scaling_expert_c' from module 'tox_get_outliers'": {
@@ -1194,7 +1228,9 @@
   },
   "Python call of 'tox_compute_family_scaling_expert'": {
     "prefix": "tox:py_tox_compute_family_scaling_expert",
-    "body": "${1:result} = tox_compute_family_scaling_expert(${2:distances}, ${3:gene_to_fam}, ${4:perm_tmp}, ${5:stack_left_tmp}, ${6:stack_right_tmp}, ${7:family_distances})",
+    "body": [
+      "${1:result} = tox_compute_family_scaling_expert(${2:distances}, ${3:gene_to_fam}, ${4:perm_tmp}, ${5:stack_left_tmp}, ${6:stack_right_tmp}, ${7:family_distances})"
+    ],
     "description": "Call of Python wrapper for 'compute_family_scaling_expert_c' from module 'tox_get_outliers'"
   },
   "Python setup for 'compute_rdi_c' from module 'tox_get_outliers'": {
@@ -1255,7 +1291,9 @@
   },
   "Python call of 'tox_compute_rdi'": {
     "prefix": "tox:py_tox_compute_rdi",
-    "body": "${1:result} = tox_compute_rdi(${2:distances}, ${3:gene_to_fam}, ${4:dscale})",
+    "body": [
+      "${1:result} = tox_compute_rdi(${2:distances}, ${3:gene_to_fam}, ${4:dscale})"
+    ],
     "description": "Call of Python wrapper for 'compute_rdi_c' from module 'tox_get_outliers'"
   },
   "Python setup for 'identify_outliers_c' from module 'tox_get_outliers'": {
@@ -1316,7 +1354,9 @@
   },
   "Python call of 'tox_identify_outliers'": {
     "prefix": "tox:py_tox_identify_outliers",
-    "body": "${1:result} = tox_identify_outliers(${2:rdi}, ${3:threshold}, ${4:percentile})",
+    "body": [
+      "${1:result} = tox_identify_outliers(${2:rdi}, ${3:threshold}, ${4:percentile})"
+    ],
     "description": "Call of Python wrapper for 'identify_outliers_c' from module 'tox_get_outliers'"
   },
   "Python setup for 'detect_outliers_c' from module 'tox_get_outliers'": {
@@ -1399,7 +1439,9 @@
   },
   "Python call of 'tox_detect_outliers'": {
     "prefix": "tox:py_tox_detect_outliers",
-    "body": "${1:result} = tox_detect_outliers(${2:distances}, ${3:gene_to_fam}, ${4:percentile})",
+    "body": [
+      "${1:result} = tox_detect_outliers(${2:distances}, ${3:gene_to_fam}, ${4:percentile})"
+    ],
     "description": "Call of Python wrapper for 'detect_outliers_c' from module 'tox_get_outliers'"
   },
   "Python setup for 'compute_shift_vector_field_c' from module 'tox_shift_vectors'": {
@@ -1507,7 +1549,9 @@
   },
   "Python call of 'tox_compute_shift_vector_field'": {
     "prefix": "tox:py_tox_compute_shift_vector_field",
-    "body": "${1:result} = tox_compute_shift_vector_field(${2:expression_vectors}, ${3:family_centroids}, ${4:gene_to_centroid})",
+    "body": [
+      "${1:result} = tox_compute_shift_vector_field(${2:expression_vectors}, ${3:family_centroids}, ${4:gene_to_centroid})"
+    ],
     "description": "Call of Python wrapper for 'compute_shift_vector_field_c' from module 'tox_shift_vectors'"
   },
   "Python setup for 'group_centroid_c' from module 'tox_gene_centroids'": {
@@ -1609,7 +1653,9 @@
   },
   "Python call of 'tox_group_centroid'": {
     "prefix": "tox:py_tox_group_centroid",
-    "body": "${1:result} = tox_group_centroid(${2:expression_vectors}, ${3:gene_to_family}, ${4:n_families}, ${5:mode}, ${6:ortholog_set})",
+    "body": [
+      "${1:result} = tox_group_centroid(${2:expression_vectors}, ${3:gene_to_family}, ${4:n_families}, ${5:mode}, ${6:ortholog_set})"
+    ],
     "description": "Call of Python wrapper for 'group_centroid_c' from module 'tox_gene_centroids'"
   },
   "Python setup for 'mean_vector_c' from module 'tox_gene_centroids'": {
@@ -1679,7 +1725,9 @@
   },
   "Python call of 'tox_mean_vector'": {
     "prefix": "tox:py_tox_mean_vector",
-    "body": "${1:result} = tox_mean_vector(${2:expression_vectors}, ${3:gene_indices})",
+    "body": [
+      "${1:result} = tox_mean_vector(${2:expression_vectors}, ${3:gene_indices})"
+    ],
     "description": "Call of Python wrapper for 'mean_vector_c' from module 'tox_gene_centroids'"
   },
   "Python setup for 'compute_baselines_factor_dependent_c' from module 'tox_trajectory_contribution_analysis'": {
@@ -1764,7 +1812,9 @@
   },
   "Python call of 'tox_compute_baselines_factor_dependent'": {
     "prefix": "tox:py_tox_compute_baselines_factor_dependent",
-    "body": "${1:result} = tox_compute_baselines_factor_dependent(${2:factor}, ${3:dependent}, ${4:mode})",
+    "body": [
+      "${1:result} = tox_compute_baselines_factor_dependent(${2:factor}, ${3:dependent}, ${4:mode})"
+    ],
     "description": "Call of Python wrapper for 'compute_baselines_factor_dependent_c' from module 'tox_trajectory_contribution_analysis'"
   },
   "Python setup for 'k_means_clustering_c' from module 'tox_clustering'": {
@@ -1837,7 +1887,9 @@
   },
   "Python call of 'tox_k_means_clustering'": {
     "prefix": "tox:py_tox_k_means_clustering",
-    "body": "${1:result} = tox_k_means_clustering(${2:data_points}, ${3:centroids}, ${4:max_iter})",
+    "body": [
+      "${1:result} = tox_k_means_clustering(${2:data_points}, ${3:centroids}, ${4:max_iter})"
+    ],
     "description": "Call of Python wrapper for 'k_means_clustering_c' from module 'tox_clustering'"
   },
   "Python setup for 'linkage_clustering_c' from module 'tox_clustering'": {
@@ -1917,7 +1969,9 @@
   },
   "Python call of 'tox_linkage_clustering'": {
     "prefix": "tox:py_tox_linkage_clustering",
-    "body": "${1:result} = tox_linkage_clustering(${2:distances}, ${3:method})",
+    "body": [
+      "${1:result} = tox_linkage_clustering(${2:distances}, ${3:method})"
+    ],
     "description": "Call of Python wrapper for 'linkage_clustering_c' from module 'tox_clustering'"
   },
   "Python setup for 'detect_neofunctionalization_c' from module 'tox_paralog_analysis'": {
@@ -1984,7 +2038,9 @@
   },
   "Python call of 'tox_detect_neofunctionalization'": {
     "prefix": "tox:py_tox_detect_neofunctionalization",
-    "body": "${1:result} = tox_detect_neofunctionalization(${2:ancestors}, ${3:genes}, ${4:gene_to_fam}, ${5:thresholds})",
+    "body": [
+      "${1:result} = tox_detect_neofunctionalization(${2:ancestors}, ${3:genes}, ${4:gene_to_fam}, ${5:thresholds})"
+    ],
     "description": "Call of Python wrapper for 'detect_neofunctionalization_c' from module 'tox_paralog_analysis'"
   },
   "Python setup for 'mask_check_state_c' from module 'tox_paralog_analysis'": {
@@ -2027,7 +2083,9 @@
   },
   "Python call of 'tox_mask_check_state'": {
     "prefix": "tox:py_tox_mask_check_state",
-    "body": "${1:result} = tox_mask_check_state(${2:bit_mask}, ${3:i_gene})",
+    "body": [
+      "${1:result} = tox_mask_check_state(${2:bit_mask}, ${3:i_gene})"
+    ],
     "description": "Call of Python wrapper for 'mask_check_state_c' from module 'tox_paralog_analysis'"
   },
   "Python setup for 'mask_chunk_count_c' from module 'tox_paralog_analysis'": {
@@ -2067,7 +2125,9 @@
   },
   "Python call of 'tox_mask_chunk_count'": {
     "prefix": "tox:py_tox_mask_chunk_count",
-    "body": "${1:result} = tox_mask_chunk_count(${2:n_genes})",
+    "body": [
+      "${1:result} = tox_mask_chunk_count(${2:n_genes})"
+    ],
     "description": "Call of Python wrapper for 'mask_chunk_count_c' from module 'tox_paralog_analysis'"
   },
   "Python setup for 'calc_work_arr_paralog_subsets_size_c' from module 'tox_paralog_analysis'": {
@@ -2121,7 +2181,9 @@
   },
   "Python call of 'tox_calc_work_arr_paralog_subsets_size'": {
     "prefix": "tox:py_tox_calc_work_arr_paralog_subsets_size",
-    "body": "${1:result} = tox_calc_work_arr_paralog_subsets_size(${2:max_subset_size}, ${3:n_genes}, ${4:filtered_paralogs_mask})",
+    "body": [
+      "${1:result} = tox_calc_work_arr_paralog_subsets_size(${2:max_subset_size}, ${3:n_genes}, ${4:filtered_paralogs_mask})"
+    ],
     "description": "Call of Python wrapper for 'calc_work_arr_paralog_subsets_size_c' from module 'tox_paralog_analysis'"
   },
   "Python setup for 'filter_paralogs_by_pattern_dosage_effect_c' from module 'tox_paralog_analysis'": {
@@ -2180,7 +2242,9 @@
   },
   "Python call of 'tox_filter_paralogs_by_pattern_dosage_effect'": {
     "prefix": "tox:py_tox_filter_paralogs_by_pattern_dosage_effect",
-    "body": "${1:result} = tox_filter_paralogs_by_pattern_dosage_effect(${2:gene_angles}, ${3:threshold}, ${4:gene_to_fam}, ${5:n_families})",
+    "body": [
+      "${1:result} = tox_filter_paralogs_by_pattern_dosage_effect(${2:gene_angles}, ${3:threshold}, ${4:gene_to_fam}, ${5:n_families})"
+    ],
     "description": "Call of Python wrapper for 'filter_paralogs_by_pattern_dosage_effect_c' from module 'tox_paralog_analysis'"
   },
   "Python setup for 'filter_paralogs_by_pattern_subfunctionalization_c' from module 'tox_paralog_analysis'": {
@@ -2238,7 +2302,9 @@
   },
   "Python call of 'tox_filter_paralogs_by_pattern_subfunctionalization'": {
     "prefix": "tox:py_tox_filter_paralogs_by_pattern_subfunctionalization",
-    "body": "${1:result} = tox_filter_paralogs_by_pattern_subfunctionalization(${2:gene_angles}, ${3:threshold}, ${4:gene_to_fam}, ${5:n_families})",
+    "body": [
+      "${1:result} = tox_filter_paralogs_by_pattern_subfunctionalization(${2:gene_angles}, ${3:threshold}, ${4:gene_to_fam}, ${5:n_families})"
+    ],
     "description": "Call of Python wrapper for 'filter_paralogs_by_pattern_subfunctionalization_c' from module 'tox_paralog_analysis'"
   },
   "Python setup for 'detect_subfunctionalization_c' from module 'tox_paralog_analysis'": {
@@ -2328,7 +2394,9 @@
   },
   "Python call of 'tox_detect_subfunctionalization'": {
     "prefix": "tox:py_tox_detect_subfunctionalization",
-    "body": "${1:result} = tox_detect_subfunctionalization(${2:ancestor}, ${3:genes}, ${4:rdi_threshold}, ${5:filtered_paralogs_mask}, ${6:max_subset_size}, ${7:paralog_norms}, ${8:sorted_paralog_norms_perm})",
+    "body": [
+      "${1:result} = tox_detect_subfunctionalization(${2:ancestor}, ${3:genes}, ${4:rdi_threshold}, ${5:filtered_paralogs_mask}, ${6:max_subset_size}, ${7:paralog_norms}, ${8:sorted_paralog_norms_perm})"
+    ],
     "description": "Call of Python wrapper for 'detect_subfunctionalization_c' from module 'tox_paralog_analysis'"
   },
   "Python setup for 'detect_dosage_effect_c' from module 'tox_paralog_analysis'": {
@@ -2412,7 +2480,9 @@
   },
   "Python call of 'tox_detect_dosage_effect'": {
     "prefix": "tox:py_tox_detect_dosage_effect",
-    "body": "${1:result} = tox_detect_dosage_effect(${2:ancestor}, ${3:genes}, ${4:filtered_paralogs_mask}, ${5:max_subset_size}, ${6:gain_gamma}, ${7:max_angle})",
+    "body": [
+      "${1:result} = tox_detect_dosage_effect(${2:ancestor}, ${3:genes}, ${4:filtered_paralogs_mask}, ${5:max_subset_size}, ${6:gain_gamma}, ${7:max_angle})"
+    ],
     "description": "Call of Python wrapper for 'detect_dosage_effect_c' from module 'tox_paralog_analysis'"
   },
   "Python setup for 'compute_contributions_c' from module 'tox_trajectory_contribution_analysis'": {
@@ -2474,7 +2544,9 @@
   },
   "Python call of 'tox_compute_contributions'": {
     "prefix": "tox:py_tox_compute_contributions",
-    "body": "${1:result} = tox_compute_contributions(${2:factor}, ${3:dependent}, ${4:mode})",
+    "body": [
+      "${1:result} = tox_compute_contributions(${2:factor}, ${3:dependent}, ${4:mode})"
+    ],
     "description": "Call of Python wrapper for 'compute_contributions_c' from module 'tox_trajectory_contribution_analysis'"
   },
   "Python setup for 'compute_all_contributions_c' from module 'tox_trajectory_contribution_analysis'": {
@@ -2560,13 +2632,15 @@
   },
   "Python call of 'tox_compute_all_contributions'": {
     "prefix": "tox:py_tox_compute_all_contributions",
-    "body": "${1:result} = tox_compute_all_contributions(${2:trajectories}, ${3:factor_indices}, ${4:dependent_indices}, ${5:mode})",
+    "body": [
+      "${1:result} = tox_compute_all_contributions(${2:trajectories}, ${3:factor_indices}, ${4:dependent_indices}, ${5:mode})"
+    ],
     "description": "Call of Python wrapper for 'compute_all_contributions_c' from module 'tox_trajectory_contribution_analysis'"
   },
   "Python setup for 'read_gene_ids_from_tsv_file_C' from module 'tox_data_read_write'": {
     "prefix": "tox:py_setup_read_gene_ids_from_tsv_file_C",
     "body": [
-      "def read_gene_ids_from_tsv_file(filename, n_genes, gene_ids_len, n_header_rows, gene_col):",
+      "def read_gene_ids_from_tsv_file(filename,n_genes, gene_ids_len, n_header_rows, gene_col):",
       "    \"\"\"",
       "    Read gene ids from a tsv file",
       "",
@@ -2632,7 +2706,9 @@
   },
   "Python call of 'read_gene_ids_from_tsv_file'": {
     "prefix": "tox:py_read_gene_ids_from_tsv_file",
-    "body": "${1:result} = read_gene_ids_from_tsv_file(${2:filename}, ${3:n_genes}, ${4:gene_ids_len}, ${5:n_header_rows}, ${6:gene_col})",
+    "body": [
+      "${1:result} = read_gene_ids_from_tsv_file(${2:filename}, ${3:n_genes}, ${4:gene_ids_len}, ${5:n_header_rows}, ${6:gene_col})"
+    ],
     "description": "Call of Python wrapper for 'read_gene_ids_from_tsv_file_C' from module 'tox_data_read_write'"
   },
   "Python setup for 'read_expression_vectors_tsv_C' from module 'tox_data_read_write'": {
@@ -2719,7 +2795,9 @@
   },
   "Python call of 'read_expression_vectors_tsv'": {
     "prefix": "tox:py_read_expression_vectors_tsv",
-    "body": "${1:result} = read_expression_vectors_tsv(${2:file_list}, ${3:gene_ids}, ${4:n_samples}, ${5:n_header_rows}, ${6:gene_col}, ${7:value_cols}, ${8:delimiter})",
+    "body": [
+      "${1:result} = read_expression_vectors_tsv(${2:file_list}, ${3:gene_ids}, ${4:n_samples}, ${5:n_header_rows}, ${6:gene_col}, ${7:value_cols}, ${8:delimiter})"
+    ],
     "description": "Call of Python wrapper for 'read_expression_vectors_tsv_C' from module 'tox_data_read_write'"
   },
   "Python setup for 'read_orthofinder_file_C' from module 'tox_data_read_write'": {
@@ -2799,7 +2877,9 @@
   },
   "Python call of 'read_orthofinder_file'": {
     "prefix": "tox:py_read_orthofinder_file",
-    "body": "${1:result} = read_orthofinder_file(${2:filename}, ${3:gene_ids}, ${4:family_ids_len}, ${5:n_families})",
+    "body": [
+      "${1:result} = read_orthofinder_file(${2:filename}, ${3:gene_ids}, ${4:family_ids_len}, ${5:n_families})"
+    ],
     "description": "Call of Python wrapper for 'read_orthofinder_file_C' from module 'tox_data_read_write'"
   },
   "Python setup for 'filter_unassigned_genes_C' from module 'tox_data_tools'": {
@@ -2834,7 +2914,9 @@
   },
   "Python call of 'filter_unassigned_genes'": {
     "prefix": "tox:py_filter_unassigned_genes",
-    "body": "${1:result} = filter_unassigned_genes(${2:gene_to_fam})",
+    "body": [
+      "${1:result} = filter_unassigned_genes(${2:gene_to_fam})"
+    ],
     "description": "Call of Python wrapper for 'filter_unassigned_genes_C' from module 'tox_data_tools'"
   },
   "Python setup for 'validate_gene_to_family_mapping_C' from module 'tox_data_validation'": {
@@ -2872,7 +2954,9 @@
   },
   "Python call of 'validate_gene_to_family_mapping'": {
     "prefix": "tox:py_validate_gene_to_family_mapping",
-    "body": "validate_gene_to_family_mapping(${1:gene_to_fam}, ${2:n_families})",
+    "body": [
+      "validate_gene_to_family_mapping(${1:gene_to_fam}, ${2:n_families})"
+    ],
     "description": "Call of Python wrapper for 'validate_gene_to_family_mapping_C' from module 'tox_data_validation'"
   },
   "Python setup for 'validate_expression_data_C' from module 'tox_data_validation'": {
@@ -2913,7 +2997,9 @@
   },
   "Python call of 'validate_expression_data'": {
     "prefix": "tox:py_validate_expression_data",
-    "body": "validate_expression_data(${1:expression_vectors}, ${2:check_non_negative})",
+    "body": [
+      "validate_expression_data(${1:expression_vectors}, ${2:check_non_negative})"
+    ],
     "description": "Call of Python wrapper for 'validate_expression_data_C' from module 'tox_data_validation'"
   },
   "Python setup for 'validate_family_centroids_C' from module 'tox_data_validation'": {
@@ -2951,7 +3037,9 @@
   },
   "Python call of 'validate_family_centroids'": {
     "prefix": "tox:py_validate_family_centroids",
-    "body": "validate_family_centroids(${1:family_centroids})",
+    "body": [
+      "validate_family_centroids(${1:family_centroids})"
+    ],
     "description": "Call of Python wrapper for 'validate_family_centroids_C' from module 'tox_data_validation'"
   },
   "Python setup for 'validate_shift_vectors_C' from module 'tox_data_validation'": {
@@ -3009,7 +3097,9 @@
   },
   "Python call of 'validate_shift_vectors'": {
     "prefix": "tox:py_validate_shift_vectors",
-    "body": "validate_shift_vectors(${1:shift_vectors}, ${2:expression_vectors}, ${3:family_centroids}, ${4:gene_to_fam}, ${5:n_genes}, ${6:n_samples}, ${7:n_families})",
+    "body": [
+      "validate_shift_vectors(${1:shift_vectors}, ${2:expression_vectors}, ${3:family_centroids}, ${4:gene_to_fam}, ${5:n_genes}, ${6:n_samples}, ${7:n_families})"
+    ],
     "description": "Call of Python wrapper for 'validate_shift_vectors_C' from module 'tox_data_validation'"
   },
   "Python setup for 'validate_string_array_uniqueness_C' from module 'tox_data_validation'": {
@@ -3048,7 +3138,9 @@
   },
   "Python call of 'validate_string_array_uniqueness'": {
     "prefix": "tox:py_validate_string_array_uniqueness",
-    "body": "validate_string_array_uniqueness(${1:strings})",
+    "body": [
+      "validate_string_array_uniqueness(${1:strings})"
+    ],
     "description": "Call of Python wrapper for 'validate_string_array_uniqueness_C' from module 'tox_data_validation'"
   },
   "Python setup for 'validate_data_structure_C' from module 'tox_data_validation'": {
@@ -3123,7 +3215,9 @@
   },
   "Python call of 'validate_data_structure'": {
     "prefix": "tox:py_validate_data_structure",
-    "body": "validate_data_structure(${1:n_genes}, ${2:n_families}, ${3:n_samples}, ${4:gene_ids}, ${5:gene_family_ids}, ${6:gene_to_fam}, ${7:expression_vectors}, ${8:family_centroids}, ${9:shift_vectors})",
+    "body": [
+      "validate_data_structure(${1:n_genes}, ${2:n_families}, ${3:n_samples}, ${4:gene_ids}, ${5:gene_family_ids}, ${6:gene_to_fam}, ${7:expression_vectors}, ${8:family_centroids}, ${9:shift_vectors})"
+    ],
     "description": "Call of Python wrapper for 'validate_data_structure_C' from module 'tox_data_validation'"
   },
   "Python setup for 'validate_all_data_C' from module 'tox_data_validation'": {
@@ -3198,7 +3292,9 @@
   },
   "Python call of 'validate_all_data'": {
     "prefix": "tox:py_validate_all_data",
-    "body": "validate_all_data(${1:n_genes}, ${2:n_families}, ${3:n_samples}, ${4:gene_ids}, ${5:gene_family_ids}, ${6:gene_to_fam}, ${7:expression_vectors}, ${8:family_centroids}, ${9:shift_vectors})",
+    "body": [
+      "validate_all_data(${1:n_genes}, ${2:n_families}, ${3:n_samples}, ${4:gene_ids}, ${5:gene_family_ids}, ${6:gene_to_fam}, ${7:expression_vectors}, ${8:family_centroids}, ${9:shift_vectors})"
+    ],
     "description": "Call of Python wrapper for 'validate_all_data_C' from module 'tox_data_validation'"
   },
   "Python setup for 'create_zip_archive_c' from module 'tox_archive'": {
@@ -3286,7 +3382,9 @@
   },
   "Python call of 'create_zip_archive'": {
     "prefix": "tox:py_create_zip_archive",
-    "body": "create_zip_archive(${1:zip_filename: str}, ${2:keys}, ${3:filenames})",
+    "body": [
+      "create_zip_archive(${1:zip_filename: str}, ${2:keys}, ${3:filenames})"
+    ],
     "description": "Call of Python wrapper for 'create_zip_archive_c' from module 'tox_archive'"
   },
   "Python setup for 'extract_zip_archive_c' from module 'tox_archive'": {
@@ -3365,7 +3463,9 @@
   },
   "Python call of 'extract_zip_archive'": {
     "prefix": "tox:py_extract_zip_archive",
-    "body": "${1:result} = extract_zip_archive(${2:zip_filename})",
+    "body": [
+      "${1:result} = extract_zip_archive(${2:zip_filename})"
+    ],
     "description": "Call of Python wrapper for 'extract_zip_archive_c' from module 'tox_archive'"
   }
 }
