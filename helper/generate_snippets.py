@@ -49,7 +49,7 @@ def get_initial_snippet_dicts() -> Tuple[Dict[Literal["_kind"], SnippetKind], Di
     return {"_kind": "tox"}, {"_kind": "f42"}
 
 
-def generate_fortran_snippets(file_pattern: str, ignored_files=[]) -> Tuple[Wrappers, FortranModules]:
+def generate_fortran_snippets(file_pattern: str, ignored_files: List[str] = []) -> Tuple[Wrappers, FortranModules]:
     """
         Parses a fortran file and generates call snippets for each subroutine inside a module.
 
@@ -160,7 +160,7 @@ def get_module_snippets(module_name: str, f42_snippets: Snippets, tox_snippets: 
         raise RuntimeError(f"module name '{module_name}' does not start with 'tox_' or 'f42_'")
 
 
-def generate_interfacing_snippets(file_pattern: str, lang: InterfacingLanguage, fortran_modules: FortranModules, ignored_files=[], fortran_wrappers=set()) -> None:
+def generate_interfacing_snippets(file_pattern: str, lang: InterfacingLanguage, fortran_modules: FortranModules, ignored_files: List[str] = [], fortran_wrappers: Wrappers = set()) -> None:
     """
         Parses a python and R files and generates snippets for those lines having a preceding header.
         For function definitions, a call snippet is generated as well.
@@ -253,7 +253,7 @@ def write_snippets(f42_snippets: Snippets, tox_snippets: Snippets, lang: Interfa
             snippets_dict["_kind"] = kind  # re-add the snippet kind
 
 
-def error_in_line(msg: str, file_name: str, line_number: int, post_msg=None):
+def error_in_line(msg: str, file_name: str, line_number: int, post_msg: str | None = None):
     """
         Helper for raising errors consistently that give info about file name and line number
         msg-pattern: "${msg} in file '${filename}', line ${line_number}[: ${post_msg}]"
