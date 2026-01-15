@@ -3,6 +3,7 @@ import re
 import json
 from sys import stderr
 
+
 def main():
     fortran_wrappers, fortran_modules = generate_fortran_snippets("src/**/*.[fF]90", ["src/config.F90", "src/safeguard.F90"])
     generate_interfacing_snippets("python/*.py", "Python", fortran_modules, fortran_wrappers={*fortran_wrappers})
@@ -79,12 +80,12 @@ def generate_fortran_snippets(file_pattern, ignored_files=[]):
 
 
 def get_module_snippets(module_name, f42_snippets, tox_snippets):
-    if module_name.startswith("f42"):
+    if re.search(r'^f42[_:]', module_name):
         return f42_snippets
-    if module_name.startswith("tox"):
+    if re.search(r'^tox[_:]', module_name):
         return tox_snippets
     else:
-        raise RuntimeError(f"module name '{module_name}' does not start with 'tox' or 'f42'")
+        raise RuntimeError(f"module name '{module_name}' does not start with 'tox_' or 'f42_'")
 
 
 def generate_interfacing_snippets(file_pattern, lang, fortran_modules, ignored_files=[], fortran_wrappers=set()):
@@ -97,13 +98,13 @@ def generate_interfacing_snippets(file_pattern, lang, fortran_modules, ignored_f
                 wrapped_func_name = None
                 module = None
                 module_snippets = None
-                defined_function = False
+                defined_function = None
                 is_void = True
                 for line_number, line in enumerate(file, 1):
                     if line.startswith("#>"):
                         if line.startswith("#>skip snippets"):
                             break
-                        update_interfacing_snippets(module_snippets, body, module, wrapped_func_name, description, is_void, lang, fortran_wrappers, file_name, line_number)
+                        update_interfacing_snippets(module_snippets, body, module, wrapped_func_name, description, is_void, defined_function, lang, fortran_wrappers, file_name, line_number)
                         is_void = True
                         body = []
                         module, wrapped_func_name, description = get_interfacing_metadata(line, file_name, line_number)
@@ -128,7 +129,7 @@ def generate_interfacing_snippets(file_pattern, lang, fortran_modules, ignored_f
                         if re.search(r"^\s*\breturn\b", line) is not None:
                             is_void = False
 
-                update_interfacing_snippets(module_snippets, body, module, wrapped_func_name, description, is_void, lang, fortran_wrappers, file_name, line_number)
+                update_interfacing_snippets(module_snippets, body, module, wrapped_func_name, description, is_void, defined_function, lang, fortran_wrappers, file_name, line_number)
 
     if lang == "Python" and len(fortran_wrappers) > 0:
         raise RuntimeError(f"Missing Python wrappers for: {", ".join(fortran_wrappers)}")
@@ -165,8 +166,10 @@ def get_interfacing_metadata(initial_line, file_name, line_number):
     error_in_line("Invalid snippet header", file_name, line_number, "Should match pattern: '#> <fortran_module_name>:<fortran_subroutine_name>:<description>' OR '#> (tox|f42)_helper[-<name>]:<description>' ")
 
 
-def update_interfacing_snippets(snippets, body, module, wrapped_func_name, description, is_void, lang, fortran_wrappers, file_name, line_number):
+def update_interfacing_snippets(snippets, body, module, wrapped_func_name, description, is_void, defined_function, lang, fortran_wrappers, file_name, line_number):
     if module is not None:
+        if not defined_function:
+            error_in_line("Could not inherit a name for the snippet, try '#> (f42|tox)_helper-<name>:<description>' syntax", file_name, line_number - len(body) - 1)
         if module.endswith(":helper") and wrapped_func_name is not None:
             remove_unnecessary_lines(body)
             snippets[f"{lang} Helper to {description}"] = {
@@ -186,9 +189,12 @@ def update_interfacing_snippets(snippets, body, module, wrapped_func_name, descr
 
 
 def remove_unnecessary_lines(body):
+    inside_multiline_comment = False
     # remove last unnecessary lines, either empty (or spaces) or comments
-    while re.search(r'^\s*(#|"""|$)', (last_line := body.pop())) is not None:
-        pass
+    while (match := re.search(r'^\s*(#|(?P<ml_comment_open>""".*(?P<ml_comment_close>""")?)|$)', (last_line := body.pop()))) is not None or inside_multiline_comment:
+        if match is not None and match.group("ml_comment_open") is not None:
+            if match.group("ml_comment_close") is None:
+                inside_multiline_comment = not inside_multiline_comment
 
     body.append(last_line)
     body.append("")
