@@ -25,6 +25,9 @@ function get_compiler() {
 }
 
 function get_flags() {
+  # Libraries
+  echo -en "-lzip -lxxhash "
+
   # Detect compiler and choose appropriate profile:
   if [[ "$FC" == "ifx" || "$FC" == "ifort" ]]; then
     echo "-O2 -fopenmp-target-do-concurrent -warn all -diag-enable=all -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC"

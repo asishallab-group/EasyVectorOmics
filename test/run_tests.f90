@@ -11,18 +11,21 @@ program main
   use mod_test_calc_tiss_avg
   use mod_test_calc_fchange
   use mod_test_euclidean_distance
-  use mod_test_rap_tools_omics_vector_RAP_projection
-  use mod_test_rap_tools_omics_field_RAP_projection
+  use mod_test_rap_tools_omics_vector_RAP_projection, only: run_all_tests_rap_tools_omics_vector_RAP_projection => run_all_tests, run_named_tests_rap_tools_omics_vector_RAP_projection => run_named_tests
+  use mod_test_rap_tools_omics_field_RAP_projection, only: run_all_tests_rap_tools_omics_field_RAP_projection => run_all_tests, run_named_tests_rap_tools_omics_field_RAP_projection => run_named_tests
   use mod_test_clock_hand_angles
   use mod_test_relative_axis_contributions
   use mod_test_tissue_versatility
+  use mod_test_tox_data
   use mod_test_normalization_pipeline
   use mod_test_shift_vectors
   use mod_test_gene_centroids
   use mod_test_tox_conversions
   use mod_test_arrays
+  use mod_test_tox_paralog_analysis
   use mod_test_outlier_detection
-  use mod_test_tox_trajectory_contribution_analysis
+  use mod_test_tox_traj_contrib_analysis
+  use mod_test_normalization_unit_length
   use mod_test_tox_clustering
 
   implicit none
@@ -100,13 +103,16 @@ contains
     call add_suite("clock_hand_angles", run_all_tests_clock_hand_angles, run_named_tests_clock_hand_angles)
     call add_suite("relative_axis_contributions", run_all_tests_relative_axis, run_named_tests_relative_axis)
     call add_suite("tissue_versatility", run_all_tests_tissue_versatility, run_named_tests_tissue_versatility)
+    call add_suite("tox_data", run_all_tests_tox_data, run_named_tests_tox_data)
     call add_suite("normalization_pipeline", run_all_tests_normalization_pipeline, run_named_tests_normalization_pipeline)
     call add_suite("shift_vectors", run_all_tests_shift_vectors, run_named_tests_shift_vectors)
     call add_suite("arrays", run_all_tests_array, run_named_tests_array)
     call add_suite("gene_centroids", run_all_tests_gene_centroids, run_named_tests_gene_centroids)
     call add_suite("tox_conversions", run_all_tests_tox_conversions, run_named_tests_tox_conversions)
+    call add_suite("tox_paralog_analysis", run_all_tests_tox_paralog_analysis, run_named_tests_tox_paralog_analysis)
     call add_suite("outlier_detection", run_all_tests_outlier_detection, run_named_tests_outlier_detection)
     call add_suite("tox_trajectory_contribution_analysis", run_all_tests_tox_trajectory_contribution_analysis, run_named_tests_tox_trajectory_contribution_analysis)
+    call add_suite("normalization_unit_length", run_all_tests_normalization_unit_length, run_named_tests_normalization_unit_length)
     call add_suite("tox_clustering", run_all_tests_tox_clustering, run_named_tests_tox_clustering)
   end subroutine initialize_suites
   

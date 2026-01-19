@@ -2,7 +2,7 @@
 # This script demonstrates how to use distance_to_centroid with normalized TPM data,
 # orthogroup centroids and gene-to-family mapping
 
-library(readr)
+# Avoid requiring 'readr' in CI; use base R readers instead
 
 # Source the main functions
 source("r/tensoromics_functions.R")
@@ -13,13 +13,12 @@ generate_gene_to_family_mapping <- function(orthogroups_file, centroids_file, ge
   cat("Loading data files...\n")
   
   # Read orthogroups file
-  orthogroups <- read_tsv(orthogroups_file, show_col_types = FALSE)
-  
+  orthogroups <- read.table(orthogroups_file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
   # Read centroids file
-  centroids <- read_tsv(centroids_file, show_col_types = FALSE)
+  centroids <- read.table(centroids_file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
   
   # Read gene expression file
-  gene_expr <- read_tsv(gene_expression_file, show_col_types = FALSE)
+  gene_expr <- read.table(gene_expression_file, sep="\t", header=TRUE, stringsAsFactors=FALSE)
   
   # Detect available species columns (all except "Orthogroup")
   species_columns <- colnames(orthogroups)[colnames(orthogroups) != "Orthogroup"]
@@ -146,7 +145,7 @@ run_real_data_example <- function() {
   # Save results
   if (!dir.exists("results")) dir.create("results", recursive = TRUE)
   output_file <- file.path("results/distance_to_centroids_fortran.tsv")
-  write_tsv(results_with_families, output_file)
+  write.table(results_df, file = output_file, sep = "\t", row.names = FALSE, quote = FALSE)
   
   cat("Results saved to:", output_file, "\n")
   cat("Genes with families:", nrow(results_with_families), "\n")
