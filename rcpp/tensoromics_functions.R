@@ -1322,9 +1322,6 @@ tox_loess_smooth_2d <- function(
   )
 }
 
-# Relative Axis Plane (RAP) Projection
-
-
 #' Project selected vectors onto a Relative Axis Plane (RAP)
 #' 
 #' This function validates inputs and calls the C/Rcpp RAP projection wrapper.
@@ -1338,8 +1335,8 @@ tox_omics_vector_RAP_projection <- function(vecs, vecs_selection_mask, axes_sele
   n_axes <- nrow(vecs)
   n_vecs <- ncol(vecs)
 
-  validate_logical_or_index_vector(vecs_selection_mask, expecte, name = "vecs_selection_mask")
-  validate_logical_or_index_vector(axes_selection_mask, name = "axes_selection_mask")
+  validate_logical_or_index_vector(vecs_selection_mask, expected_length = n_vecs, name = "vecs_selection_mask")
+  validate_logical_or_index_vector(axes_selection_mask, expected_length = n_axes, name = "axes_selection_mask")
   vecs_selection_mask <- as.integer(vecs_selection_mask)
   axes_selection_mask <- as.integer(axes_selection_mask)
 
@@ -1360,8 +1357,8 @@ tox_omics_field_RAP_projection <- function(vecs, vecs_selection_mask, axes_selec
   validate_numeric_matrix(vecs, "vecs")
   n_axes <- nrow(vecs) / 2
   n_vecs <- ncol(vecs)
-  validate_logical_or_index_vector(vecs_selection_mask,  name = "vecs_selection_mask")
-  validate_logical_or_index_vector(axes_selection_mask,  name = "axes_selection_mask")
+  validate_logical_or_index_vector(vecs_selection_mask, expected_length = n_vecs, name = "vecs_selection_mask")
+  validate_logical_or_index_vector(axes_selection_mask, expected_length = n_axes, name = "axes_selection_mask")
   vecs_selection_mask <- as.integer(vecs_selection_mask)
   axes_selection_mask <- as.integer(axes_selection_mask)
   res <- tox_omics_field_RAP_projection_rcpp(vecs, vecs_selection_mask, axes_selection_mask)

@@ -104,18 +104,31 @@ List tox_cluster_factor_trajectories_k_means_rcpp(int n_clusters,
       double* signed_angles, int* ierr
     );
    
-  void omics_vector_RAP_projection_c(
-    double* vecs, int* n_axes, int* n_vecs,
-    int* vecs_selection_mask, int* n_selected_vecs,
-    int* axes_selection_mask, int* n_selected_axes,
-    double* projections, int* ierr
-  );
-  void omics_field_RAP_projection_c(
-    double* vecs, int* n_axes, int* n_vecs,
-    int* vecs_selection_mask, int* n_selected_vecs,
-    int* axes_selection_mask, int* n_selected_axes,
-    double* projections, int* ierr
-  );
+ void omics_vector_RAP_projection_c(
+  const double* vecs,
+  int n_axes,
+  int n_vecs,
+  const int* vecs_selection_mask,
+  int n_selected_vecs,
+  const int* axes_selection_mask,
+  int n_selected_axes,
+  double* projections,
+  int* ierr
+);
+
+ 
+void omics_field_RAP_projection_c(
+  const double* vecs,
+  int n_axes,
+  int n_vecs,
+  const int* vecs_selection_mask,
+  int n_selected_vecs,
+  const int* axes_selection_mask,
+  int n_selected_axes,
+  double* projections,
+  int* ierr
+);
+
 
     void normalize_by_std_dev_c(int n_genes, int n_tissues,
                                 double *input_matrix, double *output_matrix, int *ierr);                                    
@@ -1429,44 +1442,151 @@ List tox_extract_zip_archive_generic_rcpp(RawVector zip_filename_raw) {
 // ===================================================================
 
 // [[Rcpp::export]]
-List tox_omics_vector_RAP_projection_rcpp(NumericMatrix vecs, IntegerVector vecs_selection_mask, IntegerVector axes_selection_mask) {
+Rcpp::List tox_omics_vector_RAP_projection_rcpp(Rcpp::NumericMatrix vecs,
+                                               Rcpp::IntegerVector vecs_selection_mask,
+                                               Rcpp::IntegerVector axes_selection_mask) {
   int n_axes = vecs.nrow();
   int n_vecs = vecs.ncol();
-  int n_selected_vecs = sum(vecs_selection_mask);
-  int n_selected_axes = sum(axes_selection_mask);
-  NumericMatrix projections(n_selected_axes, n_selected_vecs);
+
+  // ---- Check mask lengths ----
+  if (vecs_selection_mask.size() != n_vecs) {
+    Rcpp::stop("vecs_selection_mask length must be ncol(vecs)=%d, got %d",
+               n_vecs, vecs_selection_mask.size());
+  }
+  if (axes_selection_mask.size() != n_axes) {
+    Rcpp::stop("axes_selection_mask length must be nrow(vecs)=%d, got %d",
+               n_axes, axes_selection_mask.size());
+  }
+
+  // ---- Check mask contents and count selected ----
+  int n_selected_vecs = 0;
+  for (int j = 0; j < n_vecs; ++j) {
+    int v = vecs_selection_mask[j];
+    if (v == NA_INTEGER) {
+      Rcpp::stop("vecs_selection_mask contains NA at position %d", j + 1);
+    }
+    if (v != 0 && v != 1) {
+      Rcpp::stop("vecs_selection_mask must be 0/1; got %d at position %d", v, j + 1);
+    }
+    if (v == 1) ++n_selected_vecs;
+  }
+
+  int n_selected_axes = 0;
+  for (int i = 0; i < n_axes; ++i) {
+    int a = axes_selection_mask[i];
+    if (a == NA_INTEGER) {
+      Rcpp::stop("axes_selection_mask contains NA at position %d", i + 1);
+    }
+    if (a != 0 && a != 1) {
+      Rcpp::stop("axes_selection_mask must be 0/1; got %d at position %d", a, i + 1);
+    }
+    if (a == 1) ++n_selected_axes;
+  }
+
+  if (n_selected_vecs <= 0) Rcpp::stop("No vectors selected (vecs_selection_mask has no 1s).");
+  if (n_selected_axes <= 0) Rcpp::stop("No axes selected (axes_selection_mask has no 1s).");
+
+  // ---- Allocate output ----
+  Rcpp::NumericMatrix projections(n_selected_axes, n_selected_vecs);
   int ierr = 0;
-  // Convert logical mask to int (Fortran expects int mask)
+
+  // Copy masks for C/Fortran
   std::vector<int> vecs_mask(vecs_selection_mask.begin(), vecs_selection_mask.end());
   std::vector<int> axes_mask(axes_selection_mask.begin(), axes_selection_mask.end());
-  omics_vector_RAP_projection_c(
-    vecs.begin(), &n_axes, &n_vecs,
-    vecs_mask.data(), &n_selected_vecs,
-    axes_mask.data(), &n_selected_axes,
-    projections.begin(), &ierr
+
+  // ---- Call native code ----
+omics_vector_RAP_projection_c(
+  vecs.begin(),
+  n_axes,
+  n_vecs,
+  vecs_mask.data(),
+  n_selected_vecs,
+  axes_mask.data(),
+  n_selected_axes,
+  projections.begin(),
+  &ierr
+);
+  return Rcpp::List::create(
+    Rcpp::Named("projections") = projections,
+    Rcpp::Named("ierr") = ierr
   );
-  return List::create(Named("projections") = projections,
-   Named("ierr") = ierr);
 }
 
 // [[Rcpp::export]]
-List tox_omics_field_RAP_projection_rcpp(NumericMatrix vecs, IntegerVector vecs_selection_mask, IntegerVector axes_selection_mask) {
-  int n_axes = vecs.nrow() / 2; // field matrix: 2*n_axes x n_vecs
+Rcpp::List tox_omics_field_RAP_projection_rcpp(Rcpp::NumericMatrix vecs,
+                                              Rcpp::IntegerVector vecs_selection_mask,
+                                              Rcpp::IntegerVector axes_selection_mask) {
+  int n_rows = vecs.nrow();
   int n_vecs = vecs.ncol();
-  int n_selected_vecs = sum(vecs_selection_mask);
-  int n_selected_axes = sum(axes_selection_mask);
-  NumericMatrix projections(n_selected_axes, n_selected_vecs);
+
+  // Field input must be (2*n_axes) x n_vecs
+  if (n_rows % 2 != 0) {
+    Rcpp::stop("Field vecs must have 2*n_axes rows; nrow(vecs)=%d is not even.", n_rows);
+  }
+  int n_axes = n_rows / 2;
+
+  // ---- Check mask lengths ----
+  if (vecs_selection_mask.size() != n_vecs) {
+    Rcpp::stop("vecs_selection_mask length must be ncol(vecs)=%d, got %d",
+               n_vecs, vecs_selection_mask.size());
+  }
+  if (axes_selection_mask.size() != n_axes) {
+    Rcpp::stop("axes_selection_mask length must be n_axes=nrow(vecs)/2=%d, got %d",
+               n_axes, axes_selection_mask.size());
+  }
+
+  // ---- Check mask contents and count selected ----
+  int n_selected_vecs = 0;
+  for (int j = 0; j < n_vecs; ++j) {
+    int v = vecs_selection_mask[j];
+    if (v == NA_INTEGER) {
+      Rcpp::stop("vecs_selection_mask contains NA at position %d", j + 1);
+    }
+    if (v != 0 && v != 1) {
+      Rcpp::stop("vecs_selection_mask must be 0/1; got %d at position %d", v, j + 1);
+    }
+    if (v == 1) ++n_selected_vecs;
+  }
+
+  int n_selected_axes = 0;
+  for (int i = 0; i < n_axes; ++i) {
+    int a = axes_selection_mask[i];
+    if (a == NA_INTEGER) {
+      Rcpp::stop("axes_selection_mask contains NA at position %d", i + 1);
+    }
+    if (a != 0 && a != 1) {
+      Rcpp::stop("axes_selection_mask must be 0/1; got %d at position %d", a, i + 1);
+    }
+    if (a == 1) ++n_selected_axes;
+  }
+
+  if (n_selected_vecs <= 0) Rcpp::stop("No vectors selected (vecs_selection_mask has no 1s).");
+  if (n_selected_axes <= 0) Rcpp::stop("No axes selected (axes_selection_mask has no 1s).");
+
+  // ---- Allocate output ----
+  Rcpp::NumericMatrix projections(n_selected_axes, n_selected_vecs);
   int ierr = 0;
+
   std::vector<int> vecs_mask(vecs_selection_mask.begin(), vecs_selection_mask.end());
   std::vector<int> axes_mask(axes_selection_mask.begin(), axes_selection_mask.end());
-  omics_field_RAP_projection_c(
-    vecs.begin(), &n_axes, &n_vecs,
-    vecs_mask.data(), &n_selected_vecs,
-    axes_mask.data(), &n_selected_axes,
-    projections.begin(), &ierr
+
+  // ---- Call native code ----
+ omics_field_RAP_projection_c(
+  vecs.begin(),
+  n_axes,
+  n_vecs,
+  vecs_mask.data(),
+  n_selected_vecs,
+  axes_mask.data(),
+  n_selected_axes,
+  projections.begin(),
+  &ierr
+);
+  return Rcpp::List::create(
+    Rcpp::Named("projections") = projections,
+    Rcpp::Named("ierr") = ierr
   );
-  return List::create(Named("projections") = projections,
-   Named("ierr") = ierr);
 }
 
-  // [[Rcpp::export]]
+
+
