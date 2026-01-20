@@ -1,8 +1,8 @@
 !> Module for serializing complex arrays to binary files.
-module serialize_complex
+module f42_serialize_complex
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only: c_loc
-  use array_utils, only: write_file_header
+  use f42_array_utils, only: write_file_header
   use tox_errors
   implicit none
 
@@ -181,14 +181,14 @@ contains
     end if
     close(unit)
   end subroutine
-end module serialize_complex
+end module f42_serialize_complex
 
 
 !> Serialize a flat complex array with specified dimensions and number of dimensions to a binary file.
 !! R can not pass a multidimensional array directly, so we use a flat array and dimensions. Therefore, exposing serialize_complex_*d to R is not needed.
 subroutine serialize_complex_flat_r(arr, array_size, dims, ndim, filename_raw, fn_len, ierr)
   use iso_fortran_env, only: int32, real64
-  use serialize_complex, only: serialize_complex_nd
+  use f42_serialize_complex, only: serialize_complex_nd
   use tox_conversions, only : c_char_1d_as_string
   use iso_c_binding, only: c_char
   use tox_errors, only : set_ok, is_ok
@@ -223,12 +223,12 @@ subroutine serialize_complex_flat_r(arr, array_size, dims, ndim, filename_raw, f
   end do
 
   call serialize_complex_nd(arr(1:total_len), dims(1:ndim), ndim, filename, ierr)
-end subroutine
+end subroutine serialize_complex_flat_r
 
 !> C binding for the subroutine to serialize a flat complex array to a binary file.
 subroutine serialize_complex_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) bind(C, name="serialize_complex_nd_C")
   use iso_c_binding, only: c_int, c_double_complex, c_char
-  use serialize_complex, only: serialize_complex_nd
+  use f42_serialize_complex, only: serialize_complex_nd
   use tox_errors, only : set_ok, is_ok
   use iso_fortran_env, only : int32, real64
   use tox_conversions, only : c_char_1d_as_string
@@ -258,4 +258,4 @@ subroutine serialize_complex_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) b
 
   ! save
   call serialize_complex_nd(arr, dims, ndim, filename, ierr)
-end subroutine
+end subroutine serialize_complex_nd_C

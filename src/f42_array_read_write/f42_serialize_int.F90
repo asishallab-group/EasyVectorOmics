@@ -1,22 +1,23 @@
-!> Module for serializing logical arrays to binary files.
-module serialize_logical
+!> Module for serializing integer arrays to binary files.
+module f42_serialize_int
+  use safeguard
   use, intrinsic :: iso_fortran_env, only: int32, real64
   use iso_c_binding, only: c_loc
-  use array_utils, only: write_file_header
+  use f42_array_utils, only: write_file_header
   use tox_errors
   implicit none
 
-  public:: serialize_logical_1d, serialize_logical_2d, serialize_logical_3d, &
-           serialize_logical_4d, serialize_logical_5d, serialize_logical_nd
+  public:: serialize_int_1d, serialize_int_2d, serialize_int_3d, &
+           serialize_int_4d, serialize_int_5d, serialize_int_nd
 
-  integer(int32), parameter :: ARRAY_TYPE_LOGICAL = 4
+  integer(int32), parameter :: ARRAY_TYPE_INT = 1
 
 contains
 
-  !> Serialize a 1D logical array to a binary file.
+  !> Serialize a 1D integer(int32) array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, and the array data.
-  subroutine serialize_logical_1d(arr, filename, ierr)
-    logical, intent(in) :: arr(:)
+  subroutine serialize_int_1d(arr, filename, ierr)
+    integer(int32), intent(in) :: arr(:)
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
@@ -30,7 +31,7 @@ contains
     call set_ok(ierr)
     call set_ok(ioerror)
 
-    call write_file_header(filename, unit, ARRAY_TYPE_LOGICAL, 1, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, 1_int32, dims, ierr)
     if (.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) arr
@@ -40,10 +41,10 @@ contains
     close(unit)
   end subroutine
 
-  !> Serialize a 2D logical array to a binary file.
+  !> Serialize a 2D integer(int32) array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, and the array data.
-  subroutine serialize_logical_2d(arr, filename, ierr)
-    logical, intent(in) :: arr(:,:)
+  subroutine serialize_int_2d(arr, filename, ierr)
+    integer(int32), intent(in) :: arr(:,:)
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
@@ -57,7 +58,7 @@ contains
     call set_ok(ierr)
     call set_ok(ioerror)
 
-    call write_file_header(filename, unit, ARRAY_TYPE_LOGICAL, 2, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, 2_int32, dims, ierr)
     if (.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) arr
@@ -67,10 +68,10 @@ contains
     close(unit)
   end subroutine
 
-  !> Serialize a 3D logical array to a binary file.
+  !> Serialize a 3D integer(int32) array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, and the array data.
-  subroutine serialize_logical_3d(arr, filename, ierr)
-    logical, intent(in) :: arr(:,:,:)
+  subroutine serialize_int_3d(arr, filename, ierr)
+    integer(int32), intent(in) :: arr(:,:,:)
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
@@ -83,7 +84,7 @@ contains
 
     call set_ok(ierr)
     call set_ok(ioerror)
-    call write_file_header(filename, unit, ARRAY_TYPE_LOGICAL, 3, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, 3_int32, dims, ierr)
     if (.not. is_ok(ierr)) return 
 
     write(unit, iostat=ioerror) arr
@@ -93,10 +94,10 @@ contains
     close(unit)
   end subroutine
 
-  !> Serialize a 4D logical array to a binary file.
+  !> Serialize a 4D integer(int32) array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, and the array data.
-  subroutine serialize_logical_4d(arr, filename, ierr)
-    logical, intent(in) :: arr(:,:,:,:)
+  subroutine serialize_int_4d(arr, filename, ierr)
+    integer(int32), intent(in) :: arr(:,:,:,:)
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
@@ -111,7 +112,7 @@ contains
     call set_ok(ierr)
     call set_ok(ioerror)
 
-    call write_file_header(filename, unit, ARRAY_TYPE_LOGICAL, 4, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, 4_int32, dims, ierr)
     if (.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) arr
@@ -121,10 +122,10 @@ contains
     close(unit)
   end subroutine
 
-  !> Serialize a 5D logical array to a binary file.
+  !> Serialize a 5D integer(int32) array to a binary file.
   !! The file will contain a magic number, type code, dimension, shape, and the array data.
-  subroutine serialize_logical_5d(arr, filename, ierr)
-    logical, intent(in) :: arr(:,:,:,:,:)
+  subroutine serialize_int_5d(arr, filename, ierr)
+    integer(int32), intent(in) :: arr(:,:,:,:,:)
     !! array to save
     character(len=*), intent(in) :: filename
     !! output filename
@@ -139,7 +140,7 @@ contains
 
     call set_ok(ierr)
     call set_ok(ioerror)
-    call write_file_header(filename, unit, ARRAY_TYPE_LOGICAL, 5, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, 5_int32, dims, ierr)
     if (.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) arr
@@ -149,11 +150,11 @@ contains
     close(unit)
   end subroutine
 
-  !> Serialize a flat logical array with specified dimensions and number of dimensions to a binary file.
+  !> Serialize a flat integer array with specified dimensions and number of dimensions to a binary file.
   !> @note this is called by R
-  subroutine serialize_logical_nd(arr, dims, ndim, filename, ierr)
-    logical, intent(in) :: arr(:)
-    !! Flat logical array to serialize
+  subroutine serialize_int_nd(arr, dims, ndim, filename, ierr)
+    integer(int32), intent(in) :: arr(:)
+    !! Flat integer array to serialize
     integer(int32), intent(in) :: dims(:)
     !! Dimensions of the array
     integer(int32), intent(in) :: ndim
@@ -172,7 +173,7 @@ contains
       call set_err_once(ierr, ERR_DIM_MISMATCH)
     end if
 
-    call write_file_header(filename, unit, ARRAY_TYPE_LOGICAL, ndim, dims, ierr)
+    call write_file_header(filename, unit, ARRAY_TYPE_INT, ndim, dims, ierr)
     if (.not. is_ok(ierr)) return
 
     write(unit, iostat=ioerror) arr
@@ -181,16 +182,16 @@ contains
     end if
     close(unit)
   end subroutine
-end module serialize_logical
+end module f42_serialize_int
 
 
-!> Serialize a flat logical array with specified dimensions and number of dimensions to a binary file.
-!! R can not pass a multidimensional array directly, so we use a flat array and dimensions. Therefore, exposing serialize_logical_*d to R is not needed.
-subroutine serialize_logical_flat_r(arr, array_size, dims, ndim, filename_raw, fn_len, ierr)
+!> Serialize a flat integer array with specified dimensions and number of dimensions to a binary file.
+!! R can not pass a multidimensional array directly, so we use a flat array and dimensions. Therefore, exposing serialize_int_*d to R is not needed.
+subroutine serialize_int_flat_r(arr, array_size, dims, ndim, filename_raw, fn_len, ierr)
   use iso_fortran_env, only: int32
-  use serialize_logical, only: serialize_logical_nd
+  use f42_serialize_int, only: serialize_int_nd
   use tox_errors, only : set_ok, is_ok
-  use tox_conversions, only: c_char_1d_as_string
+  use tox_conversions, only : c_char_1d_as_string
   use iso_c_binding, only: c_char
   implicit none
 
@@ -198,14 +199,14 @@ subroutine serialize_logical_flat_r(arr, array_size, dims, ndim, filename_raw, f
   !! Number of dimensions
   integer(int32), intent(in) :: array_size
   !! Size of the flat array
-  logical, intent(in) :: arr(array_size)
-  !! Flat logical array to serialize
+  integer(int32), intent(in) :: arr(array_size)
+  !! Flat integer array to serialize
   integer(int32), intent(in) :: dims(ndim)
   !! Dimensions of the array
   integer(int32), intent(in) :: fn_len
   !! Length of the filename array
   character(kind=c_char, len=1), intent(in) :: filename_raw(fn_len)
-  !! Array of raw bytes characters representing the filename
+  !! Array of ASCII characters representing the filename
   integer(int32), intent(out) :: ierr
   !! Error code
 
@@ -222,46 +223,39 @@ subroutine serialize_logical_flat_r(arr, array_size, dims, ndim, filename_raw, f
     total_len = total_len * dims(i)
   end do
 
-  call serialize_logical_nd(arr(1:total_len), dims(1:ndim), ndim, filename, ierr)
-end subroutine
+  call serialize_int_nd(arr(1:total_len), dims(1:ndim), ndim, filename, ierr)
+end subroutine serialize_int_flat_r
 
-!> C binding for the subroutine to serialize a flat logical array to a binary file.
-subroutine serialize_logical_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) bind(C, name="serialize_logical_nd_C")
+!> C binding for the subroutine to serialize a flat integer array to a binary file.
+subroutine serialize_int_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) bind(C, name="serialize_int_nd_C")
   use iso_c_binding, only: c_int, c_char
-  use tox_conversions, only: c_int_as_logical, c_char_1d_as_string
-  use serialize_logical, only: serialize_logical_nd
+  use f42_serialize_int, only: serialize_int_nd
   use tox_errors, only : set_ok, is_ok
   use iso_fortran_env, only : int32
+  use tox_conversions, only : c_char_1d_as_string
   implicit none
 
   ! input
-
   integer(c_int), intent(in), value :: ndim
     !! Number of dimensions
   integer(c_int), intent(in) :: dims(ndim)
-    !! Dimensions of the array  
+    !! Dimensions of the array
   integer(c_int), intent(in) :: arr(product(dims))
-    !! Pointer to the flat logical array    
+    !! Pointer to the flat integer array  
   integer(c_int), intent(in), value :: fn_len
     !! Length of the filename array
   character(kind=c_char, len=1), intent(in) :: filename_raw(fn_len)
-    !! Array of raw bytes characters representing the filename
+    !! Array of ASCII characters representing the filename
   integer(c_int), intent(out) :: ierr
     !! Error code
 
   ! Local
   character(len=:), allocatable :: filename
-  logical, allocatable :: tmp_arr(:)
-
-  allocate(tmp_arr(product(dims(1:ndim))))
 
   call set_ok(ierr)
 
   call c_char_1d_as_string(filename_raw, filename, ierr)
-  if( .not. is_ok(ierr)) return
-
-  call c_int_as_logical(arr, tmp_arr)
-
+  if (.not. is_ok(ierr)) return
   ! save
-  call serialize_logical_nd(tmp_arr, dims, ndim, filename, ierr)
-end subroutine
+  call serialize_int_nd(arr, dims, ndim, filename, ierr)
+end subroutine serialize_int_nd_C

@@ -2,7 +2,7 @@
 !!
 !! This module provides routines to build a BST index (via sorting), access sorted values,
 !! and perform efficient range queries over a real-valued array.
-module binary_search_tree
+module f42_binary_search_tree
   use safeguard
   use f42_utils, only: sort_array
   use, intrinsic :: iso_fortran_env, only: int32, real64
@@ -110,13 +110,13 @@ contains
     end do
   end subroutine bst_range_query
 
-end module binary_search_tree
+end module f42_binary_search_tree
 
 !> Wrapper for getting range query usable by R
 subroutine bst_range_query_r(values, sorted_indices, num_values, lower_bound, upper_bound, &
                             output_indices, num_matches, ierr)
 
-  use binary_search_tree, only: bst_range_query
+  use f42_binary_search_tree, only: bst_range_query
   use, intrinsic :: iso_fortran_env, only: int32, real64
 
   implicit none
@@ -143,7 +143,7 @@ end subroutine bst_range_query_r
 
 !> Wrapper for building BST index usable by R
 subroutine build_bst_index_r(values, num_values, sorted_indices, left_stack, right_stack, ierr)
-  use binary_search_tree, only: build_bst_index
+  use f42_binary_search_tree, only: build_bst_index
   use, intrinsic :: iso_fortran_env, only: int32, real64
   implicit none
   integer(int32), intent(in) :: num_values           
@@ -166,7 +166,7 @@ end subroutine build_bst_index_r
 subroutine bst_range_query_C(values, sorted_indices, num_values, lower_bound, upper_bound, &
                             output_indices, num_matches, ierr) bind(C, name='bst_range_query_C')
   use, intrinsic :: iso_c_binding, only: c_int, c_double
-  use binary_search_tree, only: bst_range_query
+  use f42_binary_search_tree, only: bst_range_query
   implicit none
   real(c_double), intent(in) :: values(num_values)    
   !! Input real array (C-style)
@@ -193,7 +193,7 @@ end subroutine bst_range_query_C
 subroutine build_bst_index_C(values, num_values, sorted_indices, left_stack, right_stack, ierr) &
                             bind(C, name='build_bst_index_C')
   use, intrinsic :: iso_c_binding, only: c_int, c_double
-  use binary_search_tree
+  use f42_binary_search_tree
   implicit none
   integer(c_int), value :: num_values               
   !! Number of elements

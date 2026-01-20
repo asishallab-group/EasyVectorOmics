@@ -1,16 +1,16 @@
 module mod_test_arrays
     use asserts
-    use array_utils, only: get_array_metadata
-    use int_deserialize_mod
-    use real_deserialize_mod
-    use char_deserialize_mod
-    use serialize_char
-    use serialize_int
-    use serialize_real
-    use logical_deserialize_mod
-    use complex_deserialize_mod
-    use serialize_logical
-    use serialize_complex
+    use f42_array_utils, only: get_array_metadata
+    use f42_deserialize_int
+    use f42_deserialize_real
+    use f42_deserialize_char
+    use f42_serialize_char
+    use f42_serialize_int
+    use f42_serialize_real
+    use f42_deserialize_logical
+    use f42_deserialize_complex
+    use f42_serialize_logical
+    use f42_serialize_complex
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use iso_c_binding
     use tox_errors

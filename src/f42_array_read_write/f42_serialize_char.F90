@@ -1,10 +1,10 @@
 !> Module providing serialization and deserialization routines for character arrays
 !! of up to 5 dimensions, arrays are serialized to a custom binary format with a magic number and type/dimension metadata.
 
-module serialize_char
+module f42_serialize_char
   use safeguard
   use, intrinsic :: iso_fortran_env, only: int32, real64
-  use array_utils, only: write_file_header
+  use f42_array_utils, only: write_file_header
   use tox_errors
   implicit none
 
@@ -202,13 +202,13 @@ contains
     close(unit)
   end subroutine serialize_char_nd
 
-end module serialize_char
+end module f42_serialize_char
 
 !> serializes a flat character array to a binary file.
 subroutine serialize_char_flat_r(raw_arr, array_size, dims, ndim, clen, filename_raw, fn_len, ierr)
   use iso_fortran_env, only: int32
   use iso_c_binding, only: c_char
-  use serialize_char, only: serialize_char_nd
+  use f42_serialize_char, only: serialize_char_nd
   use tox_errors, only: set_err_once, set_ok, is_ok, ERR_ALLOC_FAIL
   use tox_conversions, only: c_char_1d_as_string, c_char_2d_as_string
   implicit none
@@ -256,10 +256,10 @@ subroutine serialize_char_flat_r(raw_arr, array_size, dims, ndim, clen, filename
 
 end subroutine serialize_char_flat_r
 
-subroutine serialize_char_flat_C(raw_chars, dims, ndim, clen, filename_c, fn_len, ierr) bind(C, name="serialize_char_flat_C")
+subroutine serialize_char_nd_C(raw_chars, dims, ndim, clen, filename_c, fn_len, ierr) bind(C, name="serialize_char_nd_C")
   use iso_c_binding, only: c_char, c_int, c_null_char
   use iso_fortran_env, only: int32
-  use serialize_char, only: serialize_char_nd
+  use f42_serialize_char, only: serialize_char_nd
   use tox_conversions, only: c_char_1d_as_string, c_char_as_char
   use tox_errors
   implicit none
@@ -312,4 +312,4 @@ subroutine serialize_char_flat_C(raw_chars, dims, ndim, clen, filename_c, fn_len
 
   call serialize_char_nd(flat, dims, ndim, clen, filename, ierr)
   
-end subroutine serialize_char_flat_C
+end subroutine serialize_char_nd_C
