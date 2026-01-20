@@ -3232,6 +3232,7 @@ def tox_compute_all_contributions(trajectories, factor_indices, dependent_indice
     }
 
 
+#> tox_trajectory_contribution_analysis:perform_permutation_test_c: Perform permutation test for a given factor–dependent pair
 def tox_perform_permutation_test(trajectories, factor_idx, dependent_idx, sample_idx,
                                  mode, n_permutations, random_seed):
     """
@@ -3313,6 +3314,7 @@ def tox_perform_permutation_test(trajectories, factor_idx, dependent_idx, sample
     }
 
 
+#> tox_trajectory_contribution_analysis:compute_p_values_c: Compute p-values for observed contributions compared to permutation contributions
 def tox_compute_p_values(local_contributions_observed,
                          total_contribution_observed,
                          local_contributions_perm,
