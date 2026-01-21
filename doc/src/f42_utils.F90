@@ -90,8 +90,11 @@ contains
     real(real64), intent(in) :: b
       !! Second variable of comparison a==b
 
+    real(real64) :: rel_tolerance
+
     if (ieee_is_finite(a) .and. ieee_is_finite(b)) then
-      is_close = abs(a - b) <= EPS * max(abs(a), abs(b))
+      rel_tolerance = EPS * max(abs(a), abs(b))
+      is_close = abs(a - b) <= max(rel_tolerance, 1d-12)
     else
       is_close = a == b
     end if
