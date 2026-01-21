@@ -26,15 +26,21 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(8)
-        all_tests(1) = test_case("test_normalize_variable_timeseries", test_normalize_variable_timeseries)
-        all_tests(2) = test_case("test_normalize_single_trajectory", test_normalize_single_trajectory)
-        all_tests(3) = test_case("test_normalize_all_trajectories", test_normalize_all_trajectories)
-        all_tests(4) = test_case("test_normalize_edge_cases", test_normalize_edge_cases)
-        all_tests(5) = test_case("test_normalize_invalid_inputs", test_normalize_invalid_inputs)
-        all_tests(6) = test_case("test_compute_baselines_factor_dependent", test_compute_baselines_factor_dependent)
-        all_tests(7) = test_case("test_compute_contributions", test_compute_contributions)
-        all_tests(8) = test_case("test_compute_all_contributions", test_compute_all_contributions)
+        type(test_case) :: all_tests(14)
+        all_tests(1) = test_case("test_compute_baselines_factor_dependent", test_compute_baselines_factor_dependent)
+        all_tests(2) = test_case("test_compute_contributions", test_compute_contributions)
+        all_tests(3) = test_case("test_compute_all_contributions", test_compute_all_contributions)
+        all_tests(4) = test_case("test_select_random_sample_helper", test_select_random_sample_helper)
+        all_tests(5) = test_case("test_perform_permutation_test", test_perform_permutation_test)
+        all_tests(6) = test_case("test_compute_p_values", test_compute_p_values)
+        all_tests(7) = test_case("test_normalize_variable_timeseries", test_normalize_variable_timeseries)
+        all_tests(8) = test_case("test_normalize_single_trajectory", test_normalize_single_trajectory)
+        all_tests(9) = test_case("test_normalize_all_trajectories", test_normalize_all_trajectories)
+        all_tests(10) = test_case("test_normalize_edge_cases", test_normalize_edge_cases)
+        all_tests(11) = test_case("test_normalize_invalid_inputs", test_normalize_invalid_inputs)
+        all_tests(12) = test_case("test_compute_baselines_factor_dependent", test_compute_baselines_factor_dependent)
+        all_tests(13) = test_case("test_compute_contributions", test_compute_contributions)
+        all_tests(14) = test_case("test_compute_all_contributions", test_compute_all_contributions)
     end function get_all_tests
 
     !> Run all tox_trajectory_contribution_analysis tests.
@@ -75,6 +81,198 @@ contains
             end if
         end do
     end subroutine run_named_tests_tox_trajectory_contribution_analysis
+
+    !> initializes random number generator with a randomly selected seed
+    subroutine setup_random
+        integer(int32) :: seed
+
+        call random_init(.false., .false.) ! reset random number generator to non-reproducible
+        seed = int(rand_range(0.0_real64, real(huge(1_int32), kind=real64)), kind=int32) ! pick random seed
+        call init_random(seed) ! set random number generator to seed
+        write (*, "('Using random seed: ', I0)") seed
+    end subroutine setup_random
+
+    subroutine test_compute_p_values()
+        integer(int32), parameter :: n_timepoints = 3, n_permutations = 4
+        integer(int32) :: ierr
+        real(real64) :: local_contributions_observed(n_timepoints)
+        real(real64) :: total_contribution_observed
+        real(real64) :: local_contributions_perm(n_timepoints, n_permutations)
+        real(real64) :: total_contributions_perm(n_permutations)
+        real(real64) :: local_p_values(n_timepoints)
+        real(real64) :: total_p_value
+        real(real64) :: expected_local_p(n_timepoints)
+        real(real64) :: expected_total_p
+
+        ! -------------------------------
+        ! Setup observed contributions
+        ! -------------------------------
+        local_contributions_observed = [2.0_real64, 0.0_real64, 2.0_real64]
+        total_contribution_observed  = sum(local_contributions_observed)  ! = 4.0
+
+        ! -------------------------------
+        ! Setup permutation contributions
+        ! -------------------------------
+        ! Permutation 1: [1,0,1], total=2
+        local_contributions_perm(:,1) = [1.0_real64, 0.0_real64, 1.0_real64]
+        total_contributions_perm(1)   = 2.0_real64
+
+        ! Permutation 2: [2,0,2], total=4
+        local_contributions_perm(:,2) = [2.0_real64, 0.0_real64, 2.0_real64]
+        total_contributions_perm(2)   = 4.0_real64
+
+        ! Permutation 3: [3,1,3], total=7
+        local_contributions_perm(:,3) = [3.0_real64, 1.0_real64, 3.0_real64]
+        total_contributions_perm(3)   = 7.0_real64
+
+        ! Permutation 4: [0,0,0], total=0
+        local_contributions_perm(:,4) = [0.0_real64, 0.0_real64, 0.0_real64]
+        total_contributions_perm(4)   = 0.0_real64
+
+        ! -------------------------------
+        ! Call routine
+        ! -------------------------------
+        call compute_p_values(local_contributions_observed, total_contribution_observed, &
+            local_contributions_perm, total_contributions_perm, n_timepoints, n_permutations, &
+            local_p_values, total_p_value, ierr)
+
+        call assert_equal_int(ierr, ERR_OK, "test_compute_p_values: ierr")
+
+        ! -------------------------------
+        ! Expected p-values
+        ! -------------------------------
+        ! For each timepoint:
+        ! Timepoint 1 observed=2.0 → perms >=2.0: [2,3] → 2/4 = 0.5
+        ! Timepoint 2 observed=0.0 → perms >=0.0: [1,2,3,4] → 4/4 = 1.0
+        ! Timepoint 3 observed=2.0 → perms >=2.0: [2,3] → 2/4 = 0.5
+        expected_local_p = [0.5_real64, 1.0_real64, 0.5_real64]
+
+        ! Total observed=4.0 → perms >=4.0: [2,3] → 2/4 = 0.5
+        expected_total_p = 0.5_real64
+
+        ! -------------------------------
+        ! Assertions
+        ! -------------------------------
+        call assert_equal_array_real(local_p_values, expected_local_p, n_timepoints, TOL, "test_compute_p_values: local p-values")
+        call assert_equal_real(total_p_value, expected_total_p, TOL, "test_compute_p_values: total p-value")
+    end subroutine test_compute_p_values
+
+    subroutine test_perform_permutation_test()
+        integer(int32), parameter :: n_factors = 2, n_samples = 20, n_timepoints = 3
+        integer(int32), parameter :: n_permutations = 2
+        integer(int32) :: ierr, mode
+        real(real64) :: trajectories(n_factors, n_samples, n_timepoints)
+        integer(int32) :: factor_idx, dependent_idx, sample_idx
+        real(real64) :: local_contributions(n_timepoints, n_permutations)
+        real(real64) :: total_contributions(n_permutations)
+        real(real64) :: temp_factor(n_timepoints), temp_dependent(n_timepoints)
+        real(real64) :: expected_local(n_timepoints, n_permutations)
+        real(real64) :: expected_total(n_permutations)
+
+        call setup_random()
+
+        ! Case 1: test functionality without randomness, as all data unlike current_sample is same
+        sample_idx    = 1
+        mode          = BASELINE_MEAN
+        factor_idx    = 1
+        dependent_idx = 1 ! will be different for the permutations
+        trajectories(1,1,:) = [1.0_real64, 2.0_real64, 3.0_real64]
+        trajectories(1,2:,1) = 2.0_real64
+        trajectories(1,2:,2) = 4.0_real64
+        trajectories(1,2:,3) = 6.0_real64
+        ! Dependent 2 values across samples/timepoints
+        trajectories(2,1,:) = [4.0_real64, 5.0_real64, 6.0_real64]
+        trajectories(2,2:,1) = 1.0_real64
+        trajectories(2,2:,2) = 3.0_real64
+        trajectories(2,2:,3) = 5.0_real64
+
+
+        call perform_permutation_test(trajectories, n_factors, n_samples, n_timepoints, &
+            factor_idx, dependent_idx, sample_idx, mode, n_permutations, &
+            local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+
+        call assert_equal_int(ierr, ERR_OK, "test_perform_permutation_test: Case 1 Permutation test ierr")
+
+        ! Factor trajectory (sample 1): [1,2,3], mean=2.0
+        ! Dependent trajectory (sample 2): [1,3,5], mean=3.0
+        ! Contributions = (factor - 2.0)*(dependent - 3.0)
+        expected_local(1, :) = (1.0-2.0)*(1.0-3.0)   ! = 2.0
+        expected_local(2, :) = (2.0-2.0)*(3.0-3.0)   ! = 0.0
+        expected_local(3, :) = (3.0-2.0)*(5.0-3.0)   ! = 2.0
+        expected_total    = sum(expected_local(:, 1))   ! = 4.0
+
+        call assert_equal_array_real(local_contributions, expected_local, n_timepoints * n_permutations, TOL, "test_perform_permutation_test: Case 1 local contributions")
+        call assert_equal_array_real(total_contributions, expected_total, n_permutations, TOL, "test_perform_permutation_test: Case 1 total contribution")
+
+        ! Case 2: test randomness reproducibility: without seed -> not reproducible
+        call random_number(trajectories)
+        call perform_permutation_test(trajectories, n_factors, n_samples, n_timepoints, &
+            factor_idx, dependent_idx, sample_idx, mode, n_permutations, &
+            expected_local, expected_total, temp_factor, temp_dependent, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_perform_permutation_test: Case 2 Permutation test ierr expected contribs")
+
+        call perform_permutation_test(trajectories, n_factors, n_samples, n_timepoints, &
+            factor_idx, dependent_idx, sample_idx, mode, n_permutations, &
+            local_contributions, total_contributions, temp_factor, temp_dependent, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_perform_permutation_test: Case 2 Permutation test ierr")
+
+        call assert_false(all(local_contributions == expected_local), "test_perform_permutation_test: Case 2 should not be reproducible")
+
+        ! Case 3: test randomness reproducibility: with seed -> reproducible
+        call random_number(trajectories)
+        call perform_permutation_test(trajectories, n_factors, n_samples, n_timepoints, &
+            factor_idx, dependent_idx, sample_idx, mode, n_permutations, &
+            expected_local, expected_total, temp_factor, temp_dependent, ierr, random_seed=42_int32)
+        call assert_equal_int(ierr, ERR_OK, "test_perform_permutation_test: Case 3 Permutation test ierr expected contribs")
+
+        call perform_permutation_test(trajectories, n_factors, n_samples, n_timepoints, &
+            factor_idx, dependent_idx, sample_idx, mode, n_permutations, &
+            local_contributions, total_contributions, temp_factor, temp_dependent, ierr, random_seed=42_int32)
+        call assert_equal_int(ierr, ERR_OK, "test_perform_permutation_test: Case 3 Permutation test ierr")
+
+        call assert_true(all(local_contributions == expected_local), "test_perform_permutation_test: Case 3 should be reproducible")
+    end subroutine test_perform_permutation_test
+
+    subroutine test_select_random_sample_helper
+        use f42_utils, only: rand_range
+        integer(int32), parameter :: n_samples = 10, current_sample = 5
+        integer(int32) :: ierr, random_sample, i
+        integer(int32), dimension(n_samples) :: sample_counts
+
+        call setup_random()
+
+        ! Case 1: Basic selection test -> current_sample never selected
+        sample_counts = 0
+        do i = 1, 1000
+            call select_random_sample_helper(n_samples, current_sample, random_sample, ierr)
+            call assert_equal_int(ierr, ERR_OK, "test_select_random_sample_helper: Case 1: Unexpected error when selecting sample")
+            
+            sample_counts(random_sample) = sample_counts(random_sample) + 1
+        end do
+
+        call assert_equal_int(sample_counts(current_sample), 0_int32, "test_select_random_sample_helper: Case 1: current_sample selected")
+        call assert_equal_int(count(sample_counts /= 0), n_samples - 1, "test_select_random_sample_helper: Case 1: for 1000 iterations all other 9 samples should definitely be selected once")
+    
+        ! Case 2: only two samples -> forced selection
+        call select_random_sample_helper(2_int32, 1_int32, random_sample, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_select_random_sample_helper: Case 2: Unexpected error when selecting sample")
+        call assert_equal_int(random_sample, 2_int32, "test_select_random_sample_helper: Case 2: selected wrong sample")
+
+        call select_random_sample_helper(2_int32, 2_int32, random_sample, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_select_random_sample_helper: Case 2: Unexpected error when selecting sample")
+        call assert_equal_int(random_sample, 1_int32, "test_select_random_sample_helper: Case 2: selected wrong sample")
+
+        ! Case 3: Error case: n_samples=current_sample=1
+        call select_random_sample_helper(1_int32, 1_int32, random_sample, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_select_random_sample_helper: Case 3: Expected error for samples=1")
+
+        ! Case 4: Error case: current_sample out of range
+        call select_random_sample_helper(n_samples, 0_int32, random_sample, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_select_random_sample_helper: Case 4: Expected error for current_sample=0")
+
+        call select_random_sample_helper(n_samples, n_samples + 1, random_sample, ierr)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_select_random_sample_helper: Case 4: Expected error for current_sample>n_samples")
+    end subroutine test_select_random_sample_helper
 
     subroutine test_compute_all_contributions()
         integer(int32), parameter :: n_factors = 2, n_samples = 1, n_timepoints = 3
