@@ -3102,6 +3102,143 @@ def tox_detect_dosage_effect(ancestor, genes,
     }
 
 
+#> tox_trajectory_normalization:normalize_variable_timeseries_C: Normalize a single variable across time using min-max scaling.
+def tox_normalize_variable_timeseries(v):
+    """
+    Normalize a single variable across time using min-max scaling.
+
+    Args:
+        v (array-like): 1D time series to normalize (length = n_points)
+
+    Returns:
+        np.ndarray: Normalized time series in [0,1]
+
+    Raises:
+        RuntimeError: If normalization fails
+    """
+    v_arr = np.asfortranarray(v, dtype=np.float64)
+    n_points = ctypes.c_int(len(v_arr))
+    v_norm = np.empty_like(v_arr)
+    ierr = ctypes.c_int(0)
+    status = ctypes.c_int(0)
+
+    normalize_c = lib.normalize_variable_timeseries_C
+    normalize_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # v
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # v_norm
+        ctypes.POINTER(ctypes.c_int),                                    # n_points
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+        ctypes.POINTER(ctypes.c_int)                                     # status
+    ]
+    normalize_c.restype = None
+
+    normalize_c(v_arr, v_norm, ctypes.byref(n_points), ctypes.byref(ierr), ctypes.byref(status))
+    check_err_code(ierr.value)
+
+    _readonly(v_norm)
+    result = {
+        "v_norm": v_norm,
+        "status": status.value
+    }
+    return result
+
+
+#> tox_trajectory_normalization:normalize_single_trajectory_C: Normalize all factors in a single trajectory independently across time.
+def tox_normalize_single_trajectory(trajectory):
+    """
+    Normalize all factors in a single trajectory independently across time.
+
+    Args:
+        trajectory (array-like): 2D array shape(n_timepoints, n_factors) for one sample
+
+    Returns:
+        np.ndarray: Normalized trajectory shape(n_timepoints, n_factors) in [0,1]
+
+    Raises:
+        RuntimeError: If normalization fails
+    """
+    traj_arr = np.asfortranarray(trajectory, dtype=np.float64)
+    n_timepoints, n_factors = traj_arr.shape
+
+    n_factors_c = ctypes.c_int(n_factors)
+    n_timepoints_c = ctypes.c_int(n_timepoints)
+    traj_norm = np.empty_like(traj_arr)
+    ierr = ctypes.c_int(0)
+    status = ctypes.c_int(0)
+
+    normalize_c = lib.normalize_single_trajectory_C
+    normalize_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # trajectory
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # trajectory_norm
+        ctypes.POINTER(ctypes.c_int),                                    # n_factors
+        ctypes.POINTER(ctypes.c_int),                                    # n_timepoints
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+        ctypes.POINTER(ctypes.c_int)                                     # status
+    ]
+    normalize_c.restype = None
+
+    normalize_c(traj_arr, traj_norm, ctypes.byref(n_factors_c), 
+                ctypes.byref(n_timepoints_c), ctypes.byref(ierr), ctypes.byref(status))
+    check_err_code(ierr.value)
+
+    _readonly(traj_norm)
+    result = {
+        "traj_norm": traj_norm,
+        "status": status.value
+    }
+    return result
+
+
+#> tox_trajectory_normalization:normalize_all_trajectories_C: Normalize all trajectories across multiple entities.
+def tox_normalize_all_trajectories(trajectories):
+    """
+    Normalize all trajectories across multiple entities.
+
+    Args:
+        trajectories (array-like): 3D array (n_factors × n_samples × n_timepoints)
+
+    Returns:
+        np.ndarray: Normalized trajectories (n_factors × n_samples × n_timepoints) in [0,1]
+
+    Raises:
+        RuntimeError: If normalization fails
+    """
+    traj_arr = np.asfortranarray(trajectories, dtype=np.float64)
+    n_factors, n_samples, n_timepoints = traj_arr.shape
+
+    n_factors_c = ctypes.c_int(n_factors)
+    n_samples_c = ctypes.c_int(n_samples)
+    n_timepoints_c = ctypes.c_int(n_timepoints)
+    traj_norm = np.empty_like(traj_arr)
+    ierr = ctypes.c_int(0)
+    status = ctypes.c_int(0)
+
+    normalize_c = lib.normalize_all_trajectories_C
+    normalize_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # trajectories
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # trajectories_norm
+        ctypes.POINTER(ctypes.c_int),                                    # n_factors
+        ctypes.POINTER(ctypes.c_int),                                    # n_samples
+        ctypes.POINTER(ctypes.c_int),                                    # n_timepoints
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+        ctypes.POINTER(ctypes.c_int)                                     # status
+    ]
+    normalize_c.restype = None
+
+    normalize_c(traj_arr, traj_norm, ctypes.byref(n_factors_c), 
+                ctypes.byref(n_samples_c), ctypes.byref(n_timepoints_c), 
+                ctypes.byref(ierr), ctypes.byref(status))
+    check_err_code(ierr.value)
+
+    _readonly(traj_norm)
+
+    result = {
+        "traj_norm": traj_norm,
+        "status": status.value
+    }
+    return result
+
+
 #> tox_trajectory_contribution_analysis:compute_contributions_c: Compute contribution analysis for a factor–dependent pair
 def tox_compute_contributions(factor, dependent, mode):
     """
