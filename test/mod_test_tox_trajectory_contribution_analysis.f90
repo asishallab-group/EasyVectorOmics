@@ -577,14 +577,14 @@ contains
 
     subroutine test_normalize_single_trajectory()
         integer(int32), parameter :: n_factors = 3, n_timepoints = 4
-        real(real64) :: trajectory(n_factors, n_timepoints), trajectory_norm(n_factors, n_timepoints)
-        real(real64) :: expected(n_factors, n_timepoints)
+        real(real64) :: trajectory(n_timepoints, n_factors), trajectory_norm(n_timepoints, n_factors)
+        real(real64) :: expected(n_timepoints, n_factors)
         integer(int32) :: ierr, i_factor, i_timepoint, status
         
         ! Create test trajectory for ONE SAMPLE: factors × timepoints
         do i_factor = 1, n_factors
             do i_timepoint = 1, n_timepoints
-                trajectory(i_factor, i_timepoint) = real(i_factor * 10 + i_timepoint, real64)
+                trajectory(i_timepoint, i_factor) = real(i_factor * 10 + i_timepoint, real64)
             end do
         end do
         
@@ -594,7 +594,7 @@ contains
         ! Factor 3: [31, 32, 33, 34] → normalized: [0.0, 0.333..., 0.666..., 1.0]
         do i_factor = 1, n_factors
             do i_timepoint = 1, n_timepoints
-                expected(i_factor, i_timepoint) = (real(i_timepoint, real64) - 1.0_real64) / real(n_timepoints - 1, real64)
+                expected(i_timepoint, i_factor) = (real(i_timepoint, real64) - 1.0_real64) / real(n_timepoints - 1, real64)
             end do
         end do
         
@@ -603,15 +603,15 @@ contains
         
         ! Check each factor independently
         do i_factor = 1, n_factors
-            call assert_equal_array_real(trajectory_norm(i_factor, :), expected(i_factor, :), n_timepoints, TOL, &
+            call assert_equal_array_real(trajectory_norm(:, i_factor), expected(:, i_factor), n_timepoints, TOL, &
                 "test_normalize_single_trajectory: factor ")
         end do
         
         ! Verify min=0 and max=1 for each factor (across time)
         do i_factor = 1, n_factors
-            call assert_equal_real(minval(trajectory_norm(i_factor, :)), 0.0_real64, TOL, &
+            call assert_equal_real(minval(trajectory_norm(:, i_factor)), 0.0_real64, TOL, &
                 "test_normalize_single_trajectory: min=0 for factor ")
-            call assert_equal_real(maxval(trajectory_norm(i_factor, :)), 1.0_real64, TOL, &
+            call assert_equal_real(maxval(trajectory_norm(:, i_factor)), 1.0_real64, TOL, &
                 "test_normalize_single_trajectory: max=1 for factor ")
         end do
     end subroutine test_normalize_single_trajectory

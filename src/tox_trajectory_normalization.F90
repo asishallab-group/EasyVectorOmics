@@ -15,7 +15,6 @@ contains
     
     !> Normalize a single variable across time using min-max scaling
     pure subroutine normalize_variable_timeseries(v, v_norm, n_points, ierr, status)
-        use ieee_arithmetic, only: ieee_is_finite, ieee_is_nan
         integer(int32), intent(in) :: n_points
         !! Vector length (number of time points)
         real(real64), intent(in) :: v(n_points)
@@ -27,7 +26,7 @@ contains
         integer(int32), intent(out) :: status
         !! Status code for specific warnings
         
-        real(real64) :: min_val, max_val, denominator, epsilon_val
+        real(real64) :: min_val, max_val, denominator
         integer(int32) :: i
         
         ! Initialize
@@ -38,13 +37,8 @@ contains
         call validate_dimension_size(n_points, ierr)
         if (is_err(ierr)) return
 
-        epsilon_val = 1.0e-12_real64
-
-        !! THIS IS THE TOPIC OF A CURRENT DISCUSSION -- Issue 102, see comments
-        !!! -------------------------------
         min_val = minval(v)
         max_val = maxval(v)
-        !!! -------------------------------
         
         ! Calculate denominator
         denominator = max_val - min_val
@@ -70,35 +64,33 @@ contains
         !! Number of factors/variables
         integer(int32), intent(in) :: n_timepoints
         !! Number of time points
-        real(real64), intent(in) :: trajectory(n_factors, n_timepoints)
+        real(real64), intent(in) :: trajectory(n_timepoints, n_factors)
         !! Original trajectory for one sample
-        real(real64), intent(out) :: trajectory_norm(n_factors, n_timepoints)
+        real(real64), intent(out) :: trajectory_norm(n_timepoints, n_factors)
         !! Normalized trajectory for one sample
         integer(int32), intent(out) :: ierr
         !! Error code
         integer(int32), intent(out) :: status
         !! Status code for specific warnings
         
-        integer(int32) :: i_factor
+        integer(int32) :: i_factor, tmp_status
 
-        real(real64), dimension(n_timepoints) :: temp_series, temp_series_norm
-        
         ! Initialize
         call set_ok(ierr)
         call set_ok(status)
+        call set_ok(tmp_status)
         
         call validate_dimension_size(n_factors, ierr)
         if (is_err(ierr)) return
         
         ! Normalize each factor independently across time
         do i_factor = 1, n_factors
-            temp_series = trajectory(i_factor, :)
             call normalize_variable_timeseries( &
-                temp_series, &           ! Time series for this factor
-                temp_series_norm, &      ! Normalized time series
-                n_timepoints, ierr, status)
-            trajectory_norm(i_factor, :) = temp_series_norm
+                trajectory(:, i_factor), &           ! Time series for this factor
+                trajectory_norm(:, i_factor), &      ! Normalized time series
+                n_timepoints, ierr, tmp_status)
             
+            if (is_err(tmp_status)) status = tmp_status
             if (is_err(ierr)) return
         end do
         
@@ -124,12 +116,13 @@ contains
         integer(int32), intent(out) :: status
         !! Status code for specific warnings
 
-        integer(int32) :: i_sample, i_factor
+        integer(int32) :: i_sample, i_factor, i_timepoint, tmp_status
 
         real(real64), dimension(n_timepoints) :: temp_series, temp_series_norm
         
         call set_ok(ierr)
         call set_ok(status)
+        call set_ok(tmp_status)
 
         call validate_dimension_size(n_samples, ierr)
         if (is_err(ierr)) return
@@ -137,15 +130,18 @@ contains
         ! Normalize each sample/entity independently
         do i_sample = 1, n_samples
             do i_factor = 1, n_factors
-                temp_series = trajectories(i_factor, i_sample, :)
+                do i_timepoint = 1, n_timepoints
+                    temp_series(i_timepoint) = trajectories(i_factor, i_sample, i_timepoint)
+                end do
 
-                call normalize_variable_timeseries(temp_series, temp_series_norm, n_timepoints, ierr, status)
-                
+                call normalize_variable_timeseries(temp_series, temp_series_norm, n_timepoints, ierr, tmp_status)
+
+                if (is_err(tmp_status)) status = tmp_status
                 if (is_err(ierr)) return
+                
                 trajectories_norm(i_factor, i_sample, :) = temp_series_norm
             end do
         end do
-        
     end subroutine normalize_all_trajectories
 
 end module tox_trajectory_normalization
@@ -187,9 +183,9 @@ pure subroutine normalize_single_trajectory_C(trajectory, trajectory_norm, n_fac
     !! Number of factors
     integer(c_int), intent(in), target :: n_timepoints
     !! Number of time points
-    real(c_double), dimension(n_factors, n_timepoints), intent(in), target :: trajectory
+    real(c_double), dimension(n_timepoints, n_factors), intent(in), target :: trajectory
     !! Original trajectory for one sample
-    real(c_double), dimension(n_factors, n_timepoints), intent(out), target :: trajectory_norm
+    real(c_double), dimension(n_timepoints, n_factors), intent(out), target :: trajectory_norm
     !! Normalized trajectory for one sample
     integer(c_int), intent(out), target :: ierr
     !! Error code

@@ -3149,16 +3149,16 @@ def tox_normalize_single_trajectory(trajectory):
     Normalize all factors in a single trajectory independently across time.
 
     Args:
-        trajectory (array-like): 2D array (n_factors × n_timepoints) for one sample
+        trajectory (array-like): 2D array shape(n_timepoints, n_factors) for one sample
 
     Returns:
-        np.ndarray: Normalized trajectory (n_factors × n_timepoints) in [0,1]
+        np.ndarray: Normalized trajectory shape(n_timepoints, n_factors) in [0,1]
 
     Raises:
         RuntimeError: If normalization fails
     """
     traj_arr = np.asfortranarray(trajectory, dtype=np.float64)
-    n_factors, n_timepoints = traj_arr.shape
+    n_timepoints, n_factors = traj_arr.shape
 
     n_factors_c = ctypes.c_int(n_factors)
     n_timepoints_c = ctypes.c_int(n_timepoints)
