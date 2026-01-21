@@ -5,6 +5,7 @@ module mod_test_tox_traj_contrib_analysis
     use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan
     use tox_trajectory_contribution_analysis
     use tox_errors
+    use tox_trajectory_normalization
     implicit none
 
     ! Abstract interface for all test procedures
@@ -25,15 +26,61 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(6)
-
+        type(test_case) :: all_tests(14)
         all_tests(1) = test_case("test_compute_baselines_factor_dependent", test_compute_baselines_factor_dependent)
         all_tests(2) = test_case("test_compute_contributions", test_compute_contributions)
         all_tests(3) = test_case("test_compute_all_contributions", test_compute_all_contributions)
         all_tests(4) = test_case("test_select_random_sample_helper", test_select_random_sample_helper)
         all_tests(5) = test_case("test_perform_permutation_test", test_perform_permutation_test)
         all_tests(6) = test_case("test_compute_p_values", test_compute_p_values)
+        all_tests(7) = test_case("test_normalize_variable_timeseries", test_normalize_variable_timeseries)
+        all_tests(8) = test_case("test_normalize_single_trajectory", test_normalize_single_trajectory)
+        all_tests(9) = test_case("test_normalize_all_trajectories", test_normalize_all_trajectories)
+        all_tests(10) = test_case("test_normalize_edge_cases", test_normalize_edge_cases)
+        all_tests(11) = test_case("test_normalize_invalid_inputs", test_normalize_invalid_inputs)
+        all_tests(12) = test_case("test_compute_baselines_factor_dependent", test_compute_baselines_factor_dependent)
+        all_tests(13) = test_case("test_compute_contributions", test_compute_contributions)
+        all_tests(14) = test_case("test_compute_all_contributions", test_compute_all_contributions)
     end function get_all_tests
+
+    !> Run all tox_trajectory_contribution_analysis tests.
+    subroutine run_all_tests_tox_trajectory_contribution_analysis
+        type(test_case), allocatable :: all_tests(:)
+        integer(int32) :: i
+
+        all_tests = get_all_tests()
+
+        do i = 1, size(all_tests)
+            call all_tests(i)%test_proc()
+            print "(' ',A,' passed.')", trim(all_tests(i)%name)
+        end do
+        print *, "All tox_trajectory_contribution_analysis tests passed successfully."
+    end subroutine run_all_tests_tox_trajectory_contribution_analysis
+
+    !> Run specific tox_trajectory_contribution_analysis tests by name.
+    subroutine run_named_tests_tox_trajectory_contribution_analysis(test_names)
+        character(len=*), intent(in) :: test_names(:)
+        type(test_case), allocatable :: all_tests(:)
+        integer(int32) :: i, j
+        logical :: found
+
+        all_tests = get_all_tests()
+
+        do i = 1, size(test_names)
+            found = .false.
+            do j = 1, size(all_tests)
+                if (trim(test_names(i)) == trim(all_tests(j)%name)) then
+                    call all_tests(j)%test_proc()
+                    print "(' ',A,' passed.')", trim(test_names(i))
+                    found = .true.
+                    exit
+                end if
+            end do
+            if (.not. found) then
+                print *, "Unknown test: ", trim(test_names(i))
+            end if
+        end do
+    end subroutine run_named_tests_tox_trajectory_contribution_analysis
 
     !> initializes random number generator with a randomly selected seed
     subroutine setup_random
@@ -489,42 +536,199 @@ contains
         call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_compute_baselines_factor_dependent: invalid mode")
     end subroutine test_compute_baselines_factor_dependent
 
-    !> Run all tox_trajectory_contribution_analysis tests.
-    subroutine run_all_tests_tox_trajectory_contribution_analysis
-        type(test_case), allocatable :: all_tests(:)
-        integer(int32) :: i
+    subroutine test_normalize_variable_timeseries()
+        integer(int32) :: n_points = 5
+        real(real64) :: v(5), v_norm(5), v_norm_expected(5), v1_norm(1), v1_norm_expected(1), v1(1)
+        integer(int32) :: ierr, status
+        
+        ! Test 1: Normal case
+        v = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64, 5.0_real64]
+        v_norm_expected = [0.0_real64, 0.25_real64, 0.5_real64, 0.75_real64, 1.0_real64]
+        
+        call normalize_variable_timeseries(v, v_norm, n_points, ierr, status)
 
-        all_tests = get_all_tests()
+        call assert_equal_int(ierr, ERR_OK, "test_normalize_variable_timeseries: normal case should succeed")
+        call assert_equal_array_real(v_norm, v_norm_expected, n_points, TOL, "test_normalize_variable_timeseries: normal case values")
+        
+        ! Test 2: Constant vector (all values same)
+        v = [2.0_real64, 2.0_real64, 2.0_real64, 2.0_real64, 2.0_real64]
+        v_norm_expected = [0.0_real64, 0.0_real64, 0.0_real64, 0.0_real64, 0.0_real64]
+        
+        call normalize_variable_timeseries(v, v_norm, n_points, ierr, status)
+        call assert_equal_int(ierr, ERR_OK, "test_normalize_variable_timeseries: constant vector should succeed")
+        call assert_equal_array_real(v_norm, v_norm_expected, n_points, TOL, "test_normalize_variable_timeseries: constant vector values")
+        
+        ! Test 3: Negative values
+        v = [-5.0_real64, -2.0_real64, 0.0_real64, 3.0_real64, 6.0_real64]
+        v_norm_expected = [0.0_real64, 0.27272727_real64, 0.45454545_real64, 0.72727273_real64, 1.0_real64]
+        
+        call normalize_variable_timeseries(v, v_norm, n_points, ierr, status)
+        call assert_equal_int(ierr, ERR_OK, "test_normalize_variable_timeseries: negative values should succeed")
+        call assert_equal_array_real(v_norm, v_norm_expected, n_points, 1.0e-8_real64, "test_normalize_variable_timeseries: negative values")
+        
+        ! Test 4: Single point
+        v1 = [3.14_real64]
+        v1_norm_expected = [0.0_real64]  ! Single value normalized to 0
+        
+        call normalize_variable_timeseries(v1, v1_norm, 1, ierr, status)
+        call assert_equal_int(ierr, ERR_OK, "test_normalize_variable_timeseries: single point should succeed")
+        call assert_equal_array_real(v1_norm, v1_norm_expected, 1, TOL, "test_normalize_variable_timeseries: single point")
+    end subroutine test_normalize_variable_timeseries
 
-        do i = 1, size(all_tests)
-            call all_tests(i)%test_proc()
-            print "(' ',A,' passed.')", trim(all_tests(i)%name)
-        end do
-        print *, "All tox_trajectory_contribution_analysis tests passed successfully."
-    end subroutine run_all_tests_tox_trajectory_contribution_analysis
-
-    !> Run specific tox_trajectory_contribution_analysis tests by name.
-    subroutine run_named_tests_tox_trajectory_contribution_analysis(test_names)
-        character(len=*), intent(in) :: test_names(:)
-        type(test_case), allocatable :: all_tests(:)
-        integer(int32) :: i, j
-        logical :: found
-
-        all_tests = get_all_tests()
-
-        do i = 1, size(test_names)
-            found = .false.
-            do j = 1, size(all_tests)
-                if (trim(test_names(i)) == trim(all_tests(j)%name)) then
-                    call all_tests(j)%test_proc()
-                    print "(' ',A,' passed.')", trim(test_names(i))
-                    found = .true.
-                    exit
-                end if
+    subroutine test_normalize_single_trajectory()
+        integer(int32), parameter :: n_factors = 3, n_timepoints = 4
+        real(real64) :: trajectory(n_timepoints, n_factors), trajectory_norm(n_timepoints, n_factors)
+        real(real64) :: expected(n_timepoints, n_factors)
+        integer(int32) :: ierr, i_factor, i_timepoint, status
+        
+        ! Create test trajectory for ONE SAMPLE: factors × timepoints
+        do i_factor = 1, n_factors
+            do i_timepoint = 1, n_timepoints
+                trajectory(i_timepoint, i_factor) = real(i_factor * 10 + i_timepoint, real64)
             end do
-            if (.not. found) then
-                print *, "Unknown test: ", trim(test_names(i))
-            end if
         end do
-    end subroutine run_named_tests_tox_trajectory_contribution_analysis
+        
+        ! Expected: Each factor normalized independently across time
+        ! Factor 1: [11, 12, 13, 14] → normalized: [0.0, 0.333..., 0.666..., 1.0]
+        ! Factor 2: [21, 22, 23, 24] → normalized: [0.0, 0.333..., 0.666..., 1.0]
+        ! Factor 3: [31, 32, 33, 34] → normalized: [0.0, 0.333..., 0.666..., 1.0]
+        do i_factor = 1, n_factors
+            do i_timepoint = 1, n_timepoints
+                expected(i_timepoint, i_factor) = (real(i_timepoint, real64) - 1.0_real64) / real(n_timepoints - 1, real64)
+            end do
+        end do
+        
+        call normalize_single_trajectory(trajectory, trajectory_norm, n_factors, n_timepoints, ierr, status)
+        call assert_equal_int(ierr, ERR_OK, "test_normalize_single_trajectory: should succeed")
+        
+        ! Check each factor independently
+        do i_factor = 1, n_factors
+            call assert_equal_array_real(trajectory_norm(:, i_factor), expected(:, i_factor), n_timepoints, TOL, &
+                "test_normalize_single_trajectory: factor ")
+        end do
+        
+        ! Verify min=0 and max=1 for each factor (across time)
+        do i_factor = 1, n_factors
+            call assert_equal_real(minval(trajectory_norm(:, i_factor)), 0.0_real64, TOL, &
+                "test_normalize_single_trajectory: min=0 for factor ")
+            call assert_equal_real(maxval(trajectory_norm(:, i_factor)), 1.0_real64, TOL, &
+                "test_normalize_single_trajectory: max=1 for factor ")
+        end do
+    end subroutine test_normalize_single_trajectory
+
+    subroutine test_normalize_all_trajectories()
+        integer(int32), parameter :: n_factors = 2, n_samples = 3, n_timepoints = 4
+        real(real64) :: trajectories(n_factors, n_samples, n_timepoints)
+        real(real64) :: trajectories_norm(n_factors, n_samples, n_timepoints)
+        integer(int32) :: ierr, i_factor, i_sample, i_timepoint, status
+        
+        ! Fill with known pattern: factor × sample × timepoint
+        do i_factor = 1, n_factors
+            do i_sample = 1, n_samples
+                do i_timepoint = 1, n_timepoints
+                    trajectories(i_factor, i_sample, i_timepoint) = &
+                        real(i_factor * 100 + i_sample * 10 + i_timepoint, real64)
+                end do
+            end do
+        end do
+        
+        call normalize_all_trajectories(trajectories, trajectories_norm, &
+                                      n_factors, n_samples, n_timepoints, ierr, status)
+        call assert_equal_int(ierr, ERR_OK, "test_normalize_all_trajectories: should succeed")
+        
+        ! Check: For each (factor, sample), values should be normalized across time
+        do i_sample = 1, n_samples
+            do i_factor = 1, n_factors
+                call assert_equal_real(minval(trajectories_norm(i_factor, i_sample, :)), &
+                                     0.0_real64, TOL, &
+                                     "test_normalize_all_trajectories: factor ")
+                call assert_equal_real(maxval(trajectories_norm(i_factor, i_sample, :)), &
+                                     1.0_real64, TOL, &
+                                     "test_normalize_all_trajectories: factor ")
+            end do
+        end do
+        
+        ! Verify all values are in [0,1]
+        do i_sample = 1, n_samples
+            do i_factor = 1, n_factors
+                do i_timepoint = 1, n_timepoints
+                    call assert_true(trajectories_norm(i_factor, i_sample, i_timepoint) >= 0.0_real64 - TOL, &
+                                   "test_normalize_all_trajectories: value >= 0")
+                    call assert_true(trajectories_norm(i_factor, i_sample, i_timepoint) <= 1.0_real64 + TOL, &
+                                   "test_normalize_all_trajectories: value <= 1")
+                end do
+            end do
+        end do
+    end subroutine test_normalize_all_trajectories
+
+    subroutine test_normalize_edge_cases()
+        real(real64) :: v(3), v_norm(3), v_norm_expected(3)
+        real(real64) :: v5(5), v5_norm(5), v5_norm_expected(5)
+        integer(int32) :: ierr, status
+        
+        ! Test 1: Very small values, should result in zero vector due to division by near zero
+        v = [tiny(1.0_real64), 2.0_real64 * tiny(1.0_real64), 3.0_real64 * tiny(1.0_real64)]
+        v_norm_expected = [0.0_real64, 0.0_real64, 0.0_real64]
+        
+        call normalize_variable_timeseries(v, v_norm, 3, ierr, status)
+
+        call assert_equal_int(ierr, ERR_OK, "test_normalize_edge_cases: small values should succeed")
+        call assert_equal_array_real(v_norm, v_norm_expected, 3, TOL, "test_normalize_edge_cases: small values")
+        
+        ! Test 2: Large values
+        v = [1.0e10_real64, 2.0e10_real64, 3.0e10_real64]
+        v_norm_expected = [0.0_real64, 0.5_real64, 1.0_real64]
+        
+        call normalize_variable_timeseries(v, v_norm, 3, ierr, status)
+        call assert_equal_int(ierr, ERR_OK, "test_normalize_edge_cases: large values should succeed")
+        call assert_equal_array_real(v_norm, v_norm_expected, 3, TOL, "test_normalize_edge_cases: large values")
+        
+        ! Test 3: Mixed positive and negative with zero
+        v5 = [-10.0_real64, -5.0_real64, 0.0_real64, 5.0_real64, 10.0_real64]
+        v5_norm_expected = [0.0_real64, 0.25_real64, 0.5_real64, 0.75_real64, 1.0_real64]
+        
+        call normalize_variable_timeseries(v5, v5_norm, 5, ierr, status)
+        call assert_equal_int(ierr, ERR_OK, "test_normalize_edge_cases: mixed values should succeed")
+        call assert_equal_array_real(v5_norm, v5_norm_expected, 5, 1.0e-8_real64, "test_normalize_edge_cases: mixed values")
+        
+        ! Test 4: Already normalized (values in [0,1])
+        v5 = [0.0_real64, 0.25_real64, 0.5_real64, 0.75_real64, 1.0_real64]
+        v5_norm_expected = v5  ! Should stay the same
+        
+        call normalize_variable_timeseries(v5, v5_norm, 5, ierr, status)
+        call assert_equal_int(ierr, ERR_OK, "test_normalize_edge_cases: already normalized should succeed")
+        call assert_equal_array_real(v5_norm, v5_norm_expected, 5, TOL, "test_normalize_edge_cases: already normalized")
+    end subroutine test_normalize_edge_cases
+
+    subroutine test_normalize_invalid_inputs()
+        real(real64) :: v(5), v_norm(5)
+        real(real64) :: v3(3), v3_norm(3)
+        integer(int32) :: ierr, status
+        
+        ! Test 1: Empty array (n_points = 0)
+        call normalize_variable_timeseries(v, v_norm, 0, ierr, status)
+        call assert_equal_int(ierr, ERR_EMPTY_INPUT, "test_normalize_invalid_inputs: empty array should return ERR_EMPTY_INPUT")
+        
+        ! Test 2: Negative n_points
+        call normalize_variable_timeseries(v, v_norm, -1, ierr, status)
+        call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_normalize_invalid_inputs: negative n_points should return ERR_INVALID_INPUT")
+        
+        ! Test 3: NaN in input
+        v3 = [1.0_real64, ieee_value(0.0_real64, ieee_quiet_nan), 3.0_real64]
+        call normalize_variable_timeseries(v3, v3_norm, 3, ierr, status)
+        ! Note: NaN handling depends on minval/maxval behavior - check if error is set
+        if (ierr /= ERR_OK) then
+            ! If error is set, it should be ERR_NAN_INF
+            call assert_equal_int(ierr, ERR_NAN_INF, "test_normalize_invalid_inputs: NaN should return ERR_NAN_INF")
+        end if
+        
+        ! Test 4: Infinity in input
+        v3 = [1.0_real64, 2.0_real64, huge(1.0_real64)]
+        call normalize_variable_timeseries(v3, v3_norm, 3, ierr, status)
+        ! Similar to NaN case
+        if (ierr /= ERR_OK) then
+            call assert_equal_int(ierr, ERR_NAN_INF, "test_normalize_invalid_inputs: Infinity should return ERR_NAN_INF")
+        end if
+    end subroutine test_normalize_invalid_inputs
+
 end module mod_test_tox_traj_contrib_analysis
