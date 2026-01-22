@@ -3820,7 +3820,7 @@ def tox_compute_velocity_trajectory(trajectory):
 
     _readonly(velocity)
 
-    return velocity
+    return {"velocity": velocity}
 
 
 #> tox_trajectory_contribution_analysis:tox_compute_acceleration_from_velocity_trajectory_c: Compute acceleration for a single velocity trajectory (1D array)
@@ -3862,4 +3862,4 @@ def tox_compute_acceleration_from_velocity_trajectory(velocity):
 
     _readonly(acceleration)
 
-    return acceleration
+    return {"acceleration": acceleration}

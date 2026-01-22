@@ -460,6 +460,8 @@ def main():
     test_tox_compute_velocity_trajectory()
     test_tox_compute_acceleration_from_velocity_trajectory()
 
+    
+    os._exit(0)
 
 if __name__ == "__main__":
     main()

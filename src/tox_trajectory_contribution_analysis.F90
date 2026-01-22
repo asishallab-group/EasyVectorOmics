@@ -387,9 +387,13 @@ contains
                                              n_samples, n_timepoints, n_variables, ierr)
 
         integer(int32), intent(in)  :: n_samples, n_timepoints, n_variables
+        !! number of samples, timepoints, and variables
         integer(int32), intent(out) :: ierr
+        !! Error code
         real(real64), intent(in)  :: trajectories(n_samples, n_timepoints, n_variables)
+        !! input position trajectories
         real(real64), intent(out) :: velocity(n_samples, n_timepoints, n_variables)
+        !! output velocity trajectories
 
         integer(int32) :: sample, var
 
@@ -417,9 +421,13 @@ contains
                                                   n_samples, n_timepoints, n_variables, ierr)
 
         integer(int32), intent(in)  :: n_samples, n_timepoints, n_variables
+        !! number of samples, timepoints, and variables
         integer(int32), intent(out) :: ierr
+        !! Error code
         real(real64), intent(in)  :: velocity(n_samples, n_timepoints, n_variables)
+        !! input velocity trajectories
         real(real64), intent(out) :: acceleration(n_samples, n_timepoints, n_variables)
+        !! output acceleration trajectories
 
         integer(int32) :: sample, var
 
@@ -451,32 +459,51 @@ contains
         C_acceleration, acceleration_contribution_series, ierr)
 
         integer(int32), intent(in) :: n_samples, n_timepoints, n_variables
+        !! number of samples, timepoints, and variables
         integer(int32), intent(in) :: mode
+        !! Baseline mode: 1=RAW, 2=MIN, 3=MEAN
         real(real64),   intent(in) :: trajectories(n_samples, n_timepoints, n_variables)
+        !! input position trajectories
 
         ! Workspace (preallocated by caller)
         real(real64), intent(out) :: velocity(n_samples, n_timepoints, n_variables)
+        !! output velocity trajectories
         real(real64), intent(out) :: acceleration(n_samples, n_timepoints, n_variables)
+        !! output acceleration trajectories
 
         real(real64), intent(inout) :: factor_velocity(n_timepoints-1, n_variables)
+        !! velocity factor workspace
         real(real64), intent(inout) :: dependent_velocity(n_timepoints-1)
+        !! velocity dependent workspace
         real(real64), intent(inout) :: velocity_contributions(n_timepoints-1)
+        !! velocity contributions workspace
 
         real(real64), intent(inout) :: factor_acceleration(n_timepoints-2, n_variables)
+        !! acceleration factor workspace
         real(real64), intent(inout) :: dependent_acceleration(n_timepoints-2)
+        !! acceleration dependent workspace
         real(real64), intent(inout) :: acceleration_contributions(n_timepoints-2)
+        !! acceleration contributions workspace
 
         ! Outputs
         real(real64), intent(out) :: C_velocity(n_samples, n_variables, n_variables)
+        !! output velocity contributions
         real(real64), intent(out) :: velocity_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+        !! output velocity contribution series
         real(real64), intent(out) :: C_acceleration(n_samples, n_variables, n_variables)
+        !! output acceleration contributions
         real(real64), intent(out) :: acceleration_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+        !! output acceleration contribution series
 
         integer(int32), intent(out) :: ierr
+        !! Error code
 
         integer(int32) :: sample, factor_index, dependent_index, time_index
+        !! Loop indices for samples, factors, dependents, and time points
         real(real64)   :: total_velocity_contribution, total_acceleration_contribution
+        !! Total contributions for velocity and acceleration
         integer(int32) :: n_vel, n_acc
+        !! Number of valid velocity and acceleration time points
 
         call set_ok(ierr)
 
@@ -581,21 +608,35 @@ contains
         C_acceleration, acceleration_contribution_series, ierr)
 
         integer(int32), intent(in) :: n_samples, n_timepoints, n_variables
+        !! number of samples
+        !! number of timepoints
+        !! number of variables
         integer(int32), intent(in) :: mode
+        !! Baseline mode: 1=RAW, 2=MIN, 3=MEAN
         real(real64),   intent(in) :: trajectories(n_samples, n_timepoints, n_variables)
+         !! input position trajectories
 
         real(real64), intent(out) :: C_velocity(n_samples, n_variables, n_variables)
+        !! output velocity contributions
         real(real64), intent(out) :: velocity_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+        !! output acceleration contributions
         real(real64), intent(out) :: C_acceleration(n_samples, n_variables, n_variables)
+        !! output acceleration contributions
         real(real64), intent(out) :: acceleration_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+        !! output acceleration contributions
         integer(int32), intent(out) :: ierr
+        !! Error code
 
         ! Workspace (allocated once here)
         real(real64), allocatable :: velocity(:,:,:)
+        !! velocity trajectory
         real(real64), allocatable :: acceleration(:,:,:)
+        !! acceleration trajectory
 
         real(real64), allocatable :: factor_velocity(:, :), dependent_velocity(:), velocity_contributions(:)
+        !! velocity contributions workspace
         real(real64), allocatable :: factor_acceleration(:, :), dependent_acceleration(:), acceleration_contributions(:)
+        !! acceleration contributions workspace
 
         call set_ok(ierr)
 
@@ -628,6 +669,17 @@ contains
             factor_acceleration, dependent_acceleration, acceleration_contributions, &
             C_velocity, velocity_contribution_series, &
             C_acceleration, acceleration_contribution_series, ierr)
+
+        ! Explicitly free work arrays (Fortran would normally clean these on exit, but being explicit helps
+        ! when interoping with ctypes and mixed runtimes).
+        if (allocated(velocity))                deallocate(velocity)
+        if (allocated(acceleration))            deallocate(acceleration)
+        if (allocated(factor_velocity))         deallocate(factor_velocity)
+        if (allocated(dependent_velocity))      deallocate(dependent_velocity)
+        if (allocated(velocity_contributions))  deallocate(velocity_contributions)
+        if (allocated(factor_acceleration))     deallocate(factor_acceleration)
+        if (allocated(dependent_acceleration))  deallocate(dependent_acceleration)
+        if (allocated(acceleration_contributions)) deallocate(acceleration_contributions)
     end subroutine compute_velocity_acceleration_contributions_alloc
 
     !> Compute velocity trajectory from a single position trajectory
@@ -637,9 +689,13 @@ contains
     pure subroutine compute_velocity_trajectory(trajectory, velocity, n_timepoints, ierr)
 
         integer(int32), intent(in)  :: n_timepoints
+        !! number of timepoints
         integer(int32), intent(out) :: ierr
+        !! Error code
         real(real64), intent(in)  :: trajectory(n_timepoints)
+        !! input position trajectory
         real(real64), intent(out) :: velocity(n_timepoints)
+        !! output velocity trajectory
 
         integer(int32) :: t
 
@@ -663,9 +719,13 @@ contains
                                                                  n_timepoints, ierr)
 
         integer(int32), intent(in)  :: n_timepoints
+        !! number of timepoints
         integer(int32), intent(out) :: ierr
+        !! Error code
         real(real64), intent(in)  :: velocity_traj(n_timepoints)
+        !! velocity trajectory
         real(real64), intent(out) :: acceleration(n_timepoints)
+        !! acceleration trajectory
 
         integer(int32) :: t
 
@@ -958,11 +1018,17 @@ subroutine tox_compute_velocity_trajectories_c(trajectories, n_samples, n_timepo
     implicit none
 
     integer(c_int), intent(in),  target :: n_samples
+    !! number of samples
     integer(c_int), intent(in),  target :: n_timepoints
+    !! number of timepoints
     integer(c_int), intent(in),  target :: n_variables
+    !! number of variables
     real(c_double), intent(in),  target :: trajectories(n_samples, n_timepoints, n_variables)
+    !! input trajectories
     real(c_double), intent(out), target :: velocity(n_samples, n_timepoints, n_variables)
+    !! output velocity trajectories
     integer(c_int), intent(out), target :: ierr
+    !! error code
 
     !! Null-pointer validation 
     M_CHECK_IERR_NON_NULL
@@ -989,11 +1055,17 @@ subroutine tox_compute_acceleration_from_velocity_c(velocity, n_samples, n_timep
     implicit none
 
     integer(c_int), intent(in),  target :: n_samples
+    !! number of samples
     integer(c_int), intent(in),  target :: n_timepoints
+    !! number of timepoints
     integer(c_int), intent(in),  target :: n_variables
+    !! number of variables
     real(c_double), intent(in),  target :: velocity(n_samples, n_timepoints, n_variables)
+    !! input velocity trajectories
     real(c_double), intent(out), target :: acceleration(n_samples, n_timepoints, n_variables)
+    !! output acceleration trajectories
     integer(c_int), intent(out), target :: ierr
+    !! error code
 
     M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_samples)
@@ -1022,34 +1094,52 @@ subroutine tox_compute_velocity_acceleration_contributions_c(trajectories, n_sam
     implicit none
 
     integer(c_int), intent(in),  target :: n_samples
+    !! number of samples
     integer(c_int), intent(in),  target :: n_timepoints
+    !! number of timepoints
     integer(c_int), intent(in),  target :: n_variables
+    !! number of variables
     character(len=1, kind=c_char), dimension(*), intent(in), target :: mode
+    !! Baseline mode: "raw", "min", "mean"
     integer(c_int), intent(out), target :: ierr
+    !! error code
     real(c_double), intent(in),  target :: trajectories(n_samples, n_timepoints, n_variables)
+    !! input trajectories
 
     ! ---- Workspace (passed in from C) ----
     real(c_double), intent(out), target :: velocity(n_samples, n_timepoints, n_variables)
+    !! output velocity trajectories
     real(c_double), intent(out), target :: acceleration(n_samples, n_timepoints, n_variables)
+    !! output acceleration trajectories
 
     ! 1D work vectors (length depends on n_timepoints)
     ! Caller must allocate:
     !   factor_velocity, dependent_velocity, velocity_contributions : length (n_timepoints-1) if n_timepoints>1
     !   factor_acceleration, dependent_acceleration, acceleration_contributions : length (n_timepoints-2) if n_timepoints>2
-    real(c_double), intent(inout), target :: factor_velocity(n_timepoints - 1)
+    real(c_double), intent(inout), target :: factor_velocity(n_timepoints - 1, n_variables)
+    !! factor for velocity contributions (2D workspace)
     real(c_double), intent(inout), target :: dependent_velocity(n_timepoints - 1)
+    !! dependent variable for velocity contributions
     real(c_double), intent(inout), target :: velocity_contributions(n_timepoints - 1)
+    !! velocity contributions
 
-    real(c_double), intent(inout), target :: factor_acceleration(n_timepoints - 2)
+    real(c_double), intent(inout), target :: factor_acceleration(n_timepoints - 2, n_variables)
+    !! factor for acceleration contributions (2D workspace)
     real(c_double), intent(inout), target :: dependent_acceleration(n_timepoints - 2)
+    !! dependent variable for acceleration contributions
     real(c_double), intent(inout), target :: acceleration_contributions(n_timepoints - 2)
+    !! acceleration contributions
 
     real(c_double), intent(out), target :: C_velocity(n_samples, n_variables, n_variables)
+    !! velocity covariance matrix
     real(c_double), intent(out), target :: velocity_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+    !! velocity contribution series
     real(c_double), intent(out), target :: C_acceleration(n_samples, n_variables, n_variables)
+    !! acceleration covariance matrix
     real(c_double), intent(out), target :: acceleration_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
-
+    !! acceleration contribution series
     integer(int32) :: mode_int
+    !! integer representation of baseline mode
 
     ! ---- Null checks ----
     M_CHECK_IERR_NON_NULL
@@ -1097,19 +1187,29 @@ subroutine tox_compute_velocity_acceleration_contributions_alloc_c(trajectories,
     implicit none
 
     integer(c_int), intent(in),  target :: n_samples
+    !! number of samples
     integer(c_int), intent(in),  target :: n_timepoints
+    !! number of timepoints
     integer(c_int), intent(in),  target :: n_variables
+    !! number of variables
     character(len=1, kind=c_char), dimension(*), intent(in), target :: mode
+    !! Baseline mode: "raw", "min", "mean"
 
     real(c_double), intent(in),  target :: trajectories(n_samples, n_timepoints, n_variables)
+    !! input trajectories
     real(c_double), intent(out), target :: C_velocity(n_samples, n_variables, n_variables)
+    !! velocity covariance matrix
     real(c_double), intent(out), target :: velocity_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+    !! velocity contribution series
     real(c_double), intent(out), target :: C_acceleration(n_samples, n_variables, n_variables)
+    !! acceleration covariance matrix
     real(c_double), intent(out), target :: acceleration_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
-
+    !! acceleration contribution series
     integer(c_int), intent(out), target :: ierr
+    !! error code
 
     integer(int32) :: mode_int
+    ! ---- Null checks ----
 
     M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_samples)
@@ -1143,9 +1243,13 @@ subroutine tox_compute_velocity_trajectory_c(trajectory, n_timepoints, velocity,
     implicit none
 
     integer(c_int), intent(in),  target :: n_timepoints
+    !! number of timepoints
     real(c_double), intent(in),  target :: trajectory(n_timepoints)
+    !! input position trajectory
     real(c_double), intent(out), target :: velocity(n_timepoints)
+    !! output velocity trajectory
     integer(c_int), intent(out), target :: ierr
+    !! error code
 
     M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_timepoints)
@@ -1166,9 +1270,13 @@ subroutine tox_compute_acceleration_from_velocity_trajectory_c(velocity, n_timep
     implicit none
 
     integer(c_int), intent(in),  target :: n_timepoints
+    !! number of timepoints
     real(c_double), intent(in),  target :: velocity(n_timepoints)
+    !! input velocity trajectory
     real(c_double), intent(out), target :: acceleration(n_timepoints)
+    !! output acceleration trajectory
     integer(c_int), intent(out), target :: ierr
+    !! error code
 
     M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_timepoints)
