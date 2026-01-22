@@ -16,6 +16,8 @@ from tensoromics_functions import (
     tox_compute_baselines_factor_dependent,
     tox_perform_permutation_test,
     tox_compute_p_values,
+    tox_compute_velocity_trajectory,
+    tox_compute_acceleration_from_velocity_trajectory,
     tox_compute_velocity_trajectories,
     tox_compute_acceleration_from_velocity,
     tox_compute_velocity_acceleration_contributions,
@@ -398,6 +400,48 @@ def test_compute_p_values():
     print("✅ Compute p values test passed.")
 
 
+def test_tox_compute_velocity_trajectory():
+    """Test single-trajectory velocity computation wrapper."""
+    trajectory = np.array([1.0, 2.0, 4.0, 7.0], dtype=np.float64)
+    result = tox_compute_velocity_trajectory(trajectory)
+    velocity = result["velocity"]
+
+    expected = np.array([0.0, 1.0, 2.0, 3.0], dtype=np.float64)
+
+    assert velocity.shape == trajectory.shape
+    assert np.allclose(velocity, expected, atol=TOL)
+
+    # Dimensionality check
+    try:
+        tox_compute_velocity_trajectory(trajectory.reshape(1, -1))
+        assert False, "Expected ValueError for 2D input"
+    except ValueError:
+        pass  # Expected
+
+    print("✅ tox_compute_velocity_trajectory passed.")
+
+
+def test_tox_compute_acceleration_from_velocity_trajectory():
+    """Test single-trajectory acceleration computation wrapper."""
+    velocity = np.array([0.0, 1.0, 2.0, 3.0], dtype=np.float64)
+    result = tox_compute_acceleration_from_velocity_trajectory(velocity)
+    acceleration = result["acceleration"]
+
+    expected = np.array([0.0, 0.0, 1.0, 1.0], dtype=np.float64)
+
+    assert acceleration.shape == velocity.shape
+    assert np.allclose(acceleration, expected, atol=TOL)
+
+    # Dimensionality check
+    try:
+        tox_compute_acceleration_from_velocity_trajectory(velocity.reshape(1, -1))
+        assert False, "Expected ValueError for 2D input"
+    except ValueError:
+        pass  # Expected
+
+    print("✅ tox_compute_acceleration_from_velocity_trajectory passed.")
+
+
 def main():
     print("=================================================")
     print("    TRAJECTORY CONTRIBUTION ANALYSIS PYTHON INTERFACE TESTS")
@@ -413,6 +457,9 @@ def main():
     test_tox_compute_acceleration_from_velocity()
     test_tox_compute_velocity_acceleration_contributions()
     test_tox_compute_velocity_acceleration_contributions_expert()
+    test_tox_compute_velocity_trajectory()
+    test_tox_compute_acceleration_from_velocity_trajectory()
+
 
 if __name__ == "__main__":
     main()

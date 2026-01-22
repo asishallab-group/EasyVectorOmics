@@ -26,7 +26,7 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(18)
+        type(test_case) :: all_tests(20)
 
         all_tests(1) = test_case("test_compute_baselines_factor_dependent", test_compute_baselines_factor_dependent)
         all_tests(2) = test_case("test_compute_contributions", test_compute_contributions)
@@ -46,7 +46,39 @@ contains
         all_tests(16) = test_case("test_compute_acceleration_from_velocity", test_compute_acceleration_from_velocity)
         all_tests(17) = test_case("test_compute_velocity_acceleration_contributions", test_compute_velocity_acceleration_contributions)
         all_tests(18) = test_case("test_compute_velocity_acceleration_contributions_alloc", test_compute_velocity_acceleration_contribs_alloc)
+        all_tests(19) = test_case("test_compute_velocity_trajectory", test_compute_velocity_trajectory)
+        all_tests(20) = test_case("test_compute_acceleration_from_velocity_trajectory", test_compute_acceleration_from_velocity_trajectory)
     end function get_all_tests
+
+    !> Test for compute_velocity_trajectory
+    subroutine test_compute_velocity_trajectory()
+        integer(int32), parameter :: n_timepoints = 5
+        real(real64) :: trajectory(n_timepoints), velocity(n_timepoints), expected_velocity(n_timepoints)
+        integer(int32) :: ierr
+
+        ! Simple increasing sequence
+        trajectory = [1.0_real64, 2.0_real64, 4.0_real64, 7.0_real64, 11.0_real64]
+        expected_velocity = [0.0_real64, 1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64]
+
+        call compute_velocity_trajectory(trajectory, velocity, n_timepoints, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_compute_velocity_trajectory: ierr")
+        call assert_equal_array_real(velocity, expected_velocity, n_timepoints, TOL, "test_compute_velocity_trajectory: velocity")
+    end subroutine test_compute_velocity_trajectory
+
+    !> Test for compute_acceleration_from_velocity_trajectory
+    subroutine test_compute_acceleration_from_velocity_trajectory()
+        integer(int32), parameter :: n_timepoints = 5
+        real(real64) :: velocity(n_timepoints), acceleration(n_timepoints), expected_acceleration(n_timepoints)
+        integer(int32) :: ierr
+
+        ! Simple increasing velocity
+        velocity = [0.0_real64, 1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64]
+        expected_acceleration = [0.0_real64, 0.0_real64, 1.0_real64, 1.0_real64, 1.0_real64]
+
+        call compute_acceleration_from_velocity_trajectory(velocity, acceleration, n_timepoints, ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_compute_acceleration_from_velocity_trajectory: ierr")
+        call assert_equal_array_real(acceleration, expected_acceleration, n_timepoints, TOL, "test_compute_acceleration_from_velocity_trajectory: acceleration")
+    end subroutine test_compute_acceleration_from_velocity_trajectory
 
     !> Run all tox_trajectory_contribution_analysis tests.
     subroutine run_all_tests_tox_trajectory_contribution_analysis
