@@ -3710,7 +3710,7 @@ def tox_compute_velocity_acceleration_contributions(trajectories, mode):
         "acceleration_contribution_series": acceleration_series_f,
     }
 
-#> tox_trajectory_contribution_analysis:tox_compute_velocity_acceleration_contribution_expert: Compute velocity and acceleration contributions for all variable pairs
+#> tox_trajectory_contribution_analysis:tox_compute_velocity_acceleration_contributions_c: Compute velocity and acceleration contributions for all variable pairs
 def tox_compute_velocity_acceleration_contributions_expert(trajectories, mode):
     """
     Compute velocity and acceleration contributions using the expert (non-allocating) Fortran routine.
