@@ -384,32 +384,36 @@ contains
 
     !> Compute velocity trajectories from position trajectories
     pure subroutine compute_velocity_trajectories(trajectories, velocity, &
-                                             n_samples, n_timepoints, n_variables, ierr)
+                                             n_factors, n_samples, n_timepoints, ierr)
 
-        integer(int32), intent(in)  :: n_samples, n_timepoints, n_variables
-        !! number of samples, timepoints, and variables
+        integer(int32), intent(in)  :: n_factors
+        !! number of factors
+        integer(int32), intent(in)  :: n_samples
+        !! number of samples
+        integer(int32), intent(in)  :: n_timepoints
+        !! number of timepoints
         integer(int32), intent(out) :: ierr
         !! Error code
-        real(real64), intent(in)  :: trajectories(n_samples, n_timepoints, n_variables)
+        real(real64), intent(in)  :: trajectories(n_factors, n_samples, n_timepoints)
         !! input position trajectories
-        real(real64), intent(out) :: velocity(n_samples, n_timepoints, n_variables)
+        real(real64), intent(out) :: velocity(n_factors, n_samples, n_timepoints)
         !! output velocity trajectories
 
-        integer(int32) :: sample, var
+        integer(int32) :: factor, sample
 
         call set_ok(ierr)
+        call validate_dimension_size(n_factors, ierr)
         call validate_dimension_size(n_samples, ierr)
         call validate_dimension_size(n_timepoints, ierr)
-        call validate_dimension_size(n_variables, ierr)
         if (is_err(ierr)) return
 
         velocity = 0.0_real64
         if (n_timepoints <= 1) return
 
         do sample = 1, n_samples
-            do var = 1, n_variables
-                call compute_velocity_trajectory(trajectories(sample, :, var), &
-                                                velocity(sample, :, var), &
+            do factor = 1, n_factors
+                call compute_velocity_trajectory(trajectories(factor, sample, :), &
+                                                velocity(factor, sample, :), &
                                                 n_timepoints, ierr)
                 if (is_err(ierr)) return
             end do
@@ -418,33 +422,37 @@ contains
 
     !> Compute acceleration trajectories from velocity trajectories
     pure subroutine compute_acceleration_from_velocity(velocity, acceleration, &
-                                                  n_samples, n_timepoints, n_variables, ierr)
+                                                  n_factors, n_samples, n_timepoints, ierr)
 
-        integer(int32), intent(in)  :: n_samples, n_timepoints, n_variables
-        !! number of samples, timepoints, and variables
+        integer(int32), intent(in)  :: n_factors
+        !! number of factors
+        integer(int32), intent(in)  :: n_samples
+        !! number of samples
+        integer(int32), intent(in)  :: n_timepoints
+        !! number of timepoints
         integer(int32), intent(out) :: ierr
         !! Error code
-        real(real64), intent(in)  :: velocity(n_samples, n_timepoints, n_variables)
+        real(real64), intent(in)  :: velocity(n_factors, n_samples, n_timepoints)
         !! input velocity trajectories
-        real(real64), intent(out) :: acceleration(n_samples, n_timepoints, n_variables)
+        real(real64), intent(out) :: acceleration(n_factors, n_samples, n_timepoints)
         !! output acceleration trajectories
 
-        integer(int32) :: sample, var
+        integer(int32) :: factor, sample
 
         call set_ok(ierr)
 
+        call validate_dimension_size(n_factors, ierr)
         call validate_dimension_size(n_samples, ierr)
         call validate_dimension_size(n_timepoints, ierr)
-        call validate_dimension_size(n_variables, ierr)
         if (is_err(ierr)) return
 
         acceleration = 0.0_real64
         if (n_timepoints <= 2) return
 
-        do sample = 1, n_samples
-            do var = 1, n_variables
-                call compute_acceleration_from_velocity_trajectory(velocity(sample, :, var), &
-                                                                  acceleration(sample, :, var), &
+        do factor = 1, n_factors
+            do sample = 1, n_samples
+                call compute_acceleration_from_velocity_trajectory(velocity(factor, sample, :), &
+                                                                  acceleration(factor, sample, :), &
                                                                   n_timepoints, ierr)
                 if (is_err(ierr)) return
             end do
@@ -452,33 +460,37 @@ contains
     end subroutine compute_acceleration_from_velocity
 
     !> Compute velocity and acceleration contributions for all variable pairs in the trajectories
-    pure subroutine compute_velocity_acceleration_contributions(trajectories, n_samples, n_timepoints, n_variables, mode, velocity, acceleration, &
+    pure subroutine compute_velocity_acceleration_contributions(trajectories, n_factors, n_samples, n_timepoints, mode, velocity, acceleration, &
         factor_velocity, dependent_velocity, velocity_contributions, &
         factor_acceleration, dependent_acceleration, acceleration_contributions, &
         C_velocity, velocity_contribution_series, &
         C_acceleration, acceleration_contribution_series, ierr)
 
-        integer(int32), intent(in) :: n_samples, n_timepoints, n_variables
-        !! number of samples, timepoints, and variables
+        integer(int32), intent(in)  :: n_factors
+        !! number of factors
+        integer(int32), intent(in)  :: n_samples
+        !! number of samples
+        integer(int32), intent(in)  :: n_timepoints
+        !! number of timepoints
         integer(int32), intent(in) :: mode
         !! Baseline mode: 1=RAW, 2=MIN, 3=MEAN
-        real(real64),   intent(in) :: trajectories(n_samples, n_timepoints, n_variables)
+        real(real64),   intent(in) :: trajectories(n_factors, n_samples, n_timepoints)
         !! input position trajectories
 
         ! Workspace (preallocated by caller)
-        real(real64), intent(out) :: velocity(n_samples, n_timepoints, n_variables)
+        real(real64), intent(out) :: velocity(n_factors, n_samples, n_timepoints)
         !! output velocity trajectories
-        real(real64), intent(out) :: acceleration(n_samples, n_timepoints, n_variables)
+        real(real64), intent(out) :: acceleration(n_factors, n_samples, n_timepoints)
         !! output acceleration trajectories
 
-        real(real64), intent(inout) :: factor_velocity(n_timepoints-1, n_variables)
+        real(real64), intent(inout) :: factor_velocity(n_timepoints-1, n_factors)
         !! velocity factor workspace
         real(real64), intent(inout) :: dependent_velocity(n_timepoints-1)
         !! velocity dependent workspace
         real(real64), intent(inout) :: velocity_contributions(n_timepoints-1)
         !! velocity contributions workspace
 
-        real(real64), intent(inout) :: factor_acceleration(n_timepoints-2, n_variables)
+        real(real64), intent(inout) :: factor_acceleration(n_timepoints-2, n_factors)
         !! acceleration factor workspace
         real(real64), intent(inout) :: dependent_acceleration(n_timepoints-2)
         !! acceleration dependent workspace
@@ -486,13 +498,13 @@ contains
         !! acceleration contributions workspace
 
         ! Outputs
-        real(real64), intent(out) :: C_velocity(n_samples, n_variables, n_variables)
+        real(real64), intent(out) :: C_velocity(n_samples, n_factors, n_factors)
         !! output velocity contributions
-        real(real64), intent(out) :: velocity_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+        real(real64), intent(out) :: velocity_contribution_series(n_samples, n_factors, n_factors, n_timepoints)
         !! output velocity contribution series
-        real(real64), intent(out) :: C_acceleration(n_samples, n_variables, n_variables)
+        real(real64), intent(out) :: C_acceleration(n_samples, n_factors, n_factors)
         !! output acceleration contributions
-        real(real64), intent(out) :: acceleration_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+        real(real64), intent(out) :: acceleration_contribution_series(n_samples, n_factors, n_factors, n_timepoints)
         !! output acceleration contribution series
 
         integer(int32), intent(out) :: ierr
@@ -507,9 +519,9 @@ contains
 
         call set_ok(ierr)
 
+        call validate_dimension_size(n_factors, ierr)
         call validate_dimension_size(n_samples, ierr)
         call validate_dimension_size(n_timepoints, ierr)
-        call validate_dimension_size(n_variables, ierr)
         if (is_err(ierr)) return
 
         C_velocity                     = 0.0_real64
@@ -518,11 +530,11 @@ contains
         acceleration_contribution_series = 0.0_real64
 
         ! ---- Step 1: velocity ----
-        call compute_velocity_trajectories(trajectories, velocity, n_samples, n_timepoints, n_variables, ierr)
+        call compute_velocity_trajectories(trajectories, velocity, n_factors, n_samples, n_timepoints, ierr)
         if (is_err(ierr)) return
 
         ! ---- Step 2: acceleration from velocity ----
-        call compute_acceleration_from_velocity(velocity, acceleration, n_samples, n_timepoints, n_variables, ierr)
+        call compute_acceleration_from_velocity(velocity, acceleration, n_factors, n_samples, n_timepoints, ierr)
         if (is_err(ierr)) return
 
         n_vel = n_timepoints - 1_int32
@@ -531,20 +543,20 @@ contains
         if (n_vel > 0) then
             do sample = 1, n_samples
                 ! Extract ALL factor velocities once per sample into 2D array
-                do factor_index = 1, n_variables
+                do factor_index = 1, n_factors
                     do time_index = 2, n_timepoints
-                        factor_velocity(time_index-1, factor_index) = velocity(sample, time_index, factor_index)
+                        factor_velocity(time_index-1, factor_index) = velocity(factor_index, sample, time_index)
                     end do
                 end do
             
-                do dependent_index = 1, n_variables
+                do dependent_index = 1, n_factors
                     ! Extract dependent velocity data once per dependent
                     do time_index = 2, n_timepoints
-                        dependent_velocity(time_index-1) = velocity(sample, time_index, dependent_index)
+                        dependent_velocity(time_index-1) = velocity(dependent_index, sample, time_index)
                     end do
                     
                     ! Process all factors for this dependent
-                    do factor_index = 1, n_variables
+                    do factor_index = 1, n_factors
                         ! Set first velocity to zero (no change from predecessor)
                         velocity_contribution_series(sample, factor_index, dependent_index, 1) = 0.0_real64
 
@@ -567,21 +579,21 @@ contains
         if (n_acc > 0) then
             do sample = 1, n_samples
                 ! Extract ALL factor accelerations once per sample into 2D array
-                do factor_index = 1, n_variables
+                do factor_index = 1, n_factors
                     do time_index = 3, n_timepoints
-                        factor_acceleration(time_index-2, factor_index) = acceleration(sample, time_index, factor_index)
+                        factor_acceleration(time_index-2, factor_index) = acceleration(factor_index, sample, time_index)
                     end do
                 end do
                 
                 ! Now iterate through dependents
-                do dependent_index = 1, n_variables
+                do dependent_index = 1, n_factors
                     ! Extract dependent acceleration data once per dependent
                     do time_index = 3, n_timepoints
-                        dependent_acceleration(time_index-2) = acceleration(sample, time_index, dependent_index)
+                        dependent_acceleration(time_index-2) = acceleration(dependent_index, sample, time_index)
                     end do
                     
                     ! Process all factors for this dependent
-                    do factor_index = 1, n_variables
+                    do factor_index = 1, n_factors
                         ! Set first two accelerations to zero (no change for missing predecessors)
                         acceleration_contribution_series(sample, factor_index, dependent_index, 1) = 0.0_real64
                         acceleration_contribution_series(sample, factor_index, dependent_index, 2) = 0.0_real64
@@ -603,35 +615,37 @@ contains
         end if
     end subroutine compute_velocity_acceleration_contributions
 
-    subroutine compute_velocity_acceleration_contributions_alloc(trajectories, n_samples, n_timepoints, n_variables, mode, &
+    subroutine compute_velocity_acceleration_contributions_alloc(trajectories, n_factors, n_samples, n_timepoints, mode, &
         C_velocity, velocity_contribution_series, &
         C_acceleration, acceleration_contribution_series, ierr)
 
-        integer(int32), intent(in) :: n_samples, n_timepoints, n_variables
+        integer(int32), intent(in)  :: n_factors
+        !! number of factors
+        integer(int32), intent(in)  :: n_samples
         !! number of samples
+        integer(int32), intent(in)  :: n_timepoints
         !! number of timepoints
-        !! number of variables
         integer(int32), intent(in) :: mode
         !! Baseline mode: 1=RAW, 2=MIN, 3=MEAN
-        real(real64),   intent(in) :: trajectories(n_samples, n_timepoints, n_variables)
+        real(real64),   intent(in) :: trajectories(n_factors, n_samples, n_timepoints)
          !! input position trajectories
 
-        real(real64), intent(out) :: C_velocity(n_samples, n_variables, n_variables)
+        real(real64), intent(out) :: C_velocity(n_samples, n_factors, n_factors)
         !! output velocity contributions
-        real(real64), intent(out) :: velocity_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+        real(real64), intent(out) :: velocity_contribution_series(n_samples, n_factors, n_factors, n_timepoints)
         !! output acceleration contributions
-        real(real64), intent(out) :: C_acceleration(n_samples, n_variables, n_variables)
+        real(real64), intent(out) :: C_acceleration(n_samples, n_factors, n_factors)
         !! output acceleration contributions
-        real(real64), intent(out) :: acceleration_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+        real(real64), intent(out) :: acceleration_contribution_series(n_samples, n_factors, n_factors, n_timepoints)
         !! output acceleration contributions
         integer(int32), intent(out) :: ierr
         !! Error code
 
         ! Workspace (allocated once here)
         real(real64), allocatable :: velocity(:,:,:)
-        !! velocity trajectory
+        !! velocity trajectory (n_factors, n_samples, n_timepoints)
         real(real64), allocatable :: acceleration(:,:,:)
-        !! acceleration trajectory
+        !! acceleration trajectory (n_factors, n_samples, n_timepoints)
 
         real(real64), allocatable :: factor_velocity(:, :), dependent_velocity(:), velocity_contributions(:)
         !! velocity contributions workspace
@@ -640,30 +654,30 @@ contains
 
         call set_ok(ierr)
 
+        call validate_dimension_size(n_factors, ierr)
         call validate_dimension_size(n_samples, ierr)
         call validate_dimension_size(n_timepoints, ierr)
-        call validate_dimension_size(n_variables, ierr)
         if (is_err(ierr)) return
 
         ! Allocate big work arrays once
-        M_ALLOCATE(velocity(n_samples, n_timepoints, n_variables))
-        M_ALLOCATE(acceleration(n_samples, n_timepoints, n_variables))
+        M_ALLOCATE(velocity(n_factors, n_samples, n_timepoints))
+        M_ALLOCATE(acceleration(n_factors, n_samples, n_timepoints))
 
         ! Allocate 1D reusable work vectors once
         if (n_timepoints > 1) then
-            M_ALLOCATE(factor_velocity(n_timepoints-1, n_variables))
+            M_ALLOCATE(factor_velocity(n_timepoints-1, n_factors))
             M_ALLOCATE(dependent_velocity(n_timepoints-1))
             M_ALLOCATE(velocity_contributions(n_timepoints-1))
         end if
 
         if (n_timepoints > 2) then
-            M_ALLOCATE(factor_acceleration(n_timepoints-2, n_variables))
+            M_ALLOCATE(factor_acceleration(n_timepoints-2, n_factors))
             M_ALLOCATE(dependent_acceleration(n_timepoints-2))
             M_ALLOCATE(acceleration_contributions(n_timepoints-2))
         end if
 
         ! Call the SK routine (no allocation inside)
-        call compute_velocity_acceleration_contributions(trajectories, n_samples, n_timepoints, n_variables, mode, &
+        call compute_velocity_acceleration_contributions(trajectories, n_factors, n_samples, n_timepoints, mode, &
             velocity, acceleration, &
             factor_velocity, dependent_velocity, velocity_contributions, &
             factor_acceleration, dependent_acceleration, acceleration_contributions, &
@@ -1007,7 +1021,7 @@ end subroutine compute_p_values_c
 
 
 !> C wrapper for compute_velocity_trajectories
-subroutine tox_compute_velocity_trajectories_c(trajectories, n_samples, n_timepoints, n_variables, &
+subroutine tox_compute_velocity_trajectories_c(trajectories, n_factors, n_samples, n_timepoints, &
                                                velocity, ierr) &
     bind(C, name="tox_compute_velocity_trajectories_c")
     use tox_trajectory_contribution_analysis, only : compute_velocity_trajectories
@@ -1017,32 +1031,32 @@ subroutine tox_compute_velocity_trajectories_c(trajectories, n_samples, n_timepo
     M_USE_NULL_VALIDATION
     implicit none
 
+    integer(c_int), intent(in),  target :: n_factors
+    !! number of factors
     integer(c_int), intent(in),  target :: n_samples
     !! number of samples
     integer(c_int), intent(in),  target :: n_timepoints
     !! number of timepoints
-    integer(c_int), intent(in),  target :: n_variables
-    !! number of variables
-    real(c_double), intent(in),  target :: trajectories(n_samples, n_timepoints, n_variables)
+    real(c_double), intent(in),  target :: trajectories(n_factors, n_samples, n_timepoints)
     !! input trajectories
-    real(c_double), intent(out), target :: velocity(n_samples, n_timepoints, n_variables)
+    real(c_double), intent(out), target :: velocity(n_factors, n_samples, n_timepoints)
     !! output velocity trajectories
     integer(c_int), intent(out), target :: ierr
     !! error code
 
     !! Null-pointer validation 
     M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_factors)
     M_CHECK_NON_NULL(n_samples)
     M_CHECK_NON_NULL(n_timepoints)
-    M_CHECK_NON_NULL(n_variables)
     M_CHECK_NON_NULL(trajectories)
     M_CHECK_NON_NULL(velocity)
 
-    call compute_velocity_trajectories(trajectories, velocity, n_samples, n_timepoints, n_variables, ierr)
+    call compute_velocity_trajectories(trajectories, velocity, n_factors, n_samples, n_timepoints, ierr)
 end subroutine tox_compute_velocity_trajectories_c
 
 !> C wrapper for compute_acceleration_from_velocity
-subroutine tox_compute_acceleration_from_velocity_c(velocity, n_samples, n_timepoints, n_variables, &
+subroutine tox_compute_acceleration_from_velocity_c(velocity, n_factors, n_samples, n_timepoints, &
                                                     acceleration, ierr) &
     bind(C, name="tox_compute_acceleration_from_velocity_c")
 
@@ -1054,31 +1068,31 @@ subroutine tox_compute_acceleration_from_velocity_c(velocity, n_samples, n_timep
     M_USE_NULL_VALIDATION
     implicit none
 
+    integer(c_int), intent(in),  target :: n_factors
+    !! number of factors
     integer(c_int), intent(in),  target :: n_samples
     !! number of samples
     integer(c_int), intent(in),  target :: n_timepoints
     !! number of timepoints
-    integer(c_int), intent(in),  target :: n_variables
-    !! number of variables
-    real(c_double), intent(in),  target :: velocity(n_samples, n_timepoints, n_variables)
+    real(c_double), intent(in),  target :: velocity(n_factors, n_samples, n_timepoints)
     !! input velocity trajectories
-    real(c_double), intent(out), target :: acceleration(n_samples, n_timepoints, n_variables)
+    real(c_double), intent(out), target :: acceleration(n_factors, n_samples, n_timepoints)
     !! output acceleration trajectories
     integer(c_int), intent(out), target :: ierr
     !! error code
 
     M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_factors)
     M_CHECK_NON_NULL(n_samples)
     M_CHECK_NON_NULL(n_timepoints)
-    M_CHECK_NON_NULL(n_variables)
     M_CHECK_NON_NULL(velocity)
     M_CHECK_NON_NULL(acceleration)
 
-    call compute_acceleration_from_velocity(velocity, acceleration, n_samples, n_timepoints, n_variables, ierr)
+    call compute_acceleration_from_velocity(velocity, acceleration, n_factors, n_samples, n_timepoints, ierr)
 end subroutine tox_compute_acceleration_from_velocity_c
 
 !> C wrapper for compute_velocity_and_acceleration_contributions
-subroutine tox_compute_velocity_acceleration_contributions_c(trajectories, n_samples, n_timepoints, n_variables, mode, &
+subroutine tox_compute_velocity_acceleration_contributions_c(trajectories, n_factors, n_samples, n_timepoints, mode, &
     velocity, acceleration, &
     factor_velocity, dependent_velocity, velocity_contributions, &
     factor_acceleration, dependent_acceleration, acceleration_contributions, &
@@ -1093,50 +1107,50 @@ subroutine tox_compute_velocity_acceleration_contributions_c(trajectories, n_sam
     M_USE_NULL_VALIDATION
     implicit none
 
+    integer(c_int), intent(in),  target :: n_factors
+    !! number of factors
     integer(c_int), intent(in),  target :: n_samples
     !! number of samples
     integer(c_int), intent(in),  target :: n_timepoints
     !! number of timepoints
-    integer(c_int), intent(in),  target :: n_variables
-    !! number of variables
     character(len=1, kind=c_char), dimension(*), intent(in), target :: mode
     !! Baseline mode: "raw", "min", "mean"
     integer(c_int), intent(out), target :: ierr
     !! error code
-    real(c_double), intent(in),  target :: trajectories(n_samples, n_timepoints, n_variables)
+    real(c_double), intent(in),  target :: trajectories(n_factors, n_samples, n_timepoints)
     !! input trajectories
 
     ! ---- Workspace (passed in from C) ----
-    real(c_double), intent(out), target :: velocity(n_samples, n_timepoints, n_variables)
+    real(c_double), intent(out), target :: velocity(n_factors, n_samples, n_timepoints)
     !! output velocity trajectories
-    real(c_double), intent(out), target :: acceleration(n_samples, n_timepoints, n_variables)
+    real(c_double), intent(out), target :: acceleration(n_factors, n_samples, n_timepoints)
     !! output acceleration trajectories
 
     ! 1D work vectors (length depends on n_timepoints)
     ! Caller must allocate:
     !   factor_velocity, dependent_velocity, velocity_contributions : length (n_timepoints-1) if n_timepoints>1
     !   factor_acceleration, dependent_acceleration, acceleration_contributions : length (n_timepoints-2) if n_timepoints>2
-    real(c_double), intent(inout), target :: factor_velocity(n_timepoints - 1, n_variables)
+    real(c_double), intent(inout), target :: factor_velocity(n_timepoints - 1, n_factors)
     !! factor for velocity contributions (2D workspace)
     real(c_double), intent(inout), target :: dependent_velocity(n_timepoints - 1)
     !! dependent variable for velocity contributions
     real(c_double), intent(inout), target :: velocity_contributions(n_timepoints - 1)
     !! velocity contributions
 
-    real(c_double), intent(inout), target :: factor_acceleration(n_timepoints - 2, n_variables)
+    real(c_double), intent(inout), target :: factor_acceleration(n_timepoints - 2, n_factors)
     !! factor for acceleration contributions (2D workspace)
     real(c_double), intent(inout), target :: dependent_acceleration(n_timepoints - 2)
     !! dependent variable for acceleration contributions
     real(c_double), intent(inout), target :: acceleration_contributions(n_timepoints - 2)
     !! acceleration contributions
 
-    real(c_double), intent(out), target :: C_velocity(n_samples, n_variables, n_variables)
+    real(c_double), intent(out), target :: C_velocity(n_samples, n_factors, n_factors)
     !! velocity covariance matrix
-    real(c_double), intent(out), target :: velocity_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+    real(c_double), intent(out), target :: velocity_contribution_series(n_samples, n_factors, n_factors, n_timepoints)
     !! velocity contribution series
-    real(c_double), intent(out), target :: C_acceleration(n_samples, n_variables, n_variables)
+    real(c_double), intent(out), target :: C_acceleration(n_samples, n_factors, n_factors)
     !! acceleration covariance matrix
-    real(c_double), intent(out), target :: acceleration_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+    real(c_double), intent(out), target :: acceleration_contribution_series(n_samples, n_factors, n_factors, n_timepoints)
     !! acceleration contribution series
     integer(int32) :: mode_int
     !! integer representation of baseline mode
@@ -1145,7 +1159,7 @@ subroutine tox_compute_velocity_acceleration_contributions_c(trajectories, n_sam
     M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_samples)
     M_CHECK_NON_NULL(n_timepoints)
-    M_CHECK_NON_NULL(n_variables)
+    M_CHECK_NON_NULL(n_factors)
     M_CHECK_NON_NULL(mode)
     M_CHECK_NON_NULL(trajectories)
     M_CHECK_NON_NULL(velocity)
@@ -1164,7 +1178,7 @@ subroutine tox_compute_velocity_acceleration_contributions_c(trajectories, n_sam
     call get_baseline_mode(mode, mode_int, ierr)
     if (is_err(ierr)) return
 
-    call compute_velocity_acceleration_contributions(trajectories, n_samples, n_timepoints, n_variables, mode_int, &
+    call compute_velocity_acceleration_contributions(trajectories, n_factors, n_samples, n_timepoints, mode_int, &
         velocity, acceleration, &
         factor_velocity, dependent_velocity, velocity_contributions, &
         factor_acceleration, dependent_acceleration, acceleration_contributions, &
@@ -1174,7 +1188,7 @@ subroutine tox_compute_velocity_acceleration_contributions_c(trajectories, n_sam
 end subroutine tox_compute_velocity_acceleration_contributions_c
 
 !> C wrapper for compute_velocity_acceleration_contributions_alloc 
-subroutine tox_compute_velocity_acceleration_contributions_alloc_c(trajectories, n_samples, n_timepoints, n_variables, mode, &
+subroutine tox_compute_velocity_acceleration_contributions_alloc_c(trajectories, n_factors, n_samples, n_timepoints, mode, &
     C_velocity, velocity_contribution_series, &
     C_acceleration, acceleration_contribution_series, ierr) &
     bind(C, name="tox_compute_velocity_acceleration_contributions_alloc_c")
@@ -1186,24 +1200,24 @@ subroutine tox_compute_velocity_acceleration_contributions_alloc_c(trajectories,
     M_USE_NULL_VALIDATION
     implicit none
 
+    integer(c_int), intent(in),  target :: n_factors
+    !! number of factors
     integer(c_int), intent(in),  target :: n_samples
     !! number of samples
     integer(c_int), intent(in),  target :: n_timepoints
     !! number of timepoints
-    integer(c_int), intent(in),  target :: n_variables
-    !! number of variables
     character(len=1, kind=c_char), dimension(*), intent(in), target :: mode
     !! Baseline mode: "raw", "min", "mean"
 
-    real(c_double), intent(in),  target :: trajectories(n_samples, n_timepoints, n_variables)
+    real(c_double), intent(in),  target :: trajectories(n_factors, n_samples, n_timepoints)
     !! input trajectories
-    real(c_double), intent(out), target :: C_velocity(n_samples, n_variables, n_variables)
+    real(c_double), intent(out), target :: C_velocity(n_samples, n_factors, n_factors)
     !! velocity covariance matrix
-    real(c_double), intent(out), target :: velocity_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+    real(c_double), intent(out), target :: velocity_contribution_series(n_samples, n_factors, n_factors, n_timepoints)
     !! velocity contribution series
-    real(c_double), intent(out), target :: C_acceleration(n_samples, n_variables, n_variables)
+    real(c_double), intent(out), target :: C_acceleration(n_samples, n_factors, n_factors)
     !! acceleration covariance matrix
-    real(c_double), intent(out), target :: acceleration_contribution_series(n_samples, n_variables, n_variables, n_timepoints)
+    real(c_double), intent(out), target :: acceleration_contribution_series(n_samples, n_factors, n_factors, n_timepoints)
     !! acceleration contribution series
     integer(c_int), intent(out), target :: ierr
     !! error code
@@ -1214,7 +1228,7 @@ subroutine tox_compute_velocity_acceleration_contributions_alloc_c(trajectories,
     M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_samples)
     M_CHECK_NON_NULL(n_timepoints)
-    M_CHECK_NON_NULL(n_variables)
+    M_CHECK_NON_NULL(n_factors)
     M_CHECK_NON_NULL(mode)
     M_CHECK_NON_NULL(trajectories)
     M_CHECK_NON_NULL(C_velocity)
@@ -1226,7 +1240,7 @@ subroutine tox_compute_velocity_acceleration_contributions_alloc_c(trajectories,
     if (is_err(ierr)) return
 
     call compute_velocity_acceleration_contributions_alloc( &
-        trajectories, n_samples, n_timepoints, n_variables, mode_int, &
+        trajectories, n_factors, n_samples, n_timepoints, mode_int, &
         C_velocity, velocity_contribution_series, &
         C_acceleration, acceleration_contribution_series, ierr)
 

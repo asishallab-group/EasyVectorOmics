@@ -3525,21 +3525,35 @@ def tox_compute_p_values(local_contributions_observed,
 
 #> tox_trajectory_contribution_analysis:tox_compute_velocity_trajectories_c: Compute velocity (first differences) for each trajectory time series
 def tox_compute_velocity_trajectories(trajectories):
-    """Compute velocity (first differences) for each trajectory time series."""
+    """
+    Compute velocity (first differences) for each trajectory time series.
+    
+    Args:
+        trajectories (np.ndarray): 3D array of shape (n_factors, n_samples, n_timepoints)
+    
+    Returns:
+        np.ndarray: Velocity trajectories of shape (n_factors, n_samples, n_timepoints)
+    
+    Raises:
+        ValueError: If input is not 3D
+        RuntimeError: If error occurs in Fortran/C layer
+    """
     trajectories = np.asarray(trajectories, dtype=np.float64)
 
     if trajectories.ndim != 3:
-        raise ValueError("trajectories must be a 3D array (samples, variables, timepoints)")
+        raise ValueError("trajectories must be a 3D array (n_factors, n_samples, n_timepoints)")
 
-    n_samples, n_variables, n_timepoints = trajectories.shape
+    n_factors, n_samples, n_timepoints = trajectories.shape
 
-    trajectories_f = np.asfortranarray(np.transpose(trajectories, (0, 2, 1)))
-    velocity_f = np.empty_like(trajectories_f)
+    # Fortran arrays are column-major, so keep the order as-is
+    trajectories_f = np.asfortranarray(trajectories)
+    velocity_f = np.empty((n_factors, n_samples, n_timepoints), dtype=np.float64, order='F')
     ierr = ctypes.c_int(0)
 
+    n_factors_c = ctypes.c_int(n_factors)
     n_samples_c = ctypes.c_int(n_samples)
     n_timepoints_c = ctypes.c_int(n_timepoints)
-    n_variables_c = ctypes.c_int(n_variables)
+
 
     compute_velocity = lib.tox_compute_velocity_trajectories_c
     compute_velocity.argtypes = [
@@ -3554,38 +3568,48 @@ def tox_compute_velocity_trajectories(trajectories):
 
     compute_velocity(
         trajectories_f,
+        ctypes.byref(n_factors_c),
         ctypes.byref(n_samples_c),
         ctypes.byref(n_timepoints_c),
-        ctypes.byref(n_variables_c),
         velocity_f,
         ctypes.byref(ierr),
     )
 
     check_err_code(ierr.value)
 
-    velocity = np.transpose(np.asarray(velocity_f, order="C"), (0, 2, 1))
-    _readonly(velocity)
-
-    return {"velocity": velocity}
+    # Return as Fortran-ordered array (n_factors, n_samples, n_timepoints)
+    _readonly(velocity_f)
+    return velocity_f
 
 
 #> tox_trajectory_contribution_analysis:tox_compute_acceleration_from_velocity_c: Compute acceleration (second differences) from velocity trajectories
 def tox_compute_acceleration_from_velocity(velocity):
-    """Compute acceleration (second differences) from velocity trajectories."""
+    """
+    Compute acceleration (second differences) from velocity trajectories.
+    
+    Args:
+        velocity (np.ndarray): 3D array of shape (n_factors, n_samples, n_timepoints)
+    
+    Returns:
+        np.ndarray: Acceleration trajectories of shape (n_factors, n_samples, n_timepoints)
+    
+    Raises:
+        ValueError: If input is not 3D
+        RuntimeError: If error occurs in Fortran/C layer
+    """
     velocity = np.asarray(velocity, dtype=np.float64)
 
     if velocity.ndim != 3:
-        raise ValueError("velocity must be a 3D array (samples, variables, timepoints)")
+        raise ValueError("velocity must be a 3D array (n_factors, n_samples, n_timepoints)")
+    n_factors, n_samples, n_timepoints = velocity.shape
 
-    n_samples, n_variables, n_timepoints = velocity.shape
-
-    velocity_f = np.asfortranarray(np.transpose(velocity, (0, 2, 1)))
-    acceleration_f = np.empty_like(velocity_f)
+    velocity_f = np.asfortranarray(velocity)
+    acceleration_f = np.empty((n_factors, n_samples, n_timepoints), dtype=np.float64, order='F')
     ierr = ctypes.c_int(0)
 
+    n_factors_c = ctypes.c_int(n_factors)
     n_samples_c = ctypes.c_int(n_samples)
     n_timepoints_c = ctypes.c_int(n_timepoints)
-    n_variables_c = ctypes.c_int(n_variables)
 
     compute_acceleration = lib.tox_compute_acceleration_from_velocity_c
     compute_acceleration.argtypes = [
@@ -3600,43 +3624,52 @@ def tox_compute_acceleration_from_velocity(velocity):
 
     compute_acceleration(
         velocity_f,
+        ctypes.byref(n_factors_c),
         ctypes.byref(n_samples_c),
         ctypes.byref(n_timepoints_c),
-        ctypes.byref(n_variables_c),
         acceleration_f,
         ctypes.byref(ierr),
     )
 
     check_err_code(ierr.value)
 
-    acceleration = np.transpose(np.asarray(acceleration_f, order="C"), (0, 2, 1))
-    _readonly(acceleration)
-
-    return {"acceleration": acceleration}
-
+    # Return as Fortran-ordered array (n_factors, n_samples, n_timepoints)
+    _readonly(acceleration_f)
+    return acceleration_f
 
 #> tox_trajectory_contribution_analysis:tox_compute_velocity_acceleration_contributions_alloc_c: Compute velocity and acceleration contributions for all variable pairs
 def tox_compute_velocity_acceleration_contributions(trajectories, mode):
-    """Compute velocity and acceleration contributions for all variable pairs."""
+    """
+    Compute velocity and acceleration contributions for all variable pairs.
+    
+    Args:
+        trajectories (np.ndarray): 3D array of shape (n_factors, n_samples, n_timepoints)
+        mode (str): Baseline mode ("raw", "min", "mean")
+    
+    Returns:
+        dict with C_velocity, velocity_contribution_series, C_acceleration, acceleration_contribution_series
+    """
     trajectories = np.asarray(trajectories, dtype=np.float64)
 
     if trajectories.ndim != 3:
-        raise ValueError("trajectories must be a 3D array (samples, variables, timepoints)")
+        raise ValueError("trajectories must be a 3D array (n_factors, n_samples, n_timepoints)")
 
-    n_samples, n_variables, n_timepoints = trajectories.shape
+    n_factors, n_samples, n_timepoints = trajectories.shape
 
-    trajectories_f = np.asfortranarray(np.transpose(trajectories, (0, 2, 1)))
+    # Fortran-contiguous input (n_factors, n_samples, n_timepoints)
+    trajectories_f = np.asfortranarray(trajectories)
 
-    C_velocity_f = np.empty((n_samples, n_variables, n_variables), dtype=np.float64, order="F")
-    velocity_series_f = np.empty((n_samples, n_variables, n_variables, n_timepoints), dtype=np.float64, order="F")
-    C_acceleration_f = np.empty((n_samples, n_variables, n_variables), dtype=np.float64, order="F")
-    acceleration_series_f = np.empty((n_samples, n_variables, n_variables, n_timepoints), dtype=np.float64, order="F")
+    # Output arrays with correct shapes
+    C_velocity_f = np.zeros((n_samples, n_factors, n_factors), dtype=np.float64, order="F")
+    velocity_series_f = np.zeros((n_samples, n_factors, n_factors, n_timepoints), dtype=np.float64, order="F")
+    C_acceleration_f = np.zeros((n_samples, n_factors, n_factors), dtype=np.float64, order="F")
+    acceleration_series_f = np.zeros((n_samples, n_factors, n_factors, n_timepoints), dtype=np.float64, order="F")
 
     ierr = ctypes.c_int(0)
 
+    n_factors_c = ctypes.c_int(n_factors)
     n_samples_c = ctypes.c_int(n_samples)
     n_timepoints_c = ctypes.c_int(n_timepoints)
-    n_variables_c = ctypes.c_int(n_variables)
 
     compute_contribs = lib.tox_compute_velocity_acceleration_contributions_alloc_c
     compute_contribs.argtypes = [
@@ -3655,9 +3688,9 @@ def tox_compute_velocity_acceleration_contributions(trajectories, mode):
 
     compute_contribs(
         trajectories_f,
+        ctypes.byref(n_factors_c),
         ctypes.byref(n_samples_c),
         ctypes.byref(n_timepoints_c),
-        ctypes.byref(n_variables_c),
         ctypes.c_char_p(mode.encode("utf-8")),
         C_velocity_f,
         velocity_series_f,
@@ -3668,86 +3701,100 @@ def tox_compute_velocity_acceleration_contributions(trajectories, mode):
 
     check_err_code(ierr.value)
 
-    C_velocity = np.asarray(C_velocity_f, order="C")
-    velocity_series = np.asarray(velocity_series_f, order="C")
-    C_acceleration = np.asarray(C_acceleration_f, order="C")
-    acceleration_series = np.asarray(acceleration_series_f, order="C")
-
-    _readonly(C_velocity, velocity_series, C_acceleration, acceleration_series)
+    _readonly(C_velocity_f, velocity_series_f, C_acceleration_f, acceleration_series_f)
 
     return {
-        "C_velocity": C_velocity,
-        "velocity_contribution_series": velocity_series,
-        "C_acceleration": C_acceleration,
-        "acceleration_contribution_series": acceleration_series,
+        "C_velocity": C_velocity_f,
+        "velocity_contribution_series": velocity_series_f,
+        "C_acceleration": C_acceleration_f,
+        "acceleration_contribution_series": acceleration_series_f,
     }
 
-
-#> tox_trajectory_contribution_analysis:tox_compute_velocity_acceleration_contributions_c: Compute velocity and acceleration contributions for all variable pairs
+#> tox_trajectory_contribution_analysis:tox_compute_velocity_acceleration_contribution_expert: Compute velocity and acceleration contributions for all variable pairs
 def tox_compute_velocity_acceleration_contributions_expert(trajectories, mode):
-    """Compute velocity and acceleration contributions using the Fortran allocating helper."""
+    """
+    Compute velocity and acceleration contributions using the expert (non-allocating) Fortran routine.
+    
+    Args:
+        trajectories (np.ndarray): 3D array of shape (n_factors, n_samples, n_timepoints)
+        mode (str): Baseline mode ("raw", "min", "mean")
+    
+    Returns:
+        dict: {
+            "C_velocity": np.ndarray of shape (n_samples, n_factors, n_factors),
+            "velocity_contribution_series": np.ndarray of shape (n_samples, n_factors, n_factors, n_timepoints),
+            "C_acceleration": np.ndarray of shape (n_samples, n_factors, n_factors),
+            "acceleration_contribution_series": np.ndarray of shape (n_samples, n_factors, n_factors, n_timepoints)
+        }
+    """
     trajectories = np.asarray(trajectories, dtype=np.float64)
 
     if trajectories.ndim != 3:
-        raise ValueError("trajectories must be a 3D array (samples, variables, timepoints)")
+        raise ValueError("trajectories must be a 3D array (n_factors, n_samples, n_timepoints)")
 
-    n_samples, n_variables, n_timepoints = trajectories.shape
+    n_factors, n_samples, n_timepoints = trajectories.shape
 
-    trajectories_f = np.asfortranarray(np.transpose(trajectories, (0, 2, 1)))
+    # Fortran-contiguous array with correct dimension order
+    trajectories_f = np.asfortranarray(trajectories)
 
-    C_velocity_f = np.empty((n_samples, n_variables, n_variables), dtype=np.float64, order="F")
-    velocity_series_f = np.empty((n_samples, n_variables, n_variables, n_timepoints), dtype=np.float64, order="F")
-    C_acceleration_f = np.empty((n_samples, n_variables, n_variables), dtype=np.float64, order="F")
-    acceleration_series_f = np.empty((n_samples, n_variables, n_variables, n_timepoints), dtype=np.float64, order="F")
+    # Output arrays with correct shapes
+    C_velocity_f = np.empty((n_samples, n_factors, n_factors), dtype=np.float64, order="F")
+    velocity_series_f = np.empty((n_samples, n_factors, n_factors, n_timepoints), dtype=np.float64, order="F")
+    C_acceleration_f = np.empty((n_samples, n_factors, n_factors), dtype=np.float64, order="F")
+    acceleration_series_f = np.empty((n_samples, n_factors, n_factors, n_timepoints), dtype=np.float64, order="F")
 
-    ierr = ctypes.c_int(0)
+    # Workspace arrays with correct shapes
+    velocity_ws = np.empty((n_factors, n_samples, n_timepoints), dtype=np.float64, order="F")
+    acceleration_ws = np.empty((n_factors, n_samples, n_timepoints), dtype=np.float64, order="F")
 
-    n_samples_c = ctypes.c_int(n_samples)
-    n_timepoints_c = ctypes.c_int(n_timepoints)
-    n_variables_c = ctypes.c_int(n_variables)
-
-    velocity_ws = np.empty((n_samples, n_timepoints, n_variables), dtype=np.float64, order="F")
-    acceleration_ws = np.empty_like(velocity_ws)
-
+    # Velocity workspace (n_timepoints - 1 elements)
     vel_len = max(1, n_timepoints - 1)
-    acc_len = max(1, n_timepoints - 2)
-
-    factor_velocity_ws = np.zeros(vel_len, dtype=np.float64, order="F")
+    factor_velocity_ws = np.zeros((vel_len, n_factors), dtype=np.float64, order="F")
     dependent_velocity_ws = np.zeros(vel_len, dtype=np.float64, order="F")
     velocity_contrib_ws = np.zeros(vel_len, dtype=np.float64, order="F")
 
-    factor_acceleration_ws = np.zeros(acc_len, dtype=np.float64, order="F")
+    # Acceleration workspace (n_timepoints - 2 elements)
+    acc_len = max(1, n_timepoints - 2)
+    factor_acceleration_ws = np.zeros((acc_len, n_factors), dtype=np.float64, order="F")
     dependent_acceleration_ws = np.zeros(acc_len, dtype=np.float64, order="F")
     acceleration_contrib_ws = np.zeros(acc_len, dtype=np.float64, order="F")
 
+    ierr = ctypes.c_int(0)
+
+    n_factors_c = ctypes.c_int(n_factors)
+    n_samples_c = ctypes.c_int(n_samples)
+    n_timepoints_c = ctypes.c_int(n_timepoints)
+
+    # Setup C wrapper for expert (non-allocating) routine
     compute_contribs_expert = lib.tox_compute_velocity_acceleration_contributions_c
     compute_contribs_expert.argtypes = [
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
-        ctypes.POINTER(ctypes.c_int),
-        ctypes.POINTER(ctypes.c_int),
-        ctypes.POINTER(ctypes.c_int),
-        ctypes.c_char_p,
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
-        ctypes.POINTER(ctypes.c_int),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # trajectories
+        ctypes.POINTER(ctypes.c_int),                                    # n_factors
+        ctypes.POINTER(ctypes.c_int),                                    # n_samples
+        ctypes.POINTER(ctypes.c_int),                                    # n_timepoints
+        ctypes.c_char_p,                                                 # mode
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # velocity
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # acceleration
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # factor_velocity
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # dependent_velocity
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # velocity_contrib
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # factor_acceleration
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # dependent_acceleration
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # acceleration_contrib
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # C_velocity
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # velocity_series
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # C_acceleration
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # acceleration_series
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
     ]
     compute_contribs_expert.restype = None
 
+    # Call expert (non-allocating) Fortran routine
     compute_contribs_expert(
         trajectories_f,
+        ctypes.byref(n_factors_c),
         ctypes.byref(n_samples_c),
         ctypes.byref(n_timepoints_c),
-        ctypes.byref(n_variables_c),
         ctypes.c_char_p(mode.encode("utf-8")),
         velocity_ws,
         acceleration_ws,
@@ -3766,20 +3813,15 @@ def tox_compute_velocity_acceleration_contributions_expert(trajectories, mode):
 
     check_err_code(ierr.value)
 
-    C_velocity = np.asarray(C_velocity_f, order="C")
-    velocity_series = np.asarray(velocity_series_f, order="C")
-    C_acceleration = np.asarray(C_acceleration_f, order="C")
-    acceleration_series = np.asarray(acceleration_series_f, order="C")
-
-    _readonly(C_velocity, velocity_series, C_acceleration, acceleration_series)
+    # Mark outputs as read-only
+    _readonly(C_velocity_f, velocity_series_f, C_acceleration_f, acceleration_series_f)
 
     return {
-        "C_velocity": C_velocity,
-        "velocity_contribution_series": velocity_series,
-        "C_acceleration": C_acceleration,
-        "acceleration_contribution_series": acceleration_series,
+        "C_velocity": C_velocity_f,
+        "velocity_contribution_series": velocity_series_f,
+        "C_acceleration": C_acceleration_f,
+        "acceleration_contribution_series": acceleration_series_f,
     }
-
 
 #> tox_trajectory_contribution_analysis:tox_compute_velocity_trajectory_c: Compute velocity for a single trajectory (1D array)
 def tox_compute_velocity_trajectory(trajectory):
@@ -3820,7 +3862,7 @@ def tox_compute_velocity_trajectory(trajectory):
 
     _readonly(velocity)
 
-    return {"velocity": velocity}
+    return velocity
 
 
 #> tox_trajectory_contribution_analysis:tox_compute_acceleration_from_velocity_trajectory_c: Compute acceleration for a single velocity trajectory (1D array)
@@ -3832,7 +3874,7 @@ def tox_compute_acceleration_from_velocity_trajectory(velocity):
         velocity (np.ndarray): 1D array of shape (n_timepoints,)
 
     Returns:
-        dict: {'acceleration': np.ndarray of shape (n_timepoints,)}
+        np.ndarray: Acceleration of shape (n_timepoints,)
 
     Raises:
         ValueError: If input is not 1D
@@ -3862,4 +3904,4 @@ def tox_compute_acceleration_from_velocity_trajectory(velocity):
 
     _readonly(acceleration)
 
-    return {"acceleration": acceleration}
+    return acceleration
