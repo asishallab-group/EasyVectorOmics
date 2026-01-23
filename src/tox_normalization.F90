@@ -5,7 +5,7 @@ module tox_normalization
   use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
   use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, is_err, validate_dimension_size, validate_in_range_real
-  use f42_utils, only: norm, is_close
+  use f42_utils, only: norm, is_close, logx
 contains
 
   !> Normalizes an input vector to unit length in-place
@@ -255,7 +255,6 @@ contains
       integer(int32), intent(out) :: ierr
       ! Locals
       integer(int32) :: i_elem
-      real(real64), parameter :: LOG2 = log(2.0d0)
 
       ! Error handling
       call set_ok(ierr)
@@ -267,7 +266,8 @@ contains
       ! Loop through all elements in the flattened input matrix
       do i_elem = 1, n_genes * n_grps
           ! Apply the log2(x + 1) transformation
-          output_matrix(i_elem) = log(input_matrix(i_elem) + 1.0d0) / LOG2
+          call logx(input_matrix(i_elem) + 1.0d0, 2.0_real64, output_matrix(i_elem), ierr)
+          if (is_err(ierr)) return
       end do
   end subroutine log2_transformation
 
@@ -755,7 +755,6 @@ pure subroutine normalize_unit_length_c(vector, n_dims, ierr) bind(C, name="norm
     M_USE_NULL_VALIDATION
     implicit none
   
-
     integer(c_int), intent(in), target :: n_dims
         !! number of elements in `vector`
     real(c_double), dimension(n_dims), intent(inout), target :: vector
