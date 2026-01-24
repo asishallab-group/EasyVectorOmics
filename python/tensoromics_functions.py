@@ -220,7 +220,7 @@ def tox_serialize_int_nd(arr: np.ndarray, filename: str):
         ctypes.c_int,  # ndim
         np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"),  # filename_c
         ctypes.c_int,  # fn_len
-        ctypes.POINTER(ctypes.c_int) 
+        ctypes.POINTER(ctypes.c_int)
     ]
     lib.serialize_int_nd_C.restype = None
 
@@ -466,7 +466,7 @@ def tox_serialize_logical_nd(arr: np.ndarray, filename: str):
         ctypes.c_int,  # ndim
         np.ctypeslib.ndpointer(dtype=np.byte, ndim=1, flags="C_CONTIGUOUS"),  # filename_c
         ctypes.c_int,  # fn_len
-        ctypes.POINTER(ctypes.c_int) 
+        ctypes.POINTER(ctypes.c_int)
     ]
     lib.serialize_logical_nd_C.restype = None
 
@@ -615,7 +615,7 @@ def build_bst_index(values):
         np.ctypeslib.ndpointer(dtype=np.int32),                          # sorted_indices (out)
         np.ctypeslib.ndpointer(dtype=np.int32),                          # stack_left
         np.ctypeslib.ndpointer(dtype=np.int32),                          # stack_right
-        ctypes.POINTER(ctypes.c_int)                                     # ierr   
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
     ]
 
     # Build BST index
@@ -673,7 +673,7 @@ def bst_range_query(values, indices, lower_bound, upper_bound):
     ]
 
     # Perform range query
-    lib.bst_range_query_C(values, indices, n, lower_bound, upper_bound, 
+    lib.bst_range_query_C(values, indices, n, lower_bound, upper_bound,
                          output_indices, ctypes.byref(match_count), ctypes.byref(ierr))
     check_err_code(ierr.value)
 
@@ -735,7 +735,7 @@ def build_kd_index(points, dimension_order=None):
     ]
 
     # Build KD-Tree index using the flat array
-    lib.build_kd_index_C(points, d, n, kd_indices, dimension_order, workspace, 
+    lib.build_kd_index_C(points, d, n, kd_indices, dimension_order, workspace,
                         value_buffer, permutation, stack_left, stack_right, ctypes.byref(ierr))
     check_err_code(ierr.value)
 
@@ -1579,7 +1579,7 @@ def tox_loess_smooth_2d(x_ref, y_ref, indices_used, x_query, kernel_sigma, kerne
 
     Args:
         x_ref: Reference x values
-        y_ref: Reference y values  
+        y_ref: Reference y values
         indices_used: Indices of points to use (1-based for Fortran)
         x_query: Query x values where to compute smoothed y
         kernel_sigma: Kernel bandwidth parameter
@@ -1713,7 +1713,7 @@ def tox_compute_family_scaling(distances, gene_to_fam):
 
 
 #> tox_get_outliers:compute_family_scaling_expert_c: Compute family scaling factors using LOESS smoothing (Expert Version)
-def tox_compute_family_scaling_expert(distances, gene_to_fam, perm_tmp, stack_left_tmp, 
+def tox_compute_family_scaling_expert(distances, gene_to_fam, perm_tmp, stack_left_tmp,
                                  stack_right_tmp, family_distances):
     """
     Expert version of compute_family_scaling with user-provided work arrays
@@ -1849,7 +1849,7 @@ def tox_compute_rdi(distances, gene_to_fam, dscale):
     compute_rdi_c.restype = None
 
     # Call Fortran routine
-    compute_rdi_c(n_genes, n_families, distances, gene_to_fam, dscale, 
+    compute_rdi_c(n_genes, n_families, distances, gene_to_fam, dscale,
                   rdi, sorted_rdi, perm, stack_left, stack_right)
 
     # Mark output as read-only
@@ -1897,7 +1897,7 @@ def tox_identify_outliers(rdi, threshold=None, percentile=95.0):
     identify_outliers_c.restype = None
 
     # Call Fortran routine
-    identify_outliers_c(n_genes, rdi, sorted_rdi, outliers_int, 
+    identify_outliers_c(n_genes, rdi, sorted_rdi, outliers_int,
                         ctypes.byref(threshold_out), ctypes.c_double(percentile))
 
     # Mark output as read-only
@@ -2041,7 +2041,7 @@ def tox_which(cond):
 #> tox_shift_vectors:compute_shift_vector_field_c: Computes the shift vector field for each gene expression vector based on its family centroid
 def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to_centroid):
     """
-    Calculate Shift Vector Field 
+    Calculate Shift Vector Field
 
     Computes the shift vector field for each gene expression vector based on its family centroid.
     The shift vector is defined as the difference between the gene expression vector and its corresponding family centroid,
@@ -2169,7 +2169,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, mode, ort
 
     if mode != 'all' and mode != 'orthologs':
         raise ValueError("'mode' must be either 'all' or 'orthologs'.")
-    if mode == 'orthologs': 
+    if mode == 'orthologs':
         if ortholog_set is None:
             raise ValueError("`ortholog_set` must be provided when mode is 'orthologs'.")
     else:
@@ -3177,7 +3177,7 @@ def tox_normalize_single_trajectory(trajectory):
     ]
     normalize_c.restype = None
 
-    normalize_c(traj_arr, traj_norm, ctypes.byref(n_factors_c), 
+    normalize_c(traj_arr, traj_norm, ctypes.byref(n_factors_c),
                 ctypes.byref(n_timepoints_c), ctypes.byref(ierr), ctypes.byref(status))
     check_err_code(ierr.value)
 
@@ -3225,8 +3225,8 @@ def tox_normalize_all_trajectories(trajectories):
     ]
     normalize_c.restype = None
 
-    normalize_c(traj_arr, traj_norm, ctypes.byref(n_factors_c), 
-                ctypes.byref(n_samples_c), ctypes.byref(n_timepoints_c), 
+    normalize_c(traj_arr, traj_norm, ctypes.byref(n_factors_c),
+                ctypes.byref(n_samples_c), ctypes.byref(n_timepoints_c),
                 ctypes.byref(ierr), ctypes.byref(status))
     check_err_code(ierr.value)
 

@@ -10,16 +10,16 @@ using namespace Rcpp;
 extern "C" {
 
     void normalize_by_std_dev_c(int n_genes, int n_tissues,
-                                double *input_matrix, double *output_matrix, int *ierr);                                    
+                                double *input_matrix, double *output_matrix, int *ierr);
     void quantile_normalization_c(int n_genes, int n_tissues, double *input_matrix, double *output_matrix,
                                 double *temp_col, double *rank_means,
                                   int *perm, int *stack_left, int *stack_right,
                                   int max_stack, int *ierr);
     void log2_transformation_c(int n_genes, int n_tissues,
-                               double *input_matrix, double *output_matrix, int *ierr); 
+                               double *input_matrix, double *output_matrix, int *ierr);
 
     void calc_tiss_avg_c(int n_genes, int n_grps,int *group_s, int *group_c,
-                         double *input_matrix, double *output_matrix, int *ierr);  
+                         double *input_matrix, double *output_matrix, int *ierr);
     void calc_fchange_c(int n_genes, int n_cols, int n_pairs,int *control_cols, int *cond_cols,
                         double *input_matrix, double *output_matrix, int *ierr);
 
@@ -37,7 +37,7 @@ extern "C" {
         double* loess_x, double* loess_y, int* indices_used,
         int* ierr
       );
-      
+
       void compute_family_scaling_expert_c(
         int n_genes, int n_families,
         double* distances, int* gene_to_fam,
@@ -47,7 +47,7 @@ extern "C" {
         double* family_distances,
         int* ierr
       );
-      
+
       void compute_rdi_c(
         int n_genes, int n_families,
         double* distances, int* gene_to_fam,
@@ -55,7 +55,7 @@ extern "C" {
         double* rdi, double* sorted_rdi,
         int* perm, int* stack_left, int* stack_right
       );
-      
+
       void identify_outliers_c(
         int n_genes,
         double* rdi, double* sorted_rdi,
@@ -63,7 +63,7 @@ extern "C" {
         double* threshold,
         double percentile
       );
-      
+
       void detect_outliers_c(
         int n_genes, int n_families,
         double* distances, int* gene_to_fam,
@@ -75,7 +75,7 @@ extern "C" {
         double percentile
       );
 
-      
+
       void euclidean_distance_c(double* vec1, double* vec2, int d, double* result);
 
       void distance_to_centroid_c(
@@ -99,16 +99,16 @@ extern "C" {
       );
 
     void euclidean_distance_c(double* vec1, double* vec2, int d, double* result);
-    void distance_to_centroid_c(int n_genes, int n_families, double* genes, 
-                                double* centroids, int* gene_to_fam, 
+    void distance_to_centroid_c(int n_genes, int n_families, double* genes,
+                                double* centroids, int* gene_to_fam,
                                 double* distances, int d);
-    void compute_tissue_versatility_c(int n_axes, int n_vectors, 
-                                      double* expression_vectors, 
+    void compute_tissue_versatility_c(int n_axes, int n_vectors,
+                                      double* expression_vectors,
                                       int* exp_vecs_selection_index,
-                                      int n_selected_vectors, 
-                                      int* axes_selection, 
+                                      int n_selected_vectors,
+                                      int* axes_selection,
                                       int n_selected_axes,
-                                      double* tissue_versatilities, 
+                                      double* tissue_versatilities,
                                       double* tissue_angles_deg,
                                       int* ierr);
     void compute_shift_vector_field_c(int d, int n_genes, int n_families,
@@ -133,7 +133,7 @@ extern "C" {
 double tox_euclidean_distance_rcpp(NumericVector vec1, NumericVector vec2) {
     int d = vec1.length();
     double result = 0.0;
-    
+
     euclidean_distance_c(vec1.begin(), vec2.begin(), d, &result);
     return result;
 }
@@ -142,17 +142,17 @@ double tox_euclidean_distance_rcpp(NumericVector vec1, NumericVector vec2) {
  * Calculate distances from genes to their family centroids
  */
 // [[Rcpp::export]]
-NumericVector tox_distance_to_centroid_rcpp(NumericVector genes, NumericVector centroids, 
+NumericVector tox_distance_to_centroid_rcpp(NumericVector genes, NumericVector centroids,
                                        IntegerVector gene_to_fam, int d) {
     int n_genes = genes.length() / d;
     int n_families = centroids.length() / d;
-    
+
     NumericVector distances(n_genes);
-    
-    distance_to_centroid_c(n_genes, n_families, genes.begin(), 
-                          centroids.begin(), gene_to_fam.begin(), 
+
+    distance_to_centroid_c(n_genes, n_families, genes.begin(),
+                          centroids.begin(), gene_to_fam.begin(),
                           distances.begin(), d);
-    
+
     return distances;
 }
 
@@ -160,24 +160,24 @@ NumericVector tox_distance_to_centroid_rcpp(NumericVector genes, NumericVector c
  * Calculate Tissue Versatility
  */
 // [[Rcpp::export]]
-List tox_calculate_tissue_versatility_rcpp(NumericMatrix expression_vectors, 
-                                      IntegerVector vector_selection, 
+List tox_calculate_tissue_versatility_rcpp(NumericMatrix expression_vectors,
+                                      IntegerVector vector_selection,
                                       IntegerVector axis_selection) {
     int n_axes = expression_vectors.nrow();
     int n_vectors = expression_vectors.ncol();
     int n_selected_vectors = sum(vector_selection);
     int n_selected_axes = sum(axis_selection);
-    
+
     NumericVector tissue_versatilities(n_selected_vectors);
     NumericVector tissue_angles_deg(n_selected_vectors);
     int ierr = 0;
-    
+
     compute_tissue_versatility_c(n_axes, n_vectors, expression_vectors.begin(),
                                 vector_selection.begin(), n_selected_vectors,
                                 axis_selection.begin(), n_selected_axes,
-                                tissue_versatilities.begin(), 
+                                tissue_versatilities.begin(),
                                 tissue_angles_deg.begin(), &ierr);
-    
+
     return List::create(
         Named("tissue_versatilities") = tissue_versatilities,
         Named("tissue_angles_deg") = tissue_angles_deg,
@@ -185,7 +185,7 @@ List tox_calculate_tissue_versatility_rcpp(NumericMatrix expression_vectors,
         Named("n_selected_axes") = n_selected_axes,
         Named("ierr") = ierr
     );
-    
+
 }
 
 /**
