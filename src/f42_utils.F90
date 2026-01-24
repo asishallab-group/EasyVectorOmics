@@ -5,7 +5,7 @@
 module f42_utils
   use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
-  use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, set_ok, set_err_once, set_err
+  use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, set_ok, set_err_once, set_err, validate_in_range_real, is_err
   use, intrinsic :: ieee_arithmetic, only: ieee_next_after, ieee_value, ieee_positive_inf, ieee_negative_inf, ieee_is_finite, ieee_is_nan
   implicit none
 
@@ -24,6 +24,26 @@ module f42_utils
   real(real64), parameter :: PI = 4.0_real64 * atan(1.0_real64)
   real(real64), parameter :: EPS = epsilon(1.0_real64)
 contains
+
+  !> Compute logarithm for any base
+  pure subroutine logx(val, base, exponent, ierr)
+      real(real64), intent(in) :: val
+        !! Value (`x` in $ b^y = x $)
+      real(real64), intent(in) :: base
+        !! Base (`b` in $ b^y = x $)
+      real(real64), intent(out) :: exponent
+        !! Exponent (`y` in $ b^y = x $)
+      integer(int32), intent(out) :: ierr
+        !! Error code
+
+      call set_ok(ierr)
+      call validate_in_range_real(val, ierr, min=above(0.0_real64))
+      call validate_in_range_real(base, ierr, min=above(0.0_real64))
+      if (is_close(base, 1.0_real64)) call set_err(ierr, ERR_DIVISION_BY_ZERO)
+      if (is_err(ierr)) return
+      
+      exponent = log(val) / log(base)
+  end subroutine logx
 
   !> Initialize Fortran's random number generator
   subroutine init_random(seed)
