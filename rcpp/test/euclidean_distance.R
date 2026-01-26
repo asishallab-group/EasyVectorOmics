@@ -1,4 +1,4 @@
-# Simple Rcpp-Fortran integration
+
 library(Rcpp)
 
 # Set library path and compile
