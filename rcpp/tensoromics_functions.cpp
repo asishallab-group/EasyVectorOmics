@@ -124,6 +124,25 @@ extern "C" {
                          int* gene_to_family, int n_families,
                          double* centroid_matrix, const char* mode,
                          int* ortholog_set, int* selected_indices, int selected_indices_len, int* ierr);
+    
+    void compute_gene_means_c(int* n_genes, int* n_reps, double* expr, 
+                          double* means, int* ierr);
+
+    void compute_residuals_c(int* n_genes, int* n_reps, double* expr, 
+                            double* means, double* resid, int* ierr);
+
+    void pool_means_c(int* n_genes_S1, double* mean_S1, 
+                      int* n_genes_S2, double* mean_S2,
+                      int* n_points, int* N_pool, 
+                      double* x_star, int* ierr);
+
+    void construct_neighborhoods_c(int* n_points, double* x_star, 
+                                  int* n_genes_S, double* mean_S,
+                                  int* n_reps_S, double* resid_S,
+                                  int* N_pool, int* k_x,
+                                  double* neighborhood_residuals,
+                                  int* neighborhood_indices,
+                                  int* ierr);
 }
 
 /**
@@ -555,5 +574,156 @@ List tox_group_centroid_rcpp(NumericMatrix expression_vectors, IntegerVector gen
     return List::create(
         Named("centroid_matrix") = centroid_matrix,
         Named("ierr") = ierr
+    );
+}
+
+// [[Rcpp::export]]
+Rcpp::List tox_compute_gene_means_rcpp(Rcpp::NumericMatrix expr) {
+    int n_reps = expr.nrow();
+    int n_genes = expr.ncol();
+    int ierr = 0;
+    
+    Rcpp::NumericVector means(n_genes);
+    
+    compute_gene_means_c(&n_genes, &n_reps, expr.begin(), 
+                         means.begin(), &ierr);
+    
+    return Rcpp::List::create(
+        Rcpp::Named("means") = means,
+        Rcpp::Named("ierr") = ierr
+    );
+}
+
+// [[Rcpp::export]]
+Rcpp::List tox_compute_residuals_rcpp(Rcpp::NumericMatrix expr, 
+                                       Rcpp::NumericVector means) {
+    int n_reps = expr.nrow();
+    int n_genes = expr.ncol();
+    int ierr = 0;
+    
+    if (means.length() != n_genes) {
+        Rcpp::stop("Length of means must equal number of columns in expr");
+    }
+    
+    Rcpp::NumericMatrix resid(n_reps, n_genes);
+    
+    compute_residuals_c(&n_genes, &n_reps, expr.begin(), 
+                       means.begin(), resid.begin(), &ierr);
+    
+    return Rcpp::List::create(
+        Rcpp::Named("resid") = resid,
+        Rcpp::Named("ierr") = ierr
+    );
+}
+
+// [[Rcpp::export]]
+Rcpp::List tox_pool_means_rcpp(Rcpp::NumericVector mean_S1, 
+                                Rcpp::NumericVector mean_S2,
+                                int n_points) {
+    int n_genes_S1 = mean_S1.length();
+    int n_genes_S2 = mean_S2.length();
+    int N_pool = 0;
+    int ierr = 0;
+    
+    Rcpp::NumericVector x_star(n_points);
+    
+    pool_means_c(&n_genes_S1, mean_S1.begin(),
+                &n_genes_S2, mean_S2.begin(),
+                &n_points, &N_pool, x_star.begin(), &ierr);
+    
+    return Rcpp::List::create(
+        Rcpp::Named("N_pool") = N_pool,
+        Rcpp::Named("x_star") = x_star,
+        Rcpp::Named("ierr") = ierr
+    );
+}
+
+// [[Rcpp::export]]
+Rcpp::List tox_construct_neighborhoods_rcpp(int n_points,
+                                            Rcpp::NumericVector x_star,
+                                            Rcpp::NumericVector mean_S,
+                                            Rcpp::NumericMatrix resid_S,
+                                            int N_pool) {
+    int n_genes_S = mean_S.length();
+    int n_reps_S = resid_S.nrow();
+    int ierr = 0;
+    
+    if (resid_S.ncol() != n_genes_S) {
+        Rcpp::stop("Number of columns in resid_S must equal length of mean_S");
+    }
+    
+    if (x_star.length() != n_points) {
+        Rcpp::stop("Length of x_star must equal n_points");
+    }
+    
+    int k_x = 0;
+    int max_neighbors = 1000;
+    int max_residuals = n_reps_S * max_neighbors;
+    
+    Rcpp::NumericMatrix neighborhood_residuals(n_points, max_residuals);
+    Rcpp::IntegerMatrix neighborhood_indices(n_points, max_neighbors);
+    
+    // Initialize with NA values
+    neighborhood_residuals.fill(NA_REAL);
+    neighborhood_indices.fill(-1);
+    
+    construct_neighborhoods_c(&n_points, x_star.begin(),
+                             &n_genes_S, mean_S.begin(),
+                             &n_reps_S, resid_S.begin(),
+                             &N_pool, &k_x,
+                             neighborhood_residuals.begin(),
+                             neighborhood_indices.begin(),
+                             &ierr);
+    
+    // Check for errors
+    if (ierr != 0) {
+        Rcpp::warning("Error in construct_neighborhoods: ierr = " + std::to_string(ierr));
+        return Rcpp::List::create(
+            Rcpp::Named("ierr") = ierr,
+            Rcpp::Named("k_x") = k_x,
+            Rcpp::Named("neighborhood_residuals") = R_NilValue,
+            Rcpp::Named("neighborhood_indices") = R_NilValue
+        );
+    }
+    
+    // Trim the matrices to actual size
+    int actual_residuals = 0;
+    for (int i = 0; i < n_points; i++) {
+        for (int j = 0; j < max_residuals; j++) {
+            if (!Rcpp::NumericVector::is_na(neighborhood_residuals(i, j))) {
+                actual_residuals = std::max(actual_residuals, j + 1);
+            }
+        }
+    }
+    
+    int actual_indices = 0;
+    for (int i = 0; i < n_points; i++) {
+        for (int j = 0; j < max_neighbors; j++) {
+            if (neighborhood_indices(i, j) != -1) {
+                actual_indices = std::max(actual_indices, j + 1);
+            }
+        }
+    }
+    
+    Rcpp::NumericMatrix trimmed_residuals(n_points, actual_residuals);
+    Rcpp::IntegerMatrix trimmed_indices(n_points, actual_indices);
+    
+    for (int i = 0; i < n_points; i++) {
+        for (int j = 0; j < actual_residuals; j++) {
+            trimmed_residuals(i, j) = neighborhood_residuals(i, j);
+        }
+        for (int j = 0; j < actual_indices; j++) {
+            trimmed_indices(i, j) = neighborhood_indices(i, j);
+        }
+    }
+    
+    // Convert to 1-based indexing for R
+    trimmed_indices = trimmed_indices + 1;
+    
+    return Rcpp::List::create(
+        Rcpp::Named("ierr") = ierr,
+        Rcpp::Named("k_x") = k_x,
+        Rcpp::Named("neighborhood_residuals") = trimmed_residuals,
+        Rcpp::Named("neighborhood_indices") = trimmed_indices
     );
 }

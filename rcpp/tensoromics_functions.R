@@ -943,3 +943,142 @@ tox_mean_vector <- function(expression_vectors, gene_indices) {
   check_err_code(result$ierr)
   return(result)
 }
+
+#' Compute per-gene mean expression values
+#'
+#' This function computes the mean expression for each gene across replicates,
+#' handling NaN values appropriately.
+#'
+#' @param expr Numeric matrix of expression data (replicates × genes)
+#' @return List with components:
+#'   - means: Numeric vector of per-gene mean expression values
+#'   - ierr: Error code (0 for success)
+#' @export
+tox_compute_gene_means <- function(expr) {
+  # Validate input
+  if (!is.matrix(expr)) {
+    stop("expr must be a numeric matrix")
+  }
+  
+  # Call the Rcpp function
+  result <- tox_compute_gene_means_rcpp(expr)
+  check_err_code(result$ierr)
+  
+  # Return structured result
+  return(as.numeric(result$means))
+}
+
+#' Compute signed residuals
+#'
+#' This function computes signed residuals for each gene and replicate.
+#'
+#' @param expr Numeric matrix of expression data (replicates × genes)
+#' @param means Numeric vector of per-gene mean expression values
+#' @return List with components:
+#'   - resid: Numeric matrix of signed residuals (replicates × genes)
+#'   - ierr: Error code (0 for success)
+#' @export
+tox_compute_residuals <- function(expr, means) {
+  # Validate input
+  if (!is.matrix(expr)) {
+    stop("expr must be a numeric matrix")
+  }
+  
+  if (length(means) != ncol(expr)) {
+    stop("Length of means must equal number of columns in expr")
+  }
+  
+  # Call the Rcpp function
+  result <- tox_compute_residuals_rcpp(expr, means)
+  check_err_code(result$ierr)
+  
+  # Return structured result
+  return(matrix(result$resid, nrow = nrow(expr), ncol = ncol(expr)))
+}
+
+#' Pool mean expression values across studies
+#'
+#' This function pools per-gene mean expression values from two studies
+#' and computes reference points for neighborhood construction.
+#'
+#' @param mean_S1 Numeric vector of per-gene mean expression values for study 1
+#' @param mean_S2 Numeric vector of per-gene mean expression values for study 2
+#' @param n_points Number of reference points to define (default: 100)
+#' @return List with components:
+#'   - N_pool: Total number of valid (non-NA) pooled mean-expression values
+#'   - x_star: Mean-expression reference points
+#'   - ierr: Error code (0 for success)
+#' @export
+tox_pool_means <- function(mean_S1, mean_S2, n_points = 100) {
+  # Validate input
+  if (!is.numeric(mean_S1) || !is.numeric(mean_S2)) {
+    stop("mean_S1 and mean_S2 must be numeric vectors")
+  }
+  
+  if (n_points < 1) {
+    stop("n_points must be at least 1")
+  }
+  
+  # Call the Rcpp function
+  result <- tox_pool_means_rcpp(mean_S1, mean_S2, n_points)
+
+  check_err_code(result$ierr)
+  
+  # Return structured result
+  return(list(
+    N_pool = as.integer(result$N_pool),
+    x_star = as.numeric(result$x_star)
+  ))
+}
+
+#' Construct neighborhood-based residual sets (kNN)
+#'
+#' This function constructs neighborhoods around reference points and
+#' collects residuals from genes in each neighborhood.
+#'
+#' @param x_star Numeric vector of mean-expression reference points
+#' @param mean_S Numeric vector of per-gene mean expression values for the study
+#' @param resid_S Numeric matrix of signed residuals for the study (replicates × genes)
+#' @param N_pool Total number of pooled mean-expression values across both studies
+#' @return List with components:
+#'   - ierr: Error code (0 for success)
+#'   - k_x: Neighborhood size used (constant for all reference points)
+#'   - neighborhood_residuals: Matrix of residual vectors for each neighborhood
+#'   - neighborhood_indices: Matrix of indices of selected neighborhood genes (1-based)
+#' @export
+tox_construct_neighborhoods <- function(x_star, mean_S, resid_S, N_pool) {
+  # Validate input
+  if (!is.numeric(x_star)) {
+    stop("x_star must be a numeric vector")
+  }
+  
+  if (!is.numeric(mean_S)) {
+    stop("mean_S must be a numeric vector")
+  }
+  
+  if (!is.matrix(resid_S)) {
+    stop("resid_S must be a numeric matrix")
+  }
+  
+  if (length(mean_S) != ncol(resid_S)) {
+    stop("Length of mean_S must equal number of columns in resid_S")
+  }
+  
+  if (N_pool < 1) {
+    stop("N_pool must be at least 1")
+  }
+  
+  n_points <- length(x_star)
+  
+  # Call the Rcpp function
+  result <- tox_construct_neighborhoods_rcpp(n_points, x_star, mean_S, resid_S, N_pool)
+  
+  check_err_code(result$ierr)
+  
+  # Return structured result
+  return(list(
+    k_x = as.integer(result$k_x),
+    neighborhood_residuals = result$neighborhood_residuals,
+    neighborhood_indices = result$neighborhood_indices
+  ))
+}
