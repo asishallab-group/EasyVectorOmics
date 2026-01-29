@@ -226,11 +226,30 @@ contains
         
     ! Compute reference points as empirical quantiles using the permutation
     do concurrent (j = 1:n_points)
+
+      !!! CURRENT TOPIC OF DISCUSSION; PLEASE USE EITHER OR
+      !!!==================
+      !!! Interpolation method
       ! Convert j/(n_points+1) to a percentile (0-100)
       quantile_level = real(j, real64) / real(n_points + 1, real64) * 100.0_real64
       
       ! Use calc_percentile to compute the value
       call calc_percentile(pooled_means, perm, quantile_level, x_star(j), ierr)
+      !!!==================
+
+      !!!==================
+      !!! Flooring approach
+      !!!==================
+      ! quantile_level = real(j, real64) / real(n_points + 1, real64)
+      ! pos = quantile_level * real(N_pool, real64)
+      ! idx = floor(pos)
+      
+      ! ! Clamp to valid indices (1-based indexing)
+      ! if (idx < 1) idx = 1
+      ! if (idx > N_pool) idx = N_pool
+      
+      ! ! Get value from original pooled_means using permutation index
+      ! x_star(j) = pooled_means(perm(idx))
     end do    
   end subroutine pool_means_helper
 
