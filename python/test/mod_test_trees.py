@@ -18,7 +18,8 @@ def test_bst():
 
     # Range query using the wrapper function
     res = bst_range_query(x, ix + 1, 1.5, 3.5)
-    print(f"Range [1.5, 3.5] matches: {res["matching_indices"] - 1} (values: {x[res["matching_indices"] - 1]})")
+    matching_indices = res["matching_indices"] - 1
+    print(f"Range [1.5, 3.5] matches: {matching_indices} (values: {x[matching_indices]})")
 
 def test_kdtree():
     print("\n=== Testing KD-Tree ===")

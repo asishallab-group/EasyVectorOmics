@@ -139,6 +139,12 @@ validate_all_data(n_genes_kept, n_families, n_samples, filtered_gene_ids, family
 print("All data validated")
 
 print("Testing save function...")
+# Clean up any existing test archives
+for archive_name in ["test_archive_1_py.zip", "test_archive_2_py.zip", "test_archive_3_py.zip", "test_archive_4_py.zip"]:
+    if os.path.exists(archive_name):
+        os.remove(archive_name)
+        print(f"Removed existing {archive_name}")
+
 save_tox_data("test_archive_1_py.zip", gene_ids=filtered_gene_ids, gene_ids_name="gene_ids_v1.bin",
                       expression_vectors=filtered_kallisto_expr, expression_vectors_name="kallisto_data_v1.bin")
 
@@ -183,6 +189,12 @@ print("="*50)
 
 def test_non_standard_arrays():
     """Test creating and saving non-standard arrays using direct create_zip_archive calls"""
+    
+    # Clean up any existing test archives from previous runs
+    for archive_name in ["test_non_standard_1.zip", "test_non_standard_2.zip", "test_non_standard_3.zip"]:
+        if os.path.exists(archive_name):
+            os.remove(archive_name)
+            print(f"Removed existing {archive_name}")
     
     # Create various non-standard arrays
     print("Creating non-standard arrays...")
