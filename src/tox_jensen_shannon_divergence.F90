@@ -125,7 +125,7 @@ contains
             if (is_close(bin_residuals, 0.0_real64)) then
                 pmf(:, i_bin) = 0.0_real64
             else
-                do concurrent (i_neighbor = 1:n_neighbors) shared(pmf, bin_residuals)
+                do concurrent (i_neighbor = 1:n_neighbors) shared(pmf, bin_residuals, i_bin)
                     pmf(i_neighbor, i_bin) = real(counts(i_neighbor, i_bin), real64) / bin_residuals
                 end do
             end if
@@ -147,9 +147,6 @@ contains
         integer(int32), intent(out) :: ierr
             !! Error code
 
-        real(real64) :: S_mean, s1_val, s2_val
-        integer(int32) :: i_bin, i_neighbor
-
         call set_ok(ierr)
 
         call validate_dimension_size(n_neighbors, ierr)
@@ -159,11 +156,30 @@ contains
 
         if (is_err(ierr)) return
 
+        call compute_divergence_per_reference_point_helper(pmf_S1, pmf_S2, n_neighbors, n_bins, js_divergences)
+    end subroutine compute_divergence_per_reference_point
+
+    !> (no input validation) Having the probabilities `pmf` from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]], this subroutine computes the Jensen-Shannon divergence per reference point/neighbor
+    pure subroutine compute_divergence_per_reference_point_helper(pmf_S1, pmf_S2, n_neighbors, n_bins, js_divergences)
+        integer(int32), intent(in) :: n_neighbors
+            !! Number of neighbors (k)
+        integer(int32), intent(in) :: n_bins
+            !! Number of equally sized histogram bins in range [-R,R]
+        real(real64), dimension(n_neighbors, n_bins), intent(in) :: pmf_S1
+            !! Computed normalized hostogram counts from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]] for study 1
+        real(real64), dimension(n_neighbors, n_bins), intent(in) :: pmf_S2
+            !! Computed normalized hostogram counts from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]] for study 2
+        real(real64), dimension(n_neighbors), intent(out) :: js_divergences
+            !! Jensen-Shannon divergence per residual
+
+        real(real64) :: S_mean, s1_val, s2_val
+        integer(int32) :: i_bin, i_neighbor
+
         js_divergences = 0.0_real64
 
         ! 1. compute the Knullback-Leibler (KL) divergences
         ! Note that the J-S divergence is defined as `0.5 * KL_S1 + 0.5 * KL_S2`, equivalent to `0.5 * (KL_S1 + KL_S2)`.
-        ! Thus, instead of computing KL_S* independent, it accumulates directly in the `js_divergences` output.
+        ! Thus, instead of computing KL_S* independently, it accumulates directly in the `js_divergences` output.
         ! Another thing, switching the loops would enable both to run concurrently and the 0.5*js_divergences step could be done in one go,
         ! but cache locality still beats that, except for the case of thousands of neighbors, which might not be the common case.
         do i_bin = 1, n_bins
@@ -182,11 +198,11 @@ contains
             end do
         end do
 
-        ! Compute the js_divergences
+        ! 2. Compute the js_divergences
         do concurrent (i_neighbor = 1:n_neighbors) shared(js_divergences)
             js_divergences(i_neighbor) = 0.5_real64 * js_divergences(i_neighbor)
         end do
-    end subroutine compute_divergence_per_reference_point
+    end subroutine compute_divergence_per_reference_point_helper
 
     !> Computes the global weighted Jensen-Shannon divergence from the per-neighbor divergences calculated by [[tox_jensen_shannon_divergence(module):compute_divergence_per_reference_point(subroutine)]]
     pure subroutine compute_weighted_global_divergence(js_divergences, neighborhood_residuals_S1, neighborhood_residuals_S2, n_residuals, n_neighbors, global_js_divergence, included_n_residuals, weights, ierr)
@@ -220,6 +236,31 @@ contains
 
         if (is_err(ierr)) return
 
+        call compute_weighted_global_divergence_helper(js_divergences, neighborhood_residuals_S1, neighborhood_residuals_S2, n_residuals, n_neighbors, global_js_divergence, included_n_residuals, weights)
+    end subroutine compute_weighted_global_divergence
+
+    !> (no input validation) Computes the global weighted Jensen-Shannon divergence from the per-neighbor divergences calculated by [[tox_jensen_shannon_divergence(module):compute_divergence_per_reference_point(subroutine)]]
+    pure subroutine compute_weighted_global_divergence_helper(js_divergences, neighborhood_residuals_S1, neighborhood_residuals_S2, n_residuals, n_neighbors, global_js_divergence, included_n_residuals, weights)
+        integer(int32), intent(in) :: n_residuals
+            !! Number of residuals
+        integer(int32), intent(in) :: n_neighbors
+            !! Number of neighbors (k)
+        real(real64), dimension(n_neighbors), intent(in) :: js_divergences
+            !! Jensen-Shannon divergence per residual, computed for `neighborhood_residuals_S1` and `neighborhood_residuals_S2`
+        real(real64), dimension(n_residuals, n_neighbors), intent(in) :: neighborhood_residuals_S1
+            !! Computed neighborhood residuals for study 1 (kNN), NaN is explicitly allowed for missing values
+        real(real64), dimension(n_residuals, n_neighbors), intent(in) :: neighborhood_residuals_S2
+            !! Computed neighborhood residuals for study 2 (kNN), NaN is explicitly allowed for missing values
+        real(real64), intent(out) :: global_js_divergence
+            !! Weighted global Jensen-Shannon divergence
+        integer(int32), dimension(n_neighbors), intent(out) :: included_n_residuals
+            !! Stores the count of non-NaN residuals (included ones)
+        real(real64), dimension(n_neighbors), intent(out) :: weights
+            !! Weights used for calculating the global weighted Jensen-Shannon divergence `global_js_divergence`
+
+        integer(int32) :: i_neighbor, i_residual
+        real(real64) :: total_sample_count
+
         global_js_divergence = 0.0_real64
         included_n_residuals = 0_int32
 
@@ -240,6 +281,6 @@ contains
 
             global_js_divergence = global_js_divergence + weights(i_neighbor)
         end do
-    end subroutine compute_weighted_global_divergence
+    end subroutine compute_weighted_global_divergence_helper
 
 end module tox_jensen_shannon_divergence
