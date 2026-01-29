@@ -3521,3 +3521,264 @@ def tox_compute_p_values(local_contributions_observed,
         "local_p_values": local_p_values,
         "total_p_value": total_p_value.value
     }
+
+
+def tox_compute_gene_means(expr: np.ndarray):
+    """
+    Compute per-gene mean expression values.
+    
+    Args:
+        expr: Expression matrix (replicates × genes) as Fortran-order array
+        
+    Returns:
+        - means: 1D array of per-gene mean expression values
+    """
+    # Ensure Fortran-order arrays
+    expr = np.asfortranarray(expr, dtype=np.float64)
+    
+    n_genes = expr.shape[1]
+    n_reps = expr.shape[0]
+    
+    n_genes_c = ctypes.c_int(n_genes)
+    n_reps_c = ctypes.c_int(n_reps)
+    
+    # Allocate outputs
+    means = np.empty(n_genes, dtype=np.float64, order="F")
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper
+    compute_gene_means_c = lib.compute_gene_means_c
+    compute_gene_means_c.argtypes = [
+        ctypes.POINTER(ctypes.c_int),                                    # n_genes
+        ctypes.POINTER(ctypes.c_int),                                    # n_reps
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # expr
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # means
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
+    ]
+    compute_gene_means_c.restype = None
+    
+    # Call Fortran routine
+    compute_gene_means_c(ctypes.byref(n_genes_c),
+                         ctypes.byref(n_reps_c),
+                         expr,
+                         means,
+                         ctypes.byref(ierr))
+    check_err_code(ierr.value)
+    
+    _readonly(means)
+    
+    return means
+
+def tox_compute_residuals(expr: np.ndarray, means: np.ndarray):
+    """
+    Compute signed residuals for each gene and replicate.
+    
+    Args:
+        expr: Expression matrix (replicates × genes) as Fortran-order array
+        means: 1D array of per-gene mean expression values
+        
+    Returns:
+        - resid: Matrix of signed residuals (replicates × genes)
+    """
+    # Ensure Fortran-order arrays
+    expr = np.asfortranarray(expr, dtype=np.float64)
+    means = np.asfortranarray(means, dtype=np.float64)
+    
+    n_genes = expr.shape[1]
+    n_reps = expr.shape[0]
+    
+    if len(means) != n_genes:
+        raise ValueError(f"Length of means ({len(means)}) must equal number of columns in expr ({n_genes})")
+    
+    n_genes_c = ctypes.c_int(n_genes)
+    n_reps_c = ctypes.c_int(n_reps)
+    
+    # Allocate outputs
+    resid = np.empty((n_reps, n_genes), dtype=np.float64, order="F")
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper
+    compute_residuals_c = lib.compute_residuals_c
+    compute_residuals_c.argtypes = [
+        ctypes.POINTER(ctypes.c_int),                                    # n_genes
+        ctypes.POINTER(ctypes.c_int),                                    # n_reps
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # expr
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # means
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # resid
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
+    ]
+    compute_residuals_c.restype = None
+    
+    # Call Fortran routine
+    compute_residuals_c(ctypes.byref(n_genes_c),
+                        ctypes.byref(n_reps_c),
+                        expr,
+                        means,
+                        resid,
+                        ctypes.byref(ierr))
+
+    check_err_code(ierr.value)
+    
+    _readonly(resid)
+    
+    return resid
+
+def tox_pool_means(mean_S1: np.ndarray, mean_S2: np.ndarray, n_points: int):
+    """
+    Pool per-gene mean expression values from two studies and compute reference points.
+    
+    Args:
+        mean_S1: 1D array of per-gene mean expression values for study 1
+        mean_S2: 1D array of per-gene mean expression values for study 2
+        n_points: Number of reference points to define
+        
+    Returns:
+        Dictionary with keys:
+            - N_pool: Total number of valid (non-NA) pooled mean-expression values
+            - x_star: Mean-expression reference points
+    """
+    # Ensure Fortran-order arrays
+    mean_S1 = np.asfortranarray(mean_S1, dtype=np.float64)
+    mean_S2 = np.asfortranarray(mean_S2, dtype=np.float64)
+    
+    if n_points < 1:
+        raise ValueError("n_points must be at least 1")
+    
+    n_genes_S1_c = ctypes.c_int(len(mean_S1))
+    n_genes_S2_c = ctypes.c_int(len(mean_S2))
+    n_points_c = ctypes.c_int(n_points)
+    
+    # Allocate outputs
+    N_pool = ctypes.c_int(0)
+    x_star = np.empty(n_points, dtype=np.float64, order="F")
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper
+    pool_means_c = lib.pool_means_c
+    pool_means_c.argtypes = [
+        ctypes.POINTER(ctypes.c_int),                                    # n_genes_S1
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # mean_S1
+        ctypes.POINTER(ctypes.c_int),                                    # n_genes_S2
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # mean_S2
+        ctypes.POINTER(ctypes.c_int),                                    # n_points
+        ctypes.POINTER(ctypes.c_int),                                    # N_pool
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # x_star
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
+    ]
+    pool_means_c.restype = None
+    
+    # Call Fortran routine
+    pool_means_c(ctypes.byref(n_genes_S1_c),
+                 mean_S1,
+                 ctypes.byref(n_genes_S2_c),
+                 mean_S2,
+                 ctypes.byref(n_points_c),
+                 ctypes.byref(N_pool),
+                 x_star,
+                 ctypes.byref(ierr))
+    
+    check_err_code(ierr.value)
+    _readonly(x_star)
+    
+    return {
+        "N_pool": N_pool.value,
+        "x_star": x_star,
+    }
+
+def tox_construct_neighborhoods(x_star: np.ndarray, 
+                                mean_S: np.ndarray, 
+                                resid_S: np.ndarray, 
+                                N_pool: int,
+                                neighborhood_size: int = -1):
+    """
+    Construct neighborhoods around reference points and collect residuals.
+    
+    Args:
+        x_star: 1D array of mean-expression reference points
+        mean_S: 1D array of per-gene mean expression values for the study
+        resid_S: 2D array of signed residuals (replicates × genes)
+        N_pool: Total number of pooled mean-expression values across both studies
+        neighborhood_size: Explicit size of the neighborhood. Use -1 for automatic
+                          calculation.
+                          
+    Returns:
+        Dictionary with keys:
+            - k_x: Neighborhood size used
+            - neighborhood_residuals: 2D array of residual vectors for each neighborhood
+            - neighborhood_indices: 2D array of indices of selected neighborhood genes (1-based)
+    """
+    # Ensure Fortran-order arrays
+    x_star = np.asfortranarray(x_star, dtype=np.float64)
+    mean_S = np.asfortranarray(mean_S, dtype=np.float64)
+    resid_S = np.asfortranarray(resid_S, dtype=np.float64)
+    
+    n_points = len(x_star)
+    n_genes_S = len(mean_S)
+    n_reps_S = resid_S.shape[0]
+    
+    if resid_S.shape[1] != n_genes_S:
+        raise ValueError(f"Number of columns in resid_S ({resid_S.shape[1]}) must equal length of mean_S ({n_genes_S})")
+    
+    if N_pool < 1:
+        raise ValueError("N_pool must be at least 1")
+    
+    if neighborhood_size != -1 and neighborhood_size < 1:
+        raise ValueError("If specified, neighborhood_size must be at least 1")
+    
+    n_points_c = ctypes.c_int(n_points)
+    n_genes_S_c = ctypes.c_int(n_genes_S)
+    n_reps_S_c = ctypes.c_int(n_reps_S)
+    N_pool_c = ctypes.c_int(N_pool)
+    neighborhood_size_c = ctypes.c_int(neighborhood_size)
+    
+    # Maximum sizes as defined in Fortran
+    max_neighbors = 1000
+    max_residuals = n_reps_S * max_neighbors
+    
+    # Allocate outputs
+    k_x = ctypes.c_int(0)
+    neighborhood_residuals = np.empty((n_points, max_residuals), dtype=np.float64, order="F")
+    neighborhood_indices = np.empty((n_points, max_neighbors), dtype=np.int32, order="F")
+    ierr = ctypes.c_int(0)
+    
+    # Setup C wrapper
+    construct_neighborhoods_c = lib.construct_neighborhoods_c
+    construct_neighborhoods_c.argtypes = [
+        ctypes.POINTER(ctypes.c_int),                                    # n_points
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # x_star
+        ctypes.POINTER(ctypes.c_int),                                    # n_genes_S
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # mean_S
+        ctypes.POINTER(ctypes.c_int),                                    # n_reps_S
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # resid_S
+        ctypes.POINTER(ctypes.c_int),                                    # neighborhood_size
+        ctypes.POINTER(ctypes.c_int),                                    # N_pool
+        ctypes.POINTER(ctypes.c_int),                                    # k_x
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # neighborhood_residuals
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),    # neighborhood_indices
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
+    ]
+    construct_neighborhoods_c.restype = None
+    
+    # Call Fortran routine
+    construct_neighborhoods_c(ctypes.byref(n_points_c),
+                              x_star,
+                              ctypes.byref(n_genes_S_c),
+                              mean_S,
+                              ctypes.byref(n_reps_S_c),
+                              resid_S,
+                              ctypes.byref(neighborhood_size_c),
+                              ctypes.byref(N_pool_c),
+                              ctypes.byref(k_x),
+                              neighborhood_residuals,
+                              neighborhood_indices,
+                              ctypes.byref(ierr))
+    
+    check_err_code(ierr.value)
+    
+    _readonly(neighborhood_residuals, neighborhood_indices)
+    
+    return {
+        "k_x": k_x.value,
+        "neighborhood_residuals": neighborhood_residuals,
+        "neighborhood_indices": neighborhood_indices
+    }
