@@ -25,6 +25,18 @@ module f42_utils
   real(real64), parameter :: EPS = epsilon(1.0_real64)
 contains
 
+  !> Clamps a value into a range `min_val <= val <= max_val`
+  pure real(real64) function clamp(val, min_val, max_val) result(clamped)
+    real(real64), intent(in) :: val
+      !! Value to be clamped
+    real(real64), intent(in) :: min_val
+      !! Lower bound
+    real(real64), intent(in) :: max_val
+      !! Upper bound
+  
+    clamped = max(min_val, min(val, max_val))
+  end function clamp
+
   !> Compute logarithm for any base
   pure subroutine logx(val, base, exponent, ierr)
       real(real64), intent(in) :: val
@@ -163,7 +175,7 @@ contains
     end if
 
     theta = dot_product / norm_product
-    theta = max(-1.0_real64, min(1.0_real64, theta))
+    theta = clamp(theta, -1.0_real64, 1.0_real64)
     angle = acos(theta)
   end subroutine angle_between
 
@@ -913,7 +925,7 @@ contains
   !| Returns the sorted unique values and their cumulative frequencies in [0,1].
   !| Assumes perm is already sorted by values[perm]. Caller controls sorting algorithm.
   !| The number of unique values can be determined by finding the last non-zero cdf_value.
-  subroutine compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
+  pure subroutine compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
     !| Array of observed data values (e.g., contributions or spikes).
     real(real64), intent(in) :: values(n_values)
     !| Number of values in the input array.
@@ -978,7 +990,7 @@ contains
   !> Helper routine that sorts and calls compute_edf.
   !| Allocates workspace internally and performs sorting before computing EDF.
   !| Use this for convenience; use compute_edf directly for custom sorting.
-  subroutine compute_edf_alloc(values, n_values, unique_values, cdf_values, n_unique, ierr)
+  pure subroutine compute_edf_alloc(values, n_values, unique_values, cdf_values, n_unique, ierr)
     !| Array of observed data values (e.g., contributions or spikes).
     real(real64), intent(in) :: values(n_values)
     !| Number of values in the input array.
@@ -1078,7 +1090,7 @@ contains
 
   !> Calculate the percentile of an array, allocating necessary arrays when no sorting permutation is given
   !! @note This subroutine uses quicksort internally which may cause a spike in memory usage for large arrays.
-  subroutine calc_percentile_alloc(array, percentile, value, ierr)
+  pure subroutine calc_percentile_alloc(array, percentile, value, ierr)
     use tox_errors, only: ERR_EMPTY_INPUT, ERR_ALLOC_FAIL, set_ok, set_err, is_err
     real(real64), intent(in) :: array(:)
     !! Input array
