@@ -6,7 +6,7 @@ module tox_jenson_shannon_test
   use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
   use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_value, ieee_quiet_nan
-  use f42_utils, only: heapsort_real
+  use f42_utils, only: heapsort_real, calc_percentile
   use tox_errors, only: validate_all_in_range_real, validate_in_range_int, is_err, set_ok
   implicit none
   
@@ -177,12 +177,12 @@ contains
       perm(i) = i
     end do
 
-    call pool_means_helper(n_genes_S1, mean_S1, n_genes_S2, mean_S2, n_points, N_pool, pooled_means, perm, x_star)
+    call pool_means_helper(n_genes_S1, mean_S1, n_genes_S2, mean_S2, n_points, N_pool, pooled_means, perm, x_star, ierr)
 
   end subroutine pool_means_alloc
   
   !> Pool per-gene mean expression values across studies
-  pure subroutine pool_means_helper(n_genes_S1, mean_S1, n_genes_S2, mean_S2, n_points, N_pool, pooled_means, perm, x_star)
+  pure subroutine pool_means_helper(n_genes_S1, mean_S1, n_genes_S2, mean_S2, n_points, N_pool, pooled_means, perm, x_star, ierr)
     integer(int32), intent(in) :: n_genes_S1
     !! Number of genes in study S1
     integer(int32), intent(in) :: n_genes_S2
@@ -200,7 +200,9 @@ contains
     integer(int32), intent(inout) :: perm(N_pool)
     !! Sorting permutation
     real(real64), intent(out) :: x_star(n_points)
-    !! Mean-expression reference points 
+    !! Mean-expression reference points
+    integer(int32), intent(out) :: ierr
+    !! Error code
     
     integer(int32) :: i, j, idx, valid_count
     real(real64) :: pos, quantile_level
@@ -224,16 +226,11 @@ contains
         
     ! Compute reference points as empirical quantiles using the permutation
     do concurrent (j = 1:n_points)
-      quantile_level = real(j, real64) / real(n_points + 1, real64)
-      pos = quantile_level * real(N_pool, real64)
-      idx = floor(pos)
+      ! Convert j/(n_points+1) to a percentile (0-100)
+      quantile_level = real(j, real64) / real(n_points + 1, real64) * 100.0_real64
       
-      ! Clamp to valid indices (1-based indexing)
-      if (idx < 1) idx = 1
-      if (idx > N_pool) idx = N_pool
-      
-      ! Get value from original pooled_means using permutation index
-      x_star(j) = pooled_means(perm(idx))
+      ! Use calc_percentile to compute the value
+      call calc_percentile(pooled_means, perm, quantile_level, x_star(j), ierr)
     end do    
   end subroutine pool_means_helper
 

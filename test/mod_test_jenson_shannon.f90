@@ -284,10 +284,10 @@ contains
     ! Check that x_star contains quantiles from pooled data
     ! Pooled data: [1,2,3,4,5,6,7,8,9,10]
     ! For n_points=3, quantiles at positions: 10/4=2.5, 20/4=5.0, 30/4=7.5
-    ! Floored: 2, 5, 7 -> values: 2, 5, 7
-    call assert_equal_real(x_star(1), 2.0_real64, 1e-9_real64, "test_pool_means_alloc_basic: first quantile")
-    call assert_equal_real(x_star(2), 5.0_real64, 1e-9_real64, "test_pool_means_alloc_basic: second quantile")
-    call assert_equal_real(x_star(3), 7.0_real64, 1e-9_real64, "test_pool_means_alloc_basic: third quantile")
+    ! Floored: 2, 5, 7 -> values: 2, 5, 7 -> interpolation to 3.25, 5.5 and 7.75
+    call assert_equal_real(x_star(1), 3.25_real64, 1e-9_real64, "test_pool_means_alloc_basic: first quantile")
+    call assert_equal_real(x_star(2), 5.5_real64, 1e-9_real64, "test_pool_means_alloc_basic: second quantile")
+    call assert_equal_real(x_star(3), 7.75_real64, 1e-9_real64, "test_pool_means_alloc_basic: third quantile")
   end subroutine test_pool_means_alloc_basic
 
   ! Test case 10: pool_means_alloc with NaN values.
@@ -305,10 +305,9 @@ contains
     call assert_equal_int(N_pool, 6, "test_pool_means_alloc_with_nan: N_pool should exclude NaN values")
     
     ! Pooled data (excluding NaN): [1,2,3,4,5,6]
-    ! For n_points=2, quantiles at positions: 6/3=2, 12/3=4
-    ! Values: 2, 4
-    call assert_equal_real(x_star(1), 2.0_real64, 1e-9_real64, "test_pool_means_alloc_with_nan: first quantile")
-    call assert_equal_real(x_star(2), 4.0_real64, 1e-9_real64, "test_pool_means_alloc_with_nan: second quantile")
+    ! Values: 2.666, 4.3333 -> interpolation
+    call assert_equal_real(x_star(1), 2.0_real64 + 2.0_real64/3.0_real64, 1e-9_real64, "test_pool_means_alloc_with_nan: first quantile")
+    call assert_equal_real(x_star(2), 4.0_real64 + 1.0_real64/3.0_real64, 1e-9_real64, "test_pool_means_alloc_with_nan: second quantile")
   end subroutine test_pool_means_alloc_with_nan
 
   ! Test case 11: pool_means_alloc with single study.
