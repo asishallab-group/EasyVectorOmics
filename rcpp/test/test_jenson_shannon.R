@@ -176,6 +176,31 @@ test_error_handling <- function() {
   cat("Error handling test passed ✓\n")
 }
 
+# Test with explicit neighborhood size
+test_construct_neighborhoods_explicit <- function() {
+  cat("\n[test_construct_neighborhoods_explicit] Neighborhoods with explicit size test\n")
+  
+  n_points <- 3
+  x_star <- c(10, 20, 30)
+  mean_S <- c(8, 12, 18, 22, 28)
+  resid_S <- matrix(c(
+    1, -1, 2, -2, 3,
+    -1, 1, -2, 2, -3
+  ), nrow = 2, ncol = 5, byrow = TRUE)
+  N_pool <- 10
+  explicit_size <- 50
+  
+  # Test with explicit size
+  result <- tox_construct_neighborhoods(x_star, mean_S, resid_S, N_pool, explicit_size)
+  
+  cat("  Explicit neighborhood size: ", explicit_size, "\n")
+  cat("  Neighborhood size used (k_x):", result$k_x, "\n")
+  
+  stopifnot(result$k_x == explicit_size)  # Should use the explicit size
+  
+  cat("Neighborhoods with explicit size test passed ✓\n")
+}
+
 # Run all tests
 cat("========================================\n")
 cat("Running simple tests for tox_jenson_shannon_test\n")
@@ -187,6 +212,7 @@ test_compute_residuals_basic()
 test_pool_means_basic()
 test_construct_neighborhoods_basic()
 test_error_handling()
+test_construct_neighborhoods_explicit()
 
 cat("\n========================================\n")
 cat("All tests completed successfully! ✓\n")

@@ -139,7 +139,7 @@ extern "C" {
     void construct_neighborhoods_c(int* n_points, double* x_star, 
                                   int* n_genes_S, double* mean_S,
                                   int* n_reps_S, double* resid_S,
-                                  int* N_pool, int* k_x,
+                                  int* neighboorhood_size, int* N_pool, int* k_x,
                                   double* neighborhood_residuals,
                                   int* neighborhood_indices,
                                   int* ierr);
@@ -643,6 +643,7 @@ Rcpp::List tox_construct_neighborhoods_rcpp(int n_points,
                                             Rcpp::NumericVector x_star,
                                             Rcpp::NumericVector mean_S,
                                             Rcpp::NumericMatrix resid_S,
+                                            int neighborhood_size,
                                             int N_pool) {
     int n_genes_S = mean_S.length();
     int n_reps_S = resid_S.nrow();
@@ -656,8 +657,17 @@ Rcpp::List tox_construct_neighborhoods_rcpp(int n_points,
         Rcpp::stop("Length of x_star must equal n_points");
     }
     
+    // Allow -1 for automatic calculation, otherwise validate
+    if (neighborhood_size != -1 && neighborhood_size < 1) {
+        Rcpp::stop("If specified, neighborhood_size must be at least 1");
+    }
+    
+    if (N_pool < 1) {
+        Rcpp::stop("N_pool must be at least 1");
+    }
+    
     int k_x = 0;
-    int max_neighbors = 1000;
+    int max_neighbors = 1000;  // Maximum as defined in Fortran
     int max_residuals = n_reps_S * max_neighbors;
     
     Rcpp::NumericMatrix neighborhood_residuals(n_points, max_residuals);
@@ -670,7 +680,7 @@ Rcpp::List tox_construct_neighborhoods_rcpp(int n_points,
     construct_neighborhoods_c(&n_points, x_star.begin(),
                              &n_genes_S, mean_S.begin(),
                              &n_reps_S, resid_S.begin(),
-                             &N_pool, &k_x,
+                             &neighborhood_size, &N_pool, &k_x,
                              neighborhood_residuals.begin(),
                              neighborhood_indices.begin(),
                              &ierr);

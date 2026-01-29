@@ -355,7 +355,7 @@ contains
     integer(int32) :: work_indices(n_genes_S)
     real(real64) :: neighborhood_residuals(n_points, n_reps_S * 1000)
     integer(int32) :: neighborhood_indices(n_points, 1000)
-    integer(int32) :: i, ierr
+    integer(int32) :: i, ierr, neighborhood_size
     
     x_star = [5.0, 15.0]
     mean_S = [1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0, 8.0, 9.0, 10.0]
@@ -367,12 +367,14 @@ contains
     end do
     
     N_pool = n_genes_S * 2
+
+    neighborhood_size = 10
     
     call construct_neighborhoods(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, &
                                  distances, work_indices, N_pool, k_x, &
-                                 neighborhood_residuals, neighborhood_indices, ierr)
+                                 neighborhood_residuals, neighborhood_indices, ierr, neighborhood_size)
     
-    call assert_true(k_x >= 100 .and. k_x <= 1000, "test_construct_neighborhoods_basic: k_x within limits")
+    call assert_true(k_x == 10, "test_construct_neighborhoods_basic: k_x within limits")
     call assert_true(any(neighborhood_indices(1, 1:k_x) == 5), "test_construct_neighborhoods_basic: gene 5 should be nearest")
     call assert_true(any(neighborhood_indices(2, 1:k_x) == 10), "test_construct_neighborhoods_basic: gene 10 should be nearest")
     call assert_true(.not. all(ieee_is_nan(neighborhood_residuals)), "test_construct_neighborhoods_basic: residuals should exist")

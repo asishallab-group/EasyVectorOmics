@@ -255,7 +255,7 @@ contains
 
 !> Construct neighborhood-based residual sets (kNN)
 pure subroutine construct_neighborhoods(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, distances, work_indices, &
-                                   N_pool, k_x, neighborhood_residuals, neighborhood_indices, ierr)
+                                   N_pool, k_x, neighborhood_residuals, neighborhood_indices, ierr, neighborhood_size)
   integer(int32), intent(in) :: n_points
   !! Number of reference points
   integer(int32), intent(in) :: n_genes_S
@@ -282,21 +282,26 @@ pure subroutine construct_neighborhoods(n_points, x_star, n_genes_S, mean_S, n_r
   !! Indices of selected neighborhood genes
   integer(int32), intent(out) :: ierr
   !! Error code
+  integer(int32), intent(in), optional :: neighborhood_size
+  !! Optional explicit neighborhood size, otherwise use default
 
   call set_ok(ierr)
   call validate_in_range_int(n_points, ierr, min = 1_int32)
   call validate_in_range_int(n_genes_S, ierr, min = 1_int32)
   call validate_in_range_int(n_reps_S, ierr, min = 1_int32)
   call validate_in_range_int(N_pool, ierr, min = 1_int32)
+  if(present(neighborhood_size)) then
+    call validate_in_range_int(neighborhood_size, ierr, min = 1_int32)
+  end if
   if(is_err(ierr)) return
 
-  call construct_neighborhoods_helper(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, distances, work_indices, N_pool, k_x, neighborhood_residuals, neighborhood_indices)
+  call construct_neighborhoods_helper(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, distances, work_indices, N_pool, k_x, neighborhood_residuals, neighborhood_indices, neighborhood_size)
 
 end subroutine construct_neighborhoods
   
 !> Construct neighborhood-based residual sets (kNN)
 pure subroutine construct_neighborhoods_helper(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, distances, work_indices, &
-                                   N_pool, k_x, neighborhood_residuals, neighborhood_indices)
+                                   N_pool, k_x, neighborhood_residuals, neighborhood_indices, neighborhood_size)
   integer(int32), intent(in) :: n_points
   !! Number of reference points
   integer(int32), intent(in) :: n_genes_S
@@ -314,20 +319,25 @@ pure subroutine construct_neighborhoods_helper(n_points, x_star, n_genes_S, mean
   real(real64), intent(inout) :: distances(n_genes_S)
   !! Distances work array
   integer(int32), intent(inout) :: work_indices(n_genes_S)
-  !! Work array for indices (not to be confused with permutation)
+  !! Work array for indices 
   integer(int32), intent(out) :: k_x
   !! Neighborhood size used (constant for all reference points)
   real(real64), intent(out) :: neighborhood_residuals(n_points, n_reps_S * 1000)
   !! Collection of residual vectors for each neighborhood
   integer(int32), intent(out) :: neighborhood_indices(n_points, 1000)
   !! Indices of selected neighborhood genes
+  integer(int32), intent(in), optional :: neighborhood_size
+  !! Optional explicit neighborhood size
   
   integer(int32) :: j, g, i, m, residual_count
   integer(int32) :: perm(n_genes_S)  ! perm for heapsort
   
   ! Calculate neighborhood size
-  k_x = min(max(100, N_pool / (2 * n_points)), 1000)
-  
+  if(present(neighborhood_size)) then 
+    k_x = neighborhood_size
+  else
+    k_x = min(max(100, N_pool / (2 * n_points)), 1000)
+  end if
   ! Initialize output arrays
   neighborhood_residuals = ieee_value(0.0_real64, ieee_quiet_nan)
   neighborhood_indices = -1
@@ -479,7 +489,7 @@ end subroutine pool_means_c
 
 !> C wrapper for construct_neighborhoods
 subroutine construct_neighborhoods_c(n_points, x_star, n_genes_S, mean_S, &
-                                    n_reps_S, resid_S, N_pool, k_x, &
+                                    n_reps_S, resid_S, neighborhood_size, N_pool, k_x, &
                                     neighborhood_residuals, neighborhood_indices, ierr) &
           bind(C, name="construct_neighborhoods_c")
   use, intrinsic :: iso_c_binding, only: c_int, c_double
@@ -501,6 +511,8 @@ subroutine construct_neighborhoods_c(n_points, x_star, n_genes_S, mean_S, &
   !! Per-gene mean expression values
   real(c_double), intent(in), target :: resid_S(n_reps_S, n_genes_S)
   !! Matrix of signed residuals (row-major: replicates × genes)
+  integer(c_int), intent(in), target :: neighborhood_size
+  !! Explicit size of the neighborhood
   integer(c_int), intent(out), target :: k_x
   !! Neighborhood size used (constant for all reference points)
   real(c_double), intent(out), target :: neighborhood_residuals(n_points, n_reps_S * 1000)
@@ -524,8 +536,15 @@ subroutine construct_neighborhoods_c(n_points, x_star, n_genes_S, mean_S, &
   M_CHECK_NON_NULL(k_x)
   M_CHECK_NON_NULL(neighborhood_residuals)
   M_CHECK_NON_NULL(neighborhood_indices)
-  
-  call construct_neighborhoods(n_points, x_star, n_genes_S, mean_S, &
+  M_CHECK_NON_NULL(neighborhood_size)
+
+  if(neighborhood_size > 0) then
+    call construct_neighborhoods(n_points, x_star, n_genes_S, mean_S, &
+                              n_reps_S, resid_S, distances, work_indices, &
+                              N_pool, k_x, neighborhood_residuals, neighborhood_indices, ierr, neighborhood_size)
+  else
+    call construct_neighborhoods(n_points, x_star, n_genes_S, mean_S, &
                               n_reps_S, resid_S, distances, work_indices, &
                               N_pool, k_x, neighborhood_residuals, neighborhood_indices, ierr)
+  end if
 end subroutine construct_neighborhoods_c

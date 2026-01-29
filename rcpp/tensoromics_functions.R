@@ -1039,6 +1039,8 @@ tox_pool_means <- function(mean_S1, mean_S2, n_points = 100) {
 #' @param x_star Numeric vector of mean-expression reference points
 #' @param mean_S Numeric vector of per-gene mean expression values for the study
 #' @param resid_S Numeric matrix of signed residuals for the study (replicates × genes)
+#' @param neighborhood_size Explicit size of the neighborhood. Use -1 for automatic
+#'        calculation (default: -1).
 #' @param N_pool Total number of pooled mean-expression values across both studies
 #' @return List with components:
 #'   - ierr: Error code (0 for success)
@@ -1046,7 +1048,8 @@ tox_pool_means <- function(mean_S1, mean_S2, n_points = 100) {
 #'   - neighborhood_residuals: Matrix of residual vectors for each neighborhood
 #'   - neighborhood_indices: Matrix of indices of selected neighborhood genes (1-based)
 #' @export
-tox_construct_neighborhoods <- function(x_star, mean_S, resid_S, N_pool) {
+tox_construct_neighborhoods <- function(x_star, mean_S, resid_S, N_pool,
+                                        neighborhood_size = -1) {
   # Validate input
   if (!is.numeric(x_star)) {
     stop("x_star must be a numeric vector")
@@ -1064,6 +1067,11 @@ tox_construct_neighborhoods <- function(x_star, mean_S, resid_S, N_pool) {
     stop("Length of mean_S must equal number of columns in resid_S")
   }
   
+  # Allow -1 for automatic calculation, otherwise validate
+  if (neighborhood_size != -1 && neighborhood_size < 1) {
+    stop("If specified, neighborhood_size must be at least 1")
+  }
+  
   if (N_pool < 1) {
     stop("N_pool must be at least 1")
   }
@@ -1071,7 +1079,8 @@ tox_construct_neighborhoods <- function(x_star, mean_S, resid_S, N_pool) {
   n_points <- length(x_star)
   
   # Call the Rcpp function
-  result <- tox_construct_neighborhoods_rcpp(n_points, x_star, mean_S, resid_S, N_pool)
+  result <- tox_construct_neighborhoods_rcpp(n_points, x_star, mean_S, 
+                                            resid_S, neighborhood_size, N_pool)
   
   check_err_code(result$ierr)
   
