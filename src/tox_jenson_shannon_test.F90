@@ -334,7 +334,7 @@ pure subroutine construct_neighborhoods_helper(n_points, x_star, n_genes_S, mean
   
   ! Calculate neighborhood size
   if(present(neighborhood_size)) then 
-    k_x = neighborhood_size
+    k_x = min(neighborhood_size, 1000)
   else
     k_x = min(max(100, N_pool / (2 * n_points)), 1000)
   end if
