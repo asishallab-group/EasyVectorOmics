@@ -944,6 +944,7 @@ tox_mean_vector <- function(expression_vectors, gene_indices) {
   return(result)
 }
 
+#> tox_jenson_shannon_test:compute_gene_means_c: Compute per-gene mean expression values
 #' Compute per-gene mean expression values
 #'
 #' This function computes the mean expression for each gene across replicates,
@@ -968,6 +969,7 @@ tox_compute_gene_means <- function(expr) {
   return(as.numeric(result$means))
 }
 
+#> tox_jenson_shannon_test:compute_residuals_c: Compute signed residuals
 #' Compute signed residuals
 #'
 #' This function computes signed residuals for each gene and replicate.
@@ -996,6 +998,7 @@ tox_compute_residuals <- function(expr, means) {
   return(matrix(result$resid, nrow = nrow(expr), ncol = ncol(expr)))
 }
 
+#> tox_jenson_shannon_test:pool_means_c: Pool mean expression values across studies
 #' Pool mean expression values across studies
 #'
 #' This function pools per-gene mean expression values from two studies
@@ -1031,6 +1034,7 @@ tox_pool_means <- function(mean_S1, mean_S2, n_points = 100) {
   ))
 }
 
+#> tox_jenson_shannon_test:construct_neighborhoods_c: Construct neighborhood-based residual sets (kNN)
 #' Construct neighborhood-based residual sets (kNN)
 #'
 #' This function constructs neighborhoods around reference points and
