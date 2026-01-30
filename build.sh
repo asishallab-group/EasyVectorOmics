@@ -18,9 +18,10 @@ fi
 # Build with FPM first
 generate_fpm_toml .fpm.toml $COMPILER > fpm.toml
 fpm build --compiler $COMPILER --flag "$FLAGS $DIRECTIVES" --flag "-DDEFAULT_ALIGNMENT=$ALIGN" --flag "$MAX_PERF_FLAG"
-rm fpm.toml
 
 check_exit_code "Build with fpm failed"
+
+rm fpm.toml
 
 # Move .mod, .o and .so files from FPM build directories to root
 for compiler_dir in build/${COMPILER}_*; do

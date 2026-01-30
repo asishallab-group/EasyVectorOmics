@@ -5,7 +5,7 @@
 module f42_utils
   use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
-  use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, set_ok, set_err_once, set_err, validate_in_range_real, is_err
+  use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, set_ok, set_err_once, set_err, validate_in_range_real, is_err, validate_in_range_int, validate_dimension_size
   use, intrinsic :: ieee_arithmetic, only: ieee_next_after, ieee_value, ieee_positive_inf, ieee_negative_inf, ieee_is_finite, ieee_is_nan
   implicit none
 
@@ -1036,32 +1036,39 @@ contains
     integer(int32), intent(out) :: ierr
     !! Error code
     
-    integer(int32) :: n, lower_index
-    real(real64) :: index, fraction, lower_value, upper_value
+    integer(int32) :: n
     
     ! Initialize error
     call set_ok(ierr)
     
     ! Input validation
     n = size(array)
-    if (n == 0) then
-      call set_err_once(ierr, ERR_EMPTY_INPUT)
-      value = 0.0_real64
-      return
-    end if
+    call validate_dimension_size(n, ierr)
+    if (size(permutation) /= n) call set_err_once(ierr, ERR_INVALID_INPUT)
+    call validate_in_range_real(percentile, ierr, min=0.0_real64, max=100.0_real64)
+
+    if (is_err(ierr)) return
+
+    call calc_percentile_helper(array, permutation, percentile, value)
+  end subroutine calc_percentile
+
+  !> (no input validation) Calculate the percentile of an array given a sorted permutation.
+  !! Uses linear interpolation between adjacent values.
+  pure subroutine calc_percentile_helper(array, permutation, percentile, value)
+    real(real64), intent(in) :: array(:)
+    !! input array
+    integer(int32), intent(in) :: permutation(:)
+    !! permutation vector representing sorted order
+    real(real64), intent(in) :: percentile
+    !! desired percentile (0-100)
+    real(real64), intent(out) :: value
+    !! output percentile value
     
-    if (size(permutation) /= n) then
-      call set_err_once(ierr, ERR_INVALID_INPUT)
-      value = 0.0_real64
-      return
-    end if
+    integer(int32) :: n, lower_index
+    real(real64) :: index, fraction, lower_value, upper_value
     
-    if (percentile < 0.0_real64 .or. percentile > 100.0_real64) then
-      call set_err_once(ierr, ERR_INVALID_INPUT)
-      value = 0.0_real64
-      return
-    end if
-    
+    n = size(array)
+
     ! Handle single element case
     if (n == 1) then
       value = array(1)
@@ -1086,7 +1093,7 @@ contains
       upper_value = array(permutation(lower_index + 1))
       value = lower_value + fraction * (upper_value - lower_value)
     end if
-  end subroutine calc_percentile
+  end subroutine calc_percentile_helper
 
   !> Calculate the percentile of an array, allocating necessary arrays when no sorting permutation is given
   !! @note This subroutine uses quicksort internally which may cause a spike in memory usage for large arrays.

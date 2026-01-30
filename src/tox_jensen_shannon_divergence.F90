@@ -4,13 +4,94 @@ module tox_jensen_shannon_divergence
     use safeguard
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
-    use f42_utils, only: clamp, calc_percentile, is_close, sort_array_heapsort
+    use f42_utils, only: clamp, calc_percentile_helper, is_close, sort_array_heapsort
     use tox_errors, only: set_ok, set_err, is_err, ERR_ALLOC_FAIL, validate_dimension_size, validate_in_range_real, validate_all_in_range_real, validate_in_range_int, validate_all_in_range_int
     implicit none
 contains
 
     !> Computes the shared residual range [-R, R] for the computed residuals from studies S1 and S2
-    pure subroutine determine_shared_residual_range_alloc(neighborhood_residuals_S1, neighborhood_residuals_S2, n_residuals, n_neighbors, shared_residual_range, residual_range_quantile, ierr)
+    pure subroutine determine_shared_residual_range(neighborhood_residuals_S1, neighborhood_residuals_S2, n_residuals, n_neighbors, shared_residual_range, tmp_abs_residual_pool, tmp_abs_residual_pool_perm, ierr, residual_range_quantile)
+        integer(int32), intent(in) :: n_residuals
+            !! Number of residuals
+        integer(int32), intent(in) :: n_neighbors
+            !! Number of neighbors (k)
+        real(real64), dimension(n_residuals, n_neighbors), intent(in) :: neighborhood_residuals_S1
+            !! Computed neighborhood residuals for study 1 (kNN), NaN is explicitly allowed for missing values
+        real(real64), dimension(n_residuals, n_neighbors), intent(in) :: neighborhood_residuals_S2
+            !! Computed neighborhood residuals for study 2 (kNN), NaN is explicitly allowed for missing values
+        real(real64), intent(in), optional :: residual_range_quantile
+            !! Quantile for determining the residual range, default: 95.0
+        real(real64), intent(out) :: shared_residual_range
+            !! Computed residual range (R)
+        real(real64), dimension(2 * size(neighborhood_residuals_S1, kind=int32)), intent(out) :: tmp_abs_residual_pool
+            !! Work array for the absolute residual values of the concatenated S1,S2 residuals
+        integer(int32), dimension(size(tmp_abs_residual_pool, kind=int32)), intent(out) :: tmp_abs_residual_pool_perm
+            !! Work array for the sorting permutation of `tmp_abs_residual_pool`
+        integer(int32), intent(out) :: ierr
+            !! Error code
+
+        call set_ok(ierr)
+
+        call validate_dimension_size(n_residuals, ierr)
+        call validate_in_range_real(residual_range_quantile, ierr, min=0.0_real64, max=100.0_real64)
+
+        if (is_err(ierr)) return
+
+        call determine_shared_residual_range_helper(neighborhood_residuals_S1, neighborhood_residuals_S2, n_residuals, n_neighbors, shared_residual_range, tmp_abs_residual_pool, tmp_abs_residual_pool_perm, residual_range_quantile)
+    end subroutine determine_shared_residual_range
+
+    !> (no input validation) Computes the shared residual range [-R, R] for the computed residuals from studies S1 and S2
+    pure subroutine determine_shared_residual_range_helper(neighborhood_residuals_S1, neighborhood_residuals_S2, n_residuals, n_neighbors, shared_residual_range, tmp_abs_residual_pool, tmp_abs_residual_pool_perm, residual_range_quantile)
+        integer(int32), intent(in) :: n_residuals
+            !! Number of residuals
+        integer(int32), intent(in) :: n_neighbors
+            !! Number of neighbors (k)
+        real(real64), dimension(n_residuals, n_neighbors), intent(in) :: neighborhood_residuals_S1
+            !! Computed neighborhood residuals for study 1 (kNN), NaN is explicitly allowed for missing values
+        real(real64), dimension(n_residuals, n_neighbors), intent(in) :: neighborhood_residuals_S2
+            !! Computed neighborhood residuals for study 2 (kNN), NaN is explicitly allowed for missing values
+        real(real64), intent(in), optional :: residual_range_quantile
+            !! Quantile for determining the residual range, default: 95.0
+        real(real64), intent(out) :: shared_residual_range
+            !! Computed residual range (R)
+        real(real64), dimension(2 * size(neighborhood_residuals_S1, kind=int32)), intent(out) :: tmp_abs_residual_pool
+            !! Work array for the absolute residual values of the concatenated S1,S2 residuals
+        integer(int32), dimension(size(tmp_abs_residual_pool, kind=int32)), intent(out) :: tmp_abs_residual_pool_perm
+            !! Work array for the sorting permutation of `tmp_abs_residual_pool`
+
+        integer(int32) :: i_residual, i_neighbor, n_pool, n_predecessors, pool_idx
+        real(real64) :: actual_quantile
+
+        M_DEFAULT_VAL(residual_range_quantile, actual_quantile, 95.0_real64)
+
+        ! Collect the absolute residual values and compute the percentile value
+        do concurrent (i_neighbor = 1:n_neighbors, i_residual = 1:n_residuals) local(n_predecessors, pool_idx) shared(tmp_abs_residual_pool_perm, neighborhood_residuals_S1, neighborhood_residuals_S2, tmp_abs_residual_pool)
+            n_predecessors = (i_neighbor - 1) * n_residuals * 2
+            pool_idx = n_predecessors + i_residual * 2
+            tmp_abs_residual_pool(pool_idx - 1) = abs(neighborhood_residuals_S1(i_residual, i_neighbor))
+            tmp_abs_residual_pool(pool_idx) = abs(neighborhood_residuals_S2(i_residual, i_neighbor))
+            
+            tmp_abs_residual_pool_perm(pool_idx) = pool_idx
+            tmp_abs_residual_pool_perm(pool_idx - 1) = pool_idx - 1
+        end do
+
+        call sort_array_heapsort(tmp_abs_residual_pool, tmp_abs_residual_pool_perm)
+
+        n_pool = size(tmp_abs_residual_pool, kind=int32)
+        ! NaN is always last -> find last non-NaN index for percentile calculation
+        do i_residual = n_pool, 1, -1
+            if (ieee_is_nan(tmp_abs_residual_pool(tmp_abs_residual_pool_perm(i_residual)))) then
+                n_pool = n_pool - 1
+            else
+                exit
+            end if
+        end do
+
+        call calc_percentile_helper(tmp_abs_residual_pool(:n_pool), tmp_abs_residual_pool_perm(:n_pool), actual_quantile, shared_residual_range)
+    end subroutine determine_shared_residual_range_helper
+
+    !> Computes the shared residual range [-R, R] for the computed residuals from studies S1 and S2
+    pure subroutine determine_shared_residual_range_alloc(neighborhood_residuals_S1, neighborhood_residuals_S2, n_residuals, n_neighbors, shared_residual_range, ierr, residual_range_quantile)
         integer(int32), intent(in) :: n_residuals
             !! Number of residuals
         integer(int32), intent(in) :: n_neighbors
@@ -26,17 +107,13 @@ contains
         integer(int32), intent(out) :: ierr
             !! Error code
 
-        integer(int32) :: i_residual, i_neighbor, n_pool, n_predecessors, pool_idx
-        real(real64) :: actual_quantile
+        integer(int32) :: n_pool
         real(real64), dimension(:), allocatable :: abs_residual_pool
         integer(int32), dimension(:), allocatable :: perm
-
-        M_DEFAULT_VAL(residual_range_quantile, actual_quantile, 95.0_real64)
 
         call set_ok(ierr)
 
         call validate_dimension_size(n_residuals, ierr)
-        call validate_in_range_real(actual_quantile, ierr, min=0.0_real64, max=100.0_real64)
 
         if (is_err(ierr)) return
 
@@ -45,29 +122,7 @@ contains
         M_ALLOCATE(abs_residual_pool(n_pool))
         M_ALLOCATE(perm(n_pool))
 
-        ! Collect the absolute residual values and compute the percentile value
-        do concurrent (i_neighbor = 1:n_neighbors, i_residual = 1:n_residuals) local(n_predecessors, pool_idx) shared(perm, neighborhood_residuals_S1, neighborhood_residuals_S2, abs_residual_pool)
-            n_predecessors = (i_neighbor - 1) * n_residuals * 2
-            pool_idx = n_predecessors + i_residual * 2
-            abs_residual_pool(pool_idx - 1) = abs(neighborhood_residuals_S1(i_residual, i_neighbor))
-            abs_residual_pool(pool_idx) = abs(neighborhood_residuals_S2(i_residual, i_neighbor))
-            
-            perm(pool_idx) = pool_idx
-            perm(pool_idx - 1) = pool_idx - 1
-        end do
-
-        call sort_array_heapsort(abs_residual_pool, perm)
-
-        ! NaN is always last -> find last non-NaN index for percentile calculation
-        do i_residual = n_pool, 1, -1
-            if (ieee_is_nan(abs_residual_pool(perm(i_residual)))) then
-                n_pool = n_pool - 1
-            else
-                exit
-            end if
-        end do
-
-        call calc_percentile(abs_residual_pool(:n_pool), perm(:n_pool), actual_quantile, shared_residual_range, ierr)
+        call determine_shared_residual_range(neighborhood_residuals_S1, neighborhood_residuals_S2, n_residuals, n_neighbors, shared_residual_range, abs_residual_pool, perm, ierr, residual_range_quantile)
     end subroutine determine_shared_residual_range_alloc
 
     !> Summarizes the neighborhood residuals in absolute histogram counts and probability mass functions `pmf(residual, bin)` (actually a matrix)
@@ -102,6 +157,31 @@ contains
         call validate_in_range_real(shared_residual_range, ierr, min=0.0_real64)
 
         if (is_err(ierr)) return
+
+        call build_residual_histograms_helper(neighborhood_residuals, n_residuals, n_neighbors, shared_residual_range, n_bins, counts, pmf, included_n_residuals)
+    end subroutine build_residual_histograms
+
+    !> (no input validation) Summarizes the neighborhood residuals in absolute histogram counts and probability mass functions `pmf(residual, bin)` (actually a matrix)
+    pure subroutine build_residual_histograms_helper(neighborhood_residuals, n_residuals, n_neighbors, shared_residual_range, n_bins, counts, pmf, included_n_residuals)
+        integer(int32), intent(in) :: n_residuals
+            !! Number of residuals
+        integer(int32), intent(in) :: n_neighbors
+            !! Number of neighbors (k)
+        real(real64), dimension(n_residuals, n_neighbors), intent(in) :: neighborhood_residuals
+            !! Computed neighborhood residuals for a study (kNN), NaN is explicitly allowed for missing values
+        real(real64), intent(in) :: shared_residual_range
+            !! Computed residual range (R) from [[tox_jensen_shannon_divergence(module):determine_shared_residual_range_alloc(subroutine)]]
+        integer(int32), intent(in) :: n_bins
+            !! Number of equally sized histogram bins in range [-R,R]
+        integer(int32), dimension(n_neighbors, n_bins), intent(out) :: counts
+            !! Absolute counts of a residual per bin
+        real(real64), dimension(n_neighbors, n_bins), intent(out) :: pmf
+            !! `counts` normalized to `0 <= counts(:, i) <= 1` and `sum(counts(:, i)) == 1`
+        integer(int32), dimension(n_neighbors), intent(out) :: included_n_residuals
+            !! Stores the count of non-NaN residuals (included ones)
+
+        real(real64) :: bin_width, clamped_residual
+        integer(int32) :: bin_idx, i_neighbor, i_residual, i_bin, included_residuals
 
         bin_width = 2.0_real64 * shared_residual_range / real(n_bins, real64)
         counts = 0_int32
@@ -138,7 +218,7 @@ contains
                 end if
             end do
         end do
-    end subroutine build_residual_histograms
+    end subroutine build_residual_histograms_helper
 
     !> Having the probabilities `pmf` from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]], this subroutine computes the Jensen-Shannon divergence per reference point/neighbor
     pure subroutine compute_divergence_per_reference_point(pmf_S1, pmf_S2, n_neighbors, n_bins, js_divergences, ierr)

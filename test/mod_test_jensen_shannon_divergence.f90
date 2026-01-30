@@ -104,7 +104,7 @@ contains
         S2 = reshape([ &
             2,-4,6,8,  1,3,5,7,  9,0,1,2 ], [n_residuals,n_neighbors])
 
-        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, ierr=ierr)
+        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_determine_shared_residual_range: Test 1: ierr should be OK")
         call assert_equal_real(R, 10.85_real64, TOL, "test_determine_shared_residual_range: Test 1: R should be 10.85")
 
@@ -115,7 +115,7 @@ contains
         ! Median of sorted array above = 0.5 * (sorted(12) + sorted(13)) = 5.5
         !
         q = 50.0_real64
-        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, q, ierr)
+        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, ierr, q)
         call assert_equal_int(ierr, ERR_OK, "test_determine_shared_residual_range: Test 2: ierr should be OK")
         call assert_equal_real(R, 5.0_real64, TOL, "test_determine_shared_residual_range: Test 2: R should be 5.0")
 
@@ -123,14 +123,14 @@ contains
         ! Test 3 — Quantile < 0 → error
         ! ============================================================
         q = below(0.0_real64)
-        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, q, ierr)
+        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, ierr, q)
         call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_determine_shared_residual_range: Test 3: ierr should be INVALID_INPUT")
 
         ! ============================================================
         ! Test 4 — Quantile > 100 → error
         ! ============================================================
         q = above(100.0_real64)
-        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, q, ierr)
+        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, ierr, q)
         call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_determine_shared_residual_range: Test 4: ierr should be INVALID_INPUT")
 
         ! ============================================================
@@ -154,7 +154,7 @@ contains
         ! sorted(21) = 11
         ! -> R = 11
         !
-        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, ierr=ierr)
+        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_determine_shared_residual_range: Test 5: ierr should be OK")
         call assert_equal_real(R, 11.0_real64, TOL, "test_determine_shared_residual_range: Test 5: R should ignore NaNs")
 
@@ -163,7 +163,7 @@ contains
         ! ============================================================
         S1 = 0.0_real64
         S2 = 0.0_real64
-        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, ierr=ierr)
+        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_determine_shared_residual_range: Test 6: ierr should be OK")
         call assert_equal_real(R, 0.0_real64, TOL, "test_determine_shared_residual_range: Test 6: R should be zero")
 
@@ -175,7 +175,7 @@ contains
         ! sorted = [3, 4]
         ! rank = 0.95 * (2-1) + 1 = 1.95
         ! R = 3 + (4-3)*0.95 = 3.95
-        call determine_shared_residual_range_alloc(S1, S2, 1_int32, 1_int32, R, ierr=ierr)
+        call determine_shared_residual_range_alloc(S1, S2, 1_int32, 1_int32, R, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_determine_shared_residual_range: Test 6: ierr should be OK")
         call assert_equal_real(R, 3.95_real64, TOL, "test_determine_shared_residual_range: Test 7: R should be 3.95")
 
