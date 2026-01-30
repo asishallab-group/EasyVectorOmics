@@ -290,9 +290,7 @@ pure subroutine construct_neighborhoods(n_points, x_star, n_genes_S, mean_S, n_r
   call validate_in_range_int(n_genes_S, ierr, min = 1_int32)
   call validate_in_range_int(n_reps_S, ierr, min = 1_int32)
   call validate_in_range_int(N_pool, ierr, min = 1_int32)
-  if(present(neighborhood_size)) then
-    call validate_in_range_int(neighborhood_size, ierr, min = 1_int32)
-  end if
+  call validate_in_range_int(neighborhood_size, ierr, min = 1_int32)
   if(is_err(ierr)) return
 
   call construct_neighborhoods_helper(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, distances, work_indices, N_pool, k_x, neighborhood_residuals, neighborhood_indices, neighborhood_size)
