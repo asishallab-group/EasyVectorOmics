@@ -356,3 +356,236 @@ contains
     end subroutine compute_weighted_global_divergence_helper
 
 end module tox_jensen_shannon_divergence
+
+!> C-compatible wrapper for [[tox_jensen_shannon_divergence(module):determine_shared_residual_range(subroutine)]]
+pure subroutine determine_shared_residual_range_expert_c( &
+    neighborhood_residuals_S1, neighborhood_residuals_S2, &
+    n_residuals, n_neighbors, &
+    residual_range_quantile, &
+    shared_residual_range, &
+    tmp_abs_residual_pool, tmp_abs_residual_pool_perm, &
+    ierr ) &
+    bind(C, name="determine_shared_residual_range_expert_c")
+
+    use tox_jensen_shannon_divergence, only: determine_shared_residual_range
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
+    M_USE_NULL_VALIDATION
+    implicit none
+
+    integer(c_int), intent(in), target :: n_residuals
+        !! Number of residuals
+    integer(c_int), intent(in), target :: n_neighbors
+        !! Number of neighbors (k)
+    real(c_double), dimension(n_residuals, n_neighbors), intent(in), target :: neighborhood_residuals_S1
+        !! Residuals for study 1
+    real(c_double), dimension(n_residuals, n_neighbors), intent(in), target :: neighborhood_residuals_S2
+        !! Residuals for study 2
+    real(c_double), intent(in), target :: residual_range_quantile
+        !! Quantile for determining the residual range
+    real(c_double), intent(out), target :: shared_residual_range
+        !! Computed residual range (R)
+    real(c_double), dimension(2*n_residuals*n_neighbors), intent(out), target :: tmp_abs_residual_pool
+        !! Work array for absolute residuals
+    integer(c_int), dimension(2*n_residuals*n_neighbors), intent(out), target :: tmp_abs_residual_pool_perm
+        !! Work array for sorting permutation
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_residuals)
+    M_CHECK_NON_NULL(n_neighbors)
+    M_CHECK_NON_NULL(neighborhood_residuals_S1)
+    M_CHECK_NON_NULL(neighborhood_residuals_S2)
+    M_CHECK_NON_NULL(residual_range_quantile)
+    M_CHECK_NON_NULL(shared_residual_range)
+    M_CHECK_NON_NULL(tmp_abs_residual_pool)
+    M_CHECK_NON_NULL(tmp_abs_residual_pool_perm)
+
+    call determine_shared_residual_range( &
+        neighborhood_residuals_S1, neighborhood_residuals_S2, &
+        n_residuals, n_neighbors, &
+        shared_residual_range, &
+        tmp_abs_residual_pool, tmp_abs_residual_pool_perm, &
+        ierr, residual_range_quantile )
+
+end subroutine determine_shared_residual_range_expert_c
+
+!> C-compatible wrapper for [[tox_jensen_shannon_divergence(module):determine_shared_residual_range_alloc(subroutine)]]
+pure subroutine determine_shared_residual_range_c( &
+    neighborhood_residuals_S1, neighborhood_residuals_S2, &
+    n_residuals, n_neighbors, &
+    residual_range_quantile, &
+    shared_residual_range, ierr ) &
+    bind(C, name="determine_shared_residual_range_c")
+
+    use tox_jensen_shannon_divergence, only: determine_shared_residual_range_alloc
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
+    M_USE_NULL_VALIDATION
+    implicit none
+
+    integer(c_int), intent(in), target :: n_residuals
+        !! Number of residuals
+    integer(c_int), intent(in), target :: n_neighbors
+        !! Number of neighbors (k)
+    real(c_double), dimension(n_residuals, n_neighbors), intent(in), target :: neighborhood_residuals_S1
+        !! Residuals for study 1
+    real(c_double), dimension(n_residuals, n_neighbors), intent(in), target :: neighborhood_residuals_S2
+        !! Residuals for study 2
+    real(c_double), intent(in), target :: residual_range_quantile
+        !! Quantile for determining the residual range
+    real(c_double), intent(out), target :: shared_residual_range
+        !! Computed residual range (R)
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_residuals)
+    M_CHECK_NON_NULL(n_neighbors)
+    M_CHECK_NON_NULL(neighborhood_residuals_S1)
+    M_CHECK_NON_NULL(neighborhood_residuals_S2)
+    M_CHECK_NON_NULL(residual_range_quantile)
+    M_CHECK_NON_NULL(shared_residual_range)
+
+    call determine_shared_residual_range_alloc( &
+        neighborhood_residuals_S1, neighborhood_residuals_S2, &
+        n_residuals, n_neighbors, &
+        shared_residual_range, ierr, residual_range_quantile )
+
+end subroutine determine_shared_residual_range_c
+
+!> C-compatible wrapper for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
+pure subroutine build_residual_histograms_c( &
+    neighborhood_residuals, &
+    n_residuals, n_neighbors, &
+    shared_residual_range, &
+    n_bins, &
+    counts, pmf, included_n_residuals, &
+    ierr ) &
+    bind(C, name="build_residual_histograms_c")
+
+    use tox_jensen_shannon_divergence, only: build_residual_histograms
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
+    M_USE_NULL_VALIDATION
+    implicit none
+
+    integer(c_int), intent(in), target :: n_residuals
+        !! Number of residuals
+    integer(c_int), intent(in), target :: n_neighbors
+        !! Number of neighbors (k)
+    real(c_double), dimension(n_residuals, n_neighbors), intent(in), target :: neighborhood_residuals
+        !! Residuals for a study (kNN), NaN allowed
+    real(c_double), intent(in), target :: shared_residual_range
+        !! Shared residual range R
+    integer(c_int), intent(in), target :: n_bins
+        !! Number of histogram bins
+    integer(c_int), dimension(n_neighbors, n_bins), intent(out), target :: counts
+        !! Histogram counts
+    real(c_double), dimension(n_neighbors, n_bins), intent(out), target :: pmf
+        !! Normalized PMF
+    integer(c_int), dimension(n_neighbors), intent(out), target :: included_n_residuals
+        !! Count of non-NaN residuals per neighbor
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(neighborhood_residuals)
+    M_CHECK_NON_NULL(n_residuals)
+    M_CHECK_NON_NULL(n_neighbors)
+    M_CHECK_NON_NULL(shared_residual_range)
+    M_CHECK_NON_NULL(n_bins)
+    M_CHECK_NON_NULL(counts)
+    M_CHECK_NON_NULL(pmf)
+    M_CHECK_NON_NULL(included_n_residuals)
+
+    call build_residual_histograms( &
+        neighborhood_residuals, &
+        n_residuals, n_neighbors, &
+        shared_residual_range, &
+        n_bins, &
+        counts, pmf, included_n_residuals, &
+        ierr )
+
+end subroutine build_residual_histograms_c
+
+!> C-compatible wrapper for [[tox_jensen_shannon_divergence(module):compute_divergence_per_reference_point(subroutine)]]
+pure subroutine compute_divergence_per_reference_point_c( &
+    pmf_S1, pmf_S2, &
+    n_neighbors, n_bins, &
+    js_divergences, ierr ) &
+    bind(C, name="compute_divergence_per_reference_point_c")
+
+    use tox_jensen_shannon_divergence, only: compute_divergence_per_reference_point
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
+    M_USE_NULL_VALIDATION
+    implicit none
+
+    integer(c_int), intent(in), target :: n_neighbors
+        !! Number of neighbors (k)
+    integer(c_int), intent(in), target :: n_bins
+        !! Number of histogram bins
+    real(c_double), dimension(n_neighbors, n_bins), intent(in), target :: pmf_S1
+        !! PMF for study S1
+    real(c_double), dimension(n_neighbors, n_bins), intent(in), target :: pmf_S2
+        !! PMF for study S2
+    real(c_double), dimension(n_neighbors), intent(out), target :: js_divergences
+        !! Jensen–Shannon divergence per neighbor
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_neighbors)
+    M_CHECK_NON_NULL(n_bins)
+    M_CHECK_NON_NULL(pmf_S1)
+    M_CHECK_NON_NULL(pmf_S2)
+    M_CHECK_NON_NULL(js_divergences)
+
+    call compute_divergence_per_reference_point( &
+        pmf_S1, pmf_S2, &
+        n_neighbors, n_bins, &
+        js_divergences, ierr )
+
+end subroutine compute_divergence_per_reference_point_c
+
+!> C-compatible wrapper for [[tox_jensen_shannon_divergence(module):compute_weighted_global_divergence(subroutine)]]
+pure subroutine compute_weighted_global_divergence_c( &
+    js_divergences, &
+    n_neighbors, &
+    included_n_residuals_S1, included_n_residuals_S2, &
+    global_js_divergence, weights, &
+    ierr ) &
+    bind(C, name="compute_weighted_global_divergence_c")
+
+    use tox_jensen_shannon_divergence, only: compute_weighted_global_divergence
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
+    M_USE_NULL_VALIDATION
+    implicit none
+
+    integer(c_int), intent(in), target :: n_neighbors
+        !! Number of neighbors (k)
+    real(c_double), dimension(n_neighbors), intent(in), target :: js_divergences
+        !! Per-neighbor JSD values
+    integer(c_int), dimension(n_neighbors), intent(in), target :: included_n_residuals_S1
+        !! Residual counts for study S1
+    integer(c_int), dimension(n_neighbors), intent(in), target :: included_n_residuals_S2
+        !! Residual counts for study S2
+    real(c_double), intent(out), target :: global_js_divergence
+        !! Weighted global JSD
+    real(c_double), dimension(n_neighbors), intent(out), target :: weights
+        !! Normalized weights
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_neighbors)
+    M_CHECK_NON_NULL(js_divergences)
+    M_CHECK_NON_NULL(included_n_residuals_S1)
+    M_CHECK_NON_NULL(included_n_residuals_S2)
+    M_CHECK_NON_NULL(global_js_divergence)
+    M_CHECK_NON_NULL(weights)
+
+    call compute_weighted_global_divergence( &
+        js_divergences, n_neighbors, &
+        included_n_residuals_S1, included_n_residuals_S2, &
+        global_js_divergence, weights, ierr )
+
+end subroutine compute_weighted_global_divergence_c
