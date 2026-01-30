@@ -110,14 +110,7 @@ contains
   subroutine assert_equal_real(a, b, tol, msg)
     real(real64), intent(in) :: a, b, tol
     character(*), intent(in) :: msg
-
-    real(real64) :: diff
-
-    diff = abs(a-b)
-    if (ieee_is_nan(diff)) then
-      write(error_unit,*) "ASSERTION FAILED (NaN): "
-      stop 1
-    else if (diff > tol) then
+    if (abs(a-b) > tol) then
       write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (got ", a, ", expected ", b, ", tol=", tol, ")"
       stop 1
     end if
@@ -127,14 +120,7 @@ contains
   subroutine assert_not_equal_real(a, b, tol, msg)
     real(real64), intent(in) :: a, b, tol
     character(*), intent(in) :: msg
-
-    real(real64) :: diff
-
-    diff = abs(a-b)
-    if (ieee_is_nan(diff)) then
-      write(error_unit,*) "ASSERTION FAILED (NaN): "
-      stop 1
-    else if (diff <= tol) then
+    if (abs(a-b) <= tol) then
       write(error_unit,*) "ASSERTION FAILED (should not be equal): ", trim(msg)
       stop 1
     end if
@@ -155,20 +141,10 @@ contains
     real(real64), intent(in) :: a(n), b(n), tol
     integer(int32), intent(in) :: n
     character(*), intent(in) :: msg
-
-    integer(int32) :: i
-    real(real64) :: diff
-
-    do i = 1, n
-      diff = abs(a(i)-b(i))
-      if (ieee_is_nan(diff)) then
-        write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (NaN in real array)"
-        stop 1
-      else if (diff > tol) then
-        write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (real arrays differ, tol=", tol, ")"
-        stop 1
-      end if
-    end do
+    if (any(abs(a-b) > tol)) then
+      write(error_unit,*) "ASSERTION FAILED: ", trim(msg), " (real arrays differ, tol=", tol, ")"
+      stop 1
+    end if
   end subroutine
 
   !> Asserts that two character arrays are equal
