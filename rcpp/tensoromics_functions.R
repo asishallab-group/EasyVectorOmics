@@ -1610,3 +1610,72 @@ tox_k_means_clustering <- function(n_clusters, data_points, n_points, n_dims, ce
   check_err_code(res$ierr)
   return(res)
 }
+
+# ===================================================================
+# FOLD CHANGE CALCULATION
+# ===================================================================
+
+#' Calculate fold changes between control and condition columns
+#' 
+#' Computes log2 fold changes between control and condition columns.
+#' This function calculates the mean of control columns and condition columns
+#' separately, then computes the log2 fold change as log2(condition_mean / control_mean).
+#' 
+#' @param df Numeric matrix with genes as rows and samples/conditions as columns
+#' @param control_pattern Character string or vector to identify control columns (matched against colnames)
+#' @param condition_patterns Character string or vector to identify condition columns (matched against colnames)
+#' 
+#' @return Data frame with genes as rows and fold change values as columns
+#' 
+tox_calculate_fold_changes <- function(df, control_pattern, condition_patterns) {
+  # Input validation
+  validate_numeric_matrix(df, "df")
+  
+  # Ensure df has row and column names
+  if (is.null(rownames(df))) {
+    rownames(df) <- paste0("gene", 1:nrow(df))
+  }
+  if (is.null(colnames(df))) {
+    colnames(df) <- paste0("sample", 1:ncol(df))
+  }
+  
+  # Find control and condition column indices
+  control_cols <- which(grepl(control_pattern, colnames(df), fixed = TRUE))
+  
+  if (length(control_cols) == 0) {
+    stop(paste("No columns matched control_pattern:", control_pattern))
+  }
+  
+  # Calculate fold changes for each condition pattern
+  fold_changes <- NULL
+  
+  for (pattern in condition_patterns) {
+    condition_cols <- which(grepl(pattern, colnames(df), fixed = TRUE))
+    
+    if (length(condition_cols) == 0) {
+      warning(paste("No columns matched condition_pattern:", pattern))
+      next
+    }
+    
+    # Calculate mean expression for control and condition
+    control_mean <- rowMeans(df[, control_cols, drop = FALSE])
+    condition_mean <- rowMeans(df[, condition_cols, drop = FALSE])
+    
+    # Calculate log2 fold change
+    # Add small pseudocount to avoid log(0)
+    pseudocount <- 1e-8
+    fc <- log2((condition_mean + pseudocount) / (control_mean + pseudocount))
+    
+    if (is.null(fold_changes)) {
+      fold_changes <- data.frame(fc)
+      colnames(fold_changes) <- paste0("FC_", pattern)
+    } else {
+      fold_changes[[paste0("FC_", pattern)]] <- fc
+    }
+  }
+  
+  # Set row names to gene names from input
+  rownames(fold_changes) <- rownames(df)
+  
+  return(fold_changes)
+}
