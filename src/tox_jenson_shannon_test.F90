@@ -401,7 +401,7 @@ subroutine compute_gene_means_c(n_genes, n_reps, expr, means, ierr) &
   integer(c_int), intent(in), target :: n_reps
   !! Number of biological replicates in the study
   real(c_double), intent(in), target :: expr(n_reps, n_genes)
-  !! Expression matrix (row-major: replicates × genes)
+  !! Expression matrix
   real(c_double), intent(out), target :: means(n_genes)
   !! Per-gene mean expression values
   integer(c_int), intent(out), target :: ierr
@@ -429,11 +429,11 @@ subroutine compute_residuals_c(n_genes, n_reps, expr, means, resid, ierr) &
   integer(c_int), intent(in), target :: n_reps
   !! Number of biological replicates in the study
   real(c_double), intent(in), target :: expr(n_reps, n_genes)
-  !! Expression matrix (row-major: replicates × genes)
+  !! Expression matrix
   real(c_double), intent(in), target :: means(n_genes)
   !! Per-gene mean expression values
   real(c_double), intent(out), target :: resid(n_reps, n_genes)
-  !! Matrix of signed residuals (row-major: replicates × genes)
+  !! Matrix of signed residuals
   integer(c_int), intent(out), target :: ierr
   !! Error code
   
