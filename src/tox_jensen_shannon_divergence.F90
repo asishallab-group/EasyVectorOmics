@@ -196,12 +196,14 @@ contains
                 s2_val = pmf_S2(i_neighbor, i_bin)
                 S_mean = 0.5_real64 * (s1_val + s2_val)
 
-                if (s1_val > 0.0_real64) then
-                    js_divergences(i_neighbor) = js_divergences(i_neighbor) + s1_val * log(s1_val / S_mean)
-                end if
+                if (.not. is_close(S_mean, 0.0_real64)) then
+                    if (s1_val > 0.0_real64) then
+                        js_divergences(i_neighbor) = js_divergences(i_neighbor) + s1_val * log(s1_val / S_mean)
+                    end if
 
-                if (s2_val > 0.0_real64) then
-                    js_divergences(i_neighbor) = js_divergences(i_neighbor) + s2_val * log(s2_val / S_mean)
+                    if (s2_val > 0.0_real64) then
+                        js_divergences(i_neighbor) = js_divergences(i_neighbor) + s2_val * log(s2_val / S_mean)
+                    end if
                 end if
             end do
         end do
@@ -213,9 +215,7 @@ contains
     end subroutine compute_divergence_per_reference_point_helper
 
     !> Computes the global weighted Jensen-Shannon divergence from the per-neighbor divergences calculated by [[tox_jensen_shannon_divergence(module):compute_divergence_per_reference_point(subroutine)]]
-    pure subroutine compute_weighted_global_divergence(js_divergences, n_residuals, n_neighbors, included_n_residuals_S1, included_n_residuals_S2, global_js_divergence, weights, ierr)
-        integer(int32), intent(in) :: n_residuals
-            !! Number of residuals
+    pure subroutine compute_weighted_global_divergence(js_divergences, n_neighbors, included_n_residuals_S1, included_n_residuals_S2, global_js_divergence, weights, ierr)
         integer(int32), intent(in) :: n_neighbors
             !! Number of neighbors (k)
         real(real64), dimension(n_neighbors), intent(in) :: js_divergences
@@ -231,26 +231,20 @@ contains
         integer(int32), intent(out) :: ierr
             !! Error code
 
-        integer(int32) :: i_neighbor, i_residual
-        real(real64) :: total_sample_count
-
         call set_ok(ierr)
 
         call validate_dimension_size(n_neighbors, ierr)
-        call validate_dimension_size(n_residuals, ierr)
         call validate_all_in_range_real(js_divergences, size(js_divergences, kind=int32), ierr, min=0.0_real64)
         call validate_all_in_range_int(included_n_residuals_S1, size(included_n_residuals_S1, kind=int32), ierr, min=0_int32)
         call validate_all_in_range_int(included_n_residuals_S2, size(included_n_residuals_S2, kind=int32), ierr, min=0_int32)
 
         if (is_err(ierr)) return
 
-        call compute_weighted_global_divergence_helper(js_divergences, n_residuals, n_neighbors, included_n_residuals_S1, included_n_residuals_S2, global_js_divergence, weights)
+        call compute_weighted_global_divergence_helper(js_divergences, n_neighbors, included_n_residuals_S1, included_n_residuals_S2, global_js_divergence, weights)
     end subroutine compute_weighted_global_divergence
 
     !> (no input validation) Computes the global weighted Jensen-Shannon divergence from the per-neighbor divergences calculated by [[tox_jensen_shannon_divergence(module):compute_divergence_per_reference_point(subroutine)]]
-    pure subroutine compute_weighted_global_divergence_helper(js_divergences, n_residuals, n_neighbors, included_n_residuals_S1, included_n_residuals_S2, global_js_divergence, weights)
-        integer(int32), intent(in) :: n_residuals
-            !! Number of residuals
+    pure subroutine compute_weighted_global_divergence_helper(js_divergences, n_neighbors, included_n_residuals_S1, included_n_residuals_S2, global_js_divergence, weights)
         integer(int32), intent(in) :: n_neighbors
             !! Number of neighbors (k)
         real(real64), dimension(n_neighbors), intent(in) :: js_divergences
