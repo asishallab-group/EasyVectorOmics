@@ -360,7 +360,7 @@ pure subroutine construct_neighborhoods_helper(n_points, x_star, n_genes_S, mean
     do m = 1, min(k_x, n_genes_S)
       g = perm(m)  ! Get the actual gene index from the permutation vector
       ! Only store if the distance is finite (not NaN)
-      if (.not. ieee_is_nan(distances(m))) then
+      if (.not. ieee_is_nan(distances(perm(m)))) then
         neighborhood_indices(j, m) = g
       else
         ! Once we hit NaN, all remaining distances will be NaN
@@ -510,7 +510,7 @@ subroutine construct_neighborhoods_c(n_points, x_star, n_genes_S, mean_S, &
   real(c_double), intent(in), target :: mean_S(n_genes_S)
   !! Per-gene mean expression values
   real(c_double), intent(in), target :: resid_S(n_reps_S, n_genes_S)
-  !! Matrix of signed residuals (row-major: replicates × genes)
+  !! Matrix of signed residuals
   integer(c_int), intent(in), target :: neighborhood_size
   !! Explicit size of the neighborhood
   integer(c_int), intent(out), target :: k_x
