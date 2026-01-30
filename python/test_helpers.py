@@ -29,9 +29,6 @@ def run_all_tests(functions, script_file_name, test_only=True):
                 failed += 1
 
     print(f"\nSummary: {passed} passed, {failed} failed, {skipped} skipped")
-    if failed == 0:
-        print(f"All tests in '{script_file_name}' passed successfully.")
-    else:
-        print(f"{failed} tests failed.")
+    assert failed == 0, f"{failed} tests in '{script_file_name}' failed."
 
-    return failed == 0
+    print(f"All tests in '{script_file_name}' passed successfully.")

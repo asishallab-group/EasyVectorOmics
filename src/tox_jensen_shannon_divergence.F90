@@ -10,7 +10,7 @@ module tox_jensen_shannon_divergence
 contains
 
     !> Computes the shared residual range [-R, R] for the computed residuals from studies S1 and S2
-    pure subroutine determine_shared_residual_range(abs_residual_pool, abs_residual_pool_perm, n_pool, shared_residual_range, ierr, residual_range_quantile)
+    subroutine determine_shared_residual_range(abs_residual_pool, abs_residual_pool_perm, n_pool, shared_residual_range, ierr, residual_range_quantile)
         integer(int32), intent(in) :: n_pool
             !! Size of pool of residuals `abs_residual_pool`, usually `2*n_residuals*n_neighbors`
         real(real64), intent(in), optional :: residual_range_quantile
@@ -36,7 +36,7 @@ contains
     end subroutine determine_shared_residual_range
 
     !> (no input validation) Computes the shared residual range [-R, R] for the computed residuals from studies S1 and S2
-    pure subroutine determine_shared_residual_range_helper(abs_residual_pool, abs_residual_pool_perm, n_pool, shared_residual_range, residual_range_quantile)
+    subroutine determine_shared_residual_range_helper(abs_residual_pool, abs_residual_pool_perm, n_pool, shared_residual_range, residual_range_quantile)
         integer(int32), intent(in) :: n_pool
             !! Size of pool of residuals `abs_residual_pool`, usually `2*n_residuals*n_neighbors`
         real(real64), intent(in), optional :: residual_range_quantile
@@ -67,7 +67,7 @@ contains
     end subroutine determine_shared_residual_range_helper
 
     !> Computes the shared residual range [-R, R] for the computed residuals from studies S1 and S2
-    pure subroutine determine_shared_residual_range_alloc(neighborhood_residuals_S1, neighborhood_residuals_S2, n_residuals, n_neighbors, shared_residual_range, ierr, residual_range_quantile)
+    subroutine determine_shared_residual_range_alloc(neighborhood_residuals_S1, neighborhood_residuals_S2, n_residuals, n_neighbors, shared_residual_range, ierr, residual_range_quantile)
         integer(int32), intent(in) :: n_residuals
             !! Number of residuals
         integer(int32), intent(in) :: n_neighbors
@@ -348,7 +348,7 @@ contains
 end module tox_jensen_shannon_divergence
 
 !> C-compatible wrapper for [[tox_jensen_shannon_divergence(module):determine_shared_residual_range(subroutine)]]
-pure subroutine determine_shared_residual_range_expert_c( &
+subroutine determine_shared_residual_range_expert_c( &
     abs_residual_pool, abs_residual_pool_perm, n_pool, &
     residual_range_quantile, shared_residual_range, ierr &
     ) bind(C, name="determine_shared_residual_range_expert_c")
@@ -385,7 +385,7 @@ pure subroutine determine_shared_residual_range_expert_c( &
 end subroutine determine_shared_residual_range_expert_c
 
 !> C-compatible wrapper for [[tox_jensen_shannon_divergence(module):determine_shared_residual_range_alloc(subroutine)]]
-pure subroutine determine_shared_residual_range_c( &
+subroutine determine_shared_residual_range_c( &
     neighborhood_residuals_S1, neighborhood_residuals_S2, &
     n_residuals, n_neighbors, &
     residual_range_quantile, &

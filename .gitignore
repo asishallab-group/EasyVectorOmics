@@ -14,6 +14,7 @@ test_*
 !python/test_helpers.py
 !r/test/test_*
 !rcpp/test/test_*
+!rcpp/test_helpers.py
 
 manifest.txt
 

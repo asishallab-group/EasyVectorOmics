@@ -9,6 +9,16 @@ using namespace Rcpp;
 
 extern "C" {
 
+    void compute_weighted_global_divergence_c( double* js_divergences, int* n_neighbors, int* included_n_residuals_S1, int* included_n_residuals_S2, double* global_js_divergence, double* weights, int* ierr );
+
+    void compute_divergence_per_reference_point_c( double* pmf_S1, double* pmf_S2, int* n_neighbors, int* n_bins, double* js_divergences, int* ierr );
+
+    void build_residual_histograms_c( double* neighborhood_residuals, int* n_residuals, int* n_neighbors, double* shared_residual_range, int* n_bins, int* counts, double* pmf, int* included_n_residuals, int* ierr );
+
+    void determine_shared_residual_range_c( double* neighborhood_residuals_S1, double* neighborhood_residuals_S2, int* n_residuals, int* n_neighbors, double* residual_range_quantile, double* shared_residual_range, int* ierr );
+
+    void determine_shared_residual_range_expert_c( double* residual_pool, int* residual_pool_perm, int* n_pool, double* residual_range_quantile, double* shared_R, int* ierr );
+
     void normalize_by_std_dev_c(int n_genes, int n_tissues,
                                 double *input_matrix, double *output_matrix, int *ierr);
     void quantile_normalization_c(int n_genes, int n_tissues, double *input_matrix, double *output_matrix,
@@ -555,5 +565,148 @@ List tox_group_centroid_rcpp(NumericMatrix expression_vectors, IntegerVector gen
     return List::create(
         Named("centroid_matrix") = centroid_matrix,
         Named("ierr") = ierr
+    );
+}
+
+// [[Rcpp::export]]
+Rcpp::List tox_determine_shared_residual_range_expert_rcpp(
+    Rcpp::NumericVector residual_pool,
+    Rcpp::IntegerVector residual_pool_perm,
+    double residual_range_quantile = 95.0
+) {
+    int n_pool = residual_pool.size();
+    double shared_R = 0.0;
+    int ierr = 0;
+
+    determine_shared_residual_range_expert_c(
+        residual_pool.begin(),
+        residual_pool_perm.begin(),
+        &n_pool,
+        &residual_range_quantile,
+        &shared_R,
+        &ierr
+    );
+
+    return Rcpp::List::create(
+        Rcpp::Named("shared_R") = shared_R,
+        Rcpp::Named("ierr") = ierr
+    );
+}
+
+// [[Rcpp::export]]
+Rcpp::List tox_determine_shared_residual_range_rcpp(
+    Rcpp::NumericMatrix neighborhood_residuals_S1,
+    Rcpp::NumericMatrix neighborhood_residuals_S2,
+    double residual_range_quantile = 95.0
+) {
+    int n_residuals = neighborhood_residuals_S1.nrow();
+    int n_neighbors = neighborhood_residuals_S1.ncol();
+
+    double shared_R = 0.0;
+    int ierr = 0;
+
+    determine_shared_residual_range_c(
+        neighborhood_residuals_S1.begin(),
+        neighborhood_residuals_S2.begin(),
+        &n_residuals,
+        &n_neighbors,
+        &residual_range_quantile,
+        &shared_R,
+        &ierr
+    );
+
+    return Rcpp::List::create(
+        Rcpp::Named("shared_R") = shared_R,
+        Rcpp::Named("ierr") = ierr
+    );
+}
+
+// [[Rcpp::export]]
+Rcpp::List tox_build_residual_histograms_rcpp(
+    Rcpp::NumericMatrix neighborhood_residuals,
+    double shared_residual_range,
+    int n_bins
+) {
+    int n_residuals = neighborhood_residuals.nrow();
+    int n_neighbors = neighborhood_residuals.ncol();
+
+    Rcpp::IntegerMatrix counts(n_neighbors, n_bins);
+    Rcpp::NumericMatrix pmf(n_neighbors, n_bins);
+    Rcpp::IntegerVector included_n_residuals(n_neighbors);
+
+    int ierr = 0;
+
+    build_residual_histograms_c(
+        neighborhood_residuals.begin(),
+        &n_residuals,
+        &n_neighbors,
+        &shared_residual_range,
+        &n_bins,
+        counts.begin(),
+        pmf.begin(),
+        included_n_residuals.begin(),
+        &ierr
+    );
+
+    return Rcpp::List::create(
+        Rcpp::Named("counts") = counts,
+        Rcpp::Named("pmf") = pmf,
+        Rcpp::Named("included_n_residuals") = included_n_residuals,
+        Rcpp::Named("ierr") = ierr
+    );
+}
+
+// [[Rcpp::export]]
+Rcpp::List tox_compute_divergence_per_reference_point_rcpp(
+    Rcpp::NumericMatrix pmf_S1,
+    Rcpp::NumericMatrix pmf_S2
+) {
+    int n_neighbors = pmf_S1.nrow();
+    int n_bins = pmf_S1.ncol();
+
+    Rcpp::NumericVector js_divergences(n_neighbors);
+    int ierr = 0;
+
+    compute_divergence_per_reference_point_c(
+        pmf_S1.begin(),
+        pmf_S2.begin(),
+        &n_neighbors,
+        &n_bins,
+        js_divergences.begin(),
+        &ierr
+    );
+
+    return Rcpp::List::create(
+        Rcpp::Named("js_divergences") = js_divergences,
+        Rcpp::Named("ierr") = ierr
+    );
+}
+
+// [[Rcpp::export]]
+Rcpp::List tox_compute_weighted_global_divergence_rcpp(
+    Rcpp::NumericVector js_divergences,
+    Rcpp::IntegerVector included_n_residuals_S1,
+    Rcpp::IntegerVector included_n_residuals_S2
+) {
+    int n_neighbors = js_divergences.size();
+
+    double global_jsd = 0.0;
+    Rcpp::NumericVector weights(n_neighbors);
+    int ierr = 0;
+
+    compute_weighted_global_divergence_c(
+        js_divergences.begin(),
+        &n_neighbors,
+        included_n_residuals_S1.begin(),
+        included_n_residuals_S2.begin(),
+        &global_jsd,
+        weights.begin(),
+        &ierr
+    );
+
+    return Rcpp::List::create(
+        Rcpp::Named("global_js_divergence") = global_jsd,
+        Rcpp::Named("weights") = weights,
+        Rcpp::Named("ierr") = ierr
     );
 }
