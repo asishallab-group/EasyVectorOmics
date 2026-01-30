@@ -9,4 +9,4 @@ library = true
 type = "shared" 
 
 [build]
-link = ["xxhash", "zip", "iomp5"]
+link = ["xxhash", "zip"]
