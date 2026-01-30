@@ -211,7 +211,7 @@ def generate_interfacing_snippets(file_pattern: str, lang: InterfacingLanguage, 
                         # check for a function definition
                         if re.search(r'(<-\s*function|^def)', line) is not None:
                             if defined_function:
-                                error_in_line("Declaring a new function without snippet header (or just missing indentation)", file_name, line_number)
+                                error_in_line("Declaring a new function without snippet header", file_name, line_number)
                             defined_function = True
 
                         # treat line as body (without line break)

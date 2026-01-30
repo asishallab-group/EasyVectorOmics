@@ -3521,3 +3521,292 @@ def tox_compute_p_values(local_contributions_observed,
         "local_p_values": local_p_values,
         "total_p_value": total_p_value.value
     }
+
+
+#> tox_jensen_shannon_divergence:determine_shared_residual_range_expert_c: Compute shared residual range R from two residual matrices.
+def tox_determine_shared_residual_range_expert(
+    residual_pool,
+    residual_pool_perm,
+    residual_range_quantile=95.0,
+):
+    """
+    Compute shared residual range R from two residual matrices.
+
+    Args:
+        residual_pool: np.ndarray (n_pool)
+        residual_pool_perm: np.ndarray (n_pool), permutation vector that sorts `residual_pool`
+        residual_range_quantile: float
+
+    Returns:
+        float: shared_residual_range
+    """
+
+    # Ensure Fortran order
+    residual_pool = np.ascontiguousarray(residual_pool, dtype=np.float64)
+    residual_pool_perm = np.ascontiguousarray(residual_pool_perm, dtype=np.int32)
+
+    n_pool_c = ctypes.c_int(len(residual_pool))
+    quantile_c = ctypes.c_double(residual_range_quantile)
+
+    shared_R = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+
+    fn = lib.determine_shared_residual_range_expert_c
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # residual_pool
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),  # residual_pool_perm
+        ctypes.POINTER(ctypes.c_int),                                    # n_pool
+        ctypes.POINTER(ctypes.c_double),                                 # quantile
+        ctypes.POINTER(ctypes.c_double),                                 # shared_R
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+    ]
+    fn.restype = None
+
+    fn(
+        residual_pool,
+        residual_pool_perm,
+        ctypes.byref(n_pool_c),
+        ctypes.byref(quantile_c),
+        ctypes.byref(shared_R),
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+
+    return shared_R.value
+
+
+#> tox_jensen_shannon_divergence:determine_shared_residual_range_c: Compute shared residual range R from two residual matrices.
+def tox_determine_shared_residual_range(
+    neighborhood_residuals_S1,
+    neighborhood_residuals_S2,
+    residual_range_quantile,
+):
+    """
+    Compute shared residual range R from two residual matrices.
+    Concatenates both neighborhoods with absolute values into one flat array and determines the residual range [-R,R] this way, using percentile.
+
+    Args:
+        neighborhood_residuals_S1: np.ndarray (n_residuals, n_neighbors)
+        neighborhood_residuals_S2: np.ndarray (n_residuals, n_neighbors)
+        residual_range_quantile: float
+
+    Returns:
+        float: shared_residual_range
+    """
+
+    S1 = np.asfortranarray(neighborhood_residuals_S1, dtype=np.float64)
+    S2 = np.asfortranarray(neighborhood_residuals_S2, dtype=np.float64)
+
+    n_residuals_c, n_neighbors_c = map(ctypes.c_int, S1.shape)
+    quantile_c = ctypes.c_double(residual_range_quantile)
+
+    shared_R = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+
+    fn = lib.determine_shared_residual_range_c
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    fn.restype = None
+
+    fn(
+        S1,
+        S2,
+        ctypes.byref(n_residuals_c),
+        ctypes.byref(n_neighbors_c),
+        ctypes.byref(quantile_c),
+        ctypes.byref(shared_R),
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+
+    return shared_R.value
+
+
+#> tox_jensen_shannon_divergence:build_residual_histograms_c: Build histogram counts and PMFs for one study
+def tox_build_residual_histograms(
+    neighborhood_residuals,
+    shared_residual_range,
+    n_bins,
+):
+    """
+    Build histogram counts and PMFs for one study.
+
+    Args:
+        neighborhood_residuals: np.ndarray (n_residuals, n_neighbors)
+        shared_residual_range: float
+        n_bins: int
+
+    Returns:
+        dict with:
+            counts: (n_neighbors, n_bins)
+            pmf: (n_neighbors, n_bins)
+            included_n_residuals: (n_neighbors,)
+    """
+
+    E = np.asfortranarray(neighborhood_residuals, dtype=np.float64)
+
+    n_residuals_c = ctypes.c_int(E.shape[0])
+    n_neighbors_c = ctypes.c_int(E.shape[1])
+    n_bins_c = ctypes.c_int(n_bins)
+    R_c = ctypes.c_double(shared_residual_range)
+
+    counts = np.empty((E.shape[1], n_bins), dtype=np.int32, order="F")
+    pmf = np.empty((E.shape[1], n_bins), dtype=np.float64, order="F")
+    included = np.empty(E.shape[1], dtype=np.int32)
+
+    ierr = ctypes.c_int(0)
+
+    fn = lib.build_residual_histograms_c
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # E
+        ctypes.POINTER(ctypes.c_int),                                    # n_residuals
+        ctypes.POINTER(ctypes.c_int),                                    # n_neighbors
+        ctypes.POINTER(ctypes.c_double),                                 # R
+        ctypes.POINTER(ctypes.c_int),                                    # n_bins
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),    # counts
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # pmf
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # included
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+    ]
+    fn.restype = None
+
+    fn(
+        E,
+        ctypes.byref(n_residuals_c),
+        ctypes.byref(n_neighbors_c),
+        ctypes.byref(R_c),
+        ctypes.byref(n_bins_c),
+        counts,
+        pmf,
+        included,
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+
+    _readonly(counts)
+    _readonly(pmf)
+    _readonly(included)
+
+    return {
+        "counts": counts,
+        "pmf": pmf,
+        "included_n_residuals": included,
+    }
+
+
+#> tox_jensen_shannon_divergence:compute_divergence_per_reference_point_c: Build histogram counts and PMFs for one study
+def tox_compute_divergence_per_reference_point(pmf_S1, pmf_S2):
+    """
+    Compute per-neighbor Jensen–Shannon divergences.
+
+    Args:
+        pmf_S1: np.ndarray (n_neighbors, n_bins)
+        pmf_S2: np.ndarray (n_neighbors, n_bins)
+
+    Returns:
+        np.ndarray (n_neighbors,)
+    """
+
+    P1 = np.asfortranarray(pmf_S1, dtype=np.float64)
+    P2 = np.asfortranarray(pmf_S2, dtype=np.float64)
+
+    n_neighbors_c, n_bins_c = map(ctypes.c_int, P1.shape)
+
+    jsd = np.empty(P1.shape[0], dtype=np.float64)
+    ierr = ctypes.c_int(0)
+
+    fn = lib.compute_divergence_per_reference_point_c
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # P1
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # P2
+        ctypes.POINTER(ctypes.c_int),                                    # n_neighbors
+        ctypes.POINTER(ctypes.c_int),                                    # n_bins
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # jsd
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+    ]
+    fn.restype = None
+
+    fn(
+        P1,
+        P2,
+        ctypes.byref(n_neighbors_c),
+        ctypes.byref(n_bins_c),
+        jsd,
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+    _readonly(jsd)
+
+    return jsd
+
+
+#> tox_jensen_shannon_divergence:compute_weighted_global_divergence_c: Compute weighted global Jensen–Shannon divergence
+def tox_compute_weighted_global_divergence(
+    js_divergences,
+    included_S1,
+    included_S2,
+):
+    """
+    Compute weighted global Jensen–Shannon divergence.
+
+    Args:
+        js_divergences: np.ndarray (n_neighbors,)
+        included_S1: np.ndarray (n_neighbors,)
+        included_S2: np.ndarray (n_neighbors,)
+
+    Returns:
+        dict with:
+            global_js_divergence: float
+            weights: np.ndarray (n_neighbors,)
+    """
+
+    jsd = np.ascontiguousarray(js_divergences, dtype=np.float64)
+    inc1 = np.ascontiguousarray(included_S1, dtype=np.int32)
+    inc2 = np.ascontiguousarray(included_S2, dtype=np.int32)
+
+    n_neighbors_c = ctypes.c_int(jsd.shape[0])
+    weights = np.empty(jsd.shape[0], dtype=np.float64, order="C")
+    global_jsd = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+
+    fn = lib.compute_weighted_global_divergence_c
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # jsd
+        ctypes.POINTER(ctypes.c_int),                                    # n_neighbors
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # inc1
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # inc2
+        ctypes.POINTER(ctypes.c_double),                                 # global_jsd
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # weights
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+    ]
+    fn.restype = None
+
+    fn(
+        jsd,
+        ctypes.byref(n_neighbors_c),
+        inc1,
+        inc2,
+        ctypes.byref(global_jsd),
+        weights,
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+
+    _readonly(weights)
+
+    return {
+        "global_js_divergence": global_jsd.value,
+        "weights": weights,
+    }
