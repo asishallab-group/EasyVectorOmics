@@ -5,7 +5,7 @@ module tox_jensen_shannon_divergence
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
     use f42_utils, only: clamp, calc_percentile, is_close, sort_array_heapsort
-    use tox_errors, only: set_ok, set_err, is_err, ERR_ALLOC_FAIL, validate_dimension_size, validate_in_range_real, validate_all_in_range_real, validate_in_range_int
+    use tox_errors, only: set_ok, set_err, is_err, ERR_ALLOC_FAIL, validate_dimension_size, validate_in_range_real, validate_all_in_range_real, validate_in_range_int, validate_all_in_range_int
     implicit none
 contains
 
@@ -46,7 +46,7 @@ contains
         M_ALLOCATE(perm(n_pool))
 
         ! Collect the absolute residual values and compute the percentile value
-        do concurrent (i_neighbor = 1:n_neighbors, i_residual = 1:n_pool) local(n_predecessors, pool_idx) shared(perm, neighborhood_residuals_S1, neighborhood_residuals_S2, abs_residual_pool)
+        do concurrent (i_neighbor = 1:n_neighbors, i_residual = 1:n_residuals) local(n_predecessors, pool_idx) shared(perm, neighborhood_residuals_S1, neighborhood_residuals_S2, abs_residual_pool)
             n_predecessors = (i_neighbor - 1) * n_residuals * 2
             pool_idx = n_predecessors + i_residual * 2
             abs_residual_pool(pool_idx - 1) = abs(neighborhood_residuals_S1(i_residual, i_neighbor))
@@ -71,7 +71,7 @@ contains
     end subroutine determine_shared_residual_range_alloc
 
     !> Summarizes the neighborhood residuals in absolute histogram counts and probability mass functions `pmf(residual, bin)` (actually a matrix)
-    pure subroutine build_residual_histograms(neighborhood_residuals, n_residuals, n_neighbors, shared_residual_range, n_bins, counts, pmf, ierr)
+    pure subroutine build_residual_histograms(neighborhood_residuals, n_residuals, n_neighbors, shared_residual_range, n_bins, counts, pmf, included_n_residuals, ierr)
         integer(int32), intent(in) :: n_residuals
             !! Number of residuals
         integer(int32), intent(in) :: n_neighbors
@@ -86,11 +86,13 @@ contains
             !! Absolute counts of a residual per bin
         real(real64), dimension(n_neighbors, n_bins), intent(out) :: pmf
             !! `counts` normalized to `0 <= counts(:, i) <= 1` and `sum(counts(:, i)) == 1`
+        integer(int32), dimension(n_neighbors), intent(out) :: included_n_residuals
+            !! Stores the count of non-NaN residuals (included ones)
         integer(int32), intent(out) :: ierr
             !! Error code
 
-        real(real64) :: bin_width, clamped_residual, bin_residuals
-        integer(int32) :: bin_idx, i_neighbor, i_residual, i_bin
+        real(real64) :: bin_width, clamped_residual
+        integer(int32) :: bin_idx, i_neighbor, i_residual, i_bin, included_residuals
 
         call set_ok(ierr)
 
@@ -103,32 +105,38 @@ contains
 
         bin_width = 2.0_real64 * shared_residual_range / real(n_bins, real64)
         counts = 0_int32
+        pmf = 0.0_real64
 
         ! 1. assign the bins to the residuals (increase the respective count)
         ! outer loop cannot be concurrent, as counts of same residuals and bins but different neighbors might be changed at the same time
-        do concurrent (i_neighbor = 1:n_neighbors) local(i_residual, clamped_residual, bin_idx) shared(n_residuals, counts, neighborhood_residuals, shared_residual_range, bin_width)
+        do concurrent (i_neighbor = 1:n_neighbors) local(included_residuals, i_residual, clamped_residual, bin_idx) shared(n_residuals, counts, neighborhood_residuals, shared_residual_range, bin_width)
+            included_residuals = 0_int32
+
             do i_residual = 1, n_residuals
                 if (.not. ieee_is_nan(neighborhood_residuals(i_residual, i_neighbor))) then
                     ! clamp residual to histogram range
                     clamped_residual = clamp(neighborhood_residuals(i_residual, i_neighbor), min_val=-shared_residual_range, max_val=shared_residual_range)
 
                     ! assign bin to residual
-                    bin_idx = int( (clamped_residual + shared_residual_range) / bin_width )
+                    bin_idx = min(n_bins, int( (clamped_residual + shared_residual_range) / bin_width ) + 1)
                     counts(i_neighbor, bin_idx) = counts(i_neighbor, bin_idx) + 1
+
+                    included_residuals = included_residuals + 1
                 end if
             end do
+
+            included_n_residuals(i_neighbor) = included_residuals
         end do
 
         ! 2. calculate pmf
-        do concurrent (i_bin = 1:n_bins) local(bin_residuals, i_residual) shared(counts, pmf)
-            bin_residuals = real(sum(counts(:, i_bin)), real64)
-            if (is_close(bin_residuals, 0.0_real64)) then
-                pmf(:, i_bin) = 0.0_real64
-            else
-                do concurrent (i_neighbor = 1:n_neighbors) shared(pmf, bin_residuals, i_bin)
-                    pmf(i_neighbor, i_bin) = real(counts(i_neighbor, i_bin), real64) / bin_residuals
-                end do
-            end if
+        do concurrent (i_bin = 1:n_bins) local(i_neighbor) shared(counts, pmf, included_n_residuals)
+            do concurrent (i_neighbor = 1:n_neighbors) shared(pmf, i_bin, included_n_residuals, counts)
+                if (included_n_residuals(i_neighbor) == 0) then
+                    pmf(i_neighbor, i_bin) = 0.0_real64
+                else
+                    pmf(i_neighbor, i_bin) = real(counts(i_neighbor, i_bin), real64) / real(included_n_residuals(i_neighbor), real64)
+                end if
+            end do
         end do
     end subroutine build_residual_histograms
 
@@ -143,7 +151,7 @@ contains
         real(real64), dimension(n_neighbors, n_bins), intent(in) :: pmf_S2
             !! Computed normalized hostogram counts from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]] for study 2
         real(real64), dimension(n_neighbors), intent(out) :: js_divergences
-            !! Jensen-Shannon divergence per residual
+            !! Jensen-Shannon divergence per neighbor
         integer(int32), intent(out) :: ierr
             !! Error code
 
@@ -170,7 +178,7 @@ contains
         real(real64), dimension(n_neighbors, n_bins), intent(in) :: pmf_S2
             !! Computed normalized hostogram counts from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]] for study 2
         real(real64), dimension(n_neighbors), intent(out) :: js_divergences
-            !! Jensen-Shannon divergence per residual
+            !! Jensen-Shannon divergence per neighbor
 
         real(real64) :: S_mean, s1_val, s2_val
         integer(int32) :: i_bin, i_neighbor
@@ -205,21 +213,19 @@ contains
     end subroutine compute_divergence_per_reference_point_helper
 
     !> Computes the global weighted Jensen-Shannon divergence from the per-neighbor divergences calculated by [[tox_jensen_shannon_divergence(module):compute_divergence_per_reference_point(subroutine)]]
-    pure subroutine compute_weighted_global_divergence(js_divergences, neighborhood_residuals_S1, neighborhood_residuals_S2, n_residuals, n_neighbors, global_js_divergence, included_n_residuals, weights, ierr)
+    pure subroutine compute_weighted_global_divergence(js_divergences, n_residuals, n_neighbors, included_n_residuals_S1, included_n_residuals_S2, global_js_divergence, weights, ierr)
         integer(int32), intent(in) :: n_residuals
             !! Number of residuals
         integer(int32), intent(in) :: n_neighbors
             !! Number of neighbors (k)
         real(real64), dimension(n_neighbors), intent(in) :: js_divergences
-            !! Jensen-Shannon divergence per residual, computed for `neighborhood_residuals_S1` and `neighborhood_residuals_S2`
-        real(real64), dimension(n_residuals, n_neighbors), intent(in) :: neighborhood_residuals_S1
-            !! Computed neighborhood residuals for study 1 (kNN), NaN is explicitly allowed for missing values
-        real(real64), dimension(n_residuals, n_neighbors), intent(in) :: neighborhood_residuals_S2
-            !! Computed neighborhood residuals for study 2 (kNN), NaN is explicitly allowed for missing values
+            !! Jensen-Shannon divergence per neighbor, computed for studies S1 and S2
+        integer(int32), dimension(n_neighbors), intent(in) :: included_n_residuals_S1
+            !! Count of non-NaN residuals (included ones) in study 1
+        integer(int32), dimension(n_neighbors), intent(in) :: included_n_residuals_S2
+            !! Count of non-NaN residuals (included ones) in study 2
         real(real64), intent(out) :: global_js_divergence
             !! Weighted global Jensen-Shannon divergence
-        integer(int32), dimension(n_neighbors), intent(out) :: included_n_residuals
-            !! Stores the count of non-NaN residuals (included ones)
         real(real64), dimension(n_neighbors), intent(out) :: weights
             !! Weights used for calculating the global weighted Jensen-Shannon divergence `global_js_divergence`
         integer(int32), intent(out) :: ierr
@@ -233,53 +239,45 @@ contains
         call validate_dimension_size(n_neighbors, ierr)
         call validate_dimension_size(n_residuals, ierr)
         call validate_all_in_range_real(js_divergences, size(js_divergences, kind=int32), ierr, min=0.0_real64)
+        call validate_all_in_range_int(included_n_residuals_S1, size(included_n_residuals_S1, kind=int32), ierr, min=0_int32)
+        call validate_all_in_range_int(included_n_residuals_S2, size(included_n_residuals_S2, kind=int32), ierr, min=0_int32)
 
         if (is_err(ierr)) return
 
-        call compute_weighted_global_divergence_helper(js_divergences, neighborhood_residuals_S1, neighborhood_residuals_S2, n_residuals, n_neighbors, global_js_divergence, included_n_residuals, weights)
+        call compute_weighted_global_divergence_helper(js_divergences, n_residuals, n_neighbors, included_n_residuals_S1, included_n_residuals_S2, global_js_divergence, weights)
     end subroutine compute_weighted_global_divergence
 
     !> (no input validation) Computes the global weighted Jensen-Shannon divergence from the per-neighbor divergences calculated by [[tox_jensen_shannon_divergence(module):compute_divergence_per_reference_point(subroutine)]]
-    pure subroutine compute_weighted_global_divergence_helper(js_divergences, neighborhood_residuals_S1, neighborhood_residuals_S2, n_residuals, n_neighbors, global_js_divergence, included_n_residuals, weights)
+    pure subroutine compute_weighted_global_divergence_helper(js_divergences, n_residuals, n_neighbors, included_n_residuals_S1, included_n_residuals_S2, global_js_divergence, weights)
         integer(int32), intent(in) :: n_residuals
             !! Number of residuals
         integer(int32), intent(in) :: n_neighbors
             !! Number of neighbors (k)
         real(real64), dimension(n_neighbors), intent(in) :: js_divergences
-            !! Jensen-Shannon divergence per residual, computed for `neighborhood_residuals_S1` and `neighborhood_residuals_S2`
-        real(real64), dimension(n_residuals, n_neighbors), intent(in) :: neighborhood_residuals_S1
-            !! Computed neighborhood residuals for study 1 (kNN), NaN is explicitly allowed for missing values
-        real(real64), dimension(n_residuals, n_neighbors), intent(in) :: neighborhood_residuals_S2
-            !! Computed neighborhood residuals for study 2 (kNN), NaN is explicitly allowed for missing values
+            !! Jensen-Shannon divergence per neighbor, computed for studies S1 and S2
+        integer(int32), dimension(n_neighbors), intent(in) :: included_n_residuals_S1
+            !! Count of non-NaN residuals (included ones) in study 1 (obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]])
+        integer(int32), dimension(n_neighbors), intent(in) :: included_n_residuals_S2
+            !! Count of non-NaN residuals (included ones) in study 2 (obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]])
         real(real64), intent(out) :: global_js_divergence
             !! Weighted global Jensen-Shannon divergence
-        integer(int32), dimension(n_neighbors), intent(out) :: included_n_residuals
-            !! Stores the count of non-NaN residuals (included ones)
         real(real64), dimension(n_neighbors), intent(out) :: weights
             !! Weights used for calculating the global weighted Jensen-Shannon divergence `global_js_divergence`
 
-        integer(int32) :: i_neighbor, i_residual
+        integer(int32) :: i_neighbor, included_residuals
         real(real64) :: total_sample_count
 
         global_js_divergence = 0.0_real64
-        included_n_residuals = 0_int32
 
-        ! Count included residuals
-        do concurrent (i_neighbor = 1:n_neighbors) local(i_residual) shared(n_residuals, neighborhood_residuals_S1, neighborhood_residuals_S2, included_n_residuals)
-            do i_residual = 1, n_residuals
-                if (ieee_is_nan(neighborhood_residuals_S1(i_residual, i_neighbor)) .or. ieee_is_nan(neighborhood_residuals_S2(i_residual, i_neighbor))) then
-                    included_n_residuals(i_neighbor) = included_n_residuals(i_neighbor) + 1
-                end if
-            end do
-        end do
-
-        total_sample_count = real(sum(included_n_residuals), real64)
+        total_sample_count = real(sum(included_n_residuals_S1) + sum(included_n_residuals_S2), real64)
 
         ! Calculate the global Jensen-Shannon divergence
-        do concurrent (i_neighbor = 1:n_neighbors) shared(weights, included_n_residuals, total_sample_count) reduce(+:global_js_divergence)
-            weights(i_neighbor) = real(included_n_residuals(i_neighbor), real64) / total_sample_count
+        do concurrent (i_neighbor = 1:n_neighbors) local(included_residuals) shared(weights, included_n_residuals_S1, included_n_residuals_S2, total_sample_count) reduce(+:global_js_divergence)
+            included_residuals = included_n_residuals_S1(i_neighbor) + included_n_residuals_S2(i_neighbor)
 
-            global_js_divergence = global_js_divergence + weights(i_neighbor)
+            weights(i_neighbor) = real(included_residuals, real64) / total_sample_count
+
+            global_js_divergence = global_js_divergence + weights(i_neighbor) * js_divergences(i_neighbor)
         end do
     end subroutine compute_weighted_global_divergence_helper
 
