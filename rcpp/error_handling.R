@@ -223,7 +223,7 @@ validate_logical_vector <- function(x, name = deparse(substitute(x)), expected_l
   invisible(TRUE)
 }
 
-validate_mode <- function(mode, allowed = c('all', 'ortho')) {
+validate_mode <- function(mode, allowed = c('all', 'orthologs')) {
   if (!mode %in% allowed) stop(sprintf("`mode` must be one of: %s.", paste(allowed, collapse = ", ")))
   invisible(NULL)
 }

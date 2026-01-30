@@ -1098,6 +1098,90 @@ tox_serialize_char_array <- function(arr, filename) {
 }
 
 
+# ============================================================
+#  Deserialization (logical / complex)
+# ============================================================
+tox_deserialize_logical_array <- function(filename, max_dims = 5L) {
+  # validate inputs
+  validate_filename(filename)
+  validate_max_dims(max_dims)
+  
+
+  meta <- tox_get_array_metadata(filename, max_dims, with_clen = FALSE)
+  
+  # Coerce to base types
+  filename <- as.character(filename)
+  max_dims <- as.integer(max_dims)
+
+  # Call Rcpp wrapper
+  result <- tox_deserialize_logical_array_rcpp(filename, max_dims)
+
+  # Check error code
+  check_err_code(result$ierr)
+
+  # Shape flat vector into array
+  array(result$values, dim = result$dims[1:result$ndim])
+}
+
+tox_deserialize_complex_array <- function(filename, max_dims = 5L) {
+  # validate inputs
+  validate_filename(filename)
+  validate_max_dims(max_dims)
+  
+
+  meta <- tox_get_array_metadata(filename, max_dims, with_clen = FALSE)
+  
+  # Coerce to base types
+  filename <- as.character(filename)
+  max_dims <- as.integer(max_dims)
+
+  # Call Rcpp wrapper
+  result <- tox_deserialize_complex_array_rcpp(filename, max_dims)
+
+  # Check error code
+  check_err_code(result$ierr)
+
+  # Shape flat vector into array
+  array(result$values, dim = result$dims[1:result$ndim])
+}
+
+# ============================================================
+#  Serialization (logical / complex)
+# ============================================================
+
+tox_serialize_logical_array <- function(arr, filename) {
+  # validate inputs
+  validate_array_or_vector(arr)
+  validate_filename(filename)
+  
+  # Coerce to base types
+  filename <- as.character(filename)
+  arr <- as.array(arr)
+
+  # Call Rcpp wrapper
+  result <- tox_serialize_logical_array_rcpp(arr, filename)
+
+  check_err_code(result$ierr)
+  invisible(NULL)
+}
+
+tox_serialize_complex_array <- function(arr, filename) {
+  # validate inputs
+  validate_array_or_vector(arr)
+  validate_filename(filename)
+  
+  # Coerce to base types
+  filename <- as.character(filename)
+  arr <- as.array(arr)
+
+  # Call Rcpp wrapper
+  result <- tox_serialize_complex_array_rcpp(arr, filename)
+
+  check_err_code(result$ierr)
+  invisible(NULL)
+}
+
+
 
 # ============================================================
 #  4) KD-tree index (multidimensional) + spherical KD
@@ -1373,8 +1457,23 @@ tox_omics_field_RAP_projection <- function(vecs, vecs_selection_mask, axes_selec
 #' @export
 tox_relative_axes_changes_from_shift_vector <- function(vec) {
   validate_numeric_vector(vec, "vec")
+  
+  # Handle zero vector case - return zero contributions
+  if (all(vec == 0)) {
+    return(rep(0.0, length(vec)))
+  }
+  
   res <- tox_relative_axes_changes_from_shift_vector_rcpp(vec)
   return(res)
+}
+
+#' Compute relative axis changes from a shift vector (alias for tox_relative_axes_changes_from_shift_vector)
+#' 
+#' @param vec Numeric vector (shift vector)
+#' @return Numeric vector of fractional axis changes (sums to 1)
+#' @export
+relative_axes_changes_from_shift_vector <- function(vec) {
+  tox_relative_axes_changes_from_shift_vector(vec)
 }
 
 #' Compute relative axis contributions from a RAP-projected and normalized expression vector
@@ -1384,38 +1483,75 @@ tox_relative_axes_changes_from_shift_vector <- function(vec) {
 #' @export
 tox_relative_axes_expression_from_expression_vector <- function(vec) {
   validate_numeric_vector(vec, "vec")
+  
+  # Handle zero vector case - return zero contributions
+  if (all(vec == 0)) {
+    return(rep(0.0, length(vec)))
+  }
+  
   res <- tox_relative_axes_expression_from_expression_vector_rcpp(vec)
   return(res)
+}
+
+#' Compute relative axis contributions from a RAP-projected and normalized expression vector (alias for tox_relative_axes_expression_from_expression_vector)
+#' 
+#' @param vec Numeric vector (RAP-projected and normalized expression vector)
+#' @return Numeric vector of fractional axis contributions (sums to 1)
+#' @export
+relative_axes_expression_from_expression_vector <- function(vec) {
+  tox_relative_axes_expression_from_expression_vector(vec)
 }
 
 #' Compute signed clock hand angle between two RAP-projected and normalized vectors
 #' 
 #' @param v1 Numeric vector (first normalized vector in RAP space)
 #' @param v2 Numeric vector (second normalized vector in RAP space)
-#' @param selected_axes_for_signed Integer vector of length 3 (axes for directionality, ignored if length(v1) <= 3)
+#' @param selected_axes_for_signed Integer vector of length 3 (axes for directionality, ignored if length(v1) <= 3). Default: c(1, 2, 3)
 #' @return Signed angle in radians [-pi, pi]
 #' @export
-tox_clock_hand_angle_between_vectors <- function(v1, v2, selected_axes_for_signed) {
+tox_clock_hand_angle_between_vectors <- function(v1, v2, selected_axes_for_signed = c(1L, 2L, 3L)) {
   validate_numeric_vector(v1, "v1")
   validate_numeric_vector(v2, "v2")
   validate_same_length(v1, v2, "v1", "v2")
+  
+  # Convert to integer if needed
+  selected_axes_for_signed <- as.integer(selected_axes_for_signed)
+  
+  # For 2D vectors, adjust selected_axes_for_signed to be within range
+  n_dims <- length(v1)
+  if (n_dims <= 3) {
+    # For 2D/3D, use only valid axes
+    selected_axes_for_signed <- c(1L, min(2L, n_dims), min(3L, n_dims))
+  }
+  
   validate_integer_vector(selected_axes_for_signed, "selected_axes_for_signed", expected_length = 3)
   res <- tox_clock_hand_angle_between_vectors_rcpp(v1, v2, selected_axes_for_signed)
   return(res)
 }
 
 #' Compute signed rotation angles for pairs of RAP-projected and normalized vectors
-#' 
+#'
 #' @param origins Numeric matrix (n_dims x n_vecs), first set of vectors
 #' @param targets Numeric matrix (n_dims x n_vecs), second set of vectors
-#' @param vecs_selection_mask Integer or logical vector (length n_vecs)
-#' @param selected_axes_for_signed Integer vector of length 3 (axes for directionality)
+#' @param vecs_selection_mask Integer or logical vector (length n_vecs). Default: rep(1, ncol(origins)) (all vectors selected)
+#' @param selected_axes_for_signed Integer vector of length 3 (axes for directionality). Default: c(1, 2, 3)
 #' @return Numeric vector of signed angles (radians)
 #' @export
-tox_clock_hand_angles_for_shift_vectors <- function(origins, targets, vecs_selection_mask, selected_axes_for_signed) {
+tox_clock_hand_angles_for_shift_vectors <- function(origins, targets, vecs_selection_mask = rep(1L, ncol(origins)), selected_axes_for_signed = c(1L, 2L, 3L)) {
   validate_numeric_matrix(origins, "origins")
   validate_numeric_matrix(targets, "targets")
   validate_same_length(vecs_selection_mask, rep(0, ncol(origins)), "vecs_selection_mask", "origins columns")
+  
+  # Convert to integer if needed
+  selected_axes_for_signed <- as.integer(selected_axes_for_signed)
+  
+  # For 2D vectors, adjust selected_axes_for_signed to be within range
+  n_dims <- nrow(origins)
+  if (n_dims <= 3) {
+    # For 2D/3D, use only valid axes
+    selected_axes_for_signed <- c(1L, min(2L, n_dims), min(3L, n_dims))
+  }
+  
   validate_integer_vector(selected_axes_for_signed, "selected_axes_for_signed", expected_length = 3)
   res <- tox_clock_hand_angles_for_shift_vectors_rcpp(origins, targets, as.integer(vecs_selection_mask), selected_axes_for_signed)
   return(res)
