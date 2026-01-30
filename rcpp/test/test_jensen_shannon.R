@@ -1,4 +1,4 @@
-# test_tox_jenson_shannon_test.R
+# test_tox_jensen_shannon_test.R
 source("rcpp/tensoromics_functions.R")
 
 # Test 1: Basic compute_gene_means
@@ -203,7 +203,7 @@ test_construct_neighborhoods_explicit <- function() {
 
 # Run all tests
 cat("========================================\n")
-cat("Running simple tests for tox_jenson_shannon_test\n")
+cat("Running simple tests for tox_jensen_shannon_test\n")
 cat("========================================\n")
 
 test_compute_gene_means_basic()

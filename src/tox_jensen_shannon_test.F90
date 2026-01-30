@@ -2,7 +2,7 @@
 !> # Global Jensen-Shannon-Divergence Compatibility Test (gJCT)
 !!
 !! This module implements the four main subroutines for the gJCT algorithm.
-module tox_jenson_shannon_test
+module tox_jensen_shannon_test
   use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
   use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_value, ieee_quiet_nan
@@ -386,13 +386,13 @@ pure subroutine construct_neighborhoods_helper(n_points, x_star, n_genes_S, mean
   end do    
 end subroutine construct_neighborhoods_helper
   
-end module tox_jenson_shannon_test
+end module tox_jensen_shannon_test
 
 !> C wrapper for compute_gene_means
 subroutine compute_gene_means_c(n_genes, n_reps, expr, means, ierr) &
           bind(C, name="compute_gene_means_c")
   use, intrinsic :: iso_c_binding, only: c_int, c_double
-  use tox_jenson_shannon_test, only: compute_gene_means
+  use tox_jensen_shannon_test, only: compute_gene_means
   M_USE_NULL_VALIDATION
   implicit none
   
@@ -420,7 +420,7 @@ end subroutine compute_gene_means_c
 subroutine compute_residuals_c(n_genes, n_reps, expr, means, resid, ierr) &
           bind(C, name="compute_residuals_c")
   use, intrinsic :: iso_c_binding, only: c_int, c_double
-  use tox_jenson_shannon_test, only: compute_residuals
+  use tox_jensen_shannon_test, only: compute_residuals
   M_USE_NULL_VALIDATION
   implicit none
   
@@ -452,7 +452,7 @@ subroutine pool_means_c(n_genes_S1, mean_S1, n_genes_S2, mean_S2, &
                               n_points, N_pool, x_star, ierr) &
           bind(C, name="pool_means_c")
   use, intrinsic :: iso_c_binding, only: c_int, c_double
-  use tox_jenson_shannon_test, only: pool_means_alloc
+  use tox_jensen_shannon_test, only: pool_means_alloc
   M_USE_NULL_VALIDATION
   implicit none
   
@@ -493,7 +493,7 @@ subroutine construct_neighborhoods_c(n_points, x_star, n_genes_S, mean_S, &
                                     neighborhood_residuals, neighborhood_indices, ierr) &
           bind(C, name="construct_neighborhoods_c")
   use, intrinsic :: iso_c_binding, only: c_int, c_double
-  use tox_jenson_shannon_test, only: construct_neighborhoods
+  use tox_jensen_shannon_test, only: construct_neighborhoods
   M_USE_NULL_VALIDATION
   implicit none
   

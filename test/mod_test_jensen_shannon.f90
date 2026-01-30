@@ -1,8 +1,8 @@
-! filepath: test/mod_test_jenson_shannon.f90
+! filepath: test/mod_test_jensen_shannon.f90
 !> Unit test suite for Jensen-Shannon divergence and related statistical routines.
-module mod_test_jenson_shannon
+module mod_test_jensen_shannon
   use asserts
-  use tox_jenson_shannon_test
+  use tox_jensen_shannon_test
   use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT
   use, intrinsic :: iso_fortran_env, only: real64, int32
   use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_value, ieee_quiet_nan
@@ -50,7 +50,7 @@ contains
   end function get_all_tests
 
   !> Run all Jensen-Shannon tests.
-  subroutine run_all_tests_jenson_shannon()
+  subroutine run_all_tests_jensen_shannon()
     type(test_case) :: all_tests(18)
     integer(int32) :: i
     all_tests = get_all_tests()
@@ -59,10 +59,10 @@ contains
       print *, trim(all_tests(i)%name), " passed."
     end do
     print *, "All Jensen-Shannon tests passed successfully."
-  end subroutine run_all_tests_jenson_shannon
+  end subroutine run_all_tests_jensen_shannon
 
   !> Run specific tests by name.
-  subroutine run_named_tests_jenson_shannon(test_names)
+  subroutine run_named_tests_jensen_shannon(test_names)
     character(len=*), intent(in) :: test_names(:)
     type(test_case) :: all_tests(18)
     integer(int32) :: i, j
@@ -82,7 +82,7 @@ contains
         print *, "Unknown test: ", trim(test_names(i))
       end if
     end do
-  end subroutine run_named_tests_jenson_shannon
+  end subroutine run_named_tests_jensen_shannon
 
   ! --------------------------------------------------------------------------
   ! Helper Functions
@@ -525,4 +525,4 @@ contains
     call assert_true(all(neighborhood_indices(1, 2:1000) == -1), "test_construct_neighborhoods_edge_cases: remaining indices should be -1")
   end subroutine test_construct_neighborhoods_edge_cases
 
-end module mod_test_jenson_shannon
+end module mod_test_jensen_shannon

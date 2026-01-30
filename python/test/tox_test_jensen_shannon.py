@@ -1,4 +1,4 @@
-# tox_test_jenson_shannon_test.py
+# tox_test_jensen_shannon_test.py
 import numpy as np
 import sys
 import os
@@ -295,7 +295,7 @@ def test_error_handling():
 def run_all_tests():
     """Run all tests"""
     print("=" * 60)
-    print("Running tests for tox_jenson_shannon_test Python wrappers")
+    print("Running tests for tox_jensen_shannon_test Python wrappers")
     print("=" * 60)
     
     test_compute_gene_means()

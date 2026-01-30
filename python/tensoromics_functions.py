@@ -3522,7 +3522,7 @@ def tox_compute_p_values(local_contributions_observed,
         "total_p_value": total_p_value.value
     }
 
-#> tox_jenson_shannon_test:compute_gene_means_c: Compute per-gene mean expression values
+#> tox_jensen_shannon_test:compute_gene_means_c: Compute per-gene mean expression values
 def tox_compute_gene_means(expr: np.ndarray):
     """
     Compute per-gene mean expression values.
@@ -3569,7 +3569,7 @@ def tox_compute_gene_means(expr: np.ndarray):
     
     return means
 
-#> tox_jenson_shannon_test:compute_residuals_c: Compute signed residuals
+#> tox_jensen_shannon_test:compute_residuals_c: Compute signed residuals
 def tox_compute_residuals(expr: np.ndarray, means: np.ndarray):
     """
     Compute signed residuals for each gene and replicate.
@@ -3624,7 +3624,7 @@ def tox_compute_residuals(expr: np.ndarray, means: np.ndarray):
     
     return resid
 
-#> tox_jenson_shannon_test:pool_means_c: Pool mean expression values across studies
+#> tox_jensen_shannon_test:pool_means_c: Pool mean expression values across studies
 def tox_pool_means(mean_S1: np.ndarray, mean_S2: np.ndarray, n_points: int):
     """
     Pool per-gene mean expression values from two studies and compute reference points.
@@ -3687,7 +3687,7 @@ def tox_pool_means(mean_S1: np.ndarray, mean_S2: np.ndarray, n_points: int):
         "x_star": x_star,
     }
 
-#> tox_jenson_shannon_test:construct_neighborhoods_c: Construct neighborhood-based residual sets (kNN)
+#> tox_jensen_shannon_test:construct_neighborhoods_c: Construct neighborhood-based residual sets (kNN)
 def tox_construct_neighborhoods(x_star: np.ndarray, 
                                 mean_S: np.ndarray, 
                                 resid_S: np.ndarray, 
