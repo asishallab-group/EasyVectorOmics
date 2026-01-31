@@ -957,16 +957,14 @@ tox_mean_vector <- function(expression_vectors, gene_indices) {
 #' @export
 tox_compute_gene_means <- function(expr) {
   # Validate input
-  if (!is.matrix(expr)) {
-    stop("expr must be a numeric matrix")
-  }
+  validate_numeric_matrix(expr)
   
   # Call the Rcpp function
   result <- tox_compute_gene_means_rcpp(expr)
   check_err_code(result$ierr)
   
   # Return structured result
-  return(as.numeric(result$means))
+  return (result$means)
 }
 
 #> tox_jensen_shannon_test:compute_residuals_c: Compute signed residuals
@@ -982,20 +980,14 @@ tox_compute_gene_means <- function(expr) {
 #' @export
 tox_compute_residuals <- function(expr, means) {
   # Validate input
-  if (!is.matrix(expr)) {
-    stop("expr must be a numeric matrix")
-  }
-  
-  if (length(means) != ncol(expr)) {
-    stop("Length of means must equal number of columns in expr")
-  }
+  validate_numeric_matrix(expr)
   
   # Call the Rcpp function
   result <- tox_compute_residuals_rcpp(expr, means)
   check_err_code(result$ierr)
   
   # Return structured result
-  return(matrix(result$resid, nrow = nrow(expr), ncol = ncol(expr)))
+  return(result$resid)
 }
 
 #> tox_jensen_shannon_test:pool_means_c: Pool mean expression values across studies
@@ -1006,21 +998,16 @@ tox_compute_residuals <- function(expr, means) {
 #'
 #' @param mean_S1 Numeric vector of per-gene mean expression values for study 1
 #' @param mean_S2 Numeric vector of per-gene mean expression values for study 2
-#' @param n_points Number of reference points to define (default: 100)
+#' @param n_points Number of reference points to define
 #' @return List with components:
 #'   - N_pool: Total number of valid (non-NA) pooled mean-expression values
 #'   - x_star: Mean-expression reference points
 #'   - ierr: Error code (0 for success)
 #' @export
-tox_pool_means <- function(mean_S1, mean_S2, n_points = 100) {
+tox_pool_means <- function(mean_S1, mean_S2, n_points) {
   # Validate input
-  if (!is.numeric(mean_S1) || !is.numeric(mean_S2)) {
-    stop("mean_S1 and mean_S2 must be numeric vectors")
-  }
-  
-  if (n_points < 1) {
-    stop("n_points must be at least 1")
-  }
+  validate_numeric_vector(mean_S1)
+  validate_numeric_vector(mean_S2)
   
   # Call the Rcpp function
   result <- tox_pool_means_rcpp(mean_S1, mean_S2, n_points)
@@ -1029,8 +1016,40 @@ tox_pool_means <- function(mean_S1, mean_S2, n_points = 100) {
   
   # Return structured result
   return(list(
-    N_pool = as.integer(result$N_pool),
-    x_star = as.numeric(result$x_star)
+    n_pool = result$n_pool,
+    x_star = result$x_star
+  ))
+}
+
+#> tox_jensen_shannon_test:pool_means_expert_c: Pool mean expression values across studies
+#' Pool mean expression values across studies
+#'
+#' This function pools per-gene mean expression values from two studies
+#' and computes reference points for neighborhood construction.
+#'
+#' @param pooled_means Numeric vector of merged per-gene mean expression values from both studies
+#' @param pooled_perm Integer vector of indices that would sort pooled_means (NaN values should be last values in sorting)
+#' @param n_points Number of reference points to define
+#' @return List with components:
+#'   - N_pool: Total number of valid (non-NA) pooled mean-expression values
+#'   - x_star: Mean-expression reference points
+#'   - ierr: Error code (0 for success)
+#' @export
+tox_pool_means_expert <- function(pooled_means, pooled_perm, n_points) {
+  # Validate input
+  validate_numeric_vector(pooled_means)
+  validate_logical_or_index_vector(pooled_perm)
+  validate_same_length(pooled_means, pooled_perm)
+  
+  # Call the Rcpp function
+  result <- tox_pool_means_rcpp(mean_S1, mean_S2, n_points)
+
+  check_err_code(result$ierr)
+  
+  # Return structured result
+  return(list(
+    n_pool = result$n_pool,
+    x_star = result$x_star
   ))
 }
 
@@ -1043,54 +1062,31 @@ tox_pool_means <- function(mean_S1, mean_S2, n_points = 100) {
 #' @param x_star Numeric vector of mean-expression reference points
 #' @param mean_S Numeric vector of per-gene mean expression values for the study
 #' @param resid_S Numeric matrix of signed residuals for the study (replicates × genes)
-#' @param neighborhood_size Explicit size of the neighborhood. Use -1 for automatic
+#' @param desired_n_neighbors Desired size of the neighborhood, might be lower in the end (default=0, means automatic detection)
 #'        calculation (default: -1).
-#' @param N_pool Total number of pooled mean-expression values across both studies
 #' @return List with components:
 #'   - ierr: Error code (0 for success)
 #'   - k_x: Neighborhood size used (constant for all reference points)
 #'   - neighborhood_residuals: Matrix of residual vectors for each neighborhood
 #'   - neighborhood_indices: Matrix of indices of selected neighborhood genes (1-based)
 #' @export
-tox_construct_neighborhoods <- function(x_star, mean_S, resid_S, N_pool,
-                                        neighborhood_size = -1) {
+tox_construct_neighborhoods <- function(x_star, n_pool, mean_S, resid_S,
+                                        desired_n_neighbors = 0) {
   # Validate input
-  if (!is.numeric(x_star)) {
-    stop("x_star must be a numeric vector")
-  }
-  
-  if (!is.numeric(mean_S)) {
-    stop("mean_S must be a numeric vector")
-  }
-  
-  if (!is.matrix(resid_S)) {
-    stop("resid_S must be a numeric matrix")
-  }
-  
-  if (length(mean_S) != ncol(resid_S)) {
-    stop("Length of mean_S must equal number of columns in resid_S")
-  }
-  
-  # Allow -1 for automatic calculation, otherwise validate
-  if (neighborhood_size != -1 && neighborhood_size < 1) {
-    stop("If specified, neighborhood_size must be at least 1")
-  }
-  
-  if (N_pool < 1) {
-    stop("N_pool must be at least 1")
-  }
+  validate_numeric_vector(x_star)
+  validate_numeric_vector(mean_S)
+  validate_numeric_matrix(resid_S)
   
   n_points <- length(x_star)
   
   # Call the Rcpp function
-  result <- tox_construct_neighborhoods_rcpp(n_points, x_star, mean_S, 
-                                            resid_S, neighborhood_size, N_pool)
+  result <- tox_construct_neighborhoods_rcpp(x_star, n_pool, mean_S, 
+                                            resid_S, desired_n_neighbors)
   
   check_err_code(result$ierr)
   
   # Return structured result
   return(list(
-    k_x = as.integer(result$k_x),
     neighborhood_residuals = result$neighborhood_residuals,
     neighborhood_indices = result$neighborhood_indices
   ))

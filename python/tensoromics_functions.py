@@ -3667,7 +3667,7 @@ def tox_pool_means(mean_S1, mean_S2, n_points):
 
 
 #> tox_jensen_shannon:pool_means_expert_c: Pool mean-expression values using pre-pooled array
-def tox_pool_means_expert(pooled_means, pooled_perm, n_genes_S1, n_genes_S2, n_points):
+def tox_pool_means_expert(pooled_means, pooled_perm, n_points):
     """
     Pool means using pre-pooled and pre-sorted arrays.
 
@@ -3689,13 +3689,13 @@ def tox_pool_means_expert(pooled_means, pooled_perm, n_genes_S1, n_genes_S2, n_p
     x_star = np.empty(n_points, dtype=np.float64, order="C")
     n_pool_c = ctypes.c_int(0)
     ierr = ctypes.c_int(0)
+    pool_size = ctypes.c_int(len(pooled_means))
 
     fn = lib.pool_means_expert_c
     fn.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),              # pooled_means
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),                # pooled_perm
-        ctypes.POINTER(ctypes.c_int),                                   # n_genes_S1
-        ctypes.POINTER(ctypes.c_int),                                   # n_genes_S2
+        ctypes.POINTER(ctypes.c_int),                                   # pool_size
         ctypes.POINTER(ctypes.c_int),                                   # n_points
         ctypes.POINTER(ctypes.c_int),                                   # n_pool
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),              # x_star
@@ -3706,8 +3706,7 @@ def tox_pool_means_expert(pooled_means, pooled_perm, n_genes_S1, n_genes_S2, n_p
     fn(
         pm,
         perm,
-        ctypes.byref(ctypes.c_int(n_genes_S1)),
-        ctypes.byref(ctypes.c_int(n_genes_S2)),
+        ctypes.byref(pool_size),
         ctypes.byref(ctypes.c_int(n_points)),
         ctypes.byref(n_pool_c),
         x_star,

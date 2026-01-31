@@ -101,7 +101,7 @@ def test_pool_means():
     def pool_means_expert(mean_S1, mean_S2, n_points):
         pool = np.concatenate([mean_S1, mean_S2])
         perm = np.argsort(pool) + 1
-        return tox_pool_means_expert(pool, perm, len(mean_S1), len(mean_S2), n_points)
+        return tox_pool_means_expert(pool, perm, n_points)
 
     for pool_means in (tox_pool_means, pool_means_expert):
         result = pool_means(mean_S1, mean_S2, n_points)

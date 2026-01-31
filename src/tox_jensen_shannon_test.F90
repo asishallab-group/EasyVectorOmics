@@ -140,7 +140,7 @@ contains
 
         real(real64), allocatable :: pooled_means(:)
         integer(int32), allocatable :: perm(:)
-        integer(int32) :: i_gene, pool_idx
+        integer(int32) :: i_gene, pool_idx, pool_size
 
         call set_ok(ierr)
 
@@ -150,8 +150,9 @@ contains
         if (is_err(ierr)) return
 
         ! Allocate arrays for pooled means
-        M_ALLOCATE(pooled_means(n_genes_S1 + n_genes_S2))
-        M_ALLOCATE(perm(n_genes_S1 + n_genes_S2))
+        pool_size = n_genes_S1 + n_genes_S2
+        M_ALLOCATE(pooled_means(pool_size))
+        M_ALLOCATE(perm(pool_size))
 
         do concurrent(i_gene=1:n_genes_S1) shared(pooled_means, mean_S1)
             pooled_means(i_gene) = mean_S1(i_gene)
@@ -166,23 +167,21 @@ contains
 
         call heapsort_real(pooled_means, perm)
 
-        call pool_means(pooled_means, perm, n_genes_S1, n_genes_S2, n_points, n_pool, x_star, ierr)
+        call pool_means(pooled_means, perm, pool_size, n_points, n_pool, x_star, ierr)
 
     end subroutine pool_means_alloc
 
     !> Pool per-gene mean expression values across studies
-    pure subroutine pool_means(pooled_means, pooled_means_perm, n_genes_S1, n_genes_S2, n_points, n_pool, x_star, ierr)
-        integer(int32), intent(in) :: n_genes_S1
-            !! Number of genes in study S1
-        integer(int32), intent(in) :: n_genes_S2
-            !! Number of genes in study S2
+    pure subroutine pool_means(pooled_means, pooled_means_perm, pool_size, n_points, n_pool, x_star, ierr)
+        integer(c_int), intent(in), target :: pool_size
+            !! Number of means in the pool, usually `n_genes_S1 + n_genes_S2`
         integer(int32), intent(in) :: n_points
             !! Number of reference points to define
         integer(int32), intent(out) :: n_pool
             !! Total number of included (non-NaN) pooled mean-expression values
-        real(real64), intent(in) :: pooled_means(n_genes_S1 + n_genes_S2)
+        real(real64), intent(in) :: pooled_means(pool_size)
             !! Pooled means
-        integer(int32), intent(in) :: pooled_means_perm(n_genes_S1 + n_genes_S2)
+        integer(int32), intent(in) :: pooled_means_perm(pool_size)
             !! Sorting permutation for `pooled_means`
         real(real64), intent(out) :: x_star(n_points)
             !! Mean-expression reference points
@@ -191,28 +190,25 @@ contains
 
         call set_ok(ierr)
 
-        call validate_dimension_size(n_genes_S1, ierr)
-        call validate_dimension_size(n_genes_S2, ierr)
+        call validate_dimension_size(pool_size, ierr)
         call validate_dimension_size(n_points, ierr)
         ! mean values can contain NaN
         if (is_err(ierr)) return
 
-        call pool_means_helper(pooled_means, pooled_means_perm, n_genes_S1, n_genes_S2, n_points, n_pool, x_star)
+        call pool_means_helper(pooled_means, pooled_means_perm, pool_size, n_points, n_pool, x_star)
     end subroutine pool_means
 
     !> (no input validation) Pool per-gene mean expression values across studies
-    pure subroutine pool_means_helper(pooled_means, pooled_means_perm, n_genes_S1, n_genes_S2, n_points, n_pool, x_star)
-        integer(int32), intent(in) :: n_genes_S1
-            !! Number of genes in study S1
-        integer(int32), intent(in) :: n_genes_S2
-            !! Number of genes in study S2
+    pure subroutine pool_means_helper(pooled_means, pooled_means_perm, pool_size, n_points, n_pool, x_star)
+        integer(c_int), intent(in), target :: pool_size
+            !! Number of means in the pool, usually `n_genes_S1 + n_genes_S2`
         integer(int32), intent(in) :: n_points
             !! Number of reference points to define
         integer(int32), intent(out) :: n_pool
             !! Total number of included (non-NaN) pooled mean-expression values
-        real(real64), intent(in) :: pooled_means(n_genes_S1 + n_genes_S2)
+        real(real64), intent(in) :: pooled_means(pool_size)
             !! Pooled means
-        integer(int32), intent(in) :: pooled_means_perm(n_genes_S1 + n_genes_S2)
+        integer(int32), intent(in) :: pooled_means_perm(pool_size)
             !! Sorting permutation for `pooled_means`
         real(real64), intent(out) :: x_star(n_points)
             !! Mean-expression reference points
@@ -315,8 +311,8 @@ contains
         call validate_dimension_size(n_neighbors, ierr)
         if (is_err(ierr)) return
 
-        M_ALLOCATE(tmp_distances(n_neighbors))
-        M_ALLOCATE(tmp_distances_perm(n_neighbors))
+        M_ALLOCATE(tmp_distances(n_genes_S))
+        M_ALLOCATE(tmp_distances_perm(n_genes_S))
 
         call construct_neighborhoods(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, tmp_distances, tmp_distances_perm, neighborhood_residuals, neighborhood_indices, n_neighbors, ierr)
 
@@ -528,22 +524,20 @@ end subroutine pool_means_c
 
 !> C-compatible wrapper for [[tox_jensen_shannon_test(module):pool_means(subroutine)]]
 pure subroutine pool_means_expert_c(pooled_means, pooled_means_perm, &
-    n_genes_S1, n_genes_S2, n_points, n_pool, x_star, ierr) &
+    pool_size, n_points, n_pool, x_star, ierr) &
     bind(C, name="pool_means_expert_c")
 
     use, intrinsic :: iso_c_binding, only: c_int, c_double
     use tox_jensen_shannon_test, only: pool_means
     M_USE_NULL_VALIDATION
 
-    integer(c_int), intent(in), target :: n_genes_S1
-        !! Number of genes in study S1
-    integer(c_int), intent(in), target :: n_genes_S2
-        !! Number of genes in study S2
+    integer(c_int), intent(in), target :: pool_size
+        !! Number of means in the pool, usually `n_genes_S1 + n_genes_S2`
     integer(c_int), intent(in), target :: n_points
         !! Number of reference points to define
-    real(c_double), dimension(n_genes_S1+n_genes_S2), intent(in), target :: pooled_means
+    real(c_double), dimension(pool_size), intent(in), target :: pooled_means
         !! Pooled means
-    integer(c_int), dimension(n_genes_S1+n_genes_S2), intent(in), target :: pooled_means_perm
+    integer(c_int), dimension(pool_size), intent(in), target :: pooled_means_perm
         !! Sorting permutation for `pooled_means`
     integer(c_int), intent(out), target :: n_pool
         !! Total number of included (non-NaN) pooled mean-expression values
@@ -553,8 +547,7 @@ pure subroutine pool_means_expert_c(pooled_means, pooled_means_perm, &
         !! Error code
 
     M_CHECK_IERR_NON_NULL
-    M_CHECK_NON_NULL(n_genes_S1)
-    M_CHECK_NON_NULL(n_genes_S2)
+    M_CHECK_NON_NULL(pool_size)
     M_CHECK_NON_NULL(n_points)
     M_CHECK_NON_NULL(pooled_means)
     M_CHECK_NON_NULL(pooled_means_perm)
@@ -562,7 +555,7 @@ pure subroutine pool_means_expert_c(pooled_means, pooled_means_perm, &
     M_CHECK_NON_NULL(x_star)
 
     call pool_means(pooled_means, pooled_means_perm, &
-                    n_genes_S1, n_genes_S2, n_points, n_pool, x_star, ierr)
+                    pool_size, n_points, n_pool, x_star, ierr)
 end subroutine pool_means_expert_c
 
 !> C-compatible wrapper for [[tox_jensen_shannon_test(module):calc_neighborhood_size(function)]]
