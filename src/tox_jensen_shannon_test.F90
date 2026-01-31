@@ -6,13 +6,10 @@
 module tox_jensen_shannon_test
     use safeguard
     use, intrinsic :: iso_fortran_env, only: real64, int32
-    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_value, ieee_quiet_nan
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_value, ieee_quiet_nan, ieee_is_finite
     use f42_utils, only: heapsort_real, calc_percentile_helper, clamp
     use tox_errors, only: validate_all_in_range_real, validate_in_range_int, is_err, set_ok, validate_dimension_size, ERR_ALLOC_FAIL, set_err
     implicit none
-
-    private
-    public :: compute_gene_means, compute_gene_means_helper, compute_residuals, compute_residuals_helper, pool_means_alloc, construct_neighborhoods, construct_neighborhoods_helper
 
 contains
 
@@ -51,7 +48,7 @@ contains
             !! Per-gene mean expression values
 
         integer(int32) :: i_gene, i_rep, n_included
-        real(real64) :: sum_val
+        real(real64) :: sum_val, expr_val
 
         ! Use do concurrent for parallelization across genes
         do concurrent(i_gene=1:n_genes) local(sum_val, n_included)
@@ -59,8 +56,9 @@ contains
             n_included = 0
 
             ! Count valid (non-NaN) replicates and compute sum
-            do concurrent(i_rep=1:n_reps) shared(expr) reduce(+:sum_val, n_included)
-                if (.not. ieee_is_nan(expr(i_rep, i_gene))) then
+            do concurrent(i_rep=1:n_reps) local(expr_val) shared(expr) reduce(+:sum_val, n_included)
+                expr_val = expr(i_rep, i_gene)
+                if ((.not. ieee_is_nan(expr_val)) .and. ieee_is_finite(expr_val)) then
                     sum_val = sum_val + expr(i_rep, i_gene)
                     n_included = n_included + 1
                 end if
@@ -122,7 +120,7 @@ contains
     end subroutine compute_residuals_helper
 
     !> Pool per-gene mean expression values across studies
-    subroutine pool_means_alloc(n_genes_S1, mean_S1, n_genes_S2, mean_S2, n_points, n_pool, x_star, ierr)
+    pure subroutine pool_means_alloc(n_genes_S1, mean_S1, n_genes_S2, mean_S2, n_points, n_pool, x_star, ierr)
         integer(int32), intent(in) :: n_genes_S1
             !! Number of genes in study S1
         integer(int32), intent(in) :: n_genes_S2
@@ -148,7 +146,6 @@ contains
 
         call validate_dimension_size(n_genes_S1, ierr)
         call validate_dimension_size(n_genes_S2, ierr)
-        call validate_dimension_size(n_points, ierr)
         ! mean values can contain NaN
         if (is_err(ierr)) return
 
@@ -169,11 +166,41 @@ contains
 
         call heapsort_real(pooled_means, perm)
 
-        call pool_means_helper(pooled_means, perm, n_genes_S1, n_genes_S2, n_points, n_pool, x_star)
+        call pool_means(pooled_means, perm, n_genes_S1, n_genes_S2, n_points, n_pool, x_star, ierr)
 
     end subroutine pool_means_alloc
 
     !> Pool per-gene mean expression values across studies
+    pure subroutine pool_means(pooled_means, pooled_means_perm, n_genes_S1, n_genes_S2, n_points, n_pool, x_star, ierr)
+        integer(int32), intent(in) :: n_genes_S1
+            !! Number of genes in study S1
+        integer(int32), intent(in) :: n_genes_S2
+            !! Number of genes in study S2
+        integer(int32), intent(in) :: n_points
+            !! Number of reference points to define
+        integer(int32), intent(out) :: n_pool
+            !! Total number of included (non-NaN) pooled mean-expression values
+        real(real64), intent(in) :: pooled_means(n_genes_S1 + n_genes_S2)
+            !! Pooled means
+        integer(int32), intent(in) :: pooled_means_perm(n_genes_S1 + n_genes_S2)
+            !! Sorting permutation for `pooled_means`
+        real(real64), intent(out) :: x_star(n_points)
+            !! Mean-expression reference points
+        integer(int32), intent(out) :: ierr
+            !! Error code
+
+        call set_ok(ierr)
+
+        call validate_dimension_size(n_genes_S1, ierr)
+        call validate_dimension_size(n_genes_S2, ierr)
+        call validate_dimension_size(n_points, ierr)
+        ! mean values can contain NaN
+        if (is_err(ierr)) return
+
+        call pool_means_helper(pooled_means, pooled_means_perm, n_genes_S1, n_genes_S2, n_points, n_pool, x_star)
+    end subroutine pool_means
+
+    !> (no input validation) Pool per-gene mean expression values across studies
     pure subroutine pool_means_helper(pooled_means, pooled_means_perm, n_genes_S1, n_genes_S2, n_points, n_pool, x_star)
         integer(int32), intent(in) :: n_genes_S1
             !! Number of genes in study S1
@@ -285,16 +312,13 @@ contains
         integer(int32), dimension(:), allocatable :: tmp_distances_perm
 
         call set_ok(ierr)
-        call validate_dimension_size(n_points, ierr)
-        call validate_dimension_size(n_genes_S, ierr)
-        call validate_dimension_size(n_reps_S, ierr)
         call validate_dimension_size(n_neighbors, ierr)
         if (is_err(ierr)) return
 
         M_ALLOCATE(tmp_distances(n_neighbors))
         M_ALLOCATE(tmp_distances_perm(n_neighbors))
 
-        call construct_neighborhoods_helper(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, tmp_distances, tmp_distances_perm, neighborhood_residuals, neighborhood_indices, n_neighbors)
+        call construct_neighborhoods(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, tmp_distances, tmp_distances_perm, neighborhood_residuals, neighborhood_indices, n_neighbors, ierr)
 
     end subroutine construct_neighborhoods_alloc
 
@@ -325,12 +349,23 @@ contains
         integer(int32), intent(out) :: ierr
             !! Error code
 
+        integer(int32) :: i_gene, n_possible_neighbors
+
         call set_ok(ierr)
         call validate_dimension_size(n_points, ierr)
         call validate_dimension_size(n_genes_S, ierr)
         call validate_dimension_size(n_reps_S, ierr)
         call validate_dimension_size(n_neighbors, ierr)
-        call validate_in_range_int(n_neighbors, ierr, min=1_int32, max=n_genes_S)
+
+        n_possible_neighbors = 0_int32
+        do concurrent (i_gene = 1:n_genes_S) shared(mean_S) reduce(+:n_possible_neighbors)
+            if (.not. ieee_is_nan(mean_S(i_gene))) then
+                n_possible_neighbors = n_possible_neighbors + 1
+            end if
+        end do
+
+        call validate_in_range_int(n_neighbors, ierr, min=1_int32, max=n_possible_neighbors)
+
         if (is_err(ierr)) return
 
         call construct_neighborhoods_helper(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, tmp_distances, tmp_distances_perm, neighborhood_residuals, neighborhood_indices, n_neighbors)
@@ -393,3 +428,226 @@ contains
         end do
     end subroutine construct_neighborhoods_helper
 end module tox_jensen_shannon_test
+
+!> C-compatible wrapper for [[tox_jensen_shannon_test(module):compute_gene_means(subroutine)]]
+pure subroutine compute_gene_means_c(n_genes, n_reps, expr, means, ierr) &
+    bind(C, name="compute_gene_means_c")
+
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
+    use tox_jensen_shannon_test, only: compute_gene_means
+    M_USE_NULL_VALIDATION
+
+    integer(c_int), intent(in), target :: n_genes
+        !! Number of genes in the study
+    integer(c_int), intent(in), target :: n_reps
+        !! Number of biological replicates in the study
+    real(c_double), dimension(n_reps, n_genes), intent(in), target :: expr
+        !! Expression matrix
+    real(c_double), dimension(n_genes), intent(out), target :: means
+        !! Per-gene mean expression values
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_genes)
+    M_CHECK_NON_NULL(n_reps)
+    M_CHECK_NON_NULL(expr)
+    M_CHECK_NON_NULL(means)
+
+    call compute_gene_means(n_genes, n_reps, expr, means, ierr)
+end subroutine compute_gene_means_c
+
+!> C-compatible wrapper for [[tox_jensen_shannon_test(module):compute_residuals(subroutine)]]
+pure subroutine compute_residuals_c(n_genes, n_reps, expr, means, resid, ierr) &
+    bind(C, name="compute_residuals_c")
+
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
+    use tox_jensen_shannon_test, only: compute_residuals
+    M_USE_NULL_VALIDATION
+
+    integer(c_int), intent(in), target :: n_genes
+        !! Number of genes in the study
+    integer(c_int), intent(in), target :: n_reps
+        !! Number of biological replicates in the study
+    real(c_double), dimension(n_reps, n_genes), intent(in), target :: expr
+        !! Expression matrix containing
+    real(c_double), dimension(n_genes), intent(in), target :: means
+        !! Per-gene mean expression values
+    real(c_double), dimension(n_reps, n_genes), intent(out), target :: resid
+        !! Matrix of signed residuals
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_genes)
+    M_CHECK_NON_NULL(n_reps)
+    M_CHECK_NON_NULL(expr)
+    M_CHECK_NON_NULL(means)
+    M_CHECK_NON_NULL(resid)
+
+    call compute_residuals(n_genes, n_reps, expr, means, resid, ierr)
+end subroutine compute_residuals_c
+
+!> C-compatible wrapper for [[tox_jensen_shannon_test(module):pool_means_alloc(subroutine)]]
+pure subroutine pool_means_c(n_genes_S1, mean_S1, n_genes_S2, mean_S2, &
+    n_points, n_pool, x_star, ierr) bind(C, name="pool_means_c")
+
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
+    use tox_jensen_shannon_test, only: pool_means_alloc
+    M_USE_NULL_VALIDATION
+
+    integer(c_int), intent(in), target :: n_genes_S1
+        !! Number of genes in study S1
+    real(c_double), dimension(n_genes_S1), intent(in), target :: mean_S1
+        !! Per-gene mean expression values
+    integer(c_int), intent(in), target :: n_genes_S2
+        !! Number of genes in study S2
+    real(c_double), dimension(n_genes_S2), intent(in), target :: mean_S2
+        !! Per-gene mean expression values
+    integer(c_int), intent(in), target :: n_points
+        !! Number of reference points to define
+    integer(c_int), intent(out), target :: n_pool
+        !! Total number of included (non-NaN) pooled mean-expression values
+    real(c_double), dimension(n_points), intent(out), target :: x_star
+        !! Mean-expression reference points
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_genes_S1)
+    M_CHECK_NON_NULL(mean_S1)
+    M_CHECK_NON_NULL(n_genes_S2)
+    M_CHECK_NON_NULL(mean_S2)
+    M_CHECK_NON_NULL(n_points)
+    M_CHECK_NON_NULL(n_pool)
+    M_CHECK_NON_NULL(x_star)
+
+    call pool_means_alloc(n_genes_S1, mean_S1, n_genes_S2, mean_S2, &
+                          n_points, n_pool, x_star, ierr)
+end subroutine pool_means_c
+
+!> C-compatible wrapper for [[tox_jensen_shannon_test(module):pool_means(subroutine)]]
+pure subroutine pool_means_expert_c(pooled_means, pooled_means_perm, &
+    n_genes_S1, n_genes_S2, n_points, n_pool, x_star, ierr) &
+    bind(C, name="pool_means_expert_c")
+
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
+    use tox_jensen_shannon_test, only: pool_means
+    M_USE_NULL_VALIDATION
+
+    integer(c_int), intent(in), target :: n_genes_S1
+        !! Number of genes in study S1
+    integer(c_int), intent(in), target :: n_genes_S2
+        !! Number of genes in study S2
+    integer(c_int), intent(in), target :: n_points
+        !! Number of reference points to define
+    real(c_double), dimension(n_genes_S1+n_genes_S2), intent(in), target :: pooled_means
+        !! Pooled means
+    integer(c_int), dimension(n_genes_S1+n_genes_S2), intent(in), target :: pooled_means_perm
+        !! Sorting permutation for `pooled_means`
+    integer(c_int), intent(out), target :: n_pool
+        !! Total number of included (non-NaN) pooled mean-expression values
+    real(c_double), dimension(n_points), intent(out), target :: x_star
+        !! Mean-expression reference points
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_genes_S1)
+    M_CHECK_NON_NULL(n_genes_S2)
+    M_CHECK_NON_NULL(n_points)
+    M_CHECK_NON_NULL(pooled_means)
+    M_CHECK_NON_NULL(pooled_means_perm)
+    M_CHECK_NON_NULL(n_pool)
+    M_CHECK_NON_NULL(x_star)
+
+    call pool_means(pooled_means, pooled_means_perm, &
+                    n_genes_S1, n_genes_S2, n_points, n_pool, x_star, ierr)
+end subroutine pool_means_expert_c
+
+!> C-compatible wrapper for [[tox_jensen_shannon_test(module):calc_neighborhood_size(function)]]
+pure subroutine calc_neighborhood_size_c(n_pool, n_points, n_genes_S, mean_S, &
+    desired_size, n_neighbors, ierr) bind(C, name="calc_neighborhood_size_c")
+
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
+    use tox_jensen_shannon_test, only: calc_neighborhood_size
+    use tox_errors, only: set_ok
+    M_USE_NULL_VALIDATION
+
+    integer(c_int), intent(in), target :: n_pool
+        !! Total number of pooled mean-expression values across both studies
+    integer(c_int), intent(in), target :: n_points
+        !! Number of reference points
+    integer(c_int), intent(in), target :: n_genes_S
+        !! Number of genes in the current study
+    real(c_double), dimension(n_genes_S), intent(in), target :: mean_S
+        !! Per-gene mean expression values
+    integer(c_int), intent(in), target :: desired_size
+        !! Optional desired neighborhood size, default=1000
+    integer(c_int), intent(out), target :: n_neighbors
+        !! Neighborhood size used (constant for all reference points)
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_pool)
+    M_CHECK_NON_NULL(n_points)
+    M_CHECK_NON_NULL(n_genes_S)
+    M_CHECK_NON_NULL(mean_S)
+    M_CHECK_NON_NULL(desired_size)
+    M_CHECK_NON_NULL(n_neighbors)
+
+    if (desired_size > 0_c_int) then
+        n_neighbors = calc_neighborhood_size(n_pool, n_points, n_genes_S, mean_S, desired_size)
+    else
+        n_neighbors = calc_neighborhood_size(n_pool, n_points, n_genes_S, mean_S)
+    end if
+
+    call set_ok(ierr)
+end subroutine calc_neighborhood_size_c
+
+!> C-compatible wrapper for [[tox_jensen_shannon_test(module):construct_neighborhoods_alloc(subroutine)]]
+pure subroutine construct_neighborhoods_c(n_points, x_star, n_genes_S, mean_S, &
+    n_reps_S, resid_S, neighborhood_residuals, neighborhood_indices, n_neighbors, ierr) &
+    bind(C, name="construct_neighborhoods_c")
+
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
+    use tox_jensen_shannon_test, only: construct_neighborhoods_alloc
+    M_USE_NULL_VALIDATION
+
+    integer(c_int), intent(in), target :: n_points
+        !! Number of reference points
+    real(c_double), dimension(n_points), intent(in), target :: x_star
+        !! Mean-expression reference points
+    integer(c_int), intent(in), target :: n_genes_S
+        !! Number of genes in the current study
+    real(c_double), dimension(n_genes_S), intent(in), target :: mean_S
+        !! Per-gene mean expression values
+    integer(c_int), intent(in), target :: n_reps_S
+        !! Number of biological replicates in the study
+    real(c_double), dimension(n_reps_S, n_genes_S), intent(in), target :: resid_S
+        !! Matrix of signed residuals
+    real(c_double), dimension(n_reps_S, n_neighbors, n_points), intent(out), target :: neighborhood_residuals
+        !! Collection of residual vectors for each neighborhood
+    integer(c_int), dimension(n_neighbors, n_points), intent(out), target :: neighborhood_indices
+        !! Indices of selected neighborhood genes
+    integer(c_int), intent(in), target :: n_neighbors
+        !! Number of neighbors
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_points)
+    M_CHECK_NON_NULL(x_star)
+    M_CHECK_NON_NULL(n_genes_S)
+    M_CHECK_NON_NULL(mean_S)
+    M_CHECK_NON_NULL(n_reps_S)
+    M_CHECK_NON_NULL(resid_S)
+    M_CHECK_NON_NULL(neighborhood_residuals)
+    M_CHECK_NON_NULL(neighborhood_indices)
+    M_CHECK_NON_NULL(n_neighbors)
+
+    call construct_neighborhoods_alloc(n_points, x_star, n_genes_S, mean_S, &
+                                       n_reps_S, resid_S, neighborhood_residuals, &
+                                       neighborhood_indices, n_neighbors, ierr)
+end subroutine construct_neighborhoods_c
