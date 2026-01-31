@@ -21,12 +21,16 @@ module f42_utils
     module procedure sort_real_heapsort, sort_integer_heapsort, sort_character_heapsort
   end interface sort_array_heapsort
 
+  interface clamp
+    module procedure clamp_real, clamp_int
+  end interface clamp
+
   real(real64), parameter :: PI = 4.0_real64 * atan(1.0_real64)
   real(real64), parameter :: EPS = epsilon(1.0_real64)
 contains
 
-  !> Clamps a value into a range `min_val <= val <= max_val`
-  pure real(real64) function clamp(val, min_val, max_val) result(clamped)
+  !> Clamps a value into a range `min_val <= val <= max_val`. If `max_val < min_val`, `min_val` is returned
+  pure real(real64) function clamp_real(val, min_val, max_val) result(clamped)
     real(real64), intent(in) :: val
       !! Value to be clamped
     real(real64), intent(in) :: min_val
@@ -35,7 +39,19 @@ contains
       !! Upper bound
   
     clamped = max(min_val, min(val, max_val))
-  end function clamp
+  end function clamp_real
+
+  !> Clamps a value into a range `min_val <= val <= max_val`. If `max_val < min_val`, `min_val` is returned
+  pure integer(int32) function clamp_int(val, min_val, max_val) result(clamped)
+    integer(int32), intent(in) :: val
+      !! Value to be clamped
+    integer(int32), intent(in) :: min_val
+      !! Lower bound
+    integer(int32), intent(in) :: max_val
+      !! Upper bound
+  
+    clamped = max(min_val, min(val, max_val))
+  end function clamp_int
 
   !> Compute logarithm for any base
   pure subroutine logx(val, base, exponent, ierr)
