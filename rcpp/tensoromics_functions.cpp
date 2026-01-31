@@ -2,7 +2,6 @@
 
 using namespace Rcpp;
 
-
 // ===================================================================
 // FORTRAN FUNCTIONS
 // ===================================================================
@@ -98,19 +97,6 @@ extern "C" {
         int* ierr
       );
 
-    void euclidean_distance_c(double* vec1, double* vec2, int d, double* result);
-    void distance_to_centroid_c(int n_genes, int n_families, double* genes,
-                                double* centroids, int* gene_to_fam,
-                                double* distances, int d);
-    void compute_tissue_versatility_c(int n_axes, int n_vectors,
-                                      double* expression_vectors,
-                                      int* exp_vecs_selection_index,
-                                      int n_selected_vectors,
-                                      int* axes_selection,
-                                      int n_selected_axes,
-                                      double* tissue_versatilities,
-                                      double* tissue_angles_deg,
-                                      int* ierr);
     void compute_shift_vector_field_c(int d, int n_genes, int n_families,
                                       double* expression_vectors, double* family_centroids,
                                       int* gene_to_centroid, double* shift_vectors,
@@ -124,6 +110,28 @@ extern "C" {
                          int* gene_to_family, int n_families,
                          double* centroid_matrix, const char* mode,
                          int* ortholog_set, int* selected_indices, int selected_indices_len, int* ierr);
+                        
+    void tox_loess_required_workspace_c(int* d, int* nvmax, int* liv, int* lv, int* setlf);
+    
+    void loess_fit_plain_c(
+        int* n, double* x, double* y, double* w, double* z,
+        double* span, int* degree, int* nvmax, int* infl, int* setlf,
+        int* iv, int* liv, double* wv, int* lv,
+        double* diagl, double* yhat, int* ierr
+    );
+
+    void loess_fit_robust_c(
+        int* n, double* x, double* y, double* w, double* z,
+        double* span, int* degree, int* nvmax, int* infl, int* setlf,
+        int* n_iters, int* iv, int* liv, double* wv, int* lv,
+        double* diagl, double* rw, double* ww, double* res, int* pi,
+        double* yhat, int* ierr
+    );
+
+    void tox_loess_c(
+        double* x, double* y, int* n, double* span, int* degree,
+        double* yhat, int* mode, int* n_iters, int* ierr
+    );
 }
 
 /**
@@ -554,6 +562,88 @@ List tox_group_centroid_rcpp(NumericMatrix expression_vectors, IntegerVector gen
 
     return List::create(
         Named("centroid_matrix") = centroid_matrix,
+        Named("ierr") = ierr
+    );
+}
+
+// [[Rcpp::export]]
+List tox_loess_required_workspace_rcpp(int d, int nvmax, bool setlf) {
+    int liv = 0;
+    int lv = 0;
+    int setlf_int = setlf ? 1 : 0;
+
+    tox_loess_required_workspace_c(&d, &nvmax, &liv, &lv, &setlf_int);
+
+    return List::create(
+        Named("liv") = liv,
+        Named("lv")  = lv
+    );
+}
+
+// [[Rcpp::export]]
+List loess_fit_plain_rcpp(NumericVector x, NumericVector y, NumericVector w, NumericVector z,
+                         double span, int degree, int nvmax, bool infl, bool setlf,
+                         IntegerVector iv, NumericVector wv) {
+    int n = x.length();
+    int liv = iv.length();
+    int lv = wv.length();
+    int infl_int = infl ? 1 : 0;
+    int setlf_int = setlf ? 1 : 0;
+    int ierr = 0;
+
+    NumericVector yhat(n);
+    NumericVector diagl(n); // Array auxiliar para la matriz hat
+
+    loess_fit_plain_c(&n, x.begin(), y.begin(), w.begin(), z.begin(),
+                      &span, &degree, &nvmax, &infl_int, &setlf_int,
+                      iv.begin(), &liv, wv.begin(), &lv,
+                      diagl.begin(), yhat.begin(), &ierr);
+
+    return List::create(
+        Named("yhat") = yhat,
+        Named("ierr") = ierr
+    );
+}
+
+// [[Rcpp::export]]
+List loess_fit_robust_rcpp(NumericVector x, NumericVector y, NumericVector w, NumericVector z,
+                          double span, int degree, int nvmax, bool infl, bool setlf, int n_iters,
+                          IntegerVector iv, NumericVector wv, NumericVector rw, 
+                          NumericVector ww, NumericVector res, IntegerVector pi) {
+    int n = x.length();
+    int liv = iv.length();
+    int lv = wv.length();
+    int infl_int = infl ? 1 : 0;
+    int setlf_int = setlf ? 1 : 0;
+    int ierr = 0;
+
+    NumericVector yhat(n);
+    NumericVector diagl(n);
+
+    loess_fit_robust_c(&n, x.begin(), y.begin(), w.begin(), z.begin(),
+                       &span, &degree, &nvmax, &infl_int, &setlf_int,
+                       &n_iters, iv.begin(), &liv, wv.begin(), &lv,
+                       diagl.begin(), rw.begin(), ww.begin(), res.begin(), pi.begin(),
+                       yhat.begin(), &ierr);
+
+    return List::create(
+        Named("yhat") = yhat,
+        Named("ierr") = ierr
+    );
+}
+
+// [[Rcpp::export]]
+List tox_loess_rcpp(NumericVector x, NumericVector y, double span, int degree, 
+                   int mode, int n_iters) {
+    int n = x.length();
+    int ierr = 0;
+    NumericVector yhat(n);
+
+    tox_loess_c(x.begin(), y.begin(), &n, &span, &degree, 
+                yhat.begin(), &mode, &n_iters, &ierr);
+
+    return List::create(
+        Named("yhat") = yhat,
         Named("ierr") = ierr
     );
 }

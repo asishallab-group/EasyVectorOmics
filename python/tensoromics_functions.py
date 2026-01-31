@@ -3521,3 +3521,251 @@ def tox_compute_p_values(local_contributions_observed,
         "local_p_values": local_p_values,
         "total_p_value": total_p_value.value
     }
+
+
+#> tox_loess:tox_loess_required_workspace: Recommend workspace sizes based on Netlib exact formulas
+def tox_loess_required_workspace(d, nvmax, setlf):
+    """
+    Recommend workspace sizes based on Netlib exact formulas.
+
+    Args:
+        d (int): Dimensionality of the data.
+        nvmax (int): Maximum neighborhood size.
+        setlf (bool): Save matrix factorization flag.
+
+    Returns:
+        dict: {
+            "liv": int,  # Length of the integer workspace array.
+            "lv": int    # Length of the real workspace array.
+        }
+    """
+    d_c = ctypes.c_int(d)
+    nvmax_c = ctypes.c_int(nvmax)
+    setlf_c = ctypes.c_int(1 if setlf else 0)
+    
+    liv_c = ctypes.c_int(0)
+    lv_c = ctypes.c_int(0)
+
+    required_workspace_c = lib.tox_loess_required_workspace_c
+    required_workspace_c.argtypes = [
+        ctypes.POINTER(ctypes.c_int), # d
+        ctypes.POINTER(ctypes.c_int), # nvmax
+        ctypes.POINTER(ctypes.c_int), # liv 
+        ctypes.POINTER(ctypes.c_int), # lv 
+        ctypes.POINTER(ctypes.c_int)  # setlf
+    ]
+    required_workspace_c.restype = None
+
+    required_workspace_c(
+        ctypes.byref(d_c),
+        ctypes.byref(nvmax_c),
+        ctypes.byref(liv_c),
+        ctypes.byref(lv_c),
+        ctypes.byref(setlf_c)
+    )
+
+
+    return {"liv": liv_c.value, "lv": lv_c.value}
+
+
+#> tox_loess:loess_fit_plain_c: Perform plain LOESS fitting
+def loess_fit_plain(n, x, y, w, z, span, degree, nvmax, infl, setlf, iv, liv, wv, lv, diagl):
+    """
+    Perform plain LOESS fitting.
+
+    Args:
+        n (int): Total number of data points.
+        x, y, w, z (np.ndarray): Input arrays.
+        span (float): Smoothing parameter for LOESS.
+        degree (int): Degree of the LOESS polynomial.
+        nvmax (int): Maximum neighborhood size.
+        infl, setlf (bool): Flags for influence calculation and saving matrix factorization.
+        iv, wv (np.ndarray): Workspace arrays.
+        liv, lv (int): Lengths of workspace arrays.
+        diagl (np.ndarray): Diagonal elements of the hat matrix.
+
+    Returns:
+        np.ndarray: Smoothed response variable array.
+    """
+    # Ensure Fortran-order arrays
+    x = np.asfortranarray(x, dtype=np.float64)
+    y = np.asfortranarray(y, dtype=np.float64)
+    w = np.asfortranarray(w, dtype=np.float64)
+    z = np.asfortranarray(z, dtype=np.float64)
+    iv = np.asfortranarray(iv, dtype=np.int32)
+    wv = np.asfortranarray(wv, dtype=np.float64)
+    diagl = np.asfortranarray(diagl, dtype=np.float64)
+
+    infl_c = ctypes.c_int(1 if infl else 0)
+    setlf_c = ctypes.c_int(1 if setlf else 0)
+    yhat = np.empty(n, dtype=np.float64)
+    ierr = ctypes.c_int(0)
+
+    loess_fit_plain_c = lib.loess_fit_plain_c
+    loess_fit_plain_c.argtypes = [
+        ctypes.POINTER(ctypes.c_int),                                    # n
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # x
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # y
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # w
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # z
+        ctypes.POINTER(ctypes.c_double),                                 # span
+        ctypes.POINTER(ctypes.c_int),                                    # degree
+        ctypes.POINTER(ctypes.c_int),                                    # nvmax
+        ctypes.POINTER(ctypes.c_int),                                    # infl
+        ctypes.POINTER(ctypes.c_int),                                    # setlf
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),    # iv
+        ctypes.POINTER(ctypes.c_int),                                    # liv
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # wv
+        ctypes.POINTER(ctypes.c_int),                                    # lv
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # diagl
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # yhat
+        ctypes.POINTER(ctypes.c_int)                                     # ierr
+    ]
+
+    loess_fit_plain_c.restype = None
+
+    loess_fit_plain_c(
+        ctypes.byref(ctypes.c_int(n)),
+        x, y, w, z,
+        ctypes.byref(ctypes.c_double(span)),
+        ctypes.byref(ctypes.c_int(degree)),
+        ctypes.byref(ctypes.c_int(nvmax)),
+        ctypes.byref(infl_c),
+        ctypes.byref(setlf_c),
+        iv,
+        ctypes.byref(ctypes.c_int(liv)),
+        wv,
+        ctypes.byref(ctypes.c_int(lv)),
+        diagl,
+        yhat,
+        ctypes.byref(ierr)
+    )
+
+    _readonly(yhat)
+
+    check_err_code(ierr.value)
+
+    return yhat
+
+
+#> tox_loess:loess_fit_robust_c: Perform robust LOESS fitting with bisquare reweighting
+def loess_fit_robust(n, x, y, w, z, span, degree, nvmax, infl, setlf, n_iters, iv, liv, wv, lv, diagl, rw, ww, res, pi):
+    """
+    Perform robust LOESS fitting with bisquare reweighting.
+    """
+    # Ensure Fortran-order arrays
+    x = np.asfortranarray(x, dtype=np.float64)
+    y = np.asfortranarray(y, dtype=np.float64)
+    w = np.asfortranarray(w, dtype=np.float64)
+    z = np.asfortranarray(z, dtype=np.float64)
+    iv = np.asfortranarray(iv, dtype=np.int32)
+    wv = np.asfortranarray(wv, dtype=np.float64)
+    diagl = np.asfortranarray(diagl, dtype=np.float64)
+    rw = np.asfortranarray(rw, dtype=np.float64)
+    ww = np.asfortranarray(ww, dtype=np.float64)
+    res = np.asfortranarray(res, dtype=np.float64)
+    pi = np.asfortranarray(pi, dtype=np.int32)
+
+    infl_c = ctypes.c_int(1 if infl else 0)
+    setlf_c = ctypes.c_int(1 if setlf else 0)
+    yhat = np.empty(n, dtype=np.float64)
+    ierr = ctypes.c_int(0)
+
+    double_ptr = np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS")
+    int_ptr = np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS")
+
+    loess_fit_robust_c = lib.loess_fit_robust_c
+    loess_fit_robust_c.argtypes = [
+        ctypes.POINTER(ctypes.c_int),      # n
+        double_ptr,                        # x
+        double_ptr,                        # y
+        double_ptr,                        # w
+        double_ptr,                        # z
+        ctypes.POINTER(ctypes.c_double),   # span
+        ctypes.POINTER(ctypes.c_int),      # degree
+        ctypes.POINTER(ctypes.c_int),      # nvmax
+        ctypes.POINTER(ctypes.c_int),      # infl
+        ctypes.POINTER(ctypes.c_int),      # setlf
+        ctypes.POINTER(ctypes.c_int),      # n_iters
+        int_ptr,                           # iv
+        ctypes.POINTER(ctypes.c_int),      # liv
+        double_ptr,                        # wv
+        ctypes.POINTER(ctypes.c_int),      # lv
+        double_ptr,                        # diagl
+        double_ptr,                        # rw
+        double_ptr,                        # ww
+        double_ptr,                        # res
+        int_ptr,                           # pi
+        double_ptr,                        # yhat
+        ctypes.POINTER(ctypes.c_int)       # ierr
+    ]
+    loess_fit_robust_c.restype = None
+
+    loess_fit_robust_c(
+        ctypes.byref(ctypes.c_int(n)),
+        x, y, w, z,
+        ctypes.byref(ctypes.c_double(span)),
+        ctypes.byref(ctypes.c_int(degree)),
+        ctypes.byref(ctypes.c_int(nvmax)),
+        ctypes.byref(infl_c),
+        ctypes.byref(setlf_c),
+        ctypes.byref(ctypes.c_int(n_iters)),
+        iv,
+        ctypes.byref(ctypes.c_int(liv)),
+        wv,
+        ctypes.byref(ctypes.c_int(lv)),
+        diagl,
+        rw, ww, res, pi,
+        yhat,
+        ctypes.byref(ierr)
+    )
+
+    _readonly(yhat) 
+    check_err_code(ierr.value)
+
+    return yhat
+
+
+#> tox_loess:tox_loess_c: Wrapper for LOESS fitting (plain or robust)
+def tox_loess(x, y, span, degree, mode, n_iters=3):
+    """
+    Wrapper for LOESS fitting (plain or robust).
+    """
+    x = np.asfortranarray(x, dtype=np.float64)
+    y = np.asfortranarray(y, dtype=np.float64)
+    n = len(y)
+
+    yhat = np.empty(n, dtype=np.float64)
+    ierr = ctypes.c_int(0)
+
+    double_ptr = np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS")
+    
+    tox_loess_c = lib.tox_loess_c
+    tox_loess_c.argtypes = [
+        double_ptr,                        # x
+        double_ptr,                        # y
+        ctypes.POINTER(ctypes.c_int),      # n
+        ctypes.POINTER(ctypes.c_double),   # span
+        ctypes.POINTER(ctypes.c_int),      # degree
+        double_ptr,                        # yhat (output)
+        ctypes.POINTER(ctypes.c_int),      # mode
+        ctypes.POINTER(ctypes.c_int),      # n_iters
+        ctypes.POINTER(ctypes.c_int)       # ierr
+    ]
+    tox_loess_c.restype = None
+
+    tox_loess_c(
+        x, y,
+        ctypes.byref(ctypes.c_int(n)),
+        ctypes.byref(ctypes.c_double(span)),
+        ctypes.byref(ctypes.c_int(degree)),
+        yhat,
+        ctypes.byref(ctypes.c_int(mode)),
+        ctypes.byref(ctypes.c_int(n_iters)),
+        ctypes.byref(ierr)
+    )
+
+    _readonly(yhat)
+    check_err_code(ierr.value)
+
+    return yhat

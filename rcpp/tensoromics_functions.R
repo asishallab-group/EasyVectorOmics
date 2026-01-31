@@ -9,6 +9,7 @@ lib_path <- shQuote(normalizePath("build"))
 Sys.setenv(PKG_LIBS = paste0("-Wl,-rpath,", lib_path, " -L", lib_path, " -ltensor-omics -lgfortran"))
 
 # Compile and load all TensorOmics Rcpp wrapper functions (includes error_handling.cpp)
+
 sourceCpp("rcpp/tensoromics_functions.cpp", env = .GlobalEnv)
 
 cat("✓ TensorOmics Rcpp functions loaded successfully\n")
@@ -942,4 +943,94 @@ tox_mean_vector <- function(expression_vectors, gene_indices) {
   result <- tox_mean_vector_rcpp(expression_vectors, gene_indices)
   check_err_code(result$ierr)
   return(result)
+}
+
+#> tox_loess:tox_loess_required_workspace: Recommend workspace sizes based on Netlib exact formulas
+#' Recommend workspace sizes based on Netlib exact formulas
+#'
+#' @param d Integer, dimensionality of the data (usually 1)
+#' @param nvmax Integer, maximum neighborhood size
+#' @param setlf Logical, flag to save matrix factorization
+#'
+#' @return A list containing `liv` (integer workspace size) and `lv` (real workspace size)
+#'
+tox_loess_required_workspace <- function(d, nvmax, setlf) {
+
+  result <- tox_loess_required_workspace_rcpp(as.integer(d), as.integer(nvmax), as.logical(setlf))
+  return(result)
+}
+
+#> tox_loess:loess_fit_plain: Perform plain LOESS fitting
+#' Perform plain LOESS fitting
+#'
+#' @param x,y,w,z Numeric vectors of input data
+#' @param span Numeric, smoothing parameter
+#' @param degree Integer, degree of polynomial (0, 1, or 2)
+#' @param nvmax Integer, maximum neighborhood size
+#' @param infl,setlf Logical, flags for influence and factorization
+#' @param iv Integer vector, workspace array
+#' @param wv Numeric vector, workspace array
+#'
+#' @return Numeric vector of smoothed response values (yhat)
+#'
+loess_fit_plain <- function(x, y, w, z, span, degree, nvmax, infl, setlf, iv, wv) {
+
+  result <- loess_fit_plain_rcpp(
+    as.numeric(x), as.numeric(y), as.numeric(w), as.numeric(z),
+    as.numeric(span), as.integer(degree), as.integer(nvmax),
+    as.logical(infl), as.logical(setlf),
+    as.integer(iv), as.numeric(wv)
+  )
+
+  check_err_code(result$ierr)
+  return(result$yhat)
+}
+
+#> tox_loess:loess_fit_robust: Perform robust LOESS fitting with bisquare reweighting
+#' Perform robust LOESS fitting with bisquare reweighting
+#'
+#' @param n_iters Integer, number of robust iterations
+#' @param rw,ww,res Numeric vectors, additional arrays for robust fitting
+#' @param pi Integer vector, permutation indices
+#'
+#' @return Numeric vector of smoothed response values (yhat)
+#'
+loess_fit_robust <- function(x, y, w, z, span, degree, nvmax, infl, setlf, n_iters, iv, wv, rw, ww, res, pi) {
+  # R-layer validation
+  # validate_loess_robust_inputs(...)
+
+  result <- loess_fit_robust_rcpp(
+    as.numeric(x), as.numeric(y), as.numeric(w), as.numeric(z),
+    as.numeric(span), as.integer(degree), as.integer(nvmax),
+    as.logical(infl), as.logical(setlf), as.integer(n_iters),
+    as.integer(iv), as.numeric(wv),
+    as.numeric(rw), as.numeric(ww), as.numeric(res), as.integer(pi)
+  )
+
+  check_err_code(result$ierr)
+  return(result$yhat)
+}
+
+#> tox_loess:tox_loess: High-level wrapper for LOESS fitting (plain or robust)
+#' High-level wrapper for LOESS fitting (plain or robust)
+#'
+#' @param x,y Numeric vectors of input data
+#' @param span Numeric, smoothing parameter (default 0.7)
+#' @param degree Integer, polynomial degree (default 2)
+#' @param mode Integer, 0 for plain, 1 for robust
+#' @param n_iters Integer, number of robust iterations (default 3)
+#'
+#' @return Numeric vector of smoothed response variable array
+#'
+tox_loess <- function(x, y, span = 0.7, degree = 2, mode = 1, n_iters = 3) {
+
+  validate_same_length(x, y)
+
+  result <- tox_loess_rcpp(
+    as.numeric(x), as.numeric(y), as.numeric(span), 
+    as.integer(degree), as.integer(mode), as.integer(n_iters)
+  )
+
+  check_err_code(result$ierr)
+  return(result$yhat)
 }
