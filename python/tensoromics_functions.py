@@ -3523,7 +3523,7 @@ def tox_compute_p_values(local_contributions_observed,
     }
 
 
-#> tox_jensen_shannon:compute_gene_means_c: Compute per-gene mean expression
+#> tox_jensen_shannon_test:compute_gene_means_c: Compute per-gene mean expression
 def tox_compute_gene_means(expr):
     """
     Compute per-gene mean expression, ignoring NaN values.
@@ -3563,7 +3563,7 @@ def tox_compute_gene_means(expr):
     return means
 
 
-#> tox_jensen_shannon:compute_residuals_c: Compute signed residuals
+#> tox_jensen_shannon_test:compute_residuals_c: Compute signed residuals
 def tox_compute_residuals(expr, means):
     """
     Compute signed residuals.
@@ -3608,7 +3608,7 @@ def tox_compute_residuals(expr, means):
     return resid
 
 
-#> tox_jensen_shannon:pool_means_c: Pool mean-expression values across studies
+#> tox_jensen_shannon_test:pool_means_c: Pool mean-expression values across studies
 def tox_pool_means(mean_S1, mean_S2, n_points):
     """
     Pool per-gene mean expression values across studies.
@@ -3666,7 +3666,7 @@ def tox_pool_means(mean_S1, mean_S2, n_points):
     }
 
 
-#> tox_jensen_shannon:pool_means_expert_c: Pool mean-expression values using pre-pooled array
+#> tox_jensen_shannon_test:pool_means_expert_c: Pool mean-expression values using pre-pooled array
 def tox_pool_means_expert(pooled_means, pooled_perm, n_points):
     """
     Pool means using pre-pooled and pre-sorted arrays.
@@ -3722,7 +3722,7 @@ def tox_pool_means_expert(pooled_means, pooled_perm, n_points):
     }
 
 
-#> tox_jensen_shannon:calc_neighborhood_size_c: Compute neighborhood size
+#> tox_jensen_shannon_test:calc_neighborhood_size_c: Compute neighborhood size
 def tox_calc_neighborhood_size(n_pool, n_points, n_genes_S, mean_S, desired_size=0):
     """
     Compute neighborhood size.
@@ -3768,7 +3768,7 @@ def tox_calc_neighborhood_size(n_pool, n_points, n_genes_S, mean_S, desired_size
     return n_neighbors_c.value
 
 
-#> tox_jensen_shannon:construct_neighborhoods_c: Construct neighborhood residual sets (alloc variant)
+#> tox_jensen_shannon_test:construct_neighborhoods_c: Construct neighborhood residual sets (alloc variant)
 def tox_construct_neighborhoods(x_star, mean_S, resid_S, n_pool, desired_n_neighbors=0):
     """
     Construct neighborhood-based residual sets (alloc variant).
