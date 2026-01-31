@@ -33,7 +33,7 @@ contains
 
         call validate_dimension_size(n_genes, ierr)
         call validate_dimension_size(n_reps, ierr)
-    !! expression can contain NaN
+        ! expression can contain NaN
         if (is_err(ierr)) return
 
         call compute_gene_means_helper(n_genes, n_reps, expr, means)
@@ -299,8 +299,7 @@ contains
     end subroutine construct_neighborhoods_alloc
 
     !> Construct neighborhood-based residual sets (kNN)
-    pure subroutine construct_neighborhoods(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, tmp_distances, tmp_distances_perm, &
-                                            neighborhood_residuals, neighborhood_indices, n_neighbors, ierr)
+    pure subroutine construct_neighborhoods(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, tmp_distances, tmp_distances_perm, neighborhood_residuals, neighborhood_indices, n_neighbors, ierr)
         integer(int32), intent(in) :: n_points
             !! Number of reference points
         integer(int32), intent(in) :: n_genes_S
@@ -331,6 +330,7 @@ contains
         call validate_dimension_size(n_genes_S, ierr)
         call validate_dimension_size(n_reps_S, ierr)
         call validate_dimension_size(n_neighbors, ierr)
+        call validate_in_range_int(n_neighbors, ierr, min=1_int32, max=n_genes_S)
         if (is_err(ierr)) return
 
         call construct_neighborhoods_helper(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, tmp_distances, tmp_distances_perm, neighborhood_residuals, neighborhood_indices, n_neighbors)
@@ -352,9 +352,9 @@ contains
             !! Per-gene mean expression values
         real(real64), intent(in) :: resid_S(n_reps_S, n_genes_S)
             !! Matrix of signed residuals
-        real(real64), intent(out) :: tmp_distances(n_neighbors)
+        real(real64), intent(out) :: tmp_distances(n_genes_S)
             !! Distances work array
-        integer(int32), intent(out) :: tmp_distances_perm(n_neighbors)
+        integer(int32), intent(out) :: tmp_distances_perm(n_genes_S)
             !! Work array for permutation vector to sort `tmp_distances_perm`
         real(real64), intent(out) :: neighborhood_residuals(n_reps_S, n_neighbors, n_points)
             !! Collection of residual vectors for each neighborhood
@@ -363,25 +363,22 @@ contains
         integer(int32), intent(in) :: n_neighbors
             !! Number of neighbors, **CALCULATE IT WITH [[tox_jensen_shannon_test(module):calc_neighborhood_size(function)]]**
 
-        integer(int32) :: i_point, i_gene, gene_idx, residual_idx
+        integer(int32) :: i_point, i_gene, gene_idx
 
         ! Process each reference point
         do i_point = 1, n_points
 
-            ! Calculate distances. Note that `residual_idx` will have a value of `n_neighbors + 1` after leaving the loop. This is guaranteed by `calc_neighborhood_size`.
-            residual_idx = 1_int32
-            do concurrent(i_gene=1:n_genes_S) shared(tmp_distances, tmp_distances_perm, i_point, x_star, mean_S) reduce(+:residual_idx)
-                if (.not. ieee_is_nan(mean_S(i_gene))) then
-                    tmp_distances(residual_idx) = abs(mean_S(i_gene) - x_star(i_point))
+            ! Calculate distances.
+            do concurrent(i_gene=1:n_genes_S) shared(tmp_distances, tmp_distances_perm, i_point, x_star, mean_S)
+                tmp_distances(i_gene) = abs(mean_S(i_gene) - x_star(i_point))
 
-                    ! Initialize perm
-                    tmp_distances_perm(residual_idx) = i_gene
-                    residual_idx = residual_idx + 1
-                end if
+                ! Initialize perm
+                tmp_distances_perm(i_gene) = i_gene
             end do
 
             ! Sort distances using heapsort
             ! heapsort_real will reorder tmp_distances_perm so that tmp_distances(tmp_distances_perm(1:n_genes_S)) is sorted
+            ! `calc_neighborhood_size` guarantees that the NaN `mean_S` indices are not included after sorting (they come after tmp_distances_perm(:n_neighbors))
             call heapsort_real(tmp_distances, tmp_distances_perm)
 
             ! Store the n_neighbors nearest neighbor indices
