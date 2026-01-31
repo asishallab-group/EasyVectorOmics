@@ -946,7 +946,7 @@ tox_mean_vector <- function(expression_vectors, gene_indices) {
   return(result)
 }
 
-#> tox_loess:tox_loess_required_workspace: Recommend workspace sizes based on Netlib exact formulas
+#> tox_loess:tox_loess_required_workspace_c: Recommend workspace sizes based on Netlib exact formulas
 #' Recommend workspace sizes based on Netlib exact formulas
 #'
 #' @param d Integer, dimensionality of the data (usually 1)
@@ -961,7 +961,7 @@ tox_loess_required_workspace <- function(d, nvmax, setlf) {
   return(result)
 }
 
-#> tox_loess:loess_fit_plain: Perform plain LOESS fitting
+#> tox_loess:loess_fit_plain_c: Perform plain LOESS fitting
 #' Perform plain LOESS fitting
 #'
 #' @param x,y,w,z Numeric vectors of input data
@@ -987,7 +987,7 @@ loess_fit_plain <- function(x, y, w, z, span, degree, nvmax, infl, setlf, iv, wv
   return(result$yhat)
 }
 
-#> tox_loess:loess_fit_robust: Perform robust LOESS fitting with bisquare reweighting
+#> tox_loess:loess_fit_robust_c: Perform robust LOESS fitting with bisquare reweighting
 #' Perform robust LOESS fitting with bisquare reweighting
 #'
 #' @param n_iters Integer, number of robust iterations
@@ -1012,7 +1012,7 @@ loess_fit_robust <- function(x, y, w, z, span, degree, nvmax, infl, setlf, n_ite
   return(result$yhat)
 }
 
-#> tox_loess:tox_loess: High-level wrapper for LOESS fitting (plain or robust)
+#> tox_loess:tox_loess_c: High-level wrapper for LOESS fitting (plain or robust)
 #' High-level wrapper for LOESS fitting (plain or robust)
 #'
 #' @param x,y Numeric vectors of input data
