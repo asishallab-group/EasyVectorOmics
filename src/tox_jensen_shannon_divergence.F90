@@ -408,12 +408,12 @@ contains
         integer(int32), intent(out) :: ierr
             !! Error code
         integer(int32), intent(in), optional :: random_seed
-            !! Seed to use for shuffling the pool
+            !! Seed to use for shuffling
 
-        integer(int32) :: i_rep, i_neighbor, pool_size, pool_idx, i_point
-        real(real64), dimension(:, :, :), allocatable :: residual_pool
-        integer(int32), dimension(:, :), allocatable :: tmp_counts_S1
-        integer(int32), dimension(:, :), allocatable :: tmp_counts_S2
+        real(real64), dimension(:, :, :), allocatable :: S1
+        real(real64), dimension(:, :, :), allocatable :: S2
+        real(real64), dimension(:, :), allocatable :: tmp_pool
+        integer(int32), dimension(:, :), allocatable :: tmp_counts
         real(real64), dimension(:, :), allocatable :: tmp_pmf_S1
         real(real64), dimension(:, :), allocatable :: tmp_pmf_S2
         integer(int32), dimension(:), allocatable :: tmp_included_n_reps_S1
@@ -434,8 +434,8 @@ contains
         if (is_err(ierr)) return
 
         ! Allocate working arrays
-        M_ALLOCATE(tmp_counts_S1(n_points, n_bins))
-        M_ALLOCATE(tmp_counts_S2(n_points, n_bins))
+        M_ALLOCATE(tmp_pool(n_reps_S1 + n_reps_S2, n_neighbors))
+        M_ALLOCATE(tmp_counts(n_points, n_bins))
         M_ALLOCATE(tmp_pmf_S1(n_points, n_bins))
         M_ALLOCATE(tmp_pmf_S2(n_points, n_bins))
         M_ALLOCATE(tmp_included_n_reps_S1(n_points))
@@ -443,31 +443,20 @@ contains
         M_ALLOCATE(tmp_js_divergences(n_points))
         M_ALLOCATE(tmp_weights(n_points))
 
-        ! Allocate and fill pool
-        M_ALLOCATE(residual_pool(n_reps_S1 + n_reps_S2, n_neighbors, n_points))
-        pool_size = size(residual_pool, kind=int32)
+        ! Allocate the residual copies
+        M_ALLOCATE(S1(n_reps_S1, n_neighbors, n_points))
+        M_ALLOCATE(S2(n_reps_S2, n_neighbors, n_points))
 
-        ! Collect the residual values in the pool
-        do concurrent (i_point = 1:n_points)
-            do concurrent (i_neighbor = 1:n_neighbors) shared(i_point, n_reps_S1, n_reps_S2)
-                do concurrent (i_rep = 1:n_reps_S1) shared(neighborhood_residuals_S1, residual_pool, i_point, i_neighbor)
-                    residual_pool(i_rep, i_neighbor, i_point) = neighborhood_residuals_S1(i_rep, i_neighbor, i_point)
-                end do
+        S1 = neighborhood_residuals_S1
+        S2 = neighborhood_residuals_S2
 
-                do concurrent (i_rep = 1:n_reps_S2) local(pool_idx) shared(neighborhood_residuals_S2, residual_pool, i_point, i_neighbor)
-                    pool_idx = i_rep + n_reps_S1
-                    residual_pool(pool_idx, i_neighbor, i_point) = neighborhood_residuals_S2(i_rep, i_neighbor, i_point)
-                end do
-            end do
-        end do
-
-        call jgct_permutation_test_helper(residual_pool, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_counts_S1, tmp_counts_S2, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, random_seed)
+        call jgct_permutation_test_helper(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, random_seed)
     end subroutine jgct_permutation_test_alloc
 
     !> Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
     subroutine jgct_permutation_test( &
-            residual_pool, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, &
-            tmp_counts_S1, tmp_counts_S2, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, &
+            neighborhood_residuals_S1_copy, neighborhood_residuals_S2_copy, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, &
+            tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, &
             ierr, random_seed &
         )
         integer(int32), intent(in) :: n_reps_S1
@@ -478,8 +467,10 @@ contains
             !! Number of neighbors in study 1
         integer(int32), intent(in) :: n_points
             !! Number of reference points in the studies
-        real(real64), dimension(n_reps_S1 + n_reps_S2, n_neighbors, n_points), intent(inout), target :: residual_pool
-            !! Concatenation of neighborhood residuals for both studies, will be shuffled
+        real(real64), dimension(n_reps_S1, n_neighbors, n_points), intent(inout) :: neighborhood_residuals_S1_copy
+            !! Copy (if wanted) of the computed neighborhood residuals for study 1, will be shuffled in-place
+        real(real64), dimension(n_reps_S2, n_neighbors, n_points), intent(inout) :: neighborhood_residuals_S2_copy
+            !! Copy (if wanted) of the computed neighborhood residuals for study 2, will be shuffled in-place
         real(real64), intent(in) :: global_jsd_observed
             !! Observed global JSD value for both studies (from [[tox_jensen_shannon_divergence(module):compute_weighted_global_divergence(subroutine)]])
         integer(int32), intent(in) :: n_bins
@@ -492,9 +483,9 @@ contains
             !! Vector of global divergence values obtained under the null hypothesis
         real(real64), intent(out) :: p_value
             !! Empirical p-value of the permutation test: \( \frac{\text{sum}(\text{jsd_null}) + 1}{\text{n_permutations}} \)
-        integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts_S1
-            !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
-        integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts_S2
+        real(real64), dimension(n_reps_S1 + n_reps_S2, n_neighbors), intent(out) :: tmp_pool
+            !! Working array for shuffling the concatenated residuals from both studies per reference point
+        integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts
             !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
         real(real64), dimension(n_points, n_bins), intent(out) :: tmp_pmf_S1
             !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
@@ -511,7 +502,7 @@ contains
         integer(int32), intent(out) :: ierr
             !! Error code
         integer(int32), intent(in), optional :: random_seed
-            !! Seed to use for shuffling the pool
+            !! Seed to use for shuffling
 
         call set_ok(ierr)
 
@@ -525,13 +516,13 @@ contains
 
         if (is_err(ierr)) return
 
-        call jgct_permutation_test_helper(residual_pool, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_counts_S1, tmp_counts_S2, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, random_seed)
+        call jgct_permutation_test_helper(neighborhood_residuals_S1_copy, neighborhood_residuals_S2_copy, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, random_seed)
     end subroutine jgct_permutation_test
 
     !> (no input validation) Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
     subroutine jgct_permutation_test_helper( &
-            residual_pool, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, &
-            tmp_counts_S1, tmp_counts_S2, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, &
+            neighborhood_residuals_S1_copy, neighborhood_residuals_S2_copy, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, &
+            tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, &
             random_seed &
         )
         integer(int32), intent(in) :: n_reps_S1
@@ -542,8 +533,10 @@ contains
             !! Number of neighbors in study 1
         integer(int32), intent(in) :: n_points
             !! Number of reference points in the studies
-        real(real64), dimension(n_reps_S1 + n_reps_S2, n_neighbors, n_points), intent(inout), target :: residual_pool
-            !! Concatenation of neighborhood residuals for both studies, will be shuffled
+        real(real64), dimension(n_reps_S1, n_neighbors, n_points), intent(inout), target :: neighborhood_residuals_S1_copy
+            !! Copy (if wanted) of the computed neighborhood residuals for study 1, will be shuffled in-place
+        real(real64), dimension(n_reps_S2, n_neighbors, n_points), intent(inout), target :: neighborhood_residuals_S2_copy
+            !! Copy (if wanted) of the computed neighborhood residuals for study 2, will be shuffled in-place
         real(real64), intent(in) :: global_jsd_observed
             !! Observed global JSD value for both studies (from [[tox_jensen_shannon_divergence(module):compute_weighted_global_divergence(subroutine)]])
         integer(int32), intent(in) :: n_bins
@@ -556,9 +549,9 @@ contains
             !! Vector of global divergence values obtained under the null hypothesis
         real(real64), intent(out) :: p_value
             !! Empirical p-value of the permutation test: \( \frac{\text{sum}(\text{jsd_null}) + 1}{\text{n_permutations}} \)
-        integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts_S1
-            !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
-        integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts_S2
+        real(real64), dimension(n_reps_S1 + n_reps_S2, n_neighbors), intent(out), target :: tmp_pool
+            !! Working array for shuffling the concatenated residuals from both studies per reference point
+        integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts
             !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
         real(real64), dimension(n_points, n_bins), intent(out) :: tmp_pmf_S1
             !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
@@ -573,36 +566,27 @@ contains
         real(real64), dimension(n_points), intent(out) :: tmp_weights
             !! Working array for [[tox_jensen_shannon_divergence(module):compute_weighted_global_divergence(subroutine)]]
         integer(int32), intent(in), optional :: random_seed
-            !! Seed to use for shuffling the pool
+            !! Seed to use for shuffling
 
-        integer(int32) :: pool_size, n_S1, n_S2, n_jsd_exceeding_observed, i_permutation
-        real(real64), dimension(:), pointer :: residual_pool_flat
-        real(real64), dimension(:, :, :), pointer :: pooled_S1
-        real(real64), dimension(:, :, :), pointer :: pooled_S2
+        integer(int32) :: n_jsd_exceeding_observed, i_permutation, n_residuals_S1, n_residuals_S2, pool_size, i_point
 
         if (present(random_seed)) then
             call init_random(random_seed)
         end if
 
-        pool_size = size(residual_pool, kind=int32)
-        n_S1 = n_reps_S1 * n_neighbors * n_points
-        n_S2 = n_reps_S2 * n_neighbors * n_points
-
-        ! the flat residual pool will be shuffled
-        residual_pool_flat(1:pool_size) => residual_pool
-        ! the first part of the shuffled pool is the new neighborhood of S1
-        pooled_S1(1:n_reps_S1, 1:n_neighbors, 1:n_points) => residual_pool_flat(1:n_S1)
-        ! the second part of the shuffled pool is the new neighborhood of S2
-        pooled_S2(1:n_reps_S2, 1:n_neighbors, 1:n_points) => residual_pool_flat(n_S1+1:n_S2)
-
         n_jsd_exceeding_observed = 0_int32
         do i_permutation = 1, n_permutations
-            ! 1. shuffle pool -> pooled_S1, pooled_S2 change as well
-            call shuffle_vector(residual_pool_flat)
+            ! 1. shuffle residuals
+            do i_point = 1, n_points
+                call shuffle_reference_point_helper( &
+                    neighborhood_residuals_S1_copy(:, :, i_point), neighborhood_residuals_S2_copy(:, :, i_point), &
+                    n_reps_S1, n_reps_S2, n_neighbors, tmp_pool &
+                )
+            end do
 
             ! 2. Pipeline to determine the global jsd for current permutation
-            call build_residual_histograms_helper(pooled_S1, n_reps_S1, n_neighbors, n_points, shared_residual_range, n_bins, tmp_counts_S1, tmp_pmf_S1, tmp_included_n_reps_S1)
-            call build_residual_histograms_helper(pooled_S2, n_reps_S2, n_neighbors, n_points, shared_residual_range, n_bins, tmp_counts_S2, tmp_pmf_S2, tmp_included_n_reps_S2)
+            call build_residual_histograms_helper(neighborhood_residuals_S1_copy, n_reps_S1, n_neighbors, n_points, shared_residual_range, n_bins, tmp_counts, tmp_pmf_S1, tmp_included_n_reps_S1)
+            call build_residual_histograms_helper(neighborhood_residuals_S2_copy, n_reps_S2, n_neighbors, n_points, shared_residual_range, n_bins, tmp_counts, tmp_pmf_S2, tmp_included_n_reps_S2)
             call compute_divergence_per_reference_point_helper(tmp_pmf_S1, tmp_pmf_S2, n_points, n_bins, tmp_js_divergences)
             call compute_weighted_global_divergence_helper(tmp_js_divergences, n_points, tmp_included_n_reps_S1, tmp_included_n_reps_S2, jsd_null(i_permutation), tmp_weights)
 
@@ -610,7 +594,38 @@ contains
                 n_jsd_exceeding_observed = n_jsd_exceeding_observed + 1
             end if
         end do
+
+        p_value = real(n_jsd_exceeding_observed + 1, real64) / real(n_permutations + 1, real64)
     end subroutine jgct_permutation_test_helper
+
+    !> Helper for [[tox_jensen_shannon_divergence(module):jgct_permutation_test_helper(subroutine)]] to shuffle reference points
+    subroutine shuffle_reference_point_helper(reference_point_S1, reference_point_S2, n_reps_S1, n_reps_S2, n_neighbors, pool_flat)
+        integer(int32), intent(in) :: n_reps_S1
+            !! Number of replicates in study 1
+        integer(int32), intent(in) :: n_reps_S2
+            !! Number of replicates in study 2
+        integer(int32), intent(in) :: n_neighbors
+            !! Number of neighbors in study 1
+        real(real64), dimension(n_reps_S1 * n_neighbors), intent(inout) :: reference_point_S1
+            !! Residuals for one reference point in study 1, will be shuffled in-place
+        real(real64), dimension(n_reps_S2 * n_neighbors), intent(inout) :: reference_point_S2
+            !! Residuals for one reference point in study 2, will be shuffled in-place
+        real(real64), dimension((n_reps_S1 + n_reps_S2) * n_neighbors), intent(out), target :: pool_flat
+            !! Working array for shuffling the concatenated residuals from both studies per reference point
+
+        integer(int32) :: pool_size, n_residuals_S1
+
+        pool_size = size(pool_flat, kind=int32)
+        n_residuals_S1 = size(reference_point_S1, kind=int32)
+
+        pool_flat(1:n_residuals_S1) = reference_point_S1
+        pool_flat(n_residuals_S1+1:pool_size) = reference_point_S1
+
+        call shuffle_vector(pool_flat)
+
+        reference_point_S1 = pool_flat(1:n_residuals_S1)
+        reference_point_S2 = pool_flat(n_residuals_S1+1:pool_size)
+    end subroutine shuffle_reference_point_helper
 
 end module tox_jensen_shannon_divergence
 
