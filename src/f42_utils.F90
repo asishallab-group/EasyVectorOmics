@@ -40,11 +40,11 @@ contains
   !> Compute logarithm for any base
   pure subroutine logx(val, base, exponent, ierr)
       real(real64), intent(in) :: val
-        !! Value (`x` in $ b^y = x $)
+        !! Value (`x` in \( b^y = x \))
       real(real64), intent(in) :: base
-        !! Base (`b` in $ b^y = x $)
+        !! Base (`b` in \( b^y = x \))
       real(real64), intent(out) :: exponent
-        !! Exponent (`y` in $ b^y = x $)
+        !! Exponent (`y` in \( b^y = x \))
       integer(int32), intent(out) :: ierr
         !! Error code
 
@@ -179,7 +179,7 @@ contains
     angle = acos(theta)
   end subroutine angle_between
 
-  !> Returns the given degrees in positive radian value (-90deg -> 3*PI/2, not -PI/2)
+  !> Returns the given degrees in positive radian value \( -90^{\circ} \Rightarrow \frac{3\cdot \pi}{2}, \text{not} -\frac{\pi}{2} \)
   pure real(real64) function radians(degrees)
     real(real64), intent(in) :: degrees
         !! degrees to be converted
