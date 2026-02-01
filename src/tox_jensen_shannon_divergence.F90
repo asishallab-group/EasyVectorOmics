@@ -4,7 +4,7 @@ module tox_jensen_shannon_divergence
     use safeguard
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
-    use f42_utils, only: clamp, calc_percentile_helper, is_close, sort_array_heapsort
+    use f42_utils, only: clamp, calc_percentile_helper, is_close, sort_array_heapsort, shuffle_vector, init_random
     use tox_errors, only: set_ok, set_err, is_err, ERR_ALLOC_FAIL, validate_dimension_size, validate_in_range_real, validate_all_in_range_real, validate_in_range_int, validate_all_in_range_int
     implicit none
 contains
@@ -380,7 +380,7 @@ contains
     end subroutine compute_weighted_global_divergence_helper
 
     !> Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
-    pure subroutine jgct_permutation_test_alloc(neighborhood_residuals_S1, neighborhood_residuals_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, ierr)
+    subroutine jgct_permutation_test_alloc(neighborhood_residuals_S1, neighborhood_residuals_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, ierr, random_seed)
         integer(int32), intent(in) :: n_reps_S1
             !! Number of replicates in study 1
         integer(int32), intent(in) :: n_reps_S2
@@ -407,6 +407,8 @@ contains
             !! Empirical p-value of the permutation test: \( \frac{\text{sum}(\text{jsd_null}) + 1}{\text{n_permutations}} \)
         integer(int32), intent(out) :: ierr
             !! Error code
+        integer(int32), intent(in), optional :: random_seed
+            !! Seed to use for shuffling the pool
 
         integer(int32) :: i_rep, i_neighbor, pool_size, pool_idx, i_point
         real(real64), dimension(:, :, :), allocatable :: residual_pool
@@ -459,14 +461,14 @@ contains
             end do
         end do
 
-        call jgct_permutation_test_helper(residual_pool, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_counts_S1, tmp_counts_S2, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights)
+        call jgct_permutation_test_helper(residual_pool, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_counts_S1, tmp_counts_S2, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, random_seed)
     end subroutine jgct_permutation_test_alloc
 
     !> Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
-    pure subroutine jgct_permutation_test( &
+    subroutine jgct_permutation_test( &
             residual_pool, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, &
             tmp_counts_S1, tmp_counts_S2, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, &
-            ierr &
+            ierr, random_seed &
         )
         integer(int32), intent(in) :: n_reps_S1
             !! Number of replicates in study 1
@@ -508,6 +510,8 @@ contains
             !! Working array for [[tox_jensen_shannon_divergence(module):compute_weighted_global_divergence(subroutine)]]
         integer(int32), intent(out) :: ierr
             !! Error code
+        integer(int32), intent(in), optional :: random_seed
+            !! Seed to use for shuffling the pool
 
         call set_ok(ierr)
 
@@ -521,13 +525,14 @@ contains
 
         if (is_err(ierr)) return
 
-        call jgct_permutation_test_helper(residual_pool, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_counts_S1, tmp_counts_S2, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights)
+        call jgct_permutation_test_helper(residual_pool, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_counts_S1, tmp_counts_S2, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, random_seed)
     end subroutine jgct_permutation_test
 
     !> (no input validation) Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
-    pure subroutine jgct_permutation_test_helper( &
+    subroutine jgct_permutation_test_helper( &
             residual_pool, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, &
-            tmp_counts_S1, tmp_counts_S2, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights &
+            tmp_counts_S1, tmp_counts_S2, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, &
+            random_seed &
         )
         integer(int32), intent(in) :: n_reps_S1
             !! Number of replicates in study 1
@@ -567,11 +572,17 @@ contains
             !! Working array for [[tox_jensen_shannon_divergence(module):compute_divergence_per_reference_point(subroutine)]]
         real(real64), dimension(n_points), intent(out) :: tmp_weights
             !! Working array for [[tox_jensen_shannon_divergence(module):compute_weighted_global_divergence(subroutine)]]
+        integer(int32), intent(in), optional :: random_seed
+            !! Seed to use for shuffling the pool
 
         integer(int32) :: pool_size, n_S1, n_S2, n_jsd_exceeding_observed, i_permutation
         real(real64), dimension(:), pointer :: residual_pool_flat
         real(real64), dimension(:, :, :), pointer :: pooled_S1
         real(real64), dimension(:, :, :), pointer :: pooled_S2
+
+        if (present(random_seed)) then
+            call init_random(random_seed)
+        end if
 
         pool_size = size(residual_pool, kind=int32)
         n_S1 = n_reps_S1 * n_neighbors * n_points
@@ -586,7 +597,8 @@ contains
 
         n_jsd_exceeding_observed = 0_int32
         do i_permutation = 1, n_permutations
-            ! 1. TODO: shuffle
+            ! 1. shuffle pool -> pooled_S1, pooled_S2 change as well
+            call shuffle_vector(residual_pool_flat)
 
             ! 2. Pipeline to determine the global jsd for current permutation
             call build_residual_histograms_helper(pooled_S1, n_reps_S1, n_neighbors, n_points, shared_residual_range, n_bins, tmp_counts_S1, tmp_pmf_S1, tmp_included_n_reps_S1)

@@ -21,6 +21,10 @@ module f42_utils
     module procedure sort_real_heapsort, sort_integer_heapsort, sort_character_heapsort
   end interface sort_array_heapsort
 
+  interface shuffle_vector
+    module procedure shuffle_vector_real, shuffle_vector_int
+  end interface shuffle_vector
+
   real(real64), parameter :: PI = 4.0_real64 * atan(1.0_real64)
   real(real64), parameter :: EPS = epsilon(1.0_real64)
 contains
@@ -93,6 +97,40 @@ contains
     call random_number(rand_num)
     rand_num = min + rand_num * (max - min)
   end function rand_range
+
+  !> Shuffle a vector in-place, using Fisher-Yates shuffle
+  subroutine shuffle_vector_real(vec)
+      real(real64), dimension(:), intent(inout) :: vec
+          !! Output permutation array
+
+      integer(int32) :: i, rand_idx
+      real(real64) :: rand_val
+      
+      ! Fisher-Yates shuffle
+      do i = size(vec, kind=int32), 2, -1
+          ! Generate random integer in range [1, i]
+          rand_idx = int(rand_range(1.0_real64, real(i, real64)), int32)
+
+          call swap_real(vec(i), vec(rand_idx))
+      end do
+  end subroutine shuffle_vector_real
+
+  !> Shuffle a vector in-place, using Fisher-Yates shuffle
+  subroutine shuffle_vector_int(vec)
+      integer(int32), dimension(:), intent(inout) :: vec
+          !! Output permutation array
+
+      integer(int32) :: i, rand_idx
+      real(real64) :: rand_val
+      
+      ! Fisher-Yates shuffle
+      do i = size(vec, kind=int32), 2, -1
+          ! Generate random integer in range [1, i]
+          rand_idx = int(rand_range(1.0_real64, real(i, real64)), int32)
+
+          call swap_int(vec(i), vec(rand_idx))
+      end do
+  end subroutine shuffle_vector_int
 
   !> Returns the next representable float lower than a value. Helpful for exclusive upper bounds in ranges.
   pure real(real64) function below(val)
@@ -705,6 +743,16 @@ contains
     integer(int32) :: temp
     temp = a; a = b; b = temp
   end subroutine swap_int
+
+  !> Swap two real values in-place.
+  pure subroutine swap_real(a, b)
+    !| First real to swap
+    real(real64), intent(inout) :: a
+    !| Second real to swap
+    real(real64), intent(inout) :: b
+    real(real64) :: temp
+    temp = a; a = b; b = temp
+  end subroutine swap_real
 
   ! Helper: NaN-aware comparisons for real(real64).
   ! We treat NaN as greater than any numeric value so that NaNs end up at the
