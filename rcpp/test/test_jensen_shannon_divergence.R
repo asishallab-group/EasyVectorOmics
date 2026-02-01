@@ -9,24 +9,25 @@ test_determine_shared_residual_range <- function() {
   approx_equal <- function(a, b) abs(a - b) < TOL
 
   # Test 1 — Basic correctness
-  S1 <- matrix(c(
+  S1 <- array(c(
     1,2,3,4,
     5,6,-7,8,
-    9,10,11,12
-  ), 4, 3)
+    9,10,11,12,
+    1,1,1,1
+  ), dim = c(4, 2, 2))
 
-  S2 <- matrix(c(
+  S2 <- array(c(
     2,-4,6,8,
     1,3,5,7,
     9,0,1,2
-  ), 4, 3)
+  ), dim = c(3, 2, 2))
 
   R <- tox_determine_shared_residual_range(S1, S2, 95)
-  assertTrue(approx_equal(R, 10.85), "Test 1 failed: expected ~10.85")
+  assertTrue(approx_equal(R, 10.65), "Test 1 failed: expected ~10.65")
 
   # Test 2 — Custom quantile
   R <- tox_determine_shared_residual_range(S1, S2, 50)
-  assertTrue(approx_equal(R, 5.0), "Test 2 failed: expected ~5.0")
+  assertTrue(approx_equal(R, 4.0), "Test 2 failed: expected ~4.0")
 
   # Test 3 — Quantile < 0 → error
   assertError(
@@ -41,27 +42,32 @@ test_determine_shared_residual_range <- function() {
   )
 
   # Test 5 — NaNs ignored
-  S1 <- matrix(c(
-    NA,2,3,
+  S1 <- array(c(
+    NA_real_,2,3,
     4,5,6,
     -7,8,-11,
-    9,10,12
-  ), 4, 3)
-  S2 <- S1
-  S2[4,3] <- NA
+    9,10,12,
+    1,1,1,1
+  ), dim = c(4,2,2))
+  S2 <- array(c(
+    -1,2,3,
+    4,5,6,
+    -7,8,-11,
+    9,10,NA_real_
+  ), dim = c(3,2,2))
 
   R <- tox_determine_shared_residual_range(S1, S2, 95)
   assertTrue(approx_equal(R, 11.0), "Test 5 failed: expected ~11.0")
 
   # Test 6 — All zeros
-  S1 <- matrix(0, 4, 3)
-  S2 <- matrix(0, 4, 3)
+  S1 <- array(0, dim = c(4,2,2))
+  S2 <- array(0, dim = c(3,2,2))
   R <- tox_determine_shared_residual_range(S1, S2, 95)
   assertTrue(approx_equal(R, 0.0), "Test 6 failed: expected 0")
 
   # Test 7 — Single residual
-  S1 <- matrix(3, 1, 1)
-  S2 <- matrix(-4, 1, 1)
+  S1 <- array(3, dim = c(1, 1, 1))
+  S2 <- array(-4, dim = c(1, 1, 1))
   R <- tox_determine_shared_residual_range(S1, S2, 95)
   assertTrue(approx_equal(R, 3.95), "Test 7 failed: expected ~3.95")
 }
@@ -76,27 +82,28 @@ test_determine_shared_residual_range_expert <- function() {
     list(pool = pool, perm = perm)
   }
 
-  S1 <- matrix(c(
+  S1 <- array(c(
     1,2,3,4,
     5,6,-7,8,
-    9,10,11,12
-  ), 4, 3)
+    9,10,11,12,
+    1,1,1,1
+  ), dim = c(4, 2, 2))
 
-  S2 <- matrix(c(
+  S2 <- array(c(
     2,-4,6,8,
     1,3,5,7,
     9,0,1,2
-  ), 4, 3)
+  ), dim = c(3, 2, 2))
 
   pp <- make_pool(S1, S2)
 
   # Test 1
   R <- tox_determine_shared_residual_range_expert(pp$pool, pp$perm, 95)
-  assertTrue(approx_equal(R, 10.85), "Test 1 failed")
+  assertTrue(approx_equal(R, 10.65), "Test 1 failed")
 
   # Test 2
   R <- tox_determine_shared_residual_range_expert(pp$pool, pp$perm, 50)
-  assertTrue(approx_equal(R, 5.0), "Test 2 failed")
+  assertTrue(approx_equal(R, 4.0), "Test 2 failed")
 
   # Test 3
   assertError(
@@ -111,29 +118,34 @@ test_determine_shared_residual_range_expert <- function() {
   )
 
   # Test 5 — NaNs ignored
-  S1 <- matrix(c(
-    NA,2,3,
+  S1 <- array(c(
+    NA_real_,2,3,
     4,5,6,
     -7,8,-11,
-    9,10,12
-  ), 4, 3)
-  S2 <- S1
-  S2[4,3] <- NA
+    9,10,12,
+    1,1,1,1
+  ), dim = c(4,2,2))
+  S2 <- array(c(
+    -1,2,3,
+    4,5,6,
+    -7,8,-11,
+    9,10,NA_real_
+  ), dim = c(3,2,2))
 
   pp <- make_pool(S1, S2)
   R <- tox_determine_shared_residual_range_expert(pp$pool, pp$perm, 95)
   assertTrue(approx_equal(R, 11.0), "Test 5 failed")
 
   # Test 6 — All zeros
-  S1 <- matrix(0, 4, 3)
-  S2 <- matrix(0, 4, 3)
+  S1 <- array(0, dim = c(4,2,2))
+  S2 <- array(0, dim = c(3,2,2))
   pp <- make_pool(S1, S2)
   R <- tox_determine_shared_residual_range_expert(pp$pool, pp$perm, 95)
   assertTrue(approx_equal(R, 0.0), "Test 6 failed")
 
   # Test 7 — Single residual
-  S1 <- matrix(3, 1, 1)
-  S2 <- matrix(-4, 1, 1)
+  S1 <- array(3, dim = c(1, 1, 1))
+  S2 <- array(-4, dim = c(1, 1, 1))
   pp <- make_pool(S1, S2)
   R <- tox_determine_shared_residual_range_expert(pp$pool, pp$perm, 95)
   assertTrue(approx_equal(R, 3.95), "Test 7 failed")
@@ -149,10 +161,11 @@ test_build_residual_histograms <- function() {
   mat_close <- function(a, b) all(abs(a - b) < TOL)
 
   # Test 1
-  E <- matrix(0, 6, 3)
-  E[,1] <- c(-2, -0.5, 0.2, 1.7, 0.9, -1.2)
-  E[,2] <- 0
-  E[,3] <- c(2.5, -3, 1.2, 0.4, -0.1, 0)
+  E <- array(c(
+    -2, -0.5, 0.2, 1.7, 0.9, -1.2,
+    0, 0, 0, 0, 0, 0,
+    2.5, -3, 1.2, 0.4, -0.1, 0
+  ), dim = c(3,2,3))
 
   out <- tox_build_residual_histograms(E, R, n_bins)
 
@@ -160,24 +173,24 @@ test_build_residual_histograms <- function() {
     2,1,2,1,
     0,0,6,0,
     1,1,2,2
-  ), 3, 4, byrow = TRUE)
+  ), 3, 4, byrow=TRUE)
 
   expected_pmf <- matrix(c(
     2/6,1/6,2/6,1/6,
     0,0,1,0,
     1/6,1/6,1/3,1/3
-  ), 3, 4, byrow = TRUE)
+  ), 3, 4, byrow=TRUE)
 
   assertTrue(mat_equal(out$counts, expected_counts), "Test 1 counts mismatch")
   assertTrue(mat_close(out$pmf, expected_pmf), "Test 1 pmf mismatch")
   assertTrue(all(out$included_n_residuals == c(6,6,6)), "Test 1 included mismatch")
 
   # Test 2 — NaNs ignored
-  E <- matrix(0, 6, 3)
-  E[1,1] <- NA
-  E[3,1] <- NA
-  E[2,2] <- NA
-  E[6,3] <- NA
+  E <- array(0, dim = c(3,2,3))
+  E[1,1,1] <- NA_real_
+  E[3,1,1] <- NA_real_
+  E[2,1,2] <- NA_real_
+  E[3,2,3] <- NA_real_
 
   out <- tox_build_residual_histograms(E, R, n_bins)
 
@@ -198,7 +211,8 @@ test_build_residual_histograms <- function() {
   assertTrue(all(out$included_n_residuals == c(4,5,5)), "Test 2 included mismatch")
 
   # Test 3 — All NaN
-  E <- matrix(NA, 6, 3)
+  E <- array(NA_real_, dim = c(3,2,3))
+
   out <- tox_build_residual_histograms(E, R, n_bins)
 
   assertTrue(mat_equal(out$counts, matrix(0, 3, 4)), "Test 3 counts mismatch")
@@ -206,11 +220,11 @@ test_build_residual_histograms <- function() {
   assertTrue(all(out$included_n_residuals == c(0,0,0)), "Test 3 included mismatch")
 
   # Test 4 — Boundary values
-  E <- matrix(c(
+  E <- array(c(
     -2,-1,0,1,2,0,
     -2,-1,0,1,2,0,
     -2,-1,0,1,2,0
-  ), 6, 3)
+  ), dim = c(3,2,3))
 
   out <- tox_build_residual_histograms(E, R, n_bins)
 
@@ -314,9 +328,8 @@ test_compute_weighted_global_divergence <- function() {
 
   # Test 1 — uniform weights
   jsd <- c(0.1,0.2,0.3,0.4)
-  n1 <- c(5,5,5,5)
-  n2 <- c(5,5,5,5)
-
+  n1 <- c(5L,5L,5L,5L)
+  n2 <- c(5L,5L,5L,5L)
   out <- tox_compute_weighted_global_divergence(jsd, n1, n2)
 
   assertTrue(all(out$weights == 0.25), "Test 1 weights mismatch")
@@ -324,8 +337,8 @@ test_compute_weighted_global_divergence <- function() {
 
   # Test 2 — unequal sample counts
   jsd <- c(1,2,3,4)
-  n1 <- c(10,20,30,40)
-  n2 <- c(0,10,10,10)
+  n1 <- c(10L,20L,30L,40L)
+  n2 <- c(0L,10L,10L,10L)
 
   out <- tox_compute_weighted_global_divergence(jsd, n1, n2)
 
@@ -337,8 +350,8 @@ test_compute_weighted_global_divergence <- function() {
 
   # Test 3 — zero-sample neighborhoods
   jsd <- c(0.5,1.0,2.0,4.0)
-  n1 <- c(0,10,0,5)
-  n2 <- c(0,0,0,5)
+  n1 <- c(0L,10L,0L,5L)
+  n2 <- c(0L,0L,0L,5L)
 
   out <- tox_compute_weighted_global_divergence(jsd, n1, n2)
 
@@ -348,8 +361,8 @@ test_compute_weighted_global_divergence <- function() {
 
   # Test 4 — all zero samples
   jsd <- c(1,2,3,4)
-  n1 <- c(0,0,0,0)
-  n2 <- c(0,0,0,0)
+  n1 <- c(0L,0L,0L,0L)
+  n2 <- c(0L,0L,0L,0L)
 
   out <- tox_compute_weighted_global_divergence(jsd, n1, n2)
 
@@ -358,8 +371,8 @@ test_compute_weighted_global_divergence <- function() {
 
   # Test 5 — mixed jsd values, mixed sample counts
   jsd <- c(0.0, 0.5, 1.0, 2.0)
-  n1  <- c(5, 0, 10, 5)
-  n2  <- c(5, 5,  0, 5)
+  n1  <- c(5L, 0L, 10L, 5L)
+  n2  <- c(5L, 5L,  0L, 5L)
 
   out <- tox_compute_weighted_global_divergence(jsd, n1, n2)
 

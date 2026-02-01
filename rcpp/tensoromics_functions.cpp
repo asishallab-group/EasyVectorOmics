@@ -9,13 +9,13 @@ using namespace Rcpp;
 
 extern "C" {
 
-    void compute_weighted_global_divergence_c( double* js_divergences, int* n_neighbors, int* included_n_residuals_S1, int* included_n_residuals_S2, double* global_js_divergence, double* weights, int* ierr );
+    void compute_weighted_global_divergence_c( double* js_divergences, int* n_points, int* included_n_residuals_S1, int* included_n_residuals_S2, double* global_js_divergence, double* weights, int* ierr );
 
-    void compute_divergence_per_reference_point_c( double* pmf_S1, double* pmf_S2, int* n_neighbors, int* n_bins, double* js_divergences, int* ierr );
+    void compute_divergence_per_reference_point_c( double* pmf_S1, double* pmf_S2, int* n_points, int* n_bins, double* js_divergences, int* ierr );
 
-    void build_residual_histograms_c( double* neighborhood_residuals, int* n_residuals, int* n_neighbors, double* shared_residual_range, int* n_bins, int* counts, double* pmf, int* included_n_residuals, int* ierr );
+    void build_residual_histograms_c( double* neighborhood_residuals, int* n_reps, int* n_neighbors, int* n_points, double* shared_residual_range, int* n_bins, int* counts, double* pmf, int* included_n_residuals, int* ierr );
 
-    void determine_shared_residual_range_c( double* neighborhood_residuals_S1, double* neighborhood_residuals_S2, int* n_residuals, int* n_neighbors, double* residual_range_quantile, double* shared_residual_range, int* ierr );
+    void determine_shared_residual_range_c( double* neighborhood_residuals_S1, double* neighborhood_residuals_S2, int* n_reps_S1, int* n_reps_S2, int* n_neighbors, int* n_points, double* residual_range_quantile, double* shared_residual_range, int* ierr );
 
     void determine_shared_residual_range_expert_c( double* residual_pool, int* residual_pool_perm, int* n_pool, double* residual_range_quantile, double* shared_R, int* ierr );
 
@@ -574,14 +574,14 @@ Rcpp::List tox_determine_shared_residual_range_expert_rcpp(
     Rcpp::IntegerVector residual_pool_perm,
     double residual_range_quantile = 95.0
 ) {
-    int n_pool = residual_pool.size();
+    int pool_size = residual_pool.size();
     double shared_R = 0.0;
     int ierr = 0;
 
     determine_shared_residual_range_expert_c(
         residual_pool.begin(),
         residual_pool_perm.begin(),
-        &n_pool,
+        &pool_size,
         &residual_range_quantile,
         &shared_R,
         &ierr
@@ -595,12 +595,16 @@ Rcpp::List tox_determine_shared_residual_range_expert_rcpp(
 
 // [[Rcpp::export]]
 Rcpp::List tox_determine_shared_residual_range_rcpp(
-    Rcpp::NumericMatrix neighborhood_residuals_S1,
-    Rcpp::NumericMatrix neighborhood_residuals_S2,
+    Rcpp::NumericVector neighborhood_residuals_S1,
+    Rcpp::NumericVector neighborhood_residuals_S2,
     double residual_range_quantile = 95.0
 ) {
-    int n_residuals = neighborhood_residuals_S1.nrow();
-    int n_neighbors = neighborhood_residuals_S1.ncol();
+    Rcpp::IntegerVector dims = neighborhood_residuals_S1.attr("dim");
+    int n_reps_S1 = dims[0];
+    int n_neighbors = dims[1];
+    int n_points = dims[2];
+    dims = neighborhood_residuals_S2.attr("dim");
+    int n_reps_S2 = dims[0];
 
     double shared_R = 0.0;
     int ierr = 0;
@@ -608,8 +612,10 @@ Rcpp::List tox_determine_shared_residual_range_rcpp(
     determine_shared_residual_range_c(
         neighborhood_residuals_S1.begin(),
         neighborhood_residuals_S2.begin(),
-        &n_residuals,
+        &n_reps_S1,
+        &n_reps_S2,
         &n_neighbors,
+        &n_points,
         &residual_range_quantile,
         &shared_R,
         &ierr
@@ -623,23 +629,26 @@ Rcpp::List tox_determine_shared_residual_range_rcpp(
 
 // [[Rcpp::export]]
 Rcpp::List tox_build_residual_histograms_rcpp(
-    Rcpp::NumericMatrix neighborhood_residuals,
+    Rcpp::NumericVector neighborhood_residuals,
     double shared_residual_range,
     int n_bins
 ) {
-    int n_residuals = neighborhood_residuals.nrow();
-    int n_neighbors = neighborhood_residuals.ncol();
+    Rcpp::IntegerVector dims = neighborhood_residuals.attr("dim");
+    int n_reps = dims[0];
+    int n_neighbors = dims[1];
+    int n_points = dims[2];
 
-    Rcpp::IntegerMatrix counts(n_neighbors, n_bins);
-    Rcpp::NumericMatrix pmf(n_neighbors, n_bins);
-    Rcpp::IntegerVector included_n_residuals(n_neighbors);
+    Rcpp::IntegerMatrix counts(n_points, n_bins);
+    Rcpp::NumericMatrix pmf(n_points, n_bins);
+    Rcpp::IntegerVector included_n_residuals(n_points);
 
     int ierr = 0;
 
     build_residual_histograms_c(
         neighborhood_residuals.begin(),
-        &n_residuals,
+        &n_reps,
         &n_neighbors,
+        &n_points,
         &shared_residual_range,
         &n_bins,
         counts.begin(),
@@ -661,16 +670,16 @@ Rcpp::List tox_compute_divergence_per_reference_point_rcpp(
     Rcpp::NumericMatrix pmf_S1,
     Rcpp::NumericMatrix pmf_S2
 ) {
-    int n_neighbors = pmf_S1.nrow();
+    int n_points = pmf_S1.nrow();
     int n_bins = pmf_S1.ncol();
 
-    Rcpp::NumericVector js_divergences(n_neighbors);
+    Rcpp::NumericVector js_divergences(n_points);
     int ierr = 0;
 
     compute_divergence_per_reference_point_c(
         pmf_S1.begin(),
         pmf_S2.begin(),
-        &n_neighbors,
+        &n_points,
         &n_bins,
         js_divergences.begin(),
         &ierr
@@ -688,15 +697,15 @@ Rcpp::List tox_compute_weighted_global_divergence_rcpp(
     Rcpp::IntegerVector included_n_residuals_S1,
     Rcpp::IntegerVector included_n_residuals_S2
 ) {
-    int n_neighbors = js_divergences.size();
+    int n_points = js_divergences.size();
 
     double global_jsd = 0.0;
-    Rcpp::NumericVector weights(n_neighbors);
+    Rcpp::NumericVector weights(n_points);
     int ierr = 0;
 
     compute_weighted_global_divergence_c(
         js_divergences.begin(),
-        &n_neighbors,
+        &n_points,
         included_n_residuals_S1.begin(),
         included_n_residuals_S2.begin(),
         &global_jsd,

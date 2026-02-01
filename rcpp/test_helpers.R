@@ -20,6 +20,8 @@ run_all_tests <- function(env = parent.frame(), test_only = TRUE) {
 
     tryCatch(
       {
+
+        cat(sprintf("Testing %s ...\n", name))
         test_func()
         cat(sprintf("✓ %s passed.\n", name))
         passed <- passed + 1

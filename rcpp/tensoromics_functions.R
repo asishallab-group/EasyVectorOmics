@@ -962,10 +962,10 @@ tox_determine_shared_residual_range_expert <- function(
   residual_range_quantile = 95.0
 ) {
 
-  validate_numeric_vector(residual_pool, "residual_pool")
-  validate_integer_vector(residual_pool_perm, "residual_pool_perm")
-  validate_nonempty_vector(residual_pool, "residual_pool")
-  validate_equal_length(residual_pool, residual_pool_perm, "residual_pool", "residual_pool_perm")
+  validate_numeric_vector(residual_pool)
+  validate_integer_vector(residual_pool_perm)
+  validate_nonempty_vector(residual_pool)
+  validate_equal_length(residual_pool, residual_pool_perm)
 
   if (!is.numeric(residual_range_quantile) || length(residual_range_quantile) != 1L) {
     stop("residual_range_quantile must be a numeric scalar.")
@@ -999,17 +999,8 @@ tox_determine_shared_residual_range <- function(
   neighborhood_residuals_S2,
   residual_range_quantile = 95.0
 ) {
-  validate_numeric_matrix(neighborhood_residuals_S1, "neighborhood_residuals_S1")
-  validate_numeric_matrix(neighborhood_residuals_S2, "neighborhood_residuals_S2")
-  validate_matching_rows(neighborhood_residuals_S1, neighborhood_residuals_S2,
-                         "neighborhood_residuals_S1", "neighborhood_residuals_S2")
-  if (ncol(neighborhood_residuals_S1) != ncol(neighborhood_residuals_S2)) {
-    stop("Number of columns in neighborhood_residuals_S1 must match number of columns in neighborhood_residuals_S2.")
-  }
-
-  if (!is.numeric(residual_range_quantile) || length(residual_range_quantile) != 1L) {
-    stop("residual_range_quantile must be a numeric scalar.")
-  }
+  validate_numeric_array(neighborhood_residuals_S1)
+  validate_numeric_array(neighborhood_residuals_S2)
 
   result <- tox_determine_shared_residual_range_rcpp(
     neighborhood_residuals_S1,
@@ -1044,11 +1035,9 @@ tox_build_residual_histograms <- function(
   shared_residual_range,
   n_bins
 ) {
-  if (!is.numeric(shared_residual_range) || length(shared_residual_range) != 1L) {
-    stop("shared_residual_range must be a numeric scalar.")
-  }
 
-  validate_positive_integer_scalar(n_bins, "n_bins")
+  validate_numeric_array(neighborhood_residuals)
+  validate_positive_integer_scalar(n_bins)
 
   result <- tox_build_residual_histograms_rcpp(
     neighborhood_residuals,
@@ -1076,12 +1065,9 @@ tox_compute_divergence_per_reference_point <- function(
   pmf_S1,
   pmf_S2
 ) {
-  validate_numeric_matrix(pmf_S1, "pmf_S1")
-  validate_numeric_matrix(pmf_S2, "pmf_S2")
-  validate_matching_rows(pmf_S1, pmf_S2, "pmf_S1", "pmf_S2")
-  if (ncol(pmf_S1) != ncol(pmf_S2)) {
-    stop("Number of columns in pmf_S1 must match number of columns in pmf_S2.")
-  }
+  validate_numeric_matrix(pmf_S1)
+  validate_numeric_matrix(pmf_S2)
+  validate_matching_rows(pmf_S1, pmf_S2)
 
   result <- tox_compute_divergence_per_reference_point_rcpp(
     pmf_S1,
@@ -1115,18 +1101,16 @@ tox_compute_weighted_global_divergence <- function(
   included_n_residuals_S1,
   included_n_residuals_S2
 ) {
-  validate_numeric_vector(js_divergences, "js_divergences")
-  validate_integer_vector(as.integer(included_n_residuals_S1), "included_n_residuals_S1")
-  validate_integer_vector(as.integer(included_n_residuals_S2), "included_n_residuals_S2")
-  validate_equal_length(js_divergences, included_n_residuals_S1,
-                        "js_divergences", "included_n_residuals_S1")
-  validate_equal_length(js_divergences, included_n_residuals_S2,
-                        "js_divergences", "included_n_residuals_S2")
+  validate_numeric_vector(js_divergences)
+  validate_integer_vector(included_n_residuals_S1)
+  validate_integer_vector(included_n_residuals_S2)
+  validate_equal_length(js_divergences, included_n_residuals_S1)
+  validate_equal_length(js_divergences, included_n_residuals_S2)
 
   result <- tox_compute_weighted_global_divergence_rcpp(
     js_divergences,
-    as.integer(included_n_residuals_S1),
-    as.integer(included_n_residuals_S2)
+    included_n_residuals_S1,
+    included_n_residuals_S2
   )
 
   check_err_code(result$ierr)

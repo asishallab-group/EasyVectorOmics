@@ -73,8 +73,9 @@ contains
     end subroutine run_named_tests_tox_jensen_shannon_divergence
 
     subroutine test_determine_shared_residual_range
-        integer(int32), parameter :: n_residuals = 4, n_neighbors = 3
-        real(real64), dimension(n_residuals, n_neighbors) :: S1, S2
+        integer(int32), parameter :: n_reps_S1 = 4, n_reps_S2 = 3, n_neighbors = 2, n_points = 2
+        real(real64), dimension(n_reps_S1, n_neighbors, n_points) :: S1
+        real(real64), dimension(n_reps_S2, n_neighbors, n_points) :: S2
         real(real64) :: R
         integer(int32) :: ierr
         real(real64) :: q
@@ -83,30 +84,24 @@ contains
         ! Test 1 — Basic correctness with simple values
         ! ============================================================
         !
-        ! S1 abs values: [1,2,3,4,  5,6,7,8,  9,10,11,12]
-        ! S2 abs values: [2,4,6,8,  1,3,5,7,  9, 0, 1, 2]
-        !
-        ! Combined abs pool (24 values):
-        !   [1,2,3,4,5,6,7,8,9,10,11,12,
-        !    2,4,6,8,1,3,5,7,9,0,1,2]
-        !
-        ! Sorted:
-        !   [0,1,1,1,2,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,11,12]
-        !
-        ! 95% quantile → 0.95 * (24 - 1)) + 1 = 22.85
-        ! sorted(22) = 10
-        ! sorted(23) = 11
-        !
-        ! Expected R = 10 + 0.85 * (11-10) = 10.85
-        !
         S1 = reshape([ &
-            1,2,3,4,  5,6,-7,8,  9,10,11,12 ], [n_residuals,n_neighbors])
+            1,2,3,4,  5,6,-7,8,  9,10,11,12, 1,1,1,1 ], shape(S1))
         S2 = reshape([ &
-            2,-4,6,8,  1,3,5,7,  9,0,1,2 ], [n_residuals,n_neighbors])
+            2,-4,6,8,  1,3,5,7,  9,0,1,2 ], shape(S2))
 
-        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, ierr)
+        ! Sorted pool:
+        !   [0, 1, 1, 1, 1, 1, 1, 1, 2, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 11, 12]
+        !
+        ! 95% quantile → 0.95 * (28 - 1) + 1 = 26.65
+        ! sorted(26) = 10
+        ! sorted(27) = 11
+        !
+        ! Expected R = 10 + 0.65 * (11-10) = 10.65
+        !
+
+        call determine_shared_residual_range_alloc(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, R, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_determine_shared_residual_range: Test 1: ierr should be OK")
-        call assert_equal_real(R, 10.85_real64, TOL, "test_determine_shared_residual_range: Test 1: R should be 10.85")
+        call assert_equal_real(R, 10.65_real64, TOL, "test_determine_shared_residual_range: Test 1: R should be 10.65")
 
         ! ============================================================
         ! Test 2 — Custom quantile (50%)
@@ -115,22 +110,22 @@ contains
         ! Median of sorted array above = 0.5 * (sorted(12) + sorted(13)) = 5.5
         !
         q = 50.0_real64
-        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, ierr, q)
+        call determine_shared_residual_range_alloc(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, R, ierr, q)
         call assert_equal_int(ierr, ERR_OK, "test_determine_shared_residual_range: Test 2: ierr should be OK")
-        call assert_equal_real(R, 5.0_real64, TOL, "test_determine_shared_residual_range: Test 2: R should be 5.0")
+        call assert_equal_real(R, 4.0_real64, TOL, "test_determine_shared_residual_range: Test 2: R should be 4.0")
 
         ! ============================================================
         ! Test 3 — Quantile < 0 → error
         ! ============================================================
         q = below(0.0_real64)
-        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, ierr, q)
+        call determine_shared_residual_range_alloc(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, R, ierr, q)
         call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_determine_shared_residual_range: Test 3: ierr should be INVALID_INPUT")
 
         ! ============================================================
         ! Test 4 — Quantile > 100 → error
         ! ============================================================
         q = above(100.0_real64)
-        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, ierr, q)
+        call determine_shared_residual_range_alloc(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, R, ierr, q)
         call assert_equal_int(ierr, ERR_INVALID_INPUT, "test_determine_shared_residual_range: Test 4: ierr should be INVALID_INPUT")
 
         ! ============================================================
@@ -142,19 +137,24 @@ contains
         S1 = reshape([ &
             -1, 2, 3, 4, &
             5, 6, -7, 8, &
-            9, 10, -11, 12 ], [n_residuals,n_neighbors])
-        S2 = S1
-        S1(1,1) = ieee_value(1.0_real64, ieee_quiet_nan)
-        S2(4,3) = ieee_value(1.0_real64, ieee_quiet_nan)
+            9, 10, -11, 12, &
+            1,1,1,1 ], shape(S1))
+        S2 = reshape([ &
+            -1, 2, 3, 4, &
+            5, 6, -7, 8, &
+            9, 10, -11, 12 ], shape(S2))
 
-        ! Pool now excludes two NaNs → 22 values
-        ! sorted = [1,2,2,3,3,4,4,5,5,6,6,7,7,8,8,9,9,10,10,11,11,12]
-        ! 95% quantile → 0.95*(22-1)+1=20.95
-        ! sorted(20) = 11
-        ! sorted(21) = 11
+        S1(1,1,1) = ieee_value(1.0_real64, ieee_quiet_nan)
+        S2(3,2,2) = ieee_value(1.0_real64, ieee_quiet_nan)
+
+        ! Pool now excludes two NaNs → 26 values
+        ! sorted = [1, 1, 1, 1, 1, 2, 2, 3, 3, 4, 4, 5, 5, 6, 6, 7, 7, 8, 8, 9, 9, 10, 10, 11, 11, 12]
+        ! 95% quantile → 0.95*(26-1)+1=24.75
+        ! sorted(24) = 11
+        ! sorted(25) = 11
         ! -> R = 11
         !
-        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, ierr)
+        call determine_shared_residual_range_alloc(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, R, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_determine_shared_residual_range: Test 5: ierr should be OK")
         call assert_equal_real(R, 11.0_real64, TOL, "test_determine_shared_residual_range: Test 5: R should ignore NaNs")
 
@@ -163,31 +163,31 @@ contains
         ! ============================================================
         S1 = 0.0_real64
         S2 = 0.0_real64
-        call determine_shared_residual_range_alloc(S1, S2, n_residuals, n_neighbors, R, ierr)
+        call determine_shared_residual_range_alloc(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, R, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_determine_shared_residual_range: Test 6: ierr should be OK")
         call assert_equal_real(R, 0.0_real64, TOL, "test_determine_shared_residual_range: Test 6: R should be zero")
 
         ! ============================================================
-        ! Test 7 — Single residual (n_residuals=1, n_neighbors=1)
+        ! Test 7 — Single residual (n_reps_S1=1, n_reps_S2=1, n_neighbors=1, n_points=1)
         ! ============================================================
         S1 = 3.0_real64
         S2 = -4.0_real64
         ! sorted = [3, 4]
         ! rank = 0.95 * (2-1) + 1 = 1.95
         ! R = 3 + (4-3)*0.95 = 3.95
-        call determine_shared_residual_range_alloc(S1, S2, 1_int32, 1_int32, R, ierr)
+        call determine_shared_residual_range_alloc(S1, S2, 1_int32, 1_int32, 1_int32, 1_int32, R, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_determine_shared_residual_range: Test 6: ierr should be OK")
         call assert_equal_real(R, 3.95_real64, TOL, "test_determine_shared_residual_range: Test 7: R should be 3.95")
 
     end subroutine test_determine_shared_residual_range
 
     subroutine test_build_residual_histograms
-        integer(int32), parameter :: n_residuals = 6, n_neighbors = 3
+        integer(int32), parameter :: n_reps = 3, n_neighbors = 2, n_points = 3
         integer(int32), parameter :: n_bins = 4
-        real(real64), dimension(n_residuals, n_neighbors) :: E
-        real(real64), dimension(n_neighbors, n_bins) :: pmf, expected_pmf
-        integer(int32), dimension(n_neighbors, n_bins) :: counts, expected_counts
-        integer(int32), dimension(n_neighbors) :: included
+        real(real64), dimension(n_reps, n_neighbors, n_points) :: E
+        real(real64), dimension(n_points, n_bins) :: pmf, expected_pmf
+        integer(int32), dimension(n_points, n_bins) :: counts, expected_counts
+        integer(int32), dimension(n_points) :: included
         real(real64) :: R
         integer(int32) :: ierr
 
@@ -198,32 +198,29 @@ contains
         ! R = 2, M = 4 → bin width w = 1
         ! Bins: [-2,-1), [-1,0), [0,1), [1,2]
         !
-        ! Residuals for each neighbor j:
-        ! j=1: [-2, -0.5, 0.2, 1.7, 0.9, -1.2]
-        ! j=2: [0, 0, 0, 0, 0, 0]
-        ! j=3: [2.5, -3.0, 1.2, 0.4, -0.1, 0.0]  (clamping applies)
-        !
         R = 2.0_real64
 
-        E(:,1) = [-2.0, -0.5, 0.2, 1.7, 0.9, -1.2]
-        E(:,2) = 0.0_real64
-        E(:,3) = [2.5, -3.0, 1.2, 0.4, -0.1, 0.0]   ! will clamp to [-2,2]
+        E(:, 1,1) = [-2.0, -0.5, 0.2]
+        E(:, 2,1) = [1.7, 0.9, -1.2]
+        E(:, :,2) = 0.0_real64
+        E(:, 1,3) = [2.5, -3.0, 1.2] ! (clamping applies -> [2,-2,1.2])
+        E(:, 2,3) = [0.4, -0.1, 0.0]
 
-        call build_residual_histograms(E, n_residuals, n_neighbors, R, n_bins, &
+        call build_residual_histograms(E, n_reps, n_neighbors, n_points, R, n_bins, &
                                        counts, pmf, included, ierr)
 
         call assert_equal_int(ierr, ERR_OK, "test_build_residual_histograms: Test 1: ierr should be OK")
 
-        ! j = 1
+        ! point 1
         ! Values fall into bins:
         ! [-2,-1): -2, -1.2 → 2
         ! [-1,0): -0.5 → 1
         ! [0,1): 0.2, 0.9 → 2
         ! [1,2]: 1.7 → 1
         ! 
-        ! j = 2 — all zeros → all in bin [0,1)
+        ! point 2 — all zeros → all in bin [0,1)
         ! 
-        ! j = 3 — clamping:
+        ! point 3 — clamping:
         ! 2.5 → 2
         ! -3 → -2
         ! bins:
@@ -236,13 +233,13 @@ contains
             1, 0, 1,&
             2, 6, 2,&
             1, 0, 2&
-        ], [n_neighbors, n_bins])
+        ], [n_points, n_bins])
         expected_pmf = reshape([&
             0.3333333333333333_real64,  0.0_real64, 0.16666666666666666_real64,&
             0.16666666666666666_real64, 0.0_real64, 0.16666666666666666_real64,&
             0.3333333333333333_real64,  1.0_real64, 0.3333333333333333_real64,&
             0.16666666666666666_real64, 0.0_real64, 0.3333333333333333_real64&
-        ], [n_neighbors, n_bins])
+        ], [n_points, n_bins])
 
         call assert_equal_array_int(counts, expected_counts, size(counts, kind=int32), "test_build_residual_histograms: Test 1: counts don't match")
         call assert_equal_array_real(pmf, expected_pmf, size(pmf, kind=int32), TOL, "test_build_residual_histograms: Test 1: pmf don't match")
@@ -254,12 +251,12 @@ contains
         ! Test 2 — NaNs must be ignored
         ! ============================================================
         E = 0.0_real64
-        E(1,1) = ieee_value(1.0_real64, ieee_quiet_nan)
-        E(3,1) = ieee_value(1.0_real64, ieee_quiet_nan)
-        E(2,2) = ieee_value(1.0_real64, ieee_quiet_nan)
-        E(6,3) = ieee_value(1.0_real64, ieee_quiet_nan)
+        E(1,1,1) = ieee_value(1.0_real64, ieee_quiet_nan)
+        E(3,1,1) = ieee_value(1.0_real64, ieee_quiet_nan)
+        E(2,1,2) = ieee_value(1.0_real64, ieee_quiet_nan)
+        E(3,2,3) = ieee_value(1.0_real64, ieee_quiet_nan)
 
-        call build_residual_histograms(E, n_residuals, n_neighbors, R, n_bins, &
+        call build_residual_histograms(E, n_reps, n_neighbors, n_points, R, n_bins, &
                                        counts, pmf, included, ierr)
 
         call assert_equal_int(ierr, ERR_OK, "test_build_residual_histograms: Test 2: ierr should be OK")
@@ -269,13 +266,13 @@ contains
             0, 0, 0,&
             4, 5, 5,&
             0, 0, 0&
-        ], [n_neighbors, n_bins])
+        ], [n_points, n_bins])
         expected_pmf = reshape([&
             0.0_real64,  0.0_real64, 0.0_real64,&
             0.0_real64,  0.0_real64, 0.0_real64,&
             1.0_real64,  1.0_real64, 1.0_real64,&
             0.0_real64,  0.0_real64, 0.0_real64&
-        ], [n_neighbors, n_bins])
+        ], [n_points, n_bins])
 
         call assert_equal_array_int(counts, expected_counts, size(counts, kind=int32), "test_build_residual_histograms: Test 2: counts don't match")
         call assert_equal_array_real(pmf, expected_pmf, size(pmf, kind=int32), TOL, "test_build_residual_histograms: Test 2: pmf don't match")
@@ -288,7 +285,7 @@ contains
         ! ============================================================
         E = ieee_value(1.0_real64, ieee_quiet_nan)
 
-        call build_residual_histograms(E, n_residuals, n_neighbors, R, n_bins, &
+        call build_residual_histograms(E, n_reps, n_neighbors, n_points, R, n_bins, &
                                        counts, pmf, included, ierr)
 
         call assert_equal_int(ierr, ERR_OK, "test_build_residual_histograms: Test 3: ierr should be OK")
@@ -310,9 +307,9 @@ contains
         !
         E = reshape([ -2.0, -1.0, 0.0, 1.0, 2.0, 0.0, &
                       -2.0, -1.0, 0.0, 1.0, 2.0, 0.0, &
-                      -2.0, -1.0, 0.0, 1.0, 2.0, 0.0 ], [n_residuals,n_neighbors])
+                      -2.0, -1.0, 0.0, 1.0, 2.0, 0.0 ], shape(E))
 
-        call build_residual_histograms(E, n_residuals, n_neighbors, R, n_bins, &
+        call build_residual_histograms(E, n_reps, n_neighbors, n_points, R, n_bins, &
                                        counts, pmf, included, ierr)
 
         call assert_equal_int(ierr, ERR_OK, "test_build_residual_histograms: Test 4: ierr should be OK")
@@ -329,13 +326,13 @@ contains
             1, 1, 1,&
             2, 2, 2,&
             2, 2, 2&
-        ], [n_neighbors, n_bins])
+        ], [n_points, n_bins])
         expected_pmf = reshape([&
             0.16666666666666666_real64, 0.16666666666666666_real64, 0.16666666666666666_real64,&
             0.16666666666666666_real64, 0.16666666666666666_real64, 0.16666666666666666_real64,&
             0.3333333333333333_real64, 0.3333333333333333_real64, 0.3333333333333333_real64,&
             0.3333333333333333_real64, 0.3333333333333333_real64, 0.3333333333333333_real64&
-        ], [n_neighbors, n_bins])
+        ], [n_points, n_bins])
 
         call assert_equal_array_int(counts, expected_counts, size(counts, kind=int32), "test_build_residual_histograms: Test 3: counts don't match")
         call assert_equal_array_real(pmf, expected_pmf, size(pmf, kind=int32), TOL, "test_build_residual_histograms: Test 3: pmf don't match")
@@ -346,9 +343,9 @@ contains
     end subroutine test_build_residual_histograms
 
     subroutine test_compute_divergence_per_reference_point
-        integer(int32), parameter :: n_neighbors = 3, n_bins = 4
-        real(real64), dimension(n_neighbors, n_bins) :: p, q
-        real(real64), dimension(n_neighbors) :: jsd, expected_jsd
+        integer(int32), parameter :: n_points = 3, n_bins = 4
+        real(real64), dimension(n_points, n_bins) :: p, q
+        real(real64), dimension(n_points) :: jsd, expected_jsd
         integer(int32) :: ierr
         real(real64) :: tol
 
@@ -357,10 +354,10 @@ contains
         ! ============================================================
         p = reshape([0.1, 0.2, 0.3, 0.4, &
                      0.25,0.25,0.25,0.25, &
-                     1.0, 0.0, 0.0, 0.0], [n_neighbors,n_bins])
+                     1.0, 0.0, 0.0, 0.0], [n_points,n_bins])
         q = p
 
-        call compute_divergence_per_reference_point(p, q, n_neighbors, n_bins, jsd, ierr)
+        call compute_divergence_per_reference_point(p, q, n_points, n_bins, jsd, ierr)
 
         call assert_equal_int(ierr, ERR_OK, "test_compute_divergence_per_reference_point: Test 1: ierr OK")
 
@@ -386,7 +383,7 @@ contains
         p(1,1) = 1.0
         q(1,2) = 1.0
 
-        call compute_divergence_per_reference_point(p, q, n_neighbors, n_bins, jsd, ierr)
+        call compute_divergence_per_reference_point(p, q, n_points, n_bins, jsd, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_compute_divergence_per_reference_point: Test 2: ierr OK")
 
         expected_jsd = 0.0_real64
@@ -416,7 +413,7 @@ contains
         p(1,:) = [0.5, 0.5, 0.0, 0.0]
         q(1,:) = [0.0, 1.0, 0.0, 0.0]
 
-        call compute_divergence_per_reference_point(p, q, n_neighbors, n_bins, jsd, ierr)
+        call compute_divergence_per_reference_point(p, q, n_points, n_bins, jsd, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_compute_divergence_per_reference_point: Test 3: ierr OK")
 
         ! Compute expected value analytically
@@ -445,7 +442,7 @@ contains
         p(1,1) = 1.0
         q(1,3) = 1.0
 
-        call compute_divergence_per_reference_point(p, q, n_neighbors, n_bins, jsd, ierr)
+        call compute_divergence_per_reference_point(p, q, n_points, n_bins, jsd, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_compute_divergence_per_reference_point: Test 4: ierr OK")
 
         expected_jsd = 0.0_real64
@@ -460,16 +457,16 @@ contains
             0.0,1.0,0.0,&
             0.0,0.0,0.25,&
             0.25,0.25,0.25&
-        ], [n_neighbors,n_bins])
+        ], [n_points,n_bins])
 
         q = reshape([ &
             0.2,0.3,0.5,&
             0.0,0.0,1.0,&
             0.0,0.0,0.25,&
             0.25,0.25,0.25&
-        ], [n_neighbors,n_bins])
+        ], [n_points,n_bins])
 
-        call compute_divergence_per_reference_point(p, q, n_neighbors, n_bins, jsd, ierr)
+        call compute_divergence_per_reference_point(p, q, n_points, n_bins, jsd, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_compute_divergence_per_reference_point: Test 5: ierr OK")
 
         expected_jsd = 0.0_real64
@@ -479,10 +476,10 @@ contains
     end subroutine test_compute_divergence_per_reference_point
 
     subroutine test_compute_weighted_global_divergence
-        integer(int32), parameter :: n_neighbors = 4
-        real(real64), dimension(n_neighbors) :: jsd
-        integer(int32), dimension(n_neighbors) :: n1, n2
-        real(real64), dimension(n_neighbors) :: w, expected_weights
+        integer(int32), parameter :: n_points = 4
+        real(real64), dimension(n_points) :: jsd
+        integer(int32), dimension(n_points) :: n1, n2
+        real(real64), dimension(n_points) :: w, expected_weights
         real(real64) :: global_jsd
         integer(int32) :: ierr
         real(real64) :: expected, tol
@@ -505,7 +502,7 @@ contains
         n1  = [5.0_real64,5.0_real64,5.0_real64,5.0_real64]
         n2  = [5.0_real64,5.0_real64,5.0_real64,5.0_real64]
 
-        call compute_weighted_global_divergence(jsd, n_neighbors, n1, n2, &
+        call compute_weighted_global_divergence(jsd, n_points, n1, n2, &
                                                 global_jsd, w, ierr)
 
         expected_weights = 0.25_real64
@@ -531,7 +528,7 @@ contains
         n1  = [10.0_real64,20.0_real64,30.0_real64,40.0_real64]
         n2  = [ 0.0_real64,10.0_real64,10.0_real64,10.0_real64]
 
-        call compute_weighted_global_divergence(jsd, n_neighbors, n1, n2, &
+        call compute_weighted_global_divergence(jsd, n_points, n1, n2, &
                                                 global_jsd, w, ierr)
 
         call assert_equal_int(ierr, ERR_OK, "test_compute_weighted_global_divergence: Test 2: ierr OK")
@@ -564,7 +561,7 @@ contains
         n1  = [0.0_real64,10.0_real64,0.0_real64,5.0_real64]
         n2  = [0.0_real64, 0.0_real64,0.0_real64,5.0_real64]
 
-        call compute_weighted_global_divergence(jsd, n_neighbors, n1, n2, &
+        call compute_weighted_global_divergence(jsd, n_points, n1, n2, &
                                                 global_jsd, w, ierr)
 
         call assert_equal_int(ierr, ERR_OK, "test_compute_weighted_global_divergence: Test 3: ierr OK")
@@ -589,7 +586,7 @@ contains
         n1  = 0
         n2  = 0
 
-        call compute_weighted_global_divergence(jsd, n_neighbors, n1, n2, &
+        call compute_weighted_global_divergence(jsd, n_points, n1, n2, &
                                                 global_jsd, w, ierr)
 
         expected_weights = 0.0_real64
@@ -616,7 +613,7 @@ contains
         n1  = [5.0_real64,0.0_real64,10.0_real64,5.0_real64]
         n2  = [5.0_real64,5.0_real64, 0.0_real64,5.0_real64]
 
-        call compute_weighted_global_divergence(jsd, n_neighbors, n1, n2, &
+        call compute_weighted_global_divergence(jsd, n_points, n1, n2, &
                                                 global_jsd, w, ierr)
 
         call assert_equal_int(ierr, ERR_OK, "test_compute_weighted_global_divergence: Test 5: ierr OK")

@@ -23,28 +23,26 @@ def test_tox_determine_shared_residual_range():
     # ============================================================
     # Test 1 — Basic correctness with simple values
     # ============================================================
-    S1 = np.array([
-        [ 1,  2,  3],
-        [ 4,  5,  6],
-        [-7,  8,  9],
-        [10, 11, 12],
-    ], dtype=np.float64, order="F")
+    S1 = np.zeros((4, 2, 2), dtype=np.float64, order="F")
+    S1[:, 0, 0] = [1,  2,  3, 4]
+    S1[:, 1, 0] = [5,  6, -7, 8]
+    S1[:, 0, 1] = [9, 10, 11, 12]
+    S1[:, 1, 1] = [1, 1, 1, 1]
 
-    S2 = np.array([
-        [ 2, -4,  6],
-        [ 8,  1,  3],
-        [ 5,  7,  9],
-        [ 0,  1,  2],
-    ], dtype=np.float64, order="F")
+    S2 = np.zeros((3, 2, 2), dtype=np.float64, order="F")
+    S2[:, 0, 0] = [2, -4,  6]
+    S2[:, 1, 0] = [8,  1,  3]
+    S2[:, 0, 1] = [5,  7,  9]
+    S2[:, 1, 1] = [0,  1,  2]
 
     R = tox_determine_shared_residual_range(S1, S2, 95.0)
-    assert abs(R - 10.85) < TOL, f"Test 1 failed: expected 10.85, got {R}"
+    assert abs(R - 10.65) < TOL, f"Test 1 failed: expected 10.65, got {R}"
 
     # ============================================================
     # Test 2 — Custom quantile (50%)
     # ============================================================
     R = tox_determine_shared_residual_range(S1, S2, 50.0)
-    assert abs(R - 5.0) < TOL, f"Test 2 failed: expected 5.0, got {R}"
+    assert abs(R - 4.0) < TOL, f"Test 2 failed: expected 4.0, got {R}"
 
     # ============================================================
     # Test 3 — Quantile < 0 → error
@@ -67,17 +65,20 @@ def test_tox_determine_shared_residual_range():
     # ============================================================
     # Test 5 — NaNs must be ignored
     # ============================================================
-    S1 = np.array([
-        [-1,  2,   3],
-        [ 4,  5,   6],
-        [-7,  8,  -11],
-        [ 9, 10,  12],
-    ], dtype=np.float64, order="F")
+    S1 = np.zeros((4, 2, 2), dtype=np.float64, order="F")
+    S1[:, 0, 0] = [-1,  2,   3, 4]
+    S1[:, 1, 0] = [5, 6, -7, 8]
+    S1[:, 0, 1] = [9, 10, -11, 12]
+    S1[:, 1, 1] = [1, 1, 1, 1]
 
-    S2 = S1.copy(order="F")
+    S2 = np.zeros((3, 2, 2), dtype=np.float64, order="F")
+    S2[:, 0, 0] = [-1,  2, 3]
+    S2[:, 1, 0] = [4, 5, 6]
+    S2[:, 0, 1] = [-7, 8, 9]
+    S2[:, 1, 1] = [10, -11, 12]
 
-    S1[0, 0] = np.nan
-    S2[3, 2] = np.nan
+    S1[0, 0, 0] = np.nan
+    S2[2, 1, 1] = np.nan
 
     R = tox_determine_shared_residual_range(S1, S2, 95.0)
     assert abs(R - 11.0) < TOL, f"Test 5 failed: expected 11.0, got {R}"
@@ -85,8 +86,8 @@ def test_tox_determine_shared_residual_range():
     # ============================================================
     # Test 6 — All zeros
     # ============================================================
-    S1 = np.zeros((4, 3), dtype=np.float64, order="F")
-    S2 = np.zeros((4, 3), dtype=np.float64, order="F")
+    S1[:, :, :] = 0
+    S2[:, :, :] = 0
 
     R = tox_determine_shared_residual_range(S1, S2, 95.0)
     assert abs(R - 0.0) < TOL, f"Test 6 failed: expected 0.0, got {R}"
@@ -94,8 +95,8 @@ def test_tox_determine_shared_residual_range():
     # ============================================================
     # Test 7 — Single residual (1×1)
     # ============================================================
-    S1 = np.array([[3.0]], dtype=np.float64, order="F")
-    S2 = np.array([[-4.0]], dtype=np.float64, order="F")
+    S1 = np.array([[[3.0]]], dtype=np.float64, order="F")
+    S2 = np.array([[[-4.0]]], dtype=np.float64, order="F")
 
     R = tox_determine_shared_residual_range(S1, S2, 95.0)
     assert abs(R - 3.95) < TOL, f"Test 7 failed: expected 3.95, got {R}"
@@ -192,18 +193,21 @@ def test_tox_determine_shared_residual_range_expert():
 
 
 def test_tox_build_residual_histograms():
-    n_residuals = 6
-    n_neighbors = 3
+    n_reps = 3
+    n_neighbors = 2
+    n_points = 3
     n_bins = 4
     R = 2.0
 
     # ============================================================
     # Test 1 — Simple symmetric case, no NaNs
     # ============================================================
-    E = np.zeros((n_residuals, n_neighbors), dtype=np.float64, order="F")
-    E[:, 0] = [-2.0, -0.5, 0.2, 1.7, 0.9, -1.2]
-    E[:, 1] = 0.0
-    E[:, 2] = [2.5, -3.0, 1.2, 0.4, -0.1, 0.0]
+    E = np.zeros((n_reps, n_neighbors, n_points), dtype=np.float64, order="F")
+    E[:, 0, 0] = [-2.0, -0.5, 0.2]
+    E[:, 1, 0] = [1.7, 0.9, -1.2]
+    E[:, :, 1] = 0.0
+    E[:, 0, 2] = [2.5, -3.0, 1.2]
+    E[:, 1, 2] = [0.4, -0.1, 0.0]
 
     out = tox_build_residual_histograms(E, R, n_bins)
 
@@ -232,11 +236,11 @@ def test_tox_build_residual_histograms():
     # ============================================================
     # Test 2 — NaNs must be ignored
     # ============================================================
-    E = np.zeros((n_residuals, n_neighbors), dtype=np.float64, order="F")
-    E[0, 0] = np.nan
-    E[2, 0] = np.nan
-    E[1, 1] = np.nan
-    E[5, 2] = np.nan
+    E[:, :, :] = 0
+    E[0, 0, 0] = np.nan
+    E[2, 0, 0] = np.nan
+    E[1, 0, 1] = np.nan
+    E[2, 1, 2] = np.nan
 
     out = tox_build_residual_histograms(E, R, n_bins)
     counts = out["counts"]
@@ -264,7 +268,7 @@ def test_tox_build_residual_histograms():
     # ============================================================
     # Test 3 — All NaN → pmf = 0, counts = 0, included = 0
     # ============================================================
-    E = np.full((n_residuals, n_neighbors), np.nan, dtype=np.float64, order="F")
+    E[:, :, :] = np.nan
 
     out = tox_build_residual_histograms(E, R, n_bins)
     counts = out["counts"]
@@ -279,12 +283,16 @@ def test_tox_build_residual_histograms():
     # Test 4 — Residuals exactly on boundaries
     # ============================================================
     E = np.array([
-        [-2.0, -2.0, -2.0],
-        [-1.0, -1.0, -1.0],
-        [ 0.0,  0.0,  0.0],
-        [ 1.0,  1.0,  1.0],
-        [ 2.0,  2.0,  2.0],
-        [ 0.0,  0.0,  0.0],
+        [
+            [-2.0, -2.0, -2.0],
+            [-1.0, -1.0, -1.0],
+            [0.0,  0.0,  0.0]
+        ],
+        [
+            [1.0,  1.0,  1.0],
+            [2.0,  2.0,  2.0],
+            [0.0,  0.0,  0.0]
+        ]
     ], dtype=np.float64, order="F")
 
     out = tox_build_residual_histograms(E, R, n_bins)
@@ -310,7 +318,7 @@ def test_tox_build_residual_histograms():
 
 
 def test_tox_compute_divergence_per_reference_point():
-    n_neighbors = 3
+    n_points = 3
     n_bins = 4
 
     # ============================================================
@@ -325,22 +333,22 @@ def test_tox_compute_divergence_per_reference_point():
     q = p.copy(order="F")
 
     jsd = tox_compute_divergence_per_reference_point(p, q)
-    expected = np.zeros(n_neighbors, dtype=np.float64)
+    expected = np.zeros(n_points, dtype=np.float64)
 
     assert np.allclose(jsd, expected, atol=TOL), "Test 1 failed: identical PMFs → JSD must be zero"
 
     # ============================================================
     # Test 2 — Completely disjoint PMFs → JSD = log(2)
     # ============================================================
-    p = np.zeros((n_neighbors, n_bins), dtype=np.float64, order="F")
-    q = np.zeros((n_neighbors, n_bins), dtype=np.float64, order="F")
+    p = np.zeros((n_points, n_bins), dtype=np.float64, order="F")
+    q = np.zeros((n_points, n_bins), dtype=np.float64, order="F")
 
     p[0, 0] = 1.0
     q[0, 1] = 1.0
 
     jsd = tox_compute_divergence_per_reference_point(p, q)
 
-    expected = np.zeros(n_neighbors, dtype=np.float64)
+    expected = np.zeros(n_points, dtype=np.float64)
     expected[0] = np.log(2.0)
 
     assert np.allclose(jsd, expected, atol=TOL), "Test 2 failed: disjoint PMFs → JSD=log(2)"
@@ -350,15 +358,15 @@ def test_tox_compute_divergence_per_reference_point():
     # ============================================================
     # Test 3 — Partially overlapping PMFs (analytic)
     # ============================================================
-    p = np.zeros((n_neighbors, n_bins), dtype=np.float64, order="F")
-    q = np.zeros((n_neighbors, n_bins), dtype=np.float64, order="F")
+    p = np.zeros((n_points, n_bins), dtype=np.float64, order="F")
+    q = np.zeros((n_points, n_bins), dtype=np.float64, order="F")
 
     p[0, :] = [0.5, 0.5, 0.0, 0.0]
     q[0, :] = [0.0, 1.0, 0.0, 0.0]
 
     jsd = tox_compute_divergence_per_reference_point(p, q)
 
-    expected = np.zeros(n_neighbors, dtype=np.float64)
+    expected = np.zeros(n_points, dtype=np.float64)
     expected[0] = 0.5 * (
         0.5 * np.log(2.0) +
         0.5 * np.log(2.0 / 3.0) +
@@ -370,15 +378,15 @@ def test_tox_compute_divergence_per_reference_point():
     # ============================================================
     # Test 4 — Zero-probability bins handled correctly
     # ============================================================
-    p = np.zeros((n_neighbors, n_bins), dtype=np.float64, order="F")
-    q = np.zeros((n_neighbors, n_bins), dtype=np.float64, order="F")
+    p = np.zeros((n_points, n_bins), dtype=np.float64, order="F")
+    q = np.zeros((n_points, n_bins), dtype=np.float64, order="F")
 
     p[0, 0] = 1.0
     q[0, 2] = 1.0
 
     jsd = tox_compute_divergence_per_reference_point(p, q)
 
-    expected = np.zeros(n_neighbors, dtype=np.float64)
+    expected = np.zeros(n_points, dtype=np.float64)
     expected[0] = np.log(2.0)
 
     assert np.allclose(jsd, expected, atol=TOL), "Test 4 failed: zero-probability bins not handled correctly"
@@ -400,7 +408,7 @@ def test_tox_compute_divergence_per_reference_point():
 
     jsd = tox_compute_divergence_per_reference_point(p, q)
 
-    expected = np.zeros(n_neighbors, dtype=np.float64)
+    expected = np.zeros(n_points, dtype=np.float64)
     expected[1] = 0.5 * (1.0 * np.log(1.0 / 0.5))
     expected[2] = 0.5 * (1.0 * np.log(1.0 / 0.5))
 
