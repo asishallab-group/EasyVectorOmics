@@ -5,7 +5,7 @@ module mod_test_jensen_shannon_divergence
     use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan
     use tox_jensen_shannon_divergence
     use tox_errors
-    use f42_utils, only: above, below
+    use f42_utils, only: above, below, init_random, shuffle_vector
     implicit none
 
     ! Abstract interface for all test procedures
@@ -26,11 +26,13 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(4)
+        type(test_case) :: all_tests(6)
         all_tests(1) = test_case("test_determine_shared_residual_range", test_determine_shared_residual_range)
         all_tests(2) = test_case("test_build_residual_histograms", test_build_residual_histograms)
         all_tests(3) = test_case("test_compute_divergence_per_reference_point", test_compute_divergence_per_reference_point)
         all_tests(4) = test_case("test_compute_weighted_global_divergence", test_compute_weighted_global_divergence)
+        all_tests(5) = test_case("test_shuffle_reference_point_helper", test_shuffle_reference_point_helper)
+        all_tests(6) = test_case("test_jgct_permutation_test", test_jgct_permutation_test)
     end function get_all_tests
 
     !> Run all tox_jensen_shannon_divergence tests.
@@ -71,6 +73,129 @@ contains
             end if
         end do
     end subroutine run_named_tests_tox_jensen_shannon_divergence
+
+    subroutine test_jgct_permutation_test
+        integer(int32), parameter :: n_reps_S1 = 4, n_reps_S2 = 3, n_neighbors = 1, n_points = 2, n_permutations = 2, n_bins = 4
+        real(real64), dimension((n_reps_S1 + n_reps_S2) * n_neighbors * n_points ), target :: S_12, expected_S_12
+        real(real64), dimension(:), pointer :: S1, S2
+        integer(int32), parameter :: random_seed = 666
+        integer(int32) :: ierr, i_permutation
+        real(real64) :: p_value, global_jsd_observed
+        real(real64), dimension(n_permutations) :: jsd_null
+        real(real64), dimension((n_reps_S1 + n_reps_S2) * n_neighbors) :: tmp_pool
+        integer(int32), dimension(n_points, n_bins) :: tmp_counts
+        real(real64), dimension(n_points, n_bins) :: tmp_pmf_S1
+        real(real64), dimension(n_points, n_bins) :: tmp_pmf_S2
+        integer(int32), dimension(n_points) :: tmp_included_n_reps_S1
+        integer(int32), dimension(n_points) :: tmp_included_n_reps_S2
+        real(real64), dimension(n_points) :: tmp_js_divergences
+        real(real64), dimension(n_points) :: tmp_weights
+
+        call init_random(random_seed)
+
+        ! ============================================================
+        ! Test 1 — Test randomness with seed
+        ! ============================================================
+        !
+        S_12 = [ 1,2,3,4,  5,6,-7,8, 2,-4,6,8,  1,3 ]
+
+        ! Simulate two permutations 
+        expected_S_12 = S_12
+        S1(1:n_reps_S1 * n_neighbors * n_points) => expected_S_12(1:n_reps_S1*n_neighbors*n_points)
+        S2(1:n_reps_S2 * n_neighbors * n_points) => expected_S_12(n_reps_S1*n_neighbors*n_points+1:)
+        do i_permutation = 1, n_permutations
+            ! First point
+            tmp_pool(1:n_reps_S1*n_neighbors) = S1(1:n_reps_S1*n_neighbors)
+            tmp_pool(n_reps_S1*n_neighbors+1:) = S2(1:n_reps_S2*n_neighbors)
+            call shuffle_vector(tmp_pool)
+            S1(1:n_reps_S1*n_neighbors) = tmp_pool(1:n_reps_S1*n_neighbors)
+            S2(1:n_reps_S2*n_neighbors) = tmp_pool(n_reps_S1*n_neighbors+1:)
+
+            ! Second point
+            tmp_pool(1:n_reps_S1*n_neighbors) = S1(n_reps_S1*n_neighbors+1:)
+            tmp_pool(n_reps_S1*n_neighbors+1:) = S2(n_reps_S2*n_neighbors+1:)
+            call shuffle_vector(tmp_pool)
+            S1(n_reps_S1*n_neighbors+1:) = tmp_pool(1:n_reps_S1*n_neighbors)
+            S2(n_reps_S2*n_neighbors+1:) = tmp_pool(n_reps_S1*n_neighbors+1:)
+        end do
+
+        ! for ifx: expected_shuffle = [2, 3, 6, 1, 5, 6, 1, -7, -4, 2, 4, 8, 3, 8]
+       
+        S1(1:n_reps_S1 * n_neighbors * n_points) => S_12(1:n_reps_S1*n_neighbors*n_points)
+        S2(1:n_reps_S2 * n_neighbors * n_points) => S_12(n_reps_S1*n_neighbors*n_points+1:)
+        
+        global_jsd_observed = 0.0_real64
+        call jgct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr, random_seed=random_seed, tmp_pool=tmp_pool, tmp_counts=tmp_counts, tmp_pmf_S1=tmp_pmf_S1, tmp_pmf_S2=tmp_pmf_S2, tmp_included_n_reps_S1=tmp_included_n_reps_S1, tmp_included_n_reps_S2=tmp_included_n_reps_S2, tmp_js_divergences=tmp_js_divergences, tmp_weights=tmp_weights)
+        call assert_equal_int(ierr, ERR_OK, "test_jgct_permutation_test: Test 1: unexpected error")
+
+        call assert_equal_array_real(S_12, expected_S_12, size(S_12, kind=int32), 0.0_real64, "test_jgct_permutation_test: Test 1: concatenated S1, S2 does not match the expected permutation")
+
+        ! ============================================================
+        ! Test 2 — Test randomness without seed
+        ! ============================================================
+        !
+        S_12 = [ 1,2,3,4,  5,6,-7,8, 2,-4,6,8,  1,3 ]
+        S1(1:n_reps_S1 * n_neighbors * n_points) => S_12(1:n_reps_S1*n_neighbors*n_points)
+        S2(1:n_reps_S2 * n_neighbors * n_points) => S_12(n_reps_S1*n_neighbors*n_points+1:)
+
+        call init_random(random_seed)
+        call jgct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr, tmp_pool=tmp_pool, tmp_counts=tmp_counts, tmp_pmf_S1=tmp_pmf_S1, tmp_pmf_S2=tmp_pmf_S2, tmp_included_n_reps_S1=tmp_included_n_reps_S1, tmp_included_n_reps_S2=tmp_included_n_reps_S2, tmp_js_divergences=tmp_js_divergences, tmp_weights=tmp_weights)
+        call assert_equal_int(ierr, ERR_OK, "test_jgct_permutation_test: Test 2: 1. call, unexpected error")
+        call assert_equal_array_real(S_12, expected_S_12, size(S_12, kind=int32), 0.0_real64, "test_jgct_permutation_test: Test 2: 1. call, concatenated S1, S2 does not match the expected permutation")
+
+        call jgct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr, tmp_pool=tmp_pool, tmp_counts=tmp_counts, tmp_pmf_S1=tmp_pmf_S1, tmp_pmf_S2=tmp_pmf_S2, tmp_included_n_reps_S1=tmp_included_n_reps_S1, tmp_included_n_reps_S2=tmp_included_n_reps_S2, tmp_js_divergences=tmp_js_divergences, tmp_weights=tmp_weights)
+        call assert_equal_int(ierr, ERR_OK, "test_jgct_permutation_test: Test 2: 2. call, unexpected error")
+        call assert_true(any(S_12 /= expected_S_12), "test_jgct_permutation_test: Test 2: 2. call, concatenated S1, S2 should not match the expected permutation")
+
+
+        ! ============================================================
+        ! Test 3 — Test p value
+        ! ============================================================
+        !
+        S_12 = [ 1,2,3,4,  5,6,-7,8, 2,-4,6,8,  1,3 ]
+        S1(1:n_reps_S1 * n_neighbors * n_points) => S_12(1:n_reps_S1*n_neighbors*n_points)
+        S2(1:n_reps_S2 * n_neighbors * n_points) => S_12(n_reps_S1*n_neighbors*n_points+1:)
+
+        ! all should be greater or equal -> p_value=1
+        global_jsd_observed = 0.0_real64
+
+        call jgct_permutation_test_alloc(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_jgct_permutation_test: Test 3: unexpected error")
+
+        call assert_equal_real(p_value, 1.0_real64, TOL, "test_jgct_permutation_test: Test 3: for zero observed jsd, p_value should be 1")
+
+        ! no one should be greater or equal -> p_value=1/(n_permutations+1)=1/3
+        global_jsd_observed = huge(0.0_real64)
+        call jgct_permutation_test_alloc(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_jgct_permutation_test: Test 3: unexpected error")
+
+        call assert_equal_real(p_value, 1.0_real64 / 3.0_real64, TOL, "test_jgct_permutation_test: Test 3: for max observed jsd, p_value should be 1/3")
+    end subroutine test_jgct_permutation_test
+
+    subroutine test_shuffle_reference_point_helper
+        integer(int32), parameter :: n_reps_S1 = 4, n_reps_S2 = 3, n_neighbors = 2
+        real(real64), dimension((n_reps_S1 + n_reps_S2) * n_neighbors ), target :: S_12, expected_S_12
+        real(real64), dimension(:, :), pointer :: S1, S2
+        real(real64), dimension(n_reps_S1 + n_reps_S2, n_neighbors) :: pool_flat
+        integer(int32), parameter :: random_seed = 666
+
+        call init_random(random_seed)
+
+        S_12 = [ 1,2,3,4,  5,6,-7,8, 2,-4,6,8,  1,3 ]
+        S1(1:n_reps_S1, 1:n_neighbors) => S_12(1:n_reps_S1*n_neighbors)
+        S2(1:n_reps_S2, 1:n_neighbors) => S_12(n_reps_S1*n_neighbors+1:)
+
+        expected_S_12 = S_12
+        call shuffle_vector(expected_S_12)
+        ! for ifx: expected_S_12 = [-7, 4, 6, 3, 2, 8, 8, 5, -4, 6, 2, 3, 1, 1]
+
+        call init_random(random_seed)
+
+        call shuffle_reference_point_helper(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, pool_flat)
+
+        call assert_equal_array_real(pool_flat, S_12, size(S_12, kind=int32), TOL, "test_shuffle_reference_point_helper: pool should match concatenated S1, S2")
+        call assert_equal_array_real(S_12, expected_S_12, size(S_12, kind=int32), TOL, "test_shuffle_reference_point_helper: concatenated S1, S2 does not match the expected permutation")
+    end subroutine test_shuffle_reference_point_helper
 
     subroutine test_determine_shared_residual_range
         integer(int32), parameter :: n_reps_S1 = 4, n_reps_S2 = 3, n_neighbors = 2, n_points = 2
@@ -499,14 +624,16 @@ contains
         ! global_jsd = 0.25*(0.1+0.2+0.3+0.4) = 0.25
         !
         jsd = [0.1_real64, 0.2_real64, 0.3_real64, 0.4_real64]
-        n1  = [5.0_real64,5.0_real64,5.0_real64,5.0_real64]
-        n2  = [5.0_real64,5.0_real64,5.0_real64,5.0_real64]
+        n1  = [5_int32,5_int32,5_int32,5_int32]
+        n2  = [5_int32,5_int32,5_int32,5_int32]
 
         call compute_weighted_global_divergence(jsd, n_points, n1, n2, &
                                                 global_jsd, w, ierr)
 
         expected_weights = 0.25_real64
         call assert_equal_int(ierr, ERR_OK, "test_compute_weighted_global_divergence: Test 1: ierr OK")
+
+        ! Strangely this array comparison signals DENORMAL in gfortran if a test fails, seems to be an optimization bug
         call assert_equal_array_real(w, expected_weights, size(w, kind=int32), TOL, "test_compute_weighted_global_divergence: Test 1: uniform weights")
         call assert_equal_real(global_jsd, 0.25_real64, TOL, "test_compute_weighted_global_divergence: Test 1: global JSD")
 
@@ -525,8 +652,8 @@ contains
         ! global_jsd = sum_j w(j)*jsd(j)
         !
         jsd = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64]
-        n1  = [10.0_real64,20.0_real64,30.0_real64,40.0_real64]
-        n2  = [ 0.0_real64,10.0_real64,10.0_real64,10.0_real64]
+        n1  = [10_int32,20_int32,30_int32,40_int32]
+        n2  = [ 0_int32,10_int32,10_int32,10_int32]
 
         call compute_weighted_global_divergence(jsd, n_points, n1, n2, &
                                                 global_jsd, w, ierr)
@@ -558,8 +685,8 @@ contains
         ! global_jsd = 0.5*1.0 + 0.5*4.0 = 2.5
         !
         jsd = [0.5_real64, 1.0_real64, 2.0_real64, 4.0_real64]
-        n1  = [0.0_real64,10.0_real64,0.0_real64,5.0_real64]
-        n2  = [0.0_real64, 0.0_real64,0.0_real64,5.0_real64]
+        n1  = [0_int32,10_int32,0_int32,5_int32]
+        n2  = [0_int32, 0_int32,0_int32,5_int32]
 
         call compute_weighted_global_divergence(jsd, n_points, n1, n2, &
                                                 global_jsd, w, ierr)
@@ -610,8 +737,8 @@ contains
         ! global_jsd = sum_j w(j)*jsd(j)
         !
         jsd = [0.0_real64, 0.5_real64, 1.0_real64, 2.0_real64]
-        n1  = [5.0_real64,0.0_real64,10.0_real64,5.0_real64]
-        n2  = [5.0_real64,5.0_real64, 0.0_real64,5.0_real64]
+        n1  = [5_int32,0_int32,10_int32,5_int32]
+        n2  = [5_int32,5_int32, 0_int32,5_int32]
 
         call compute_weighted_global_divergence(jsd, n_points, n1, n2, &
                                                 global_jsd, w, ierr)

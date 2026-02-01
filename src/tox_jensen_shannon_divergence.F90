@@ -428,8 +428,6 @@ contains
         call validate_dimension_size(n_neighbors, ierr)
         call validate_dimension_size(n_points, ierr)
         call validate_in_range_int(n_bins, ierr, min=1_int32)
-        call validate_in_range_int(n_permutations, ierr, min=1_int32)
-        call validate_in_range_real(shared_residual_range, ierr, min=0.0_real64)
 
         if (is_err(ierr)) return
 
@@ -450,7 +448,7 @@ contains
         S1 = neighborhood_residuals_S1
         S2 = neighborhood_residuals_S2
 
-        call jgct_permutation_test_helper(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, random_seed)
+        call jgct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, ierr, random_seed)
     end subroutine jgct_permutation_test_alloc
 
     !> Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
@@ -533,9 +531,9 @@ contains
             !! Number of neighbors in study 1
         integer(int32), intent(in) :: n_points
             !! Number of reference points in the studies
-        real(real64), dimension(n_reps_S1, n_neighbors, n_points), intent(inout), target :: neighborhood_residuals_S1_copy
+        real(real64), dimension(n_reps_S1, n_neighbors, n_points), intent(inout) :: neighborhood_residuals_S1_copy
             !! Copy (if wanted) of the computed neighborhood residuals for study 1, will be shuffled in-place
-        real(real64), dimension(n_reps_S2, n_neighbors, n_points), intent(inout), target :: neighborhood_residuals_S2_copy
+        real(real64), dimension(n_reps_S2, n_neighbors, n_points), intent(inout) :: neighborhood_residuals_S2_copy
             !! Copy (if wanted) of the computed neighborhood residuals for study 2, will be shuffled in-place
         real(real64), intent(in) :: global_jsd_observed
             !! Observed global JSD value for both studies (from [[tox_jensen_shannon_divergence(module):compute_weighted_global_divergence(subroutine)]])
@@ -549,7 +547,7 @@ contains
             !! Vector of global divergence values obtained under the null hypothesis
         real(real64), intent(out) :: p_value
             !! Empirical p-value of the permutation test: \( \frac{\text{sum}(\text{jsd_null}) + 1}{\text{n_permutations}} \)
-        real(real64), dimension(n_reps_S1 + n_reps_S2, n_neighbors), intent(out), target :: tmp_pool
+        real(real64), dimension(n_reps_S1 + n_reps_S2, n_neighbors), intent(out) :: tmp_pool
             !! Working array for shuffling the concatenated residuals from both studies per reference point
         integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts
             !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
@@ -610,7 +608,7 @@ contains
             !! Residuals for one reference point in study 1, will be shuffled in-place
         real(real64), dimension(n_reps_S2 * n_neighbors), intent(inout) :: reference_point_S2
             !! Residuals for one reference point in study 2, will be shuffled in-place
-        real(real64), dimension((n_reps_S1 + n_reps_S2) * n_neighbors), intent(out), target :: pool_flat
+        real(real64), dimension((n_reps_S1 + n_reps_S2) * n_neighbors), intent(out) :: pool_flat
             !! Working array for shuffling the concatenated residuals from both studies per reference point
 
         integer(int32) :: pool_size, n_residuals_S1
@@ -619,7 +617,7 @@ contains
         n_residuals_S1 = size(reference_point_S1, kind=int32)
 
         pool_flat(1:n_residuals_S1) = reference_point_S1
-        pool_flat(n_residuals_S1+1:pool_size) = reference_point_S1
+        pool_flat(n_residuals_S1+1:pool_size) = reference_point_S2
 
         call shuffle_vector(pool_flat)
 
