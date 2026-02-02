@@ -6,7 +6,7 @@ module f42_utils
   use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
   use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, set_ok, set_err_once, set_err, validate_in_range_real, is_err, validate_in_range_int, validate_dimension_size
-  use, intrinsic :: ieee_arithmetic, only: ieee_next_after, ieee_value, ieee_positive_inf, ieee_negative_inf, ieee_is_finite, ieee_is_nan, ieee_quiet_nan
+  use, intrinsic :: ieee_arithmetic, only: ieee_next_after, ieee_value, ieee_positive_inf, ieee_negative_inf, ieee_is_finite, ieee_is_nan
   implicit none
 
   public :: sort_real, sort_integer, sort_character
@@ -25,7 +25,6 @@ module f42_utils
     module procedure clamp_real, clamp_int
   end interface clamp
 
-  real(real64), parameter :: NaN = ieee_value(1.0_real64, ieee_quiet_nan)
   real(real64), parameter :: PI = 4.0_real64 * atan(1.0_real64)
   real(real64), parameter :: EPS = epsilon(1.0_real64)
 contains
@@ -118,7 +117,7 @@ contains
       if (val == 0.0_real64) then
           below = -tiny(1.0_real64)
       else
-          below = ieee_next_after(val, ieee_value(1.0_real64, ieee_negative_inf))
+          below = ieee_next_after(val, M_NEG_INF)
       end if
   end function below
 
@@ -129,7 +128,7 @@ contains
       if (val == 0.0_real64) then
           above = tiny(1.0_real64)
       else
-          above = ieee_next_after(val, ieee_value(1.0_real64, ieee_positive_inf))
+          above = ieee_next_after(val, M_POS_INF)
       end if
   end function above
 

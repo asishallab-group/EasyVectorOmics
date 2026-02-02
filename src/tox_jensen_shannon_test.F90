@@ -5,8 +5,8 @@
 !! This module implements the four main subroutines for the gJCT algorithm.
 module tox_jensen_shannon_test
     use safeguard
-    use, intrinsic :: iso_fortran_env, only: real64, int32, NaN
-    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_is_finite
+    use, intrinsic :: iso_fortran_env, only: real64, int32
+    use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_value, ieee_quiet_nan, ieee_is_finite
     use f42_utils, only: heapsort_real, calc_percentile_helper, clamp
     use tox_errors, only: validate_all_in_range_real, validate_in_range_int, is_err, set_ok, validate_dimension_size, ERR_ALLOC_FAIL, set_err
     implicit none
@@ -112,7 +112,7 @@ contains
                 if (.not. ieee_is_nan(expr(i_rep, i_gene))) then
                     resid(i_rep, i_gene) = expr(i_rep, i_gene) - means(i_gene)
                 else
-                    resid(i_rep, i_gene) = NaN
+                    resid(i_rep, i_gene) = M_NAN
                 end if
             end do
         end do
@@ -228,7 +228,7 @@ contains
         end do
 
         if (n_pool == 0) then
-            x_star = NaN
+            x_star = M_NAN
         else
             ! Compute reference points as empirical quantiles using the permutation
             do concurrent(i_point=1:n_points) local(quantile_level) shared(n_points, pooled_means, pooled_means_perm, n_pool, x_star)
