@@ -1,9 +1,9 @@
 #include "macros.h"
 
-!> # Global Jensen-Shannon-Divergence Compatibility Test (gJCT)
+!> # Jensen-Shannon-Divergence (JSD) Compatibility Test (gJCT) Preprocessing
 !!
-!! This module implements the four main subroutines for the gJCT algorithm.
-module tox_jensen_shannon_test
+!! This module implements the pipeline to obtain neighborhood residuals from expression vectors, to be used for JCT based data integration.
+submodule (tox_data_integration) tox_data_integration_preprocessing
     use safeguard
     use, intrinsic :: iso_fortran_env, only: real64, int32
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_value, ieee_quiet_nan, ieee_is_finite
@@ -14,7 +14,7 @@ module tox_jensen_shannon_test
 contains
 
     !> Compute per-gene mean expression, ignoring NaN values
-    pure subroutine compute_gene_means(n_genes, n_reps, expr, means, ierr)
+    pure module subroutine compute_gene_means(n_genes, n_reps, expr, means, ierr)
         integer(int32), intent(in) :: n_genes
             !! Number of genes in the study
         integer(int32), intent(in) :: n_reps
@@ -37,7 +37,7 @@ contains
     end subroutine compute_gene_means
 
     !> (no input validation) Compute per-gene mean expression, ignoring NaN values
-    pure subroutine compute_gene_means_helper(n_genes, n_reps, expr, means)
+    pure module subroutine compute_gene_means_helper(n_genes, n_reps, expr, means)
         integer(int32), intent(in) :: n_genes
             !! Number of genes in the study
         integer(int32), intent(in) :: n_reps
@@ -69,7 +69,7 @@ contains
     end subroutine compute_gene_means_helper
 
     !> Compute signed residuals (centering by mean)
-    pure subroutine compute_residuals(n_genes, n_reps, expr, means, resid, ierr)
+    pure module subroutine compute_residuals(n_genes, n_reps, expr, means, resid, ierr)
         integer(int32), intent(in) :: n_genes
             !! Number of genes in the study
         integer(int32), intent(in) :: n_reps
@@ -93,7 +93,7 @@ contains
     end subroutine compute_residuals
 
     !> (no input validation) Compute signed residuals (centering by mean)
-    pure subroutine compute_residuals_helper(n_genes, n_reps, expr, means, resid)
+    pure module subroutine compute_residuals_helper(n_genes, n_reps, expr, means, resid)
         integer(int32), intent(in) :: n_genes
             !! Number of genes in the study
         integer(int32), intent(in) :: n_reps
@@ -120,7 +120,7 @@ contains
     end subroutine compute_residuals_helper
 
     !> Pool per-gene mean expression values across studies
-    pure subroutine pool_means_alloc(n_genes_S1, mean_S1, n_genes_S2, mean_S2, n_points, n_pool, x_star, ierr)
+    pure module subroutine pool_means_alloc(n_genes_S1, mean_S1, n_genes_S2, mean_S2, n_points, n_pool, x_star, ierr)
         integer(int32), intent(in) :: n_genes_S1
             !! Number of genes in study S1
         integer(int32), intent(in) :: n_genes_S2
@@ -172,8 +172,8 @@ contains
     end subroutine pool_means_alloc
 
     !> Pool per-gene mean expression values across studies
-    pure subroutine pool_means(pooled_means, pooled_means_perm, pool_size, n_points, n_pool, x_star, ierr)
-        integer(c_int), intent(in), target :: pool_size
+    pure module subroutine pool_means(pooled_means, pooled_means_perm, pool_size, n_points, n_pool, x_star, ierr)
+        integer(int32), intent(in), target :: pool_size
             !! Number of means in the pool, usually `n_genes_S1 + n_genes_S2`
         integer(int32), intent(in) :: n_points
             !! Number of reference points to define
@@ -199,8 +199,8 @@ contains
     end subroutine pool_means
 
     !> (no input validation) Pool per-gene mean expression values across studies
-    pure subroutine pool_means_helper(pooled_means, pooled_means_perm, pool_size, n_points, n_pool, x_star)
-        integer(c_int), intent(in), target :: pool_size
+    pure module subroutine pool_means_helper(pooled_means, pooled_means_perm, pool_size, n_points, n_pool, x_star)
+        integer(int32), intent(in), target :: pool_size
             !! Number of means in the pool, usually `n_genes_S1 + n_genes_S2`
         integer(int32), intent(in) :: n_points
             !! Number of reference points to define
@@ -240,7 +240,10 @@ contains
         end if
     end subroutine pool_means_helper
 
-    pure integer(int32) function calc_neighborhood_size(n_pool, n_points, n_genes_S, mean_S, desired_size) result(n_neighbors)
+    !> Calculate the number of neighbors to be used for [[tox_data_integration(module):construct_neighborhoods(interface)]].
+    !|
+    !| The `desired_size` works as upper limit, as the actual neighborhood size might be lower due to few genes with non-NaN mean.
+    pure module function calc_neighborhood_size(n_pool, n_points, n_genes_S, mean_S, desired_size) result(n_neighbors)
         integer(int32), intent(in) :: n_pool
             !! Total number of pooled mean-expression values across both studies
         integer(int32), intent(in) :: n_points
@@ -251,6 +254,9 @@ contains
             !! Per-gene mean expression values
         integer(int32), intent(in), optional :: desired_size
             !! Optional desired neighborhood size, default=1000
+        integer(int32) :: n_neighbors
+            !! Calculated neighborhood size
+
 
         integer(int32) :: max_neighbors, i_gene, min_neighbors
 
@@ -281,7 +287,7 @@ contains
     end function calc_neighborhood_size
 
     !> Construct neighborhood-based residual sets (kNN)
-    pure subroutine construct_neighborhoods_alloc(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, &
+    pure module subroutine construct_neighborhoods_alloc(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, &
                                                   neighborhood_residuals, neighborhood_indices, n_neighbors, ierr)
         integer(int32), intent(in) :: n_points
             !! Number of reference points
@@ -300,7 +306,7 @@ contains
         integer(int32), intent(out) :: neighborhood_indices(n_neighbors, n_points)
             !! Indices of selected neighborhood genes
         integer(int32), intent(in) :: n_neighbors
-            !! Number of neighbors, **CALCULATE IT WITH [[tox_jensen_shannon_test(module):calc_neighborhood_size(function)]]**
+            !! Number of neighbors, **CALCULATE IT WITH [[tox_data_integration(module):calc_neighborhood_size(interface)]]**
         integer(int32), intent(out) :: ierr
             !! Error code
 
@@ -319,7 +325,7 @@ contains
     end subroutine construct_neighborhoods_alloc
 
     !> Construct neighborhood-based residual sets (kNN)
-    pure subroutine construct_neighborhoods(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, tmp_distances, tmp_distances_perm, neighborhood_residuals, neighborhood_indices, n_neighbors, ierr)
+    pure module subroutine construct_neighborhoods(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, tmp_distances, tmp_distances_perm, neighborhood_residuals, neighborhood_indices, n_neighbors, ierr)
         integer(int32), intent(in) :: n_points
             !! Number of reference points
         integer(int32), intent(in) :: n_genes_S
@@ -341,7 +347,7 @@ contains
         integer(int32), intent(out) :: neighborhood_indices(n_neighbors, n_points)
             !! Indices of selected neighborhood genes
         integer(int32), intent(in) :: n_neighbors
-            !! Number of neighbors, **CALCULATE IT WITH [[tox_jensen_shannon_test(module):calc_neighborhood_size(function)]]**
+            !! Number of neighbors, **CALCULATE IT WITH [[tox_data_integration(module):calc_neighborhood_size(interface)]]**
         integer(int32), intent(out) :: ierr
             !! Error code
 
@@ -369,7 +375,7 @@ contains
     end subroutine construct_neighborhoods
 
     !> (no input validation) Construct neighborhood-based residual sets (kNN)
-    pure subroutine construct_neighborhoods_helper(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, tmp_distances, tmp_distances_perm, &
+    pure module subroutine construct_neighborhoods_helper(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, tmp_distances, tmp_distances_perm, &
                                                    neighborhood_residuals, neighborhood_indices, n_neighbors)
         integer(int32), intent(in) :: n_points
             !! Number of reference points
@@ -392,7 +398,7 @@ contains
         integer(int32), intent(out) :: neighborhood_indices(n_neighbors, n_points)
             !! Indices of selected neighborhood genes
         integer(int32), intent(in) :: n_neighbors
-            !! Number of neighbors, **CALCULATE IT WITH [[tox_jensen_shannon_test(module):calc_neighborhood_size(function)]]**
+            !! Number of neighbors, **CALCULATE IT WITH [[tox_data_integration(module):calc_neighborhood_size(interface)]]**
 
         integer(int32) :: i_point, i_gene, gene_idx
 
@@ -423,14 +429,14 @@ contains
             end do
         end do
     end subroutine construct_neighborhoods_helper
-end module tox_jensen_shannon_test
+end submodule tox_data_integration_preprocessing
 
-!> C-compatible wrapper for [[tox_jensen_shannon_test(module):compute_gene_means(subroutine)]]
+!> C-compatible wrapper for [[tox_data_integration(module):compute_gene_means(interface)]]
 pure subroutine compute_gene_means_c(n_genes, n_reps, expr, means, ierr) &
     bind(C, name="compute_gene_means_c")
 
     use, intrinsic :: iso_c_binding, only: c_int, c_double
-    use tox_jensen_shannon_test, only: compute_gene_means
+    use tox_data_integration, only: compute_gene_means
     M_USE_NULL_VALIDATION
 
     integer(c_int), intent(in), target :: n_genes
@@ -453,12 +459,12 @@ pure subroutine compute_gene_means_c(n_genes, n_reps, expr, means, ierr) &
     call compute_gene_means(n_genes, n_reps, expr, means, ierr)
 end subroutine compute_gene_means_c
 
-!> C-compatible wrapper for [[tox_jensen_shannon_test(module):compute_residuals(subroutine)]]
+!> C-compatible wrapper for [[tox_data_integration(module):compute_residuals(interface)]]
 pure subroutine compute_residuals_c(n_genes, n_reps, expr, means, resid, ierr) &
     bind(C, name="compute_residuals_c")
 
     use, intrinsic :: iso_c_binding, only: c_int, c_double
-    use tox_jensen_shannon_test, only: compute_residuals
+    use tox_data_integration, only: compute_residuals
     M_USE_NULL_VALIDATION
 
     integer(c_int), intent(in), target :: n_genes
@@ -484,12 +490,12 @@ pure subroutine compute_residuals_c(n_genes, n_reps, expr, means, resid, ierr) &
     call compute_residuals(n_genes, n_reps, expr, means, resid, ierr)
 end subroutine compute_residuals_c
 
-!> C-compatible wrapper for [[tox_jensen_shannon_test(module):pool_means_alloc(subroutine)]]
+!> C-compatible wrapper for [[tox_data_integration(module):pool_means_alloc(interface)]]
 pure subroutine pool_means_c(n_genes_S1, mean_S1, n_genes_S2, mean_S2, &
     n_points, n_pool, x_star, ierr) bind(C, name="pool_means_c")
 
     use, intrinsic :: iso_c_binding, only: c_int, c_double
-    use tox_jensen_shannon_test, only: pool_means_alloc
+    use tox_data_integration, only: pool_means_alloc
     M_USE_NULL_VALIDATION
 
     integer(c_int), intent(in), target :: n_genes_S1
@@ -522,13 +528,13 @@ pure subroutine pool_means_c(n_genes_S1, mean_S1, n_genes_S2, mean_S2, &
                           n_points, n_pool, x_star, ierr)
 end subroutine pool_means_c
 
-!> C-compatible wrapper for [[tox_jensen_shannon_test(module):pool_means(subroutine)]]
+!> C-compatible wrapper for [[tox_data_integration(module):pool_means(interface)]]
 pure subroutine pool_means_expert_c(pooled_means, pooled_means_perm, &
     pool_size, n_points, n_pool, x_star, ierr) &
     bind(C, name="pool_means_expert_c")
 
     use, intrinsic :: iso_c_binding, only: c_int, c_double
-    use tox_jensen_shannon_test, only: pool_means
+    use tox_data_integration, only: pool_means
     M_USE_NULL_VALIDATION
 
     integer(c_int), intent(in), target :: pool_size
@@ -558,12 +564,12 @@ pure subroutine pool_means_expert_c(pooled_means, pooled_means_perm, &
                     pool_size, n_points, n_pool, x_star, ierr)
 end subroutine pool_means_expert_c
 
-!> C-compatible wrapper for [[tox_jensen_shannon_test(module):calc_neighborhood_size(function)]]
+!> C-compatible wrapper for [[tox_data_integration(module):calc_neighborhood_size(interface)]]
 pure subroutine calc_neighborhood_size_c(n_pool, n_points, n_genes_S, mean_S, &
     desired_size, n_neighbors, ierr) bind(C, name="calc_neighborhood_size_c")
 
     use, intrinsic :: iso_c_binding, only: c_int, c_double
-    use tox_jensen_shannon_test, only: calc_neighborhood_size
+    use tox_data_integration, only: calc_neighborhood_size
     use tox_errors, only: set_ok
     M_USE_NULL_VALIDATION
 
@@ -599,13 +605,13 @@ pure subroutine calc_neighborhood_size_c(n_pool, n_points, n_genes_S, mean_S, &
     call set_ok(ierr)
 end subroutine calc_neighborhood_size_c
 
-!> C-compatible wrapper for [[tox_jensen_shannon_test(module):construct_neighborhoods_alloc(subroutine)]]
+!> C-compatible wrapper for [[tox_data_integration(module):construct_neighborhoods_alloc(interface)]]
 pure subroutine construct_neighborhoods_c(n_points, x_star, n_genes_S, mean_S, &
     n_reps_S, resid_S, neighborhood_residuals, neighborhood_indices, n_neighbors, ierr) &
     bind(C, name="construct_neighborhoods_c")
 
     use, intrinsic :: iso_c_binding, only: c_int, c_double
-    use tox_jensen_shannon_test, only: construct_neighborhoods_alloc
+    use tox_data_integration, only: construct_neighborhoods_alloc
     M_USE_NULL_VALIDATION
 
     integer(c_int), intent(in), target :: n_points

@@ -1,9 +1,10 @@
-!> Unit test suite for tox_jensen_shannon_divergence routine.
-module mod_test_jensen_shannon_divergence
+!> Unit test suite for tox_data_integration routine.
+module mod_test_data_integration
     use asserts
     use, intrinsic :: iso_fortran_env, only: real64, int32
     use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan
-    use tox_jensen_shannon_divergence
+    use tox_data_integration
+    use tox_data_integration_jsd
     use tox_errors
     use f42_utils, only: above, below, init_random, shuffle_vector
     implicit none
@@ -26,17 +27,35 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(6)
+        type(test_case) :: all_tests(20)
         all_tests(1) = test_case("test_determine_shared_residual_range", test_determine_shared_residual_range)
         all_tests(2) = test_case("test_build_residual_histograms", test_build_residual_histograms)
         all_tests(3) = test_case("test_compute_divergence_per_reference_point", test_compute_divergence_per_reference_point)
         all_tests(4) = test_case("test_compute_weighted_global_divergence", test_compute_weighted_global_divergence)
         all_tests(5) = test_case("test_shuffle_reference_point_helper", test_shuffle_reference_point_helper)
         all_tests(6) = test_case("test_gjct_permutation_test", test_gjct_permutation_test)
+
+        all_tests(7) = test_case("test_compute_gene_means_basic", test_compute_gene_means_basic)
+        all_tests(8) = test_case("test_compute_gene_means_with_nan", test_compute_gene_means_with_nan)
+        all_tests(9) = test_case("test_compute_gene_means_all_nan", test_compute_gene_means_all_nan)
+        all_tests(10) = test_case("test_compute_gene_means_invalid_input", test_compute_gene_means_invalid_input)
+        
+        all_tests(11) = test_case("test_compute_residuals_basic", test_compute_residuals_basic)
+        all_tests(12) = test_case("test_compute_residuals_with_nan", test_compute_residuals_with_nan)
+        all_tests(13) = test_case("test_compute_residuals_all_nan", test_compute_residuals_all_nan)
+        all_tests(14) = test_case("test_compute_residuals_invalid_input", test_compute_residuals_invalid_input)
+        
+        all_tests(15) = test_case("test_pool_means_alloc_basic", test_pool_means_alloc_basic)
+        all_tests(16) = test_case("test_pool_means_alloc_with_nan", test_pool_means_alloc_with_nan)
+        all_tests(17) = test_case("test_pool_means_alloc_single_study", test_pool_means_alloc_single_study)
+        all_tests(18) = test_case("test_pool_means_alloc_invalid_input", test_pool_means_alloc_invalid_input)
+        
+        all_tests(19) = test_case("test_construct_neighborhoods_basic", test_construct_neighborhoods_basic)
+        all_tests(20) = test_case("test_construct_neighborhoods_nan_means", test_construct_neighborhoods_nan_means)
     end function get_all_tests
 
-    !> Run all tox_jensen_shannon_divergence tests.
-    subroutine run_all_tests_tox_jensen_shannon_divergence
+    !> Run all tox_data_integration tests.
+    subroutine run_all_tests_tox_data_integration
         type(test_case), allocatable :: all_tests(:)
         integer(int32) :: i
 
@@ -46,11 +65,11 @@ contains
             call all_tests(i)%test_proc()
             print "(' ',A,' passed.')", trim(all_tests(i)%name)
         end do
-        print *, "All tox_jensen_shannon_divergence tests passed successfully."
-    end subroutine run_all_tests_tox_jensen_shannon_divergence
+        print *, "All tox_data_integration tests passed successfully."
+    end subroutine run_all_tests_tox_data_integration
 
-    !> Run specific tox_jensen_shannon_divergence tests by name.
-    subroutine run_named_tests_tox_jensen_shannon_divergence(test_names)
+    !> Run specific tox_data_integration tests by name.
+    subroutine run_named_tests_tox_data_integration(test_names)
         character(len=*), intent(in) :: test_names(:)
         type(test_case), allocatable :: all_tests(:)
         integer(int32) :: i, j
@@ -72,17 +91,19 @@ contains
                 print *, "Unknown test: ", trim(test_names(i))
             end if
         end do
-    end subroutine run_named_tests_tox_jensen_shannon_divergence
+    end subroutine run_named_tests_tox_data_integration
 
     subroutine test_gjct_permutation_test
         integer(int32), parameter :: n_reps_S1 = 4, n_reps_S2 = 3, n_neighbors = 1, n_points = 2, n_permutations = 2, n_bins = 4
         real(real64), dimension((n_reps_S1 + n_reps_S2) * n_neighbors * n_points ), target :: S_12, expected_S_12
-        real(real64), dimension(:), pointer :: S1, S2
+        real(real64), dimension(:, :, :), pointer :: S1, S2
+        real(real64), dimension(:, :), pointer :: tmp_pool
+        real(real64), dimension(:), pointer :: S1_flat, S2_flat
         integer(int32), parameter :: random_seed = 666
         integer(int32) :: ierr, i_permutation
         real(real64) :: p_value, global_jsd_observed
         real(real64), dimension(n_permutations) :: jsd_null
-        real(real64), dimension((n_reps_S1 + n_reps_S2) * n_neighbors) :: tmp_pool
+        real(real64), dimension((n_reps_S1 + n_reps_S2) * n_neighbors), target :: tmp_pool_flat
         integer(int32), dimension(n_points, n_bins) :: tmp_counts
         real(real64), dimension(n_points, n_bins) :: tmp_pmf_S1
         real(real64), dimension(n_points, n_bins) :: tmp_pmf_S2
@@ -93,6 +114,8 @@ contains
 
         call init_random(random_seed)
 
+        tmp_pool(1:n_reps_S1+n_reps_S2, 1:n_neighbors) => tmp_pool_flat
+
         ! ============================================================
         ! Test 1 — Test randomness with seed
         ! ============================================================
@@ -101,28 +124,30 @@ contains
 
         ! Simulate two permutations 
         expected_S_12 = S_12
-        S1(1:n_reps_S1 * n_neighbors * n_points) => expected_S_12(1:n_reps_S1*n_neighbors*n_points)
-        S2(1:n_reps_S2 * n_neighbors * n_points) => expected_S_12(n_reps_S1*n_neighbors*n_points+1:)
+        S1(1:n_reps_S1, 1:n_neighbors, 1:n_points) => expected_S_12(1:n_reps_S1*n_neighbors*n_points)
+        S2(1:n_reps_S2, 1:n_neighbors, 1:n_points) => expected_S_12(n_reps_S1*n_neighbors*n_points+1:)
+        S1_flat(1:n_reps_S1 * n_neighbors * n_points) => S1
+        S2_flat(1:n_reps_S2 * n_neighbors * n_points) => S2
         do i_permutation = 1, n_permutations
             ! First point
-            tmp_pool(1:n_reps_S1*n_neighbors) = S1(1:n_reps_S1*n_neighbors)
-            tmp_pool(n_reps_S1*n_neighbors+1:) = S2(1:n_reps_S2*n_neighbors)
-            call shuffle_vector(tmp_pool)
-            S1(1:n_reps_S1*n_neighbors) = tmp_pool(1:n_reps_S1*n_neighbors)
-            S2(1:n_reps_S2*n_neighbors) = tmp_pool(n_reps_S1*n_neighbors+1:)
+            tmp_pool_flat(1:n_reps_S1*n_neighbors) = S1_flat(1:n_reps_S1*n_neighbors)
+            tmp_pool_flat(n_reps_S1*n_neighbors+1:) = S2_flat(1:n_reps_S2*n_neighbors)
+            call shuffle_vector(tmp_pool_flat)
+            S1_flat(1:n_reps_S1*n_neighbors) = tmp_pool_flat(1:n_reps_S1*n_neighbors)
+            S2_flat(1:n_reps_S2*n_neighbors) = tmp_pool_flat(n_reps_S1*n_neighbors+1:)
 
             ! Second point
-            tmp_pool(1:n_reps_S1*n_neighbors) = S1(n_reps_S1*n_neighbors+1:)
-            tmp_pool(n_reps_S1*n_neighbors+1:) = S2(n_reps_S2*n_neighbors+1:)
-            call shuffle_vector(tmp_pool)
-            S1(n_reps_S1*n_neighbors+1:) = tmp_pool(1:n_reps_S1*n_neighbors)
-            S2(n_reps_S2*n_neighbors+1:) = tmp_pool(n_reps_S1*n_neighbors+1:)
+            tmp_pool_flat(1:n_reps_S1*n_neighbors) = S1_flat(n_reps_S1*n_neighbors+1:)
+            tmp_pool_flat(n_reps_S1*n_neighbors+1:) = S2_flat(n_reps_S2*n_neighbors+1:)
+            call shuffle_vector(tmp_pool_flat)
+            S1_flat(n_reps_S1*n_neighbors+1:) = tmp_pool_flat(1:n_reps_S1*n_neighbors)
+            S2_flat(n_reps_S2*n_neighbors+1:) = tmp_pool_flat(n_reps_S1*n_neighbors+1:)
         end do
 
         ! for ifx: expected_shuffle = [2, 3, 6, 1, 5, 6, 1, -7, -4, 2, 4, 8, 3, 8]
        
-        S1(1:n_reps_S1 * n_neighbors * n_points) => S_12(1:n_reps_S1*n_neighbors*n_points)
-        S2(1:n_reps_S2 * n_neighbors * n_points) => S_12(n_reps_S1*n_neighbors*n_points+1:)
+        S1(1:n_reps_S1, 1:n_neighbors, 1:n_points) => S_12(1:n_reps_S1*n_neighbors*n_points)
+        S2(1:n_reps_S2, 1:n_neighbors, 1:n_points) => S_12(n_reps_S1*n_neighbors*n_points+1:)
         
         global_jsd_observed = 0.0_real64
         call gjct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr, random_seed=random_seed, tmp_pool=tmp_pool, tmp_counts=tmp_counts, tmp_pmf_S1=tmp_pmf_S1, tmp_pmf_S2=tmp_pmf_S2, tmp_included_n_reps_S1=tmp_included_n_reps_S1, tmp_included_n_reps_S2=tmp_included_n_reps_S2, tmp_js_divergences=tmp_js_divergences, tmp_weights=tmp_weights)
@@ -135,8 +160,8 @@ contains
         ! ============================================================
         !
         S_12 = [ 1,2,3,4,  5,6,-7,8, 2,-4,6,8,  1,3 ]
-        S1(1:n_reps_S1 * n_neighbors * n_points) => S_12(1:n_reps_S1*n_neighbors*n_points)
-        S2(1:n_reps_S2 * n_neighbors * n_points) => S_12(n_reps_S1*n_neighbors*n_points+1:)
+        S1(1:n_reps_S1, 1:n_neighbors, 1:n_points) => S_12(1:n_reps_S1*n_neighbors*n_points)
+        S2(1:n_reps_S2, 1:n_neighbors, 1:n_points) => S_12(n_reps_S1*n_neighbors*n_points+1:)
 
         call init_random(random_seed)
         call gjct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr, tmp_pool=tmp_pool, tmp_counts=tmp_counts, tmp_pmf_S1=tmp_pmf_S1, tmp_pmf_S2=tmp_pmf_S2, tmp_included_n_reps_S1=tmp_included_n_reps_S1, tmp_included_n_reps_S2=tmp_included_n_reps_S2, tmp_js_divergences=tmp_js_divergences, tmp_weights=tmp_weights)
@@ -153,8 +178,8 @@ contains
         ! ============================================================
         !
         S_12 = [ 1,2,3,4,  5,6,-7,8, 2,-4,6,8,  1,3 ]
-        S1(1:n_reps_S1 * n_neighbors * n_points) => S_12(1:n_reps_S1*n_neighbors*n_points)
-        S2(1:n_reps_S2 * n_neighbors * n_points) => S_12(n_reps_S1*n_neighbors*n_points+1:)
+        S1(1:n_reps_S1, 1:n_neighbors, 1:n_points) => S_12(1:n_reps_S1*n_neighbors*n_points)
+        S2(1:n_reps_S2, 1:n_neighbors, 1:n_points) => S_12(n_reps_S1*n_neighbors*n_points+1:)
 
         ! all should be greater or equal -> p_value=1
         global_jsd_observed = 0.0_real64
@@ -175,15 +200,15 @@ contains
     subroutine test_shuffle_reference_point_helper
         integer(int32), parameter :: n_reps_S1 = 4, n_reps_S2 = 3, n_neighbors = 2
         real(real64), dimension((n_reps_S1 + n_reps_S2) * n_neighbors ), target :: S_12, expected_S_12
-        real(real64), dimension(:, :), pointer :: S1, S2
-        real(real64), dimension(n_reps_S1 + n_reps_S2, n_neighbors) :: pool_flat
+        real(real64), dimension(:), pointer :: S1, S2
+        real(real64), dimension((n_reps_S1 + n_reps_S2) * n_neighbors) :: pool_flat
         integer(int32), parameter :: random_seed = 666
 
         call init_random(random_seed)
 
         S_12 = [ 1,2,3,4,  5,6,-7,8, 2,-4,6,8,  1,3 ]
-        S1(1:n_reps_S1, 1:n_neighbors) => S_12(1:n_reps_S1*n_neighbors)
-        S2(1:n_reps_S2, 1:n_neighbors) => S_12(n_reps_S1*n_neighbors+1:)
+        S1(1:n_reps_S1*n_neighbors) => S_12(1:n_reps_S1*n_neighbors)
+        S2(1:n_reps_S2*n_neighbors) => S_12(n_reps_S1*n_neighbors+1:)
 
         expected_S_12 = S_12
         call shuffle_vector(expected_S_12)
@@ -758,4 +783,391 @@ contains
 
     end subroutine test_compute_weighted_global_divergence
 
-end module mod_test_jensen_shannon_divergence
+    ! --------------------------------------------------------------------------
+    ! Test Cases for compute_gene_means
+    ! --------------------------------------------------------------------------
+
+    ! Test case 1: Basic compute_gene_means functionality.
+    subroutine test_compute_gene_means_basic()
+        integer, parameter :: n_genes = 4, n_reps = 3
+        real(real64) :: expr(n_reps, n_genes), means(n_genes)
+        real(real64) :: expected_means(n_genes)
+        integer(int32) :: ierr
+        
+        ! Test data
+        expr = reshape([1.0, 2.0, 3.0,    &   ! Gene 1: mean = 2.0
+                        4.0, 5.0, 6.0,    &   ! Gene 2: mean = 5.0
+                        10.0, 20.0, 30.0, &   ! Gene 3: mean = 20.0
+                        0.0, 0.0, 0.0],   &   ! Gene 4: mean = 0.0
+                       [n_reps, n_genes])
+        
+        expected_means = [2.0, 5.0, 20.0, 0.0]
+        
+        call compute_gene_means(n_genes, n_reps, expr, means, ierr)
+        
+        call assert_equal_int(ierr, ERR_OK, "test_compute_gene_means_basic: should succeed")
+        call assert_allclose_array_real(means, expected_means, n_genes, 0.0_real64, &
+                                        TOL, "test_compute_gene_means_basic: means")
+    end subroutine test_compute_gene_means_basic
+
+    ! Test case 2: compute_gene_means with NaN values.
+    subroutine test_compute_gene_means_with_nan()
+        integer, parameter :: n_genes = 3, n_reps = 4
+        real(real64) :: expr(n_reps, n_genes), means(n_genes)
+        integer(int32) :: ierr
+        
+        expr(:, 1) = [1.0_real64, 2.0_real64, ieee_value(0.0_real64, ieee_quiet_nan), 3.0_real64]  ! mean = (1+2+3)/3 = 2.0
+        expr(:, 2) = [ieee_value(0.0_real64, ieee_quiet_nan), 5.0_real64, 7.0_real64, 9.0_real64]  ! mean = (5+7+9)/3 = 7.0
+        expr(:, 3) = [10.0, 20.0, 30.0, 40.0]  ! mean = 25.0
+        
+        call compute_gene_means(n_genes, n_reps, expr, means, ierr)
+        
+        call assert_equal_int(ierr, ERR_OK, "test_compute_gene_means_with_nan: should succeed")
+        call assert_equal_real(means(1), 2.0_real64, TOL, "test_compute_gene_means_with_nan: gene 1 mean")
+        call assert_equal_real(means(2), 7.0_real64, TOL, "test_compute_gene_means_with_nan: gene 2 mean")
+        call assert_equal_real(means(3), 25.0_real64, TOL, "test_compute_gene_means_with_nan: gene 3 mean")
+    end subroutine test_compute_gene_means_with_nan
+
+    ! Test case 3: compute_gene_means with all NaN values for a gene.
+    subroutine test_compute_gene_means_all_nan()
+        integer, parameter :: n_genes = 2, n_reps = 3
+        real(real64) :: expr(n_reps, n_genes), means(n_genes)
+        integer(int32) :: ierr
+        
+        expr(:, 1) = [1.0, 2.0, 3.0]  ! Normal gene
+        expr(:, 2) = ieee_value(0.0_real64, ieee_quiet_nan)  ! All NaN gene
+        
+        call compute_gene_means(n_genes, n_reps, expr, means, ierr)
+        
+        call assert_equal_int(ierr, ERR_OK, "test_compute_gene_means_all_nan: should succeed")
+        call assert_equal_real(means(1), 2.0_real64, TOL, "test_compute_gene_means_all_nan: gene 1 mean")
+        call assert_true(ieee_is_nan(means(2)), "test_compute_gene_means_all_nan: gene 2 should be NaN")
+    end subroutine test_compute_gene_means_all_nan
+
+    ! Test case 4: compute_gene_means with invalid input.
+    subroutine test_compute_gene_means_invalid_input()
+        integer, parameter :: n_genes = 0, n_reps = 3, n_genes_neg = -1
+        real(real64) :: expr(3, 1), means(1)
+        integer(int32) :: ierr
+        
+        ! Test with zero genes
+        call compute_gene_means(n_genes, n_reps, expr, means, ierr)
+        call assert_not_equal_int(ierr, ERR_OK, "test_compute_gene_means_invalid_input: zero genes should fail")
+        
+        ! Test with negative genes
+        call compute_gene_means(n_genes_neg, n_reps, expr, means, ierr)
+        call assert_not_equal_int(ierr, ERR_OK, "test_compute_gene_means_invalid_input: negative genes should fail")
+        
+        ! Test with zero replicates
+        call compute_gene_means(n_genes, 0, expr, means, ierr)
+        call assert_not_equal_int(ierr, ERR_OK, "test_compute_gene_means_invalid_input: zero replicates should fail")
+    end subroutine test_compute_gene_means_invalid_input
+
+    ! --------------------------------------------------------------------------
+    ! Test Cases for compute_residuals
+    ! --------------------------------------------------------------------------
+
+    ! Test case 5: Basic compute_residuals functionality.
+    subroutine test_compute_residuals_basic()
+        integer, parameter :: n_genes = 4, n_reps = 3
+        real(real64) :: expr(n_reps, n_genes), means(n_genes), resid(n_reps, n_genes)
+        real(real64) :: expected_resid(n_reps, n_genes)
+        integer(int32) :: ierr
+        
+        expr = reshape([1.0, 2.0, 3.0,    &   ! Gene 1
+                        4.0, 5.0, 6.0,    &   ! Gene 2
+                        10.0, 20.0, 30.0, &   ! Gene 3
+                        0.0, 0.0, 0.0],   &   ! Gene 4
+                       [n_reps, n_genes])
+        
+        means = [2.0, 5.0, 20.0, 0.0]
+        expected_resid = reshape([-1.0, 0.0, 1.0,     &   ! Gene 1 residuals
+                                  -1.0, 0.0, 1.0,     &   ! Gene 2 residuals
+                                  -10.0, 0.0, 10.0,   &   ! Gene 3 residuals
+                                  0.0, 0.0, 0.0],     &   ! Gene 4 residuals
+                                 [n_reps, n_genes])
+        
+        call compute_residuals(n_genes, n_reps, expr, means, resid, ierr)
+        
+        call assert_equal_int(ierr, ERR_OK, "test_compute_residuals_basic: should succeed")
+        call assert_allclose_array_real(reshape(resid, [n_reps*n_genes]), &
+                                        reshape(expected_resid, [n_reps*n_genes]), &
+                                        n_reps*n_genes, 0.0_real64, TOL, &
+                                        "test_compute_residuals_basic: residuals")
+    end subroutine test_compute_residuals_basic
+
+    ! Test case 6: compute_residuals with NaN values.
+    subroutine test_compute_residuals_with_nan()
+        integer, parameter :: n_genes = 2, n_reps = 4
+        real(real64) :: expr(n_reps, n_genes), means(n_genes), resid(n_reps, n_genes)
+        integer(int32) :: ierr
+        
+        expr(:, 1) = [1.0_real64, 2.0_real64, ieee_value(0.0_real64, ieee_quiet_nan), 3.0_real64]
+        expr(:, 2) = [ieee_value(0.0_real64, ieee_quiet_nan), 5.0_real64, 7.0_real64, 9.0_real64]
+        means = [2.0_real64, 7.0_real64]
+        
+        call compute_residuals(n_genes, n_reps, expr, means, resid, ierr)
+        
+        call assert_equal_int(ierr, ERR_OK, "test_compute_residuals_with_nan: should succeed")
+        ! Check specific values
+        call assert_equal_real(resid(1, 1), -1.0_real64, TOL, "test_compute_residuals_with_nan: resid(1,1)")
+        call assert_equal_real(resid(2, 1), 0.0_real64, TOL, "test_compute_residuals_with_nan: resid(2,1)")
+        call assert_true(ieee_is_nan(resid(3, 1)), "test_compute_residuals_with_nan: resid(3,1) should be NaN")
+        call assert_equal_real(resid(4, 1), 1.0_real64, TOL, "test_compute_residuals_with_nan: resid(4,1)")
+        
+        call assert_true(ieee_is_nan(resid(1, 2)), "test_compute_residuals_with_nan: resid(1,2) should be NaN")
+        call assert_equal_real(resid(2, 2), -2.0_real64, TOL, "test_compute_residuals_with_nan: resid(2,2)")
+        call assert_equal_real(resid(3, 2), 0.0_real64, TOL, "test_compute_residuals_with_nan: resid(3,2)")
+        call assert_equal_real(resid(4, 2), 2.0_real64, TOL, "test_compute_residuals_with_nan: resid(4,2)")
+    end subroutine test_compute_residuals_with_nan
+
+    ! Test case 7: compute_residuals with all NaN values.
+    subroutine test_compute_residuals_all_nan()
+        integer, parameter :: n_genes = 2, n_reps = 3
+        real(real64) :: expr(n_reps, n_genes), means(n_genes), resid(n_reps, n_genes)
+        integer(int32) :: ierr
+        
+        expr(:, 1) = [1.0, 2.0, 3.0]
+        expr(:, 2) = ieee_value(0.0_real64, ieee_quiet_nan)  ! All NaN
+        means = [2.0, 0.0]  ! Second mean is irrelevant
+        
+        call compute_residuals(n_genes, n_reps, expr, means, resid, ierr)
+        
+        call assert_equal_int(ierr, ERR_OK, "test_compute_residuals_all_nan: should succeed")
+        ! All residuals for gene 2 should be NaN
+        call assert_true(all(ieee_is_nan(resid(:, 2))), "test_compute_residuals_all_nan: all residuals for NaN gene should be NaN")
+    end subroutine test_compute_residuals_all_nan
+
+    ! Test case 8: compute_residuals with invalid input.
+    subroutine test_compute_residuals_invalid_input()
+        integer, parameter :: n_genes = 0, n_reps = 3
+        real(real64) :: expr(3, 1), means(1), resid(3, 1)
+        integer(int32) :: ierr
+        
+        ! Test with zero genes
+        call compute_residuals(n_genes, n_reps, expr, means, resid, ierr)
+        call assert_not_equal_int(ierr, ERR_OK, "test_compute_residuals_invalid_input: zero genes should fail")
+
+    end subroutine test_compute_residuals_invalid_input
+
+    ! --------------------------------------------------------------------------
+    ! Test Cases for pool_means_alloc
+    ! --------------------------------------------------------------------------
+
+    ! Test case 9: Basic pool_means_alloc functionality.
+    subroutine test_pool_means_alloc_basic()
+        integer, parameter :: n_genes_S1 = 5, n_genes_S2 = 5, n_points = 3
+        real(real64) :: mean_S1(n_genes_S1), mean_S2(n_genes_S2), x_star(n_points)
+        integer(int32) :: N_pool, ierr
+        
+        mean_S1 = [1.0, 3.0, 5.0, 7.0, 9.0]
+        mean_S2 = [2.0, 4.0, 6.0, 8.0, 10.0]
+        
+        call pool_means_alloc(n_genes_S1, mean_S1, n_genes_S2, mean_S2, n_points, N_pool, x_star, ierr)
+        
+        call assert_equal_int(ierr, ERR_OK, "test_pool_means_alloc_basic: should succeed")
+        call assert_equal_int(N_pool, 10, "test_pool_means_alloc_basic: N_pool should be 10")
+        
+        ! Check that x_star contains quantiles from pooled data
+        ! Pooled data: [1,2,3,4,5,6,7,8,9,10]
+        ! For n_points=3, quantiles at positions: 10/4=2.5, 20/4=5.0, 30/4=7.5
+        ! Floored: 2, 5, 7 -> values: 2, 5, 7 -> interpolation to 3.25, 5.5 and 7.75
+        call assert_equal_real(x_star(1), 3.25_real64, TOL, "test_pool_means_alloc_basic: first quantile")
+        call assert_equal_real(x_star(2), 5.5_real64, TOL, "test_pool_means_alloc_basic: second quantile")
+        call assert_equal_real(x_star(3), 7.75_real64, TOL, "test_pool_means_alloc_basic: third quantile")
+    end subroutine test_pool_means_alloc_basic
+
+    ! Test case 10: pool_means_alloc with NaN values.
+    subroutine test_pool_means_alloc_with_nan()
+        integer, parameter :: n_genes_S1 = 4, n_genes_S2 = 4, n_points = 2
+        real(real64) :: mean_S1(n_genes_S1), mean_S2(n_genes_S2), x_star(n_points)
+        integer(int32) :: N_pool, ierr
+        
+        mean_S1 = [1.0_real64, ieee_value(0.0_real64, ieee_quiet_nan), 3.0_real64, 5.0_real64]
+        mean_S2 = [2.0_real64, 4.0_real64, ieee_value(0.0_real64, ieee_quiet_nan), 6.0_real64]
+        
+        call pool_means_alloc(n_genes_S1, mean_S1, n_genes_S2, mean_S2, n_points, N_pool, x_star, ierr)
+        
+        call assert_equal_int(ierr, ERR_OK, "test_pool_means_alloc_with_nan: should succeed")
+        call assert_equal_int(N_pool, 6, "test_pool_means_alloc_with_nan: N_pool should exclude NaN values")
+        
+        ! Pooled data (excluding NaN): [1,2,3,4,5,6]
+        ! Values: 2.666, 4.3333 -> interpolation
+        call assert_equal_real(x_star(1), 2.0_real64 + 2.0_real64/3.0_real64, TOL, "test_pool_means_alloc_with_nan: first quantile")
+        call assert_equal_real(x_star(2), 4.0_real64 + 1.0_real64/3.0_real64, TOL, "test_pool_means_alloc_with_nan: second quantile")
+    end subroutine test_pool_means_alloc_with_nan
+
+    ! Test case 11: pool_means_alloc with single study.
+    subroutine test_pool_means_alloc_single_study()
+        integer, parameter :: n_genes_S1 = 5, n_genes_S2 = 1, n_points = 3
+        real(real64) :: mean_S1(n_genes_S1), mean_S2(1), x_star(n_points)
+        integer(int32) :: N_pool, ierr
+        
+        mean_S1 = [1.0, 2.0, 3.0, 4.0, 5.0]
+        mean_S2 = [0.0]  ! Dummy
+        
+        call pool_means_alloc(n_genes_S1, mean_S1, n_genes_S2, mean_S2, n_points, N_pool, x_star, ierr)
+        
+        call assert_equal_int(ierr, ERR_OK, "test_pool_means_alloc_single_study: should succeed")
+        ! Does not work with a single study
+    end subroutine test_pool_means_alloc_single_study
+
+    ! Test case 12: pool_means_alloc with invalid input.
+    subroutine test_pool_means_alloc_invalid_input()
+        integer, parameter :: n_genes_S1 = 0, n_genes_S2 = 5, n_points = 3
+        real(real64) :: mean_S1(1), mean_S2(5), x_star(n_points)
+        integer(int32) :: N_pool, ierr
+        
+        mean_S2 = [1.0, 2.0, 3.0, 4.0, 5.0]
+        
+        ! Test with zero genes in S1
+        call pool_means_alloc(n_genes_S1, mean_S1, n_genes_S2, mean_S2, n_points, N_pool, x_star, ierr)
+        call assert_not_equal_int(ierr, ERR_OK, "test_pool_means_alloc_invalid_input: zero genes in S1 should fail")
+        
+        ! Test with zero points
+        call pool_means_alloc(5, mean_S2, n_genes_S2, mean_S2, 0, N_pool, x_star, ierr)
+        call assert_not_equal_int(ierr, ERR_OK, "test_pool_means_alloc_invalid_input: zero points should fail")
+    end subroutine test_pool_means_alloc_invalid_input
+
+    subroutine test_construct_neighborhoods_basic()
+          integer(int32), parameter :: n_points    = 2
+          integer(int32), parameter :: n_genes_S   = 5
+          integer(int32), parameter :: n_reps_S    = 3
+          integer(int32), parameter :: n_neighbors = 2
+
+          integer(int32) :: ierr
+          real(real64) :: x_star(n_points)
+          real(real64) :: mean_S(n_genes_S)
+          real(real64) :: resid_S(n_reps_S, n_genes_S)
+          real(real64) :: tmp_distances(n_genes_S)
+          integer(int32) :: tmp_distances_perm(n_genes_S)
+          real(real64) :: neighborhood_residuals(n_reps_S, n_neighbors, n_points)
+          integer(int32) :: neighborhood_indices(n_neighbors, n_points)
+
+          ! -----------------------------
+          ! Inputs
+          ! -----------------------------
+          x_star = [ 2.0_real64, 10.0_real64 ]
+          mean_S = [ 1.0, 2.5, 9.0, 10.5, 20.0 ]
+
+          resid_S = reshape([ &
+              1.0,  2.0,  3.0,  4.0,  5.0, &   ! rep 1
+              10.0,20.0,30.0,40.0,50.0, &   ! rep 2
+              -1.0,-2.0,-3.0,-4.0,-5.0  &    ! rep 3
+          ], shape(resid_S))
+
+          ! -----------------------------
+          ! Call routine
+          ! -----------------------------
+          call construct_neighborhoods( &
+              n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, &
+              tmp_distances, tmp_distances_perm, &
+              neighborhood_residuals, neighborhood_indices, &
+              n_neighbors, ierr )
+
+          call assert_equal_int(ierr, ERR_OK, "ierr must be ERR_OK")
+
+          ! -----------------------------
+          ! Expected neighbors
+          !
+          ! For x_star(1)=2.0:
+          !   distances = [1.0, 0.5, 7.0, 8.5, 18.0]
+          !   sorted → gene 2, gene 1
+          !   tie-breaking: ascending gene index  <-- IMPORTANT
+          !
+          ! For x_star(2)=10.0:
+          !   distances = [9.0, 7.5, 1.0, 0.5, 10.0]
+          !   sorted → gene 4, gene 3
+          ! -----------------------------
+
+          call assert_equal_array_int( neighborhood_indices(:,1), [2,1], n_neighbors, &
+              "test_construct_neighborhoods_basic: Incorrect neighborhood indices for point 1" )
+
+          call assert_equal_array_int( neighborhood_indices(:,2), [4,3], n_neighbors, &
+              "test_construct_neighborhoods_basic: Incorrect neighborhood indices for point 2" )
+
+          ! -----------------------------
+          ! Expected residuals
+          ! -----------------------------
+          call assert_equal_array_real( neighborhood_residuals(:,1,1), resid_S(:, 2), n_reps_S, TOL, &
+              "test_construct_neighborhoods_basic: Incorrect residuals(:,1,1)" )
+
+          call assert_equal_array_real( neighborhood_residuals(:,2,1), resid_S(:, 1), n_reps_S, TOL, &
+              "test_construct_neighborhoods_basic: Incorrect residuals(:,2,1)" )
+
+          call assert_equal_array_real( neighborhood_residuals(:,1,2), resid_S(:, 4), n_reps_S, TOL, &
+              "test_construct_neighborhoods_basic: Incorrect residuals(:,1,2)" )
+
+          call assert_equal_array_real( neighborhood_residuals(:,2,2), resid_S(:, 3), n_reps_S, TOL, &
+              "test_construct_neighborhoods_basic: Incorrect residuals(:,2,2)" )
+
+          call construct_neighborhoods( &
+              0_int32, x_star, n_genes_S, mean_S, n_reps_S, resid_S, &
+              tmp_distances, tmp_distances_perm, &
+              neighborhood_residuals, neighborhood_indices, &
+              n_neighbors, ierr )
+
+          call assert_equal_int(ierr, ERR_EMPTY_INPUT, "ierr must be ERR_EMPTY_INPUT")
+
+          call construct_neighborhoods( &
+              n_points, x_star, 0_int32, mean_S, n_reps_S, resid_S, &
+              tmp_distances, tmp_distances_perm, &
+              neighborhood_residuals, neighborhood_indices, &
+              n_neighbors, ierr )
+
+          call assert_equal_int(ierr, ERR_EMPTY_INPUT, "ierr must be ERR_EMPTY_INPUT")
+
+          call construct_neighborhoods( &
+              n_points, x_star, n_genes_S, mean_S, 0_int32, resid_S, &
+              tmp_distances, tmp_distances_perm, &
+              neighborhood_residuals, neighborhood_indices, &
+              n_neighbors, ierr )
+
+          call assert_equal_int(ierr, ERR_EMPTY_INPUT, "ierr must be ERR_EMPTY_INPUT")
+
+          call construct_neighborhoods( &
+              n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, &
+              tmp_distances, tmp_distances_perm, &
+              neighborhood_residuals, neighborhood_indices, &
+              0_int32, ierr )
+
+          call assert_equal_int(ierr, ERR_EMPTY_INPUT, "ierr must be ERR_EMPTY_INPUT")
+    end subroutine test_construct_neighborhoods_basic
+
+    subroutine test_construct_neighborhoods_nan_means()
+          integer(int32), parameter :: n_points    = 1
+          integer(int32), parameter :: n_genes_S   = 4
+          integer(int32), parameter :: n_reps_S    = 2
+          integer(int32), parameter :: n_neighbors = 2
+
+          integer(int32) :: ierr
+          real(real64) :: x_star(n_points)
+          real(real64) :: mean_S(n_genes_S)
+          real(real64) :: resid_S(n_reps_S, n_genes_S)
+          real(real64) :: tmp_distances(n_genes_S)
+          integer(int32) :: tmp_distances_perm(n_genes_S)
+          real(real64) :: neighborhood_residuals(n_reps_S, n_neighbors, n_points)
+          integer(int32) :: neighborhood_indices(n_neighbors, n_points)
+
+          x_star = [ 5.0_real64 ]
+          mean_S = [ 4.0_real64, ieee_value(1.0_real64, ieee_quiet_nan), 6.0_real64, ieee_value(1.0_real64, ieee_quiet_nan) ]
+
+          resid_S = reshape([ &
+              1.0, 2.0, 3.0, 4.0, &
+              10.0,20.0,30.0,40.0 &
+          ], shape(resid_S))
+
+          call construct_neighborhoods( &
+              n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, &
+              tmp_distances, tmp_distances_perm, &
+              neighborhood_residuals, neighborhood_indices, &
+              n_neighbors, ierr )
+
+          call assert_equal_int(ierr, ERR_OK, "ierr must be ERR_OK")
+
+          ! Only genes 1 and 3 are valid (non-NaN)
+          call assert_equal_array_int( neighborhood_indices(:,1), [1,3], n_neighbors, &
+              "test_construct_neighborhoods_nan_means: NaN mean handling incorrect" )
+    end subroutine test_construct_neighborhoods_nan_means
+
+end module mod_test_data_integration
