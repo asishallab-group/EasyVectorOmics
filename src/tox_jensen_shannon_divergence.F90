@@ -78,13 +78,13 @@ contains
         integer(int32), intent(in) :: n_reps_S2
             !! Number of replicates in study 2
         integer(int32), intent(in) :: n_neighbors
-            !! Number of neighbors in study 1
+            !! Number of neighbors in the studies
         integer(int32), intent(in) :: n_points
             !! Number of reference points in the studies
         real(real64), dimension(n_reps_S1, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S1
-            !! Computed neighborhood residuals for study 1 (kNN), NaN is explicitly allowed for missing values
+            !! Computed neighborhood residuals for study 1 ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
         real(real64), dimension(n_reps_S2, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S2
-            !! Computed neighborhood residuals for study 2 (kNN), NaN is explicitly allowed for missing values
+            !! Computed neighborhood residuals for study 2 ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
         real(real64), intent(in), optional :: residual_range_quantile
             !! Quantile for determining the residual range, default: 95.0
         real(real64), intent(out) :: shared_residual_range
@@ -141,7 +141,7 @@ contains
     end subroutine determine_shared_residual_range_alloc
 
     !> Summarizes the neighborhood residuals in absolute histogram counts and probability mass functions `pmf(residual, bin)` (actually a matrix)
-    pure subroutine build_residual_histograms(neighborhood_residuals, n_reps, n_neighbors, n_points, shared_residual_range, n_bins, counts, pmf, included_n_reps, ierr)
+    pure subroutine build_residual_histograms(neighborhood_residuals, n_reps, n_neighbors, n_points, shared_residual_range, n_bins, counts, pmf, included_n_reps, ierr, neighbor_mask)
         integer(int32), intent(in) :: n_reps
             !! Number of replicates of the study
         integer(int32), intent(in) :: n_neighbors
@@ -149,7 +149,7 @@ contains
         integer(int32), intent(in) :: n_points
             !! Number of reference points in the studies
         real(real64), dimension(n_reps, n_neighbors, n_points), intent(in) :: neighborhood_residuals
-            !! Computed neighborhood residuals for a study (kNN), NaN is explicitly allowed for missing values
+            !! Computed neighborhood residuals for a study ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
         real(real64), intent(in) :: shared_residual_range
             !! Computed residual range (R) from [[tox_jensen_shannon_divergence(module):determine_shared_residual_range_alloc(subroutine)]]
         integer(int32), intent(in) :: n_bins
@@ -162,6 +162,8 @@ contains
             !! Stores the count of non-NaN replicates (included ones)
         integer(int32), intent(out) :: ierr
             !! Error code
+        logical, dimension(n_neighbors, n_points), intent(in), optional :: neighbor_mask
+            !! Optional mask to exclude specific neighbors (e.g. for family-wise analysis)
 
         call set_ok(ierr)
 
@@ -173,11 +175,11 @@ contains
 
         if (is_err(ierr)) return
 
-        call build_residual_histograms_helper(neighborhood_residuals, n_reps, n_neighbors, n_points, shared_residual_range, n_bins, counts, pmf, included_n_reps)
+        call build_residual_histograms_helper(neighborhood_residuals, n_reps, n_neighbors, n_points, shared_residual_range, n_bins, counts, pmf, included_n_reps, neighbor_mask)
     end subroutine build_residual_histograms
 
     !> (no input validation) Summarizes the neighborhood residuals in absolute histogram counts and probability mass functions `pmf(residual, bin)` (actually a matrix)
-    pure subroutine build_residual_histograms_helper(neighborhood_residuals, n_reps, n_neighbors, n_points, shared_residual_range, n_bins, counts, pmf, included_n_reps)
+    pure subroutine build_residual_histograms_helper(neighborhood_residuals, n_reps, n_neighbors, n_points, shared_residual_range, n_bins, counts, pmf, included_n_reps, neighbor_mask)
         integer(int32), intent(in) :: n_reps
             !! Number of replicates of the study
         integer(int32), intent(in) :: n_neighbors
@@ -185,7 +187,7 @@ contains
         integer(int32), intent(in) :: n_points
             !! Number of reference points in the study
         real(real64), dimension(n_reps, n_neighbors, n_points), intent(in) :: neighborhood_residuals
-            !! Computed neighborhood residuals for a study (kNN), NaN is explicitly allowed for missing values
+            !! Computed neighborhood residuals for a study ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
         real(real64), intent(in) :: shared_residual_range
             !! Computed residual range (R) from [[tox_jensen_shannon_divergence(module):determine_shared_residual_range_alloc(subroutine)]]
         integer(int32), intent(in) :: n_bins
@@ -196,13 +198,18 @@ contains
             !! `counts` normalized to `0 <= counts(:, i) <= 1` and `sum(counts(:, i)) == 1`
         integer(int32), dimension(n_points), intent(out) :: included_n_reps
             !! Stores the count of non-NaN replicates (included ones)
+        logical, dimension(n_neighbors, n_points), intent(in), optional :: neighbor_mask
+            !! Optional mask to exclude specific neighbors (e.g. for family-wise analysis)
 
         real(real64) :: bin_width, clamped_residual
         integer(int32) :: bin_idx, i_neighbor, i_rep, i_bin, included_reps, i_point
+        logical :: filter_neighbors
 
         bin_width = 2.0_real64 * shared_residual_range / real(n_bins, real64)
         counts = 0_int32
         pmf = 0.0_real64
+
+        filter_neighbors = present(neighbor_mask)
 
         ! 1. assign the bins to the residuals (increase the respective count)
         ! outer loop cannot be concurrent, as counts of same residuals and bins but different neighbors might be changed at the same time
@@ -210,8 +217,14 @@ contains
             included_reps = 0_int32
             do concurrent (i_neighbor = 1:n_neighbors) &
                     local(i_rep, clamped_residual, bin_idx) &
-                    shared(n_reps, counts, neighborhood_residuals, shared_residual_range, bin_width) &
+                    shared(filter_neighbors, n_reps, counts, neighborhood_residuals, shared_residual_range, bin_width) &
                     reduce(+:included_reps)
+                ! Exclude neighbor if desired
+                if (filter_neighbors) then
+                    if (.not. neighbor_mask(i_neighbor, i_point)) cycle
+                end if
+
+                ! Count non-NaNs and assign the to a bin
                 do i_rep = 1, n_reps
                     if (.not. ieee_is_nan(neighborhood_residuals(i_rep, i_neighbor, i_point))) then
                         ! clamp residual to histogram range
@@ -380,19 +393,19 @@ contains
     end subroutine compute_weighted_global_divergence_helper
 
     !> Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
-    subroutine gjct_permutation_test_alloc(neighborhood_residuals_S1, neighborhood_residuals_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, ierr, random_seed)
+    subroutine gjct_permutation_test_alloc(neighborhood_residuals_S1, neighborhood_residuals_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, ierr, random_seed, neighbor_mask_S1, neighbor_mask_S2)
         integer(int32), intent(in) :: n_reps_S1
             !! Number of replicates in study 1
         integer(int32), intent(in) :: n_reps_S2
             !! Number of replicates in study 2
         integer(int32), intent(in) :: n_neighbors
-            !! Number of neighbors in study 1
+            !! Number of neighbors in the studies
         integer(int32), intent(in) :: n_points
             !! Number of reference points in the studies
         real(real64), dimension(n_reps_S1, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S1
-            !! Computed neighborhood residuals for study 1 (kNN), NaN is explicitly allowed for missing values
+            !! Computed neighborhood residuals for study 1 ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
         real(real64), dimension(n_reps_S2, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S2
-            !! Computed neighborhood residuals for study 2 (kNN), NaN is explicitly allowed for missing values
+            !! Computed neighborhood residuals for study 2 ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
         real(real64), intent(in) :: global_jsd_observed
             !! Observed global JSD value for both studies (from [[tox_jensen_shannon_divergence(module):compute_weighted_global_divergence(subroutine)]])
         integer(int32), intent(in) :: n_bins
@@ -409,6 +422,10 @@ contains
             !! Error code
         integer(int32), intent(in), optional :: random_seed
             !! Seed to use for shuffling
+        logical, dimension(n_neighbors, n_points), intent(in), optional :: neighbor_mask_S1
+            !! Optional mask to exclude specific neighbors from study 1 (e.g. for family-wise analysis)
+        logical, dimension(n_neighbors, n_points), intent(in), optional :: neighbor_mask_S2
+            !! Optional mask to exclude specific neighbors from study 2 (e.g. for family-wise analysis)
 
         real(real64), dimension(:, :, :), allocatable :: S1
         real(real64), dimension(:, :, :), allocatable :: S2
@@ -448,21 +465,21 @@ contains
         S1 = neighborhood_residuals_S1
         S2 = neighborhood_residuals_S2
 
-        call gjct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, ierr, random_seed)
+        call gjct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_pool, tmp_pmf_S1, tmp_pmf_S2, tmp_counts, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, ierr, random_seed, neighbor_mask_S1, neighbor_mask_S2)
     end subroutine gjct_permutation_test_alloc
 
     !> Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
     subroutine gjct_permutation_test( &
             neighborhood_residuals_S1_copy, neighborhood_residuals_S2_copy, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, &
-            tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, &
-            ierr, random_seed &
+            tmp_pool, tmp_pmf_S1, tmp_pmf_S2, tmp_counts, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, &
+            ierr, random_seed, neighbor_mask_S1, neighbor_mask_S2 &
         )
         integer(int32), intent(in) :: n_reps_S1
             !! Number of replicates in study 1
         integer(int32), intent(in) :: n_reps_S2
             !! Number of replicates in study 2
         integer(int32), intent(in) :: n_neighbors
-            !! Number of neighbors in study 1
+            !! Number of neighbors in the studies
         integer(int32), intent(in) :: n_points
             !! Number of reference points in the studies
         real(real64), dimension(n_reps_S1, n_neighbors, n_points), intent(inout) :: neighborhood_residuals_S1_copy
@@ -483,11 +500,11 @@ contains
             !! Empirical p-value of the permutation test: \( \frac{\text{count}(jsd\_null \ge global\_jsd\_observed) + 1}{n\_permutations} \)
         real(real64), dimension(n_reps_S1 + n_reps_S2, n_neighbors), intent(out) :: tmp_pool
             !! Working array for shuffling the concatenated residuals from both studies per reference point
-        integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts
-            !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
         real(real64), dimension(n_points, n_bins), intent(out) :: tmp_pmf_S1
-            !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
+            !! Absolute counts of a residual per bin obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
         real(real64), dimension(n_points, n_bins), intent(out) :: tmp_pmf_S2
+            !! Absolute counts of a residual per bin obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
+        integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts
             !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
         integer(int32), dimension(n_points), intent(out) :: tmp_included_n_reps_S1
             !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
@@ -501,6 +518,10 @@ contains
             !! Error code
         integer(int32), intent(in), optional :: random_seed
             !! Seed to use for shuffling
+        logical, dimension(n_neighbors, n_points), intent(in), optional :: neighbor_mask_S1
+            !! Optional mask to exclude specific neighbors from study 1 (e.g. for family-wise analysis)
+        logical, dimension(n_neighbors, n_points), intent(in), optional :: neighbor_mask_S2
+            !! Optional mask to exclude specific neighbors from study 2 (e.g. for family-wise analysis)
 
         call set_ok(ierr)
 
@@ -514,21 +535,21 @@ contains
 
         if (is_err(ierr)) return
 
-        call gjct_permutation_test_helper(neighborhood_residuals_S1_copy, neighborhood_residuals_S2_copy, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, random_seed)
+        call gjct_permutation_test_helper(neighborhood_residuals_S1_copy, neighborhood_residuals_S2_copy, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_pool, tmp_pmf_S1, tmp_pmf_S2, tmp_counts, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, random_seed, neighbor_mask_S1, neighbor_mask_S2)
     end subroutine gjct_permutation_test
 
     !> (no input validation) Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
     subroutine gjct_permutation_test_helper( &
             neighborhood_residuals_S1_copy, neighborhood_residuals_S2_copy, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, &
-            tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, &
-            random_seed &
+            tmp_pool, tmp_pmf_S1, tmp_pmf_S2, tmp_counts, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, &
+            random_seed, neighbor_mask_S1, neighbor_mask_S2 &
         )
         integer(int32), intent(in) :: n_reps_S1
             !! Number of replicates in study 1
         integer(int32), intent(in) :: n_reps_S2
             !! Number of replicates in study 2
         integer(int32), intent(in) :: n_neighbors
-            !! Number of neighbors in study 1
+            !! Number of neighbors in the studies
         integer(int32), intent(in) :: n_points
             !! Number of reference points in the studies
         real(real64), dimension(n_reps_S1, n_neighbors, n_points), intent(inout) :: neighborhood_residuals_S1_copy
@@ -549,11 +570,11 @@ contains
             !! Empirical p-value of the permutation test: \( \frac{\text{count}(jsd\_null \ge global\_jsd\_observed) + 1}{n\_permutations} \)
         real(real64), dimension(n_reps_S1 + n_reps_S2, n_neighbors), intent(out) :: tmp_pool
             !! Working array for shuffling the concatenated residuals from both studies per reference point
-        integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts
-            !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
         real(real64), dimension(n_points, n_bins), intent(out) :: tmp_pmf_S1
-            !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
+            !! Absolute counts of a residual per bin obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
         real(real64), dimension(n_points, n_bins), intent(out) :: tmp_pmf_S2
+            !! Absolute counts of a residual per bin obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
+        integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts
             !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
         integer(int32), dimension(n_points), intent(out) :: tmp_included_n_reps_S1
             !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
@@ -565,6 +586,10 @@ contains
             !! Working array for [[tox_jensen_shannon_divergence(module):compute_weighted_global_divergence(subroutine)]]
         integer(int32), intent(in), optional :: random_seed
             !! Seed to use for shuffling
+        logical, dimension(n_neighbors, n_points), intent(in), optional :: neighbor_mask_S1
+            !! Optional mask to exclude specific neighbors from study 1 (e.g. for family-wise analysis)
+        logical, dimension(n_neighbors, n_points), intent(in), optional :: neighbor_mask_S2
+            !! Optional mask to exclude specific neighbors from study 2 (e.g. for family-wise analysis)
 
         integer(int32) :: n_jsd_exceeding_observed, i_permutation, n_residuals_S1, n_residuals_S2, pool_size, i_point
 
@@ -583,10 +608,7 @@ contains
             end do
 
             ! 2. Pipeline to determine the global jsd for current permutation
-            call build_residual_histograms_helper(neighborhood_residuals_S1_copy, n_reps_S1, n_neighbors, n_points, shared_residual_range, n_bins, tmp_counts, tmp_pmf_S1, tmp_included_n_reps_S1)
-            call build_residual_histograms_helper(neighborhood_residuals_S2_copy, n_reps_S2, n_neighbors, n_points, shared_residual_range, n_bins, tmp_counts, tmp_pmf_S2, tmp_included_n_reps_S2)
-            call compute_divergence_per_reference_point_helper(tmp_pmf_S1, tmp_pmf_S2, n_points, n_bins, tmp_js_divergences)
-            call compute_weighted_global_divergence_helper(tmp_js_divergences, n_points, tmp_included_n_reps_S1, tmp_included_n_reps_S2, jsd_null(i_permutation), tmp_weights)
+            call jct_compute_jsd_pipeline_helper(neighborhood_residuals_S1_copy, neighborhood_residuals_S2_copy, n_reps_S1, n_reps_S2, n_neighbors, n_points, n_bins, shared_residual_range, tmp_js_divergences, tmp_included_n_reps_S1, tmp_included_n_reps_S2, jsd_null(i_permutation), tmp_weights, tmp_pmf_S1, tmp_pmf_S2, tmp_counts, neighbor_mask_S1, neighbor_mask_S2)
 
             if (jsd_null(i_permutation) >= global_jsd_observed) then
                 n_jsd_exceeding_observed = n_jsd_exceeding_observed + 1
@@ -603,7 +625,7 @@ contains
         integer(int32), intent(in) :: n_reps_S2
             !! Number of replicates in study 2
         integer(int32), intent(in) :: n_neighbors
-            !! Number of neighbors in study 1
+            !! Number of neighbors in the studies
         real(real64), dimension(n_reps_S1 * n_neighbors), intent(inout) :: reference_point_S1
             !! Residuals for one reference point in study 1, will be shuffled in-place
         real(real64), dimension(n_reps_S2 * n_neighbors), intent(inout) :: reference_point_S2
@@ -626,8 +648,189 @@ contains
     end subroutine shuffle_reference_point_helper
 
     !> TODO: #118
-    pure subroutine fjct_compute_jsd
+    pure subroutine fjct_compute_jsd_alloc(family_idx, gene_to_family_S1, gene_to_family_S2, n_genes_S1, n_genes_S2, neighborhood_residuals_S1, neighborhood_residuals_S2, &
+            neighborhood_genes_S1, neighborhood_genes_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, resid_S1, resid_S2, n_bins, shared_residual_range, js_divergences, &
+            included_n_reps_S1, included_n_reps_S2, global_js_divergence, weights, ierr &
+        )
+        integer(int32), intent(in) :: n_genes_S1
+            !! Number of genes in study 1
+        integer(int32), intent(in) :: n_genes_S2
+            !! Number of genes in study 2
+        integer(int32), intent(in) :: n_reps_S1
+            !! Number of replicates in study 1
+        integer(int32), intent(in) :: n_reps_S2
+            !! Number of replicates in study 2
+        integer(int32), intent(in) :: n_neighbors
+            !! Number of neighbors in the studies
+        integer(int32), intent(in) :: n_points
+            !! Number of reference points in the studies
+        integer(int32), intent(in) :: family_idx
+            !! Index of the family that should be analyzed
+        integer(int32), dimension(n_genes_S1), intent(in) :: gene_to_family_S1
+            !! Mapping for study 1: Each index (gene) holds the index of its family
+        integer(int32), dimension(n_genes_S2), intent(in) :: gene_to_family_S2
+            !! Mapping for study 2: Each index (gene) holds the index of its family
+        real(real64), dimension(n_reps_S1, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S1
+            !! Computed neighborhood residuals for study 1 ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
+        real(real64), dimension(n_reps_S2, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S2
+            !! Computed neighborhood residuals for study 2 ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
+        integer(int32), dimension(n_neighbors, n_points), intent(in) :: neighborhood_genes_S1
+            !! Indices of selected neighborhood genes, obtained from `neighborhood_indices` of [[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]
+        integer(int32), dimension(n_neighbors, n_points), intent(in) :: neighborhood_genes_S2
+            !! Indices of selected neighborhood genes, obtained from `neighborhood_indices` of [[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]
+        real(real64), dimension(n_reps_S1, n_genes_S1), intent(in) :: resid_S1
+            !! Matrix of signed residuals for study 1, from [[tox_jensen_shannon_test(module):compute_residuals(subroutine)]]
+        real(real64), dimension(n_reps_S2, n_genes_S2), intent(in) :: resid_S2
+            !! Matrix of signed residuals for study 1, from [[tox_jensen_shannon_test(module):compute_residuals(subroutine)]]
+        integer(int32), intent(in) :: n_bins
+            !! Number of equally sized histogram bins used for the studies in [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
+        real(real64), intent(in) :: shared_residual_range
+            !! Computed residual range for both studies, from [[tox_jensen_shannon_divergence(module):determine_shared_residual_range(subroutine)]]
+        real(real64), dimension(n_points), intent(out) :: js_divergences
+            !! Jensen-Shannon divergence per reference point, computed for studies S1 and S2
+        integer(int32), dimension(n_points), intent(out) :: included_n_reps_S1
+            !! Count of non-NaN residuals (included ones) in study 1 (obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]])
+        integer(int32), dimension(n_points), intent(out) :: included_n_reps_S2
+            !! Count of non-NaN residuals (included ones) in study 2 (obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]])
+        real(real64), intent(out) :: global_js_divergence
+            !! Weighted global Jensen-Shannon divergence
+        real(real64), dimension(n_points), intent(out) :: weights
+            !! Weights used for calculating the global weighted Jensen-Shannon divergence `global_js_divergence`
+        integer(int32), intent(out) :: ierr
+            !! Error code
+
+        integer(int32) :: i_point, i_neighbor
+        logical, dimension(:, :), allocatable :: neighbor_mask_S1, neighbor_mask_S2
+        real(real64), dimension(:, :), allocatable :: pmf_S1, pmf_S2
+        integer(int32), dimension(:, :), allocatable :: tmp_counts
+
+        call set_ok(ierr)
+
+        call validate_dimension_size(n_neighbors, ierr)
+        call validate_in_range_int(family_idx, ierr, min=1_int32)
+        call validate_all_in_range_int(gene_to_family_S1, n_genes_S1, ierr, min=0_int32)
+        call validate_all_in_range_int(gene_to_family_S2, n_genes_S2, ierr, min=0_int32)
+        call validate_all_in_range_int(neighborhood_genes_S1, size(neighborhood_genes_S1, kind=int32), ierr, min=1_int32, max=n_genes_S1)
+        call validate_all_in_range_int(neighborhood_genes_S2, size(neighborhood_genes_S2, kind=int32), ierr, min=1_int32, max=n_genes_S2)
+
+        if (is_err(ierr)) return
+
+        M_ALLOCATE(neighbor_mask_S1(n_neighbors, n_points))
+        M_ALLOCATE(neighbor_mask_S2(n_neighbors, n_points))
+        M_ALLOCATE(pmf_S1(n_points, n_bins))
+        M_ALLOCATE(pmf_S2(n_points, n_bins))
+        M_ALLOCATE(tmp_counts(n_points, n_bins))
+
+        ! Set up mask for filtered analysis -> only include neighbors being part of the family
+        do concurrent (i_point = 1:n_points)
+            do concurrent (i_neighbor = 1:n_neighbors) shared(family_idx, neighbor_mask_S1, neighbor_mask_S2, gene_to_family_S1, neighborhood_genes_S1, gene_to_family_S2, neighborhood_genes_S2)
+                neighbor_mask_S1(i_neighbor, i_point) = gene_to_family_S1(neighborhood_genes_S1(i_neighbor, i_point)) == family_idx
+                neighbor_mask_S2(i_neighbor, i_point) = gene_to_family_S2(neighborhood_genes_S2(i_neighbor, i_point)) == family_idx
+            end do
+        end do
+
+        call fjct_compute_jsd(neighborhood_residuals_S1, neighborhood_residuals_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, neighbor_mask_S1, neighbor_mask_S2, n_bins, shared_residual_range, js_divergences, included_n_reps_S1, included_n_reps_S2, global_js_divergence, weights, pmf_S1, pmf_S2, tmp_counts, ierr)
+    end subroutine fjct_compute_jsd_alloc
+
+    !> TODO: #118
+    pure subroutine fjct_compute_jsd(neighborhood_residuals_S1, neighborhood_residuals_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, neighbor_mask_S1, neighbor_mask_S2, n_bins, shared_residual_range, js_divergences, included_n_reps_S1, included_n_reps_S2, global_js_divergence, weights, pmf_S1, pmf_S2, tmp_counts, ierr)
+        integer(int32), intent(in) :: n_reps_S1
+            !! Number of replicates in study 1
+        integer(int32), intent(in) :: n_reps_S2
+            !! Number of replicates in study 2
+        integer(int32), intent(in) :: n_neighbors
+            !! Number of neighbors in the studies
+        integer(int32), intent(in) :: n_points
+            !! Number of reference points in the studies
+        real(real64), dimension(n_reps_S1, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S1
+            !! Computed neighborhood residuals for study 1 ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
+        real(real64), dimension(n_reps_S2, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S2
+            !! Computed neighborhood residuals for study 2 ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
+        logical, dimension(n_neighbors, n_points), intent(in) :: neighbor_mask_S1
+            !! Optional mask to exclude specific neighbors from study 1 (e.g. for family-wise analysis)
+        logical, dimension(n_neighbors, n_points), intent(in) :: neighbor_mask_S2
+            !! Optional mask to exclude specific neighbors from study 2 (e.g. for family-wise analysis)
+        integer(int32), intent(in) :: n_bins
+            !! Number of equally sized histogram bins used for the studies in [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
+        real(real64), intent(in) :: shared_residual_range
+            !! Computed residual range for both studies, from [[tox_jensen_shannon_divergence(module):determine_shared_residual_range(subroutine)]]
+        real(real64), dimension(n_points), intent(out) :: js_divergences
+            !! Jensen-Shannon divergence per reference point, computed for studies S1 and S2
+        integer(int32), dimension(n_points), intent(out) :: included_n_reps_S1
+            !! Count of non-NaN residuals (included ones) in study 1 (obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]])
+        integer(int32), dimension(n_points), intent(out) :: included_n_reps_S2
+            !! Count of non-NaN residuals (included ones) in study 2 (obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]])
+        real(real64), intent(out) :: global_js_divergence
+            !! Weighted global Jensen-Shannon divergence
+        real(real64), dimension(n_points), intent(out) :: weights
+            !! Weights used for calculating the global weighted Jensen-Shannon divergence `global_js_divergence`
+        real(real64), dimension(n_points, n_bins), intent(out) :: pmf_S1
+            !! Absolute counts of a residual per bin obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
+        real(real64), dimension(n_points, n_bins), intent(out) :: pmf_S2
+            !! Absolute counts of a residual per bin obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
+        integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts
+            !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
+        integer(int32), intent(out) :: ierr
+            !! Error code
+
+        call set_ok(ierr)
+
+        call validate_dimension_size(n_reps_S1, ierr)
+        call validate_dimension_size(n_reps_S2, ierr)
+        call validate_dimension_size(n_neighbors, ierr)
+        call validate_dimension_size(n_points, ierr)
+        call validate_in_range_int(n_bins, ierr, min=1_int32)
+        call validate_in_range_real(shared_residual_range, ierr, min=0.0_real64)
+
+        if (is_err(ierr)) return
+
+        call jct_compute_jsd_pipeline_helper(neighborhood_residuals_S1, neighborhood_residuals_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, n_bins, shared_residual_range, js_divergences, included_n_reps_S1, included_n_reps_S2, global_js_divergence, weights, pmf_S1, pmf_S2, tmp_counts, neighbor_mask_S1, neighbor_mask_S2)
     end subroutine fjct_compute_jsd
+
+    !> TODO: #118
+    pure subroutine jct_compute_jsd_pipeline_helper(neighborhood_residuals_S1, neighborhood_residuals_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, n_bins, shared_residual_range, js_divergences, included_n_reps_S1, included_n_reps_S2, global_js_divergence, weights, pmf_S1, pmf_S2, tmp_counts, neighbor_mask_S1, neighbor_mask_S2)
+        integer(int32), intent(in) :: n_reps_S1
+            !! Number of replicates in study 1
+        integer(int32), intent(in) :: n_reps_S2
+            !! Number of replicates in study 2
+        integer(int32), intent(in) :: n_neighbors
+            !! Number of neighbors in the studies
+        integer(int32), intent(in) :: n_points
+            !! Number of reference points in the studies
+        real(real64), dimension(n_reps_S1, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S1
+            !! Computed neighborhood residuals for study 1 ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
+        real(real64), dimension(n_reps_S2, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S2
+            !! Computed neighborhood residuals for study 2 ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
+        integer(int32), intent(in) :: n_bins
+            !! Number of equally sized histogram bins used for the studies in [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
+        real(real64), intent(in) :: shared_residual_range
+            !! Computed residual range for both studies, from [[tox_jensen_shannon_divergence(module):determine_shared_residual_range(subroutine)]]
+        real(real64), dimension(n_points), intent(out) :: js_divergences
+            !! Jensen-Shannon divergence per reference point, computed for studies S1 and S2
+        integer(int32), dimension(n_points), intent(out) :: included_n_reps_S1
+            !! Count of non-NaN residuals (included ones) in study 1 (obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]])
+        integer(int32), dimension(n_points), intent(out) :: included_n_reps_S2
+            !! Count of non-NaN residuals (included ones) in study 2 (obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]])
+        real(real64), intent(out) :: global_js_divergence
+            !! Weighted global Jensen-Shannon divergence
+        real(real64), dimension(n_points), intent(out) :: weights
+            !! Weights used for calculating the global weighted Jensen-Shannon divergence `global_js_divergence`
+        real(real64), dimension(n_points, n_bins), intent(out) :: pmf_S1
+            !! Absolute counts of a residual per bin obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
+        real(real64), dimension(n_points, n_bins), intent(out) :: pmf_S2
+            !! Absolute counts of a residual per bin obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
+        integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts
+            !! Working array for [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
+        logical, dimension(n_neighbors, n_points), intent(in), optional :: neighbor_mask_S1
+            !! Optional mask to exclude specific neighbors from study 1 (e.g. for family-wise analysis)
+        logical, dimension(n_neighbors, n_points), intent(in), optional :: neighbor_mask_S2
+            !! Optional mask to exclude specific neighbors from study 2 (e.g. for family-wise analysis)
+
+        call build_residual_histograms_helper(neighborhood_residuals_S1, n_reps_S1, n_neighbors, n_points, shared_residual_range, n_bins, tmp_counts, pmf_S1, included_n_reps_S1, neighbor_mask_S1)
+        call build_residual_histograms_helper(neighborhood_residuals_S2, n_reps_S2, n_neighbors, n_points, shared_residual_range, n_bins, tmp_counts, pmf_S2, included_n_reps_S2, neighbor_mask_S2)
+        call compute_divergence_per_reference_point_helper(pmf_S1, pmf_S2, n_points, n_bins, js_divergences)
+        call compute_weighted_global_divergence_helper(js_divergences, n_points, included_n_reps_S1, included_n_reps_S2, global_js_divergence, weights)
+    end subroutine jct_compute_jsd_pipeline_helper
 
 end module tox_jensen_shannon_divergence
 
@@ -690,9 +893,9 @@ pure subroutine determine_shared_residual_range_c( &
     integer(c_int), intent(in), target :: n_points
         !! Number of reference points in the studies
     real(c_double), dimension(n_reps_S1, n_neighbors, n_points), intent(in), target :: neighborhood_residuals_S1
-        !! Computed neighborhood residuals for study 1 (kNN), NaN is explicitly allowed for missing values
+        !! Computed neighborhood residuals for study 1 ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
     real(c_double), dimension(n_reps_S2, n_neighbors, n_points), intent(in), target :: neighborhood_residuals_S2
-        !! Computed neighborhood residuals for study 2 (kNN), NaN is explicitly allowed for missing values
+        !! Computed neighborhood residuals for study 2 ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
     real(c_double), intent(in), target :: residual_range_quantile
         !! Quantile for determining the residual range, default: 95.0
     real(c_double), intent(out), target :: shared_residual_range
@@ -739,7 +942,7 @@ pure subroutine build_residual_histograms_c( &
     integer(c_int), intent(in), target :: n_points
         !! Number of reference points in the studies
     real(c_double), dimension(n_reps, n_neighbors, n_points), intent(in), target :: neighborhood_residuals
-        !! Computed neighborhood residuals for a study (kNN), NaN is explicitly allowed for missing values
+        !! Computed neighborhood residuals for a study ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
     real(c_double), intent(in), target :: shared_residual_range
         !! Computed residual range (R) from [[tox_jensen_shannon_divergence(module):determine_shared_residual_range_alloc(subroutine)]]
     integer(c_int), intent(in), target :: n_bins
@@ -875,13 +1078,13 @@ subroutine gjct_permutation_test_c( &
     integer(c_int), intent(in), target :: n_reps_S2
         !! Number of replicates in study 2
     integer(c_int), intent(in), target :: n_neighbors
-        !! Number of neighbors in study 1
+        !! Number of neighbors in the studies
     integer(c_int), intent(in), target :: n_points
         !! Number of reference points in the studies
     real(c_double), dimension(n_reps_S1, n_neighbors, n_points), intent(in), target :: neighborhood_residuals_S1
-        !! Computed neighborhood residuals for study 1 (kNN), NaN is explicitly allowed for missing values
+        !! Computed neighborhood residuals for study 1 ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
     real(c_double), dimension(n_reps_S2, n_neighbors, n_points), intent(in), target :: neighborhood_residuals_S2
-        !! Computed neighborhood residuals for study 2 (kNN), NaN is explicitly allowed for missing values
+        !! Computed neighborhood residuals for study 2 ([[tox_jensen_shannon_test(module):construct_neighborhoods(subroutine)]]), NaN is explicitly allowed for missing values
     real(c_double), intent(in), target :: global_jsd_observed
         !! Observed global JSD value for both studies (from [[tox_jensen_shannon_divergence(module):compute_weighted_global_divergence(subroutine)]])
     integer(c_int), intent(in), target :: n_bins
