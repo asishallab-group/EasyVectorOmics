@@ -1116,3 +1116,30 @@ tox_compute_weighted_global_divergence <- function(
   check_err_code(result$ierr)
   result
 }
+
+#> tox_jensen_shannon_divergence:gjct_permutation_test_c: Permutation test with internal workspace allocation
+tox_gjct_permutation_test <- function(
+  neighborhood_residuals_S1,
+  neighborhood_residuals_S2,
+  global_jsd_observed,
+  n_bins,
+  shared_residual_range,
+  n_permutations,
+  random_seed = 42L
+) {
+  validate_numeric_vector(neighborhood_residuals_S1, "neighborhood_residuals_S1")
+  validate_numeric_vector(neighborhood_residuals_S2, "neighborhood_residuals_S2")
+
+  result <- tox_gjct_permutation_test_rcpp(
+    neighborhood_residuals_S1,
+    neighborhood_residuals_S2,
+    global_jsd_observed,
+    n_bins,
+    shared_residual_range,
+    n_permutations,
+    random_seed
+  )
+
+  check_err_code(result$ierr)
+  result
+}

@@ -8,6 +8,7 @@ using namespace Rcpp;
 // ===================================================================
 
 extern "C" {
+    void gjct_permutation_test_c( double* neighborhood_residuals_S1, double* neighborhood_residuals_S2, int* n_reps_S1, int* n_reps_S2, int* n_neighbors, int* n_points, double* global_jsd_observed, int* n_bins, double* shared_residual_range, int* n_permutations, double* jsd_null, double* p_value, int* ierr, int* random_seed );
 
     void compute_weighted_global_divergence_c( double* js_divergences, int* n_points, int* included_n_residuals_S1, int* included_n_residuals_S2, double* global_js_divergence, double* weights, int* ierr );
 
@@ -717,5 +718,50 @@ Rcpp::List tox_compute_weighted_global_divergence_rcpp(
         Rcpp::Named("global_js_divergence") = global_jsd,
         Rcpp::Named("weights") = weights,
         Rcpp::Named("ierr") = ierr
+    );
+}
+
+// [[Rcpp::export]]
+Rcpp::List tox_gjct_permutation_test_rcpp(
+    Rcpp::NumericVector neighborhood_residuals_S1,
+    Rcpp::NumericVector neighborhood_residuals_S2,
+    double global_jsd_observed,
+    int n_bins,
+    double shared_residual_range,
+    int n_permutations,
+    int random_seed
+) {
+    Rcpp::IntegerVector dims = neighborhood_residuals_S1.attr("dim");
+    int n_reps_S1 = dims[0];
+    int n_neighbors = dims[1];
+    int n_points = dims[2];
+    dims = neighborhood_residuals_S2.attr("dim");
+    int n_reps_S2 = dims[0];
+
+    Rcpp::NumericVector jsd_null(n_permutations);
+    double p_value = 0.0;
+    int ierr = 0;
+
+    gjct_permutation_test_c(
+        neighborhood_residuals_S1.begin(),
+        neighborhood_residuals_S2.begin(),
+        &n_reps_S1,
+        &n_reps_S2,
+        &n_neighbors,
+        &n_points,
+        &global_jsd_observed,
+        &n_bins,
+        &shared_residual_range,
+        &n_permutations,
+        jsd_null.begin(),
+        &p_value,
+        &ierr,
+        &random_seed
+    );
+
+    return Rcpp::List::create(
+        Rcpp::Named("jsd_null") = jsd_null,
+        Rcpp::Named("p_value")  = p_value,
+        Rcpp::Named("ierr")     = ierr
     );
 }

@@ -11,7 +11,8 @@ from tensoromics_functions import (
     tox_determine_shared_residual_range_expert,
     tox_build_residual_histograms,
     tox_compute_divergence_per_reference_point,
-    tox_compute_weighted_global_divergence
+    tox_compute_weighted_global_divergence,
+    gjct_permutation_test
 )
 
 
@@ -501,6 +502,56 @@ def test_tox_compute_weighted_global_divergence():
     )
 
     assert abs(global_jsd - expected) < TOL, "Test 5 failed: weighted global JSD mismatch"
+
+
+def test_gjct_permutation_test_python():
+    n_reps_S1 = 4
+    n_reps_S2 = 3
+    n_neighbors = 1
+    n_points = 2
+    n_permutations = 2
+    n_bins = 4
+    random_seed = 666
+
+    S_12 = np.array(
+        [1, 2, 3, 4,
+         5, 6, -7, 8,
+         2, -4, 6, 8,
+         1, 3],
+        dtype=np.float64,
+    )
+
+    # reshape into (n_reps, n_neighbors, n_points) in Fortran order
+    S1 = np.reshape(S_12[:n_reps_S1 * n_neighbors * n_points],
+                    (n_reps_S1, n_neighbors, n_points), order="F")
+    S2 = np.reshape(S_12[n_reps_S1 * n_neighbors * n_points:],
+                    (n_reps_S2, n_neighbors, n_points), order="F")
+
+    # all null >= observed → p = 1
+    res_p1 = gjct_permutation_test(
+        S1, S2,
+        n_reps_S1, n_reps_S2, n_neighbors, n_points,
+        global_jsd_observed=0.0,
+        n_bins=n_bins,
+        shared_residual_range=10.0,
+        n_permutations=n_permutations,
+        random_seed=random_seed,
+    )
+    assert np.isclose(res_p1["p_value"], 1.0), "For zero observed JSD, p-value should be 1"
+
+    # none null >= observed → p = 1/(n_permutations+1)
+    huge = np.finfo(np.float64).max
+    res_p2 = gjct_permutation_test(
+        S1, S2,
+        n_reps_S1, n_reps_S2, n_neighbors, n_points,
+        global_jsd_observed=huge,
+        n_bins=n_bins,
+        shared_residual_range=10.0,
+        n_permutations=n_permutations,
+        random_seed=random_seed,
+    )
+    expected = 1.0 / (n_permutations + 1.0)
+    assert np.isclose(res_p2["p_value"], expected), "For huge observed JSD, p-value should be 1/(n_permutations+1)"
 
 
 def main():

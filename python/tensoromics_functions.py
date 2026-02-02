@@ -3816,3 +3816,61 @@ def tox_compute_weighted_global_divergence(
         "global_js_divergence": global_jsd.value,
         "weights": weights,
     }
+
+
+def gjct_permutation_test(
+    S1, S2,
+    n_reps_S1, n_reps_S2, n_neighbors, n_points,
+    global_jsd_observed, n_bins, shared_residual_range,
+    n_permutations, random_seed=42,
+):
+    S1_c = np.asfortranarray(S1, dtype=np.float64)
+    S2_c = np.asfortranarray(S2, dtype=np.float64)
+
+    jsd_null = np.empty(n_permutations, dtype=np.float64, order="C")
+    p_value = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+
+    fn = lib.gjct_permutation_test_c
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # S1
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # S2
+        ctypes.POINTER(ctypes.c_int),                                    # n_reps_S1
+        ctypes.POINTER(ctypes.c_int),                                    # n_reps_S2
+        ctypes.POINTER(ctypes.c_int),                                    # n_neighbors
+        ctypes.POINTER(ctypes.c_int),                                    # n_points
+        ctypes.POINTER(ctypes.c_double),                                 # global_jsd_observed
+        ctypes.POINTER(ctypes.c_int),                                    # n_bins
+        ctypes.POINTER(ctypes.c_double),                                 # shared_residual_range
+        ctypes.POINTER(ctypes.c_int),                                    # n_permutations
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # jsd_null
+        ctypes.POINTER(ctypes.c_double),                 # p_value
+        ctypes.POINTER(ctypes.c_int),                    # ierr
+        ctypes.POINTER(ctypes.c_int),                                    # random_seed
+    ]
+    fn.restype = None
+
+    fn(
+        S1_c, S2_c,
+        ctypes.byref(ctypes.c_int(n_reps_S1)),
+        ctypes.byref(ctypes.c_int(n_reps_S2)),
+        ctypes.byref(ctypes.c_int(n_neighbors)),
+        ctypes.byref(ctypes.c_int(n_points)),
+        ctypes.byref(ctypes.c_double(global_jsd_observed)),
+        ctypes.byref(ctypes.c_int(n_bins)),
+        ctypes.byref(ctypes.c_double(shared_residual_range)),
+        ctypes.byref(ctypes.c_int(n_permutations)),
+        jsd_null,
+        ctypes.byref(p_value),
+        ctypes.byref(ierr),
+        ctypes.byref(ctypes.c_int(random_seed)),
+    )
+
+    check_err_code(ierr.value)
+
+    _readonly(jsd_null)
+
+    return {
+        "jsd_null": jsd_null,
+        "p_value": p_value.value,
+    }

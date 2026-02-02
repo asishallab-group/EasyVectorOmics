@@ -145,7 +145,7 @@ contains
         integer(int32), intent(in) :: n_reps
             !! Number of replicates of the study
         integer(int32), intent(in) :: n_neighbors
-            !! Number of neighbors (k)
+            !! Number of reference points (k)
         integer(int32), intent(in) :: n_points
             !! Number of reference points in the studies
         real(real64), dimension(n_reps, n_neighbors, n_points), intent(in) :: neighborhood_residuals
@@ -181,7 +181,7 @@ contains
         integer(int32), intent(in) :: n_reps
             !! Number of replicates of the study
         integer(int32), intent(in) :: n_neighbors
-            !! Number of neighbors (k)
+            !! Number of reference points (k)
         integer(int32), intent(in) :: n_points
             !! Number of reference points in the study
         real(real64), dimension(n_reps, n_neighbors, n_points), intent(in) :: neighborhood_residuals
@@ -243,7 +243,7 @@ contains
     !> Having the probabilities `pmf` from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]], this subroutine computes the Jensen-Shannon divergence per reference point/neighbor
     pure subroutine compute_divergence_per_reference_point(pmf_S1, pmf_S2, n_points, n_bins, js_divergences, ierr)
         integer(int32), intent(in) :: n_points
-            !! Number of neighbors (k)
+            !! Number of reference points (k)
         integer(int32), intent(in) :: n_bins
             !! Number of equally sized histogram bins in range [-R,R]
         real(real64), dimension(n_points, n_bins), intent(in) :: pmf_S1
@@ -251,7 +251,7 @@ contains
         real(real64), dimension(n_points, n_bins), intent(in) :: pmf_S2
             !! Computed normalized hostogram counts from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]] for study 2
         real(real64), dimension(n_points), intent(out) :: js_divergences
-            !! Jensen-Shannon divergence per neighbor
+            !! Jensen-Shannon divergence per reference point
         integer(int32), intent(out) :: ierr
             !! Error code
 
@@ -270,7 +270,7 @@ contains
     !> (no input validation) Having the probabilities `pmf` from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]], this subroutine computes the Jensen-Shannon divergence per reference point/neighbor
     pure subroutine compute_divergence_per_reference_point_helper(pmf_S1, pmf_S2, n_points, n_bins, js_divergences)
         integer(int32), intent(in) :: n_points
-            !! Number of neighbors (k)
+            !! Number of reference points (k)
         integer(int32), intent(in) :: n_bins
             !! Number of equally sized histogram bins in range [-R,R]
         real(real64), dimension(n_points, n_bins), intent(in) :: pmf_S1
@@ -278,7 +278,7 @@ contains
         real(real64), dimension(n_points, n_bins), intent(in) :: pmf_S2
             !! Computed normalized hostogram counts from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]] for study 2
         real(real64), dimension(n_points), intent(out) :: js_divergences
-            !! Jensen-Shannon divergence per neighbor
+            !! Jensen-Shannon divergence per reference point
 
         real(real64) :: S_mean, s1_val, s2_val
         integer(int32) :: i_bin, i_point
@@ -317,9 +317,9 @@ contains
     !> Computes the global weighted Jensen-Shannon divergence from the per-neighbor divergences calculated by [[tox_jensen_shannon_divergence(module):compute_divergence_per_reference_point(subroutine)]]
     pure subroutine compute_weighted_global_divergence(js_divergences, n_points, included_n_reps_S1, included_n_reps_S2, global_js_divergence, weights, ierr)
         integer(int32), intent(in) :: n_points
-            !! Number of neighbors (k)
+            !! Number of reference points (k)
         real(real64), dimension(n_points), intent(in) :: js_divergences
-            !! Jensen-Shannon divergence per neighbor, computed for studies S1 and S2
+            !! Jensen-Shannon divergence per reference point, computed for studies S1 and S2
         integer(int32), dimension(n_points), intent(in) :: included_n_reps_S1
             !! Count of non-NaN residuals (included ones) in study 1 (obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]])
         integer(int32), dimension(n_points), intent(in) :: included_n_reps_S2
@@ -346,9 +346,9 @@ contains
     !> (no input validation) Computes the global weighted Jensen-Shannon divergence from the per-neighbor divergences calculated by [[tox_jensen_shannon_divergence(module):compute_divergence_per_reference_point(subroutine)]]
     pure subroutine compute_weighted_global_divergence_helper(js_divergences, n_points, included_n_reps_S1, included_n_reps_S2, global_js_divergence, weights)
         integer(int32), intent(in) :: n_points
-            !! Number of neighbors (k)
+            !! Number of reference points (k)
         real(real64), dimension(n_points), intent(in) :: js_divergences
-            !! Jensen-Shannon divergence per neighbor, computed for studies S1 and S2
+            !! Jensen-Shannon divergence per reference point, computed for studies S1 and S2
         integer(int32), dimension(n_points), intent(in) :: included_n_reps_S1
             !! Count of non-NaN residuals (included ones) in study 1 (obtained from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]])
         integer(int32), dimension(n_points), intent(in) :: included_n_reps_S2
@@ -686,7 +686,7 @@ pure subroutine determine_shared_residual_range_c( &
     integer(c_int), intent(in), target :: n_reps_S2
         !! Number of replicates in study 2
     integer(c_int), intent(in), target :: n_neighbors
-        !! Number of neighbors (k)
+        !! Number of reference points (k)
     integer(c_int), intent(in), target :: n_points
         !! Number of reference points in the studies
     real(c_double), dimension(n_reps_S1, n_neighbors, n_points), intent(in), target :: neighborhood_residuals_S1
@@ -735,7 +735,7 @@ pure subroutine build_residual_histograms_c( &
     integer(c_int), intent(in), target :: n_reps
         !! Number of replicates in the study
     integer(c_int), intent(in), target :: n_neighbors
-        !! Number of neighbors (k)
+        !! Number of reference points (k)
     integer(c_int), intent(in), target :: n_points
         !! Number of reference points in the studies
     real(c_double), dimension(n_reps, n_neighbors, n_points), intent(in), target :: neighborhood_residuals
@@ -777,7 +777,7 @@ end subroutine build_residual_histograms_c
 !> C-compatible wrapper for [[tox_jensen_shannon_divergence(module):compute_divergence_per_reference_point(subroutine)]]
 pure subroutine compute_divergence_per_reference_point_c( &
     pmf_S1, pmf_S2, &
-    n_neighbors, n_bins, &
+    n_points, n_bins, &
     js_divergences, ierr ) &
     bind(C, name="compute_divergence_per_reference_point_c")
 
@@ -786,21 +786,21 @@ pure subroutine compute_divergence_per_reference_point_c( &
     M_USE_NULL_VALIDATION
     implicit none
 
-    integer(c_int), intent(in), target :: n_neighbors
-        !! Number of neighbors (k)
+    integer(c_int), intent(in), target :: n_points
+        !! Number of reference points (k)
     integer(c_int), intent(in), target :: n_bins
         !! Number of equally sized histogram bins in range [-R,R]
-    real(c_double), dimension(n_neighbors, n_bins), intent(in), target :: pmf_S1
+    real(c_double), dimension(n_points, n_bins), intent(in), target :: pmf_S1
         !! Computed normalized hostogram counts from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]] for study 1
-    real(c_double), dimension(n_neighbors, n_bins), intent(in), target :: pmf_S2
+    real(c_double), dimension(n_points, n_bins), intent(in), target :: pmf_S2
         !! Computed normalized hostogram counts from [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]] for study 2
-    real(c_double), dimension(n_neighbors), intent(out), target :: js_divergences
-        !! Jensen-Shannon divergence per neighbor
+    real(c_double), dimension(n_points), intent(out), target :: js_divergences
+        !! Jensen-Shannon divergence per reference point
     integer(c_int), intent(out), target :: ierr
         !! Error code
 
     M_CHECK_IERR_NON_NULL
-    M_CHECK_NON_NULL(n_neighbors)
+    M_CHECK_NON_NULL(n_points)
     M_CHECK_NON_NULL(n_bins)
     M_CHECK_NON_NULL(pmf_S1)
     M_CHECK_NON_NULL(pmf_S2)
@@ -808,7 +808,7 @@ pure subroutine compute_divergence_per_reference_point_c( &
 
     call compute_divergence_per_reference_point( &
         pmf_S1, pmf_S2, &
-        n_neighbors, n_bins, &
+        n_points, n_bins, &
         js_divergences, ierr )
 
 end subroutine compute_divergence_per_reference_point_c
@@ -816,7 +816,7 @@ end subroutine compute_divergence_per_reference_point_c
 !> C-compatible wrapper for [[tox_jensen_shannon_divergence(module):compute_weighted_global_divergence(subroutine)]]
 pure subroutine compute_weighted_global_divergence_c( &
     js_divergences, &
-    n_neighbors, &
+    n_points, &
     included_n_reps_S1, included_n_reps_S2, &
     global_js_divergence, weights, &
     ierr ) &
@@ -827,23 +827,23 @@ pure subroutine compute_weighted_global_divergence_c( &
     M_USE_NULL_VALIDATION
     implicit none
 
-    integer(c_int), intent(in), target :: n_neighbors
-        !! Number of neighbors (k)
-    real(c_double), dimension(n_neighbors), intent(in), target :: js_divergences
-        !! Jensen-Shannon divergence per neighbor, computed for studies S1 and S2
-    integer(c_int), dimension(n_neighbors), intent(in), target :: included_n_reps_S1
+    integer(c_int), intent(in), target :: n_points
+        !! Number of reference points (k)
+    real(c_double), dimension(n_points), intent(in), target :: js_divergences
+        !! Jensen-Shannon divergence per reference point, computed for studies S1 and S2
+    integer(c_int), dimension(n_points), intent(in), target :: included_n_reps_S1
         !! Count of non-NaN residuals (included ones) in study 1
-    integer(c_int), dimension(n_neighbors), intent(in), target :: included_n_reps_S2
+    integer(c_int), dimension(n_points), intent(in), target :: included_n_reps_S2
         !! Count of non-NaN residuals (included ones) in study 2
     real(c_double), intent(out), target :: global_js_divergence
         !! Weighted global Jensen-Shannon divergence
-    real(c_double), dimension(n_neighbors), intent(out), target :: weights
+    real(c_double), dimension(n_points), intent(out), target :: weights
         !! Weights used for calculating the global weighted Jensen-Shannon divergence `global_js_divergence`
     integer(c_int), intent(out), target :: ierr
         !! Error code
 
     M_CHECK_IERR_NON_NULL
-    M_CHECK_NON_NULL(n_neighbors)
+    M_CHECK_NON_NULL(n_points)
     M_CHECK_NON_NULL(js_divergences)
     M_CHECK_NON_NULL(included_n_reps_S1)
     M_CHECK_NON_NULL(included_n_reps_S2)
@@ -851,8 +851,73 @@ pure subroutine compute_weighted_global_divergence_c( &
     M_CHECK_NON_NULL(weights)
 
     call compute_weighted_global_divergence( &
-        js_divergences, n_neighbors, &
+        js_divergences, n_points, &
         included_n_reps_S1, included_n_reps_S2, &
         global_js_divergence, weights, ierr )
 
 end subroutine compute_weighted_global_divergence_c
+
+!> C-compatible wrapper for [[tox_jensen_shannon_divergence(module):gjct_permutation_test_alloc(subroutine)]]
+subroutine gjct_permutation_test_c( &
+    neighborhood_residuals_S1, neighborhood_residuals_S2, &
+    n_reps_S1, n_reps_S2, n_neighbors, n_points, &
+    global_jsd_observed, n_bins, shared_residual_range, n_permutations, &
+    jsd_null, p_value, ierr, random_seed) &
+    bind(C, name="gjct_permutation_test_c")
+
+    use tox_jensen_shannon_divergence, only: gjct_permutation_test_alloc
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
+    M_USE_NULL_VALIDATION
+    implicit none
+
+    integer(c_int), intent(in), target :: n_reps_S1
+        !! Number of replicates in study 1
+    integer(c_int), intent(in), target :: n_reps_S2
+        !! Number of replicates in study 2
+    integer(c_int), intent(in), target :: n_neighbors
+        !! Number of neighbors in study 1
+    integer(c_int), intent(in), target :: n_points
+        !! Number of reference points in the studies
+    real(c_double), dimension(n_reps_S1, n_neighbors, n_points), intent(in), target :: neighborhood_residuals_S1
+        !! Computed neighborhood residuals for study 1 (kNN), NaN is explicitly allowed for missing values
+    real(c_double), dimension(n_reps_S2, n_neighbors, n_points), intent(in), target :: neighborhood_residuals_S2
+        !! Computed neighborhood residuals for study 2 (kNN), NaN is explicitly allowed for missing values
+    real(c_double), intent(in), target :: global_jsd_observed
+        !! Observed global JSD value for both studies (from [[tox_jensen_shannon_divergence(module):compute_weighted_global_divergence(subroutine)]])
+    integer(c_int), intent(in), target :: n_bins
+        !! Number of equally sized histogram bins used for the studies in [[tox_jensen_shannon_divergence(module):build_residual_histograms(subroutine)]]
+    real(c_double), intent(in), target :: shared_residual_range
+        !! Computed residual range for both studies, from [[tox_jensen_shannon_divergence(module):determine_shared_residual_range(subroutine)]]
+    integer(c_int), intent(in), target :: n_permutations
+        !! Number of permutations to perform
+    real(c_double), dimension(n_permutations), intent(out), target :: jsd_null
+        !! Vector of global divergence values obtained under the null hypothesis
+    real(c_double), intent(out), target :: p_value
+        !! Empirical p-value of the permutation test: \( \frac{\text{count}(jsd\_null \ge global\_jsd\_observed) + 1}{n\_permutations} \)
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+    integer(c_int), intent(in), target :: random_seed
+        !! Seed to use for shuffling
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(n_reps_S1)
+    M_CHECK_NON_NULL(n_reps_S2)
+    M_CHECK_NON_NULL(n_neighbors)
+    M_CHECK_NON_NULL(n_points)
+    M_CHECK_NON_NULL(neighborhood_residuals_S1)
+    M_CHECK_NON_NULL(neighborhood_residuals_S2)
+    M_CHECK_NON_NULL(global_jsd_observed)
+    M_CHECK_NON_NULL(n_bins)
+    M_CHECK_NON_NULL(shared_residual_range)
+    M_CHECK_NON_NULL(n_permutations)
+    M_CHECK_NON_NULL(jsd_null)
+    M_CHECK_NON_NULL(p_value)
+    M_CHECK_NON_NULL(random_seed)
+
+    call gjct_permutation_test_alloc( &
+        neighborhood_residuals_S1, neighborhood_residuals_S2, &
+        n_reps_S1, n_reps_S2, n_neighbors, n_points, &
+        global_jsd_observed, n_bins, shared_residual_range, n_permutations, &
+        jsd_null, p_value, ierr, random_seed)
+
+end subroutine gjct_permutation_test_c

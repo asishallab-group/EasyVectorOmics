@@ -385,4 +385,61 @@ test_compute_weighted_global_divergence <- function() {
              "Test 5 failed: global JSD mismatch")
 }
 
+test_gjct_permutation_test <- function() {
+  n_reps_S1 <- 4L
+  n_reps_S2 <- 3L
+  n_neighbors <- 1L
+  n_points <- 2L
+  n_permutations <- 2L
+  n_bins <- 4L
+  random_seed <- 666L
+
+  # Base vector (same as Fortran)
+  S_12 <- c(
+    1, 2, 3, 4,
+    5, 6, -7, 8,
+    2, -4, 6, 8,
+    1, 3
+  )
+
+  # Split into S1 and S2 arrays
+  S1_vec <- S_12[seq_len(n_reps_S1 * n_neighbors * n_points)]
+  S2_vec <- S_12[(n_reps_S1 * n_neighbors * n_points + 1L):length(S_12)]
+
+  S1_arr <- array(S1_vec, dim = c(n_reps_S1, n_neighbors, n_points))
+  S2_arr <- array(S2_vec, dim = c(n_reps_S2, n_neighbors, n_points))
+
+  # Case A: all null >= observed → p = 1
+  res_p1 <- tox_gjct_permutation_test(
+    S1_arr, S2_arr,
+    global_jsd_observed = 0,
+    n_bins = n_bins,
+    shared_residual_range = 10,
+    n_permutations = n_permutations,
+    random_seed = random_seed
+  )
+  check_err_code(res_p1$ierr)
+
+  assertTrue(abs(res_p1$p_value - 1.0) < 1e-12,
+             "Test 3A: p-value should be 1 when observed JSD = 0")
+
+  # Case B: none null >= observed → p = 1/(n_permutations+1)
+  huge <- .Machine$double.xmax
+  res_p2 <- tox_gjct_permutation_test(
+    S1_arr, S2_arr,
+    global_jsd_observed = huge,
+    n_bins = n_bins,
+    shared_residual_range = 10,
+    n_permutations = n_permutations,
+    random_seed = random_seed
+  )
+  check_err_code(res_p2$ierr)
+
+  expected <- 1.0 / (n_permutations + 1.0)
+  assertTrue(abs(res_p2$p_value - expected) < 1e-12,
+             "Test 3B: p-value should be 1/(n_permutations+1) for huge observed JSD")
+
+  invisible(TRUE)
+}
+
 run_all_tests()
