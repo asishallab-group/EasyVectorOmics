@@ -3818,14 +3818,34 @@ def tox_compute_weighted_global_divergence(
     }
 
 
+#> tox_jensen_shannon_divergence:gjct_permutation_test_c: Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
 def gjct_permutation_test(
-    S1, S2,
-    n_reps_S1, n_reps_S2, n_neighbors, n_points,
+    neighborhood_residuals_S1, neighborhood_residuals_S2,
     global_jsd_observed, n_bins, shared_residual_range,
     n_permutations, random_seed=42,
 ):
-    S1_c = np.asfortranarray(S1, dtype=np.float64)
-    S2_c = np.asfortranarray(S2, dtype=np.float64)
+    """
+    Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
+
+    Args:
+        neighborhood_residuals_S1: np.ndarray (n_reps, n_neighbors, n_points)
+        neighborhood_residuals_S2: np.ndarray (n_reps, n_neighbors, n_points)
+        global_jsd_observed: float
+        n_bins: int
+        shared_residual_range: float
+        n_permutations: int
+
+    Returns:
+        dict with:
+            jsd_null: (n_permutations,)
+            p_value: float
+    """
+
+    S1_c = np.asfortranarray(neighborhood_residuals_S1, dtype=np.float64)
+    S2_c = np.asfortranarray(neighborhood_residuals_S2, dtype=np.float64)
+
+    n_reps_S1_c, n_neighbors_c, n_points_c = map(ctypes.c_int, S1_c.shape)
+    n_reps_S2_c = ctypes.c_int(S2_c.shape[0])
 
     jsd_null = np.empty(n_permutations, dtype=np.float64, order="C")
     p_value = ctypes.c_double(0.0)
@@ -3852,10 +3872,10 @@ def gjct_permutation_test(
 
     fn(
         S1_c, S2_c,
-        ctypes.byref(ctypes.c_int(n_reps_S1)),
-        ctypes.byref(ctypes.c_int(n_reps_S2)),
-        ctypes.byref(ctypes.c_int(n_neighbors)),
-        ctypes.byref(ctypes.c_int(n_points)),
+        ctypes.byref(n_reps_S1_c),
+        ctypes.byref(n_reps_S2_c),
+        ctypes.byref(n_neighbors_c),
+        ctypes.byref(n_points_c),
         ctypes.byref(ctypes.c_double(global_jsd_observed)),
         ctypes.byref(ctypes.c_int(n_bins)),
         ctypes.byref(ctypes.c_double(shared_residual_range)),

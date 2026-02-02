@@ -1117,7 +1117,29 @@ tox_compute_weighted_global_divergence <- function(
   result
 }
 
-#> tox_jensen_shannon_divergence:gjct_permutation_test_c: Permutation test with internal workspace allocation
+#> tox_jensen_shannon_divergence:gjct_permutation_test_c: Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
+#' Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
+#'
+#' This function wraps the Fortran subroutine
+#' `gjct_permutation_test_c`, which comutes the global jsd values for permutations of the residuals of both studies.
+#' To create a permutation, the residuals of a reference point will be concatenated, shuffled and reassigned in the shuffled order.
+#'
+#' @param included_n_residuals_S1 Integer vector (length n_neighbors)
+#' @param included_n_residuals_S2 Integer vector (length n_neighbors)
+#' @param neighborhood_residuals_S1: np.ndarray (n_reps, n_neighbors, n_points)
+#' @param neighborhood_residuals_S2: np.ndarray (n_reps, n_neighbors, n_points)
+#' @param global_jsd_observed: Numeric scalar of the calculated global weighted jsd value
+#' @param n_bins: Integer number of bins that were used to calculate global_jsd_observed
+#' @param shared_residual_range: Numeric scalar of the shared residual range used to calculate global_jsd_observed
+#' @param n_permutations: Integer number of permutations to perform
+#' @param random_seed: Integer number used as random seed
+#'
+#' @return A list with:
+#'   \describe{
+#'     \item{jsd_null}{Numeric vector (length n_permutations)}
+#'     \item{p_value}{Numeric scalar}
+#'   }
+#'
 tox_gjct_permutation_test <- function(
   neighborhood_residuals_S1,
   neighborhood_residuals_S2,
@@ -1125,7 +1147,7 @@ tox_gjct_permutation_test <- function(
   n_bins,
   shared_residual_range,
   n_permutations,
-  random_seed = 42L
+  random_seed
 ) {
   validate_numeric_vector(neighborhood_residuals_S1, "neighborhood_residuals_S1")
   validate_numeric_vector(neighborhood_residuals_S2, "neighborhood_residuals_S2")

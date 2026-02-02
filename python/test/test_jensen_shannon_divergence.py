@@ -530,7 +530,6 @@ def test_gjct_permutation_test_python():
     # all null >= observed → p = 1
     res_p1 = gjct_permutation_test(
         S1, S2,
-        n_reps_S1, n_reps_S2, n_neighbors, n_points,
         global_jsd_observed=0.0,
         n_bins=n_bins,
         shared_residual_range=10.0,
@@ -543,7 +542,6 @@ def test_gjct_permutation_test_python():
     huge = np.finfo(np.float64).max
     res_p2 = gjct_permutation_test(
         S1, S2,
-        n_reps_S1, n_reps_S2, n_neighbors, n_points,
         global_jsd_observed=huge,
         n_bins=n_bins,
         shared_residual_range=10.0,
