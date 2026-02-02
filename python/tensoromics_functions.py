@@ -3525,7 +3525,7 @@ def tox_compute_p_values(local_contributions_observed,
     }
 
 
-#> tox_loess:tox_loess_required_workspace: Recommend workspace sizes based on Netlib exact formulas
+#> tox_loess:tox_loess_required_workspace_c: Recommend workspace sizes based on Netlib exact formulas
 def tox_loess_required_workspace(d, nvmax, setlf):
     """
     Recommend workspace sizes based on Netlib exact formulas.
