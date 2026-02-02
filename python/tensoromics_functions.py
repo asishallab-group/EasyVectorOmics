@@ -3523,7 +3523,7 @@ def tox_compute_p_values(local_contributions_observed,
     }
 
 
-#> tox_jensen_shannon_divergence:determine_shared_residual_range_expert_c: Compute shared residual range R from two residual matrices.
+#> tox_data_integration_jsd:determine_shared_residual_range_expert_c: Compute shared residual range R from two residual matrices.
 def tox_determine_shared_residual_range_expert(
     residual_pool,
     residual_pool_perm,
@@ -3576,7 +3576,7 @@ def tox_determine_shared_residual_range_expert(
     return shared_R.value
 
 
-#> tox_jensen_shannon_divergence:determine_shared_residual_range_c: Compute shared residual range R from two residual matrices.
+#> tox_data_integration_jsd:determine_shared_residual_range_c: Compute shared residual range R from two residual matrices.
 def tox_determine_shared_residual_range(
     neighborhood_residuals_S1,
     neighborhood_residuals_S2,
@@ -3636,7 +3636,7 @@ def tox_determine_shared_residual_range(
     return shared_R.value
 
 
-#> tox_jensen_shannon_divergence:build_residual_histograms_c: Build histogram counts and PMFs for one study
+#> tox_data_integration_jsd:build_residual_histograms_c: Build histogram counts and PMFs for one study
 def tox_build_residual_histograms(
     neighborhood_residuals,
     shared_residual_range,
@@ -3710,7 +3710,7 @@ def tox_build_residual_histograms(
     }
 
 
-#> tox_jensen_shannon_divergence:compute_divergence_per_reference_point_c: Build histogram counts and PMFs for one study
+#> tox_data_integration_jsd:compute_divergence_per_reference_point_c: Build histogram counts and PMFs for one study
 def tox_compute_divergence_per_reference_point(pmf_S1, pmf_S2):
     """
     Compute per-neighbor Jensen–Shannon divergences.
@@ -3757,7 +3757,7 @@ def tox_compute_divergence_per_reference_point(pmf_S1, pmf_S2):
     return jsd
 
 
-#> tox_jensen_shannon_divergence:compute_weighted_global_divergence_c: Compute weighted global Jensen–Shannon divergence
+#> tox_data_integration_jsd:compute_weighted_global_divergence_c: Compute weighted global Jensen–Shannon divergence
 def tox_compute_weighted_global_divergence(
     js_divergences,
     included_S1,
@@ -3818,7 +3818,7 @@ def tox_compute_weighted_global_divergence(
     }
 
 
-#> tox_jensen_shannon_divergence:gjct_permutation_test_c: Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
+#> tox_data_integration:gjct_permutation_test_c: Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
 def gjct_permutation_test(
     neighborhood_residuals_S1, neighborhood_residuals_S2,
     global_jsd_observed, n_bins, shared_residual_range,
@@ -3896,7 +3896,7 @@ def gjct_permutation_test(
     }
 
 
-#> tox_jensen_shannon_test:compute_gene_means_c: Compute per-gene mean expression
+#> tox_data_integration:compute_gene_means_c: Compute per-gene mean expression
 def tox_compute_gene_means(expr):
     """
     Compute per-gene mean expression, ignoring NaN values.
@@ -3936,7 +3936,7 @@ def tox_compute_gene_means(expr):
     return means
 
 
-#> tox_jensen_shannon_test:compute_residuals_c: Compute signed residuals
+#> tox_data_integration:compute_residuals_c: Compute signed residuals
 def tox_compute_residuals(expr, means):
     """
     Compute signed residuals.
@@ -3981,7 +3981,7 @@ def tox_compute_residuals(expr, means):
     return resid
 
 
-#> tox_jensen_shannon_test:pool_means_c: Pool mean-expression values across studies
+#> tox_data_integration:pool_means_c: Pool mean-expression values across studies
 def tox_pool_means(mean_S1, mean_S2, n_points):
     """
     Pool per-gene mean expression values across studies.
@@ -4039,7 +4039,7 @@ def tox_pool_means(mean_S1, mean_S2, n_points):
     }
 
 
-#> tox_jensen_shannon_test:pool_means_expert_c: Pool mean-expression values using pre-pooled array
+#> tox_data_integration:pool_means_expert_c: Pool mean-expression values using pre-pooled array
 def tox_pool_means_expert(pooled_means, pooled_perm, n_points):
     """
     Pool means using pre-pooled and pre-sorted arrays.
@@ -4095,7 +4095,7 @@ def tox_pool_means_expert(pooled_means, pooled_perm, n_points):
     }
 
 
-#> tox_jensen_shannon_test:calc_neighborhood_size_c: Compute neighborhood size
+#> tox_data_integration:calc_neighborhood_size_c: Compute neighborhood size
 def tox_calc_neighborhood_size(n_pool, n_points, n_genes_S, mean_S, desired_size=0):
     """
     Compute neighborhood size.
@@ -4141,7 +4141,7 @@ def tox_calc_neighborhood_size(n_pool, n_points, n_genes_S, mean_S, desired_size
     return n_neighbors_c.value
 
 
-#> tox_jensen_shannon_test:construct_neighborhoods_c: Construct neighborhood residual sets (alloc variant)
+#> tox_data_integration:construct_neighborhoods_c: Construct neighborhood residual sets (alloc variant)
 def tox_construct_neighborhoods(x_star, mean_S, resid_S, n_pool, desired_n_neighbors=0):
     """
     Construct neighborhood-based residual sets (alloc variant).

@@ -23,7 +23,6 @@ module tox_data_integration
     interface compute_gene_means
         !> Compute per-gene mean expression, ignoring NaN values
         pure module subroutine compute_gene_means(n_genes, n_reps, expr, means, ierr)
-            import
             integer(int32), intent(in) :: n_genes
                 !! Number of genes in the study
             integer(int32), intent(in) :: n_reps
@@ -40,7 +39,6 @@ module tox_data_integration
     interface compute_gene_means_helper
         !> (no input validation) Compute per-gene mean expression, ignoring NaN values
         pure module subroutine compute_gene_means_helper(n_genes, n_reps, expr, means)
-            import
             integer(int32), intent(in) :: n_genes
                 !! Number of genes in the study
             integer(int32), intent(in) :: n_reps
@@ -55,7 +53,6 @@ module tox_data_integration
     interface compute_residuals
         !> Compute signed residuals (centering by mean)
         pure module subroutine compute_residuals(n_genes, n_reps, expr, means, resid, ierr)
-            import
             integer(int32), intent(in) :: n_genes
                 !! Number of genes in the study
             integer(int32), intent(in) :: n_reps
@@ -74,7 +71,6 @@ module tox_data_integration
     interface compute_residuals_helper
         !> (no input validation) Compute signed residuals (centering by mean)
         pure module subroutine compute_residuals_helper(n_genes, n_reps, expr, means, resid)
-            import
             integer(int32), intent(in) :: n_genes
                 !! Number of genes in the study
             integer(int32), intent(in) :: n_reps
@@ -91,7 +87,6 @@ module tox_data_integration
     interface pool_means_alloc
         !> Pool per-gene mean expression values across studies
         pure module subroutine pool_means_alloc(n_genes_S1, mean_S1, n_genes_S2, mean_S2, n_points, n_pool, x_star, ierr)
-            import
             integer(int32), intent(in) :: n_genes_S1
                 !! Number of genes in study S1
             integer(int32), intent(in) :: n_genes_S2
@@ -114,7 +109,6 @@ module tox_data_integration
     interface pool_means
         !> Pool per-gene mean expression values across studies
         pure module subroutine pool_means(pooled_means, pooled_means_perm, pool_size, n_points, n_pool, x_star, ierr)
-            import
             integer(int32), intent(in), target :: pool_size
                 !! Number of means in the pool, usually `n_genes_S1 + n_genes_S2`
             integer(int32), intent(in) :: n_points
@@ -135,7 +129,6 @@ module tox_data_integration
     interface pool_means_helper
         !> (no input validation) Pool per-gene mean expression values across studies
         pure module subroutine pool_means_helper(pooled_means, pooled_means_perm, pool_size, n_points, n_pool, x_star)
-            import
             integer(int32), intent(in), target :: pool_size
                 !! Number of means in the pool, usually `n_genes_S1 + n_genes_S2`
             integer(int32), intent(in) :: n_points
@@ -156,7 +149,6 @@ module tox_data_integration
     interface calc_neighborhood_size
         !| The `desired_size` works as upper limit, as the actual neighborhood size might be lower due to few genes with non-NaN mean.
         pure module function calc_neighborhood_size(n_pool, n_points, n_genes_S, mean_S, desired_size) result(n_neighbors)
-            import
             integer(int32), intent(in) :: n_pool
                 !! Total number of pooled mean-expression values across both studies
             integer(int32), intent(in) :: n_points
@@ -176,7 +168,6 @@ module tox_data_integration
         !> Construct neighborhood-based residual sets (kNN)
         pure module subroutine construct_neighborhoods_alloc(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, &
                                                       neighborhood_residuals, neighborhood_indices, n_neighbors, ierr)
-            import
             integer(int32), intent(in) :: n_points
                 !! Number of reference points
             integer(int32), intent(in) :: n_genes_S
@@ -203,7 +194,6 @@ module tox_data_integration
     interface construct_neighborhoods
         !> Construct neighborhood-based residual sets (kNN)
         pure module subroutine construct_neighborhoods(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, tmp_distances, tmp_distances_perm, neighborhood_residuals, neighborhood_indices, n_neighbors, ierr)
-            import
             integer(int32), intent(in) :: n_points
                 !! Number of reference points
             integer(int32), intent(in) :: n_genes_S
@@ -235,7 +225,6 @@ module tox_data_integration
         !> (no input validation) Construct neighborhood-based residual sets (kNN)
         pure module subroutine construct_neighborhoods_helper(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, tmp_distances, tmp_distances_perm, &
                                                        neighborhood_residuals, neighborhood_indices, n_neighbors)
-            import
             integer(int32), intent(in) :: n_points
                 !! Number of reference points
             integer(int32), intent(in) :: n_genes_S
@@ -264,7 +253,6 @@ module tox_data_integration
     interface gjct_permutation_test_alloc
         !> Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
         module subroutine gjct_permutation_test_alloc(neighborhood_residuals_S1, neighborhood_residuals_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, ierr, random_seed, neighbor_mask_S1, neighbor_mask_S2)
-            import
             integer(int32), intent(in) :: n_reps_S1
                 !! Number of replicates in study 1
             integer(int32), intent(in) :: n_reps_S2
@@ -307,7 +295,6 @@ module tox_data_integration
                 tmp_pool, tmp_pmf_S1, tmp_pmf_S2, tmp_counts, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, &
                 ierr, random_seed, neighbor_mask_S1, neighbor_mask_S2 &
             )
-            import
             integer(int32), intent(in) :: n_reps_S1
                 !! Number of replicates in study 1
             integer(int32), intent(in) :: n_reps_S2
@@ -366,7 +353,6 @@ module tox_data_integration
                 tmp_pool, tmp_pmf_S1, tmp_pmf_S2, tmp_counts, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, &
                 random_seed, neighbor_mask_S1, neighbor_mask_S2 &
             )
-            import
             integer(int32), intent(in) :: n_reps_S1
                 !! Number of replicates in study 1
             integer(int32), intent(in) :: n_reps_S2

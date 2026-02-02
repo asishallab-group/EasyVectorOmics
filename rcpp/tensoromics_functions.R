@@ -944,7 +944,7 @@ tox_mean_vector <- function(expression_vectors, gene_indices) {
   return(result)
 }
 
-#> tox_jensen_shannon_divergence:determine_shared_residual_range_expert_c: Compute shared residual range R from a precomputed residual pool
+#> tox_data_integration_jsd:determine_shared_residual_range_expert_c: Compute shared residual range R from a precomputed residual pool
 #' Compute the shared residual range R from a precomputed residual pool
 #'
 #' This function wraps the Fortran subroutine `determine_shared_residual_range_expert_c`
@@ -981,7 +981,7 @@ tox_determine_shared_residual_range_expert <- function(
   result$shared_R
 }
 
-#> tox_jensen_shannon_divergence:determine_shared_residual_range_c: Compute shared residual range R from two residual matrices
+#> tox_data_integration_jsd:determine_shared_residual_range_c: Compute shared residual range R from two residual matrices
 #' Compute the shared residual range R from two residual matrices
 #'
 #' This function wraps the Fortran subroutine
@@ -1012,7 +1012,7 @@ tox_determine_shared_residual_range <- function(
   result$shared_R
 }
 
-#> tox_jensen_shannon_divergence:build_residual_histograms_c: Build residual histograms and PMFs
+#> tox_data_integration_jsd:build_residual_histograms_c: Build residual histograms and PMFs
 #' Build residual histograms and probability mass functions (PMFs)
 #'
 #' This function wraps the Fortran subroutine
@@ -1049,7 +1049,7 @@ tox_build_residual_histograms <- function(
   result
 }
 
-#> tox_jensen_shannon_divergence:compute_divergence_per_reference_point_c: Compute per-neighbor Jensen–Shannon divergences
+#> tox_data_integration_jsd:compute_divergence_per_reference_point_c: Compute per-neighbor Jensen–Shannon divergences
 #' Compute per-neighbor Jensen–Shannon divergences
 #'
 #' This function wraps the Fortran subroutine
@@ -1078,7 +1078,7 @@ tox_compute_divergence_per_reference_point <- function(
   result$js_divergences
 }
 
-#> tox_jensen_shannon_divergence:compute_weighted_global_divergence_c: Compute weighted global Jensen–Shannon divergence
+#> tox_data_integration_jsd:compute_weighted_global_divergence_c: Compute weighted global Jensen–Shannon divergence
 #' Compute weighted global Jensen–Shannon divergence
 #'
 #' This function wraps the Fortran subroutine
@@ -1117,7 +1117,7 @@ tox_compute_weighted_global_divergence <- function(
   result
 }
 
-#> tox_jensen_shannon_divergence:gjct_permutation_test_c: Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
+#> tox_data_integration:gjct_permutation_test_c: Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
 #' Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
 #'
 #' This function wraps the Fortran subroutine
@@ -1166,7 +1166,7 @@ tox_gjct_permutation_test <- function(
   result
 }
 
-#> tox_jensen_shannon_test:compute_gene_means_c: Compute per-gene mean expression values
+#> tox_data_integration:compute_gene_means_c: Compute per-gene mean expression values
 #' Compute per-gene mean expression values
 #'
 #' This function computes the mean expression for each gene across replicates,
@@ -1189,7 +1189,7 @@ tox_compute_gene_means <- function(expr) {
   return (result$means)
 }
 
-#> tox_jensen_shannon_test:compute_residuals_c: Compute signed residuals
+#> tox_data_integration:compute_residuals_c: Compute signed residuals
 #' Compute signed residuals
 #'
 #' This function computes signed residuals for each gene and replicate.
@@ -1212,7 +1212,7 @@ tox_compute_residuals <- function(expr, means) {
   return(result$resid)
 }
 
-#> tox_jensen_shannon_test:pool_means_c: Pool mean expression values across studies
+#> tox_data_integration:pool_means_c: Pool mean expression values across studies
 #' Pool mean expression values across studies
 #'
 #' This function pools per-gene mean expression values from two studies
@@ -1243,7 +1243,7 @@ tox_pool_means <- function(mean_S1, mean_S2, n_points) {
   ))
 }
 
-#> tox_jensen_shannon_test:pool_means_expert_c: Pool mean expression values across studies
+#> tox_data_integration:pool_means_expert_c: Pool mean expression values across studies
 #' Pool mean expression values across studies
 #'
 #' This function pools per-gene mean expression values from two studies
@@ -1275,7 +1275,7 @@ tox_pool_means_expert <- function(pooled_means, pooled_perm, n_points) {
   ))
 }
 
-#> tox_jensen_shannon_test:construct_neighborhoods_c: Construct neighborhood-based residual sets (kNN)
+#> tox_data_integration:construct_neighborhoods_c: Construct neighborhood-based residual sets (kNN)
 #' Construct neighborhood-based residual sets (kNN)
 #'
 #' This function constructs neighborhoods around reference points and
