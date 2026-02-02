@@ -20,10 +20,22 @@ extern "C" {
 
     void determine_shared_residual_range_expert_c( double* residual_pool, int* residual_pool_perm, int* n_pool, double* residual_range_quantile, double* shared_R, int* ierr );
 
+    void compute_gene_means_c( int* n_genes, int* n_reps, double* expr, double* means, int* ierr);
+
+    void compute_residuals_c( int* n_genes, int* n_reps, double* expr, double* means, double* resid, int* ierr);
+
+    void pool_means_c( int* n_genes_S1, double* mean_S1, int* n_genes_S2, double* mean_S2, int* n_points, int* n_pool, double* x_star, int* ierr);
+
+    void pool_means_expert_c( double* pooled_means, int* pooled_means_perm, int* pool_size, int* n_points, int* n_pool, double* x_star, int* ierr);
+
+    void calc_neighborhood_size_c( int* n_pool, int* n_points, int* n_genes_S, double* mean_S, int* desired_size, int* n_neighbors, int* ierr);
+
+    void construct_neighborhoods_c( int* n_points, double* x_star, int* n_genes_S, double* mean_S, int* n_reps_S, double* resid_S, double* neighborhood_residuals, int* neighborhood_indices, int* n_neighbors, int* ierr);
+
     void normalize_by_std_dev_c(int n_genes, int n_tissues,
                                 double *input_matrix, double *output_matrix, int *ierr);
     void quantile_normalization_c(int n_genes, int n_tissues, double *input_matrix, double *output_matrix,
-                                double *temp_col, double *rank_means,
+                                  double *temp_col, double *rank_means,
                                   int *perm, int *stack_left, int *stack_right,
                                   int max_stack, int *ierr);
     void log2_transformation_c(int n_genes, int n_tissues,
@@ -135,6 +147,7 @@ extern "C" {
                          int* gene_to_family, int n_families,
                          double* centroid_matrix, const char* mode,
                          int* ortholog_set, int* selected_indices, int selected_indices_len, int* ierr);
+
 }
 
 /**
@@ -763,5 +776,183 @@ Rcpp::List tox_gjct_permutation_test_rcpp(
         Rcpp::Named("jsd_null") = jsd_null,
         Rcpp::Named("p_value")  = p_value,
         Rcpp::Named("ierr")     = ierr
+    );
+}
+
+
+// [[Rcpp::export]]
+Rcpp::List tox_calc_neighborhood_size_rcpp(int n_pool,
+                                           int n_points,
+                                           int n_genes_S,
+                                           Rcpp::NumericVector mean_S,
+                                           int desired_size = 0) {
+    int n_neighbors = 0;
+    int ierr = 0;
+
+    calc_neighborhood_size_c(
+        &n_pool,
+        &n_points,
+        &n_genes_S,
+        mean_S.begin(),
+        &desired_size,
+        &n_neighbors,
+        &ierr
+    );
+
+    return Rcpp::List::create(
+        Rcpp::Named("n_neighbors") = n_neighbors,
+        Rcpp::Named("ierr")        = ierr
+    );
+}
+
+// [[Rcpp::export]]
+Rcpp::List tox_construct_neighborhoods_rcpp(
+        Rcpp::NumericVector x_star,
+        int n_pool,
+        Rcpp::NumericVector mean_S,
+        Rcpp::NumericMatrix resid_S,
+        int desired_n_neighbors = 0) {
+
+    int n_points  = x_star.size();
+    int n_genes_S = mean_S.size();
+    int n_reps_S  = resid_S.nrow();
+    int n_neighbors = 0;
+    int ierr = 0;
+
+    calc_neighborhood_size_c( &n_pool, &n_points, &n_genes_S, mean_S.begin(), &desired_n_neighbors, &n_neighbors, &ierr);
+
+    if (ierr != 0)
+    {
+        Rcpp::NumericVector neigh_res(0);
+        Rcpp::IntegerMatrix neigh_idx(0, n_points);
+
+        return Rcpp::List::create(
+            Rcpp::Named("neighborhood_residuals") = neigh_res,
+            Rcpp::Named("neighborhood_indices")   = neigh_idx,
+            Rcpp::Named("ierr")                   = ierr
+        );
+    }
+
+    // Flat buffer
+    Rcpp::NumericVector neigh_res(n_reps_S * n_neighbors * n_points);
+    Rcpp::IntegerMatrix neigh_idx(n_neighbors, n_points);
+
+    construct_neighborhoods_c(
+        &n_points, x_star.begin(),
+        &n_genes_S, mean_S.begin(),
+        &n_reps_S, resid_S.begin(),
+        neigh_res.begin(),
+        neigh_idx.begin(),
+        &n_neighbors,
+        &ierr
+    );
+
+    // Convert to 3D array
+    neigh_res.attr("dim") = Rcpp::IntegerVector::create(
+        n_reps_S,
+        n_neighbors,
+        n_points
+    );
+
+    return Rcpp::List::create(
+        Rcpp::Named("neighborhood_residuals") = neigh_res,
+        Rcpp::Named("neighborhood_indices")   = neigh_idx,
+        Rcpp::Named("ierr")                   = ierr
+    );
+}
+
+// [[Rcpp::export]]
+Rcpp::List tox_compute_gene_means_rcpp(Rcpp::NumericMatrix expr) {
+    int n_reps  = expr.nrow();
+    int n_genes = expr.ncol();
+
+    Rcpp::NumericVector means(n_genes);
+    int ierr = 0;
+
+    compute_gene_means_c(
+        &n_genes, &n_reps, expr.begin(),
+        means.begin(),
+        &ierr
+    );
+
+    return Rcpp::List::create(
+        Rcpp::Named("means") = means,
+        Rcpp::Named("ierr")  = ierr
+    );
+}
+
+// [[Rcpp::export]]
+Rcpp::List tox_compute_residuals_rcpp(Rcpp::NumericMatrix expr,
+                                      Rcpp::NumericVector means) {
+    int n_reps  = expr.nrow();
+    int n_genes = expr.ncol();
+
+    Rcpp::NumericMatrix resid(n_reps, n_genes);
+    int ierr = 0;
+
+    compute_residuals_c(
+        &n_genes, &n_reps, expr.begin(), 
+        means.begin(),
+        resid.begin(),
+        &ierr
+    );
+
+    return Rcpp::List::create(
+        Rcpp::Named("resid") = resid,
+        Rcpp::Named("ierr")  = ierr
+    );
+}
+
+// [[Rcpp::export]]
+Rcpp::List tox_pool_means_rcpp(Rcpp::NumericVector mean_S1,
+                                     Rcpp::NumericVector mean_S2,
+                                     int n_points) {
+    int n_genes_S1 = mean_S1.size();
+    int n_genes_S2 = mean_S2.size();
+
+    Rcpp::NumericVector x_star(n_points);
+    int n_pool = 0;
+    int ierr = 0;
+
+    pool_means_c(
+        &n_genes_S1, mean_S1.begin(),
+        &n_genes_S2, mean_S2.begin(),
+        &n_points,
+        &n_pool,
+        x_star.begin(),
+        &ierr
+    );
+
+    return Rcpp::List::create(
+        Rcpp::Named("n_pool") = n_pool,
+        Rcpp::Named("x_star") = x_star,
+        Rcpp::Named("ierr")   = ierr
+    );
+}
+
+// [[Rcpp::export]]
+Rcpp::List tox_pool_means_expert_rcpp(Rcpp::NumericVector pooled_means,
+                               Rcpp::IntegerVector pooled_perm,
+                               int n_points) {
+
+    Rcpp::NumericVector x_star(n_points);
+    int pool_size = pooled_means.size();
+    int n_pool = 0;
+    int ierr = 0;
+
+    pool_means_expert_c(
+        pooled_means.begin(),
+        pooled_perm.begin(),
+        &pool_size,
+        &n_points,
+        &n_pool,
+        x_star.begin(),
+        &ierr
+    );
+
+    return Rcpp::List::create(
+        Rcpp::Named("n_pool") = n_pool,
+        Rcpp::Named("x_star") = x_star,
+        Rcpp::Named("ierr")   = ierr
     );
 }

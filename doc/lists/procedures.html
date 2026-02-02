@@ -280,6 +280,18 @@ Provides an interface for R (.Fortran) and Fortran code to call the fold change 
 Computes log2 fold changes between condition and control columns for all genes. Arguments match R's .Fortran calling convention.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/calc_neighborhood_size.html'>calc_neighborhood_size</a></td>
+                 <td><a href='../module/tox_jensen_shannon_test.html'>tox_jensen_shannon_test</a></td>
+                 <td>Function</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_neighborhood_size_c.html'>calc_neighborhood_size_c</a></td>
+                 <td><a href='../sourcefile/tox_jensen_shannon_test.f90.html'>tox_jensen_shannon_test.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../proc/calc_neighborhood_size.html">calc_neighborhood_size</a></p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/calc_percentile.html'>calc_percentile</a></td>
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Subroutine</td>
@@ -291,6 +303,13 @@ Uses linear interpolation between adjacent values.</p></td>
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Subroutine</td>
                  <td><p>Calculate the percentile of an array, allocating necessary arrays when no sorting permutation is given</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_percentile_helper.html'>calc_percentile_helper</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>(no input validation) Calculate the percentile of an array given a sorted permutation.
+Uses linear interpolation between adjacent values.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/calc_tiss_avg.html'>calc_tiss_avg</a></td>
@@ -359,6 +378,24 @@ This is the reason why the work array holds the results as well, as all subsets 
                  <td><a href='../module/f42_array_utils.html'>f42_array_utils</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/clamp.html'>clamp</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/clamp_int.html'>clamp_int</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Function</td>
+                 <td><p>Clamps a value into a range <code>min_val &lt;= val &lt;= max_val</code>. If <code>max_val &lt; min_val</code>, <code>min_val</code> is returned</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/clamp_real.html'>clamp_real</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Function</td>
+                 <td><p>Clamps a value into a range <code>min_val &lt;= val &lt;= max_val</code>. If <code>max_val &lt; min_val</code>, <code>min_val</code> is returned</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/clock_hand_angle_between_vectors.html'>clock_hand_angle_between_vectors</a></td>
@@ -531,6 +568,24 @@ Calls compute_family_scaling_alloc with standard Fortran types for R interface.
 This is the recommended version for most users as it handles memory allocation automatically.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/compute_gene_means.html'>compute_gene_means</a></td>
+                 <td><a href='../module/tox_jensen_shannon_test.html'>tox_jensen_shannon_test</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Compute per-gene mean expression, ignoring NaN values</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_gene_means_c.html'>compute_gene_means_c</a></td>
+                 <td><a href='../sourcefile/tox_jensen_shannon_test.f90.html'>tox_jensen_shannon_test.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../proc/compute_gene_means.html">compute_gene_means</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_gene_means_helper.html'>compute_gene_means_helper</a></td>
+                 <td><a href='../module/tox_jensen_shannon_test.html'>tox_jensen_shannon_test</a></td>
+                 <td>Subroutine</td>
+                 <td><p>(no input validation) Compute per-gene mean expression, ignoring NaN values</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/compute_p_values.html'>compute_p_values</a></td>
                  <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
                  <td>Subroutine</td>
@@ -572,6 +627,24 @@ Outputs both unsorted and sorted RDI, permutation, and sorting workspace arrays 
                  <td>Subroutine</td>
                  <td><p>Compute fractional contribution of each axis to a RAP-projected and normalized shift vector.
 Shared utility: computes fractional contribution of each axis to a RAP-projected and normalized vector.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_residuals.html'>compute_residuals</a></td>
+                 <td><a href='../module/tox_jensen_shannon_test.html'>tox_jensen_shannon_test</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Compute signed residuals (centering by mean)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_residuals_c.html'>compute_residuals_c</a></td>
+                 <td><a href='../sourcefile/tox_jensen_shannon_test.f90.html'>tox_jensen_shannon_test.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../proc/compute_residuals.html">compute_residuals</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_residuals_helper.html'>compute_residuals_helper</a></td>
+                 <td><a href='../module/tox_jensen_shannon_test.html'>tox_jensen_shannon_test</a></td>
+                 <td>Subroutine</td>
+                 <td><p>(no input validation) Compute signed residuals (centering by mean)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/compute_shift_vector_field.html'>compute_shift_vector_field</a></td>
@@ -617,6 +690,30 @@ Exposes compute_tissue_versatility to C via iso_c_binding types with explicit di
                  <td>Subroutine</td>
                  <td><p>R wrapper for compute_tissue_versatility.
 Calls compute_tissue_versatility with standard Fortran types for R interface.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/construct_neighborhoods.html'>construct_neighborhoods</a></td>
+                 <td><a href='../module/tox_jensen_shannon_test.html'>tox_jensen_shannon_test</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Construct neighborhood-based residual sets (kNN)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/construct_neighborhoods_alloc.html'>construct_neighborhoods_alloc</a></td>
+                 <td><a href='../module/tox_jensen_shannon_test.html'>tox_jensen_shannon_test</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Construct neighborhood-based residual sets (kNN)</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/construct_neighborhoods_c.html'>construct_neighborhoods_c</a></td>
+                 <td><a href='../sourcefile/tox_jensen_shannon_test.f90.html'>tox_jensen_shannon_test.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../proc/construct_neighborhoods_alloc.html">construct_neighborhoods_alloc</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/construct_neighborhoods_helper.html'>construct_neighborhoods_helper</a></td>
+                 <td><a href='../module/tox_jensen_shannon_test.html'>tox_jensen_shannon_test</a></td>
+                 <td>Subroutine</td>
+                 <td><p>(no input validation) Construct neighborhood-based residual sets (kNN)</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/create_zip_archive.html'>create_zip_archive</a></td>
@@ -1698,6 +1795,36 @@ Input: trajectory(n_factors, n_timepoints) for ONE sample/entity</p></td>
                  <td><p>C-compatible wrapper for <a href="../proc/perform_permutation_test.html">perform_permutation_test</a></p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/pool_means.html'>pool_means</a></td>
+                 <td><a href='../module/tox_jensen_shannon_test.html'>tox_jensen_shannon_test</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Pool per-gene mean expression values across studies</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pool_means_alloc.html'>pool_means_alloc</a></td>
+                 <td><a href='../module/tox_jensen_shannon_test.html'>tox_jensen_shannon_test</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Pool per-gene mean expression values across studies</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pool_means_c.html'>pool_means_c</a></td>
+                 <td><a href='../sourcefile/tox_jensen_shannon_test.f90.html'>tox_jensen_shannon_test.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../proc/pool_means_alloc.html">pool_means_alloc</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pool_means_expert_c.html'>pool_means_expert_c</a></td>
+                 <td><a href='../sourcefile/tox_jensen_shannon_test.f90.html'>tox_jensen_shannon_test.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../proc/pool_means.html">pool_means</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pool_means_helper.html'>pool_means_helper</a></td>
+                 <td><a href='../module/tox_jensen_shannon_test.html'>tox_jensen_shannon_test</a></td>
+                 <td>Subroutine</td>
+                 <td><p>(no input validation) Pool per-gene mean expression values across studies</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/post_merge_distances_helper.html'>post_merge_distances_helper</a></td>
                  <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
                  <td>Subroutine</td>
@@ -2616,7 +2743,7 @@ Converts integer mask to logical and calls which.</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2026-01-24 09:08 +0000"             </p>
+ on "2026-02-02 10:16 +0000"             </p>
           </div>
         </div>
         <br>
