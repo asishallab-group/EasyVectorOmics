@@ -307,23 +307,8 @@ validate_all_data <- function(n_genes, n_families, n_samples,
 }
 
 
-#' Low-level function to create zip archive from keys and filenames.
-#' Directly calls the C wrapper around the Fortran routine.
-#'
-#' @param zip_filename Name of the zip file to create
-#' @param keys Vector of keys for the manifest
-#' @param filenames Vector of filenames to include in archive
 create_zip_archive <- function(zip_filename, keys, filenames) {
-  # Validation moved to error_handling.R
-  validate_character_vector(keys)
-  validate_character_vector(filenames)
-  validate_same_length(keys, filenames)
-  
-  
-  result <- tox_create_zip_archive_generic_rcpp(zip_filename, keys, filenames)
-
-  check_err_code(result$ierr)
-  message("Successfully created archive: ", zip_filename)
+  stop("Zip archive helpers have been removed. Use an external zip tool instead.")
 }
 
 #' Save standard conform tox data directly to zip archive
@@ -443,50 +428,11 @@ read_tox_data <- function(zip_filename,
                           family_ids = NULL,
                           family_centroids = NULL,
                           shift_vectors = NULL) {
-  
-
-  validate_non_empty_string(zip_filename, "zip_filename")
-
-  result <- tox_extract_zip_archive_generic_rcpp(zip_filename)
-  check_err_code(result$ierr)
-
-  result <- list(
-    gene_ids = NULL,
-    expression_vectors = NULL,
-    gene_to_fam = NULL,
-    family_ids = NULL,
-    family_centroids = NULL,
-    shift_vectors = NULL
-  )
-
-  # Read manifest file
-  manifest_path <- "manifest.txt"
- validate_file_exists(manifest_path, "manifest.txt")
-  
-  manifest_lines <- readLines(manifest_path)
-  file.remove("manifest.txt")
+  stop("Zip archive helpers have been removed. Use an external zip tool instead.")
 }
 
 extract_zip_archive <- function(zip_filename) {
- 
- result <- tox_extract_zip_archive_generic_rcpp(zip_filename)
-
-  check_err_code(result$ierr)
-  
-  # Manifest Datei lesen und Mapping erstellen
-  manifest_path <- "manifest.txt"
-  validate_file_exists(manifest_path, "manifest.txt")
-  
-  manifest_lines <- readLines(manifest_path)
-  file_mapping <- list()
-  for (line in manifest_lines) {
-    parts <- strsplit(line, "=")[[1]]
-    if (length(parts) == 2) {
-      file_mapping[[parts[1]]] <- parts[2]
-    }
-  }
-  
-  return(file_mapping)
+  stop("Zip archive helpers have been removed. Use an external zip tool instead.")
 }
 
 

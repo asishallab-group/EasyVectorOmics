@@ -1,4 +1,5 @@
 
+#> f42_helper-import_libs: Import necessary packages
 library(Rcpp)
 
 # Get absolute path to build directory containing the compiled Fortran library
@@ -20,7 +21,8 @@ source("rcpp/error_handling.R")
 # EUCLIDEAN DISTANCE FUNCTIONS
 # ===================================================================
 
-#' Calculate Euclidean distance between two vectors
+#> tox_euclidean_distance:euclidean_distance_c: Calculate Euclidean distance between two vectors
+#' 
 #' 
 #' Computes the Euclidean distance between two vectors of the same dimension.
 #' This function automatically checks for errors and throws informative exceptions.
@@ -41,7 +43,7 @@ tox_euclidean_distance <- function(vec1, vec2) {
   return(tox_euclidean_distance_rcpp(as.numeric(vec1), as.numeric(vec2)))
 }
 
-
+#> tox_euclidean_distance:distance_to_centroid_c: Calculate distance from each gene to its family centroid
 #' Calculate distances from genes to their family centroids
 #' 
 #' Computes the Euclidean distance from each gene to its corresponding family centroid.
@@ -83,7 +85,7 @@ tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
   return(tox_distance_to_centroid_rcpp(genes, centroids, gene_to_fam, d))
 }
 
-
+#> tox_tissue_versatility:compute_tissue_versatility_c: Computes normalized tissue versatility for selected expression vectors
 #' Calculate Tissue Versatility
 #' 
 #' Computes normalized tissue versatility for selected expression vectors.
@@ -145,6 +147,8 @@ tox_calculate_tissue_versatility <- function(expression_vectors, vector_selectio
 # ===================================================================
 # OUTLIER DETECTION FUNCTIONS 
 # ===================================================================
+
+#> tox_get_outliers:detect_outliers_c: Complete outlier detection pipeline
 #' Complete outlier detection workflow
 #'
 #' This function performs the complete outlier detection workflow:
@@ -182,6 +186,7 @@ tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile =
 
 }
 
+#> tox_get_outliers:compute_family_scaling_c: Compute family scaling factors for outlier detection
 #' Compute family scaling factors using LOESS smoothing
 #'
 #' This function calculates scaling factors for gene families based on distance distributions.
@@ -218,6 +223,7 @@ tox_compute_family_scaling <- function(distances, gene_to_fam, n_families) {
   ))
 }
 
+#> tox_get_outliers:compute_family_scaling_expert_c: Compute family scaling factors using LOESS smoothing (Expert Version)
 #' Compute family scaling factors using LOESS smoothing (Expert Version)
 #'
 #' Expert version of compute_family_scaling with user-provided work arrays.
@@ -276,6 +282,7 @@ tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families
   ))
 }
 
+#> tox_get_outliers:compute_rdi_c: Compute Relative Distance Index (RDI) for outlier detection
 #' Compute Relative Distance Index (RDI) for genes
 #'
 #' This function calculates the Relative Distance Index for each gene,
@@ -305,6 +312,7 @@ tox_compute_rdi <- function(distances, gene_to_fam, dscale) {
   ))
 }
 
+#> tox_get_outliers:identify_outliers_c: Identify outliers based on RDI percentile or threshold
 #' Identify outliers based on RDI percentiles
 #'
 #' This function identifies outliers by comparing each gene's RDI value
@@ -330,6 +338,7 @@ tox_identify_outliers <- function(rdi, percentile = 95.0) {
 
 # NORMALIZATION FUNCTIONS
 # ===================================================================
+#> tox_normalization:normalize_by_std_dev_c: Normalize gene expression values by standard deviation
 #' Normalize gene expression values by standard deviation
 #'
 #' This function wraps the Fortran subroutine `normalize_by_std_dev`
@@ -351,6 +360,7 @@ tox_normalize_by_std_dev <- function(input_matrix) {
   return(matrix(result$output_vector, nrow = nrow(input_matrix), ncol = ncol(input_matrix), dimnames = dimnames(input_matrix)))
 }
 
+#> tox_normalization:quantile_normalization_c: Quantile normalization of gene expression values
 #' Quantile normalization of gene expression values
 #'
 #' This function wraps the Fortran subroutine `quantile_normalization`
@@ -376,6 +386,7 @@ tox_quantile_normalization <- function(input_matrix) {
   return(matrix(result$output_vector, nrow = n_genes, ncol = n_tissues, dimnames = dimnames(input_matrix)))
 }
 
+#> tox_normalization:log2_transformation_c: Apply log2(x + 1) transformation to gene expression values
 #' Apply log2(x + 1) transformation to gene expression values
 #'
 #' This function wraps the Fortran subroutine `log2_transformation`
@@ -402,6 +413,7 @@ tox_log2_transformation <- function(input_matrix) {
   return(matrix(result$output_vector, nrow = n_genes, ncol = n_tissues, dimnames = dimnames(input_matrix)))
 }
 
+#> tox_normalization:calc_tiss_avg_c: Calculate average expression across replicates for each tissue group
 #' Calculate average expression across replicates for each tissue group
 #'
 #' This function wraps the Fortran subroutine `calc_tiss_avg`
@@ -456,6 +468,7 @@ tox_calculate_tissue_averages <- function(df) {
 }
 
 
+#> tox_normalization:calc_fchange_c: Calculate log2 fold changes between control and condition columns
 #' Calculate log2 fold changes based on control and condition patterns
 #' @param df A data frame with genes as rows and tissues/conditions as columns.
 #' @param control_pattern A string pattern to detect control columns.
@@ -487,6 +500,7 @@ tox_calculate_fc_by_patterns <- function(df, control_pattern, condition_patterns
 }
 
 
+#> tox_normalization:normalization_pipeline_c: Complete normalization pipeline for gene expression data (up to log2(x+1))
 #' Complete normalization pipeline for gene expression data (up to log2(x+1))
 #' @param input_matrix Numeric matrix (genes x tissues)
 #' @param group_s Integer vector: start column index for each replicate group (1-based)
@@ -510,6 +524,7 @@ tox_normalization_pipeline <- function(input_matrix, group_s, group_c) {
 ##################################################
 
 
+#> f42_helper: Parse tissue group name from column name
 #' Parse tissue group name from column name
 #'
 #' Helper function to extract the tissue group from a column name.
@@ -548,6 +563,7 @@ tox_parse_tissue_group <- function(colname) {
 }
 
 
+#> f42_helper: Diagnose data quality issues in gene expression matrix
 #' Diagnose data quality issues in gene expression matrix
 #'
 #' This function examines the input matrix for common data quality issues
@@ -650,6 +666,7 @@ tox_diagnose_data_quality <- function(input_matrix, show_details = TRUE) {
   return(invisible(diagnostics))
 }
 
+#> f42_helper: Clean data by removing or imputing problematic values
 #' Clean data by removing or imputing problematic values
 #'
 #' This function handles NA, NaN, Inf values and genes that are all zeros
@@ -797,6 +814,7 @@ tox_clean_data_for_normalization <- function(df_matrix,
 }
 
 
+#> f42_helper: Prepare control and condition column indices based on naming patterns
 #' Prepare control and condition column indices based on naming patterns
 #'
 #' This helper function searches for columns in the input dataframe that match
@@ -854,6 +872,7 @@ tox_prepare_indices_by_patterns <- function(df, control_pattern, condition_patte
 # ===================================================================
 # SHIFT VECTOR FIELD FUNCTIONS
 # ===================================================================
+#> tox_shift_vectors:compute_shift_vector_field_c: Calculate shift vector field for gene expression
 #' Calculate Shift Vector Field 
 #' Computes the shift vector field for each gene expression vector based on its family centroid.
 #' The shift vector is defined as the difference between the gene expression vector and its corresponding family centroid,
@@ -893,6 +912,7 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
 # ===================================================================
 # GENE CENTROIDS FUNCTIONS
 # ===================================================================
+#> tox_gene_centroids:group_centroid_c: Calculate centroids for gene families
 #' Calculate Gene Centroids
 
 #' Computes the centroids for each gene family based on the expression vectors of its member genes.
@@ -918,6 +938,7 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
   return(result)
 }
 
+#> tox_gene_centroids:mean_vector_c: Compute element-wise mean of gene expression vectors
 #' Compute the element-wise mean for a given set of gene expression vectors
 #'
 #' This function wraps the Fortran subroutine `mean_vector_r`
@@ -942,6 +963,7 @@ tox_mean_vector <- function(expression_vectors, gene_indices) {
 #  1) Array metadata wrapper
 # ============================================================
 
+#> f42_array_utils:get_array_metadata_c: Get array metadata from serialized file
 tox_get_array_metadata <- function(filename, max_dims = 5L, with_clen = FALSE) {
   # Coerce to expected base types
   filename  <- as.character(filename)
@@ -974,6 +996,7 @@ tox_get_array_metadata <- function(filename, max_dims = 5L, with_clen = FALSE) {
 # ============================================================
 #  2) Deserialization (int / real / char)
 # ============================================================
+#> f42_deserialize_int:deserialize_int_nd_C: Deserialize integer array from file
 tox_deserialize_int_array <- function(filename, max_dims = 5L) {
   # validate inputs
   validate_filename(filename)
@@ -992,7 +1015,7 @@ tox_deserialize_int_array <- function(filename, max_dims = 5L) {
   array(result$values, dim = result$dims[1:result$ndim])
 }
 
-
+#> f42_deserialize_real:deserialize_real_nd_C: Deserialize real/double array from file
 tox_deserialize_real_array <- function(filename, max_dims = 5L) {
 #validate inputs
   validate_filename(filename)
@@ -1017,6 +1040,7 @@ tox_deserialize_real_array <- function(filename, max_dims = 5L) {
   array(result$values, dim = result$dims[1:result$ndim])
   }
 
+#> f42_deserialize_char:deserialize_char_nd_C: Deserialize character array from file
 tox_deserialize_char_array <- function(filename, max_dims = 5L) {
   #validate inputs
   validate_filename(filename)
@@ -1044,6 +1068,7 @@ tox_deserialize_char_array <- function(filename, max_dims = 5L) {
 #  3) Serialization (int / real / char)
 # ============================================================
 
+#> f42_serialize_int:serialize_int_nd_C: Serialize integer array to file
 tox_serialize_int_array <- function(arr, filename) {
   #validate inputs
   validate_array_or_vector(arr)
@@ -1060,7 +1085,7 @@ tox_serialize_int_array <- function(arr, filename) {
   invisible(NULL)
 }
 
-
+#> f42_serialize_real:serialize_real_nd_C: Serialize real/double array to file
 tox_serialize_real_array <- function(arr, filename) {
   #validate inputs
   validate_array_or_vector(arr)
@@ -1078,7 +1103,7 @@ tox_serialize_real_array <- function(arr, filename) {
   invisible(NULL)
 }
 
-
+#> f42_serialize_char:serialize_char_nd_C: Serialize character array to file
 tox_serialize_char_array <- function(arr, filename) {
   #validate inputs
   validate_array_or_vector(arr)
@@ -1101,6 +1126,7 @@ tox_serialize_char_array <- function(arr, filename) {
 # ============================================================
 #  Deserialization (logical / complex)
 # ============================================================
+#> f42_deserialize_logical:deserialize_logical_nd_C: Deserialize logical array from file
 tox_deserialize_logical_array <- function(filename, max_dims = 5L) {
   # validate inputs
   validate_filename(filename)
@@ -1123,6 +1149,7 @@ tox_deserialize_logical_array <- function(filename, max_dims = 5L) {
   array(result$values, dim = result$dims[1:result$ndim])
 }
 
+#> f42_deserialize_complex:deserialize_complex_nd_C: Deserialize complex array from file
 tox_deserialize_complex_array <- function(filename, max_dims = 5L) {
   # validate inputs
   validate_filename(filename)
@@ -1149,6 +1176,7 @@ tox_deserialize_complex_array <- function(filename, max_dims = 5L) {
 #  Serialization (logical / complex)
 # ============================================================
 
+#> f42_serialize_logical:serialize_logical_nd_C: Serialize logical array to file
 tox_serialize_logical_array <- function(arr, filename) {
   # validate inputs
   validate_array_or_vector(arr)
@@ -1165,6 +1193,7 @@ tox_serialize_logical_array <- function(arr, filename) {
   invisible(NULL)
 }
 
+#> f42_serialize_complex:serialize_complex_nd_C: Serialize complex array to file
 tox_serialize_complex_array <- function(arr, filename) {
   # validate inputs
   validate_array_or_vector(arr)
@@ -1187,7 +1216,7 @@ tox_serialize_complex_array <- function(arr, filename) {
 #  4) KD-tree index (multidimensional) + spherical KD
 # ============================================================
 
-
+#> f42_kd_tree:build_kd_index_c: Build KD-tree index for multidimensional data
 build_kd_index <- function(X, dim_order = NULL) {
   # Input validation using standardized validation functions
   validate_numeric_matrix(X, "X")
@@ -1215,6 +1244,7 @@ build_kd_index <- function(X, dim_order = NULL) {
   result$kd_ix
 }
 
+#> f42_kd_tree:build_spherical_kd_c: Build spherical KD-tree index
 #' Build Spherical KD-Tree index (R-level wrapper)
 build_spherical_kd <- function(V, dim_order = NULL) {
   # R-layer validation
@@ -1245,6 +1275,7 @@ build_spherical_kd <- function(V, dim_order = NULL) {
   # Return sphere index vector
   result$sphere_ix
 }
+#> f42_helper: Get a point from the KD index
 #' Get a point from the KD index (R-level helper)
 get_kd_point <- function(X, kd_ix, position) {
   # Input validation using standardized validation functions
@@ -1263,6 +1294,7 @@ get_kd_point <- function(X, kd_ix, position) {
 #  5) BST index + range query
 # ============================================================
 
+#> f42_binary_search_tree:build_bst_index_c: Build binary search tree index
 #  BST index
 build_bst_index <- function(x) {
   # Accept either a numeric vector or a single-column numeric matrix
@@ -1278,6 +1310,7 @@ build_bst_index <- function(x) {
   return(result)
 }
  
+#> f42_helper: Get sorted value by BST index
 #' Get sorted value by BST index (R helper)
 get_sorted_value <- function(x, ix, position) {
   validate_numeric_vector(x, "x")
@@ -1289,6 +1322,7 @@ get_sorted_value <- function(x, ix, position) {
 
 # ============================================================
 # BST range query
+#> f42_binary_search_tree:bst_range_query_c: Query BST index for values in range
 bst_range_query <- function(x, ix, lo, hi) {
 
   validate_numeric_vector(x, "x")
@@ -1319,6 +1353,7 @@ bst_range_query <- function(x, ix, lo, hi) {
 #  6) which() helper via C backend
 # ============================================================
 
+#> tox_helper: which() helper function via C backend
 tox_which <- function(mask, m_max = length(mask)) {
   validate_integer_vector(as.integer(mask), "mask")
 
@@ -1337,6 +1372,7 @@ tox_which <- function(mask, m_max = length(mask)) {
 #  7) LOESS smoothing (2D)
 # ============================================================
 
+#> f42_utils:loess_smooth_2d_c: 2D LOESS smoothing for trajectory data
 tox_loess_smooth_2d <- function(
   x_ref,
   y_ref,
@@ -1406,6 +1442,7 @@ tox_loess_smooth_2d <- function(
   )
 }
 
+#> tox_relative_axis_plane_tools:omics_vector_RAP_projection_c: Project vectors onto Relative Axis Plane
 #' Project selected vectors onto a Relative Axis Plane (RAP)
 #' 
 #' This function validates inputs and calls the C/Rcpp RAP projection wrapper.
@@ -1429,6 +1466,7 @@ tox_omics_vector_RAP_projection <- function(vecs, vecs_selection_mask, axes_sele
   return(res$projections)
 }
 
+#> tox_relative_axis_plane_tools:omics_field_RAP_projection_c: Project vector fields onto Relative Axis Plane
 #' Project selected vector fields onto a Relative Axis Plane (RAP)
 #' 
 #' This function validates inputs and calls the C/Rcpp RAP field projection wrapper.
@@ -1450,6 +1488,7 @@ tox_omics_field_RAP_projection <- function(vecs, vecs_selection_mask, axes_selec
   return(res$projections)
 }
 
+#> tox_relative_axis_plane_tools:relative_axes_changes_from_shift_vector_c: Compute relative axis changes from shift vector
 #' Compute relative axis changes from a RAP-projected and normalized shift vector
 #' 
 #' @param vec Numeric vector (RAP-projected and normalized shift vector)
@@ -1467,6 +1506,7 @@ tox_relative_axes_changes_from_shift_vector <- function(vec) {
   return(res)
 }
 
+#> f42_helper: Compute relative axis changes from shift vector (alias)
 #' Compute relative axis changes from a shift vector (alias for tox_relative_axes_changes_from_shift_vector)
 #' 
 #' @param vec Numeric vector (shift vector)
@@ -1480,6 +1520,7 @@ relative_axes_changes_from_shift_vector <- function(vec) {
 #' 
 #' @param vec Numeric vector (RAP-projected and normalized expression vector)
 #' @return Numeric vector of fractional axis contributions (sums to 1)
+#> tox_relative_axis_plane_tools:relative_axes_expression_from_expression_vector_c: Compute relative axis contributions from expression vector
 #' @export
 tox_relative_axes_expression_from_expression_vector <- function(vec) {
   validate_numeric_vector(vec, "vec")
@@ -1493,6 +1534,7 @@ tox_relative_axes_expression_from_expression_vector <- function(vec) {
   return(res)
 }
 
+#> f42_helper: Compute relative axis contributions (alias)
 #' Compute relative axis contributions from a RAP-projected and normalized expression vector (alias for tox_relative_axes_expression_from_expression_vector)
 #' 
 #' @param vec Numeric vector (RAP-projected and normalized expression vector)
@@ -1502,6 +1544,7 @@ relative_axes_expression_from_expression_vector <- function(vec) {
   tox_relative_axes_expression_from_expression_vector(vec)
 }
 
+#> tox_relative_axis_plane_tools:clock_hand_angle_between_vectors_c: Compute signed angle between two vectors
 #' Compute signed clock hand angle between two RAP-projected and normalized vectors
 #' 
 #' @param v1 Numeric vector (first normalized vector in RAP space)
@@ -1529,6 +1572,7 @@ tox_clock_hand_angle_between_vectors <- function(v1, v2, selected_axes_for_signe
   return(res)
 }
 
+#> tox_relative_axis_plane_tools:clock_hand_angles_for_shift_vectors_c: Compute signed rotation angles for vector pairs
 #' Compute signed rotation angles for pairs of RAP-projected and normalized vectors
 #'
 #' @param origins Numeric matrix (n_dims x n_vecs), first set of vectors
@@ -1556,6 +1600,7 @@ tox_clock_hand_angles_for_shift_vectors <- function(origins, targets, vecs_selec
   res <- tox_clock_hand_angles_for_shift_vectors_rcpp(origins, targets, as.integer(vecs_selection_mask), selected_axes_for_signed)
   return(res)
 }
+#> tox_clustering:cluster_factor_trajectories_k_means_c: K-means clustering on factor trajectories
 #' K-means clustering on factor trajectories
 #'
 #' Performs k-means clustering on factor trajectories (factor evolution over time).
@@ -1585,6 +1630,7 @@ tox_cluster_factor_trajectories_k_means <- function(n_clusters, trajectories, n_
   return(res)
 }
 
+#> tox_clustering:k_means_clustering_c: K-means clustering (general)
 #' K-means clustering (general)
 #'
 #' Performs k-means clustering on general data points.
@@ -1615,6 +1661,7 @@ tox_k_means_clustering <- function(n_clusters, data_points, n_points, n_dims, ce
 # FOLD CHANGE CALCULATION
 # ===================================================================
 
+#> tox_helper: Calculate fold changes between control and condition columns
 #' Calculate fold changes between control and condition columns
 #' 
 #' Computes log2 fold changes between control and condition columns.

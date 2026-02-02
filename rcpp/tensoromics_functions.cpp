@@ -429,20 +429,6 @@ void validate_all_data_C(int* n_genes,
                          const double* shift_vectors,
                          int* ierr);
 
-void create_zip_archive_generic_c(const char* zip_filename,
-                                  int* zip_len,
-                                  const char* keys,
-                                  int* keys_len,
-                                  int* keys_count,
-                                  const char* filenames,
-                                  int* filenames_len,
-                                  int* filenames_count,
-                                  int* ierr);
-
-void extract_zip_archive_generic_c(const char* zip_filename,
-                                   int* filename_len,
-                                   int* ierr);
-
 }
 
 
@@ -1637,41 +1623,6 @@ List tox_validate_all_data_rcpp(RawMatrix gene_ids_raw,
     return List::create(Named("ierr") = ierr);
 }
 
-// [[Rcpp::export]]
-List tox_create_zip_archive_generic_rcpp(RawVector zip_filename_raw,
-                                         RawMatrix keys_raw,
-                                         RawMatrix filenames_raw) {
-    int zip_len = zip_filename_raw.size();
-    int keys_len = keys_raw.nrow();
-    int keys_count = keys_raw.ncol();
-    int filenames_len = filenames_raw.nrow();
-    int filenames_count = filenames_raw.ncol();
-    int ierr = 0;
-
-    create_zip_archive_generic_c(reinterpret_cast<const char*>(zip_filename_raw.begin()),
-                                 &zip_len,
-                                 reinterpret_cast<const char*>(keys_raw.begin()),
-                                 &keys_len,
-                                 &keys_count,
-                                 reinterpret_cast<const char*>(filenames_raw.begin()),
-                                 &filenames_len,
-                                 &filenames_count,
-                                 &ierr);
-
-    return List::create(Named("ierr") = ierr);
-}
-
-// [[Rcpp::export]]
-List tox_extract_zip_archive_generic_rcpp(RawVector zip_filename_raw) {
-    int zip_len = zip_filename_raw.size();
-    int ierr = 0;
-
-    extract_zip_archive_generic_c(reinterpret_cast<const char*>(zip_filename_raw.begin()),
-                                  &zip_len,
-                                  &ierr);
-
-    return List::create(Named("ierr") = ierr);
-}
 // ===================================================================
 
 // [[Rcpp::export]]
