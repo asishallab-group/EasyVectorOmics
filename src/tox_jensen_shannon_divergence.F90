@@ -380,7 +380,7 @@ contains
     end subroutine compute_weighted_global_divergence_helper
 
     !> Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
-    subroutine jgct_permutation_test_alloc(neighborhood_residuals_S1, neighborhood_residuals_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, ierr, random_seed)
+    subroutine gjct_permutation_test_alloc(neighborhood_residuals_S1, neighborhood_residuals_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, ierr, random_seed)
         integer(int32), intent(in) :: n_reps_S1
             !! Number of replicates in study 1
         integer(int32), intent(in) :: n_reps_S2
@@ -404,7 +404,7 @@ contains
         real(real64), dimension(n_permutations), intent(out) :: jsd_null
             !! Vector of global divergence values obtained under the null hypothesis
         real(real64), intent(out) :: p_value
-            !! Empirical p-value of the permutation test: \( \frac{\text{sum}(\text{jsd_null}) + 1}{\text{n_permutations}} \)
+            !! Empirical p-value of the permutation test: \( \frac{\text{count}(jsd\_null \ge global\_jsd\_observed) + 1}{n\_permutations} \)
         integer(int32), intent(out) :: ierr
             !! Error code
         integer(int32), intent(in), optional :: random_seed
@@ -448,11 +448,11 @@ contains
         S1 = neighborhood_residuals_S1
         S2 = neighborhood_residuals_S2
 
-        call jgct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, ierr, random_seed)
-    end subroutine jgct_permutation_test_alloc
+        call gjct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, ierr, random_seed)
+    end subroutine gjct_permutation_test_alloc
 
     !> Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
-    subroutine jgct_permutation_test( &
+    subroutine gjct_permutation_test( &
             neighborhood_residuals_S1_copy, neighborhood_residuals_S2_copy, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, &
             tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, &
             ierr, random_seed &
@@ -480,7 +480,7 @@ contains
         real(real64), dimension(n_permutations), intent(out) :: jsd_null
             !! Vector of global divergence values obtained under the null hypothesis
         real(real64), intent(out) :: p_value
-            !! Empirical p-value of the permutation test: \( \frac{\text{sum}(\text{jsd_null}) + 1}{\text{n_permutations}} \)
+            !! Empirical p-value of the permutation test: \( \frac{\text{count}(jsd\_null \ge global\_jsd\_observed) + 1}{n\_permutations} \)
         real(real64), dimension(n_reps_S1 + n_reps_S2, n_neighbors), intent(out) :: tmp_pool
             !! Working array for shuffling the concatenated residuals from both studies per reference point
         integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts
@@ -514,11 +514,11 @@ contains
 
         if (is_err(ierr)) return
 
-        call jgct_permutation_test_helper(neighborhood_residuals_S1_copy, neighborhood_residuals_S2_copy, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, random_seed)
-    end subroutine jgct_permutation_test
+        call gjct_permutation_test_helper(neighborhood_residuals_S1_copy, neighborhood_residuals_S2_copy, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, random_seed)
+    end subroutine gjct_permutation_test
 
     !> (no input validation) Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
-    subroutine jgct_permutation_test_helper( &
+    subroutine gjct_permutation_test_helper( &
             neighborhood_residuals_S1_copy, neighborhood_residuals_S2_copy, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range, n_permutations, jsd_null, p_value, &
             tmp_pool, tmp_counts, tmp_pmf_S1, tmp_pmf_S2, tmp_included_n_reps_S1, tmp_included_n_reps_S2, tmp_js_divergences, tmp_weights, &
             random_seed &
@@ -546,7 +546,7 @@ contains
         real(real64), dimension(n_permutations), intent(out) :: jsd_null
             !! Vector of global divergence values obtained under the null hypothesis
         real(real64), intent(out) :: p_value
-            !! Empirical p-value of the permutation test: \( \frac{\text{sum}(\text{jsd_null}) + 1}{\text{n_permutations}} \)
+            !! Empirical p-value of the permutation test: \( \frac{\text{count}(jsd\_null \ge global\_jsd\_observed) + 1}{n\_permutations} \)
         real(real64), dimension(n_reps_S1 + n_reps_S2, n_neighbors), intent(out) :: tmp_pool
             !! Working array for shuffling the concatenated residuals from both studies per reference point
         integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts
@@ -594,9 +594,9 @@ contains
         end do
 
         p_value = real(n_jsd_exceeding_observed + 1, real64) / real(n_permutations + 1, real64)
-    end subroutine jgct_permutation_test_helper
+    end subroutine gjct_permutation_test_helper
 
-    !> Helper for [[tox_jensen_shannon_divergence(module):jgct_permutation_test_helper(subroutine)]] to shuffle reference points
+    !> Helper for [[tox_jensen_shannon_divergence(module):gjct_permutation_test_helper(subroutine)]] to shuffle reference points
     subroutine shuffle_reference_point_helper(reference_point_S1, reference_point_S2, n_reps_S1, n_reps_S2, n_neighbors, pool_flat)
         integer(int32), intent(in) :: n_reps_S1
             !! Number of replicates in study 1
@@ -624,6 +624,10 @@ contains
         reference_point_S1 = pool_flat(1:n_residuals_S1)
         reference_point_S2 = pool_flat(n_residuals_S1+1:pool_size)
     end subroutine shuffle_reference_point_helper
+
+    !> TODO: #118
+    pure subroutine fjct_compute_jsd
+    end subroutine fjct_compute_jsd
 
 end module tox_jensen_shannon_divergence
 

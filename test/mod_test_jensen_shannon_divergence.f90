@@ -32,7 +32,7 @@ contains
         all_tests(3) = test_case("test_compute_divergence_per_reference_point", test_compute_divergence_per_reference_point)
         all_tests(4) = test_case("test_compute_weighted_global_divergence", test_compute_weighted_global_divergence)
         all_tests(5) = test_case("test_shuffle_reference_point_helper", test_shuffle_reference_point_helper)
-        all_tests(6) = test_case("test_jgct_permutation_test", test_jgct_permutation_test)
+        all_tests(6) = test_case("test_gjct_permutation_test", test_gjct_permutation_test)
     end function get_all_tests
 
     !> Run all tox_jensen_shannon_divergence tests.
@@ -74,7 +74,7 @@ contains
         end do
     end subroutine run_named_tests_tox_jensen_shannon_divergence
 
-    subroutine test_jgct_permutation_test
+    subroutine test_gjct_permutation_test
         integer(int32), parameter :: n_reps_S1 = 4, n_reps_S2 = 3, n_neighbors = 1, n_points = 2, n_permutations = 2, n_bins = 4
         real(real64), dimension((n_reps_S1 + n_reps_S2) * n_neighbors * n_points ), target :: S_12, expected_S_12
         real(real64), dimension(:), pointer :: S1, S2
@@ -125,10 +125,10 @@ contains
         S2(1:n_reps_S2 * n_neighbors * n_points) => S_12(n_reps_S1*n_neighbors*n_points+1:)
         
         global_jsd_observed = 0.0_real64
-        call jgct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr, random_seed=random_seed, tmp_pool=tmp_pool, tmp_counts=tmp_counts, tmp_pmf_S1=tmp_pmf_S1, tmp_pmf_S2=tmp_pmf_S2, tmp_included_n_reps_S1=tmp_included_n_reps_S1, tmp_included_n_reps_S2=tmp_included_n_reps_S2, tmp_js_divergences=tmp_js_divergences, tmp_weights=tmp_weights)
-        call assert_equal_int(ierr, ERR_OK, "test_jgct_permutation_test: Test 1: unexpected error")
+        call gjct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr, random_seed=random_seed, tmp_pool=tmp_pool, tmp_counts=tmp_counts, tmp_pmf_S1=tmp_pmf_S1, tmp_pmf_S2=tmp_pmf_S2, tmp_included_n_reps_S1=tmp_included_n_reps_S1, tmp_included_n_reps_S2=tmp_included_n_reps_S2, tmp_js_divergences=tmp_js_divergences, tmp_weights=tmp_weights)
+        call assert_equal_int(ierr, ERR_OK, "test_gjct_permutation_test: Test 1: unexpected error")
 
-        call assert_equal_array_real(S_12, expected_S_12, size(S_12, kind=int32), 0.0_real64, "test_jgct_permutation_test: Test 1: concatenated S1, S2 does not match the expected permutation")
+        call assert_equal_array_real(S_12, expected_S_12, size(S_12, kind=int32), 0.0_real64, "test_gjct_permutation_test: Test 1: concatenated S1, S2 does not match the expected permutation")
 
         ! ============================================================
         ! Test 2 — Test randomness without seed
@@ -139,13 +139,13 @@ contains
         S2(1:n_reps_S2 * n_neighbors * n_points) => S_12(n_reps_S1*n_neighbors*n_points+1:)
 
         call init_random(random_seed)
-        call jgct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr, tmp_pool=tmp_pool, tmp_counts=tmp_counts, tmp_pmf_S1=tmp_pmf_S1, tmp_pmf_S2=tmp_pmf_S2, tmp_included_n_reps_S1=tmp_included_n_reps_S1, tmp_included_n_reps_S2=tmp_included_n_reps_S2, tmp_js_divergences=tmp_js_divergences, tmp_weights=tmp_weights)
-        call assert_equal_int(ierr, ERR_OK, "test_jgct_permutation_test: Test 2: 1. call, unexpected error")
-        call assert_equal_array_real(S_12, expected_S_12, size(S_12, kind=int32), 0.0_real64, "test_jgct_permutation_test: Test 2: 1. call, concatenated S1, S2 does not match the expected permutation")
+        call gjct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr, tmp_pool=tmp_pool, tmp_counts=tmp_counts, tmp_pmf_S1=tmp_pmf_S1, tmp_pmf_S2=tmp_pmf_S2, tmp_included_n_reps_S1=tmp_included_n_reps_S1, tmp_included_n_reps_S2=tmp_included_n_reps_S2, tmp_js_divergences=tmp_js_divergences, tmp_weights=tmp_weights)
+        call assert_equal_int(ierr, ERR_OK, "test_gjct_permutation_test: Test 2: 1. call, unexpected error")
+        call assert_equal_array_real(S_12, expected_S_12, size(S_12, kind=int32), 0.0_real64, "test_gjct_permutation_test: Test 2: 1. call, concatenated S1, S2 does not match the expected permutation")
 
-        call jgct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr, tmp_pool=tmp_pool, tmp_counts=tmp_counts, tmp_pmf_S1=tmp_pmf_S1, tmp_pmf_S2=tmp_pmf_S2, tmp_included_n_reps_S1=tmp_included_n_reps_S1, tmp_included_n_reps_S2=tmp_included_n_reps_S2, tmp_js_divergences=tmp_js_divergences, tmp_weights=tmp_weights)
-        call assert_equal_int(ierr, ERR_OK, "test_jgct_permutation_test: Test 2: 2. call, unexpected error")
-        call assert_true(any(S_12 /= expected_S_12), "test_jgct_permutation_test: Test 2: 2. call, concatenated S1, S2 should not match the expected permutation")
+        call gjct_permutation_test(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr, tmp_pool=tmp_pool, tmp_counts=tmp_counts, tmp_pmf_S1=tmp_pmf_S1, tmp_pmf_S2=tmp_pmf_S2, tmp_included_n_reps_S1=tmp_included_n_reps_S1, tmp_included_n_reps_S2=tmp_included_n_reps_S2, tmp_js_divergences=tmp_js_divergences, tmp_weights=tmp_weights)
+        call assert_equal_int(ierr, ERR_OK, "test_gjct_permutation_test: Test 2: 2. call, unexpected error")
+        call assert_true(any(S_12 /= expected_S_12), "test_gjct_permutation_test: Test 2: 2. call, concatenated S1, S2 should not match the expected permutation")
 
 
         ! ============================================================
@@ -159,18 +159,18 @@ contains
         ! all should be greater or equal -> p_value=1
         global_jsd_observed = 0.0_real64
 
-        call jgct_permutation_test_alloc(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_jgct_permutation_test: Test 3: unexpected error")
+        call gjct_permutation_test_alloc(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_gjct_permutation_test: Test 3: unexpected error")
 
-        call assert_equal_real(p_value, 1.0_real64, TOL, "test_jgct_permutation_test: Test 3: for zero observed jsd, p_value should be 1")
+        call assert_equal_real(p_value, 1.0_real64, TOL, "test_gjct_permutation_test: Test 3: for zero observed jsd, p_value should be 1")
 
         ! no one should be greater or equal -> p_value=1/(n_permutations+1)=1/3
         global_jsd_observed = huge(0.0_real64)
-        call jgct_permutation_test_alloc(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr)
-        call assert_equal_int(ierr, ERR_OK, "test_jgct_permutation_test: Test 3: unexpected error")
+        call gjct_permutation_test_alloc(S1, S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, global_jsd_observed, n_bins, shared_residual_range=10.0_real64, n_permutations=2_int32, jsd_null=jsd_null, p_value=p_value, ierr=ierr)
+        call assert_equal_int(ierr, ERR_OK, "test_gjct_permutation_test: Test 3: unexpected error")
 
-        call assert_equal_real(p_value, 1.0_real64 / 3.0_real64, TOL, "test_jgct_permutation_test: Test 3: for max observed jsd, p_value should be 1/3")
-    end subroutine test_jgct_permutation_test
+        call assert_equal_real(p_value, 1.0_real64 / 3.0_real64, TOL, "test_gjct_permutation_test: Test 3: for max observed jsd, p_value should be 1/3")
+    end subroutine test_gjct_permutation_test
 
     subroutine test_shuffle_reference_point_helper
         integer(int32), parameter :: n_reps_S1 = 4, n_reps_S2 = 3, n_neighbors = 2
