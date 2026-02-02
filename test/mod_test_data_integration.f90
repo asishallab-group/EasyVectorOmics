@@ -125,9 +125,9 @@ contains
         ! Simulate two permutations 
         expected_S_12 = S_12
         S1(1:n_reps_S1, 1:n_neighbors, 1:n_points) => expected_S_12(1:n_reps_S1*n_neighbors*n_points)
+        S1_flat(1:n_reps_S1 * n_neighbors * n_points) => expected_S_12(1:n_reps_S1*n_neighbors*n_points)
         S2(1:n_reps_S2, 1:n_neighbors, 1:n_points) => expected_S_12(n_reps_S1*n_neighbors*n_points+1:)
-        S1_flat(1:n_reps_S1 * n_neighbors * n_points) => S1
-        S2_flat(1:n_reps_S2 * n_neighbors * n_points) => S2
+        S2_flat(1:n_reps_S2 * n_neighbors * n_points) => expected_S_12(n_reps_S1*n_neighbors*n_points+1:)
         do i_permutation = 1, n_permutations
             ! First point
             tmp_pool_flat(1:n_reps_S1*n_neighbors) = S1_flat(1:n_reps_S1*n_neighbors)
