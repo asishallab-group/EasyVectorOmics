@@ -7,12 +7,11 @@ EXECUTABLE="$BUILD_DIR/run_tests"
 
 source build_utils.sh
 
+handle_args "$@"
 COMPILER=$(get_compiler)
 FLAGS=$(get_flags)
 ALIGN=$(get_alignment)
 MODULE_FLAG=$(get_module_flag $BUILD_DIR)
-
-handle_args "$@"
 
 echo "Detected alignment: $ALIGN"
 
@@ -73,7 +72,6 @@ mv *.mod $BUILD_DIR/ 2>/dev/null || true
 check_build "*.o" "*.mod"
 check_exit_code "Module compilation failed"
 
-
 echo "Linking executable..."
 # Finally link everything together
 $COMPILER $FLAGS -I$BUILD_DIR \
@@ -87,7 +85,16 @@ rm -f manifest.txt
 
 echo "Running tests..."
 # Run the executable
-$EXECUTABLE $ARGS
+if [[ "$DEBUG" ]]; then
+  echo "Starting gdb for debugging..."
+  echo "Set breakpoints as needed, then use 'run' to start the program."
+  echo "To set a breakpoint, use: break <function_name> or break <file_name>:<line_number>"
+  echo "To continue execution after a breakpoint, use: continue"
+  echo "Variables of the current scope can be inspected using the 'print' command or using 'info locals'."
+  gdb --args $EXECUTABLE $ARGS
+else
+  $EXECUTABLE $ARGS
+fi
 
 check_exit_code "Tests failed"
 

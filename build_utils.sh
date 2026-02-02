@@ -24,17 +24,33 @@ function get_compiler() {
   fi
 }
 
-function get_flags() {
+function get_flags() {  
   # Libraries
   echo -en "-lzip -lxxhash "
 
+  if [[ "$DEBUG" ]]; then
+    stderr "Debug mode: enabled"
+  fi
+
   # Detect compiler and choose appropriate profile:
   if [[ "$FC" == "ifx" || "$FC" == "ifort" ]]; then
-    echo "-O2 -fopenmp-target-do-concurrent -warn all -diag-enable=all -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC"
+    if [[ "$DEBUG" ]]; then
+      echo "-O0 -g -traceback -check all -warn all -diag-enable=all -fPIC"
+    else
+      echo "-O2 -fopenmp-target-do-concurrent -warn all -diag-enable=all -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC"
+    fi
   elif [[ "$FC" == "nvfortran" ]]; then
-    echo "-O2 -Mconcur -fPIC -fopenmp -stdpar=multicore"
+    if [[ "$DEBUG" ]]; then
+      echo "-O0 -g -traceback -Mbounds -Mchkptr -Mchkstk -fPIC"
+    else
+      echo "-O2 -Mconcur -fPIC -fopenmp -stdpar=multicore"
+    fi
   else
-    echo "-O2 -march=native -mtune=native -fopenmp -funroll-loops -ftree-vectorize -fPIC"
+    if [[ "$DEBUG" ]]; then
+      echo "-O0 -g -fbacktrace -fcheck=all -fPIC"
+    else
+      echo "-O2 -march=native -mtune=native -fopenmp -funroll-loops -ftree-vectorize -fPIC"
+    fi
   fi
 }
 
@@ -54,6 +70,7 @@ function handle_args() {
   MAX_PERF_FLAG=""
   ARGS=""
   DIRECTIVES=""
+  
   for arg in "$@"; do
     if [[ "$arg" == "--max-performance" ]]; then
       MAX_PERF_FLAG="-DMAX_PERFORMANCE"
@@ -62,9 +79,10 @@ function handle_args() {
     # genericly handle optional flags
     elif [[ "$arg" == --* ]]; then
       declare undashed=${arg:2}
-      declare key=${undashed%=*}
-      declare val=${undashed##$key}
-      if [[ ! $val ]];then val=1;fi
+      declare key=${undashed%%=*}
+      # extract value after first '=' if present, else set to 1
+      declare val=$(echo "$undashed" | sed 's/^'$key'\(=\(.*\)\?\)\?/\2/g')
+      : ${val:=1}
       declare -g "$(echo "$key" | sed 's/\W/_/g; s/\w/\U&/g')=$val"
     else
       ARGS="$ARGS $arg"
