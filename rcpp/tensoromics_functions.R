@@ -214,64 +214,64 @@ tox_compute_family_scaling <- function(distances, gene_to_fam, n_families) {
   ))
 }
 
-#> tox_get_outliers:compute_family_scaling_expert_c: Compute family scaling factors using LOESS smoothing (Expert Version)
-#' Compute family scaling factors using LOESS smoothing (Expert Version)
-#'
-#' Expert version of compute_family_scaling with user-provided work arrays.
-#' This version requires pre-allocated work arrays for maximum performance and control.
-#' Use this when you need fine-grained control over memory allocation or are calling
-#' this function many times in a tight loop.
-#'
-#' @param distances Numeric vector of gene distances
-#' @param gene_to_fam Integer vector mapping genes to family indices
-#' @param n_families Integer number of families
-#' @param perm_tmp Pre-allocated permutation array for sorting (n_genes)
-#' @param stack_left_tmp Pre-allocated stack array for sorting (n_genes)
-#' @param stack_right_tmp Pre-allocated stack array for sorting (n_genes)
-#' @param family_distances Pre-allocated work array for family distances (n_genes)
-#' @return List with components:
-#'   - dscale: Scaling factors for each family
-#'   - loess_x: Family median distances
-#'   - loess_y: Family standard deviations
-#'   - indices_used: Number of genes used per family
-#'   - perm_tmp: Final state of permutation array
-#'   - stack_left_tmp: Final state of left stack array
-#'   - stack_right_tmp: Final state of right stack array
-#'   - family_distances: Final state of family distances array
-tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families,
-                                              perm_tmp, stack_left_tmp, stack_right_tmp,
-                                              family_distances) {
-# Input validation
-  validate_numeric_vector(distances)
-  n_genes <- as.integer(length(distances))
-  validate_length_equals_n(gene_to_fam, n_genes)
-  validate_index_bounds(gene_to_fam, low = 1, high = n_families)
-  validate_length_equals_n(perm_tmp, n_genes)
-  validate_length_equals_n(stack_left_tmp, n_genes)
-  validate_length_equals_n(stack_right_tmp, n_genes)
-  validate_length_equals_n(family_distances, n_genes)
+# #> tox_get_outliers:compute_family_scaling_expert_c: Compute family scaling factors using LOESS smoothing (Expert Version)
+# #' Compute family scaling factors using LOESS smoothing (Expert Version)
+# #'
+# #' Expert version of compute_family_scaling with user-provided work arrays.
+# #' This version requires pre-allocated work arrays for maximum performance and control.
+# #' Use this when you need fine-grained control over memory allocation or are calling
+# #' this function many times in a tight loop.
+# #'
+# #' @param distances Numeric vector of gene distances
+# #' @param gene_to_fam Integer vector mapping genes to family indices
+# #' @param n_families Integer number of families
+# #' @param perm_tmp Pre-allocated permutation array for sorting (n_genes)
+# #' @param stack_left_tmp Pre-allocated stack array for sorting (n_genes)
+# #' @param stack_right_tmp Pre-allocated stack array for sorting (n_genes)
+# #' @param family_distances Pre-allocated work array for family distances (n_genes)
+# #' @return List with components:
+# #'   - dscale: Scaling factors for each family
+# #'   - loess_x: Family median distances
+# #'   - loess_y: Family standard deviations
+# #'   - indices_used: Number of genes used per family
+# #'   - perm_tmp: Final state of permutation array
+# #'   - stack_left_tmp: Final state of left stack array
+# #'   - stack_right_tmp: Final state of right stack array
+# #'   - family_distances: Final state of family distances array
+# tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families,
+#                                               perm_tmp, stack_left_tmp, stack_right_tmp,
+#                                               family_distances) {
+# # Input validation
+#   validate_numeric_vector(distances)
+#   n_genes <- as.integer(length(distances))
+#   validate_length_equals_n(gene_to_fam, n_genes)
+#   validate_index_bounds(gene_to_fam, low = 1, high = n_families)
+#   validate_length_equals_n(perm_tmp, n_genes)
+#   validate_length_equals_n(stack_left_tmp, n_genes)
+#   validate_length_equals_n(stack_right_tmp, n_genes)
+#   validate_length_equals_n(family_distances, n_genes)
 
-  # Call the Rcpp forwarder.
-  result <- tox_compute_family_scaling_expert_rcpp(n_families, distances, gene_to_fam, perm_tmp, stack_left_tmp, stack_right_tmp,
-    family_distances
-  )
+#   # Call the Rcpp forwarder.
+#   result <- tox_compute_family_scaling_expert_rcpp(n_families, distances, gene_to_fam, perm_tmp, stack_left_tmp, stack_right_tmp,
+#     family_distances
+#   )
 
-   # Check for error
-  check_err_code(result$ierr)
+#    # Check for error
+#   check_err_code(result$ierr)
 
-  # Return structured result
-  return(list(
-    dscale = result$dscale,
-    loess_x = result$loess_x,
-    loess_y = result$loess_y,
-    indices_used = result$indices_used,
-    perm_tmp     = result$perm_tmp,
-    stack_left_tmp   = result$stack_left_tmp,
-    stack_right_tmp  = result$stack_right_tmp,
-    family_distances = result$family_distances
+#   # Return structured result
+#   return(list(
+#     dscale = result$dscale,
+#     loess_x = result$loess_x,
+#     loess_y = result$loess_y,
+#     indices_used = result$indices_used,
+#     perm_tmp     = result$perm_tmp,
+#     stack_left_tmp   = result$stack_left_tmp,
+#     stack_right_tmp  = result$stack_right_tmp,
+#     family_distances = result$family_distances
 
-  ))
-}
+#   ))
+# }
 
 #> tox_get_outliers:compute_rdi_c: Compute Relative Distance Index (RDI) for outlier detection
 #' Compute Relative Distance Index (RDI) for genes

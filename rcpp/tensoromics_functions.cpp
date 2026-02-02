@@ -415,40 +415,40 @@ List tox_compute_family_scaling_rcpp(NumericVector distances, IntegerVector gene
   );
 }
 
-// [[Rcpp::export]]
-List tox_compute_family_scaling_expert_rcpp(int n_families, NumericVector distances, IntegerVector gene_to_fam,
-                                            IntegerVector perm_tmp, IntegerVector stack_left_tmp, IntegerVector stack_right_tmp,
-                                            NumericVector family_distances) {
-  int n_genes = distances.size();
-  NumericVector dscale(n_families);
-  NumericVector loess_x(n_families);
-  NumericVector loess_y(n_families);
-  IntegerVector indices_used(n_families);
-  int ierr = 0;
+// // [[Rcpp::export]]
+// List tox_compute_family_scaling_expert_rcpp(int n_families, NumericVector distances, IntegerVector gene_to_fam,
+//                                             IntegerVector perm_tmp, IntegerVector stack_left_tmp, IntegerVector stack_right_tmp,
+//                                             NumericVector family_distances) {
+//   int n_genes = distances.size();
+//   NumericVector dscale(n_families);
+//   NumericVector loess_x(n_families);
+//   NumericVector loess_y(n_families);
+//   IntegerVector indices_used(n_families);
+//   int ierr = 0;
 
-  compute_family_scaling_expert_c(
-    n_genes, n_families,
-    distances.begin(),
-    gene_to_fam.begin(),
-    dscale.begin(),
-    loess_x.begin(), loess_y.begin(), indices_used.begin(),
-    perm_tmp.begin(), stack_left_tmp.begin(), stack_right_tmp.begin(),
-    family_distances.begin(),
-    &ierr
-  );
+//   compute_family_scaling_expert_c(
+//     n_genes, n_families,
+//     distances.begin(),
+//     gene_to_fam.begin(),
+//     dscale.begin(),
+//     loess_x.begin(), loess_y.begin(), indices_used.begin(),
+//     perm_tmp.begin(), stack_left_tmp.begin(), stack_right_tmp.begin(),
+//     family_distances.begin(),
+//     &ierr
+//   );
 
-  return List::create(
-    Named("dscale") = dscale,
-    Named("loess_x") = loess_x,
-    Named("loess_y") = loess_y,
-    Named("indices_used") = indices_used,
-    Named("perm_tmp") = perm_tmp,
-    Named("stack_left_tmp") = stack_left_tmp,
-    Named("stack_right_tmp") = stack_right_tmp,
-    Named("family_distances") = family_distances,
-    Named("ierr") = ierr
-  );
-}
+//   return List::create(
+//     Named("dscale") = dscale,
+//     Named("loess_x") = loess_x,
+//     Named("loess_y") = loess_y,
+//     Named("indices_used") = indices_used,
+//     Named("perm_tmp") = perm_tmp,
+//     Named("stack_left_tmp") = stack_left_tmp,
+//     Named("stack_right_tmp") = stack_right_tmp,
+//     Named("family_distances") = family_distances,
+//     Named("ierr") = ierr
+//   );
+// }
 
 // [[Rcpp::export]]
 List tox_compute_rdi_rcpp(NumericVector distances, IntegerVector gene_to_fam, NumericVector dscale) {
