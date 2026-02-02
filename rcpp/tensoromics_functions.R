@@ -943,3 +943,151 @@ tox_mean_vector <- function(expression_vectors, gene_indices) {
   check_err_code(result$ierr)
   return(result)
 }
+
+#> tox_jensen_shannon_test:compute_gene_means_c: Compute per-gene mean expression values
+#' Compute per-gene mean expression values
+#'
+#' This function computes the mean expression for each gene across replicates,
+#' handling NaN values appropriately.
+#'
+#' @param expr Numeric matrix of expression data (replicates × genes)
+#' @return List with components:
+#'   - means: Numeric vector of per-gene mean expression values
+#'   - ierr: Error code (0 for success)
+#' @export
+tox_compute_gene_means <- function(expr) {
+  # Validate input
+  validate_numeric_matrix(expr)
+  
+  # Call the Rcpp function
+  result <- tox_compute_gene_means_rcpp(expr)
+  check_err_code(result$ierr)
+  
+  # Return structured result
+  return (result$means)
+}
+
+#> tox_jensen_shannon_test:compute_residuals_c: Compute signed residuals
+#' Compute signed residuals
+#'
+#' This function computes signed residuals for each gene and replicate.
+#'
+#' @param expr Numeric matrix of expression data (replicates × genes)
+#' @param means Numeric vector of per-gene mean expression values
+#' @return List with components:
+#'   - resid: Numeric matrix of signed residuals (replicates × genes)
+#'   - ierr: Error code (0 for success)
+#' @export
+tox_compute_residuals <- function(expr, means) {
+  # Validate input
+  validate_numeric_matrix(expr)
+  
+  # Call the Rcpp function
+  result <- tox_compute_residuals_rcpp(expr, means)
+  check_err_code(result$ierr)
+  
+  # Return structured result
+  return(result$resid)
+}
+
+#> tox_jensen_shannon_test:pool_means_c: Pool mean expression values across studies
+#' Pool mean expression values across studies
+#'
+#' This function pools per-gene mean expression values from two studies
+#' and computes reference points for neighborhood construction.
+#'
+#' @param mean_S1 Numeric vector of per-gene mean expression values for study 1
+#' @param mean_S2 Numeric vector of per-gene mean expression values for study 2
+#' @param n_points Number of reference points to define
+#' @return List with components:
+#'   - N_pool: Total number of valid (non-NA) pooled mean-expression values
+#'   - x_star: Mean-expression reference points
+#'   - ierr: Error code (0 for success)
+#' @export
+tox_pool_means <- function(mean_S1, mean_S2, n_points) {
+  # Validate input
+  validate_numeric_vector(mean_S1)
+  validate_numeric_vector(mean_S2)
+  
+  # Call the Rcpp function
+  result <- tox_pool_means_rcpp(mean_S1, mean_S2, n_points)
+
+  check_err_code(result$ierr)
+  
+  # Return structured result
+  return(list(
+    n_pool = result$n_pool,
+    x_star = result$x_star
+  ))
+}
+
+#> tox_jensen_shannon_test:pool_means_expert_c: Pool mean expression values across studies
+#' Pool mean expression values across studies
+#'
+#' This function pools per-gene mean expression values from two studies
+#' and computes reference points for neighborhood construction.
+#'
+#' @param pooled_means Numeric vector of merged per-gene mean expression values from both studies
+#' @param pooled_perm Integer vector of indices that would sort pooled_means (NaN values should be last values in sorting)
+#' @param n_points Number of reference points to define
+#' @return List with components:
+#'   - N_pool: Total number of valid (non-NA) pooled mean-expression values
+#'   - x_star: Mean-expression reference points
+#'   - ierr: Error code (0 for success)
+#' @export
+tox_pool_means_expert <- function(pooled_means, pooled_perm, n_points) {
+  # Validate input
+  validate_numeric_vector(pooled_means)
+  validate_logical_or_index_vector(pooled_perm)
+  validate_same_length(pooled_means, pooled_perm)
+  
+  # Call the Rcpp function
+  result <- tox_pool_means_rcpp(mean_S1, mean_S2, n_points)
+
+  check_err_code(result$ierr)
+  
+  # Return structured result
+  return(list(
+    n_pool = result$n_pool,
+    x_star = result$x_star
+  ))
+}
+
+#> tox_jensen_shannon_test:construct_neighborhoods_c: Construct neighborhood-based residual sets (kNN)
+#' Construct neighborhood-based residual sets (kNN)
+#'
+#' This function constructs neighborhoods around reference points and
+#' collects residuals from genes in each neighborhood.
+#'
+#' @param x_star Numeric vector of mean-expression reference points
+#' @param mean_S Numeric vector of per-gene mean expression values for the study
+#' @param resid_S Numeric matrix of signed residuals for the study (replicates × genes)
+#' @param desired_n_neighbors Desired size of the neighborhood, might be lower in the end (default=0, means automatic detection)
+#'        calculation (default: -1).
+#' @return List with components:
+#'   - ierr: Error code (0 for success)
+#'   - k_x: Neighborhood size used (constant for all reference points)
+#'   - neighborhood_residuals: Matrix of residual vectors for each neighborhood
+#'   - neighborhood_indices: Matrix of indices of selected neighborhood genes (1-based)
+#' @export
+tox_construct_neighborhoods <- function(x_star, n_pool, mean_S, resid_S,
+                                        desired_n_neighbors = 0) {
+  # Validate input
+  validate_numeric_vector(x_star)
+  validate_numeric_vector(mean_S)
+  validate_numeric_matrix(resid_S)
+  
+  n_points <- length(x_star)
+  
+  # Call the Rcpp function
+  result <- tox_construct_neighborhoods_rcpp(x_star, n_pool, mean_S, 
+                                            resid_S, desired_n_neighbors)
+  
+  check_err_code(result$ierr)
+  
+  # Return structured result
+  return(list(
+    neighborhood_residuals = result$neighborhood_residuals,
+    neighborhood_indices = result$neighborhood_indices
+  ))
+}

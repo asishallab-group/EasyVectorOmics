@@ -5,7 +5,7 @@
 module f42_utils
   use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
-  use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, set_ok, set_err_once, set_err, validate_in_range_real, is_err
+  use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, set_ok, set_err_once, set_err, validate_in_range_real, is_err, validate_in_range_int, validate_dimension_size
   use, intrinsic :: ieee_arithmetic, only: ieee_next_after, ieee_value, ieee_positive_inf, ieee_negative_inf, ieee_is_finite, ieee_is_nan
   implicit none
 
@@ -21,9 +21,37 @@ module f42_utils
     module procedure sort_real_heapsort, sort_integer_heapsort, sort_character_heapsort
   end interface sort_array_heapsort
 
+  interface clamp
+    module procedure clamp_real, clamp_int
+  end interface clamp
+
   real(real64), parameter :: PI = 4.0_real64 * atan(1.0_real64)
   real(real64), parameter :: EPS = epsilon(1.0_real64)
 contains
+
+  !> Clamps a value into a range `min_val <= val <= max_val`. If `max_val < min_val`, `min_val` is returned
+  pure real(real64) function clamp_real(val, min_val, max_val) result(clamped)
+    real(real64), intent(in) :: val
+      !! Value to be clamped
+    real(real64), intent(in) :: min_val
+      !! Lower bound
+    real(real64), intent(in) :: max_val
+      !! Upper bound
+  
+    clamped = max(min_val, min(val, max_val))
+  end function clamp_real
+
+  !> Clamps a value into a range `min_val <= val <= max_val`. If `max_val < min_val`, `min_val` is returned
+  pure integer(int32) function clamp_int(val, min_val, max_val) result(clamped)
+    integer(int32), intent(in) :: val
+      !! Value to be clamped
+    integer(int32), intent(in) :: min_val
+      !! Lower bound
+    integer(int32), intent(in) :: max_val
+      !! Upper bound
+  
+    clamped = max(min_val, min(val, max_val))
+  end function clamp_int
 
   !> Compute logarithm for any base
   pure subroutine logx(val, base, exponent, ierr)
@@ -89,7 +117,7 @@ contains
       if (val == 0.0_real64) then
           below = -tiny(1.0_real64)
       else
-          below = ieee_next_after(val, ieee_value(1.0_real64, ieee_negative_inf))
+          below = ieee_next_after(val, M_NEG_INF)
       end if
   end function below
 
@@ -100,7 +128,7 @@ contains
       if (val == 0.0_real64) then
           above = tiny(1.0_real64)
       else
-          above = ieee_next_after(val, ieee_value(1.0_real64, ieee_positive_inf))
+          above = ieee_next_after(val, M_POS_INF)
       end if
   end function above
 
@@ -163,7 +191,7 @@ contains
     end if
 
     theta = dot_product / norm_product
-    theta = max(-1.0_real64, min(1.0_real64, theta))
+    theta = clamp(theta, -1.0_real64, 1.0_real64)
     angle = acos(theta)
   end subroutine angle_between
 
@@ -913,7 +941,7 @@ contains
   !| Returns the sorted unique values and their cumulative frequencies in [0,1].
   !| Assumes perm is already sorted by values[perm]. Caller controls sorting algorithm.
   !| The number of unique values can be determined by finding the last non-zero cdf_value.
-  subroutine compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
+  pure subroutine compute_edf(values, n_values, perm, unique_values, cdf_values, n_unique, ierr)
     !| Array of observed data values (e.g., contributions or spikes).
     real(real64), intent(in) :: values(n_values)
     !| Number of values in the input array.
@@ -978,7 +1006,7 @@ contains
   !> Helper routine that sorts and calls compute_edf.
   !| Allocates workspace internally and performs sorting before computing EDF.
   !| Use this for convenience; use compute_edf directly for custom sorting.
-  subroutine compute_edf_alloc(values, n_values, unique_values, cdf_values, n_unique, ierr)
+  pure subroutine compute_edf_alloc(values, n_values, unique_values, cdf_values, n_unique, ierr)
     !| Array of observed data values (e.g., contributions or spikes).
     real(real64), intent(in) :: values(n_values)
     !| Number of values in the input array.
@@ -1024,32 +1052,39 @@ contains
     integer(int32), intent(out) :: ierr
     !! Error code
     
-    integer(int32) :: n, lower_index
-    real(real64) :: index, fraction, lower_value, upper_value
+    integer(int32) :: n
     
     ! Initialize error
     call set_ok(ierr)
     
     ! Input validation
     n = size(array)
-    if (n == 0) then
-      call set_err_once(ierr, ERR_EMPTY_INPUT)
-      value = 0.0_real64
-      return
-    end if
+    call validate_dimension_size(n, ierr)
+    if (size(permutation) /= n) call set_err_once(ierr, ERR_INVALID_INPUT)
+    call validate_in_range_real(percentile, ierr, min=0.0_real64, max=100.0_real64)
+
+    if (is_err(ierr)) return
+
+    call calc_percentile_helper(array, permutation, percentile, value)
+  end subroutine calc_percentile
+
+  !> (no input validation) Calculate the percentile of an array given a sorted permutation.
+  !! Uses linear interpolation between adjacent values.
+  pure subroutine calc_percentile_helper(array, permutation, percentile, value)
+    real(real64), intent(in) :: array(:)
+    !! input array
+    integer(int32), intent(in) :: permutation(:)
+    !! permutation vector representing sorted order
+    real(real64), intent(in) :: percentile
+    !! desired percentile (0-100)
+    real(real64), intent(out) :: value
+    !! output percentile value
     
-    if (size(permutation) /= n) then
-      call set_err_once(ierr, ERR_INVALID_INPUT)
-      value = 0.0_real64
-      return
-    end if
+    integer(int32) :: n, lower_index
+    real(real64) :: index, fraction, lower_value, upper_value
     
-    if (percentile < 0.0_real64 .or. percentile > 100.0_real64) then
-      call set_err_once(ierr, ERR_INVALID_INPUT)
-      value = 0.0_real64
-      return
-    end if
-    
+    n = size(array)
+
     ! Handle single element case
     if (n == 1) then
       value = array(1)
@@ -1074,11 +1109,11 @@ contains
       upper_value = array(permutation(lower_index + 1))
       value = lower_value + fraction * (upper_value - lower_value)
     end if
-  end subroutine calc_percentile
+  end subroutine calc_percentile_helper
 
   !> Calculate the percentile of an array, allocating necessary arrays when no sorting permutation is given
   !! @note This subroutine uses quicksort internally which may cause a spike in memory usage for large arrays.
-  subroutine calc_percentile_alloc(array, percentile, value, ierr)
+  pure subroutine calc_percentile_alloc(array, percentile, value, ierr)
     use tox_errors, only: ERR_EMPTY_INPUT, ERR_ALLOC_FAIL, set_ok, set_err, is_err
     real(real64), intent(in) :: array(:)
     !! Input array

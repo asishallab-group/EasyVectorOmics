@@ -3521,3 +3521,316 @@ def tox_compute_p_values(local_contributions_observed,
         "local_p_values": local_p_values,
         "total_p_value": total_p_value.value
     }
+
+
+#> tox_jensen_shannon_test:compute_gene_means_c: Compute per-gene mean expression
+def tox_compute_gene_means(expr):
+    """
+    Compute per-gene mean expression, ignoring NaN values.
+
+    Args:
+        expr: np.ndarray (n_reps, n_genes), float64
+
+    Returns:
+        means: np.ndarray (n_genes,)
+    """
+    expr_f = np.asfortranarray(expr, dtype=np.float64)
+    n_reps, n_genes = expr_f.shape
+
+    means = np.empty(n_genes, dtype=np.float64, order="F")
+    ierr = ctypes.c_int(0)
+
+    fn = lib.compute_gene_means_c
+    fn.argtypes = [
+        ctypes.POINTER(ctypes.c_int),                                   # n_genes
+        ctypes.POINTER(ctypes.c_int),                                   # n_reps
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),              # expr
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),              # means
+        ctypes.POINTER(ctypes.c_int),                                   # ierr
+    ]
+    fn.restype = None
+
+    fn(
+        ctypes.byref(ctypes.c_int(n_genes)),
+        ctypes.byref(ctypes.c_int(n_reps)),
+        expr_f,
+        means,
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+    _readonly(means)
+    return means
+
+
+#> tox_jensen_shannon_test:compute_residuals_c: Compute signed residuals
+def tox_compute_residuals(expr, means):
+    """
+    Compute signed residuals.
+
+    Args:
+        expr: np.ndarray (n_reps, n_genes)
+        means: np.ndarray (n_genes,)
+
+    Returns:
+        resid: np.ndarray (n_reps, n_genes)
+    """
+    expr_f = np.asfortranarray(expr, dtype=np.float64)
+    means_f = np.ascontiguousarray(means, dtype=np.float64)
+
+    n_reps, n_genes = expr_f.shape
+
+    resid = np.empty_like(expr_f, order="F")
+    ierr = ctypes.c_int(0)
+
+    fn = lib.compute_residuals_c
+    fn.argtypes = [
+        ctypes.POINTER(ctypes.c_int),                                   # n_genes
+        ctypes.POINTER(ctypes.c_int),                                   # n_reps
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),              # expr
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),              # means
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),              # resid
+        ctypes.POINTER(ctypes.c_int),                                   # ierr
+    ]
+    fn.restype = None
+
+    fn(
+        ctypes.byref(ctypes.c_int(n_genes)),
+        ctypes.byref(ctypes.c_int(n_reps)),
+        expr_f,
+        means_f,
+        resid,
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+    _readonly(resid)
+    return resid
+
+
+#> tox_jensen_shannon_test:pool_means_c: Pool mean-expression values across studies
+def tox_pool_means(mean_S1, mean_S2, n_points):
+    """
+    Pool per-gene mean expression values across studies.
+
+    Args:
+        mean_S1: np.ndarray (n_genes_S1,)
+        mean_S2: np.ndarray (n_genes_S2,)
+        n_points: int
+
+    Returns:
+        dict with:
+            n_pool: int
+            x_star: np.ndarray (n_points,)
+    """
+    mean_S1_c = np.ascontiguousarray(mean_S1, dtype=np.float64)
+    mean_S2_c = np.ascontiguousarray(mean_S2, dtype=np.float64)
+
+    n_genes_S1 = mean_S1_c.shape[0]
+    n_genes_S2 = mean_S2_c.shape[0]
+
+    x_star = np.empty(n_points, dtype=np.float64, order="C")
+    n_pool_c = ctypes.c_int(0)
+    ierr = ctypes.c_int(0)
+
+    fn = lib.pool_means_c
+    fn.argtypes = [
+        ctypes.POINTER(ctypes.c_int),                                   # n_genes_S1
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),              # mean_S1
+        ctypes.POINTER(ctypes.c_int),                                   # n_genes_S2
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),              # mean_S2
+        ctypes.POINTER(ctypes.c_int),                                   # n_points
+        ctypes.POINTER(ctypes.c_int),                                   # n_pool
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),              # x_star
+        ctypes.POINTER(ctypes.c_int),                                   # ierr
+    ]
+    fn.restype = None
+
+    fn(
+        ctypes.byref(ctypes.c_int(n_genes_S1)),
+        mean_S1_c,
+        ctypes.byref(ctypes.c_int(n_genes_S2)),
+        mean_S2_c,
+        ctypes.byref(ctypes.c_int(n_points)),
+        ctypes.byref(n_pool_c),
+        x_star,
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+    _readonly(x_star)
+
+    return {
+        "n_pool": n_pool_c.value,
+        "x_star": x_star,
+    }
+
+
+#> tox_jensen_shannon_test:pool_means_expert_c: Pool mean-expression values using pre-pooled array
+def tox_pool_means_expert(pooled_means, pooled_perm, n_points):
+    """
+    Pool means using pre-pooled and pre-sorted arrays.
+
+    Args:
+        pooled_means: np.ndarray (n_genes_S1 + n_genes_S2,)
+        pooled_perm: np.ndarray (same length),  permutation that sorts pooled_means
+        n_genes_S1: int
+        n_genes_S2: int
+        n_points: int
+
+    Returns:
+        dict with:
+            n_pool: int
+            x_star: np.ndarray (n_points,)
+    """
+    pm = np.ascontiguousarray(pooled_means, dtype=np.float64)
+    perm = np.ascontiguousarray(pooled_perm, dtype=np.int32)
+
+    x_star = np.empty(n_points, dtype=np.float64, order="C")
+    n_pool_c = ctypes.c_int(0)
+    ierr = ctypes.c_int(0)
+    pool_size = ctypes.c_int(len(pooled_means))
+
+    fn = lib.pool_means_expert_c
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),              # pooled_means
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),                # pooled_perm
+        ctypes.POINTER(ctypes.c_int),                                   # pool_size
+        ctypes.POINTER(ctypes.c_int),                                   # n_points
+        ctypes.POINTER(ctypes.c_int),                                   # n_pool
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),              # x_star
+        ctypes.POINTER(ctypes.c_int),                                   # ierr
+    ]
+    fn.restype = None
+
+    fn(
+        pm,
+        perm,
+        ctypes.byref(pool_size),
+        ctypes.byref(ctypes.c_int(n_points)),
+        ctypes.byref(n_pool_c),
+        x_star,
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+    _readonly(x_star)
+
+    return {
+        "n_pool": n_pool_c.value,
+        "x_star": x_star,
+    }
+
+
+#> tox_jensen_shannon_test:calc_neighborhood_size_c: Compute neighborhood size
+def tox_calc_neighborhood_size(n_pool, n_points, n_genes_S, mean_S, desired_size=0):
+    """
+    Compute neighborhood size.
+
+    Args:
+        n_pool: int
+        n_points: int
+        n_genes_S: int
+        mean_S: np.ndarray (n_genes_S,)
+        desired_size: int (optional)
+
+    Returns:
+        n_neighbors: int
+    """
+    mean_S_c = np.ascontiguousarray(mean_S, dtype=np.float64)
+
+    n_neighbors_c = ctypes.c_int(0)
+    ierr = ctypes.c_int(0)
+
+    fn = lib.calc_neighborhood_size_c
+    fn.argtypes = [
+        ctypes.POINTER(ctypes.c_int),                                   # n_pool
+        ctypes.POINTER(ctypes.c_int),                                   # n_points
+        ctypes.POINTER(ctypes.c_int),                                   # n_genes_S
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),              # mean_S
+        ctypes.POINTER(ctypes.c_int),                                   # desired_size
+        ctypes.POINTER(ctypes.c_int),                                   # n_neighbors
+        ctypes.POINTER(ctypes.c_int),                                   # ierr
+    ]
+    fn.restype = None
+
+    fn(
+        ctypes.byref(ctypes.c_int(n_pool)),
+        ctypes.byref(ctypes.c_int(n_points)),
+        ctypes.byref(ctypes.c_int(n_genes_S)),
+        mean_S_c,
+        ctypes.byref(ctypes.c_int(desired_size)),
+        ctypes.byref(n_neighbors_c),
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+    return n_neighbors_c.value
+
+
+#> tox_jensen_shannon_test:construct_neighborhoods_c: Construct neighborhood residual sets (alloc variant)
+def tox_construct_neighborhoods(x_star, mean_S, resid_S, n_pool, desired_n_neighbors=0):
+    """
+    Construct neighborhood-based residual sets (alloc variant).
+
+    Args:
+        x_star: np.ndarray (n_points,)
+        mean_S: np.ndarray (n_genes_S,)
+        resid_S: np.ndarray (n_reps_S, n_genes_S)
+        desired_n_neighbors: int
+
+    Returns:
+        dict with:
+            neighborhood_residuals: np.ndarray (n_reps_S, actual_n_neighbors, n_points)
+            neighborhood_indices: np.ndarray (actual_n_neighbors, n_points)
+    """
+    x_star_c = np.ascontiguousarray(x_star, dtype=np.float64)
+    mean_S_c = np.ascontiguousarray(mean_S, dtype=np.float64)
+    resid_S_f = np.asfortranarray(resid_S, dtype=np.float64)
+
+    n_points = x_star_c.shape[0]
+    n_genes_S = mean_S_c.shape[0]
+    n_reps_S = resid_S_f.shape[0]
+
+    n_neighbors = tox_calc_neighborhood_size(n_pool, n_points, n_genes_S, mean_S_c, desired_n_neighbors)
+
+    neigh_res = np.empty((n_reps_S, n_neighbors, n_points), dtype=np.float64, order="F")
+    neigh_idx = np.empty((n_neighbors, n_points), dtype=np.int32, order="C")
+
+    ierr = ctypes.c_int(0)
+
+    fn = lib.construct_neighborhoods_c
+    fn.argtypes = [
+        ctypes.POINTER(ctypes.c_int),                                   # n_points
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),              # x_star
+        ctypes.POINTER(ctypes.c_int),                                   # n_genes_S
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),              # mean_S
+        ctypes.POINTER(ctypes.c_int),                                   # n_reps_S
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),              # resid_S
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),              # neighborhood_residuals
+        np.ctypeslib.ndpointer(dtype=np.int32,  flags="C_CONTIGUOUS"),               # neighborhood_indices
+        ctypes.POINTER(ctypes.c_int),                                   # n_neighbors
+        ctypes.POINTER(ctypes.c_int),                                   # ierr
+    ]
+    fn.restype = None
+
+    fn(
+        ctypes.byref(ctypes.c_int(n_points)),
+        x_star_c,
+        ctypes.byref(ctypes.c_int(n_genes_S)),
+        mean_S_c,
+        ctypes.byref(ctypes.c_int(n_reps_S)),
+        resid_S_f,
+        neigh_res,
+        neigh_idx,
+        ctypes.byref(ctypes.c_int(n_neighbors)),
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+    _readonly(neigh_res, neigh_idx)
+
+    return {
+        "neighborhood_residuals": neigh_res,
+        "neighborhood_indices": neigh_idx,
+    }
