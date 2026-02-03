@@ -3,9 +3,11 @@
 !| composition can introduce batch effects that are not easily detectable from mean expression levels alone.
 !|
 !| This ambiguity has direct consequences for downstream analyses in Tensor Omics. Integrating incompatible replicate sets can:
+!|
 !|  - distort expression spaces,
 !|  - affect distance-based analyses,
 !|  - bias machine learning models,
+!|
 !| while unnecessarily separating compatible datasets reduces statistical power.
 !|
 !| To address this, we introduce a Jensen–Shannon-Divergence based compatibility test (JSD-Comp-Test)
@@ -645,4 +647,124 @@ module tox_data_integration
                 !! Optional mask to exclude specific neighbors from study 2 (e.g. for family-wise analysis)
         end subroutine jct_compute_jsd_pipeline_helper
     end interface jct_compute_jsd_pipeline_helper
+
+    interface fjct_compute_jsd_alloc
+        !> Computes the family-level compatibility score `global_js_divergence` between two studies for a single gene family (`family_idx`), by reusing the same conditioning-on-mean-expression pipeline as the global gJCT, but restricting residual samples to genes belonging to the specified family
+        pure module subroutine fjct_compute_jsd_alloc(family_idx, gene_to_family_S1, gene_to_family_S2, n_genes_S1, n_genes_S2, neighborhood_residuals_S1, neighborhood_residuals_S2, &
+                neighborhood_genes_S1, neighborhood_genes_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, n_bins, shared_residual_range, js_divergences, &
+                included_n_reps_S1, included_n_reps_S2, total_included_n_reps, global_js_divergence, weights, ierr &
+            )
+            integer(int32), intent(in) :: n_genes_S1
+                !! Number of genes in study 1
+            integer(int32), intent(in) :: n_genes_S2
+                !! Number of genes in study 2
+            integer(int32), intent(in) :: n_reps_S1
+                !! Number of replicates in study 1
+            integer(int32), intent(in) :: n_reps_S2
+                !! Number of replicates in study 2
+            integer(int32), intent(in) :: n_neighbors
+                !! Number of neighbors in the studies
+            integer(int32), intent(in) :: n_points
+                !! Number of reference points in the studies
+            integer(int32), intent(in) :: family_idx
+                !! Index of the family that should be analyzed
+            integer(int32), dimension(n_genes_S1), intent(in) :: gene_to_family_S1
+                !! Mapping for study 1: Each index (gene) holds the index of its family
+            integer(int32), dimension(n_genes_S2), intent(in) :: gene_to_family_S2
+                !! Mapping for study 2: Each index (gene) holds the index of its family
+            real(real64), dimension(n_reps_S1, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S1
+                !! Computed neighborhood residuals for study 1 ([[tox_data_integration(module):construct_neighborhoods(interface)]]), NaN is explicitly allowed for missing values
+            real(real64), dimension(n_reps_S2, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S2
+                !! Computed neighborhood residuals for study 2 ([[tox_data_integration(module):construct_neighborhoods(interface)]]), NaN is explicitly allowed for missing values
+            integer(int32), dimension(n_neighbors, n_points), intent(in) :: neighborhood_genes_S1
+                !! Indices of selected neighborhood genes, obtained from `neighborhood_indices` of [[tox_data_integration(module):construct_neighborhoods(interface)]]
+            integer(int32), dimension(n_neighbors, n_points), intent(in) :: neighborhood_genes_S2
+                !! Indices of selected neighborhood genes, obtained from `neighborhood_indices` of [[tox_data_integration(module):construct_neighborhoods(interface)]]
+            integer(int32), intent(in) :: n_bins
+                !! Number of equally sized histogram bins used for the studies in [[tox_data_integration(module):build_residual_histograms(interface)]]
+            real(real64), intent(in) :: shared_residual_range
+                !! Computed residual range for both studies, from [[tox_data_integration(module):determine_shared_residual_range(interface)]]
+            real(real64), dimension(n_points), intent(out) :: js_divergences
+                !! Jensen-Shannon divergence per reference point, computed for studies S1 and S2
+            integer(int32), dimension(n_points), intent(out) :: included_n_reps_S1
+                !! Count of non-NaN residuals (included ones) in study 1 (obtained from [[tox_data_integration(module):build_residual_histograms(interface)]])
+            integer(int32), dimension(n_points), intent(out) :: included_n_reps_S2
+                !! Count of non-NaN residuals (included ones) in study 2 (obtained from [[tox_data_integration(module):build_residual_histograms(interface)]])
+            integer(int32), intent(out) :: total_included_n_reps
+                !! Total number of included replicates from both studies (\( \text{sum}(included\_n\_reps\_S1) + \text{sum}(included\_n\_reps\_S2) \))
+            real(real64), intent(out) :: global_js_divergence
+                !! Weighted global Jensen-Shannon divergence
+            real(real64), dimension(n_points), intent(out) :: weights
+                !! Weights used for calculating the global weighted Jensen-Shannon divergence `global_js_divergence`
+            integer(int32), intent(out) :: ierr
+                !! Error code
+        end subroutine fjct_compute_jsd_alloc
+    end interface fjct_compute_jsd_alloc
+
+    interface fjct_compute_jsd
+        !> Computes the compatibility score `global_js_divergence` between two studies per sub-neighborhood/family for a single gene family (`family_idx`), by reusing the same conditioning-on-mean-expression pipeline as the global gJCT, but restricting residual samples to genes belonging to the specified family
+        pure module subroutine fjct_compute_jsd(neighborhood_residuals_S1, neighborhood_residuals_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, neighbor_mask_S1, neighbor_mask_S2, n_bins, shared_residual_range, js_divergences, included_n_reps_S1, included_n_reps_S2, total_included_n_reps, global_js_divergence, weights, pmf_S1, pmf_S2, tmp_counts, ierr)
+            integer(int32), intent(in) :: n_reps_S1
+                !! Number of replicates in study 1
+            integer(int32), intent(in) :: n_reps_S2
+                !! Number of replicates in study 2
+            integer(int32), intent(in) :: n_neighbors
+                !! Number of neighbors in the studies
+            integer(int32), intent(in) :: n_points
+                !! Number of reference points in the studies
+            real(real64), dimension(n_reps_S1, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S1
+                !! Computed neighborhood residuals for study 1 ([[tox_data_integration(module):construct_neighborhoods(interface)]]), NaN is explicitly allowed for missing values
+            real(real64), dimension(n_reps_S2, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S2
+                !! Computed neighborhood residuals for study 2 ([[tox_data_integration(module):construct_neighborhoods(interface)]]), NaN is explicitly allowed for missing values
+            logical, dimension(n_neighbors, n_points), intent(in) :: neighbor_mask_S1
+                !! Optional mask to exclude specific neighbors from study 1 (e.g. for family-wise analysis)
+            logical, dimension(n_neighbors, n_points), intent(in) :: neighbor_mask_S2
+                !! Optional mask to exclude specific neighbors from study 2 (e.g. for family-wise analysis)
+            integer(int32), intent(in) :: n_bins
+                !! Number of equally sized histogram bins used for the studies in [[tox_data_integration(module):build_residual_histograms(interface)]]
+            real(real64), intent(in) :: shared_residual_range
+                !! Computed residual range for both studies, from [[tox_data_integration(module):determine_shared_residual_range(interface)]]
+            real(real64), dimension(n_points), intent(out) :: js_divergences
+                !! Jensen-Shannon divergence per reference point, computed for studies S1 and S2
+            integer(int32), dimension(n_points), intent(out) :: included_n_reps_S1
+                !! Count of non-NaN residuals (included ones) in study 1 (will be obtained from [[tox_data_integration(module):build_residual_histograms(interface)]])
+            integer(int32), dimension(n_points), intent(out) :: included_n_reps_S2
+                !! Count of non-NaN residuals (included ones) in study 2 (will be obtained from [[tox_data_integration(module):build_residual_histograms(interface)]])
+            integer(int32), intent(out) :: total_included_n_reps
+                !! Total number of included replicates from both studies (\( \text{sum}(included\_n\_reps\_S1) + \text{sum}(included\_n\_reps\_S2) \))
+            real(real64), intent(out) :: global_js_divergence
+                !! Weighted global Jensen-Shannon divergence
+            real(real64), dimension(n_points), intent(out) :: weights
+                !! Weights used for calculating the global weighted Jensen-Shannon divergence `global_js_divergence`
+            real(real64), dimension(n_points, n_bins), intent(out) :: pmf_S1
+                !! Absolute counts of a residual per bin (will be obtained from [[tox_data_integration(module):build_residual_histograms(interface)]])
+            real(real64), dimension(n_points, n_bins), intent(out) :: pmf_S2
+                !! Absolute counts of a residual per bin (will be obtained from [[tox_data_integration(module):build_residual_histograms(interface)]])
+            integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts
+                !! Working array for [[tox_data_integration(module):build_residual_histograms(interface)]]
+            integer(int32), intent(out) :: ierr
+                !! Error code
+        end subroutine fjct_compute_jsd
+    end interface fjct_compute_jsd
+
+    interface fjct_compute_contribution_scores
+        !> Computes the per-family/per-sub-neighborhood contribution score that combines
+        !|
+        !| 1. how divergent the family is between the studies (``), and
+        !| 2. how much residual support the family has overall (),
+        !|
+        !| using the outputs from [[tox_data_integration_per_family(module):fjct_compute_jsd(subroutine)]], collected for the analyzed sub-neighborhoods.
+        pure module subroutine fjct_compute_contribution_scores(global_js_divergences, total_included_n_reps_per_f, k_families, support_weights, contribution_scores)
+            integer(int32), intent(in) :: k_families
+                !! Number of sub-neighborhoods analyzed
+            integer(int32), dimension(k_families), intent(in) :: total_included_n_reps_per_f
+                !! Per-sub-neighborhood `total_included_n_reps`
+            real(real64), dimension(k_families), intent(in) :: global_js_divergences
+                !! Per-sub-neighborhood weighted global JSD
+            real(real64), dimension(k_families), intent(out) :: support_weights
+                !! Per-sub-neighborhood calculated support weight (ratio between its `total_included_n_reps` and `sum(total_included_n_reps_per_f)`, zero if there were no replicates included at all)
+            real(real64), dimension(k_families), intent(out) :: contribution_scores
+                !! Per-sub-neighborhood calculated contribution ( \( support\_weights_i * global\_js\_divergences_i \) )
+        end subroutine fjct_compute_contribution_scores
+    end interface fjct_compute_contribution_scores
 end module tox_data_integration
