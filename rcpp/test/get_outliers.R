@@ -16,18 +16,25 @@ cat("Based on Fortran test suite with comprehensive test coverage\n")
 # Test 1: Basic LOESS scaling
 test_compute_family_scaling_basic <- function() {
   cat("\n[test_compute_family_scaling_basic] Basic LOESS scaling test\n")
-  distances <- c(1, 2, 3, 4, 5)
-  gene_to_fam <- c(1, 1, 2, 2, 2)
-  n_families <- 2
-  
+  set.seed(42)  # For reproducibility
+
+  # Updated to use more genes and families
+  n_families <- 6
+  genes_per_fam <- 4
+  n_genes <- n_families * genes_per_fam
+
+  # Generate distances and gene-to-family mapping
+  distances <- rep(1:n_families, each = genes_per_fam) * 2 + rep(c(0.1, 0.4, 0.9, 1.6), n_families)
+  gene_to_fam <- rep(1:n_families, each = genes_per_fam)
+
   result <- tox_compute_family_scaling(distances, gene_to_fam, n_families)
-  
+
   # Verify results
-  stopifnot(all(result$dscale > 0))  # Both families have >1 gene
+  stopifnot(all(result$dscale > 0))  # All families have >1 gene
   stopifnot(length(result$dscale) == n_families)
   stopifnot(length(result$loess_x) == n_families)
   stopifnot(length(result$loess_y) == n_families)
-  
+
   cat("Basic LOESS scaling test passed ✓\n")
 }
 
@@ -70,17 +77,22 @@ test_compute_family_scaling_zero_distances <- function() {
 test_compute_family_scaling_large_dataset <- function() {
   cat("\n[test_compute_family_scaling_large_dataset] Large dataset test\n")
   set.seed(42)  # For reproducibility
-  n_genes <- 20
-  n_families <- 4
+
+  # Updated to use more families and genes
+  n_families <- 10
+  genes_per_fam <- 5
+  n_genes <- n_families * genes_per_fam
+
+  # Generate random distances and gene-to-family mapping
   distances <- runif(n_genes, 0.5, 5.0)  # Random distances
-  gene_to_fam <- sample(1:n_families, n_genes, replace=TRUE)
-  
+  gene_to_fam <- rep(1:n_families, each = genes_per_fam)
+
   result <- tox_compute_family_scaling(distances, gene_to_fam, n_families)
-  
+
   # Verify large dataset handling
   stopifnot(length(result$dscale) == n_families)
   stopifnot(all(result$dscale >= 0))  # All scaling factors non-negative
-  
+
   cat("Large dataset test passed ✓\n")
 }
 
@@ -222,19 +234,25 @@ test_identify_outliers_percentile_100 <- function() {
 # Test 13: Typical workflow
 test_detect_outliers_typical <- function() {
   cat("\n[test_detect_outliers_typical] Typical workflow test\n")
-  distances <- c(1, 2, 3, 4, 5, 6)
-  gene_to_fam <- c(1, 1, 2, 2, 2, 2)
-  n_families <- 2
+  set.seed(42)  # For reproducibility
+  # Updated to use more genes and families
+  n_families <- 8
+  genes_per_fam <- 6
+  n_genes <- n_families * genes_per_fam
   percentile <- 80.0
-  
+
+  # Generate distances and gene-to-family mapping
+  distances <- runif(n_genes, 1, 10)  # Random distances
+  gene_to_fam <- rep(1:n_families, each = genes_per_fam)
+
   result <- tox_detect_outliers(distances, gene_to_fam, n_families, percentile)
-  
+
   # Verify typical workflow
   stopifnot(length(result$is_outlier) == length(distances))
   stopifnot(length(result$loess_x) == n_families)
   stopifnot(length(result$loess_y) == n_families)
   stopifnot(is.logical(result$is_outlier))
-  
+
   cat("Typical workflow test passed ✓\n")
 }
 
@@ -279,17 +297,34 @@ test_detect_outliers_single_families <- function() {
 # Test 16: Mixed family sizes
 test_detect_outliers_mixed_sizes <- function() {
   cat("\n[test_detect_outliers_mixed_sizes] Mixed family sizes test\n")
-  distances <- c(1.0, 1.1, 1.2, 1.3, 1.4, 2.0, 2.1, 3.0, 4.0, 5.0)
-  gene_to_fam <- c(1, 1, 1, 1, 1, 2, 2, 3, 3, 3)  # Family sizes: 5, 2, 3
-  n_families <- 3
+  set.seed(42)  # For reproducibility
+
+  # Updated to use more families with mixed sizes
+  distances <- c(
+    runif(10, 1, 2),  # Family 1: 10 genes
+    runif(8, 2, 3),   # Family 2: 8 genes
+    runif(12, 3, 4),  # Family 3: 12 genes
+    runif(6, 4, 5),   # Family 4: 6 genes
+    runif(9, 5, 6),   # Family 5: 9 genes
+    runif(7, 6, 7)    # Family 6: 7 genes
+  )
+  gene_to_fam <- c(
+    rep(1, 10),  # Family 1
+    rep(2, 8),   # Family 2
+    rep(3, 12),  # Family 3
+    rep(4, 6),   # Family 4
+    rep(5, 9),   # Family 5
+    rep(6, 7)    # Family 6
+  )
+  n_families <- 6
   percentile <- 95.0
-  
+
   result <- tox_detect_outliers(distances, gene_to_fam, n_families, percentile)
-  
+
   # Verify mixed family sizes work
   stopifnot(length(result$is_outlier) == length(distances))
   stopifnot(length(result$loess_x) == n_families)
-  
+
   cat("Mixed family sizes test passed ✓\n")
 }
 
@@ -297,8 +332,8 @@ test_detect_outliers_mixed_sizes <- function() {
 test_detect_outliers_large_dataset <- function() {
   cat("\n[test_detect_outliers_large_dataset] Large dataset test\n")
   set.seed(123)  # For reproducibility
-  n_genes <- 50
-  n_families <- 5
+  n_genes <- 60
+  n_families <- 6
   
   # Create synthetic data with some clear outliers
   distances <- c(
@@ -306,12 +341,13 @@ test_detect_outliers_large_dataset <- function() {
     rnorm(10, 2, 0.1),    # Family 2: tight cluster around 2
     rnorm(10, 3, 0.1),    # Family 3: tight cluster around 3
     rnorm(10, 4, 0.1),    # Family 4: tight cluster around 4
-    rnorm(8, 5, 0.1),     # Family 5: tight cluster around 5
+    rnorm(10, 5, 0.1),     # Family 5: tight cluster around 5
+    rnorm(8, 6, 0.1),     # Family 6: tight cluster around 6
     c(20, 25)             # Two clear outliers
   )
   # Map each distance to a family index. The constructed distances vector has
   # 10+10+10+10+8+2 = 50 elements, so create a matching mapping of length 50.
-  gene_to_fam <- rep(1:5, each = 10)
+  gene_to_fam <- rep(1:6, each = 10)
   percentile <- 90.0
   
   result <- tox_detect_outliers(distances, gene_to_fam, n_families, percentile)

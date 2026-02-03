@@ -10,7 +10,7 @@ import os
 # Add parent directory to path to import tensoromics_functions
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from tensoromics_functions import (
-    tox_normalize_by_std_dev,
+    tox_root_mean_sq_normalization,
     tox_quantile_normalization,
     tox_log2_transformation,
     tox_calculate_tissue_averages,
@@ -90,7 +90,7 @@ def test_tox_normalize_example_1():
     print_matrix("Input", mat)
     
     # Call tox function
-    result = tox_normalize_by_std_dev(mat)
+    result = tox_root_mean_sq_normalization(mat)
     print_matrix("Output", result)
     
     # Manual verification
@@ -116,7 +116,7 @@ def test_tox_normalize_example_2():
     
     print_matrix("Input", mat)
     
-    result = tox_normalize_by_std_dev(mat)
+    result = tox_root_mean_sq_normalization(mat)
     print_matrix("Output", result)
     
     assert np.all(np.isfinite(result)), "All results should be finite"
@@ -324,7 +324,7 @@ def test_error_handling():
     mat_nan = np.array([[1.0, np.nan], [3.0, 4.0]], dtype=np.float64)
     
     try:
-        tox_normalize_by_std_dev(mat_nan)
+        tox_root_mean_sq_normalization(mat_nan)
         assert False, "Should have raised ValueError for NaN input"
     except ValueError as e:
         print(f"✓ Correctly caught NaN error: {e}")
@@ -334,7 +334,7 @@ def test_error_handling():
     mat_inf = np.array([[1.0, np.inf], [3.0, 4.0]], dtype=np.float64)
     
     try:
-        tox_normalize_by_std_dev(mat_inf)
+        tox_root_mean_sq_normalization(mat_inf)
         assert False, "Should have raised ValueError for infinite input"
     except ValueError as e:
         print(f"✓ Correctly caught infinite error: {e}")

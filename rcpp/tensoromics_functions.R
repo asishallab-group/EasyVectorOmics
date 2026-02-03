@@ -271,10 +271,10 @@ tox_identify_outliers <- function(rdi, percentile = 95.0) {
 # NORMALIZATION FUNCTIONS
 # ===================================================================
 
-#> tox_normalization:normalize_by_std_dev_c: Normalize gene expression values by standard deviation
+#> tox_normalization:root_mean_sq_normalization_c: Normalize gene expression values by standard deviation
 #' Normalize gene expression values by standard deviation
 #'
-#' This function wraps the Fortran subroutine `normalize_by_std_dev`
+#' This function wraps the Fortran subroutine `root_mean_sq_normalization`
 #' to normalize each gene's expression across tissues by the standard deviation.
 #'
 #' @param input_matrix A numeric matrix with genes as rows and tissues as columns.
@@ -285,11 +285,11 @@ tox_identify_outliers <- function(rdi, percentile = 95.0) {
 #' - Restores the original row and column names after normalization.
 #'
 #' @examples
-#' normalized_matrix <- tox_normalize_by_std_dev(input_matrix)
-tox_normalize_by_std_dev <- function(input_matrix) {
+#' normalized_matrix <- tox_root_mean_sq_normalization(input_matrix)
+tox_root_mean_sq_normalization <- function(input_matrix) {
 
 
-  result <- tox_normalize_by_std_dev_rcpp(input_matrix)
+  result <- tox_root_mean_sq_normalization_rcpp(input_matrix)
   return(matrix(result$output_vector, nrow = nrow(input_matrix), ncol = ncol(input_matrix), dimnames = dimnames(input_matrix)))
 }
 

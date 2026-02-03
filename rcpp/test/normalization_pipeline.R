@@ -46,7 +46,7 @@ pipeline_vs_manual <- function() {
   cat("[DEBUG] input_matrix=", paste(input_matrix, collapse=","), "\n")
   cat("[DEBUG] colnames=", paste(colnames(input_matrix), collapse=","), "\n")
   cat("[DEBUG] group_s=", paste(group_s, collapse=","), " group_c=", paste(group_c, collapse=","), "\n")
-  buf_stddev <- tox_normalize_by_std_dev(input_matrix)
+  buf_stddev <- tox_root_mean_sq_normalization(input_matrix)
   buf_quant <- tox_quantile_normalization(buf_stddev)
   buf_avg <- tox_calculate_tissue_averages(buf_quant)
   cat("[DEBUG] buf_avg=", paste(as.vector(as.matrix(buf_avg)), collapse=","), " colnames=", paste(colnames(buf_avg), collapse=","), "\n")

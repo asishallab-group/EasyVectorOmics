@@ -4,8 +4,9 @@
 module tox_normalization
   use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
-  use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, is_err, validate_dimension_size, validate_in_range_real
+  use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, ERR_INVALID_INPUT, is_err, validate_dimension_size, validate_in_range_real
   use f42_utils, only: norm, is_close, logx
+  use tox_loess, only: loess_alloc
 contains
 
   !> Normalizes an input vector to unit length in-place
@@ -88,7 +89,7 @@ contains
     end if
 
     ! Step 1: Normalize per-gene by std dev
-    call normalize_by_std_dev(n_genes, n_tissues, input_matrix, buf_stddev, ierr)
+    call root_mean_sq_normalization(n_genes, n_tissues, input_matrix, buf_stddev, ierr)
     if (is_err(ierr)) return
 
     ! Step 2: Quantile normalization
@@ -105,9 +106,111 @@ contains
 
   end subroutine normalization_pipeline
 
+
+!> Normalizes each gene's expression vector using LOESS-stabilized standard deviation.
+  !! This procedure applies a global stabilization based on the relationship between
+  !! gene-wise mean expression and empirical standard deviation.
+  subroutine normalize_by_std_dev(n_genes, n_tissues, input_matrix, output_matrix, &
+                                       loess_x, loess_y, indices_used, yhat_global, &
+                                       span, degree, ierr)
+      use, intrinsic :: iso_fortran_env, only: real64, int32
+      implicit none
+
+      !| Number of genes (rows)
+      integer(int32), intent(in) :: n_genes
+      !| Number of tissues (columns)
+      integer(int32), intent(in) :: n_tissues
+      !| Input matrix indexed as (n_genes, n_tissues)
+      real(real64), intent(in) :: input_matrix(n_genes, n_tissues)
+      !| Output normalized matrix (same shape as input)
+      real(real64), intent(out) :: output_matrix(n_genes, n_tissues)
+
+      ! Buffers for LOESS fitting (preallocated to avoid internal allocations)
+      !| Mean values (X-axis for LOESS)
+      real(real64), intent(inout) :: loess_x(n_genes)
+      !| Empirical standard deviation values (Y-axis for LOESS)
+      real(real64), intent(inout) :: loess_y(n_genes)
+      !| Mapping back to gene indices
+      integer(int32), intent(inout) :: indices_used(n_genes)
+      !| Fitted standard deviation values (LOESS predictions)
+      real(real64), intent(out) :: yhat_global(n_genes)
+
+      !| LOESS span parameter
+      real(real64), intent(in) :: span
+      !| LOESS degree parameter
+      integer(int32), intent(in) :: degree
+      !| Error code: 0=ok, non-zero indicates an error
+      integer(int32), intent(out) :: ierr
+
+      ! Local variables
+      integer(int32) :: i_gene, i_tissue, n_valid
+      real(real64) :: mean_val, sq_sum, fitted_sd
+      real(real64), parameter :: eps = 1.0d-12
+
+      ! Initialize error code and output arrays
+      call set_ok(ierr)
+      n_valid = 0
+      yhat_global = 0.0_real64
+
+      ! ------------------------------------------------------------
+      ! Step 1: Calculate empirical statistics and compact valid data
+      ! ------------------------------------------------------------
+      do i_gene = 1, n_genes
+          ! Compute mean expression for the gene
+          mean_val = sum(input_matrix(i_gene, :)) / real(n_tissues, real64)
+
+          ! Compute population standard deviation (SD = sqrt(E[X^2] - (E[X])^2))
+          sq_sum = sum(input_matrix(i_gene, :)**2)
+          loess_y(i_gene) = sqrt(max(0.0_real64, (sq_sum / real(n_tissues, real64)) - mean_val**2))
+          loess_x(i_gene) = mean_val
+
+          ! Filter out genes with zero variance (not informative for LOESS)
+          if (loess_y(i_gene) < eps) cycle
+
+          ! Compact valid data for LOESS fitting
+          n_valid = n_valid + 1
+          loess_x(n_valid) = loess_x(i_gene)
+          loess_y(n_valid) = loess_y(i_gene)
+          indices_used(n_valid) = i_gene
+      end do
+
+      ! Check if there are enough valid points for LOESS fitting
+      if (n_valid < 5) then
+          call set_err(ierr, ERR_INVALID_INPUT)
+          return
+      end if
+
+      ! ------------------------------------------------------------
+      ! Step 2: Perform LOESS fitting (robust mode)
+      ! ------------------------------------------------------------
+      call loess_alloc(x=loess_x(1:n_valid), y=loess_y(1:n_valid), &
+                       span=span, degree=degree, yhat=yhat_global(1:n_valid), &
+                       mode=1, n_iters=3, ierr=ierr)
+
+      ! Exit if LOESS fitting fails
+      if (is_err(ierr)) return
+
+      ! ------------------------------------------------------------
+      ! Step 3: Normalize the input matrix using stabilized SD
+      ! ------------------------------------------------------------
+      ! Initialize output matrix (invalid genes remain unchanged)
+      output_matrix = input_matrix
+
+      do i_gene = 1, n_valid
+          fitted_sd = yhat_global(i_gene)
+
+          ! Safety check: use empirical SD if LOESS prediction is invalid
+          if (fitted_sd < eps) fitted_sd = loess_y(i_gene)
+
+          ! Normalize the gene's expression vector by the stabilized SD
+          output_matrix(indices_used(i_gene), :) = input_matrix(indices_used(i_gene), :) / fitted_sd
+      end do
+
+  end subroutine normalize_by_std_dev
+  
   !> Normalizes each gene's expression vector using `sqrt(mean(x^2))`
   !| across tissues (not classical standard deviation).
-  pure subroutine normalize_by_std_dev(n_genes, n_tissues, input_matrix, output_matrix, ierr)
+  pure subroutine root_mean_sq_normalization(n_genes, n_tissues, input_matrix, output_matrix, ierr)
       implicit none
 
       !| Number of genes (rows)
@@ -147,7 +250,7 @@ contains
           end do
       end do
 
-  end subroutine normalize_by_std_dev
+  end subroutine root_mean_sq_normalization
 
   !> Quantile normalization of a gene expression matrix (F42-compliant).
   !| Computes average expression per rank across tissues.
@@ -378,12 +481,13 @@ contains
       end do
 
   end subroutine calc_fchange
+
 end module tox_normalization
 
 !> R/Fortran wrapper for normalization by standard deviation.
 !| Provides an interface for R (.Fortran) and Fortran code to call the normalization routine.
-pure subroutine normalize_by_std_dev_r(n_genes, n_tissues, input_matrix, output_matrix, ierr)
-  use tox_normalization, only: normalize_by_std_dev
+pure subroutine root_mean_sq_normalization_r(n_genes, n_tissues, input_matrix, output_matrix, ierr)
+  use tox_normalization, only: root_mean_sq_normalization
   use, intrinsic :: iso_fortran_env, only: real64, int32
   implicit none
 
@@ -398,15 +502,15 @@ pure subroutine normalize_by_std_dev_r(n_genes, n_tissues, input_matrix, output_
   !| Error code
   integer(int32), intent(out) :: ierr
   
-  call normalize_by_std_dev(n_genes, n_tissues, input_matrix, output_matrix, ierr)
+  call root_mean_sq_normalization(n_genes, n_tissues, input_matrix, output_matrix, ierr)
   
-end subroutine normalize_by_std_dev_r
+end subroutine root_mean_sq_normalization_r
 
 !> C/Python wrapper for normalization by standard deviation.
 !| Provides a C/Python-compatible interface to the normalization routine.
-pure subroutine normalize_by_std_dev_c(n_genes, n_tissues, input_matrix, output_matrix, ierr) bind(C, name="normalize_by_std_dev_c")
+pure subroutine root_mean_sq_normalization_c(n_genes, n_tissues, input_matrix, output_matrix, ierr) bind(C, name="root_mean_sq_normalization_c")
   use, intrinsic :: iso_c_binding, only : c_int, c_double, c_f_pointer, c_loc
-  use tox_normalization, only: normalize_by_std_dev
+  use tox_normalization, only: root_mean_sq_normalization
   implicit none
 
   !| Number of genes (rows)
@@ -420,9 +524,9 @@ pure subroutine normalize_by_std_dev_c(n_genes, n_tissues, input_matrix, output_
   !| Error code
   integer(c_int), intent(out) :: ierr
 
-  call normalize_by_std_dev(n_genes, n_tissues, input_matrix, output_matrix, ierr)
+  call root_mean_sq_normalization(n_genes, n_tissues, input_matrix, output_matrix, ierr)
 
-end subroutine normalize_by_std_dev_c
+end subroutine root_mean_sq_normalization_c
 
 
 !> R/Fortran wrapper for quantile normalization.

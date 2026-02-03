@@ -1028,8 +1028,8 @@ def relative_axes_expression_from_expression_vector(expression_vector):
     return contrib
 
 
-#> tox_normalization:normalize_by_std_dev_c: Normalize gene expression values by standard deviation
-def tox_normalize_by_std_dev(input_matrix):
+#> tox_normalization:root_mean_sq_normalization_c: Normalize gene expression values by standard deviation
+def tox_root_mean_sq_normalization(input_matrix):
     """
     Normalize gene expression values by standard deviation
 
@@ -1054,7 +1054,7 @@ def tox_normalize_by_std_dev(input_matrix):
     ierr = ctypes.c_int(0)
 
     # Setup C wrapper
-    normalize_c = lib.normalize_by_std_dev_c
+    normalize_c = lib.root_mean_sq_normalization_c
     normalize_c.argtypes = [
         ctypes.c_int,  # n_genes
         ctypes.c_int,  # n_tissues

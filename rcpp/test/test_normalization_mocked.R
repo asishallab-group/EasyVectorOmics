@@ -20,7 +20,7 @@ mock_matrix <- matrix(runif(5 * 12, min=10, max=100), nrow=5, ncol=12)
 dimnames(mock_matrix) <- list(gene_ids, col_names)
 
 # --- Run normalization pipeline ---
-normalized_matrix_std <- tox_normalize_by_std_dev(mock_matrix)
+normalized_matrix_std <- tox_root_mean_sq_normalization(mock_matrix)
 normalized_matrix_qtl <- tox_quantile_normalization(normalized_matrix_std)
 normalized_matrix_log <- tox_log2_transformation(normalized_matrix_qtl)
 averaged_df <- tox_calculate_tissue_averages(normalized_matrix_log)

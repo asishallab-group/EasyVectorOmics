@@ -8,7 +8,7 @@ import os
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
-from tensoromics_functions import tox_normalization_pipeline, tox_normalize_by_std_dev, tox_quantile_normalization, tox_calculate_tissue_averages, tox_log2_transformation
+from tensoromics_functions import tox_normalization_pipeline, tox_root_mean_sq_normalization, tox_quantile_normalization, tox_calculate_tissue_averages, tox_log2_transformation
 
 def assert_equal(x, y, tol=1e-12, msg=None):
     x = np.asarray(x)
@@ -56,7 +56,7 @@ def pipeline_vs_manual():
     print(f"[DEBUG] input_matrix=\n{input_matrix}")
     print(f"[DEBUG] col_names={col_names}")
     print(f"[DEBUG] group_s={group_s} group_c={group_c}")
-    buf_stddev = tox_normalize_by_std_dev(input_matrix)
+    buf_stddev = tox_root_mean_sq_normalization(input_matrix)
     buf_quant = tox_quantile_normalization(buf_stddev)
     buf_avg = tox_calculate_tissue_averages(buf_quant, group_s, group_c)
     print(f"[DEBUG] buf_avg=\n{buf_avg}")

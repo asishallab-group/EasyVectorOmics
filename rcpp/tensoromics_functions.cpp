@@ -8,7 +8,7 @@ using namespace Rcpp;
 
 extern "C" {
 
-    void normalize_by_std_dev_c(int n_genes, int n_tissues,
+    void root_mean_sq_normalization_c(int n_genes, int n_tissues,
                                 double *input_matrix, double *output_matrix, int *ierr);
     void quantile_normalization_c(int n_genes, int n_tissues, double *input_matrix, double *output_matrix,
                                 double *temp_col, double *rank_means,
@@ -200,13 +200,13 @@ List tox_calculate_tissue_versatility_rcpp(NumericMatrix expression_vectors,
  * Calculate normalization by standard deviation
  */
 // [[Rcpp::export]]
-List tox_normalize_by_std_dev_rcpp(NumericMatrix input) {
+List tox_root_mean_sq_normalization_rcpp(NumericMatrix input) {
     int n_genes = input.nrow();
     int n_tissues = input.ncol();
     NumericMatrix output(n_genes, n_tissues);
     int ierr = 0;
 
-    normalize_by_std_dev_c(n_genes, n_tissues, input.begin(), output.begin(), &ierr);
+    root_mean_sq_normalization_c(n_genes, n_tissues, input.begin(), output.begin(), &ierr);
 
     return List::create(
         Named("output_vector") = output,
