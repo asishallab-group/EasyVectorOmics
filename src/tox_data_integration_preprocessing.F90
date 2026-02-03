@@ -1,8 +1,8 @@
 #include "macros.h"
 
 !> # Jensen-Shannon-Divergence (JSD) Compatibility Test (gJCT) Preprocessing
-!!
-!! This module implements the pipeline to obtain neighborhood residuals from expression vectors, to be used for JCT based data integration.
+!|
+!| This module implements the pipeline to obtain neighborhood residuals from expression vectors, to be used for JCT based data integration.
 submodule (tox_data_integration) tox_data_integration_preprocessing
     use safeguard
     use, intrinsic :: iso_fortran_env, only: real64, int32
@@ -256,7 +256,6 @@ contains
             !! Optional desired neighborhood size, default=1000
         integer(int32) :: n_neighbors
             !! Calculated neighborhood size
-
 
         integer(int32) :: max_neighbors, i_gene, min_neighbors
 

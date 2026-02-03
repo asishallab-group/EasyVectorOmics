@@ -1,11 +1,10 @@
 #include "macros.h"
 
 !> # Jensen-Shannon-Divergence (JSD) Compatibility Test (gJCT) Preprocessing
-!!
-!! This module implements the pipeline to obtain neighborhood residuals from expression vectors, to be used for JCT based data integration.
+!|
+!| This module implements the pipeline to obtain neighborhood residuals from expression vectors, to be used for JCT based data integration.
 submodule (tox_data_integration) tox_data_integration_stats
-    use iso_fortran_env, only: int32, real64
-    use tox_data_integration_jsd, only: jct_compute_jsd_pipeline_helper
+    use, intrinsic :: iso_fortran_env, only: int32, real64
     use tox_errors, only: validate_dimension_size, validate_in_range_int, validate_in_range_real, set_ok, set_err, is_err, ERR_ALLOC_FAIL
     use f42_utils, only: init_random, shuffle_vector
 contains
@@ -25,11 +24,11 @@ contains
         real(real64), dimension(n_reps_S2, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S2
             !! Computed neighborhood residuals for study 2 ([[tox_data_integration(module):construct_neighborhoods(interface)]]), NaN is explicitly allowed for missing values
         real(real64), intent(in) :: global_jsd_observed
-            !! Observed global JSD value for both studies (from [[tox_data_integration_jsd(module):compute_weighted_global_divergence(subroutine)]])
+            !! Observed global JSD value for both studies (from [[tox_data_integration(module):compute_weighted_global_divergence(interface)]])
         integer(int32), intent(in) :: n_bins
-            !! Number of equally sized histogram bins used for the studies in [[tox_data_integration_jsd(module):build_residual_histograms(subroutine)]]
+            !! Number of equally sized histogram bins used for the studies in [[tox_data_integration(module):build_residual_histograms(interface)]]
         real(real64), intent(in) :: shared_residual_range
-            !! Computed residual range for both studies, from [[tox_data_integration_jsd(module):determine_shared_residual_range(subroutine)]]
+            !! Computed residual range for both studies, from [[tox_data_integration(module):determine_shared_residual_range(interface)]]
         integer(int32), intent(in) :: n_permutations
             !! Number of permutations to perform
         real(real64), dimension(n_permutations), intent(out) :: jsd_null
@@ -105,11 +104,11 @@ contains
         real(real64), dimension(n_reps_S2, n_neighbors, n_points), intent(inout) :: neighborhood_residuals_S2_copy
             !! Copy (if wanted) of the computed neighborhood residuals for study 2, will be shuffled in-place
         real(real64), intent(in) :: global_jsd_observed
-            !! Observed global JSD value for both studies (from [[tox_data_integration_jsd(module):compute_weighted_global_divergence(subroutine)]])
+            !! Observed global JSD value for both studies (from [[tox_data_integration(module):compute_weighted_global_divergence(interface)]])
         integer(int32), intent(in) :: n_bins
-            !! Number of equally sized histogram bins used for the studies in [[tox_data_integration_jsd(module):build_residual_histograms(subroutine)]]
+            !! Number of equally sized histogram bins used for the studies in [[tox_data_integration(module):build_residual_histograms(interface)]]
         real(real64), intent(in) :: shared_residual_range
-            !! Computed residual range for both studies, from [[tox_data_integration_jsd(module):determine_shared_residual_range(subroutine)]]
+            !! Computed residual range for both studies, from [[tox_data_integration(module):determine_shared_residual_range(interface)]]
         integer(int32), intent(in) :: n_permutations
             !! Number of permutations to perform
         real(real64), dimension(n_permutations), intent(out) :: jsd_null
@@ -119,19 +118,19 @@ contains
         real(real64), dimension(n_reps_S1 + n_reps_S2, n_neighbors), intent(out) :: tmp_pool
             !! Working array for shuffling the concatenated residuals from both studies per reference point
         real(real64), dimension(n_points, n_bins), intent(out) :: tmp_pmf_S1
-            !! Absolute counts of a residual per bin obtained from [[tox_data_integration_jsd(module):build_residual_histograms(subroutine)]]
+            !! Absolute counts of a residual per bin obtained from [[tox_data_integration(module):build_residual_histograms(interface)]]
         real(real64), dimension(n_points, n_bins), intent(out) :: tmp_pmf_S2
-            !! Absolute counts of a residual per bin obtained from [[tox_data_integration_jsd(module):build_residual_histograms(subroutine)]]
+            !! Absolute counts of a residual per bin obtained from [[tox_data_integration(module):build_residual_histograms(interface)]]
         integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts
-            !! Working array for [[tox_data_integration_jsd(module):build_residual_histograms(subroutine)]]
+            !! Working array for [[tox_data_integration(module):build_residual_histograms(interface)]]
         integer(int32), dimension(n_points), intent(out) :: tmp_included_n_reps_S1
-            !! Working array for [[tox_data_integration_jsd(module):build_residual_histograms(subroutine)]]
+            !! Working array for [[tox_data_integration(module):build_residual_histograms(interface)]]
         integer(int32), dimension(n_points), intent(out) :: tmp_included_n_reps_S2
-            !! Working array for [[tox_data_integration_jsd(module):build_residual_histograms(subroutine)]]
+            !! Working array for [[tox_data_integration(module):build_residual_histograms(interface)]]
         real(real64), dimension(n_points), intent(out) :: tmp_js_divergences
-            !! Working array for [[tox_data_integration_jsd(module):compute_divergence_per_reference_point(subroutine)]]
+            !! Working array for [[tox_data_integration(module):compute_divergence_per_reference_point(interface)]]
         real(real64), dimension(n_points), intent(out) :: tmp_weights
-            !! Working array for [[tox_data_integration_jsd(module):compute_weighted_global_divergence(subroutine)]]
+            !! Working array for [[tox_data_integration(module):compute_weighted_global_divergence(interface)]]
         integer(int32), intent(out) :: ierr
             !! Error code
         integer(int32), intent(in), optional :: random_seed
@@ -175,11 +174,11 @@ contains
         real(real64), dimension(n_reps_S2, n_neighbors, n_points), intent(inout), target :: neighborhood_residuals_S2_copy
             !! Copy (if wanted) of the computed neighborhood residuals for study 2, will be shuffled in-place
         real(real64), intent(in) :: global_jsd_observed
-            !! Observed global JSD value for both studies (from [[tox_data_integration_jsd(module):compute_weighted_global_divergence(subroutine)]])
+            !! Observed global JSD value for both studies (from [[tox_data_integration(module):compute_weighted_global_divergence(interface)]])
         integer(int32), intent(in) :: n_bins
-            !! Number of equally sized histogram bins used for the studies in [[tox_data_integration_jsd(module):build_residual_histograms(subroutine)]]
+            !! Number of equally sized histogram bins used for the studies in [[tox_data_integration(module):build_residual_histograms(interface)]]
         real(real64), intent(in) :: shared_residual_range
-            !! Computed residual range for both studies, from [[tox_data_integration_jsd(module):determine_shared_residual_range(subroutine)]]
+            !! Computed residual range for both studies, from [[tox_data_integration(module):determine_shared_residual_range(interface)]]
         integer(int32), intent(in) :: n_permutations
             !! Number of permutations to perform
         real(real64), dimension(n_permutations), intent(out) :: jsd_null
@@ -189,19 +188,19 @@ contains
         real(real64), dimension(n_reps_S1 + n_reps_S2, n_neighbors), intent(out), target :: tmp_pool
             !! Working array for shuffling the concatenated residuals from both studies per reference point
         real(real64), dimension(n_points, n_bins), intent(out) :: tmp_pmf_S1
-            !! Absolute counts of a residual per bin obtained from [[tox_data_integration_jsd(module):build_residual_histograms(subroutine)]]
+            !! Absolute counts of a residual per bin obtained from [[tox_data_integration(module):build_residual_histograms(interface)]]
         real(real64), dimension(n_points, n_bins), intent(out) :: tmp_pmf_S2
-            !! Absolute counts of a residual per bin obtained from [[tox_data_integration_jsd(module):build_residual_histograms(subroutine)]]
+            !! Absolute counts of a residual per bin obtained from [[tox_data_integration(module):build_residual_histograms(interface)]]
         integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts
-            !! Working array for [[tox_data_integration_jsd(module):build_residual_histograms(subroutine)]]
+            !! Working array for [[tox_data_integration(module):build_residual_histograms(interface)]]
         integer(int32), dimension(n_points), intent(out) :: tmp_included_n_reps_S1
-            !! Working array for [[tox_data_integration_jsd(module):build_residual_histograms(subroutine)]]
+            !! Working array for [[tox_data_integration(module):build_residual_histograms(interface)]]
         integer(int32), dimension(n_points), intent(out) :: tmp_included_n_reps_S2
-            !! Working array for [[tox_data_integration_jsd(module):build_residual_histograms(subroutine)]]
+            !! Working array for [[tox_data_integration(module):build_residual_histograms(interface)]]
         real(real64), dimension(n_points), intent(out) :: tmp_js_divergences
-            !! Working array for [[tox_data_integration_jsd(module):compute_divergence_per_reference_point(subroutine)]]
+            !! Working array for [[tox_data_integration(module):compute_divergence_per_reference_point(interface)]]
         real(real64), dimension(n_points), intent(out) :: tmp_weights
-            !! Working array for [[tox_data_integration_jsd(module):compute_weighted_global_divergence(subroutine)]]
+            !! Working array for [[tox_data_integration(module):compute_weighted_global_divergence(interface)]]
         integer(int32), intent(in), optional :: random_seed
             !! Seed to use for shuffling
         logical, dimension(n_neighbors, n_points), intent(in), optional :: neighbor_mask_S1
@@ -300,11 +299,11 @@ subroutine gjct_permutation_test_c( &
     real(c_double), dimension(n_reps_S2, n_neighbors, n_points), intent(in), target :: neighborhood_residuals_S2
         !! Computed neighborhood residuals for study 2 ([[tox_data_integration(module):construct_neighborhoods(interface)]]), NaN is explicitly allowed for missing values
     real(c_double), intent(in), target :: global_jsd_observed
-        !! Observed global JSD value for both studies (from [[tox_data_integration_jsd(module):compute_weighted_global_divergence(subroutine)]])
+        !! Observed global JSD value for both studies (from [[tox_data_integration(module):compute_weighted_global_divergence(interface)]])
     integer(c_int), intent(in), target :: n_bins
-        !! Number of equally sized histogram bins used for the studies in [[tox_data_integration_jsd(module):build_residual_histograms(subroutine)]]
+        !! Number of equally sized histogram bins used for the studies in [[tox_data_integration(module):build_residual_histograms(interface)]]
     real(c_double), intent(in), target :: shared_residual_range
-        !! Computed residual range for both studies, from [[tox_data_integration_jsd(module):determine_shared_residual_range(subroutine)]]
+        !! Computed residual range for both studies, from [[tox_data_integration(module):determine_shared_residual_range(interface)]]
     integer(c_int), intent(in), target :: n_permutations
         !! Number of permutations to perform
     real(c_double), dimension(n_permutations), intent(out), target :: jsd_null
