@@ -236,11 +236,9 @@ contains
 
         mode = BASELINE_RAW
 
-        call compute_velocity_acceleration_contributions(trajectories, 2, 1, 4, mode, &
-             velocity, acceleration, &
-             factor_velocity, dependent_velocity, raw_velocity_contrib, &
-             factor_acceleration, dependent_acceleration, raw_acceleration_contrib, &
-             C_vel, series_vel, C_acc, series_acc, ierr)
+           call compute_velocity_acceleration_contributions(trajectories, 2, 1, 4, mode, &
+               factor_velocity, dependent_velocity, raw_velocity_contrib, &
+               C_vel, series_vel, C_acc, series_acc, ierr)
         call assert_equal_int(ierr, ERR_OK, "compute_velocity_acceleration_contributions: expected OK status")
 
         call compute_velocity_trajectories(trajectories, velocity, 2, 1, 4, ierr)
@@ -252,8 +250,8 @@ contains
         factor_velocity(:,1)    = velocity(1,1,2:4)
         dependent_velocity = velocity(2,1,2:4)
 
-        call compute_contributions(factor_velocity, dependent_velocity, &
-            int(size(factor_velocity), kind=int32), mode, raw_velocity_contrib, expected_total_vel, ierr)
+        call compute_contributions(factor_velocity(:,1), dependent_velocity, &
+            int(size(dependent_velocity), kind=int32), mode, raw_velocity_contrib, expected_total_vel, ierr)
         call assert_equal_int(ierr, ERR_OK, "compute_velocity_acceleration_contributions: expected velocity contribution status")
 
         expected_series_vel = 0.0_real64
@@ -284,14 +282,9 @@ contains
 
     subroutine test_compute_velocity_acceleration_contribs_alloc()
         real(real64) :: trajectories(2,1,4)
-        real(real64) :: velocity_ws(2,1,4)
-        real(real64) :: acceleration_ws(2,1,4)
         real(real64) :: factor_velocity(3,2)
         real(real64) :: dependent_velocity(3)
         real(real64) :: velocity_contrib(3)
-        real(real64) :: factor_acceleration(2,2)
-        real(real64) :: dependent_acceleration(2)
-        real(real64) :: acceleration_contrib(2)
         real(real64) :: C_vel_ref(1,2,2)
         real(real64) :: C_acc_ref(1,2,2)
         real(real64) :: series_vel_ref(1,2,2,4)
@@ -311,9 +304,7 @@ contains
         mode = BASELINE_RAW
 
         call compute_velocity_acceleration_contributions(trajectories, 2, 1, 4, mode, &
-            velocity_ws, acceleration_ws, &
             factor_velocity, dependent_velocity, velocity_contrib, &
-            factor_acceleration, dependent_acceleration, acceleration_contrib, &
             C_vel_ref, series_vel_ref, C_acc_ref, series_acc_ref, ierr)
         call assert_equal_int(ierr, ERR_OK, "compute_velocity_acceleration_contributions_alloc: reference call")
 
@@ -460,7 +451,7 @@ contains
         call assert_equal_array_real(local_contributions, expected_local, n_timepoints * n_permutations, TOL, "test_perform_permutation_test: Case 1 local contributions")
         call assert_equal_array_real(total_contributions, expected_total, n_permutations, TOL, "test_perform_permutation_test: Case 1 total contribution")
 
-        ! Case 2: test randomness reproducibility: with different seeds -> not reproducible 
+        ! Case 2: test randomness reproducibility: without seed -> not reproducible 
         call random_number(trajectories)
         call perform_permutation_test(trajectories, n_factors, n_samples, n_timepoints, &
             factor_idx, dependent_idx, sample_idx, mode, n_permutations, &
