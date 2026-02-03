@@ -3523,7 +3523,7 @@ def tox_compute_p_values(local_contributions_observed,
     }
 
 
-#> tox_data_integration_jsd:determine_shared_residual_range_expert_c: Compute shared residual range R from two residual matrices.
+#> tox_data_integration:determine_shared_residual_range_expert_c: Compute shared residual range R from two residual matrices.
 def tox_determine_shared_residual_range_expert(
     residual_pool,
     residual_pool_perm,
@@ -3576,7 +3576,7 @@ def tox_determine_shared_residual_range_expert(
     return shared_R.value
 
 
-#> tox_data_integration_jsd:determine_shared_residual_range_c: Compute shared residual range R from two residual matrices.
+#> tox_data_integration:determine_shared_residual_range_c: Compute shared residual range R from two residual matrices.
 def tox_determine_shared_residual_range(
     neighborhood_residuals_S1,
     neighborhood_residuals_S2,
@@ -3636,7 +3636,7 @@ def tox_determine_shared_residual_range(
     return shared_R.value
 
 
-#> tox_data_integration_jsd:build_residual_histograms_c: Build histogram counts and PMFs for one study
+#> tox_data_integration:build_residual_histograms_c: Build histogram counts and PMFs for one study
 def tox_build_residual_histograms(
     neighborhood_residuals,
     shared_residual_range,
@@ -3710,7 +3710,7 @@ def tox_build_residual_histograms(
     }
 
 
-#> tox_data_integration_jsd:compute_divergence_per_reference_point_c: Build histogram counts and PMFs for one study
+#> tox_data_integration:compute_divergence_per_reference_point_c: Build histogram counts and PMFs for one study
 def tox_compute_divergence_per_reference_point(pmf_S1, pmf_S2):
     """
     Compute per-neighbor Jensen–Shannon divergences.
@@ -3757,7 +3757,7 @@ def tox_compute_divergence_per_reference_point(pmf_S1, pmf_S2):
     return jsd
 
 
-#> tox_data_integration_jsd:compute_weighted_global_divergence_c: Compute weighted global Jensen–Shannon divergence
+#> tox_data_integration:compute_weighted_global_divergence_c: Compute weighted global Jensen–Shannon divergence
 def tox_compute_weighted_global_divergence(
     js_divergences,
     included_S1,

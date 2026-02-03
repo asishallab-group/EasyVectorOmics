@@ -944,7 +944,7 @@ tox_mean_vector <- function(expression_vectors, gene_indices) {
   return(result)
 }
 
-#> tox_data_integration_jsd:determine_shared_residual_range_expert_c: Compute shared residual range R from a precomputed residual pool
+#> tox_data_integration:determine_shared_residual_range_expert_c: Compute shared residual range R from a precomputed residual pool
 #' Compute the shared residual range R from a precomputed residual pool
 #'
 #' This function wraps the Fortran subroutine `determine_shared_residual_range_expert_c`
@@ -981,7 +981,7 @@ tox_determine_shared_residual_range_expert <- function(
   result$shared_R
 }
 
-#> tox_data_integration_jsd:determine_shared_residual_range_c: Compute shared residual range R from two residual matrices
+#> tox_data_integration:determine_shared_residual_range_c: Compute shared residual range R from two residual matrices
 #' Compute the shared residual range R from two residual matrices
 #'
 #' This function wraps the Fortran subroutine
@@ -1012,7 +1012,7 @@ tox_determine_shared_residual_range <- function(
   result$shared_R
 }
 
-#> tox_data_integration_jsd:build_residual_histograms_c: Build residual histograms and PMFs
+#> tox_data_integration:build_residual_histograms_c: Build residual histograms and PMFs
 #' Build residual histograms and probability mass functions (PMFs)
 #'
 #' This function wraps the Fortran subroutine
@@ -1049,7 +1049,7 @@ tox_build_residual_histograms <- function(
   result
 }
 
-#> tox_data_integration_jsd:compute_divergence_per_reference_point_c: Compute per-neighbor Jensen–Shannon divergences
+#> tox_data_integration:compute_divergence_per_reference_point_c: Compute per-neighbor Jensen–Shannon divergences
 #' Compute per-neighbor Jensen–Shannon divergences
 #'
 #' This function wraps the Fortran subroutine
@@ -1078,7 +1078,7 @@ tox_compute_divergence_per_reference_point <- function(
   result$js_divergences
 }
 
-#> tox_data_integration_jsd:compute_weighted_global_divergence_c: Compute weighted global Jensen–Shannon divergence
+#> tox_data_integration:compute_weighted_global_divergence_c: Compute weighted global Jensen–Shannon divergence
 #' Compute weighted global Jensen–Shannon divergence
 #'
 #' This function wraps the Fortran subroutine
