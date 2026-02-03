@@ -4,7 +4,6 @@ module mod_test_data_integration
     use, intrinsic :: iso_fortran_env, only: real64, int32
     use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan
     use tox_data_integration
-    use tox_data_integration_per_family
     use tox_errors
     use f42_utils, only: above, below, init_random, shuffle_vector
     implicit none
