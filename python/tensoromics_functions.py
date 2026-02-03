@@ -3743,21 +3743,11 @@ def tox_compute_velocity_acceleration_contributions_expert(trajectories, mode):
     C_acceleration_f = np.empty((n_samples, n_factors, n_factors), dtype=np.float64, order="F")
     acceleration_series_f = np.empty((n_samples, n_factors, n_factors, n_timepoints), dtype=np.float64, order="F")
 
-    # Workspace arrays with correct shapes
-    velocity_ws = np.empty((n_factors, n_samples, n_timepoints), dtype=np.float64, order="F")
-    acceleration_ws = np.empty((n_factors, n_samples, n_timepoints), dtype=np.float64, order="F")
-
-    # Velocity workspace (n_timepoints - 1 elements)
+    # Workspace arrays with correct shapes (reused for velocity and acceleration)
     vel_len = max(1, n_timepoints - 1)
-    factor_velocity_ws = np.zeros((vel_len, n_factors), dtype=np.float64, order="F")
-    dependent_velocity_ws = np.zeros(vel_len, dtype=np.float64, order="F")
-    velocity_contrib_ws = np.zeros(vel_len, dtype=np.float64, order="F")
-
-    # Acceleration workspace (n_timepoints - 2 elements)
-    acc_len = max(1, n_timepoints - 2)
-    factor_acceleration_ws = np.zeros((acc_len, n_factors), dtype=np.float64, order="F")
-    dependent_acceleration_ws = np.zeros(acc_len, dtype=np.float64, order="F")
-    acceleration_contrib_ws = np.zeros(acc_len, dtype=np.float64, order="F")
+    factor_workspace = np.zeros((vel_len, n_factors), dtype=np.float64, order="F")
+    dependent_workspace = np.zeros(vel_len, dtype=np.float64, order="F")
+    contributions_workspace = np.zeros(vel_len, dtype=np.float64, order="F")
 
     ierr = ctypes.c_int(0)
 
@@ -3773,14 +3763,9 @@ def tox_compute_velocity_acceleration_contributions_expert(trajectories, mode):
         ctypes.POINTER(ctypes.c_int),                                    # n_samples
         ctypes.POINTER(ctypes.c_int),                                    # n_timepoints
         ctypes.c_char_p,                                                 # mode
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # velocity
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # acceleration
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # factor_velocity
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # dependent_velocity
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # velocity_contrib
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # factor_acceleration
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # dependent_acceleration
-        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # acceleration_contrib
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # factor_workspace
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # dependent_workspace
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # contributions_workspace
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # C_velocity
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # velocity_series
         np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # C_acceleration
@@ -3796,14 +3781,9 @@ def tox_compute_velocity_acceleration_contributions_expert(trajectories, mode):
         ctypes.byref(n_samples_c),
         ctypes.byref(n_timepoints_c),
         ctypes.c_char_p(mode.encode("utf-8")),
-        velocity_ws,
-        acceleration_ws,
-        factor_velocity_ws,
-        dependent_velocity_ws,
-        velocity_contrib_ws,
-        factor_acceleration_ws,
-        dependent_acceleration_ws,
-        acceleration_contrib_ws,
+        factor_workspace,
+        dependent_workspace,
+        contributions_workspace,
         C_velocity_f,
         velocity_series_f,
         C_acceleration_f,
