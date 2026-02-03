@@ -154,7 +154,7 @@ contains
         real(real64), dimension(n_reps, n_neighbors, n_points), intent(in) :: neighborhood_residuals
             !! Computed neighborhood residuals for a study ([[tox_data_integration(module):construct_neighborhoods(interface)]]), NaN is explicitly allowed for missing values
         real(real64), intent(in) :: shared_residual_range
-            !! Computed residual range (R) from [[tox_data_integration(module):determine_shared_residual_range_alloc(subroutine)]]
+            !! Computed residual range (R) from [[tox_data_integration(module):determine_shared_residual_range_alloc(interface)]]
         integer(int32), intent(in) :: n_bins
             !! Number of equally sized histogram bins in range [-R,R]
         integer(int32), dimension(n_points, n_bins), intent(out) :: counts
@@ -192,7 +192,7 @@ contains
         real(real64), dimension(n_reps, n_neighbors, n_points), intent(in) :: neighborhood_residuals
             !! Computed neighborhood residuals for a study ([[tox_data_integration(module):construct_neighborhoods(interface)]]), NaN is explicitly allowed for missing values
         real(real64), intent(in) :: shared_residual_range
-            !! Computed residual range (R) from [[tox_data_integration(module):determine_shared_residual_range_alloc(subroutine)]]
+            !! Computed residual range (R) from [[tox_data_integration(module):determine_shared_residual_range_alloc(interface)]]
         integer(int32), intent(in) :: n_bins
             !! Number of equally sized histogram bins in range [-R,R]
         integer(int32), dimension(n_points, n_bins), intent(out) :: counts
@@ -256,16 +256,16 @@ contains
         end do
     end subroutine build_residual_histograms_helper
 
-    !> Having the probabilities `pmf` from [[tox_data_integration(module):build_residual_histograms(subroutine)]], this subroutine computes the Jensen-Shannon divergence per reference point/neighbor
+    !> Having the probabilities `pmf` from [[tox_data_integration(module):build_residual_histograms(interface)]], this subroutine computes the Jensen-Shannon divergence per reference point/neighbor
     pure module subroutine compute_divergence_per_reference_point(pmf_S1, pmf_S2, n_points, n_bins, js_divergences, ierr)
         integer(int32), intent(in) :: n_points
             !! Number of reference points (k)
         integer(int32), intent(in) :: n_bins
             !! Number of equally sized histogram bins in range [-R,R]
         real(real64), dimension(n_points, n_bins), intent(in) :: pmf_S1
-            !! Computed normalized hostogram counts from [[tox_data_integration(module):build_residual_histograms(subroutine)]] for study 1
+            !! Computed normalized hostogram counts from [[tox_data_integration(module):build_residual_histograms(interface)]] for study 1
         real(real64), dimension(n_points, n_bins), intent(in) :: pmf_S2
-            !! Computed normalized hostogram counts from [[tox_data_integration(module):build_residual_histograms(subroutine)]] for study 2
+            !! Computed normalized hostogram counts from [[tox_data_integration(module):build_residual_histograms(interface)]] for study 2
         real(real64), dimension(n_points), intent(out) :: js_divergences
             !! Jensen-Shannon divergence per reference point
         integer(int32), intent(out) :: ierr
@@ -283,16 +283,16 @@ contains
         call compute_divergence_per_reference_point_helper(pmf_S1, pmf_S2, n_points, n_bins, js_divergences)
     end subroutine compute_divergence_per_reference_point
 
-    !> (no input validation) Having the probabilities `pmf` from [[tox_data_integration(module):build_residual_histograms(subroutine)]], this subroutine computes the Jensen-Shannon divergence per reference point/neighbor
+    !> (no input validation) Having the probabilities `pmf` from [[tox_data_integration(module):build_residual_histograms(interface)]], this subroutine computes the Jensen-Shannon divergence per reference point/neighbor
     pure module subroutine compute_divergence_per_reference_point_helper(pmf_S1, pmf_S2, n_points, n_bins, js_divergences)
         integer(int32), intent(in) :: n_points
             !! Number of reference points (k)
         integer(int32), intent(in) :: n_bins
             !! Number of equally sized histogram bins in range [-R,R]
         real(real64), dimension(n_points, n_bins), intent(in) :: pmf_S1
-            !! Computed normalized hostogram counts from [[tox_data_integration(module):build_residual_histograms(subroutine)]] for study 1
+            !! Computed normalized hostogram counts from [[tox_data_integration(module):build_residual_histograms(interface)]] for study 1
         real(real64), dimension(n_points, n_bins), intent(in) :: pmf_S2
-            !! Computed normalized hostogram counts from [[tox_data_integration(module):build_residual_histograms(subroutine)]] for study 2
+            !! Computed normalized hostogram counts from [[tox_data_integration(module):build_residual_histograms(interface)]] for study 2
         real(real64), dimension(n_points), intent(out) :: js_divergences
             !! Jensen-Shannon divergence per reference point
 
@@ -330,16 +330,16 @@ contains
         end do
     end subroutine compute_divergence_per_reference_point_helper
 
-    !> Computes the global weighted Jensen-Shannon divergence from the per-neighbor divergences calculated by [[tox_data_integration(module):compute_divergence_per_reference_point(subroutine)]]
+    !> Computes the global weighted Jensen-Shannon divergence from the per-neighbor divergences calculated by [[tox_data_integration(module):compute_divergence_per_reference_point(interface)]]
     pure module subroutine compute_weighted_global_divergence(js_divergences, n_points, included_n_reps_S1, included_n_reps_S2, global_js_divergence, weights, ierr)
         integer(int32), intent(in) :: n_points
             !! Number of reference points (k)
         real(real64), dimension(n_points), intent(in) :: js_divergences
             !! Jensen-Shannon divergence per reference point, computed for studies S1 and S2
         integer(int32), dimension(n_points), intent(in) :: included_n_reps_S1
-            !! Count of non-NaN residuals (included ones) in study 1 (obtained from [[tox_data_integration(module):build_residual_histograms(subroutine)]])
+            !! Count of non-NaN residuals (included ones) in study 1 (obtained from [[tox_data_integration(module):build_residual_histograms(interface)]])
         integer(int32), dimension(n_points), intent(in) :: included_n_reps_S2
-            !! Count of non-NaN residuals (included ones) in study 2 (obtained from [[tox_data_integration(module):build_residual_histograms(subroutine)]])
+            !! Count of non-NaN residuals (included ones) in study 2 (obtained from [[tox_data_integration(module):build_residual_histograms(interface)]])
         real(real64), intent(out) :: global_js_divergence
             !! Weighted global Jensen-Shannon divergence
         real(real64), dimension(n_points), intent(out) :: weights
@@ -359,16 +359,16 @@ contains
         call compute_weighted_global_divergence_helper(js_divergences, n_points, included_n_reps_S1, included_n_reps_S2, global_js_divergence, weights)
     end subroutine compute_weighted_global_divergence
 
-    !> (no input validation) Computes the global weighted Jensen-Shannon divergence from the per-neighbor divergences calculated by [[tox_data_integration(module):compute_divergence_per_reference_point(subroutine)]]
+    !> (no input validation) Computes the global weighted Jensen-Shannon divergence from the per-neighbor divergences calculated by [[tox_data_integration(module):compute_divergence_per_reference_point(interface)]]
     pure module subroutine compute_weighted_global_divergence_helper(js_divergences, n_points, included_n_reps_S1, included_n_reps_S2, global_js_divergence, weights)
         integer(int32), intent(in) :: n_points
             !! Number of reference points (k)
         real(real64), dimension(n_points), intent(in) :: js_divergences
             !! Jensen-Shannon divergence per reference point, computed for studies S1 and S2
         integer(int32), dimension(n_points), intent(in) :: included_n_reps_S1
-            !! Count of non-NaN residuals (included ones) in study 1 (obtained from [[tox_data_integration(module):build_residual_histograms(subroutine)]])
+            !! Count of non-NaN residuals (included ones) in study 1 (obtained from [[tox_data_integration(module):build_residual_histograms(interface)]])
         integer(int32), dimension(n_points), intent(in) :: included_n_reps_S2
-            !! Count of non-NaN residuals (included ones) in study 2 (obtained from [[tox_data_integration(module):build_residual_histograms(subroutine)]])
+            !! Count of non-NaN residuals (included ones) in study 2 (obtained from [[tox_data_integration(module):build_residual_histograms(interface)]])
         real(real64), intent(out) :: global_js_divergence
             !! Weighted global Jensen-Shannon divergence
         real(real64), dimension(n_points), intent(out) :: weights
@@ -410,25 +410,25 @@ contains
         real(real64), dimension(n_reps_S2, n_neighbors, n_points), intent(in) :: neighborhood_residuals_S2
             !! Computed neighborhood residuals for study 2 ([[tox_data_integration(module):construct_neighborhoods(interface)]]), NaN is explicitly allowed for missing values
         integer(int32), intent(in) :: n_bins
-            !! Number of equally sized histogram bins used for the studies in [[tox_data_integration(module):build_residual_histograms(subroutine)]]
+            !! Number of equally sized histogram bins used for the studies in [[tox_data_integration(module):build_residual_histograms(interface)]]
         real(real64), intent(in) :: shared_residual_range
-            !! Computed residual range for both studies, from [[tox_data_integration(module):determine_shared_residual_range(subroutine)]]
+            !! Computed residual range for both studies, from [[tox_data_integration(module):determine_shared_residual_range(interface)]]
         real(real64), dimension(n_points), intent(out) :: js_divergences
             !! Jensen-Shannon divergence per reference point, computed for studies S1 and S2
         integer(int32), dimension(n_points), intent(out) :: included_n_reps_S1
-            !! Count of non-NaN residuals (included ones) in study 1 (obtained from [[tox_data_integration(module):build_residual_histograms(subroutine)]])
+            !! Count of non-NaN residuals (included ones) in study 1 (obtained from [[tox_data_integration(module):build_residual_histograms(interface)]])
         integer(int32), dimension(n_points), intent(out) :: included_n_reps_S2
-            !! Count of non-NaN residuals (included ones) in study 2 (obtained from [[tox_data_integration(module):build_residual_histograms(subroutine)]])
+            !! Count of non-NaN residuals (included ones) in study 2 (obtained from [[tox_data_integration(module):build_residual_histograms(interface)]])
         real(real64), intent(out) :: global_js_divergence
             !! Weighted global Jensen-Shannon divergence
         real(real64), dimension(n_points), intent(out) :: weights
             !! Weights used for calculating the global weighted Jensen-Shannon divergence `global_js_divergence`
         real(real64), dimension(n_points, n_bins), intent(out) :: pmf_S1
-            !! Absolute counts of a residual per bin obtained from [[tox_data_integration(module):build_residual_histograms(subroutine)]]
+            !! Absolute counts of a residual per bin obtained from [[tox_data_integration(module):build_residual_histograms(interface)]]
         real(real64), dimension(n_points, n_bins), intent(out) :: pmf_S2
-            !! Absolute counts of a residual per bin obtained from [[tox_data_integration(module):build_residual_histograms(subroutine)]]
+            !! Absolute counts of a residual per bin obtained from [[tox_data_integration(module):build_residual_histograms(interface)]]
         integer(int32), dimension(n_points, n_bins), intent(out) :: tmp_counts
-            !! Working array for [[tox_data_integration(module):build_residual_histograms(subroutine)]]
+            !! Working array for [[tox_data_integration(module):build_residual_histograms(interface)]]
         logical, dimension(n_neighbors, n_points), intent(in), optional :: neighbor_mask_S1
             !! Optional mask to exclude specific neighbors from study 1 (e.g. for family-wise analysis)
         logical, dimension(n_neighbors, n_points), intent(in), optional :: neighbor_mask_S2
@@ -441,7 +441,7 @@ contains
     end subroutine jct_compute_jsd_pipeline_helper
 end submodule tox_data_integration_jsd
 
-!> C-compatible wrapper for [[tox_data_integration(module):determine_shared_residual_range(subroutine)]]
+!> C-compatible wrapper for [[tox_data_integration(module):determine_shared_residual_range(interface)]]
 pure subroutine determine_shared_residual_range_expert_c( &
     abs_residual_pool, abs_residual_pool_perm, pool_size, &
     residual_range_quantile, shared_residual_range, ierr &
@@ -478,7 +478,7 @@ pure subroutine determine_shared_residual_range_expert_c( &
 
 end subroutine determine_shared_residual_range_expert_c
 
-!> C-compatible wrapper for [[tox_data_integration(module):determine_shared_residual_range_alloc(subroutine)]]
+!> C-compatible wrapper for [[tox_data_integration(module):determine_shared_residual_range_alloc(interface)]]
 pure subroutine determine_shared_residual_range_c( &
     neighborhood_residuals_S1, neighborhood_residuals_S2, &
     n_reps_S1, n_reps_S2, n_neighbors, n_points, &
@@ -527,7 +527,7 @@ pure subroutine determine_shared_residual_range_c( &
 
 end subroutine determine_shared_residual_range_c
 
-!> C-compatible wrapper for [[tox_data_integration(module):build_residual_histograms(subroutine)]]
+!> C-compatible wrapper for [[tox_data_integration(module):build_residual_histograms(interface)]]
 pure subroutine build_residual_histograms_c( &
     neighborhood_residuals, &
     n_reps, n_neighbors, n_points, &
@@ -551,7 +551,7 @@ pure subroutine build_residual_histograms_c( &
     real(c_double), dimension(n_reps, n_neighbors, n_points), intent(in), target :: neighborhood_residuals
         !! Computed neighborhood residuals for a study ([[tox_data_integration(module):construct_neighborhoods(interface)]]), NaN is explicitly allowed for missing values
     real(c_double), intent(in), target :: shared_residual_range
-        !! Computed residual range (R) from [[tox_data_integration(module):determine_shared_residual_range_alloc(subroutine)]]
+        !! Computed residual range (R) from [[tox_data_integration(module):determine_shared_residual_range_alloc(interface)]]
     integer(c_int), intent(in), target :: n_bins
         !! Number of equally sized histogram bins in range [-R,R]
     integer(c_int), dimension(n_points, n_bins), intent(out), target :: counts
@@ -584,7 +584,7 @@ pure subroutine build_residual_histograms_c( &
 
 end subroutine build_residual_histograms_c
 
-!> C-compatible wrapper for [[tox_data_integration(module):compute_divergence_per_reference_point(subroutine)]]
+!> C-compatible wrapper for [[tox_data_integration(module):compute_divergence_per_reference_point(interface)]]
 pure subroutine compute_divergence_per_reference_point_c( &
     pmf_S1, pmf_S2, &
     n_points, n_bins, &
@@ -601,9 +601,9 @@ pure subroutine compute_divergence_per_reference_point_c( &
     integer(c_int), intent(in), target :: n_bins
         !! Number of equally sized histogram bins in range [-R,R]
     real(c_double), dimension(n_points, n_bins), intent(in), target :: pmf_S1
-        !! Computed normalized hostogram counts from [[tox_data_integration(module):build_residual_histograms(subroutine)]] for study 1
+        !! Computed normalized hostogram counts from [[tox_data_integration(module):build_residual_histograms(interface)]] for study 1
     real(c_double), dimension(n_points, n_bins), intent(in), target :: pmf_S2
-        !! Computed normalized hostogram counts from [[tox_data_integration(module):build_residual_histograms(subroutine)]] for study 2
+        !! Computed normalized hostogram counts from [[tox_data_integration(module):build_residual_histograms(interface)]] for study 2
     real(c_double), dimension(n_points), intent(out), target :: js_divergences
         !! Jensen-Shannon divergence per reference point
     integer(c_int), intent(out), target :: ierr
@@ -623,7 +623,7 @@ pure subroutine compute_divergence_per_reference_point_c( &
 
 end subroutine compute_divergence_per_reference_point_c
 
-!> C-compatible wrapper for [[tox_data_integration(module):compute_weighted_global_divergence(subroutine)]]
+!> C-compatible wrapper for [[tox_data_integration(module):compute_weighted_global_divergence(interface)]]
 pure subroutine compute_weighted_global_divergence_c( &
     js_divergences, &
     n_points, &
