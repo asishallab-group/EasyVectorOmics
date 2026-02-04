@@ -360,6 +360,114 @@ test_detect_outliers_large_dataset <- function() {
 }
 
 # =====================
+# Tests for compute_family_scaling_expert
+# =====================
+
+# Test 18: Expert version basic test
+test_compute_family_scaling_expert_basic <- function() {
+  cat("\n[test_compute_family_scaling_expert_basic] Expert version basic test\n")
+  set.seed(42)  # For reproducibility
+
+  # Test data
+  n_families <- 6
+  genes_per_fam <- 4
+  n_genes <- n_families * genes_per_fam
+  span <- 0.7
+  mode <- 1
+  n_iters <- 3
+  degree <- 2
+
+  distances <- c(
+    runif(genes_per_fam, 1.0, 2.0),  # Family 1
+    runif(genes_per_fam, 2.0, 3.0),  # Family 2
+    runif(genes_per_fam, 3.0, 4.0),  # Family 3
+    runif(genes_per_fam, 4.0, 5.0),  # Family 4
+    runif(genes_per_fam, 5.0, 6.0),  # Family 5
+    runif(genes_per_fam, 6.0, 7.0)   # Family 6
+  )
+  gene_to_fam <- rep(1:n_families, each = genes_per_fam)
+
+  # Pre-allocate work arrays (user responsibility)
+  perm_tmp <- integer(n_genes)
+  stack_left_tmp <- integer(n_genes)
+  stack_right_tmp <- integer(n_genes)
+  family_distances <- numeric(n_genes)
+
+  result <- tox_compute_family_scaling_expert(
+    distances, gene_to_fam, n_families,
+    perm_tmp, stack_left_tmp, stack_right_tmp,
+    family_distances, span, degree, mode, n_iters
+  )
+
+  cat("  Input distances:", distances, "\n")
+  cat("  Gene-to-family mapping:", gene_to_fam, "\n")
+  cat("  Scaling factors:", result$dscale, "\n")
+
+  # Verify basic properties
+  stopifnot(length(result$dscale) == n_families)  # Six families
+  stopifnot(all(is.finite(result$dscale)))
+  stopifnot(all(result$dscale > 0))  # Scaling factors should be positive
+
+  cat("Expert version basic test passed ✓\n")
+}
+
+# Test 19: Expert version consistency with regular
+test_compute_family_scaling_expert_consistency <- function() {
+  cat("\n[test_compute_family_scaling_expert_consistency] Expert version consistency test\n")
+  set.seed(42)  # For reproducibility
+
+  # Test data
+  n_families <- 6
+  genes_per_fam <- 4
+  n_genes <- n_families * genes_per_fam
+  span <- 0.7
+  mode <- 1
+  n_iters <- 3
+  degree <- 2
+
+  distances <- c(
+    runif(genes_per_fam, 1.0, 2.0),  # Family 1
+    runif(genes_per_fam, 2.0, 3.0),  # Family 2
+    runif(genes_per_fam, 3.0, 4.0),  # Family 3
+    runif(genes_per_fam, 4.0, 5.0),  # Family 4
+    runif(genes_per_fam, 5.0, 6.0),  # Family 5
+    runif(genes_per_fam, 6.0, 7.0)   # Family 6
+  )
+  gene_to_fam <- rep(1:n_families, each = genes_per_fam)
+
+  # Pre-allocate work arrays (user responsibility)
+  perm_tmp <- integer(n_genes)
+  stack_left_tmp <- integer(n_genes)
+  stack_right_tmp <- integer(n_genes)
+  family_distances <- numeric(n_genes)
+
+  # Validar tamaños de las matrices de trabajo
+  stopifnot(length(perm_tmp) == n_genes)
+  stopifnot(length(stack_left_tmp) == n_genes)
+  stopifnot(length(stack_right_tmp) == n_genes)
+  stopifnot(length(family_distances) == n_genes)
+
+  result_expert <- tox_compute_family_scaling_expert(
+    distances, gene_to_fam, n_families,
+    perm_tmp, stack_left_tmp, stack_right_tmp,
+    family_distances, span = span, degree = degree, mode = mode, n_iters = n_iters
+  )
+  result_regular <- tox_compute_family_scaling(distances, gene_to_fam, n_families)
+
+  # Compare with regular version to ensure consistency
+  cat("  Comparing expert vs regular version:\n")
+  cat("    Expert dscale:", result_expert$dscale, "\n")
+  cat("    Regular dscale:", result_regular$dscale, "\n")
+
+  # Results should be very similar (within numerical precision)
+  stopifnot(all(abs(result_expert$dscale - result_regular$dscale) < 1e-10))
+  stopifnot(all(abs(result_expert$loess_x - result_regular$loess_x) < 1e-10))
+  stopifnot(all(abs(result_expert$loess_y - result_regular$loess_y) < 1e-10))
+
+  cat("Expert version consistency test passed ✓\n")
+}
+
+# =====================
 # Run all tests
 # =====================
 
@@ -391,6 +499,10 @@ test_detect_outliers_invalid_families()
 test_detect_outliers_single_families()
 test_detect_outliers_mixed_sizes()
 test_detect_outliers_large_dataset()
+
+# compute_family_scaling_expert tests
+test_compute_family_scaling_expert_basic()
+test_compute_family_scaling_expert_consistency()
 
 cat("=================================================\n")
 cat("             ALL TESTS COMPLETED\n")

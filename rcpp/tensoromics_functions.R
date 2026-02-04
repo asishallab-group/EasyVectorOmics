@@ -214,6 +214,75 @@ tox_compute_family_scaling <- function(distances, gene_to_fam, n_families) {
   ))
 }
 
+#> tox_get_outliers:compute_family_scaling_expert_c: Compute family scaling factors for outlier detection (expert version)
+#' Compute Family Scaling (Expert Version)
+#'
+#' This function computes family scaling factors using the expert version of the Fortran subroutine.
+#' It automatically calculates the required workspace sizes (`lv` and `liv`) using `tox_loess_required_workspace`.
+#'
+#' @param distances Numeric vector of distances for each gene.
+#' @param gene_to_fam Integer vector mapping genes to family indices.
+#' @param n_families Integer, total number of families.
+#' @param perm_tmp Integer vector for temporary permutation storage.
+#' @param stack_left_tmp Integer vector for temporary left stack storage.
+#' @param stack_right_tmp Integer vector for temporary right stack storage.
+#' @param family_distances Numeric vector for temporary family distances storage.
+#' @param span Numeric, smoothing parameter for LOESS (default: 0.7).
+#' @param degree Integer, degree of polynomial for LOESS (default: 2).
+#' @param mode Integer, mode for LOESS (default: 1).
+#' @param n_iters Integer, number of iterations for LOESS (default: 3).
+#' @return A list with components:
+#'   - dscale: Scaling factors for each family.
+#'   - loess_x: Family median distances.
+#'   - loess_y: Family standard deviations.
+#'   - indices_used: Number of genes used per family.
+#'   - ierr: Error code (0 = success).
+tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families,
+                                              perm_tmp, stack_left_tmp, stack_right_tmp,
+                                              family_distances, span, degree, mode, n_iters) {
+  # Validate inputs
+  distances <- as.numeric(distances)
+  gene_to_fam <- as.integer(gene_to_fam)
+  perm_tmp <- as.integer(perm_tmp)
+  stack_left_tmp <- as.integer(stack_left_tmp)
+  stack_right_tmp <- as.integer(stack_right_tmp)
+  family_distances <- as.numeric(family_distances)
+
+  # Calculate workspace sizes
+  workspace <- tox_loess_required_workspace(d = 1, nvmax = n_families, setlf = FALSE)
+  liv <- workspace$liv
+  lv <- workspace$lv
+
+  # Initialize workspace arrays
+  iv <- integer(liv)
+  wv <- numeric(lv)
+
+  # Call the Rcpp function
+  result <- tox_compute_family_scaling_expert_rcpp(
+    distances, gene_to_fam, n_families,
+    perm_tmp, stack_left_tmp, stack_right_tmp,
+    family_distances, iv, liv, lv, span, degree, mode, n_iters
+  )
+
+
+   # Check for error
+  check_err_code(result$ierr)
+
+  # Return structured result
+  return(list(
+    dscale = result$dscale,
+    loess_x = result$loess_x,
+    loess_y = result$loess_y,
+    indices_used = result$indices_used,
+    perm_tmp     = result$perm_tmp,
+    stack_left_tmp   = result$stack_left_tmp,
+    stack_right_tmp  = result$stack_right_tmp,
+    family_distances = result$family_distances
+
+  ))
+}
+
+
 #> tox_get_outliers:compute_rdi_c: Compute Relative Distance Index (RDI) for outlier detection
 #' Compute Relative Distance Index (RDI) for genes
 #'

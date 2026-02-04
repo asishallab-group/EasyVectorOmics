@@ -15,7 +15,6 @@ contains
   subroutine compute_family_scaling( &
     n_genes, n_families, distances, gene_to_fam, dscale, &
     loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, &
-    ! LOESS workspaces (preallocated by alloc wrapper):
     iv, liv, wv, lv, diagl, w_init, z_mat, rw, ww, res, pi, yhat_tmp, &
     span, degree, mode, n_iters, ierr)
 
@@ -583,7 +582,9 @@ use, intrinsic :: iso_c_binding, only : c_int, c_double
 use tox_get_outliers, only: compute_family_scaling_alloc
 implicit none
 !| Total number of genes
-integer(c_int), intent(in), value :: n_genes, n_families
+integer(c_int), intent(in), value :: n_genes
+!| Total number of families
+integer(c_int), intent(in), value :: n_families
 !| Array of Euclidean distances for each gene
 real(c_double), intent(in), target :: distances(n_genes)
 !| Mapping of each gene to its family (1-based)
@@ -611,7 +612,9 @@ subroutine compute_rdi_c(n_genes, n_families, distances, gene_to_fam, dscale, rd
   implicit none
 
   !| Total number of genes
-  integer(c_int), intent(in), value :: n_genes, n_families
+  integer(c_int), intent(in), value :: n_genes
+  !| Total number of families
+  integer(c_int), intent(in), value :: n_families
   !| Array of Euclidean distances for each gene to its centroid
   real(c_double), intent(in), target :: distances(n_genes)
   !| Gene-to-family mapping (1-based indexing)
@@ -723,3 +726,80 @@ subroutine detect_outliers_c(n_genes, n_families, distances, gene_to_fam, &
     end if
   end do
 end subroutine detect_outliers_c
+
+!> C wrapper for compute_family_scaling expert version.
+!| Calls compute_family_scaling with C-compatible types for external interface.
+!| This wrapper is designed for external use, providing additional arguments for advanced configurations.
+subroutine compute_family_scaling_expert_c(n_genes, n_families, distances, gene_to_fam, dscale, &
+  loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, &
+  iv, liv, wv, lv, diagl, w_init, z_mat, rw, ww, res, pi, yhat_tmp, &
+  span, degree, mode, n_iters, ierr) bind(C, name="compute_family_scaling_expert_c")
+
+  use, intrinsic :: iso_c_binding, only : c_int, c_double
+  use tox_get_outliers, only: compute_family_scaling
+  implicit none
+  
+  !| Total number of genes
+  integer(c_int), intent(in) :: n_genes
+  !| Total number of families
+  integer(c_int), intent(in) :: n_families
+  !| Array of Euclidean distances for each gene
+  real(c_double), intent(in), target :: distances(n_genes)
+  !| Mapping of each gene to its family (1-based)
+  integer(c_int), intent(in), target :: gene_to_fam(n_genes)
+  !| Output: array of scaling factors per family
+  real(c_double), intent(out), target :: dscale(n_families)
+  !| Reference x-coordinates for LOESS
+  real(c_double), intent(inout), target :: loess_x(n_families)
+  !| Reference y-coordinates for LOESS
+  real(c_double), intent(inout), target :: loess_y(n_families)
+  !| Indices of reference points used for smoothing
+  integer(c_int), intent(inout), target :: indices_used(n_families)
+  !| Temporary array for permutation
+  integer(c_int), intent(inout), target :: perm_tmp(n_genes)
+  !| Temporary array for left stack
+  integer(c_int), intent(inout), target :: stack_left_tmp(n_genes)
+  !| Temporary array for right stack
+  integer(c_int), intent(inout), target :: stack_right_tmp(n_genes)
+  !| Temporary array for family distances
+  real(c_double), intent(inout), target :: family_distances(n_genes)
+  !| Integer workspace array for LOESS
+  integer(c_int), intent(inout), target :: iv(liv)
+  !| Length of integer workspace array
+  integer(c_int), intent(in) :: liv
+  !| Length of real workspace array
+  integer(c_int), intent(in) :: lv
+  !| Real workspace array for LOESS
+  real(c_double), intent(inout), target :: wv(lv)
+  !| Diagonal elements for LOESS
+  real(c_double), intent(inout), target :: diagl(n_genes)
+  !| Initial weights for LOESS
+  real(c_double), intent(inout), target :: w_init(n_genes)
+  !| Z matrix for LOESS
+  real(c_double), intent(inout), target :: z_mat(n_genes, 1)
+  !| Residual weights for LOESS
+  real(c_double), intent(inout), target :: rw(n_genes)
+  !| Working weights for LOESS
+  real(c_double), intent(inout), target :: ww(n_genes)
+  !| Residuals for LOESS
+  real(c_double), intent(inout), target :: res(n_genes)
+  !| Pi values for LOESS
+  integer(c_int), intent(inout), target :: pi(n_genes)
+  !| Temporary array for predicted values
+  real(c_double), intent(inout), target :: yhat_tmp(n_genes)
+  !| Span parameter for LOESS
+  real(c_double), intent(in) :: span
+  !| Degree of polynomial for LOESS
+  integer(c_int), intent(in) :: degree
+  !| Mode for LOESS
+  integer(c_int), intent(in) :: mode
+  !| Number of iterations for LOESS
+  integer(c_int), intent(in) :: n_iters
+  !| Error code: 0=ok, 201=invalid family indices
+  integer(c_int), intent(out) :: ierr
+
+  call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
+    loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, &
+    iv, liv, wv, lv, diagl, w_init, z_mat, rw, ww, res, pi, yhat_tmp, &
+    span, degree, mode, n_iters, ierr)
+end subroutine compute_family_scaling_expert_c

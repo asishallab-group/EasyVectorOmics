@@ -11,7 +11,7 @@ import os
 # Add parent directory to path to import tensoromics_functions
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from tensoromics_functions import (
-    tox_compute_family_scaling, tox_compute_rdi, tox_identify_outliers, tox_detect_outliers
+    tox_compute_family_scaling, tox_compute_family_scaling_expert, tox_compute_rdi, tox_identify_outliers, tox_detect_outliers
 )
 
 print("=== Testing outlier detection Python wrapper functions ===")
@@ -132,99 +132,141 @@ def test_compute_family_scaling_edge_cases():
 
     print("Edge cases test passed ✓")
 
-# def test_tox_compute_family_scaling_expert():
-#     """Test expert version with user-provided work arrays"""
-#     print("\n[test_compute_family_scaling_expert] Expert version test")
-    
-#     # Test data
-#     distances = np.array([1.0, 2.0, 3.0, 4.0, 5.0, 6.0], dtype=np.float64)
-#     gene_to_fam = np.array([1, 1, 2, 2, 3, 3], dtype=np.int32)
-#     n_genes = len(distances)
-    
-#     # Pre-allocate work arrays (user responsibility)
-#     perm_tmp = np.zeros(n_genes, dtype=np.int32)
-#     stack_left_tmp = np.zeros(n_genes, dtype=np.int32)
-#     stack_right_tmp = np.zeros(n_genes, dtype=np.int32)
-#     family_distances = np.zeros(n_genes, dtype=np.float64)
-    
-#     result = tox_compute_family_scaling_expert(
-#         distances, gene_to_fam, perm_tmp, stack_left_tmp, 
-#         stack_right_tmp, family_distances
-#     )
-    
-#     print("  Input distances:", distances)
-#     print("  Gene-to-family mapping:", gene_to_fam)
-#     print("  Scaling factors:", result['dscale'])
-#     print("  Work arrays also returned in result")
-    
-#     # Verify basic properties
-#     assert len(result['dscale']) == 3  # Three families
-#     assert all(np.isfinite(result['dscale']))
-#     assert all(result['dscale'] > 0)  # Scaling factors should be positive
-    
-#     # Verify work arrays are returned
-#     assert 'perm_tmp' in result
-#     assert 'stack_left_tmp' in result
-#     assert 'stack_right_tmp' in result
-#     assert 'family_distances' in result
-    
-#     # Compare with regular version to ensure consistency
-#     result_regular = tox_compute_family_scaling(distances, gene_to_fam)
-    
-#     print("  Comparing expert vs regular version:")
-#     print(f"    Expert dscale: {result['dscale']}")
-#     print(f"    Regular dscale: {result_regular['dscale']}")
-    
-#     # Results should be very similar (within numerical precision)
-#     np.testing.assert_allclose(result['dscale'], result_regular['dscale'], rtol=1e-10)
-#     np.testing.assert_allclose(result['loess_x'], result_regular['loess_x'], rtol=1e-10)
-#     np.testing.assert_allclose(result['loess_y'], result_regular['loess_y'], rtol=1e-10)
-    
-#     print("Expert version test passed ✓")
+def test_tox_compute_family_scaling_expert():
+    """Test expert version with user-provided work arrays"""
+    print("\n[test_compute_family_scaling_expert] Expert version test")
 
-# def test_compute_family_scaling_expert_input_validation():
-#     """Test expert version input validation"""
-#     print("\n[test_compute_family_scaling_expert_input_validation] Expert input validation test")
-    
-#     distances = np.array([1.0, 2.0, 3.0, 4.0], dtype=np.float64)
-#     gene_to_fam = np.array([1, 1, 2, 2], dtype=np.int32)
-#     n_genes = len(distances)
-    
-#     # Test wrong size work arrays
-#     error_caught1 = False
-#     try:
-#         perm_tmp = np.zeros(n_genes - 1, dtype=np.int32)  # Wrong size
-#         stack_left_tmp = np.zeros(n_genes, dtype=np.int32)
-#         stack_right_tmp = np.zeros(n_genes, dtype=np.int32)
-#         family_distances = np.zeros(n_genes, dtype=np.float64)
-        
-#         tox_compute_family_scaling_expert(
-#             distances, gene_to_fam, perm_tmp, stack_left_tmp, 
-#             stack_right_tmp, family_distances
-#         )
-#     except ValueError as e:
-#         error_caught1 = True
-#         assert "same length" in str(e)
-#     assert error_caught1
-    
-#     # Test another wrong size array
-#     error_caught2 = False
-#     try:
-#         perm_tmp = np.zeros(n_genes, dtype=np.int32)
-#         stack_left_tmp = np.zeros(n_genes, dtype=np.int32)
-#         stack_right_tmp = np.zeros(n_genes, dtype=np.int32)
-#         family_distances = np.zeros(n_genes + 1, dtype=np.float64)  # Wrong size
-        
-#         tox_compute_family_scaling_expert(
-#             distances, gene_to_fam, perm_tmp, stack_left_tmp, 
-#             stack_right_tmp, family_distances
-#         )
-#     except ValueError as e:
-#         error_caught2 = True
-#         assert "same length" in str(e)
-#     assert error_caught2
-    
-#     print("Expert input validation test passed ✓")
+    # Test data
+    n_families = 6
+    genes_per_fam = 4
+    n_genes = n_families * genes_per_fam
+    span = 0.7
+    mode = 1
+    n_iters = 3
+    degree = 2
+
+    distances = np.concatenate([
+        np.random.uniform(1.0, 2.0, genes_per_fam),  # Family 1
+        np.random.uniform(2.0, 3.0, genes_per_fam),  # Family 2
+        np.random.uniform(3.0, 4.0, genes_per_fam),  # Family 3
+        np.random.uniform(4.0, 5.0, genes_per_fam),  # Family 4
+        np.random.uniform(5.0, 6.0, genes_per_fam),  # Family 5
+        np.random.uniform(6.0, 7.0, genes_per_fam)   # Family 6
+    ])
+    gene_to_fam = np.concatenate([
+        np.full(genes_per_fam, 1),
+        np.full(genes_per_fam, 2),
+        np.full(genes_per_fam, 3),
+        np.full(genes_per_fam, 4),
+        np.full(genes_per_fam, 5),
+        np.full(genes_per_fam, 6)
+    ]).astype(np.int32)
+
+    # Pre-allocate work arrays (user responsibility)
+    perm_tmp = np.zeros(n_genes, dtype=np.int32)
+    stack_left_tmp = np.zeros(n_genes, dtype=np.int32)
+    stack_right_tmp = np.zeros(n_genes, dtype=np.int32)
+    family_distances = np.zeros(n_genes, dtype=np.float64)
+
+    result = tox_compute_family_scaling_expert(
+        distances, gene_to_fam, span, degree, mode, n_iters, perm_tmp, stack_left_tmp,
+        stack_right_tmp, family_distances
+    )
+
+    print("  Input distances:", distances)
+    print("  Gene-to-family mapping:", gene_to_fam)
+    print("  Scaling factors:", result['dscale'])
+    print("  Work arrays also returned in result")
+
+    # Verify basic properties
+    assert len(result['dscale']) == n_families  # Six families
+    assert all(np.isfinite(result['dscale']))
+    assert all(result['dscale'] > 0)  # Scaling factors should be positive
+
+    # Verify work arrays are returned
+    assert 'perm_tmp' in result
+    assert 'stack_left_tmp' in result
+    assert 'stack_right_tmp' in result
+    assert 'family_distances' in result
+
+    # Compare with regular version to ensure consistency
+    result_regular = tox_compute_family_scaling(distances, gene_to_fam)
+
+    print("  Comparing expert vs regular version:")
+    print(f"    Expert dscale: {result['dscale']}")
+    print(f"    Regular dscale: {result_regular['dscale']}")
+
+    # Results should be very similar (within numerical precision)
+    np.testing.assert_allclose(result['dscale'], result_regular['dscale'], rtol=1e-10)
+    np.testing.assert_allclose(result['loess_x'], result_regular['loess_x'], rtol=1e-10)
+    np.testing.assert_allclose(result['loess_y'], result_regular['loess_y'], rtol=1e-10)
+
+    print("Expert version test passed ✓")
+
+def test_compute_family_scaling_expert_input_validation():
+    """Test expert version input validation"""
+    print("\n[test_compute_family_scaling_expert_input_validation] Expert input validation test")
+
+    n_families = 6
+    genes_per_fam = 4
+    n_genes = n_families * genes_per_fam
+    span = 0.7
+    mode = 1
+    n_iters = 3
+    degree = 2
+
+    distances = np.concatenate([
+        np.random.uniform(1.0, 2.0, genes_per_fam),  # Family 1
+        np.random.uniform(2.0, 3.0, genes_per_fam),  # Family 2
+        np.random.uniform(3.0, 4.0, genes_per_fam),  # Family 3
+        np.random.uniform(4.0, 5.0, genes_per_fam),  # Family 4
+        np.random.uniform(5.0, 6.0, genes_per_fam),  # Family 5
+        np.random.uniform(6.0, 7.0, genes_per_fam)   # Family 6
+    ])
+    gene_to_fam = np.concatenate([
+        np.full(genes_per_fam, 1),
+        np.full(genes_per_fam, 2),
+        np.full(genes_per_fam, 3),
+        np.full(genes_per_fam, 4),
+        np.full(genes_per_fam, 5),
+        np.full(genes_per_fam, 6)
+    ]).astype(np.int32)
+
+    # Test wrong size work arrays
+    error_caught1 = False
+    try:
+        perm_tmp = np.zeros(n_genes - 1, dtype=np.int32)  # Wrong size
+        stack_left_tmp = np.zeros(n_genes, dtype=np.int32)
+        stack_right_tmp = np.zeros(n_genes, dtype=np.int32)
+        family_distances = np.zeros(n_genes, dtype=np.float64)
+
+        tox_compute_family_scaling_expert(
+            distances, gene_to_fam, span, degree, mode, n_iters, perm_tmp, stack_left_tmp, 
+            stack_right_tmp, family_distances
+        )
+    except ValueError as e:
+        error_caught1 = True
+        assert "same length" in str(e)
+    assert error_caught1
+
+    # Test another wrong size array
+    error_caught2 = False
+    try:
+        perm_tmp = np.zeros(n_genes, dtype=np.int32)
+        stack_left_tmp = np.zeros(n_genes, dtype=np.int32)
+        stack_right_tmp = np.zeros(n_genes, dtype=np.int32)
+        family_distances = np.zeros(n_genes + 1, dtype=np.float64)  # Wrong size
+
+        tox_compute_family_scaling_expert(
+            distances, gene_to_fam, span, degree, mode, n_iters, perm_tmp, stack_left_tmp, 
+            stack_right_tmp, family_distances
+        )
+    except ValueError as e:
+        error_caught2 = True
+        assert "same length" in str(e)
+    assert error_caught2
+
+    print("Expert input validation test passed ✓")
 
 # =====================
 # Tests for compute_rdi
@@ -450,8 +492,8 @@ def main():
     test_compute_family_scaling_basic()
     test_compute_family_scaling_single_family()
     test_compute_family_scaling_edge_cases()
-    # test_tox_compute_family_scaling_expert()
-    # test_compute_family_scaling_expert_input_validation()
+    test_tox_compute_family_scaling_expert()
+    test_compute_family_scaling_expert_input_validation()
 
     # compute_rdi tests
     test_compute_rdi_basic()

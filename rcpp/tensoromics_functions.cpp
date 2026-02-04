@@ -38,13 +38,17 @@ extern "C" {
       );
 
       void compute_family_scaling_expert_c(
-        int n_genes, int n_families,
-        double* distances, int* gene_to_fam,
-        double* dscale,
-        double* loess_x, double* loess_y, int* indices_used,
-        int* perm_tmp, int* stack_left_tmp, int* stack_right_tmp,
-        double* family_distances,
-        int* ierr
+          int* n_genes, int* n_families,
+          double* distances, int* gene_to_fam,
+          double* dscale,
+          double* loess_x, double* loess_y, int* indices_used,
+          int* perm_tmp, int* stack_left_tmp, int* stack_right_tmp,
+          double* family_distances,
+          int* iv, int* liv, double* wv, int* lv,
+          double* diagl, double* w_init, double* z_mat,
+          double* rw, double* ww, double* res, int* pi, double* yhat_tmp,
+          double* span, int* degree, int* mode, int* n_iters,
+          int* ierr
       );
 
       void compute_rdi_c(
@@ -415,40 +419,51 @@ List tox_compute_family_scaling_rcpp(NumericVector distances, IntegerVector gene
   );
 }
 
-// // [[Rcpp::export]]
-// List tox_compute_family_scaling_expert_rcpp(int n_families, NumericVector distances, IntegerVector gene_to_fam,
-//                                             IntegerVector perm_tmp, IntegerVector stack_left_tmp, IntegerVector stack_right_tmp,
-//                                             NumericVector family_distances) {
-//   int n_genes = distances.size();
-//   NumericVector dscale(n_families);
-//   NumericVector loess_x(n_families);
-//   NumericVector loess_y(n_families);
-//   IntegerVector indices_used(n_families);
-//   int ierr = 0;
+// [[Rcpp::export]]
+List tox_compute_family_scaling_expert_rcpp(NumericVector distances, IntegerVector gene_to_fam, int n_families,
+                                            IntegerVector perm_tmp, IntegerVector stack_left_tmp, IntegerVector stack_right_tmp,
+                                            NumericVector family_distances, IntegerVector iv, int liv, int lv, double span, int degree, int mode, int n_iters) {
+    int n_genes = distances.size();
+    NumericVector dscale(n_families);
+    NumericVector loess_x(n_families);
+    NumericVector loess_y(n_families);
+    IntegerVector indices_used(n_families);
+    NumericVector wv(lv);
+    NumericVector diagl(n_genes);
+    NumericVector w_init(n_genes);
+    NumericVector z_mat(n_genes);
+    NumericVector rw(n_genes);
+    NumericVector ww(n_genes);
+    NumericVector res(n_genes);
+    NumericVector yhat_tmp(n_genes);
+    IntegerVector pi(n_genes);
 
-//   compute_family_scaling_expert_c(
-//     n_genes, n_families,
-//     distances.begin(),
-//     gene_to_fam.begin(),
-//     dscale.begin(),
-//     loess_x.begin(), loess_y.begin(), indices_used.begin(),
-//     perm_tmp.begin(), stack_left_tmp.begin(), stack_right_tmp.begin(),
-//     family_distances.begin(),
-//     &ierr
-//   );
+    int ierr = 0;
 
-//   return List::create(
-//     Named("dscale") = dscale,
-//     Named("loess_x") = loess_x,
-//     Named("loess_y") = loess_y,
-//     Named("indices_used") = indices_used,
-//     Named("perm_tmp") = perm_tmp,
-//     Named("stack_left_tmp") = stack_left_tmp,
-//     Named("stack_right_tmp") = stack_right_tmp,
-//     Named("family_distances") = family_distances,
-//     Named("ierr") = ierr
-//   );
-// }
+    compute_family_scaling_expert_c(
+        &n_genes, &n_families,
+        distances.begin(),
+        gene_to_fam.begin(),
+        dscale.begin(),
+        loess_x.begin(), loess_y.begin(), indices_used.begin(),
+        perm_tmp.begin(), stack_left_tmp.begin(), stack_right_tmp.begin(),
+        family_distances.begin(),
+        iv.begin(), &liv,   
+        wv.begin(), &lv,    
+        diagl.begin(), w_init.begin(), z_mat.begin(),
+        rw.begin(), ww.begin(), res.begin(), pi.begin(), yhat_tmp.begin(),
+        &span, &degree, &mode, &n_iters,
+        &ierr
+    );
+
+    return List::create(
+        Named("dscale") = dscale,
+        Named("loess_x") = loess_x,
+        Named("loess_y") = loess_y,
+        Named("indices_used") = indices_used,
+        Named("ierr") = ierr
+    );
+}
 
 // [[Rcpp::export]]
 List tox_compute_rdi_rcpp(NumericVector distances, IntegerVector gene_to_fam, NumericVector dscale) {

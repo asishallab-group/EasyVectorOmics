@@ -1713,99 +1713,155 @@ def tox_compute_family_scaling(distances, gene_to_fam):
         'indices_used': indices_used
     }
 
+#> tox_get_outliers:compute_family_scaling_expert_c: Compute family scaling factors using LOESS smoothing (Expert Version)
+def tox_compute_family_scaling_expert(distances, gene_to_fam, span, degree, mode, n_iters, perm_tmp, stack_left_tmp,
+                                      stack_right_tmp, family_distances):
+    """
+    Expert version of compute_family_scaling with user-provided work arrays
 
-# #> tox_get_outliers:compute_family_scaling_expert_c: Compute family scaling factors using LOESS smoothing (Expert Version)
-# def tox_compute_family_scaling_expert(distances, gene_to_fam, perm_tmp, stack_left_tmp,
-#                                  stack_right_tmp, family_distances):
-#     """
-#     Expert version of compute_family_scaling with user-provided work arrays
+    This version requires pre-allocated work arrays for maximum performance and control.
+    Use this when you need fine-grained control over memory allocation or are calling
+    this function many times in a tight loop.
 
-#     This version requires pre-allocated work arrays for maximum performance and control.
-#     Use this when you need fine-grained control over memory allocation or are calling
-#     this function many times in a tight loop.
+    Args:
+        distances: Gene distances to family centroids
+        gene_to_fam: Gene-to-family mapping
+        perm_tmp: Pre-allocated permutation array for sorting (n_genes)
+        stack_left_tmp: Pre-allocated stack array for sorting (n_genes)
+        stack_right_tmp: Pre-allocated stack array for sorting (n_genes)
+        family_distances: Pre-allocated work array for family distances (n_genes)
 
-#     Args:
-#         distances: Gene distances to family centroids
-#         gene_to_fam: Gene-to-family mapping
-#         perm_tmp: Pre-allocated permutation array for sorting (n_genes)
-#         stack_left_tmp: Pre-allocated stack array for sorting (n_genes)
-#         stack_right_tmp: Pre-allocated stack array for sorting (n_genes)
-#         family_distances: Pre-allocated work array for family distances (n_genes)
+    Returns:
+        dict: Dictionary containing scaling factors and intermediate results
+    """
+    distances = np.ascontiguousarray(distances, dtype=np.float64)
+    gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
+    perm_tmp = np.ascontiguousarray(perm_tmp, dtype=np.int32)
+    stack_left_tmp = np.ascontiguousarray(stack_left_tmp, dtype=np.int32)
+    stack_right_tmp = np.ascontiguousarray(stack_right_tmp, dtype=np.int32)
+    family_distances = np.ascontiguousarray(family_distances, dtype=np.float64)
 
-#     Returns:
-#         dict: Dictionary containing scaling factors and intermediate results
-#     """
-#     distances = np.ascontiguousarray(distances, dtype=np.float64)
-#     gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
-#     perm_tmp = np.ascontiguousarray(perm_tmp, dtype=np.int32)
-#     stack_left_tmp = np.ascontiguousarray(stack_left_tmp, dtype=np.int32)
-#     stack_right_tmp = np.ascontiguousarray(stack_right_tmp, dtype=np.int32)
-#     family_distances = np.ascontiguousarray(family_distances, dtype=np.float64)
+    n_genes = len(distances)
+    n_families = int(np.max(gene_to_fam)) if len(gene_to_fam) > 0 else 0
 
-#     n_genes = len(distances)
-#     n_families = int(np.max(gene_to_fam)) if len(gene_to_fam) > 0 else 0
+    if len(gene_to_fam) != n_genes:
+        raise ValueError("distances and gene_to_fam must have same length")
+    if len(perm_tmp) != n_genes:
+        raise ValueError("perm_tmp must have same length as distances")
+    if len(stack_left_tmp) != n_genes:
+        raise ValueError("stack_left_tmp must have same length as distances")
+    if len(stack_right_tmp) != n_genes:
+        raise ValueError("stack_right_tmp must have same length as distances")
+    if len(family_distances) != n_genes:
+        raise ValueError("family_distances must have same length as distances")
 
-#     if len(gene_to_fam) != n_genes:
-#         raise ValueError("distances and gene_to_fam must have same length")
-#     if len(perm_tmp) != n_genes:
-#         raise ValueError("perm_tmp must have same length as distances")
-#     if len(stack_left_tmp) != n_genes:
-#         raise ValueError("stack_left_tmp must have same length as distances")
-#     if len(stack_right_tmp) != n_genes:
-#         raise ValueError("stack_right_tmp must have same length as distances")
-#     if len(family_distances) != n_genes:
-#         raise ValueError("family_distances must have same length as distances")
+    # Determine workspace sizes using tox_loess_required_workspace
+    workspace_sizes = tox_loess_required_workspace(1, n_families, False)
+    liv = workspace_sizes['liv']
+    lv = workspace_sizes['lv']
 
-#     # Prepare output arrays
-#     dscale = np.zeros(n_families, dtype=np.float64)
-#     loess_x = np.zeros(n_families, dtype=np.float64)
-#     loess_y = np.zeros(n_families, dtype=np.float64)
-#     indices_used = np.zeros(n_families, dtype=np.int32)
-#     error_code = np.zeros(1, dtype=np.int32)
+    c_n_genes = ctypes.c_int(n_genes)
+    c_n_families = ctypes.c_int(n_families)
+    
+    workspace_sizes = tox_loess_required_workspace(1, n_families, False)
+    c_liv = ctypes.c_int(workspace_sizes['liv'])
+    c_lv = ctypes.c_int(workspace_sizes['lv'])
+    
+    c_span = ctypes.c_double(span)
+    c_degree = ctypes.c_int(degree)
+    c_mode = ctypes.c_int(mode)
+    c_n_iters = ctypes.c_int(n_iters)
 
-#     # Setup C wrapper
-#     compute_family_scaling_expert_c = lib.compute_family_scaling_expert_c
-#     compute_family_scaling_expert_c.argtypes = [
-#         ctypes.c_int,  # n_genes
-#         ctypes.c_int,  # n_families
-#         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # distances
-#         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # gene_to_fam
-#         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # dscale
-#         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_x
-#         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_y
-#         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # indices_used
-#         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # perm_tmp
-#         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_left_tmp
-#         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_right_tmp
-#         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # family_distances
-#         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # error_code
-#     ]
-#     compute_family_scaling_expert_c.restype = None
+    # Allocate additional workspace arrays
+    iv = np.zeros(liv, dtype=np.int32)
+    wv = np.zeros(lv, dtype=np.float64)
+    diagl = np.zeros(n_genes, dtype=np.float64)
+    w_init = np.zeros(n_genes, dtype=np.float64)
+    z_mat = np.zeros((n_genes, 1), dtype=np.float64)
+    rw = np.zeros(n_genes, dtype=np.float64)
+    ww = np.zeros(n_genes, dtype=np.float64)
+    res = np.zeros(n_genes, dtype=np.float64)
+    pi = np.zeros(n_genes, dtype=np.int32)
+    yhat_tmp = np.zeros(n_genes, dtype=np.float64)
 
-#     # Call Fortran routine
-#     compute_family_scaling_expert_c(
-#         n_genes, n_families, distances, gene_to_fam,
-#         dscale, loess_x, loess_y, indices_used,
-#         perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, error_code
-#     )
+    # Prepare output arrays
+    dscale = np.zeros(n_families, dtype=np.float64)
+    loess_x = np.zeros(n_families, dtype=np.float64)
+    loess_y = np.zeros(n_families, dtype=np.float64)
+    indices_used = np.zeros(n_families, dtype=np.int32)
+    error_code = np.zeros(1, dtype=np.int32)
 
-#     # Check for errors
-#     check_err_code(error_code[0])
+    # Setup C wrapper
+    compute_family_scaling_expert_c = lib.compute_family_scaling_expert_c
+    compute_family_scaling_expert_c.argtypes = [
+        ctypes.POINTER(ctypes.c_int),  # n_genes
+        ctypes.POINTER(ctypes.c_int),  # n_families
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # distances
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # gene_to_fam
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # dscale
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_x
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_y
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # indices_used
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # perm_tmp
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_left_tmp
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_right_tmp
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # family_distances
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # iv
+        ctypes.POINTER(ctypes.c_int),  # liv
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # wv
+        ctypes.POINTER(ctypes.c_int),  # lv
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # diagl
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # w_init
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # z_mat
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # rw
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # ww
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # res
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # pi
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # yhat_tmp
+        ctypes.POINTER(ctypes.c_double),  # span
+        ctypes.POINTER(ctypes.c_int),  # degree
+        ctypes.POINTER(ctypes.c_int),  # mode
+        ctypes.POINTER(ctypes.c_int),  # n_iters
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # error_code
+    ]
+    compute_family_scaling_expert_c.restype = None
 
-#     # Mark outputs as read-only
-#     _readonly(dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances)
+    # Call Fortran routine
+    compute_family_scaling_expert_c(
+        ctypes.byref(c_n_genes), 
+        ctypes.byref(c_n_families), 
+        distances, 
+        gene_to_fam,
+        dscale, loess_x, loess_y, indices_used,
+        perm_tmp, stack_left_tmp, stack_right_tmp, family_distances,
+        iv, 
+        ctypes.byref(c_liv), 
+        wv, 
+        ctypes.byref(c_lv),
+        diagl, w_init, z_mat, rw, ww, res, pi, yhat_tmp,
+        ctypes.byref(c_span), 
+        ctypes.byref(c_degree), 
+        ctypes.byref(c_mode), 
+        ctypes.byref(c_n_iters), 
+        error_code
+    )
 
-#     return {
-#         'dscale': dscale,
-#         'loess_x': loess_x,
-#         'loess_y': loess_y,
-#         'indices_used': indices_used,
-#         'perm_tmp': perm_tmp,
-#         'stack_left_tmp': stack_left_tmp,
-#         'stack_right_tmp': stack_right_tmp,
-#         'family_distances': family_distances
-#     }
+    # Check for errors
+    check_err_code(error_code[0])
 
+    # Mark outputs as read-only
+    _readonly(dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances)
+
+    return {
+        'dscale': dscale,
+        'loess_x': loess_x,
+        'loess_y': loess_y,
+        'indices_used': indices_used,
+        'perm_tmp': perm_tmp,
+        'stack_left_tmp': stack_left_tmp,
+        'stack_right_tmp': stack_right_tmp,
+        'family_distances': family_distances
+    }
 
 #> tox_get_outliers:compute_rdi_c: Compute Relative Distance Index (RDI) for outlier detection
 def tox_compute_rdi(distances, gene_to_fam, dscale):
