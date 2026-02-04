@@ -28,13 +28,11 @@ for compiler_dir in build/${COMPILER}_*; do
   if [ -d "$compiler_dir" ]; then
     echo "Processing FPM directory: $compiler_dir"
     # Move .so files if they exist
-    mv "$compiler_dir"/*.so build/ 2>/dev/null || true
+    cp "$compiler_dir"/*.so build/ 2>/dev/null || true
     # Move .mod files if they exist
-    find "$compiler_dir" -name "*.mod" -exec mv {} build/ \; 2>/dev/null || true
+    find "$compiler_dir" -name "*.mod" -exec cp {} build/ \; 2>/dev/null || true
     # Move .o files from subdirectories if they exist
-    find "$compiler_dir" -name "*.o" -exec mv {} build/ \; 2>/dev/null || true
-    # Remove the compiler-specific directory
-    rm -rf "$compiler_dir"
+    find "$compiler_dir" -name "*.o" -exec cp {} build/ \; 2>/dev/null || true
   fi
 done
 

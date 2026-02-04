@@ -4,6 +4,7 @@
 !|
 !| This module implements the pipeline to obtain neighborhood residuals from expression vectors, to be used for JCT based data integration.
 submodule (tox_data_integration) tox_data_integration_stats
+    use safeguard
     use, intrinsic :: iso_fortran_env, only: int32, real64
     use tox_errors, only: validate_dimension_size, validate_in_range_int, validate_in_range_real, set_ok, set_err, is_err, ERR_ALLOC_FAIL
     use f42_utils, only: init_random, shuffle_vector

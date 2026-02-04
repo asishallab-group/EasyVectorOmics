@@ -31,7 +31,7 @@ if [[ -z "$NO_BUILD" ]]; then
     test_directive=${d%% *}
     test_directive=${test_directive#-DTEST_KIND_MISMATCH_}
     echo -en "Testing safeguard for mismatch for $test_directive: "
-    if [[ $(bash build.sh "$@" "${directives}" 1>kinds.out 2>/dev/null; grep "Divi.*zero" kinds.out) ]]; then
+    if [[ $(bash build.sh "${directives}" 1>kinds.out 2>/dev/null; grep "Divi.*zero" kinds.out) ]]; then
       echo "success"
     else
       echo "failure"
@@ -45,7 +45,7 @@ EOF
   check_exit_code "Kind Mismatch Test failed"
 
   echo "Compiling src/"
-  bash build.sh "$@"
+  bash build.sh
   check_exit_code "Build failed"
 fi
 
