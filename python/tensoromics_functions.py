@@ -3523,7 +3523,380 @@ def tox_compute_p_values(local_contributions_observed,
     }
 
 
-#> tox_jensen_shannon_test:compute_gene_means_c: Compute per-gene mean expression
+#> tox_data_integration:determine_shared_residual_range_expert_c: Compute shared residual range R from two residual matrices.
+def tox_determine_shared_residual_range_expert(
+    residual_pool,
+    residual_pool_perm,
+    residual_range_quantile=95.0,
+):
+    """
+    Compute shared residual range R from two residual matrices.
+
+    Args:
+        residual_pool: np.ndarray (pool_size), pool_size is usually `(n_reps_S1 + n_reps_2)*n_neighbors*n_points`
+        residual_pool_perm: np.ndarray (pool_size), permutation vector that sorts `residual_pool`
+        residual_range_quantile: float
+
+    Returns:
+        float: shared_residual_range
+    """
+
+    # Ensure Fortran order
+    residual_pool = np.ascontiguousarray(residual_pool, dtype=np.float64)
+    residual_pool_perm = np.ascontiguousarray(residual_pool_perm, dtype=np.int32)
+
+    pool_size_c = ctypes.c_int(len(residual_pool))
+    quantile_c = ctypes.c_double(residual_range_quantile)
+
+    shared_R = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+
+    fn = lib.determine_shared_residual_range_expert_c
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # residual_pool
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),  # residual_pool_perm
+        ctypes.POINTER(ctypes.c_int),                                    # pool_size
+        ctypes.POINTER(ctypes.c_double),                                 # quantile
+        ctypes.POINTER(ctypes.c_double),                                 # shared_R
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+    ]
+    fn.restype = None
+
+    fn(
+        residual_pool,
+        residual_pool_perm,
+        ctypes.byref(pool_size_c),
+        ctypes.byref(quantile_c),
+        ctypes.byref(shared_R),
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+
+    return shared_R.value
+
+
+#> tox_data_integration:determine_shared_residual_range_c: Compute shared residual range R from two residual matrices.
+def tox_determine_shared_residual_range(
+    neighborhood_residuals_S1,
+    neighborhood_residuals_S2,
+    residual_range_quantile=95.0,
+):
+    """
+    Compute shared residual range R from two residual matrices.
+    Concatenates both neighborhoods with absolute values into one flat array and determines the residual range [-R,R] this way, using percentile.
+
+    Args:
+        neighborhood_residuals_S1: np.ndarray (n_reps_S1, n_neighbors, n_points)
+        neighborhood_residuals_S2: np.ndarray (n_reps_S2, n_neighbors, n_points)
+        residual_range_quantile: float
+
+    Returns:
+        float: shared_residual_range
+    """
+
+    S1 = np.asfortranarray(neighborhood_residuals_S1, dtype=np.float64)
+    S2 = np.asfortranarray(neighborhood_residuals_S2, dtype=np.float64)
+
+    n_reps_s1_c, n_neighbors_c, n_points_c = map(ctypes.c_int, S1.shape)
+    n_reps_s2_c = ctypes.c_int(S2.shape[0])
+    quantile_c = ctypes.c_double(residual_range_quantile)
+
+    shared_R = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+
+    fn = lib.determine_shared_residual_range_c
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_int),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_double),
+        ctypes.POINTER(ctypes.c_int),
+    ]
+    fn.restype = None
+
+    fn(
+        S1,
+        S2,
+        ctypes.byref(n_reps_s1_c),
+        ctypes.byref(n_reps_s2_c),
+        ctypes.byref(n_neighbors_c),
+        ctypes.byref(n_points_c),
+        ctypes.byref(quantile_c),
+        ctypes.byref(shared_R),
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+
+    return shared_R.value
+
+
+#> tox_data_integration:build_residual_histograms_c: Build histogram counts and PMFs for one study
+def tox_build_residual_histograms(
+    neighborhood_residuals,
+    shared_residual_range,
+    n_bins,
+):
+    """
+    Build histogram counts and PMFs for one study.
+
+    Args:
+        neighborhood_residuals: np.ndarray (n_reps, n_neighbors, n_points)
+        shared_residual_range: float
+        n_bins: int
+
+    Returns:
+        dict with:
+            counts: (n_points, n_bins)
+            pmf: (n_points, n_bins)
+            included_n_residuals: (n_points,)
+    """
+
+    E = np.asfortranarray(neighborhood_residuals, dtype=np.float64)
+
+    n_reps_c, n_neighbors_c, n_points_c = map(ctypes.c_int, E.shape)
+    n_bins_c = ctypes.c_int(n_bins)
+    R_c = ctypes.c_double(shared_residual_range)
+
+    counts = np.empty((n_points_c.value, n_bins), dtype=np.int32, order="F")
+    pmf = np.empty((n_points_c.value, n_bins), dtype=np.float64, order="F")
+    included = np.empty(n_points_c.value, dtype=np.int32)
+
+    ierr = ctypes.c_int(0)
+
+    fn = lib.build_residual_histograms_c
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # E
+        ctypes.POINTER(ctypes.c_int),                                    # n_residuals
+        ctypes.POINTER(ctypes.c_int),                                    # n_neighbors
+        ctypes.POINTER(ctypes.c_int),                                    # n_points
+        ctypes.POINTER(ctypes.c_double),                                 # R
+        ctypes.POINTER(ctypes.c_int),                                    # n_bins
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),    # counts
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # pmf
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # included
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+    ]
+    fn.restype = None
+
+    fn(
+        E,
+        ctypes.byref(n_reps_c),
+        ctypes.byref(n_neighbors_c),
+        ctypes.byref(n_points_c),
+        ctypes.byref(R_c),
+        ctypes.byref(n_bins_c),
+        counts,
+        pmf,
+        included,
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+
+    _readonly(counts)
+    _readonly(pmf)
+    _readonly(included)
+
+    return {
+        "counts": counts,
+        "pmf": pmf,
+        "included_n_residuals": included,
+    }
+
+
+#> tox_data_integration:compute_divergence_per_reference_point_c: Build histogram counts and PMFs for one study
+def tox_compute_divergence_per_reference_point(pmf_S1, pmf_S2):
+    """
+    Compute per-neighbor Jensen–Shannon divergences.
+
+    Args:
+        pmf_S1: np.ndarray (n_points, n_bins)
+        pmf_S2: np.ndarray (n_points, n_bins)
+
+    Returns:
+        np.ndarray (n_points,)
+    """
+
+    P1 = np.asfortranarray(pmf_S1, dtype=np.float64)
+    P2 = np.asfortranarray(pmf_S2, dtype=np.float64)
+
+    n_points_c, n_bins_c = map(ctypes.c_int, P1.shape)
+
+    jsd = np.empty(P1.shape[0], dtype=np.float64)
+    ierr = ctypes.c_int(0)
+
+    fn = lib.compute_divergence_per_reference_point_c
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # P1
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # P2
+        ctypes.POINTER(ctypes.c_int),                                    # n_points
+        ctypes.POINTER(ctypes.c_int),                                    # n_bins
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # jsd
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+    ]
+    fn.restype = None
+
+    fn(
+        P1,
+        P2,
+        ctypes.byref(n_points_c),
+        ctypes.byref(n_bins_c),
+        jsd,
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+    _readonly(jsd)
+
+    return jsd
+
+
+#> tox_data_integration:compute_weighted_global_divergence_c: Compute weighted global Jensen–Shannon divergence
+def tox_compute_weighted_global_divergence(
+    js_divergences,
+    included_S1,
+    included_S2,
+):
+    """
+    Compute weighted global Jensen–Shannon divergence.
+
+    Args:
+        js_divergences: np.ndarray (n_points,)
+        included_S1: np.ndarray (n_points,)
+        included_S2: np.ndarray (n_points,)
+
+    Returns:
+        dict with:
+            global_js_divergence: float
+            weights: np.ndarray (n_points,)
+    """
+
+    jsd = np.ascontiguousarray(js_divergences, dtype=np.float64)
+    inc1 = np.ascontiguousarray(included_S1, dtype=np.int32)
+    inc2 = np.ascontiguousarray(included_S2, dtype=np.int32)
+
+    n_points_c = ctypes.c_int(jsd.shape[0])
+    weights = np.empty(jsd.shape[0], dtype=np.float64, order="C")
+    global_jsd = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+
+    fn = lib.compute_weighted_global_divergence_c
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # jsd
+        ctypes.POINTER(ctypes.c_int),                                    # n_points
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # inc1
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # inc2
+        ctypes.POINTER(ctypes.c_double),                                 # global_jsd
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # weights
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+    ]
+    fn.restype = None
+
+    fn(
+        jsd,
+        ctypes.byref(n_points_c),
+        inc1,
+        inc2,
+        ctypes.byref(global_jsd),
+        weights,
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+
+    _readonly(weights)
+
+    return {
+        "global_js_divergence": global_jsd.value,
+        "weights": weights,
+    }
+
+
+#> tox_data_integration:gjct_permutation_test_c: Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
+def gjct_permutation_test(
+    neighborhood_residuals_S1, neighborhood_residuals_S2,
+    global_jsd_observed, n_bins, shared_residual_range,
+    n_permutations, random_seed=42,
+):
+    """
+    Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
+
+    Args:
+        neighborhood_residuals_S1: np.ndarray (n_reps, n_neighbors, n_points)
+        neighborhood_residuals_S2: np.ndarray (n_reps, n_neighbors, n_points)
+        global_jsd_observed: float
+        n_bins: int
+        shared_residual_range: float
+        n_permutations: int
+
+    Returns:
+        dict with:
+            jsd_null: (n_permutations,)
+            p_value: float
+    """
+
+    S1_c = np.asfortranarray(neighborhood_residuals_S1, dtype=np.float64)
+    S2_c = np.asfortranarray(neighborhood_residuals_S2, dtype=np.float64)
+
+    n_reps_S1_c, n_neighbors_c, n_points_c = map(ctypes.c_int, S1_c.shape)
+    n_reps_S2_c = ctypes.c_int(S2_c.shape[0])
+
+    jsd_null = np.empty(n_permutations, dtype=np.float64, order="C")
+    p_value = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+
+    fn = lib.gjct_permutation_test_c
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # S1
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # S2
+        ctypes.POINTER(ctypes.c_int),                                    # n_reps_S1
+        ctypes.POINTER(ctypes.c_int),                                    # n_reps_S2
+        ctypes.POINTER(ctypes.c_int),                                    # n_neighbors
+        ctypes.POINTER(ctypes.c_int),                                    # n_points
+        ctypes.POINTER(ctypes.c_double),                                 # global_jsd_observed
+        ctypes.POINTER(ctypes.c_int),                                    # n_bins
+        ctypes.POINTER(ctypes.c_double),                                 # shared_residual_range
+        ctypes.POINTER(ctypes.c_int),                                    # n_permutations
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # jsd_null
+        ctypes.POINTER(ctypes.c_double),                 # p_value
+        ctypes.POINTER(ctypes.c_int),                    # ierr
+        ctypes.POINTER(ctypes.c_int),                                    # random_seed
+    ]
+    fn.restype = None
+
+    fn(
+        S1_c, S2_c,
+        ctypes.byref(n_reps_S1_c),
+        ctypes.byref(n_reps_S2_c),
+        ctypes.byref(n_neighbors_c),
+        ctypes.byref(n_points_c),
+        ctypes.byref(ctypes.c_double(global_jsd_observed)),
+        ctypes.byref(ctypes.c_int(n_bins)),
+        ctypes.byref(ctypes.c_double(shared_residual_range)),
+        ctypes.byref(ctypes.c_int(n_permutations)),
+        jsd_null,
+        ctypes.byref(p_value),
+        ctypes.byref(ierr),
+        ctypes.byref(ctypes.c_int(random_seed)),
+    )
+
+    check_err_code(ierr.value)
+
+    _readonly(jsd_null)
+
+    return {
+        "jsd_null": jsd_null,
+        "p_value": p_value.value,
+    }
+
+
+#> tox_data_integration:compute_gene_means_c: Compute per-gene mean expression
 def tox_compute_gene_means(expr):
     """
     Compute per-gene mean expression, ignoring NaN values.
@@ -3563,7 +3936,7 @@ def tox_compute_gene_means(expr):
     return means
 
 
-#> tox_jensen_shannon_test:compute_residuals_c: Compute signed residuals
+#> tox_data_integration:compute_residuals_c: Compute signed residuals
 def tox_compute_residuals(expr, means):
     """
     Compute signed residuals.
@@ -3608,7 +3981,7 @@ def tox_compute_residuals(expr, means):
     return resid
 
 
-#> tox_jensen_shannon_test:pool_means_c: Pool mean-expression values across studies
+#> tox_data_integration:pool_means_c: Pool mean-expression values across studies
 def tox_pool_means(mean_S1, mean_S2, n_points):
     """
     Pool per-gene mean expression values across studies.
@@ -3666,7 +4039,7 @@ def tox_pool_means(mean_S1, mean_S2, n_points):
     }
 
 
-#> tox_jensen_shannon_test:pool_means_expert_c: Pool mean-expression values using pre-pooled array
+#> tox_data_integration:pool_means_expert_c: Pool mean-expression values using pre-pooled array
 def tox_pool_means_expert(pooled_means, pooled_perm, n_points):
     """
     Pool means using pre-pooled and pre-sorted arrays.
@@ -3722,7 +4095,7 @@ def tox_pool_means_expert(pooled_means, pooled_perm, n_points):
     }
 
 
-#> tox_jensen_shannon_test:calc_neighborhood_size_c: Compute neighborhood size
+#> tox_data_integration:calc_neighborhood_size_c: Compute neighborhood size
 def tox_calc_neighborhood_size(n_pool, n_points, n_genes_S, mean_S, desired_size=0):
     """
     Compute neighborhood size.
@@ -3768,10 +4141,10 @@ def tox_calc_neighborhood_size(n_pool, n_points, n_genes_S, mean_S, desired_size
     return n_neighbors_c.value
 
 
-#> tox_jensen_shannon_test:construct_neighborhoods_c: Construct neighborhood residual sets (alloc variant)
+#> tox_data_integration:construct_neighborhoods_c: Construct neighborhood residual sets
 def tox_construct_neighborhoods(x_star, mean_S, resid_S, n_pool, desired_n_neighbors=0):
     """
-    Construct neighborhood-based residual sets (alloc variant).
+    Construct neighborhood-based residual sets.
 
     Args:
         x_star: np.ndarray (n_points,)
@@ -3833,4 +4206,362 @@ def tox_construct_neighborhoods(x_star, mean_S, resid_S, n_pool, desired_n_neigh
     return {
         "neighborhood_residuals": neigh_res,
         "neighborhood_indices": neigh_idx,
+    }
+
+
+#> tox_data_integration:fjct_compute_jsd_c: Compute family-level JSD
+def fjct_compute_jsd(
+    family_idx,
+    gene_to_family_S1,
+    gene_to_family_S2,
+    neighborhood_residuals_S1,
+    neighborhood_residuals_S2,
+    neighborhood_genes_S1,
+    neighborhood_genes_S2,
+    n_bins,
+    shared_residual_range
+):
+    """
+    Compute the family-level Jensen–Shannon divergence using the
+    Fortran routine `fjct_compute_jsd_alloc_c` from the tox_data_integration module.
+
+    This routine:
+      - builds family-specific neighbor masks,
+      - constructs masked residual histograms,
+      - computes per-point JSD values,
+      - computes weighted global JSD,
+      - returns included replicate counts and weights.
+
+    Parameters
+    ----------
+    family_idx : int
+        Index of the gene family to analyze.
+    gene_to_family_S1 : np.ndarray, shape (n_genes_S1,), int32
+        Family index for each gene in study 1.
+    gene_to_family_S2 : np.ndarray, shape (n_genes_S2,), int32
+        Family index for each gene in study 2.
+    neighborhood_residuals_S1 : np.ndarray, shape (n_reps_S1, n_neighbors, n_points), float64 (F-order)
+        Residuals for study 1.
+    neighborhood_residuals_S2 : np.ndarray, shape (n_reps_S2, n_neighbors, n_points), float64 (F-order)
+        Residuals for study 2.
+    neighborhood_genes_S1 : np.ndarray, shape (n_neighbors, n_points), int32
+        Gene indices for study 1 neighborhoods.
+    neighborhood_genes_S2 : np.ndarray, shape (n_neighbors, n_points), int32
+        Gene indices for study 2 neighborhoods.
+    n_bins : int
+        Number of histogram bins.
+    shared_residual_range : float
+        Shared residual range for histogram construction.
+
+    Returns
+    -------
+    dict
+        {
+            "js_divergences": np.ndarray (n_points,),
+            "included_n_reps_S1": np.ndarray (n_points,),
+            "included_n_reps_S2": np.ndarray (n_points,),
+            "total_included_n_reps": int,
+            "global_js_divergence": float,
+            "weights": np.ndarray (n_points,),
+            "ierr": int
+        }
+
+    Notes
+    -----
+    - All arrays must be Fortran-contiguous.
+    - Raises an exception if ierr != 0.
+    """
+
+    gene_to_family_S1 = np.asfortranarray(gene_to_family_S1, dtype=np.int32)
+    gene_to_family_S2 = np.asfortranarray(gene_to_family_S2, dtype=np.int32)
+    neighborhood_residuals_S1 = np.asfortranarray(neighborhood_residuals_S1, dtype=np.float64)
+    neighborhood_residuals_S2 = np.asfortranarray(neighborhood_residuals_S2, dtype=np.float64)
+    neighborhood_genes_S1 = np.asfortranarray(neighborhood_genes_S1, dtype=np.int32)
+    neighborhood_genes_S2 = np.asfortranarray(neighborhood_genes_S2, dtype=np.int32)
+
+    n_reps_S1, n_neighbors, n_points = neighborhood_residuals_S1.shape
+    n_reps_S2 = neighborhood_residuals_S2.shape[0]
+    n_genes_S1 = gene_to_family_S1.shape[0]
+    n_genes_S2 = gene_to_family_S2.shape[0]
+
+    jsd = np.empty(n_points, dtype=np.float64, order="F")
+    inc1 = np.empty(n_points, dtype=np.int32, order="F")
+    inc2 = np.empty(n_points, dtype=np.int32, order="F")
+    total = ctypes.c_int(0)
+    global_jsd = ctypes.c_double(0.0)
+    weights = np.empty(n_points, dtype=np.float64, order="F")
+    ierr = ctypes.c_int(0)
+
+    lib.fjct_compute_jsd_c.argtypes = [
+        ctypes.POINTER(ctypes.c_int),   # family_idx
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),                 # gene_to_family_S1
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),                 # gene_to_family_S2
+        ctypes.POINTER(ctypes.c_int),   # n_genes_S1
+        ctypes.POINTER(ctypes.c_int),   # n_genes_S2
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),                 # neighborhood_residuals_S1
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),                 # neighborhood_residuals_S2
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),                 # neighborhood_genes_S1
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),                 # neighborhood_genes_S2
+        ctypes.POINTER(ctypes.c_int),   # n_reps_S1
+        ctypes.POINTER(ctypes.c_int),   # n_reps_S2
+        ctypes.POINTER(ctypes.c_int),   # n_neighbors
+        ctypes.POINTER(ctypes.c_int),   # n_points
+        ctypes.POINTER(ctypes.c_int),   # n_bins
+        ctypes.POINTER(ctypes.c_double),# shared_residual_range
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),                 # js_divergences
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),                 # included_n_reps_S1
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),                 # included_n_reps_S2
+        ctypes.POINTER(ctypes.c_int),   # total_included_n_reps
+        ctypes.POINTER(ctypes.c_double),# global_js_divergence
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),                 # weights
+        ctypes.POINTER(ctypes.c_int)    # ierr
+    ]
+    lib.fjct_compute_jsd_c.restype = None
+
+    lib.fjct_compute_jsd_c(
+        ctypes.byref(ctypes.c_int(family_idx)),
+        gene_to_family_S1,
+        gene_to_family_S2,
+        ctypes.byref(ctypes.c_int(n_genes_S1)),
+        ctypes.byref(ctypes.c_int(n_genes_S2)),
+        neighborhood_residuals_S1,
+        neighborhood_residuals_S2,
+        neighborhood_genes_S1,
+        neighborhood_genes_S2,
+        ctypes.byref(ctypes.c_int(n_reps_S1)),
+        ctypes.byref(ctypes.c_int(n_reps_S2)),
+        ctypes.byref(ctypes.c_int(n_neighbors)),
+        ctypes.byref(ctypes.c_int(n_points)),
+        ctypes.byref(ctypes.c_int(n_bins)),
+        ctypes.byref(ctypes.c_double(shared_residual_range)),
+        jsd,
+        inc1,
+        inc2,
+        ctypes.byref(total),
+        ctypes.byref(global_jsd),
+        weights,
+        ctypes.byref(ierr)
+    )
+
+    check_err_code(ierr.value)
+
+    _readonly(jsd, inc1, inc2, weights)
+
+    return {
+        "js_divergences": jsd,
+        "included_n_reps_S1": inc1,
+        "included_n_reps_S2": inc2,
+        "total_included_n_reps": total.value,
+        "global_js_divergence": global_jsd.value,
+        "weights": weights,
+        "ierr": ierr.value,
+    }
+
+
+#> tox_data_integration:fjct_compute_jsd_expert_c: Compute family-level JSD (expert variant with masks)
+def fjct_compute_jsd_expert(
+    neighborhood_residuals_S1,
+    neighborhood_residuals_S2,
+    neighbor_mask_S1,
+    neighbor_mask_S2,
+    n_bins,
+    shared_residual_range
+):
+    """
+    Expert variant of the family-level JSD computation. This version accepts
+    precomputed neighbor masks and returns full histogram data (PMFs and counts).
+
+    Parameters
+    ----------
+    neighborhood_residuals_S1 : np.ndarray, shape (n_reps_S1, n_neighbors, n_points), float64 (F-order)
+        Residuals for study 1.
+    neighborhood_residuals_S2 : np.ndarray, shape (n_reps_S2, n_neighbors, n_points), float64 (F-order)
+        Residuals for study 2.
+    neighbor_mask_S1 : np.ndarray, shape (n_neighbors, n_points), bool
+        Mask selecting neighbors for study 1.
+    neighbor_mask_S2 : np.ndarray, shape (n_neighbors, n_points), bool
+        Mask selecting neighbors for study 2.
+    n_bins : int
+        Number of histogram bins.
+    shared_residual_range : float
+        Shared residual range for histogram construction.
+
+    Returns
+    -------
+    dict
+        {
+            "js_divergences": np.ndarray (n_points,),
+            "included_n_reps_S1": np.ndarray (n_points,),
+            "included_n_reps_S2": np.ndarray (n_points,),
+            "total_included_n_reps": int,
+            "global_js_divergence": float,
+            "weights": np.ndarray (n_points,),
+            "pmf_S1": np.ndarray (n_points, n_bins),
+            "pmf_S2": np.ndarray (n_points, n_bins),
+            "tmp_counts": np.ndarray (n_points, n_bins),
+            "ierr": int
+        }
+
+    Notes
+    -----
+    - All arrays must be Fortran-contiguous.
+    """
+
+    neighborhood_residuals_S1 = np.asfortranarray(neighborhood_residuals_S1, dtype=np.float64)
+    neighborhood_residuals_S2 = np.asfortranarray(neighborhood_residuals_S2, dtype=np.float64)
+    neighbor_mask_S1 = np.asfortranarray(neighbor_mask_S1, dtype=np.int32)
+    neighbor_mask_S2 = np.asfortranarray(neighbor_mask_S2, dtype=np.int32)
+
+    n_reps_S1, n_neighbors, n_points = neighborhood_residuals_S1.shape
+    n_reps_S2 = neighborhood_residuals_S2.shape[0]
+
+    jsd = np.empty(n_points, dtype=np.float64, order="F")
+    inc1 = np.empty(n_points, dtype=np.int32, order="F")
+    inc2 = np.empty(n_points, dtype=np.int32, order="F")
+    total = ctypes.c_int(0)
+    global_jsd = ctypes.c_double(0.0)
+    weights = np.empty(n_points, dtype=np.float64, order="F")
+
+    pmf_S1 = np.empty((n_points, n_bins), dtype=np.float64, order="F")
+    pmf_S2 = np.empty((n_points, n_bins), dtype=np.float64, order="F")
+    tmp_counts = np.empty((n_points, n_bins), dtype=np.int32, order="F")
+
+    ierr = ctypes.c_int(0)
+
+    lib.fjct_compute_jsd_expert_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),                 # neighborhood_residuals_S1
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),                 # neighborhood_residuals_S2
+        ctypes.POINTER(ctypes.c_int),   # n_reps_S1
+        ctypes.POINTER(ctypes.c_int),   # n_reps_S2
+        ctypes.POINTER(ctypes.c_int),   # n_neighbors
+        ctypes.POINTER(ctypes.c_int),   # n_points
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),                 # neighbor_mask_S1
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),                 # neighbor_mask_S2
+        ctypes.POINTER(ctypes.c_int),   # n_bins
+        ctypes.POINTER(ctypes.c_double),# shared_residual_range
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),                 # js_divergences
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),                 # included_n_reps_S1
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),                 # included_n_reps_S2
+        ctypes.POINTER(ctypes.c_int),   # total_included_n_reps
+        ctypes.POINTER(ctypes.c_double),# global_js_divergence
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),                 # weights
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),                 # pmf_S1
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),                 # pmf_S2
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),                 # tmp_counts
+        ctypes.POINTER(ctypes.c_int)    # ierr
+    ]
+    lib.fjct_compute_jsd_expert_c.restype = None
+
+    lib.fjct_compute_jsd_expert_c(
+        neighborhood_residuals_S1,
+        neighborhood_residuals_S2,
+        ctypes.byref(ctypes.c_int(n_reps_S1)),
+        ctypes.byref(ctypes.c_int(n_reps_S2)),
+        ctypes.byref(ctypes.c_int(n_neighbors)),
+        ctypes.byref(ctypes.c_int(n_points)),
+        neighbor_mask_S1,
+        neighbor_mask_S2,
+        ctypes.byref(ctypes.c_int(n_bins)),
+        ctypes.byref(ctypes.c_double(shared_residual_range)),
+        jsd,
+        inc1,
+        inc2,
+        ctypes.byref(total),
+        ctypes.byref(global_jsd),
+        weights,
+        pmf_S1,
+        pmf_S2,
+        tmp_counts,
+        ctypes.byref(ierr)
+    )
+
+    check_err_code(ierr.value)
+
+    _readonly(jsd, inc1, inc2, weights, pmf_S1, pmf_S2)
+
+    return {
+        "js_divergences": jsd,
+        "included_n_reps_S1": inc1,
+        "included_n_reps_S2": inc2,
+        "total_included_n_reps": total.value,
+        "global_js_divergence": global_jsd.value,
+        "weights": weights,
+        "pmf_S1": pmf_S1,
+        "pmf_S2": pmf_S2,
+        "ierr": ierr.value,
+    }
+
+
+#> tox_data_integration:fjct_compute_contribution_scores_c: Compute per-family contribution scores
+def fjct_compute_contribution_scores(
+    global_js_divergences,
+    total_included_n_reps_per_f
+):
+    """
+    Compute per-family contribution scores using the Fortran routine
+    `fjct_compute_contribution_scores_c`.
+
+    This combines:
+      1. the divergence of each family (global_js_divergences),
+      2. the residual support weight of each family
+         (total_included_n_reps_per_f / sum(total_included_n_reps_per_f)).
+
+    Parameters
+    ----------
+    global_js_divergences : np.ndarray, shape (k_families,), float64
+        Weighted global JSD per family.
+    total_included_n_reps_per_f : np.ndarray, shape (k_families,), int32
+        Total included replicates per family.
+
+    Returns
+    -------
+    dict
+        {
+            "support_weights": np.ndarray (k_families,),
+            "contribution_scores": np.ndarray (k_families,),
+            "ierr": int
+        }
+
+    Notes
+    -----
+    - All arrays must be contiguous and correctly typed.
+    - Raises an exception if ierr != 0.
+    """
+
+    global_js_divergences = np.asfortranarray(global_js_divergences, dtype=np.float64)
+    total_included_n_reps_per_f = np.asfortranarray(total_included_n_reps_per_f, dtype=np.int32)
+
+    k_families = ctypes.c_int(global_js_divergences.shape[0])
+
+    support = np.empty(k_families.value, dtype=np.float64, order="F")
+    contrib = np.empty(k_families.value, dtype=np.float64, order="F")
+    ierr = ctypes.c_int(0)
+
+    lib.fjct_compute_contribution_scores_c.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),                 # global_js_divergences
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),                 # total_included_n_reps_per_f
+        ctypes.POINTER(ctypes.c_int),   # k_families
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),                 # support_weights
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),                 # contribution_scores
+        ctypes.POINTER(ctypes.c_int)    # ierr
+    ]
+    lib.fjct_compute_contribution_scores_c.restype = None
+
+    lib.fjct_compute_contribution_scores_c(
+        global_js_divergences,
+        total_included_n_reps_per_f,
+        ctypes.byref(k_families),
+        support,
+        contrib,
+        ctypes.byref(ierr)
+    )
+
+    check_err_code(ierr.value)
+
+    _readonly(support, contrib)
+
+    return {
+        "support_weights": support,
+        "contribution_scores": contrib,
+        "ierr": ierr.value,
     }

@@ -944,7 +944,229 @@ tox_mean_vector <- function(expression_vectors, gene_indices) {
   return(result)
 }
 
-#> tox_jensen_shannon_test:compute_gene_means_c: Compute per-gene mean expression values
+#> tox_data_integration:determine_shared_residual_range_expert_c: Compute shared residual range R from a precomputed residual pool
+#' Compute the shared residual range R from a precomputed residual pool
+#'
+#' This function wraps the Fortran subroutine `determine_shared_residual_range_expert_c`
+#' which computes the residual range from a flattened residual pool and its sorting permutation.
+#'
+#' @param residual_pool Numeric vector of absolute residuals (NaNs removed)
+#' @param residual_pool_perm Numeric vector giving the permutation that sorts `residual_pool`
+#' @param residual_range_quantile Numeric scalar (default 95.0)
+#'
+#' @return Numeric scalar: the shared residual range R
+#'
+tox_determine_shared_residual_range_expert <- function(
+  residual_pool,
+  residual_pool_perm,
+  residual_range_quantile = 95.0
+) {
+
+  validate_numeric_vector(residual_pool)
+  validate_integer_vector(residual_pool_perm)
+  validate_nonempty_vector(residual_pool)
+  validate_equal_length(residual_pool, residual_pool_perm)
+
+  if (!is.numeric(residual_range_quantile) || length(residual_range_quantile) != 1L) {
+    stop("residual_range_quantile must be a numeric scalar.")
+  }
+
+  result <- tox_determine_shared_residual_range_expert_rcpp(
+    residual_pool,
+    residual_pool_perm,
+    residual_range_quantile
+  )
+
+  check_err_code(result$ierr)
+  result$shared_R
+}
+
+#> tox_data_integration:determine_shared_residual_range_c: Compute shared residual range R from two residual matrices
+#' Compute the shared residual range R from two residual matrices
+#'
+#' This function wraps the Fortran subroutine
+#' `determine_shared_residual_range_c`, which computes the shared
+#' residual range from two residual matrices (S1 and S2).
+#'
+#' @param neighborhood_residuals_S1 Numeric matrix (n_residuals × n_neighbors)
+#' @param neighborhood_residuals_S2 Numeric matrix (n_residuals × n_neighbors)
+#' @param residual_range_quantile Numeric scalar (default 95.0)
+#'
+#' @return Numeric scalar: the shared residual range R
+#'
+tox_determine_shared_residual_range <- function(
+  neighborhood_residuals_S1,
+  neighborhood_residuals_S2,
+  residual_range_quantile = 95.0
+) {
+  validate_numeric_array(neighborhood_residuals_S1)
+  validate_numeric_array(neighborhood_residuals_S2)
+
+  result <- tox_determine_shared_residual_range_rcpp(
+    neighborhood_residuals_S1,
+    neighborhood_residuals_S2,
+    residual_range_quantile
+  )
+
+  check_err_code(result$ierr)
+  result$shared_R
+}
+
+#> tox_data_integration:build_residual_histograms_c: Build residual histograms and PMFs
+#' Build residual histograms and probability mass functions (PMFs)
+#'
+#' This function wraps the Fortran subroutine
+#' `build_residual_histograms_c`, which computes histogram bin counts
+#' and normalized PMFs for each neighbor.
+#'
+#' @param neighborhood_residuals Numeric matrix (n_residuals × n_neighbors)
+#' @param shared_residual_range Numeric scalar R
+#' @param n_bins Integer number of histogram bins
+#'
+#' @return A list with:
+#'   \describe{
+#'     \item{counts}{Integer matrix (n_neighbors × n_bins)}
+#'     \item{pmf}{Numeric matrix (n_neighbors × n_bins)}
+#'     \item{included_n_residuals}{Integer vector (n_neighbors)}
+#'   }
+#'
+tox_build_residual_histograms <- function(
+  neighborhood_residuals,
+  shared_residual_range,
+  n_bins
+) {
+
+  validate_numeric_array(neighborhood_residuals)
+  validate_positive_integer_scalar(n_bins)
+
+  result <- tox_build_residual_histograms_rcpp(
+    neighborhood_residuals,
+    shared_residual_range,
+    as.integer(n_bins)
+  )
+
+  check_err_code(result$ierr)
+  result
+}
+
+#> tox_data_integration:compute_divergence_per_reference_point_c: Compute per-neighbor Jensen–Shannon divergences
+#' Compute per-neighbor Jensen–Shannon divergences
+#'
+#' This function wraps the Fortran subroutine
+#' `compute_divergence_per_reference_point_c`, which computes the
+#' Jensen–Shannon divergence for each neighbor based on two PMF matrices.
+#'
+#' @param pmf_S1 Numeric matrix (n_neighbors × n_bins)
+#' @param pmf_S2 Numeric matrix (n_neighbors × n_bins)
+#'
+#' @return Numeric vector of length n_neighbors containing the JSD values
+#'
+tox_compute_divergence_per_reference_point <- function(
+  pmf_S1,
+  pmf_S2
+) {
+  validate_numeric_matrix(pmf_S1)
+  validate_numeric_matrix(pmf_S2)
+  validate_matching_rows(pmf_S1, pmf_S2)
+
+  result <- tox_compute_divergence_per_reference_point_rcpp(
+    pmf_S1,
+    pmf_S2
+  )
+
+  check_err_code(result$ierr)
+  result$js_divergences
+}
+
+#> tox_data_integration:compute_weighted_global_divergence_c: Compute weighted global Jensen–Shannon divergence
+#' Compute weighted global Jensen–Shannon divergence
+#'
+#' This function wraps the Fortran subroutine
+#' `compute_weighted_global_divergence_c`, which computes the weighted
+#' global Jensen–Shannon divergence from per-neighbor divergences and
+#' sample counts.
+#'
+#' @param js_divergences Numeric vector (length n_neighbors)
+#' @param included_n_residuals_S1 Integer vector (length n_neighbors)
+#' @param included_n_residuals_S2 Integer vector (length n_neighbors)
+#'
+#' @return A list with:
+#'   \describe{
+#'     \item{global_js_divergence}{Numeric scalar}
+#'     \item{weights}{Numeric vector (length n_neighbors)}
+#'   }
+#'
+tox_compute_weighted_global_divergence <- function(
+  js_divergences,
+  included_n_residuals_S1,
+  included_n_residuals_S2
+) {
+  validate_numeric_vector(js_divergences)
+  validate_integer_vector(included_n_residuals_S1)
+  validate_integer_vector(included_n_residuals_S2)
+  validate_equal_length(js_divergences, included_n_residuals_S1)
+  validate_equal_length(js_divergences, included_n_residuals_S2)
+
+  result <- tox_compute_weighted_global_divergence_rcpp(
+    js_divergences,
+    included_n_residuals_S1,
+    included_n_residuals_S2
+  )
+
+  check_err_code(result$ierr)
+  result
+}
+
+#> tox_data_integration:gjct_permutation_test_c: Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
+#' Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
+#'
+#' This function wraps the Fortran subroutine
+#' `gjct_permutation_test_c`, which comutes the global jsd values for permutations of the residuals of both studies.
+#' To create a permutation, the residuals of a reference point will be concatenated, shuffled and reassigned in the shuffled order.
+#'
+#' @param included_n_residuals_S1 Integer vector (length n_neighbors)
+#' @param included_n_residuals_S2 Integer vector (length n_neighbors)
+#' @param neighborhood_residuals_S1: np.ndarray (n_reps, n_neighbors, n_points)
+#' @param neighborhood_residuals_S2: np.ndarray (n_reps, n_neighbors, n_points)
+#' @param global_jsd_observed: Numeric scalar of the calculated global weighted jsd value
+#' @param n_bins: Integer number of bins that were used to calculate global_jsd_observed
+#' @param shared_residual_range: Numeric scalar of the shared residual range used to calculate global_jsd_observed
+#' @param n_permutations: Integer number of permutations to perform
+#' @param random_seed: Integer number used as random seed
+#'
+#' @return A list with:
+#'   \describe{
+#'     \item{jsd_null}{Numeric vector (length n_permutations)}
+#'     \item{p_value}{Numeric scalar}
+#'   }
+#'
+tox_gjct_permutation_test <- function(
+  neighborhood_residuals_S1,
+  neighborhood_residuals_S2,
+  global_jsd_observed,
+  n_bins,
+  shared_residual_range,
+  n_permutations,
+  random_seed
+) {
+  validate_numeric_vector(neighborhood_residuals_S1, "neighborhood_residuals_S1")
+  validate_numeric_vector(neighborhood_residuals_S2, "neighborhood_residuals_S2")
+
+  result <- tox_gjct_permutation_test_rcpp(
+    neighborhood_residuals_S1,
+    neighborhood_residuals_S2,
+    global_jsd_observed,
+    n_bins,
+    shared_residual_range,
+    n_permutations,
+    random_seed
+  )
+
+  check_err_code(result$ierr)
+  result
+}
+
+#> tox_data_integration:compute_gene_means_c: Compute per-gene mean expression values
 #' Compute per-gene mean expression values
 #'
 #' This function computes the mean expression for each gene across replicates,
@@ -967,7 +1189,7 @@ tox_compute_gene_means <- function(expr) {
   return (result$means)
 }
 
-#> tox_jensen_shannon_test:compute_residuals_c: Compute signed residuals
+#> tox_data_integration:compute_residuals_c: Compute signed residuals
 #' Compute signed residuals
 #'
 #' This function computes signed residuals for each gene and replicate.
@@ -990,7 +1212,7 @@ tox_compute_residuals <- function(expr, means) {
   return(result$resid)
 }
 
-#> tox_jensen_shannon_test:pool_means_c: Pool mean expression values across studies
+#> tox_data_integration:pool_means_c: Pool mean expression values across studies
 #' Pool mean expression values across studies
 #'
 #' This function pools per-gene mean expression values from two studies
@@ -1021,7 +1243,7 @@ tox_pool_means <- function(mean_S1, mean_S2, n_points) {
   ))
 }
 
-#> tox_jensen_shannon_test:pool_means_expert_c: Pool mean expression values across studies
+#> tox_data_integration:pool_means_expert_c: Pool mean expression values across studies
 #' Pool mean expression values across studies
 #'
 #' This function pools per-gene mean expression values from two studies
@@ -1053,7 +1275,7 @@ tox_pool_means_expert <- function(pooled_means, pooled_perm, n_points) {
   ))
 }
 
-#> tox_jensen_shannon_test:construct_neighborhoods_c: Construct neighborhood-based residual sets (kNN)
+#> tox_data_integration:construct_neighborhoods_c: Construct neighborhood-based residual sets (kNN)
 #' Construct neighborhood-based residual sets (kNN)
 #'
 #' This function constructs neighborhoods around reference points and
@@ -1090,4 +1312,112 @@ tox_construct_neighborhoods <- function(x_star, n_pool, mean_S, resid_S,
     neighborhood_residuals = result$neighborhood_residuals,
     neighborhood_indices = result$neighborhood_indices
   ))
+}
+
+#> tox_data_integration:fjct_compute_jsd_c: Compute family-level JSD
+#' Compute family-level JSD
+#'
+#' @param family_idx Integer scalar.
+#' @param gene_to_family_S1 Integer vector (n_genes_S1).
+#' @param gene_to_family_S2 Integer vector (n_genes_S2).
+#' @param neighborhood_residuals_S1 Numeric array (n_reps_S1 × n_neighbors × n_points).
+#' @param neighborhood_residuals_S2 Numeric array (n_reps_S2 × n_neighbors × n_points).
+#' @param neighborhood_genes_S1 Integer matrix (n_neighbors × n_points).
+#' @param neighborhood_genes_S2 Integer matrix (n_neighbors × n_points).
+#' @param n_bins Integer scalar.
+#' @param shared_residual_range Numeric scalar.
+#'
+#' @return A list with js_divergences, included_n_reps_S1, included_n_reps_S2,
+#'         total_included_n_reps, global_js_divergence, weights, ierr.
+tox_fjct_compute_jsd <- function(
+  family_idx,
+  gene_to_family_S1,
+  gene_to_family_S2,
+  neighborhood_residuals_S1,
+  neighborhood_residuals_S2,
+  neighborhood_genes_S1,
+  neighborhood_genes_S2,
+  n_bins,
+  shared_residual_range
+) {
+  validate_numeric_array(neighborhood_residuals_S1)
+  validate_numeric_array(neighborhood_residuals_S2)
+  validate_numeric_vector(neighborhood_genes_S1)
+  validate_numeric_vector(neighborhood_genes_S2)
+
+  result <- tox_fjct_compute_jsd_alloc_rcpp(
+    family_idx,
+    gene_to_family_S1,
+    gene_to_family_S2,
+    neighborhood_residuals_S1,
+    neighborhood_residuals_S2,
+    neighborhood_genes_S1,
+    neighborhood_genes_S2,
+    n_bins,
+    shared_residual_range
+  )
+
+  check_err_code(result$ierr)
+  result
+}
+
+#> tox_data_integration:fjct_compute_jsd_expert_c: Compute family-level JSD (expert variant with masks)
+#' Compute family-level JSD (expert variant with masks)
+#'
+#' @param neighborhood_residuals_S1 Numeric array (n_reps_S1 × n_neighbors × n_points).
+#' @param neighborhood_residuals_S2 Numeric array (n_reps_S2 × n_neighbors × n_points).
+#' @param neighbor_mask_S1 Locical/Integer matrix (n_neighbors × n_points), non-zero is TRUE.
+#' @param neighbor_mask_S2 Locical/Integer matrix (n_neighbors × n_points), non-zero is TRUE.
+#' @param n_bins Integer scalar.
+#' @param shared_residual_range Numeric scalar.
+#'
+#' @return A list with js_divergences, included_n_reps_S1, included_n_reps_S2,
+#'         total_included_n_reps, global_js_divergence, weights,
+#'         pmf_S1, pmf_S2, tmp_counts, ierr.
+tox_fjct_compute_jsd_expert <- function(
+  neighborhood_residuals_S1,
+  neighborhood_residuals_S2,
+  neighbor_mask_S1,
+  neighbor_mask_S2,
+  n_bins,
+  shared_residual_range
+) {
+  validate_numeric_array(neighborhood_residuals_S1)
+  validate_numeric_array(neighborhood_residuals_S2)
+  mask_int_S1 <- neighbor_mask_S1 * 1L
+  mask_int_S2 <- neighbor_mask_S2 * 1L
+
+  result <- tox_fjct_compute_jsd_expert_rcpp(
+    neighborhood_residuals_S1,
+    neighborhood_residuals_S2,
+    mask_int_S1,
+    mask_int_S2,
+    n_bins,
+    shared_residual_range
+  )
+
+  check_err_code(result$ierr)
+  result
+}
+
+#> tox_data_integration:fjct_compute_contribution_scores_c: Compute per-family contribution scores
+#' Compute per-family contribution scores
+#'
+#' @param global_js_divergences Numeric vector (k_families).
+#' @param total_included_n_reps_per_f Integer vector (k_families).
+#'
+#' @return A list with support_weights, contribution_scores, ierr.
+tox_fjct_compute_contribution_scores <- function(
+  global_js_divergences,
+  total_included_n_reps_per_f
+) {
+  validate_numeric_vector(global_js_divergences)
+  validate_integer_vector(total_included_n_reps_per_f)
+  result <- tox_fjct_compute_contribution_scores_rcpp(
+    global_js_divergences,
+    total_included_n_reps_per_f
+  )
+
+  check_err_code(result$ierr)
+  result
 }

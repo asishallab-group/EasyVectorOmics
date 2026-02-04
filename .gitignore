@@ -1,3 +1,6 @@
+# ignore generated fpm.toml
+fpm.toml
+
 ## node modules
 **/node_modules*
 
@@ -11,8 +14,10 @@ doc/
 test_*
 !test_runner.sh
 !python/test/test_*
+!python/test_helpers.py
 !r/test/test_*
 !rcpp/test/test_*
+!rcpp/test_helpers.R
 
 manifest.txt
 

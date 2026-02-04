@@ -94,7 +94,7 @@ contains
     subroutine test_detect_neofunctionalization_input_validation()
         use ieee_arithmetic, only: ieee_value, ieee_quiet_nan, ieee_positive_inf
 
-        integer(int32), parameter :: n_dims = 3, n_genes = 2 + 1, n_families = 1
+        integer(int32), parameter :: n_dims = 3, n_genes = 2, n_families = 1
         integer(int32) :: ierr
         real(real64) :: ancestors(n_dims, n_families)
         real(real64) :: paralogs(n_dims, n_genes)
