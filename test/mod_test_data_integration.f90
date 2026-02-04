@@ -26,7 +26,7 @@ contains
 
     !> Get array of all available tests.
     function get_all_tests() result(all_tests)
-        type(test_case) :: all_tests(20)
+        type(test_case) :: all_tests(21)
         all_tests(1) = test_case("test_determine_shared_residual_range", test_determine_shared_residual_range)
         all_tests(2) = test_case("test_build_residual_histograms", test_build_residual_histograms)
         all_tests(3) = test_case("test_compute_divergence_per_reference_point", test_compute_divergence_per_reference_point)
@@ -51,6 +51,9 @@ contains
         
         all_tests(19) = test_case("test_construct_neighborhoods_basic", test_construct_neighborhoods_basic)
         all_tests(20) = test_case("test_construct_neighborhoods_nan_means", test_construct_neighborhoods_nan_means)
+
+        all_tests(21) = test_case("test_fjct", test_fjct)
+        ! all_tests(22) = test_case("test_fjct_compute_contribution_scores", test_fjct_compute_contribution_scores)
     end function get_all_tests
 
     !> Run all tox_data_integration tests.
@@ -91,6 +94,114 @@ contains
             end if
         end do
     end subroutine run_named_tests_tox_data_integration
+
+    subroutine test_fjct
+        integer(int32), parameter :: n_reps_S1 = 3, n_reps_S2 = 4, n_neighbors = 5, n_points = 3, k_families = 2
+        integer(int32), parameter :: n_bins = 4, n_genes_S1 = 10, n_genes_S2 = 10
+        integer(int32), dimension(k_families), parameter :: included_families = [1, 2]
+        integer(int32), dimension(n_genes_S1), parameter :: gene_to_family_S1 = [1, 0, 0, 0, 0, 0, 0, 0, 0, 2]
+        integer(int32), dimension(n_genes_S2), parameter :: gene_to_family_S2 = [1, 0, 0, 0, 0, 0, 0, 0, 3, 0]
+        integer(int32), dimension(n_neighbors, n_points) :: neighborhood_genes_S1, neighborhood_genes_S2
+        real(real64), dimension(n_reps_S1, n_neighbors, n_points) :: neighborhood_residuals_S1
+        real(real64), dimension(n_reps_S2, n_neighbors, n_points) :: neighborhood_residuals_S2
+        integer(int32), dimension(n_points) :: included_n_reps_S1, included_n_reps_S2, expected_included_n_reps_S1, expected_included_n_reps_S2
+        real(real64), dimension(n_points) :: weights, expected_weights, js_divergences, expected_js_divergences
+        integer(int32), dimension(k_families) :: total_included_n_reps
+        real(real64), dimension(k_families) :: global_js_divergence, support_weights, expected_support_weights, contribution_scores, expected_contribution_scores
+        real(real64) :: shared_residual_range
+        integer(int32) :: ierr, expected_total_included_n_reps, family_idx
+
+        ! ============================================================
+        ! Test 1 — Simple symmetric case, no NaNs
+        ! ============================================================
+        !
+        ! shared_residual_range = 2, M = 4 → bin width w = 1
+        ! Bins: [-2,-1), [-1,0), [0,1), [1,2]
+        !
+        shared_residual_range = 2.0_real64
+
+        neighborhood_residuals_S1 = 0.0_real64
+        neighborhood_residuals_S1(:, 1,1) = [-2.0, -0.5, 0.2]
+        neighborhood_residuals_S1(:, 1,3) = [2.5, -3.0, 1.2] ! (clamping applies -> [2,-2,1.2])
+        neighborhood_genes_S1(:, 1) = [1, 2, 3, 4, 5]
+        neighborhood_genes_S1(:, 2) = [2, 3, 4, 5, 6]
+        neighborhood_genes_S1(:, 3) = [10, 2, 3, 4, 5]
+
+        neighborhood_residuals_S2 = 0.0_real64
+        neighborhood_residuals_S2(:, 1,1) = [-2.0_real64, ieee_value(1.0_real64, ieee_quiet_nan), -0.5_real64, 0.2_real64]
+        neighborhood_residuals_S2(:, 3,3) = [0.4_real64, -0.1_real64, 0.0_real64, ieee_value(1.0_real64, ieee_quiet_nan)]
+        neighborhood_genes_S2(:, 1) = [1, 2, 3, 4, 5]
+        neighborhood_genes_S2(:, 2) = [2, 3, 4, 5, 6]
+        neighborhood_genes_S2(:, 3) = [9, 2, 3, 4, 5]
+
+        ! Values fall into bins:
+        ! [-2,-1): -2, -1.2 → 2
+        ! [-1,0): -0.5 → 1
+        ! [0,1): 0.2, 0.9 → 2
+        ! [1,2]: 1.7 → 1
+        ! 
+        ! point 2 — all zeros → all in bin [0,1)
+        ! 
+        ! point 3 — clamping:
+        ! 2.5 → 2
+        ! -3 → -2
+        ! bins:
+        ! [-2,-1): -2 → 1
+        ! [-1,0): -0.1 → 1
+        ! [0,1): 0.4, 0.0 → 2
+        ! [1,2]: 1.2, 2 → 2
+
+        family_idx = 1
+        expected_included_n_reps_S1 = [3, 0, 0] ! first neighbor has the genes of fam 1
+        ! -> pmf values point 1 = [1/3, 1/3, 1/3]
+        expected_included_n_reps_S2 = [3, 0, 0] ! first neighbor has the genes of fam 1
+        ! -> pmf values point 1 = [1/3, 1/3, 1/3]
+        expected_total_included_n_reps = 6_int32
+        expected_js_divergences = 0.0_real64
+
+        expected_weights = [1.0_real64, 0.0_real64, 0.0_real64]
+        call fjct_compute_jsd_alloc(&
+            family_idx, gene_to_family_S1, gene_to_family_S2, n_genes_S1, n_genes_S2, neighborhood_residuals_S1, neighborhood_residuals_S2, &
+            neighborhood_genes_S1, neighborhood_genes_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, n_bins, shared_residual_range, js_divergences, &
+            included_n_reps_S1, included_n_reps_S2, total_included_n_reps(family_idx), global_js_divergence(family_idx), weights, ierr &
+        )
+        call assert_equal_int(ierr, ERR_OK, "test_fjct: Family 1: ierr should be OK")
+        call assert_equal_int(total_included_n_reps(family_idx), expected_total_included_n_reps, "test_fjct: Family 1: total count of included replicates mismatch")
+        call assert_equal_array_int(included_n_reps_S1, expected_included_n_reps_S1, n_points, "test_fjct: Family 1: included_n_reps_S1 mismatch")
+        call assert_equal_array_int(included_n_reps_S2, expected_included_n_reps_S2, n_points, "test_fjct: Family 1: included_n_reps_S2 mismatch")
+        call assert_equal_array_real(js_divergences, expected_js_divergences, n_points, TOL, "test_fjct: Family 1: js_divergences mismatch")
+        call assert_equal_array_real(weights, expected_weights, n_points, TOL, "test_fjct: Family 1: weights mismatch")
+        call assert_equal_real(global_js_divergence(family_idx), expected_weights(3) * expected_js_divergences(3), TOL, "test_fjct: Family 1: global_js_divergence mismatch")
+
+        family_idx = 2
+        expected_included_n_reps_S1 = [0, 0, 3] ! third neighbor has the gene of fam 2
+        ! -> pmf values point 3 = [0, 0, 1.0]
+        expected_included_n_reps_S2 = [0, 0, 0] ! no neighbor included
+        expected_total_included_n_reps = 3_int32
+        expected_js_divergences = [0.0_real64, 0.0_real64, 0.5_real64*log(2.0_real64)] ! s1 pmf val is 1.0, s2 is 0 -> mean is 0.5 -> jsd is 0.5*log(2)
+        expected_weights = [0.0_real64, 0.0_real64, 1.0_real64]
+        call fjct_compute_jsd_alloc(&
+            family_idx, gene_to_family_S1, gene_to_family_S2, n_genes_S1, n_genes_S2, neighborhood_residuals_S1, neighborhood_residuals_S2, &
+            neighborhood_genes_S1, neighborhood_genes_S2, n_reps_S1, n_reps_S2, n_neighbors, n_points, n_bins, shared_residual_range, js_divergences, &
+            included_n_reps_S1, included_n_reps_S2, total_included_n_reps(family_idx), global_js_divergence(family_idx), weights, ierr &
+        )
+        call assert_equal_int(ierr, ERR_OK, "test_fjct: Family 2: ierr should be OK")
+        call assert_equal_int(total_included_n_reps(family_idx), expected_total_included_n_reps, "test_fjct: Family 2: total count of included replicates mismatch")
+        call assert_equal_array_int(included_n_reps_S1, expected_included_n_reps_S1, n_points, "test_fjct: Family 2: included_n_reps_S1 mismatch")
+        call assert_equal_array_int(included_n_reps_S2, expected_included_n_reps_S2, n_points, "test_fjct: Family 2: included_n_reps_S2 mismatch")
+        call assert_equal_array_real(js_divergences, expected_js_divergences, n_points, TOL, "test_fjct: Family 2: js_divergences mismatch")
+        call assert_equal_array_real(weights, expected_weights, n_points, TOL, "test_fjct: Family 2: weights mismatch")
+        call assert_equal_real(global_js_divergence(family_idx), expected_weights(3) * expected_js_divergences(3), TOL, "test_fjct: Family 2: global_js_divergence mismatch")
+
+
+        expected_support_weights = [(real(total_included_n_reps(family_idx), kind=real64) / 9.0_real64, family_idx = 1, k_families)]
+        expected_contribution_scores = [(expected_support_weights(family_idx) * global_js_divergence(family_idx), family_idx = 1, k_families)]
+        call fjct_compute_contribution_scores(global_js_divergence, total_included_n_reps, k_families, support_weights, contribution_scores)
+
+        call assert_equal_int(ierr, ERR_OK, "test_fjct: Contribution scores: ierr should be OK")
+        call assert_equal_array_real(support_weights, expected_support_weights, k_families, TOL, "test_fjct: Contribution scores: support weights mismatch")
+        call assert_equal_array_real(contribution_scores, expected_contribution_scores, k_families, TOL, "test_fjct: Contribution scores: support weights mismatch")
+    end subroutine test_fjct
 
     subroutine test_gjct_permutation_test
         integer(int32), parameter :: n_reps_S1 = 4, n_reps_S2 = 3, n_neighbors = 1, n_points = 2, n_permutations = 2, n_bins = 4
@@ -815,8 +926,8 @@ contains
         real(real64) :: expr(n_reps, n_genes), means(n_genes)
         integer(int32) :: ierr
         
-        expr(:, 1) = [1.0_real64, 2.0_real64, ieee_value(0.0_real64, ieee_quiet_nan), 3.0_real64]  ! mean = (1+2+3)/3 = 2.0
-        expr(:, 2) = [ieee_value(0.0_real64, ieee_quiet_nan), 5.0_real64, 7.0_real64, 9.0_real64]  ! mean = (5+7+9)/3 = 7.0
+        expr(:, 1) = [1.0_real64, 2.0_real64, ieee_value(1.0_real64, ieee_quiet_nan), 3.0_real64]  ! mean = (1+2+3)/3 = 2.0
+        expr(:, 2) = [ieee_value(1.0_real64, ieee_quiet_nan), 5.0_real64, 7.0_real64, 9.0_real64]  ! mean = (5+7+9)/3 = 7.0
         expr(:, 3) = [10.0, 20.0, 30.0, 40.0]  ! mean = 25.0
         
         call compute_gene_means(n_genes, n_reps, expr, means, ierr)
@@ -834,7 +945,7 @@ contains
         integer(int32) :: ierr
         
         expr(:, 1) = [1.0, 2.0, 3.0]  ! Normal gene
-        expr(:, 2) = ieee_value(0.0_real64, ieee_quiet_nan)  ! All NaN gene
+        expr(:, 2) = ieee_value(1.0_real64, ieee_quiet_nan)  ! All NaN gene
         
         call compute_gene_means(n_genes, n_reps, expr, means, ierr)
         
@@ -901,8 +1012,8 @@ contains
         real(real64) :: expr(n_reps, n_genes), means(n_genes), resid(n_reps, n_genes)
         integer(int32) :: ierr
         
-        expr(:, 1) = [1.0_real64, 2.0_real64, ieee_value(0.0_real64, ieee_quiet_nan), 3.0_real64]
-        expr(:, 2) = [ieee_value(0.0_real64, ieee_quiet_nan), 5.0_real64, 7.0_real64, 9.0_real64]
+        expr(:, 1) = [1.0_real64, 2.0_real64, ieee_value(1.0_real64, ieee_quiet_nan), 3.0_real64]
+        expr(:, 2) = [ieee_value(1.0_real64, ieee_quiet_nan), 5.0_real64, 7.0_real64, 9.0_real64]
         means = [2.0_real64, 7.0_real64]
         
         call compute_residuals(n_genes, n_reps, expr, means, resid, ierr)
@@ -927,7 +1038,7 @@ contains
         integer(int32) :: ierr
         
         expr(:, 1) = [1.0, 2.0, 3.0]
-        expr(:, 2) = ieee_value(0.0_real64, ieee_quiet_nan)  ! All NaN
+        expr(:, 2) = ieee_value(1.0_real64, ieee_quiet_nan)  ! All NaN
         means = [2.0, 0.0]  ! Second mean is irrelevant
         
         call compute_residuals(n_genes, n_reps, expr, means, resid, ierr)
@@ -982,8 +1093,8 @@ contains
         real(real64) :: mean_S1(n_genes_S1), mean_S2(n_genes_S2), x_star(n_points)
         integer(int32) :: N_pool, ierr
         
-        mean_S1 = [1.0_real64, ieee_value(0.0_real64, ieee_quiet_nan), 3.0_real64, 5.0_real64]
-        mean_S2 = [2.0_real64, 4.0_real64, ieee_value(0.0_real64, ieee_quiet_nan), 6.0_real64]
+        mean_S1 = [1.0_real64, ieee_value(1.0_real64, ieee_quiet_nan), 3.0_real64, 5.0_real64]
+        mean_S2 = [2.0_real64, 4.0_real64, ieee_value(1.0_real64, ieee_quiet_nan), 6.0_real64]
         
         call pool_means_alloc(n_genes_S1, mean_S1, n_genes_S2, mean_S2, n_points, N_pool, x_star, ierr)
         
