@@ -10,7 +10,7 @@
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>construct_neighborhoods &ndash; TensorOmics</title>
+    <title>compute_gene_means_helper &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -77,8 +77,8 @@
 
     <div class="container">
   <div class="row">
-    <h1>construct_neighborhoods
-      <small>Subroutine</small>
+    <h1>compute_gene_means_helper
+      <small>Interface</small>
       
     </h1>
       <div class="container p-2 mb-4 bg-light border rounded-3">
@@ -88,21 +88,21 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.3% of total for procedures.">29 statements</a>
+                 title="<p> 0.1% of total for procedures.</p>Including implementation: 8 statements,  0.1% of total for procedures.">8 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/tox_jensen_shannon_test.F90"> Source File</a>
+              <a href="../src/tox_data_integration.F90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/tox_jensen_shannon_test.f90.html'>tox_jensen_shannon_test.F90</a></li>
-                <li class="breadcrumb-item"><a href='../module/tox_jensen_shannon_test.html'>tox_jensen_shannon_test</a></li>
-            <li class="breadcrumb-item active" aria-current="page">construct_neighborhoods</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/tox_data_integration.f90.html'>tox_data_integration.F90</a></li>
+                <li class="breadcrumb-item"><a href='../module/tox_data_integration.html'>tox_data_integration</a></li>
+            <li class="breadcrumb-item active" aria-current="page">compute_gene_means_helper</li>
           </ol>
         </nav>
       </div>
@@ -117,10 +117,10 @@
   </script>
 
   </div>
-  
+
   <div class="row">
     <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
-      <div id="sidebar">
+        <div id="sidebar">
       <h3>Contents</h3>
   
   
@@ -134,7 +134,18 @@
   
   
   
-  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../interface/compute_gene_means_helper.html#proc-compute_gene_means_helper">compute_gene_means_helper</a>
+        </div>
+      </div>
+    </div>
+
   
   
   
@@ -147,17 +158,21 @@
   </div>
 
     </div>
-    
+
     <div class="col-md-9" id='text'>
-    <h2>public pure subroutine construct_neighborhoods(n_points, x_star, n_genes_S, mean_S, n_reps_S, resid_S, tmp_distances, tmp_distances_perm, neighborhood_residuals, neighborhood_indices, n_neighbors, ierr)  
-</h2>
-    
-
-    <p>Construct neighborhood-based residual sets (kNN)</p>
+      <h2>public interface compute_gene_means_helper</h2>
+      
 
 
-    <h3>Arguments</h3>
-        <table class="table table-striped varlist">
+        <h2>Subroutines</h2>
+            <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-compute_gene_means_helper"></span> <h3>public pure module subroutine compute_gene_means_helper(n_genes, n_reps, expr, means)  
+</h3></div>
+    <div class="card-body">
+        <p>(no input validation) Compute per-gene mean expression, ignoring NaN values</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
     <thead>
       <tr>
         <th scope="col">Type</th>
@@ -169,7 +184,7 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_points~20"></span>
+              <span class="anchor" id="variable-n_genes~59"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -177,29 +192,14 @@
               
             </td>
             <td>::</td>
-            <td><strong>n_points</strong></td>
+            <td><strong>n_genes</strong></td>
             <td>
-                <p>Number of reference points</p>
+                <p>Number of genes in the study</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-x_star~5"></span>
-              real(kind=real64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>x_star</strong>(n_points)</td>
-            <td>
-                <p>Mean-expression reference points</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-n_genes_s~3"></span>
+              <span class="anchor" id="variable-n_reps~2"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -207,44 +207,14 @@
               
             </td>
             <td>::</td>
-            <td><strong>n_genes_S</strong></td>
-            <td>
-                <p>Number of genes in the current study</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-mean_s~3"></span>
-              real(kind=real64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>mean_S</strong>(n_genes_S)</td>
-            <td>
-                <p>Per-gene mean expression values</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-n_reps_s~2"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>n_reps_S</strong></td>
+            <td><strong>n_reps</strong></td>
             <td>
                 <p>Number of biological replicates in the study</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-resid_s~2"></span>
+              <span class="anchor" id="variable-expr~2"></span>
               real(kind=real64),
             </td>
 <td>intent(in)</td>
@@ -252,14 +222,14 @@
               
             </td>
             <td>::</td>
-            <td><strong>resid_S</strong>(n_reps_S,n_genes_S)</td>
+            <td><strong>expr</strong>(n_reps,n_genes)</td>
             <td>
-                <p>Matrix of signed residuals</p>
+                <p>Expression matrix</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-tmp_distances~2"></span>
+              <span class="anchor" id="variable-means~2"></span>
               real(kind=real64),
             </td>
 <td>intent(out)</td>
@@ -267,105 +237,21 @@
               
             </td>
             <td>::</td>
-            <td><strong>tmp_distances</strong>(n_genes_S)</td>
+            <td><strong>means</strong>(n_genes)</td>
             <td>
-                <p>Distances work array</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-tmp_distances_perm~2"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>tmp_distances_perm</strong>(n_genes_S)</td>
-            <td>
-                <p>Work array for permutation vector to sort <code>tmp_distances_perm</code></p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-neighborhood_residuals~2"></span>
-              real(kind=real64),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>neighborhood_residuals</strong>(n_reps_S,n_neighbors,n_points)</td>
-            <td>
-                <p>Collection of residual vectors for each neighborhood</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-neighborhood_indices~2"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>neighborhood_indices</strong>(n_neighbors,n_points)</td>
-            <td>
-                <p>Indices of selected neighborhood genes</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-n_neighbors~3"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>n_neighbors</strong></td>
-            <td>
-                <p>Number of neighbors, <strong>CALCULATE IT WITH <a href="../proc/calc_neighborhood_size.html">calc_neighborhood_size</a></strong></p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-ierr~302"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>ierr</strong></td>
-            <td>
-                <p>Error code</p>
+                <p>Per-gene mean expression values</p>
             </td>
         </tr>
     </tbody>
   </table>
 
-    <br>
 
-
-    
-    
-
-    
-    
-
-
-
-    
-    
     </div>
   </div>
 
+
+</div>
+  </div>
       <hr>
     </div> <!-- /container -->
     <footer>
@@ -381,7 +267,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2026-02-02 10:16 +0000"             </p>
+ on "2026-02-04 22:23 +0000"             </p>
           </div>
         </div>
         <br>

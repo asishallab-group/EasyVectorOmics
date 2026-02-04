@@ -10,7 +10,7 @@
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>compute_gene_means_helper &ndash; TensorOmics</title>
+    <title>build_residual_histograms_helper &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -77,8 +77,8 @@
 
     <div class="container">
   <div class="row">
-    <h1>compute_gene_means_helper
-      <small>Subroutine</small>
+    <h1>build_residual_histograms_helper
+      <small>Interface</small>
       
     </h1>
       <div class="container p-2 mb-4 bg-light border rounded-3">
@@ -88,21 +88,21 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.2% of total for procedures.">20 statements</a>
+                 title="<p> 0.1% of total for procedures.</p>Including implementation: 14 statements,  0.1% of total for procedures.">14 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/tox_jensen_shannon_test.F90"> Source File</a>
+              <a href="../src/tox_data_integration.F90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/tox_jensen_shannon_test.f90.html'>tox_jensen_shannon_test.F90</a></li>
-                <li class="breadcrumb-item"><a href='../module/tox_jensen_shannon_test.html'>tox_jensen_shannon_test</a></li>
-            <li class="breadcrumb-item active" aria-current="page">compute_gene_means_helper</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/tox_data_integration.f90.html'>tox_data_integration.F90</a></li>
+                <li class="breadcrumb-item"><a href='../module/tox_data_integration.html'>tox_data_integration</a></li>
+            <li class="breadcrumb-item active" aria-current="page">build_residual_histograms_helper</li>
           </ol>
         </nav>
       </div>
@@ -117,10 +117,10 @@
   </script>
 
   </div>
-  
+
   <div class="row">
     <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
-      <div id="sidebar">
+        <div id="sidebar">
       <h3>Contents</h3>
   
   
@@ -134,7 +134,18 @@
   
   
   
-  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#subs-0"
+         aria-expanded="false" aria-controls="subs-0">
+         <h4 class="card-header bg-primary text-white">Subroutines</h4>
+      </a>
+      <div id="subs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../interface/build_residual_histograms_helper.html#proc-build_residual_histograms_helper">build_residual_histograms_helper</a>
+        </div>
+      </div>
+    </div>
+
   
   
   
@@ -147,17 +158,21 @@
   </div>
 
     </div>
-    
+
     <div class="col-md-9" id='text'>
-    <h2>public pure subroutine compute_gene_means_helper(n_genes, n_reps, expr, means)  
-</h2>
-    
-
-    <p>(no input validation) Compute per-gene mean expression, ignoring NaN values</p>
+      <h2>public interface build_residual_histograms_helper</h2>
+      
 
 
-    <h3>Arguments</h3>
-        <table class="table table-striped varlist">
+        <h2>Subroutines</h2>
+            <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-build_residual_histograms_helper"></span> <h3>public pure module subroutine build_residual_histograms_helper(neighborhood_residuals, n_reps, n_neighbors, n_points, shared_residual_range, n_bins, counts, pmf, included_n_reps, neighbor_mask)  
+</h3></div>
+    <div class="card-body">
+        <p>(no input validation) Summarizes the neighborhood residuals in absolute histogram counts and probability mass functions <code>pmf(residual, bin)</code> (actually a matrix)</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
     <thead>
       <tr>
         <th scope="col">Type</th>
@@ -169,22 +184,22 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_genes~83"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-neighborhood_residuals~5"></span>
+              real(kind=real64),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              dimension(n_reps, n_neighbors, n_points)
             </td>
             <td>::</td>
-            <td><strong>n_genes</strong></td>
+            <td><strong>neighborhood_residuals</strong></td>
             <td>
-                <p>Number of genes in the study</p>
+                <p>Computed neighborhood residuals for a study (<a href="../interface/construct_neighborhoods.html">construct_neighborhoods</a>), NaN is explicitly allowed for missing values</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_reps~2"></span>
+              <span class="anchor" id="variable-n_reps~6"></span>
               integer(kind=int32),
             </td>
 <td>intent(in)</td>
@@ -194,12 +209,42 @@
             <td>::</td>
             <td><strong>n_reps</strong></td>
             <td>
-                <p>Number of biological replicates in the study</p>
+                <p>Number of replicates of the study</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-expr~2"></span>
+              <span class="anchor" id="variable-n_neighbors~11"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_neighbors</strong></td>
+            <td>
+                <p>Number of reference points (k)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-n_points~27"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(in)</td>
+              <td></td>            <td>
+              
+            </td>
+            <td>::</td>
+            <td><strong>n_points</strong></td>
+            <td>
+                <p>Number of reference points in the study</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-shared_residual_range~8"></span>
               real(kind=real64),
             </td>
 <td>intent(in)</td>
@@ -207,45 +252,96 @@
               
             </td>
             <td>::</td>
-            <td><strong>expr</strong>(n_reps,n_genes)</td>
+            <td><strong>shared_residual_range</strong></td>
             <td>
-                <p>Expression matrix</p>
+                <p>Computed residual range (R) from <a href="../interface/determine_shared_residual_range_alloc.html">determine_shared_residual_range_alloc</a></p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-means~2"></span>
-              real(kind=real64),
+              <span class="anchor" id="variable-n_bins~5"></span>
+              integer(kind=int32),
             </td>
-<td>intent(out)</td>
+<td>intent(in)</td>
               <td></td>            <td>
               
             </td>
             <td>::</td>
-            <td><strong>means</strong>(n_genes)</td>
+            <td><strong>n_bins</strong></td>
             <td>
-                <p>Per-gene mean expression values</p>
+                <p>Number of equally sized histogram bins in range [-R,R]</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-counts~2"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_points, n_bins)
+            </td>
+            <td>::</td>
+            <td><strong>counts</strong></td>
+            <td>
+                <p>Absolute counts of a residual per bin</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-pmf~2"></span>
+              real(kind=real64),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_points, n_bins)
+            </td>
+            <td>::</td>
+            <td><strong>pmf</strong></td>
+            <td>
+                <p><code>counts</code> normalized to <code>0 &lt;= counts(:, i) &lt;= 1</code> and <code>sum(counts(:, i)) == 1</code></p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-included_n_reps~2"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_points)
+            </td>
+            <td>::</td>
+            <td><strong>included_n_reps</strong></td>
+            <td>
+                <p>Stores the count of non-NaN replicates (included ones)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-neighbor_mask~2"></span>
+              logical,
+            </td>
+<td>intent(in),</td>
+              <td>optional,</td>            <td>
+              dimension(n_neighbors, n_points)
+            </td>
+            <td>::</td>
+            <td><strong>neighbor_mask</strong></td>
+            <td>
+                <p>Optional mask to exclude specific neighbors (e.g. for family-wise analysis)</p>
             </td>
         </tr>
     </tbody>
   </table>
 
-    <br>
 
-
-    
-    
-
-    
-    
-
-
-
-    
-    
     </div>
   </div>
 
+
+</div>
+  </div>
       <hr>
     </div> <!-- /container -->
     <footer>
@@ -261,7 +357,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2026-02-02 10:16 +0000"             </p>
+ on "2026-02-04 22:23 +0000"             </p>
           </div>
         </div>
         <br>

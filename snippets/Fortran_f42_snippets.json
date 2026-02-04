@@ -44,6 +44,16 @@
     "body": "${{1:result}} = rand_range(${2:min}, ${3:max})",
     "description": "Call of Fortran function 'rand_range' from module 'f42_utils'"
   },
+  "Fortran Call of subroutine 'shuffle_vector_real'": {
+    "prefix": "f42:shuffle_vector_real",
+    "body": "call shuffle_vector_real(${1:vec})",
+    "description": "Call of Fortran subroutine 'shuffle_vector_real' from module 'f42_utils'"
+  },
+  "Fortran Call of subroutine 'shuffle_vector_int'": {
+    "prefix": "f42:shuffle_vector_int",
+    "body": "call shuffle_vector_int(${1:vec})",
+    "description": "Call of Fortran subroutine 'shuffle_vector_int' from module 'f42_utils'"
+  },
   "Fortran Call of function 'below'": {
     "prefix": "f42:below",
     "body": "${{1:result}} = below(${2:val})",
@@ -168,6 +178,11 @@
     "prefix": "f42:swap_int",
     "body": "call swap_int(${1:a}, ${2:b})",
     "description": "Call of Fortran subroutine 'swap_int' from module 'f42_utils'"
+  },
+  "Fortran Call of subroutine 'swap_real'": {
+    "prefix": "f42:swap_real",
+    "body": "call swap_real(${1:a}, ${2:b})",
+    "description": "Call of Fortran subroutine 'swap_real' from module 'f42_utils'"
   },
   "Fortran Call of function 'real_less'": {
     "prefix": "f42:real_less",

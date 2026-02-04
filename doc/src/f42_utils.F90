@@ -21,6 +21,10 @@ module f42_utils
     module procedure sort_real_heapsort, sort_integer_heapsort, sort_character_heapsort
   end interface sort_array_heapsort
 
+  interface shuffle_vector
+    module procedure shuffle_vector_real, shuffle_vector_int
+  end interface shuffle_vector
+
   interface clamp
     module procedure clamp_real, clamp_int
   end interface clamp
@@ -56,11 +60,11 @@ contains
   !> Compute logarithm for any base
   pure subroutine logx(val, base, exponent, ierr)
       real(real64), intent(in) :: val
-        !! Value (`x` in $ b^y = x $)
+        !! Value (`x` in \( b^y = x \))
       real(real64), intent(in) :: base
-        !! Base (`b` in $ b^y = x $)
+        !! Base (`b` in \( b^y = x \))
       real(real64), intent(out) :: exponent
-        !! Exponent (`y` in $ b^y = x $)
+        !! Exponent (`y` in \( b^y = x \))
       integer(int32), intent(out) :: ierr
         !! Error code
 
@@ -109,6 +113,40 @@ contains
     call random_number(rand_num)
     rand_num = min + rand_num * (max - min)
   end function rand_range
+
+  !> Shuffle a vector in-place, using Fisher-Yates shuffle
+  subroutine shuffle_vector_real(vec)
+      real(real64), dimension(:), intent(inout) :: vec
+          !! Output permutation array
+
+      integer(int32) :: i, rand_idx
+      real(real64) :: rand_val
+      
+      ! Fisher-Yates shuffle
+      do i = size(vec, kind=int32), 2, -1
+          ! Generate random integer in range [1, i]
+          rand_idx = int(rand_range(1.0_real64, real(i, real64)), int32)
+
+          call swap_real(vec(i), vec(rand_idx))
+      end do
+  end subroutine shuffle_vector_real
+
+  !> Shuffle a vector in-place, using Fisher-Yates shuffle
+  subroutine shuffle_vector_int(vec)
+      integer(int32), dimension(:), intent(inout) :: vec
+          !! Output permutation array
+
+      integer(int32) :: i, rand_idx
+      real(real64) :: rand_val
+      
+      ! Fisher-Yates shuffle
+      do i = size(vec, kind=int32), 2, -1
+          ! Generate random integer in range [1, i]
+          rand_idx = int(rand_range(1.0_real64, real(i, real64)), int32)
+
+          call swap_int(vec(i), vec(rand_idx))
+      end do
+  end subroutine shuffle_vector_int
 
   !> Returns the next representable float lower than a value. Helpful for exclusive upper bounds in ranges.
   pure real(real64) function below(val)
@@ -195,7 +233,7 @@ contains
     angle = acos(theta)
   end subroutine angle_between
 
-  !> Returns the given degrees in positive radian value (-90deg -> 3*PI/2, not -PI/2)
+  !> Returns the given degrees in positive radian value \( -90^{\circ} \Rightarrow \frac{3\cdot \pi}{2}, \text{not} -\frac{\pi}{2} \)
   pure real(real64) function radians(degrees)
     real(real64), intent(in) :: degrees
         !! degrees to be converted
@@ -721,6 +759,16 @@ contains
     integer(int32) :: temp
     temp = a; a = b; b = temp
   end subroutine swap_int
+
+  !> Swap two real values in-place.
+  pure subroutine swap_real(a, b)
+    !| First real to swap
+    real(real64), intent(inout) :: a
+    !| Second real to swap
+    real(real64), intent(inout) :: b
+    real(real64) :: temp
+    temp = a; a = b; b = temp
+  end subroutine swap_real
 
   ! Helper: NaN-aware comparisons for real(real64).
   ! We treat NaN as greater than any numeric value so that NaNs end up at the

@@ -10,7 +10,7 @@
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>compute_residuals &ndash; TensorOmics</title>
+    <title>shuffle_vector &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -77,8 +77,8 @@
 
     <div class="container">
   <div class="row">
-    <h1>compute_residuals
-      <small>Subroutine</small>
+    <h1>shuffle_vector
+      <small>Interface</small>
       
     </h1>
       <div class="container p-2 mb-4 bg-light border rounded-3">
@@ -88,21 +88,21 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">13 statements</a>
+                 title="<p> 0.0% of total for procedures.</p>Including implementation: 21 statements,  0.2% of total for procedures.">3 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/tox_jensen_shannon_test.F90"> Source File</a>
+              <a href="../src/f42_utils.F90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/tox_jensen_shannon_test.f90.html'>tox_jensen_shannon_test.F90</a></li>
-                <li class="breadcrumb-item"><a href='../module/tox_jensen_shannon_test.html'>tox_jensen_shannon_test</a></li>
-            <li class="breadcrumb-item active" aria-current="page">compute_residuals</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/f42_utils.f90.html'>f42_utils.F90</a></li>
+                <li class="breadcrumb-item"><a href='../module/f42_utils.html'>f42_utils</a></li>
+            <li class="breadcrumb-item active" aria-current="page">shuffle_vector</li>
           </ol>
         </nav>
       </div>
@@ -117,10 +117,10 @@
   </script>
 
   </div>
-  
+
   <div class="row">
     <div class="col-md-3 hidden-xs hidden-sm visible-md visible-lg">
-      <div id="sidebar">
+        <div id="sidebar">
       <h3>Contents</h3>
   
   
@@ -140,24 +140,42 @@
   
   
   
-  
+      <div class="card mb-4">
+      <a data-bs-toggle="collapse" href="#modprocs-0"
+         aria-expanded="false" aria-controls="modprocs-0">
+         <h4 class="card-header bg-primary text-white">Module Procedures</h4>
+      </a>
+      <div id="modprocs-0" class="collapse">
+        <div class="list-group list-group-flush">
+            <a class="list-group-item" href="../interface/shuffle_vector.html#moduleprocedure-shuffle_vector_real">shuffle_vector_real</a>
+            <a class="list-group-item" href="../interface/shuffle_vector.html#moduleprocedure-shuffle_vector_int">shuffle_vector_int</a>
+        </div>
+      </div>
+    </div>
+
   
 
 
   </div>
 
     </div>
-    
+
     <div class="col-md-9" id='text'>
-    <h2>public pure subroutine compute_residuals(n_genes, n_reps, expr, means, resid, ierr)  
-</h2>
-    
-
-    <p>Compute signed residuals (centering by mean)</p>
+      <h2>public interface shuffle_vector</h2>
+      
 
 
-    <h3>Arguments</h3>
-        <table class="table table-striped varlist">
+
+        <h2>Module Procedures</h2>
+            <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-shuffle_vector_real"></span> <h3>public  subroutine <a href='../proc/shuffle_vector_real.html'>shuffle_vector_real</a>(vec)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Shuffle a vector in-place, using Fisher-Yates shuffle</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
     <thead>
       <tr>
         <th scope="col">Type</th>
@@ -169,113 +187,68 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_genes~84"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>n_genes</strong></td>
-            <td>
-                <p>Number of genes in the study</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-n_reps~3"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>n_reps</strong></td>
-            <td>
-                <p>Number of biological replicates in the study</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-expr~3"></span>
+              <span class="anchor" id="variable-vec"></span>
               real(kind=real64),
             </td>
-<td>intent(in)</td>
+<td>intent(inout),</td>
               <td></td>            <td>
-              
+              dimension(:)
             </td>
             <td>::</td>
-            <td><strong>expr</strong>(n_reps,n_genes)</td>
+            <td><strong>vec</strong></td>
             <td>
-                <p>Expression matrix containing</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-means~3"></span>
-              real(kind=real64),
-            </td>
-<td>intent(in)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>means</strong>(n_genes)</td>
-            <td>
-                <p>Per-gene mean expression values</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-resid"></span>
-              real(kind=real64),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>resid</strong>(n_reps,n_genes)</td>
-            <td>
-                <p>Matrix of signed residuals</p>
-            </td>
-        </tr>
-        <tr>
-            <td>
-              <span class="anchor" id="variable-ierr~298"></span>
-              integer(kind=int32),
-            </td>
-<td>intent(out)</td>
-              <td></td>            <td>
-              
-            </td>
-            <td>::</td>
-            <td><strong>ierr</strong></td>
-            <td>
-                <p>Error code</p>
+<p>Output permutation array</p>
             </td>
         </tr>
     </tbody>
   </table>
 
-    <br>
 
-
-    
-    
-
-    
-    
-
-
-
-    
-    
     </div>
   </div>
 
+            <div class="card">
+    <div class="card-header codesum"><span class="anchor" id="proc-shuffle_vector_int"></span> <h3>public  subroutine <a href='../proc/shuffle_vector_int.html'>shuffle_vector_int</a>(vec)  
+</h3></div>
+    <div class="card-body">
+          
+  <p>Shuffle a vector in-place, using Fisher-Yates shuffle</p>
+
+  <h4>Arguments</h4>
+      <table class="table table-striped varlist">
+    <thead>
+      <tr>
+        <th scope="col">Type</th>
+<th scope="col">Intent</th><th scope="col">Optional</th>        <th scope="col">Attributes</th>
+        <th scope="col"></th>
+        <th scope="col">Name</th>
+        <th scope="col"></th>
+    </thead>
+    <tbody>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-vec~2"></span>
+              integer(kind=int32),
+            </td>
+<td>intent(inout),</td>
+              <td></td>            <td>
+              dimension(:)
+            </td>
+            <td>::</td>
+            <td><strong>vec</strong></td>
+            <td>
+<p>Output permutation array</p>
+            </td>
+        </tr>
+    </tbody>
+  </table>
+
+
+    </div>
+  </div>
+
+</div>
+  </div>
       <hr>
     </div> <!-- /container -->
     <footer>
@@ -291,7 +264,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2026-02-02 10:16 +0000"             </p>
+ on "2026-02-04 22:23 +0000"             </p>
           </div>
         </div>
         <br>
