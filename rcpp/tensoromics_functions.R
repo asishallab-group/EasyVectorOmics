@@ -1313,3 +1313,111 @@ tox_construct_neighborhoods <- function(x_star, n_pool, mean_S, resid_S,
     neighborhood_indices = result$neighborhood_indices
   ))
 }
+
+#> tox_data_integration:fjct_compute_jsd_c: Compute family-level JSD
+#' Compute family-level JSD
+#'
+#' @param family_idx Integer scalar.
+#' @param gene_to_family_S1 Integer vector (n_genes_S1).
+#' @param gene_to_family_S2 Integer vector (n_genes_S2).
+#' @param neighborhood_residuals_S1 Numeric array (n_reps_S1 × n_neighbors × n_points).
+#' @param neighborhood_residuals_S2 Numeric array (n_reps_S2 × n_neighbors × n_points).
+#' @param neighborhood_genes_S1 Integer matrix (n_neighbors × n_points).
+#' @param neighborhood_genes_S2 Integer matrix (n_neighbors × n_points).
+#' @param n_bins Integer scalar.
+#' @param shared_residual_range Numeric scalar.
+#'
+#' @return A list with js_divergences, included_n_reps_S1, included_n_reps_S2,
+#'         total_included_n_reps, global_js_divergence, weights, ierr.
+tox_fjct_compute_jsd <- function(
+  family_idx,
+  gene_to_family_S1,
+  gene_to_family_S2,
+  neighborhood_residuals_S1,
+  neighborhood_residuals_S2,
+  neighborhood_genes_S1,
+  neighborhood_genes_S2,
+  n_bins,
+  shared_residual_range
+) {
+  validate_numeric_array(neighborhood_residuals_S1)
+  validate_numeric_array(neighborhood_residuals_S2)
+  validate_numeric_vector(neighborhood_genes_S1)
+  validate_numeric_vector(neighborhood_genes_S2)
+
+  result <- tox_fjct_compute_jsd_alloc_rcpp(
+    family_idx,
+    gene_to_family_S1,
+    gene_to_family_S2,
+    neighborhood_residuals_S1,
+    neighborhood_residuals_S2,
+    neighborhood_genes_S1,
+    neighborhood_genes_S2,
+    n_bins,
+    shared_residual_range
+  )
+
+  check_err_code(result$ierr)
+  result
+}
+
+#> tox_data_integration:fjct_compute_jsd_expert_c: Compute family-level JSD (expert variant with masks)
+#' Compute family-level JSD (expert variant with masks)
+#'
+#' @param neighborhood_residuals_S1 Numeric array (n_reps_S1 × n_neighbors × n_points).
+#' @param neighborhood_residuals_S2 Numeric array (n_reps_S2 × n_neighbors × n_points).
+#' @param neighbor_mask_S1 Locical/Integer matrix (n_neighbors × n_points), non-zero is TRUE.
+#' @param neighbor_mask_S2 Locical/Integer matrix (n_neighbors × n_points), non-zero is TRUE.
+#' @param n_bins Integer scalar.
+#' @param shared_residual_range Numeric scalar.
+#'
+#' @return A list with js_divergences, included_n_reps_S1, included_n_reps_S2,
+#'         total_included_n_reps, global_js_divergence, weights,
+#'         pmf_S1, pmf_S2, tmp_counts, ierr.
+tox_fjct_compute_jsd_expert <- function(
+  neighborhood_residuals_S1,
+  neighborhood_residuals_S2,
+  neighbor_mask_S1,
+  neighbor_mask_S2,
+  n_bins,
+  shared_residual_range
+) {
+  validate_numeric_array(neighborhood_residuals_S1)
+  validate_numeric_array(neighborhood_residuals_S2)
+  mask_int_S1 <- neighbor_mask_S1 * 1L
+  mask_int_S2 <- neighbor_mask_S2 * 1L
+
+  result <- tox_fjct_compute_jsd_expert_rcpp(
+    neighborhood_residuals_S1,
+    neighborhood_residuals_S2,
+    mask_int_S1,
+    mask_int_S2,
+    n_bins,
+    shared_residual_range
+  )
+
+  check_err_code(result$ierr)
+  result
+}
+
+#> tox_data_integration:fjct_compute_contribution_scores_c: Compute per-family contribution scores
+#' Compute per-family contribution scores
+#'
+#' @param global_js_divergences Numeric vector (k_families).
+#' @param total_included_n_reps_per_f Integer vector (k_families).
+#'
+#' @return A list with support_weights, contribution_scores, ierr.
+tox_fjct_compute_contribution_scores <- function(
+  global_js_divergences,
+  total_included_n_reps_per_f
+) {
+  validate_numeric_vector(global_js_divergences)
+  validate_integer_vector(total_included_n_reps_per_f)
+  result <- tox_fjct_compute_contribution_scores_rcpp(
+    global_js_divergences,
+    total_included_n_reps_per_f
+  )
+
+  check_err_code(result$ierr)
+  result
+}

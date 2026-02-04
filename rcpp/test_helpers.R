@@ -45,20 +45,31 @@ run_all_tests <- function(env = parent.frame(), test_only = TRUE) {
   stopifnot(failed == 0)
 }
 
-assertError <- function(expr, msg) {
-  err <- tryCatch(
-    { expr; NULL },
-    error = function(e) e
-  )
-  if (is.null(err)) stop(msg)
+assert_true <- function(expr, msg = "Assertion failed") {
+  if (!isTRUE(expr)) stop(msg, call. = FALSE)
   invisible(TRUE)
 }
 
-assertTrue <- function(expr, msg) {
-  if (!expr) stop(msg)
+assert_false <- function(expr, msg = "Assertion failed") {
+  if (isTRUE(expr)) stop(msg, call. = FALSE)
   invisible(TRUE)
 }
 
-assertFalse <- function(expr, msg) {
-  assertTrue(!expr)
+assert_error <- function(expr, msg = "Expected an error") {
+  err <- tryCatch({ expr; NULL }, error = function(e) e)
+  if (is.null(err)) stop(msg, call. = FALSE)
+  invisible(TRUE)
+}
+
+assert_equal_int <- function(x, y, msg = "Integer mismatch") {
+  if (!identical(x, y)) stop(msg, call. = FALSE)
+  invisible(TRUE)
+}
+
+assert_equal_numeric <- function(x, y, tol = 1e-12, msg = "Real mismatch") {
+  if (length(x) != length(y)) stop(msg, call. = FALSE)
+  for (i in seq_len(length(x))) {
+    if (!(is.finite(x[i]) && is.finite(y[i]) && abs(x[i] - y[i]) <= tol)) stop(msg, call. = FALSE)
+  }
+  invisible(TRUE)
 }

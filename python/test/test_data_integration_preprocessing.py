@@ -6,6 +6,7 @@ from pathlib import Path
 
 # Add parent directory to path to import tensoromics_functions
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
+from test_helpers import run_all_tests
 from tensoromics_functions import tox_euclidean_distance, tox_distance_to_centroid
 
 # Import your functions
@@ -215,22 +216,5 @@ def test_integration():
     print("  ✓ test_integration passed")
 
 
-def run_all_tests():
-    """Run all tests"""
-    print("=" * 60)
-    print("Running tests for tox_jensen_shannon_test Python wrappers")
-    print("=" * 60)
-
-    test_compute_gene_means()
-    test_compute_residuals()
-    test_pool_means()
-    test_construct_neighborhoods()
-    test_integration()
-
-    print("" + "=" * 60)
-    print("All tests completed successfully! ✓")
-    print("=" * 60)
-
-
 if __name__ == "__main__":
-    run_all_tests()
+    run_all_tests(globals().values())

@@ -177,6 +177,8 @@ module tox_data_integration
                 !! Number of genes in the current study
             integer(int32), intent(in) :: n_reps_S
                 !! Number of biological replicates in the study
+            integer(int32), intent(in) :: n_neighbors
+                !! Number of neighbors, **CALCULATE IT WITH [[tox_data_integration(module):calc_neighborhood_size(interface)]]**
             real(real64), intent(in) :: x_star(n_points)
                 !! Mean-expression reference points
             real(real64), intent(in) :: mean_S(n_genes_S)
@@ -187,8 +189,6 @@ module tox_data_integration
                 !! Collection of residual vectors for each neighborhood
             integer(int32), intent(out) :: neighborhood_indices(n_neighbors, n_points)
                 !! Indices of selected neighborhood genes
-            integer(int32), intent(in) :: n_neighbors
-                !! Number of neighbors, **CALCULATE IT WITH [[tox_data_integration(module):calc_neighborhood_size(interface)]]**
             integer(int32), intent(out) :: ierr
                 !! Error code
         end subroutine construct_neighborhoods_alloc
@@ -203,6 +203,8 @@ module tox_data_integration
                 !! Number of genes in the current study
             integer(int32), intent(in) :: n_reps_S
                 !! Number of biological replicates in the study
+            integer(int32), intent(in) :: n_neighbors
+                !! Number of neighbors, **CALCULATE IT WITH [[tox_data_integration(module):calc_neighborhood_size(interface)]]**
             real(real64), intent(in) :: x_star(n_points)
                 !! Mean-expression reference points
             real(real64), intent(in) :: mean_S(n_genes_S)
@@ -217,8 +219,6 @@ module tox_data_integration
                 !! Collection of residual vectors for each neighborhood
             integer(int32), intent(out) :: neighborhood_indices(n_neighbors, n_points)
                 !! Indices of selected neighborhood genes
-            integer(int32), intent(in) :: n_neighbors
-                !! Number of neighbors, **CALCULATE IT WITH [[tox_data_integration(module):calc_neighborhood_size(interface)]]**
             integer(int32), intent(out) :: ierr
                 !! Error code
         end subroutine construct_neighborhoods
@@ -234,6 +234,8 @@ module tox_data_integration
                 !! Number of genes in the current study
             integer(int32), intent(in) :: n_reps_S
                 !! Number of biological replicates in the study
+            integer(int32), intent(in) :: n_neighbors
+                !! Number of neighbors, **CALCULATE IT WITH [[tox_data_integration(module):calc_neighborhood_size(interface)]]**
             real(real64), intent(in) :: x_star(n_points)
                 !! Mean-expression reference points
             real(real64), intent(in) :: mean_S(n_genes_S)
@@ -248,8 +250,6 @@ module tox_data_integration
                 !! Collection of residual vectors for each neighborhood
             integer(int32), intent(out) :: neighborhood_indices(n_neighbors, n_points)
                 !! Indices of selected neighborhood genes
-            integer(int32), intent(in) :: n_neighbors
-                !! Number of neighbors, **CALCULATE IT WITH [[tox_data_integration(module):calc_neighborhood_size(interface)]]**
         end subroutine construct_neighborhoods_helper
     end interface construct_neighborhoods_helper
 
@@ -749,13 +749,7 @@ module tox_data_integration
     end interface fjct_compute_jsd
 
     interface fjct_compute_contribution_scores
-        !> Computes the per-family/per-sub-neighborhood contribution score that combines
-        !|
-        !| 1. how divergent the family is between the studies (``), and
-        !| 2. how much residual support the family has overall (),
-        !|
-        !| using the outputs from [[tox_data_integration_per_family(module):fjct_compute_jsd(subroutine)]], collected for the analyzed sub-neighborhoods.
-        pure module subroutine fjct_compute_contribution_scores(global_js_divergences, total_included_n_reps_per_f, k_families, support_weights, contribution_scores)
+        pure module subroutine fjct_compute_contribution_scores(global_js_divergences, total_included_n_reps_per_f, k_families, support_weights, contribution_scores, ierr)
             integer(int32), intent(in) :: k_families
                 !! Number of sub-neighborhoods analyzed
             integer(int32), dimension(k_families), intent(in) :: total_included_n_reps_per_f
@@ -766,6 +760,29 @@ module tox_data_integration
                 !! Per-sub-neighborhood calculated support weight (ratio between its `total_included_n_reps` and `sum(total_included_n_reps_per_f)`, zero if there were no replicates included at all)
             real(real64), dimension(k_families), intent(out) :: contribution_scores
                 !! Per-sub-neighborhood calculated contribution ( \( support\_weights_i * global\_js\_divergences_i \) )
+            integer(int32), intent(out), target :: ierr
+                !! Error code
         end subroutine fjct_compute_contribution_scores
     end interface fjct_compute_contribution_scores
+
+    interface fjct_compute_contribution_scores_helper
+        !> (no input validation) Computes the per-family/per-sub-neighborhood contribution score that combines
+        !|
+        !| 1. how divergent the family is between the studies (``), and
+        !| 2. how much residual support the family has overall (),
+        !|
+        !| using the outputs from [[tox_data_integration_per_family(module):fjct_compute_jsd(subroutine)]], collected for the analyzed sub-neighborhoods.
+        pure module subroutine fjct_compute_contribution_scores_helper(global_js_divergences, total_included_n_reps_per_f, k_families, support_weights, contribution_scores)
+            integer(int32), intent(in) :: k_families
+                !! Number of sub-neighborhoods analyzed
+            integer(int32), dimension(k_families), intent(in) :: total_included_n_reps_per_f
+                !! Per-sub-neighborhood `total_included_n_reps`
+            real(real64), dimension(k_families), intent(in) :: global_js_divergences
+                !! Per-sub-neighborhood weighted global JSD
+            real(real64), dimension(k_families), intent(out) :: support_weights
+                !! Per-sub-neighborhood calculated support weight (ratio between its `total_included_n_reps` and `sum(total_included_n_reps_per_f)`, zero if there were no replicates included at all)
+            real(real64), dimension(k_families), intent(out) :: contribution_scores
+                !! Per-sub-neighborhood calculated contribution ( \( support\_weights_i * global\_js\_divergences_i \) )
+        end subroutine fjct_compute_contribution_scores_helper
+    end interface fjct_compute_contribution_scores_helper
 end module tox_data_integration

@@ -196,7 +196,7 @@ contains
 
         expected_support_weights = [(real(total_included_n_reps(family_idx), kind=real64) / 9.0_real64, family_idx = 1, k_families)]
         expected_contribution_scores = [(expected_support_weights(family_idx) * global_js_divergence(family_idx), family_idx = 1, k_families)]
-        call fjct_compute_contribution_scores(global_js_divergence, total_included_n_reps, k_families, support_weights, contribution_scores)
+        call fjct_compute_contribution_scores(global_js_divergence, total_included_n_reps, k_families, support_weights, contribution_scores, ierr)
 
         call assert_equal_int(ierr, ERR_OK, "test_fjct: Contribution scores: ierr should be OK")
         call assert_equal_array_real(support_weights, expected_support_weights, k_families, TOL, "test_fjct: Contribution scores: support weights mismatch")

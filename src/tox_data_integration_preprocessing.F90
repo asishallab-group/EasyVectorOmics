@@ -294,6 +294,8 @@ contains
             !! Number of genes in the current study
         integer(int32), intent(in) :: n_reps_S
             !! Number of biological replicates in the study
+        integer(int32), intent(in) :: n_neighbors
+            !! Number of neighbors, **CALCULATE IT WITH [[tox_data_integration(module):calc_neighborhood_size(interface)]]**
         real(real64), intent(in) :: x_star(n_points)
             !! Mean-expression reference points
         real(real64), intent(in) :: mean_S(n_genes_S)
@@ -304,8 +306,6 @@ contains
             !! Collection of residual vectors for each neighborhood
         integer(int32), intent(out) :: neighborhood_indices(n_neighbors, n_points)
             !! Indices of selected neighborhood genes
-        integer(int32), intent(in) :: n_neighbors
-            !! Number of neighbors, **CALCULATE IT WITH [[tox_data_integration(module):calc_neighborhood_size(interface)]]**
         integer(int32), intent(out) :: ierr
             !! Error code
 
@@ -331,6 +331,8 @@ contains
             !! Number of genes in the current study
         integer(int32), intent(in) :: n_reps_S
             !! Number of biological replicates in the study
+        integer(int32), intent(in) :: n_neighbors
+            !! Number of neighbors, **CALCULATE IT WITH [[tox_data_integration(module):calc_neighborhood_size(interface)]]**
         real(real64), intent(in) :: x_star(n_points)
             !! Mean-expression reference points
         real(real64), intent(in) :: mean_S(n_genes_S)
@@ -345,8 +347,6 @@ contains
             !! Collection of residual vectors for each neighborhood
         integer(int32), intent(out) :: neighborhood_indices(n_neighbors, n_points)
             !! Indices of selected neighborhood genes
-        integer(int32), intent(in) :: n_neighbors
-            !! Number of neighbors, **CALCULATE IT WITH [[tox_data_integration(module):calc_neighborhood_size(interface)]]**
         integer(int32), intent(out) :: ierr
             !! Error code
 
@@ -382,6 +382,8 @@ contains
             !! Number of genes in the current study
         integer(int32), intent(in) :: n_reps_S
             !! Number of biological replicates in the study
+        integer(int32), intent(in) :: n_neighbors
+            !! Number of neighbors, **CALCULATE IT WITH [[tox_data_integration(module):calc_neighborhood_size(interface)]]**
         real(real64), intent(in) :: x_star(n_points)
             !! Mean-expression reference points
         real(real64), intent(in) :: mean_S(n_genes_S)
@@ -396,8 +398,6 @@ contains
             !! Collection of residual vectors for each neighborhood
         integer(int32), intent(out) :: neighborhood_indices(n_neighbors, n_points)
             !! Indices of selected neighborhood genes
-        integer(int32), intent(in) :: n_neighbors
-            !! Number of neighbors, **CALCULATE IT WITH [[tox_data_integration(module):calc_neighborhood_size(interface)]]**
 
         integer(int32) :: i_point, i_gene, gene_idx
 

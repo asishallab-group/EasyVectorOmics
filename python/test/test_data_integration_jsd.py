@@ -553,7 +553,7 @@ def test_gjct_permutation_test_python():
 
 
 def main():
-    run_all_tests(globals().values(), sys.argv[0])
+    run_all_tests(globals().values())
 
 
 if __name__ == "__main__":
