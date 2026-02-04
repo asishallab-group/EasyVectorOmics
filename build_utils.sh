@@ -24,33 +24,17 @@ function get_compiler() {
   fi
 }
 
-function get_flags() {  
+function get_flags() {
   # Libraries
   echo -en "-lzip -lxxhash "
 
-  if [[ "$DEBUG" ]]; then
-    stderr "Debug mode: enabled"
-  fi
-
   # Detect compiler and choose appropriate profile:
   if [[ "$FC" == "ifx" || "$FC" == "ifort" ]]; then
-    if [[ "$DEBUG" ]]; then
-      echo "-O0 -g -traceback -check all -warn all -diag-enable=all -fPIC"
-    else
-      echo "-O2 -fopenmp-target-do-concurrent -warn all -diag-enable=all -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC"
-    fi
+    echo "-O2 -fopenmp-target-do-concurrent -warn all -diag-enable=all -qopenmp -xHost -align array64byte -qopt-zmm-usage=high -qopt-prefetch=3 -qopt-matmul -fPIC"
   elif [[ "$FC" == "nvfortran" ]]; then
-    if [[ "$DEBUG" ]]; then
-      echo "-O0 -g -traceback -Mbounds -Mchkptr -Mchkstk -fPIC"
-    else
-      echo "-O2 -Mconcur -fPIC -fopenmp -stdpar=multicore"
-    fi
+    echo "-O2 -Mconcur -fPIC -fopenmp -stdpar=multicore"
   else
-    if [[ "$DEBUG" ]]; then
-      echo "-O0 -g -fbacktrace -fcheck=all -fPIC"
-    else
-      echo "-O2 -march=native -mtune=native -fopenmp -funroll-loops -ftree-vectorize -fPIC"
-    fi
+    echo "-O2 -march=native -mtune=native -fopenmp -funroll-loops -ftree-vectorize -fPIC"
   fi
 }
 
@@ -70,7 +54,6 @@ function handle_args() {
   MAX_PERF_FLAG=""
   ARGS=""
   DIRECTIVES=""
-  
   for arg in "$@"; do
     if [[ "$arg" == "--max-performance" ]]; then
       MAX_PERF_FLAG="-DMAX_PERFORMANCE"
@@ -79,10 +62,9 @@ function handle_args() {
     # genericly handle optional flags
     elif [[ "$arg" == --* ]]; then
       declare undashed=${arg:2}
-      declare key=${undashed%%=*}
-      # extract value after first '=' if present, else set to 1
-      declare val=$(echo "$undashed" | sed 's/^'$key'\(=\(.*\)\?\)\?/\2/g')
-      : ${val:=1}
+      declare key=${undashed%=*}
+      declare val=${undashed##$key}
+      if [[ ! $val ]];then val=1;fi
       declare -g "$(echo "$key" | sed 's/\W/_/g; s/\w/\U&/g')=$val"
     else
       ARGS="$ARGS $arg"
@@ -145,4 +127,41 @@ function check_exit_code() {
     echo "Exit code: $code"
     exit $code
   fi
+}
+
+function generate_fpm_toml() {
+  extra_libs=   # space, tab or comma separated list, like: "lib1, lib2"
+  if [[ "$2" == "ifx" ]]; then
+    extra_libs="iomp5"
+  fi
+
+  awk -v extra_libs="$extra_libs" '
+{
+  line = $0
+
+  # match category, like "build" from [build] or "test.dependencies" from [test.dependencies]
+  match($0, /^[ \t]*\[[ \t]*([a-z\.]+)[ \t]*\]/, arr)
+
+  if (arr[1]) {
+    category = arr[1]
+  }
+
+  if (category == "build") {
+    # match: link = [ "lib_1.0" , "lib_2.0" ]
+    # and extract the array elements
+    match($0, /^[ \t]*link[ \t]*=[ \t]*\[([ \ta-z,",_0-9\.]+)\]/, arr)
+
+    if (arr[1]) {
+      # unify separators, trim start and wrap each lib in: ",\"<lib>\""
+      gsub(/[\t,]/," ",extra_libs)
+      sub(/^ +/,"",extra_libs)
+      gsub(/[^ ]+/,",\"&\"",extra_libs)
+
+      line = sprintf("link = [%s %s]", arr[1], extra_libs)
+    }
+  }
+
+  print line
+}
+' $1
 }
