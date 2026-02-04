@@ -75,7 +75,8 @@ check_exit_code "Module compilation failed"
 echo "Linking executable..."
 # Finally link everything together
 $COMPILER $FLAGS -I$BUILD_DIR \
-  $BUILD_DIR/*.o -o $EXECUTABLE
+  $BUILD_DIR/*.o -Lexternal/lib -lloess_netlib \
+  -o $EXECUTABLE
 
 check_exit_code "Executable compilation failed"
 
