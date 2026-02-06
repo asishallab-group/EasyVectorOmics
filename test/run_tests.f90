@@ -27,6 +27,7 @@ program main
   use mod_test_normalization_unit_length
   use mod_test_tox_clustering
   use mod_test_normalize_by_std_dev
+  use mod_test_data_integration
 
   implicit none
 
@@ -114,6 +115,7 @@ contains
     call add_suite("normalization_unit_length", run_all_tests_normalization_unit_length, run_named_tests_normalization_unit_length)
     call add_suite("tox_clustering", run_all_tests_tox_clustering, run_named_tests_tox_clustering)
     call add_suite("normalize_by_std_dev",run_all_tests_normalize_by_std_dev, run_named_tests_normalize_by_std_dev)
+    call add_suite("tox_data_integration", run_all_tests_tox_data_integration, run_named_tests_tox_data_integration)
   end subroutine initialize_suites
   
 

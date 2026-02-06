@@ -15,7 +15,7 @@ MODULE_FLAG=$(get_module_flag $BUILD_DIR)
 
 echo "Detected alignment: $ALIGN"
 
-if [[ -z "$NO_BUILD" ]]; then
+if [[ -z "$SKIP_KINDS_TEST" ]]; then
   bash -s -- "$@" <<'EOF'
   function get_directives() {
     echo "-D'OPEN_PAREN=(' -D'CLOSE_PAREN=)' -D'$1(KIND)=KIND(KIND)' -D'$2(KIND)=$1 OPEN_PAREN KIND CLOSE_PAREN' -D'$3(KIND)=$1 OPEN_PAREN 2 CLOSE_PAREN'"
@@ -44,6 +44,9 @@ EOF
   check_exit_code "Kind Mismatch Test failed"
 
   echo "Compiling src/"
+  bash build.sh --clean-build "$@"
+  check_exit_code "Build failed"
+else
   bash build.sh "$@"
   check_exit_code "Build failed"
 fi
@@ -55,7 +58,7 @@ mkdir -p $BUILD_DIR
 # Clean up any existing run_tests file/directory
 if [ -e "$EXECUTABLE" ]; then
   echo "Removing existing $EXECUTABLE..."
-  rm -rf "$EXECUTABLE"
+  rm -f "$EXECUTABLE"
 fi
 
 echo "Compiling test modules..."
@@ -66,8 +69,7 @@ $COMPILER $FLAGS $MODULE_FLAG -DDEFAULT_ALIGNMENT=$ALIGN $MAX_PERF_FLAG \
 check_exit_code "Test compilation failed"
 
 # Move object files to build/
-mv *.o $BUILD_DIR/ 2>/dev/null || true
-mv *.mod $BUILD_DIR/ 2>/dev/null || true
+mv *.o $BUILD_DIR/
 
 check_build "*.o" "*.mod"
 check_exit_code "Module compilation failed"

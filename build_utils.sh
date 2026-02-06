@@ -70,6 +70,11 @@ function handle_args() {
       ARGS="$ARGS $arg"
     fi
   done
+
+  # if extra directives are added, a clean build is necessary. Otherwise fpm doesn't recompile
+  if [[ $DIRECTIVES ]]; then
+    CLEAN_BUILD=1
+  fi
 }
 
 function stderr() {
