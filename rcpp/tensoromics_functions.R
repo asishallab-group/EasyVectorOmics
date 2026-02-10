@@ -9,7 +9,7 @@ lib_path <- shQuote(normalizePath("build"))
 Sys.setenv(PKG_LIBS = paste0("-Wl,-rpath,", lib_path, " -L", lib_path, " -ltensor-omics -lgfortran"))
 
 # Compile and load all TensorOmics Rcpp wrapper functions (includes error_handling.cpp)
-sourceCpp("rcpp/tensoromics_functions.cpp", env = .GlobalEnv)
+sourceCpp("rcpp/tensoromics_functions.cpp", env = .GlobalEnv, cacheDir = "rcpp/rcpp_cache")
 
 cat("✓ TensorOmics Rcpp functions loaded successfully\n")
 
@@ -1049,6 +1049,47 @@ tox_build_residual_histograms <- function(
   result
 }
 
+#> tox_data_integration:build_residual_histograms_filtered_c: Build residual histograms and PMFs
+#' Build residual histograms and probability mass functions (PMFs)
+#'
+#' This function wraps the Fortran subroutine
+#' `build_residual_histograms_filtered_c`, which computes histogram bin counts
+#' and normalized PMFs for each neighbor.
+#'
+#' @param neighborhood_residuals Numeric matrix (n_residuals × n_neighbors)
+#' @param shared_residual_range Numeric scalar R
+#' @param n_bins Integer number of histogram bins
+#' @param neighbor_mask Locical/Integer matrix (n_neighbors × n_points), non-zero is TRUE.
+#'
+#' @return A list with:
+#'   \describe{
+#'     \item{counts}{Integer matrix (n_neighbors × n_bins)}
+#'     \item{pmf}{Numeric matrix (n_neighbors × n_bins)}
+#'     \item{included_n_residuals}{Integer vector (n_neighbors)}
+#'   }
+#'
+tox_build_residual_histograms_filtered <- function(
+  neighborhood_residuals,
+  shared_residual_range,
+  n_bins,
+  neighbor_mask
+) {
+
+  validate_numeric_array(neighborhood_residuals)
+  validate_positive_integer_scalar(n_bins)
+  mask_int <- neighbor_mask * 1L
+
+  result <- tox_build_residual_histograms_filtered_rcpp(
+    neighborhood_residuals,
+    shared_residual_range,
+    as.integer(n_bins),
+    mask_int
+  )
+
+  check_err_code(result$ierr)
+  result
+}
+
 #> tox_data_integration:compute_divergence_per_reference_point_c: Compute per-neighbor Jensen–Shannon divergences
 #' Compute per-neighbor Jensen–Shannon divergences
 #'
@@ -1159,6 +1200,64 @@ tox_gjct_permutation_test <- function(
     n_bins,
     shared_residual_range,
     n_permutations,
+    random_seed
+  )
+
+  check_err_code(result$ierr)
+  result
+}
+
+#> tox_data_integration:gjct_permutation_test_filtered_c: Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
+#' Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
+#'
+#' This function wraps the Fortran subroutine
+#' `gjct_permutation_test_filtered_c`, which comutes the global jsd values for permutations of the residuals of both studies.
+#' To create a permutation, the residuals of a reference point will be concatenated, shuffled and reassigned in the shuffled order.
+#'
+#' @param included_n_residuals_S1 Integer vector (length n_neighbors)
+#' @param included_n_residuals_S2 Integer vector (length n_neighbors)
+#' @param neighborhood_residuals_S1: np.ndarray (n_reps, n_neighbors, n_points)
+#' @param neighborhood_residuals_S2: np.ndarray (n_reps, n_neighbors, n_points)
+#' @param global_jsd_observed: Numeric scalar of the calculated global weighted jsd value
+#' @param n_bins: Integer number of bins that were used to calculate global_jsd_observed
+#' @param shared_residual_range: Numeric scalar of the shared residual range used to calculate global_jsd_observed
+#' @param n_permutations: Integer number of permutations to perform
+#' @param neighbor_mask_S1 Locical/Integer matrix (n_neighbors × n_points), non-zero is TRUE.
+#' @param neighbor_mask_S2 Locical/Integer matrix (n_neighbors × n_points), non-zero is TRUE.
+#' @param random_seed: Integer number used as random seed
+#'
+#' @return A list with:
+#'   \describe{
+#'     \item{jsd_null}{Numeric vector (length n_permutations)}
+#'     \item{p_value}{Numeric scalar}
+#'   }
+#'
+tox_gjct_permutation_test_filtered <- function(
+  neighborhood_residuals_S1,
+  neighborhood_residuals_S2,
+  global_jsd_observed,
+  n_bins,
+  shared_residual_range,
+  n_permutations,
+  neighbor_mask_S1,
+  neighbor_mask_S2,
+  random_seed
+) {
+  validate_numeric_vector(neighborhood_residuals_S1, "neighborhood_residuals_S1")
+  validate_numeric_vector(neighborhood_residuals_S2, "neighborhood_residuals_S2")
+  mask_int_S1 <- neighbor_mask_S1 * 1L
+  mask_int_S2 <- neighbor_mask_S2 * 1L
+  print(mask_int_S1)
+
+  result <- tox_gjct_permutation_test_filtered_rcpp(
+    neighborhood_residuals_S1,
+    neighborhood_residuals_S2,
+    global_jsd_observed,
+    n_bins,
+    shared_residual_range,
+    n_permutations,
+    mask_int_S1,
+    mask_int_S2,
     random_seed
   )
 

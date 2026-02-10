@@ -12,12 +12,12 @@ handle_args "$@"
 
 # trigger clean build on branch switch
 if [[ $(which git) ]]; then
-  git branch --show-current 2>/dev/null 1> build/.branch.2.tmp || true
-  touch build/.branch.tmp
-  if [[ $(diff build/.branch.2.tmp build/.branch.tmp) ]]; then
+  git branch --show-current 2>/dev/null 1> build/.branch.tmp || true
+  touch build/.branch
+  if [[ $(diff build/.branch.tmp build/.branch) ]]; then
     CLEAN_BUILD=1
   fi
-  mv build/.branch.2.tmp build/.branch.tmp
+  mv build/.branch.tmp build/.branch
 fi
 
 # # Clean build directory if it exists
