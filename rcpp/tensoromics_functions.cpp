@@ -627,6 +627,7 @@ List tox_loess_required_workspace_rcpp(int d, int nvmax, bool setlf) {
     );
 }
 
+// [[Rcpp::export]]
 Rcpp::List tox_determine_shared_residual_range_expert_rcpp(
     Rcpp::NumericVector residual_pool,
     Rcpp::IntegerVector residual_pool_perm,
@@ -675,6 +676,8 @@ List loess_fit_plain_rcpp(NumericVector x, NumericVector y, NumericVector w, Num
         Named("ierr") = ierr
     );
 }
+
+// [[Rcpp::export]]
 Rcpp::List tox_determine_shared_residual_range_rcpp(
     Rcpp::NumericVector neighborhood_residuals_S1,
     Rcpp::NumericVector neighborhood_residuals_S2,
@@ -734,6 +737,8 @@ List loess_fit_robust_rcpp(NumericVector x, NumericVector y, NumericVector w, Nu
         Named("ierr") = ierr
     );
 }
+
+// [[Rcpp::export]]
 Rcpp::List tox_build_residual_histograms_rcpp(
     Rcpp::NumericVector neighborhood_residuals,
     double shared_residual_range,
@@ -786,6 +791,8 @@ List tox_loess_rcpp(NumericVector x, NumericVector y, double span, int degree,
         Named("ierr") = ierr
     );
 }
+
+// [[Rcpp::export]]
 Rcpp::List tox_compute_divergence_per_reference_point_rcpp(
     Rcpp::NumericMatrix pmf_S1,
     Rcpp::NumericMatrix pmf_S2
