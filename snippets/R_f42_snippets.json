@@ -12,7 +12,7 @@
       "Sys.setenv(PKG_LIBS = paste0(\"-Wl,-rpath,\", lib_path, \" -L\", lib_path, \" -ltensor-omics -lgfortran\"))",
       "",
       "# Compile and load all TensorOmics Rcpp wrapper functions (includes error_handling.cpp)",
-      "sourceCpp(\"rcpp/tensoromics_functions.cpp\", env = .GlobalEnv)",
+      "sourceCpp(\"rcpp/tensoromics_functions.cpp\", env = .GlobalEnv, cacheDir = \"rcpp/rcpp_cache\")",
       "",
       "cat(\"\u2713 TensorOmics Rcpp functions loaded successfully\\n\")",
       "",
