@@ -4012,6 +4012,85 @@ def tox_build_residual_histograms(
     }
 
 
+#> tox_data_integration:build_residual_histograms_filtered_c: Build histogram counts and PMFs for one study
+def tox_build_residual_histograms_filtered(
+    neighborhood_residuals,
+    shared_residual_range,
+    n_bins,
+    neighbor_mask
+):
+    """
+    Build histogram counts and PMFs for one study.
+
+    Args:
+        neighborhood_residuals: np.ndarray (n_reps, n_neighbors, n_points)
+        shared_residual_range: float
+        n_bins: int
+        neighbor_mask : np.ndarray, shape (n_neighbors, n_points), bool
+            Mask selecting neighbors to be included in the histogram calculation.
+    Returns:
+        dict with:
+            counts: (n_points, n_bins)
+            pmf: (n_points, n_bins)
+            included_n_residuals: (n_points,)
+    """
+
+    E = np.asfortranarray(neighborhood_residuals, dtype=np.float64)
+    neighbor_mask_c = np.asfortranarray(neighbor_mask, dtype=np.int32)
+
+    n_reps_c, n_neighbors_c, n_points_c = map(ctypes.c_int, E.shape)
+    n_bins_c = ctypes.c_int(n_bins)
+    R_c = ctypes.c_double(shared_residual_range)
+
+    counts = np.empty((n_points_c.value, n_bins), dtype=np.int32, order="F")
+    pmf = np.empty((n_points_c.value, n_bins), dtype=np.float64, order="F")
+    included = np.empty(n_points_c.value, dtype=np.int32)
+
+    ierr = ctypes.c_int(0)
+
+    fn = lib.build_residual_histograms_filtered_c
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # E
+        ctypes.POINTER(ctypes.c_int),                                    # n_residuals
+        ctypes.POINTER(ctypes.c_int),                                    # n_neighbors
+        ctypes.POINTER(ctypes.c_int),                                    # n_points
+        ctypes.POINTER(ctypes.c_double),                                 # R
+        ctypes.POINTER(ctypes.c_int),                                    # n_bins
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),    # counts
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # pmf
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # included
+        ctypes.POINTER(ctypes.c_int),                                    # ierr
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),    # neighbor_mask
+    ]
+    fn.restype = None
+
+    fn(
+        E,
+        ctypes.byref(n_reps_c),
+        ctypes.byref(n_neighbors_c),
+        ctypes.byref(n_points_c),
+        ctypes.byref(R_c),
+        ctypes.byref(n_bins_c),
+        counts,
+        pmf,
+        included,
+        ctypes.byref(ierr),
+        neighbor_mask_c
+    )
+
+    check_err_code(ierr.value)
+
+    _readonly(counts)
+    _readonly(pmf)
+    _readonly(included)
+
+    return {
+        "counts": counts,
+        "pmf": pmf,
+        "included_n_residuals": included,
+    }
+
+
 #> tox_data_integration:compute_divergence_per_reference_point_c: Build histogram counts and PMFs for one study
 def tox_compute_divergence_per_reference_point(pmf_S1, pmf_S2):
     """
@@ -4186,6 +4265,94 @@ def gjct_permutation_test(
         ctypes.byref(p_value),
         ctypes.byref(ierr),
         ctypes.byref(ctypes.c_int(random_seed)),
+    )
+
+    check_err_code(ierr.value)
+
+    _readonly(jsd_null)
+
+    return {
+        "jsd_null": jsd_null,
+        "p_value": p_value.value,
+    }
+
+
+#> tox_data_integration:gjct_permutation_test_filtered_c: Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
+def gjct_permutation_test_filtered(
+    neighborhood_residuals_S1, neighborhood_residuals_S2,
+    global_jsd_observed, n_bins, shared_residual_range,
+    n_permutations, neighbor_mask_S1, neighbor_mask_S2, random_seed=42
+):
+    """
+    Estimates how likely the observed divergence is to occur by chance under the null hypothesis that both studies are exchangeable
+
+    Args:
+        neighborhood_residuals_S1: np.ndarray (n_reps, n_neighbors, n_points)
+        neighborhood_residuals_S2: np.ndarray (n_reps, n_neighbors, n_points)
+        global_jsd_observed: float
+        n_bins: int
+        shared_residual_range: float
+        n_permutations: int
+        neighbor_mask_S1 : np.ndarray, shape (n_neighbors, n_points), bool
+            Mask selecting neighbors for study 1.
+        neighbor_mask_S2 : np.ndarray, shape (n_neighbors, n_points), bool
+            Mask selecting neighbors for study 2.
+        random_seed: int
+    Returns:
+        dict with:
+            jsd_null: (n_permutations,)
+            p_value: float
+    """
+
+    S1_c = np.asfortranarray(neighborhood_residuals_S1, dtype=np.float64)
+    S2_c = np.asfortranarray(neighborhood_residuals_S2, dtype=np.float64)
+    neighbor_mask_S1_c = np.asfortranarray(neighbor_mask_S1, dtype=np.int32)
+    neighbor_mask_S2_c = np.asfortranarray(neighbor_mask_S2, dtype=np.int32)
+
+    n_reps_S1_c, n_neighbors_c, n_points_c = map(ctypes.c_int, S1_c.shape)
+    n_reps_S2_c = ctypes.c_int(S2_c.shape[0])
+
+    jsd_null = np.empty(n_permutations, dtype=np.float64, order="C")
+    p_value = ctypes.c_double(0.0)
+    ierr = ctypes.c_int(0)
+
+    fn = lib.gjct_permutation_test_filtered_c
+    fn.argtypes = [
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # S1
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="F_CONTIGUOUS"),  # S2
+        ctypes.POINTER(ctypes.c_int),                                    # n_reps_S1
+        ctypes.POINTER(ctypes.c_int),                                    # n_reps_S2
+        ctypes.POINTER(ctypes.c_int),                                    # n_neighbors
+        ctypes.POINTER(ctypes.c_int),                                    # n_points
+        ctypes.POINTER(ctypes.c_double),                                 # global_jsd_observed
+        ctypes.POINTER(ctypes.c_int),                                    # n_bins
+        ctypes.POINTER(ctypes.c_double),                                 # shared_residual_range
+        ctypes.POINTER(ctypes.c_int),                                    # n_permutations
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # jsd_null
+        ctypes.POINTER(ctypes.c_double),                 # p_value
+        ctypes.POINTER(ctypes.c_int),                    # ierr
+        ctypes.POINTER(ctypes.c_int),                                    # random_seed
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),  # neighbor_mask_S1
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="F_CONTIGUOUS"),  # neighbor_mask_S2
+    ]
+    fn.restype = None
+
+    fn(
+        S1_c, S2_c,
+        ctypes.byref(n_reps_S1_c),
+        ctypes.byref(n_reps_S2_c),
+        ctypes.byref(n_neighbors_c),
+        ctypes.byref(n_points_c),
+        ctypes.byref(ctypes.c_double(global_jsd_observed)),
+        ctypes.byref(ctypes.c_int(n_bins)),
+        ctypes.byref(ctypes.c_double(shared_residual_range)),
+        ctypes.byref(ctypes.c_int(n_permutations)),
+        jsd_null,
+        ctypes.byref(p_value),
+        ctypes.byref(ierr),
+        ctypes.byref(ctypes.c_int(random_seed)),
+        neighbor_mask_S1_c,
+        neighbor_mask_S2_c
     )
 
     check_err_code(ierr.value)
