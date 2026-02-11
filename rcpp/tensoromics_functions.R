@@ -169,6 +169,10 @@ tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile =
   # Input validation
   validate_numeric_vector(distances, "distances")
   n_genes <- as.integer(length(distances))
+  gene_to_fam <- as.integer(gene_to_fam)
+  validate_integer_vector(gene_to_fam, "gene_to_fam")
+  validate_length_equals_n(gene_to_fam, n_genes, "gene_to_fam")
+  validate_index_bounds(gene_to_fam, low = 1, high = n_families, name = "gene_to_fam")
 
   # Call Rcpp wrapper
   result <- tox_detect_outliers_rcpp(distances, gene_to_fam, n_families, percentile)
@@ -1503,7 +1507,8 @@ tox_relative_axes_changes_from_shift_vector <- function(vec) {
   }
   
   res <- tox_relative_axes_changes_from_shift_vector_rcpp(vec)
-  return(res)
+  check_err_code(res$ierr)
+  return(res$contributions)
 }
 
 #> f42_helper: Compute relative axis changes from shift vector (alias)
@@ -1531,7 +1536,8 @@ tox_relative_axes_expression_from_expression_vector <- function(vec) {
   }
   
   res <- tox_relative_axes_expression_from_expression_vector_rcpp(vec)
-  return(res)
+  check_err_code(res$ierr)
+  return(res$contributions)
 }
 
 #> f42_helper: Compute relative axis contributions (alias)
@@ -1569,7 +1575,8 @@ tox_clock_hand_angle_between_vectors <- function(v1, v2, selected_axes_for_signe
   
   validate_integer_vector(selected_axes_for_signed, "selected_axes_for_signed", expected_length = 3)
   res <- tox_clock_hand_angle_between_vectors_rcpp(v1, v2, selected_axes_for_signed)
-  return(res)
+  check_err_code(res$ierr)
+  return(res$signed_angle)
 }
 
 #> tox_relative_axis_plane_tools:clock_hand_angles_for_shift_vectors_c: Compute signed rotation angles for vector pairs
@@ -1598,7 +1605,8 @@ tox_clock_hand_angles_for_shift_vectors <- function(origins, targets, vecs_selec
   
   validate_integer_vector(selected_axes_for_signed, "selected_axes_for_signed", expected_length = 3)
   res <- tox_clock_hand_angles_for_shift_vectors_rcpp(origins, targets, as.integer(vecs_selection_mask), selected_axes_for_signed)
-  return(res)
+  check_err_code(res$ierr)
+  return(res$signed_angles)
 }
 #> tox_clustering:cluster_factor_trajectories_k_means_c: K-means clustering on factor trajectories
 #' K-means clustering on factor trajectories
@@ -1625,7 +1633,15 @@ tox_cluster_factor_trajectories_k_means <- function(n_clusters, trajectories, n_
   # Check dimensions
   if (length(trajectories) != n_factors * n_samples * n_timepoints) stop("trajectories length mismatch")
   validate_matrix_shape_factor_centroids(centroids, n_factors, n_clusters)
-  res <- tox_cluster_factor_trajectories_k_means_rcpp(n_clusters, as.numeric(trajectories), n_factors, n_samples, n_timepoints, centroids, max_iterations)
+  res <- tox_cluster_factor_trajectories_k_means_rcpp(
+    trajectories = as.numeric(trajectories),
+    centroids = centroids,
+    n_clusters = n_clusters,
+    n_factors = n_factors,
+    n_samples = n_samples,
+    n_timepoints = n_timepoints,
+    max_iterations = max_iterations
+  )
   check_err_code(res$ierr)
   return(res)
 }
