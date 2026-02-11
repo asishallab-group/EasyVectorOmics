@@ -10,9 +10,11 @@ from tensoromics_functions import (
     tox_determine_shared_residual_range,
     tox_determine_shared_residual_range_expert,
     tox_build_residual_histograms,
+    tox_build_residual_histograms_filtered,
     tox_compute_divergence_per_reference_point,
     tox_compute_weighted_global_divergence,
-    gjct_permutation_test
+    gjct_permutation_test,
+    gjct_permutation_test_filtered,
 )
 
 
@@ -210,112 +212,127 @@ def test_tox_build_residual_histograms():
     E[:, 0, 2] = [2.5, -3.0, 1.2]
     E[:, 1, 2] = [0.4, -0.1, 0.0]
 
-    out = tox_build_residual_histograms(E, R, n_bins)
+    counts, pmf, included = tox_build_residual_histograms_filtered(E, R, n_bins, neighbor_mask=np.full((n_neighbors, n_points), False, order="F")).values()
 
-    counts = out["counts"]
-    pmf = out["pmf"]
-    included = out["included_n_residuals"]
+    assert np.all(counts == 0), "All counts should be zero"
+    assert np.allclose(pmf, 0.0, atol=TOL), "All pmfs should be zero"
+    assert np.all(included == 0), "All included should be zero"
 
-    expected_counts = np.array([
-        [2, 1, 2, 1],
-        [0, 0, 6, 0],
-        [1, 1, 2, 2],
-    ], dtype=np.int32, order="F")
+    def filtered(E, R, n_bins): return tox_build_residual_histograms_filtered(E, R, n_bins, neighbor_mask=np.full(E.shape, True, order="F"))
 
-    expected_pmf = np.array([
-        [2/6, 1/6, 2/6, 1/6],
-        [0/6, 0/6, 6/6, 0/6],
-        [1/6, 1/6, 2/6, 2/6],
-    ], dtype=np.float64, order="F")
+    for func in (tox_build_residual_histograms, filtered):
+        print(f"... test {func.__name__.replace("filtered", "tox_build_residual_histograms_filtered")}")
 
-    assert np.array_equal(counts, expected_counts), "Test 1: counts mismatch"
-    assert np.allclose(pmf, expected_pmf, atol=TOL), "Test 1: pmf mismatch"
-    assert included[0] == 6
-    assert included[1] == 6
-    assert included[2] == 6
+        E = np.zeros((n_reps, n_neighbors, n_points), dtype=np.float64, order="F")
+        E[:, 0, 0] = [-2.0, -0.5, 0.2]
+        E[:, 1, 0] = [1.7, 0.9, -1.2]
+        E[:, :, 1] = 0.0
+        E[:, 0, 2] = [2.5, -3.0, 1.2]
+        E[:, 1, 2] = [0.4, -0.1, 0.0]
 
-    # ============================================================
-    # Test 2 — NaNs must be ignored
-    # ============================================================
-    E[:, :, :] = 0
-    E[0, 0, 0] = np.nan
-    E[2, 0, 0] = np.nan
-    E[1, 0, 1] = np.nan
-    E[2, 1, 2] = np.nan
+        out = func(E, R, n_bins)
+        counts = out["counts"]
+        pmf = out["pmf"]
+        included = out["included_n_residuals"]
 
-    out = tox_build_residual_histograms(E, R, n_bins)
-    counts = out["counts"]
-    pmf = out["pmf"]
-    included = out["included_n_residuals"]
+        expected_counts = np.array([
+            [2, 1, 2, 1],
+            [0, 0, 6, 0],
+            [1, 1, 2, 2],
+        ], dtype=np.int32, order="F")
 
-    expected_counts = np.array([
-        [0, 0, 4, 0],
-        [0, 0, 5, 0],
-        [0, 0, 5, 0],
-    ], dtype=np.int32, order="F")
+        expected_pmf = np.array([
+            [2/6, 1/6, 2/6, 1/6],
+            [0/6, 0/6, 6/6, 0/6],
+            [1/6, 1/6, 2/6, 2/6],
+        ], dtype=np.float64, order="F")
 
-    expected_pmf = np.array([
-        [0.0, 0.0, 1.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0],
-        [0.0, 0.0, 1.0, 0.0],
-    ], dtype=np.float64, order="F")
+        assert np.array_equal(counts, expected_counts), "Test 1: counts mismatch"
+        assert np.allclose(pmf, expected_pmf, atol=TOL), "Test 1: pmf mismatch"
+        assert np.array_equal(included, [6, 6, 6]), "Test 1: included mismatch"
 
-    assert np.array_equal(counts, expected_counts), "Test 2: counts mismatch"
-    assert np.allclose(pmf, expected_pmf, atol=TOL), "Test 2: pmf mismatch"
-    assert included[0] == 4
-    assert included[1] == 5
-    assert included[2] == 5
+        # ============================================================
+        # Test 2 — NaNs must be ignored
+        # ============================================================
+        E[:, :, :] = 0
+        E[0, 0, 0] = np.nan
+        E[2, 0, 0] = np.nan
+        E[1, 0, 1] = np.nan
+        E[2, 1, 2] = np.nan
 
-    # ============================================================
-    # Test 3 — All NaN → pmf = 0, counts = 0, included = 0
-    # ============================================================
-    E[:, :, :] = np.nan
+        out = func(E, R, n_bins)
+        counts = out["counts"]
+        pmf = out["pmf"]
+        included = out["included_n_residuals"]
 
-    out = tox_build_residual_histograms(E, R, n_bins)
-    counts = out["counts"]
-    pmf = out["pmf"]
-    included = out["included_n_residuals"]
+        expected_counts = np.array([
+            [0, 0, 4, 0],
+            [0, 0, 5, 0],
+            [0, 0, 5, 0],
+        ], dtype=np.int32, order="F")
 
-    assert np.all(counts == 0), "Test 3: counts mismatch"
-    assert np.all(pmf == 0), "Test 3: pmf mismatch"
-    assert np.all(included == 0), "Test 3: included mismatch"
+        expected_pmf = np.array([
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+            [0.0, 0.0, 1.0, 0.0],
+        ], dtype=np.float64, order="F")
 
-    # ============================================================
-    # Test 4 — Residuals exactly on boundaries
-    # ============================================================
-    E = np.array([
-        [
-            [-2.0, -2.0, -2.0],
-            [-1.0, -1.0, -1.0],
-            [0.0,  0.0,  0.0]
-        ],
-        [
-            [1.0,  1.0,  1.0],
-            [2.0,  2.0,  2.0],
-            [0.0,  0.0,  0.0]
-        ]
-    ], dtype=np.float64, order="F")
+        assert np.array_equal(counts, expected_counts), "Test 2: counts mismatch"
+        assert np.allclose(pmf, expected_pmf, atol=TOL), "Test 2: pmf mismatch"
+        assert included[0] == 4
+        assert included[1] == 5
+        assert included[2] == 5
 
-    out = tox_build_residual_histograms(E, R, n_bins)
-    counts = out["counts"]
-    pmf = out["pmf"]
-    included = out["included_n_residuals"]
+        # ============================================================
+        # Test 3 — All NaN → pmf = 0, counts = 0, included = 0
+        # ============================================================
+        E[:, :, :] = np.nan
 
-    expected_counts = np.array([
-        [1, 1, 2, 2],
-        [1, 1, 2, 2],
-        [1, 1, 2, 2],
-    ], dtype=np.int32, order="F")
+        out = func(E, R, n_bins)
+        counts = out["counts"]
+        pmf = out["pmf"]
+        included = out["included_n_residuals"]
 
-    expected_pmf = np.array([
-        [1/6, 1/6, 1/3, 1/3],
-        [1/6, 1/6, 1/3, 1/3],
-        [1/6, 1/6, 1/3, 1/3],
-    ], dtype=np.float64, order="F")
+        assert np.all(counts == 0), "Test 3: counts mismatch"
+        assert np.all(pmf == 0), "Test 3: pmf mismatch"
+        assert np.all(included == 0), "Test 3: included mismatch"
 
-    assert np.array_equal(counts, expected_counts), "Test 4: counts mismatch"
-    assert np.allclose(pmf, expected_pmf, atol=TOL), "Test 4: pmf mismatch"
-    assert np.all(included == 6), "Test 4: included mismatch"
+        # ============================================================
+        # Test 4 — Residuals exactly on boundaries
+        # ============================================================
+        E = np.array([
+            [
+                [-2.0, -2.0, -2.0],
+                [-1.0, -1.0, -1.0],
+                [0.0,  0.0,  0.0]
+            ],
+            [
+                [1.0,  1.0,  1.0],
+                [2.0,  2.0,  2.0],
+                [0.0,  0.0,  0.0]
+            ]
+        ], dtype=np.float64, order="F")
+
+        out = func(E, R, n_bins)
+        counts = out["counts"]
+        pmf = out["pmf"]
+        included = out["included_n_residuals"]
+
+        expected_counts = np.array([
+            [1, 1, 2, 2],
+            [1, 1, 2, 2],
+            [1, 1, 2, 2],
+        ], dtype=np.int32, order="F")
+
+        expected_pmf = np.array([
+            [1/6, 1/6, 1/3, 1/3],
+            [1/6, 1/6, 1/3, 1/3],
+            [1/6, 1/6, 1/3, 1/3],
+        ], dtype=np.float64, order="F")
+
+        assert np.array_equal(counts, expected_counts), "Test 4: counts mismatch"
+        assert np.allclose(pmf, expected_pmf, atol=TOL), "Test 4: pmf mismatch"
+        assert np.all(included == 6), "Test 4: included mismatch"
 
 
 def test_tox_compute_divergence_per_reference_point():
@@ -512,6 +529,7 @@ def test_gjct_permutation_test_python():
     n_permutations = 2
     n_bins = 4
     random_seed = 666
+    huge = np.finfo(np.float64).max
 
     S_12 = np.array(
         [1, 2, 3, 4,
@@ -528,28 +546,60 @@ def test_gjct_permutation_test_python():
                     (n_reps_S2, n_neighbors, n_points), order="F")
 
     # all null >= observed → p = 1
-    res_p1 = gjct_permutation_test(
-        S1, S2,
-        global_jsd_observed=0.0,
-        n_bins=n_bins,
-        shared_residual_range=10.0,
-        n_permutations=n_permutations,
-        random_seed=random_seed,
-    )
-    assert np.isclose(res_p1["p_value"], 1.0), "For zero observed JSD, p-value should be 1"
-
-    # none null >= observed → p = 1/(n_permutations+1)
-    huge = np.finfo(np.float64).max
-    res_p2 = gjct_permutation_test(
+    res_p1 = gjct_permutation_test_filtered(
         S1, S2,
         global_jsd_observed=huge,
         n_bins=n_bins,
         shared_residual_range=10.0,
         n_permutations=n_permutations,
         random_seed=random_seed,
+        neighbor_mask_S1=np.full(S1.shape, False, order="F"), neighbor_mask_S2=np.full(S2.shape, False, order="F")
     )
-    expected = 1.0 / (n_permutations + 1.0)
-    assert np.isclose(res_p2["p_value"], expected), "For huge observed JSD, p-value should be 1/(n_permutations+1)"
+    assert np.isclose(res_p1["p_value"], 1/3), "For no included neighbors, p-value should be 1/3 ((0+1)/(n_permutations+1))"
+
+    def filtered(S1, S2, global_jsd_observed, n_bins, shared_residual_range, n_permutations, random_seed):
+        return gjct_permutation_test_filtered(S1, S2, global_jsd_observed, n_bins, shared_residual_range, n_permutations,
+            np.full(S1.shape, True, order="F"), np.full(S2.shape, True, order="F"), random_seed
+        )
+
+    for func in (gjct_permutation_test, filtered):
+        print(f"... test {func.__name__.replace("filtered", "gjct_permutation_test_filtered")}")
+        S_12 = np.array(
+            [1, 2, 3, 4,
+             5, 6, -7, 8,
+             2, -4, 6, 8,
+             1, 3],
+            dtype=np.float64,
+        )
+
+        # reshape into (n_reps, n_neighbors, n_points) in Fortran order
+        S1 = np.reshape(S_12[:n_reps_S1 * n_neighbors * n_points],
+                        (n_reps_S1, n_neighbors, n_points), order="F")
+        S2 = np.reshape(S_12[n_reps_S1 * n_neighbors * n_points:],
+                        (n_reps_S2, n_neighbors, n_points), order="F")
+
+        # all null >= observed → p = 1
+        res_p1 = filtered(
+            S1, S2,
+            global_jsd_observed=0.0,
+            n_bins=n_bins,
+            shared_residual_range=10.0,
+            n_permutations=n_permutations,
+            random_seed=random_seed,
+        )
+        assert np.isclose(res_p1["p_value"], 1.0), "For zero observed JSD, p-value should be 1"
+
+        # none null >= observed → p = 1/(n_permutations+1)
+        res_p2 = filtered(
+            S1, S2,
+            global_jsd_observed=huge,
+            n_bins=n_bins,
+            shared_residual_range=10.0,
+            n_permutations=n_permutations,
+            random_seed=random_seed,
+        )
+        expected = 1.0 / (n_permutations + 1.0)
+        assert np.isclose(res_p2["p_value"], expected), "For huge observed JSD, p-value should be 1/(n_permutations+1)"
 
 
 def main():

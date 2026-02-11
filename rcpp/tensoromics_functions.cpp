@@ -18,11 +18,15 @@ extern "C" {
 
     void gjct_permutation_test_c( double* neighborhood_residuals_S1, double* neighborhood_residuals_S2, int* n_reps_S1, int* n_reps_S2, int* n_neighbors, int* n_points, double* global_jsd_observed, int* n_bins, double* shared_residual_range, int* n_permutations, double* jsd_null, double* p_value, int* ierr, int* random_seed );
 
+    void gjct_permutation_test_filtered_c( double* neighborhood_residuals_S1, double* neighborhood_residuals_S2, int* n_reps_S1, int* n_reps_S2, int* n_neighbors, int* n_points, double* global_jsd_observed, int* n_bins, double* shared_residual_range, int* n_permutations, double* jsd_null, double* p_value, int* ierr, int* random_seed, int* neighbor_mask_S1, int* neighbor_mask_S2 );
+
     void compute_weighted_global_divergence_c( double* js_divergences, int* n_points, int* included_n_residuals_S1, int* included_n_residuals_S2, double* global_js_divergence, double* weights, int* ierr );
 
     void compute_divergence_per_reference_point_c( double* pmf_S1, double* pmf_S2, int* n_points, int* n_bins, double* js_divergences, int* ierr );
 
     void build_residual_histograms_c( double* neighborhood_residuals, int* n_reps, int* n_neighbors, int* n_points, double* shared_residual_range, int* n_bins, int* counts, double* pmf, int* included_n_residuals, int* ierr );
+
+    void build_residual_histograms_filtered_c( double* neighborhood_residuals, int* n_reps, int* n_neighbors, int* n_points, double* shared_residual_range, int* n_bins, int* counts, double* pmf, int* included_n_residuals, int* ierr, int* neighbor_mask );
 
     void determine_shared_residual_range_c( double* neighborhood_residuals_S1, double* neighborhood_residuals_S2, int* n_reps_S1, int* n_reps_S2, int* n_neighbors, int* n_points, double* residual_range_quantile, double* shared_residual_range, int* ierr );
 
@@ -800,6 +804,46 @@ List tox_loess_rcpp(NumericVector x, NumericVector y, double span, int degree,
 }
 
 // [[Rcpp::export]]
+Rcpp::List tox_build_residual_histograms_filtered_rcpp(
+    Rcpp::NumericVector neighborhood_residuals,
+    double shared_residual_range,
+    int n_bins,
+    IntegerVector neighbor_mask
+) {
+    Rcpp::IntegerVector dims = neighborhood_residuals.attr("dim");
+    int n_reps = dims[0];
+    int n_neighbors = dims[1];
+    int n_points = dims[2];
+
+    Rcpp::IntegerMatrix counts(n_points, n_bins);
+    Rcpp::NumericMatrix pmf(n_points, n_bins);
+    Rcpp::IntegerVector included_n_residuals(n_points);
+
+    int ierr = 0;
+
+    build_residual_histograms_filtered_c(
+        neighborhood_residuals.begin(),
+        &n_reps,
+        &n_neighbors,
+        &n_points,
+        &shared_residual_range,
+        &n_bins,
+        counts.begin(),
+        pmf.begin(),
+        included_n_residuals.begin(),
+        &ierr,
+        neighbor_mask.begin()
+    );
+
+    return Rcpp::List::create(
+        Rcpp::Named("counts") = counts,
+        Rcpp::Named("pmf") = pmf,
+        Rcpp::Named("included_n_residuals") = included_n_residuals,
+        Rcpp::Named("ierr") = ierr
+    );
+}
+
+// [[Rcpp::export]]
 Rcpp::List tox_compute_divergence_per_reference_point_rcpp(
     Rcpp::NumericMatrix pmf_S1,
     Rcpp::NumericMatrix pmf_S2
@@ -899,6 +943,54 @@ Rcpp::List tox_gjct_permutation_test_rcpp(
     );
 }
 
+// [[Rcpp::export]]
+Rcpp::List tox_gjct_permutation_test_filtered_rcpp(
+    Rcpp::NumericVector neighborhood_residuals_S1,
+    Rcpp::NumericVector neighborhood_residuals_S2,
+    double global_jsd_observed,
+    int n_bins,
+    double shared_residual_range,
+    int n_permutations,
+    IntegerVector neighbor_mask_S1,
+    IntegerVector neighbor_mask_S2,
+    int random_seed
+) {
+    Rcpp::IntegerVector dims = neighborhood_residuals_S1.attr("dim");
+    int n_reps_S1 = dims[0];
+    int n_neighbors = dims[1];
+    int n_points = dims[2];
+    dims = neighborhood_residuals_S2.attr("dim");
+    int n_reps_S2 = dims[0];
+
+    Rcpp::NumericVector jsd_null(n_permutations);
+    double p_value = 0.0;
+    int ierr = 0;
+
+    gjct_permutation_test_filtered_c(
+        neighborhood_residuals_S1.begin(),
+        neighborhood_residuals_S2.begin(),
+        &n_reps_S1,
+        &n_reps_S2,
+        &n_neighbors,
+        &n_points,
+        &global_jsd_observed,
+        &n_bins,
+        &shared_residual_range,
+        &n_permutations,
+        jsd_null.begin(),
+        &p_value,
+        &ierr,
+        &random_seed,
+        neighbor_mask_S1.begin(),
+        neighbor_mask_S2.begin()
+    );
+
+    return Rcpp::List::create(
+        Rcpp::Named("jsd_null") = jsd_null,
+        Rcpp::Named("p_value")  = p_value,
+        Rcpp::Named("ierr")     = ierr
+    );
+}
 
 // [[Rcpp::export]]
 Rcpp::List tox_calc_neighborhood_size_rcpp(int n_pool,
