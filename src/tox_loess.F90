@@ -218,6 +218,7 @@ contains
     end if
 
     if (n == 1) then
+      write(*, '(A)') "LOESS: Single point detected. Skipping adjustment (yhat = y)."
       yhat(1) = y(1)
       return 
     end if
@@ -328,6 +329,7 @@ contains
     end if
 
     if (n == 1) then
+      write(*, '(A)') "LOESS: Single point detected. Skipping adjustment (yhat = y)."
       yhat(1) = y(1)
       return 
     end if
