@@ -20,7 +20,7 @@ contains
 
   !> @brief Get array of all available tests (as subroutine, not function).
   subroutine get_all_tests(all_tests)
-    type(test_case), intent(out) :: all_tests(19)
+    type(test_case), intent(out) :: all_tests(23)
     all_tests(1) = test_case("test_scaling_basic", test_scaling_basic)
     all_tests(2) = test_case("test_rdi_basic", test_rdi_basic)
     all_tests(3) = test_case("test_identify_outliers_basic", test_identify_outliers_basic)
@@ -40,13 +40,17 @@ contains
     all_tests(17) = test_case("test_loess_global_positive", test_loess_global_positive)
     all_tests(18) = test_case("test_single_gene_family_scaling", test_single_gene_family_scaling)
     all_tests(19) = test_case("test_all_zero_distances_scaling", test_all_zero_distances_scaling)
+    all_tests(20) = test_case("test_outliers_zero_variance", test_outliers_zero_variance)
+    all_tests(21) = test_case("test_outliers_orphan_genes", test_outliers_orphan_genes)
+    all_tests(22) = test_case("test_outliers_extreme_detection", test_outliers_extreme_detection)
+    all_tests(23) = test_case("test_outliers_nan_handling", test_outliers_nan_handling)
 
   end subroutine get_all_tests
 
   !> @brief Run specific get_outliers tests by name.
   subroutine run_named_tests_get_outliers(test_names)
     character(len=*), intent(in) :: test_names(:)
-    type(test_case) :: all_tests(25)
+    type(test_case) :: all_tests(23)
     integer(int32) :: i, j
     logical :: found
 
@@ -70,7 +74,7 @@ contains
 
   !> @brief Run all tox_get_outliers tests.
   subroutine run_all_tests_get_outliers()
-    type(test_case) :: all_tests(19)
+    type(test_case) :: all_tests(23)
     integer(int32) :: i
     call get_all_tests(all_tests)
     do i = 1, size(all_tests)
@@ -694,6 +698,132 @@ contains
     call assert_true(any(dscale > 0.0_real64), 'At least one scaling value should be > 0 for non-degenerate input')
   end subroutine test_loess_global_positive
 
+  !> Test: Zero variance across families.
+  !> Validates that the filter (is_close) handles identical log-SD values without excluding all data.
+  subroutine test_outliers_zero_variance()
+    use, intrinsic :: iso_fortran_env, only: int32, real64
+    implicit none
+
+    integer(int32), parameter :: n_families = 4_int32
+    integer(int32), parameter :: genes_per_fam = 3_int32
+    integer(int32), parameter :: n_genes = n_families * genes_per_fam
+
+    real(real64)    :: distances(n_genes)
+    integer(int32)  :: gene_to_fam(n_genes)
+    real(real64)    :: dscale(n_families), loess_x(n_families), loess_y(n_families)
+    integer(int32)  :: loess_n(n_families), ierr, i
+
+    ! Setup: All genes have identical distances, resulting in identical family SDs
+    distances = 1.0_real64
+    do i = 1, n_genes
+      gene_to_fam(i) = (i - 1) / genes_per_fam + 1
+    end do
+
+    call compute_family_scaling_alloc(n_genes, n_families, distances, gene_to_fam, dscale, &
+                                      loess_x, loess_y, loess_n, ierr)
+
+    call assert_equal_int(ierr, 0, 'Error code 0 (test_outliers_zero_variance)')
+    ! Fallback should kick in, setting dscale to the median (0.0 in this specific case)
+    call assert_true(all(dscale >= 0.0_real64), 'Dscale should be valid even with zero variance')
+  end subroutine test_outliers_zero_variance
+
+  !> Test: Orphan genes (Family Size = 1) with enough support for LOESS.
+  subroutine test_outliers_orphan_genes()
+    use, intrinsic :: iso_fortran_env, only: int32, real64
+    implicit none
+
+    ! Usamos 8 familias para asegurar que n_eff >= 5
+    integer(int32), parameter :: n_families = 8_int32
+    integer(int32), parameter :: genes_per_fam = 3_int32
+    integer(int32), parameter :: n_genes = (n_families-1)*genes_per_fam + 1
+
+    real(real64)    :: distances(n_genes)
+    integer(int32)  :: gene_to_fam(n_genes)
+    real(real64)    :: dscale(n_families), lx(n_families), ly(n_families)
+    integer(int32)  :: ln(n_families), ierr, i, j, idx
+
+    ! Fill 7 families with valid data (3 genes each)
+    idx = 0
+    do i = 1, n_families - 1
+      do j = 1, genes_per_fam
+        idx = idx + 1
+        gene_to_fam(idx) = i
+        distances(idx) = real(i, real64) + (real(j, real64)*0.1)
+      end do
+    end do
+
+    ! Family 8 is the Orphan (1 gene)
+    idx = idx + 1
+    gene_to_fam(idx) = 8
+    distances(idx) = 10.0_real64
+
+    call compute_family_scaling_alloc(n_genes, n_families, distances, gene_to_fam, dscale, &
+                                      lx, ly, ln, ierr)
+
+    call assert_equal_int(ierr, 0, 'Error code 0 (test_outliers_orphan_genes)')
+    
+    ! Check that valid families got a scaling factor
+    call assert_true(dscale(1) > 0.0_real64, 'Valid family should have dscale > 0')
+    
+    ! Check that the orphan family (8) has zero scaling
+    call assert_true(abs(dscale(8)) < 1e-12_real64, 'Orphan family should have dscale = 0')
+  end subroutine
+
+  !> Test: Extreme Outlier Detection.
+  !> Verifies that a gene with a high RDI is correctly flagged as an outlier.
+  subroutine test_outliers_extreme_detection()
+    use, intrinsic :: iso_fortran_env, only: int32, real64
+    implicit none
+
+    integer(int32), parameter :: n_genes = 12_int32
+    integer(int32), parameter :: n_families = 2_int32
+
+    integer(int32) :: gene_to_fam(12) = [1,1,1,1,1,1, 2,2,2,2,2, 2]
+    real(real64)    :: distances(n_genes)
+    real(real64)    :: work_rdi(n_genes), lx(n_families), ly(n_families)
+    integer(int32)  :: perm(n_genes), sl(n_genes), sr(n_genes), ln(n_families), ierr, i
+    logical         :: is_outlier(n_genes)
+
+    do i = 1, n_genes - 1
+        distances(i) = 0.8_real64 + (real(i, real64) * 0.05_real64)
+    end do
+    distances(n_genes) = 500.0_real64
+
+    ! percentile=90: Top 10% (1 out of 10)
+    perm = [(i, i=1,n_genes)]
+    call detect_outliers(n_genes, n_families, distances, gene_to_fam, work_rdi, &
+                         perm, sl, sr, is_outlier, lx, ly, ln, ierr, percentile=90.0_real64)
+
+    call assert_equal_int(ierr, 0, 'Error code 0 (test_outliers_extreme_detection)')
+    call assert_true(is_outlier(12), 'The 10th gene should be an outlier')
+    call assert_false(is_outlier(1), 'The 1st gene should not be an outlier')
+  end subroutine test_outliers_extreme_detection
+
+  !> Test: NaN Handling.
+  !> Validates that the presence of a NaN distance does not cause a crash and is handled safely.
+  subroutine test_outliers_nan_handling()
+    use, intrinsic :: iso_fortran_env, only: int32, real64
+    use, intrinsic :: ieee_arithmetic, only: ieee_value, ieee_quiet_nan
+    implicit none
+
+    integer(int32), parameter :: n_genes = 4_int32
+    integer(int32), parameter :: n_families = 1_int32
+
+    real(real64)    :: distances(n_genes)
+    integer(int32)  :: gene_to_fam(n_genes) = 1_int32
+    real(real64)    :: work_rdi(n_genes), lx(n_families), ly(n_families)
+    integer(int32)  :: perm(n_genes), sl(n_genes), sr(n_genes), ln(n_families), ierr
+    logical         :: is_outlier(n_genes)
+
+    distances = 1.0_real64
+    distances(1) = ieee_value(1.0_real64, ieee_quiet_nan)
+
+    call detect_outliers(n_genes, n_families, distances, gene_to_fam, work_rdi, &
+                         perm, sl, sr, is_outlier, lx, ly, ln, ierr)
+
+    call assert_equal_int(ierr, 0, 'Should handle NaN without ierr (test_outliers_nan_handling)')
+    call assert_false(is_outlier(1), 'NaN distance gene should not be marked as outlier')
+  end subroutine test_outliers_nan_handling
 
 end module mod_test_get_outliers
 

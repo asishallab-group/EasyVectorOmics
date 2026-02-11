@@ -1787,7 +1787,10 @@ def tox_compute_family_scaling_expert(distances, gene_to_fam, span, degree, mode
     loess_x = np.zeros(n_families, dtype=np.float64)
     loess_y = np.zeros(n_families, dtype=np.float64)
     indices_used = np.zeros(n_families, dtype=np.int32)
+    excluded_low_sd = np.zeros(n_families, dtype=np.int32)
+    means_aux = np.zeros(n_families, dtype=np.float64)
     error_code = np.zeros(1, dtype=np.int32)
+    low_sd_cutoff = np.zeros(1, dtype=np.float64)
 
     # Setup C wrapper
     compute_family_scaling_expert_c = lib.compute_family_scaling_expert_c
@@ -1820,6 +1823,9 @@ def tox_compute_family_scaling_expert(distances, gene_to_fam, span, degree, mode
         ctypes.POINTER(ctypes.c_int),  # degree
         ctypes.POINTER(ctypes.c_int),  # mode
         ctypes.POINTER(ctypes.c_int),  # n_iters
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),    # low_sd_cutoff
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),  # excluded_low_sd
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # means_aux
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # error_code
     ]
     compute_family_scaling_expert_c.restype = None
@@ -1841,6 +1847,9 @@ def tox_compute_family_scaling_expert(distances, gene_to_fam, span, degree, mode
         ctypes.byref(c_degree), 
         ctypes.byref(c_mode), 
         ctypes.byref(c_n_iters), 
+        low_sd_cutoff,
+        excluded_low_sd, 
+        means_aux,
         error_code
     )
 
@@ -1848,7 +1857,7 @@ def tox_compute_family_scaling_expert(distances, gene_to_fam, span, degree, mode
     check_err_code(error_code[0])
 
     # Mark outputs as read-only
-    _readonly(dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances)
+    _readonly(dscale, loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, low_sd_cutoff, excluded_low_sd, means_aux)
 
     return {
         'dscale': dscale,
@@ -1858,7 +1867,10 @@ def tox_compute_family_scaling_expert(distances, gene_to_fam, span, degree, mode
         'perm_tmp': perm_tmp,
         'stack_left_tmp': stack_left_tmp,
         'stack_right_tmp': stack_right_tmp,
-        'family_distances': family_distances
+        'family_distances': family_distances,
+        'low_sd_cutoff': low_sd_cutoff[0],
+        'excluded_low_sd': excluded_low_sd,
+        'means_aux': means_aux
     }
 
 #> tox_get_outliers:compute_rdi_c: Compute Relative Distance Index (RDI) for outlier detection

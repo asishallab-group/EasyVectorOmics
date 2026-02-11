@@ -3,9 +3,9 @@ module tox_get_outliers
   use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
   use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
-  use f42_utils, only: sort_array  
+  use f42_utils, only: sort_array, calc_percentile, logx, is_close
   use tox_errors, only: ERR_INVALID_INPUT, set_ok, set_err_once, check_alloc_stat, is_err
-  use tox_loess, only: tox_loess_required_workspace, loess_fit_robust, loess_fit_plain
+  use tox_loess, only: tox_loess_required_workspace, loess_fit_robust, loess_fit_plain, EPS_LOESS, lowese
   implicit none
 
 contains
@@ -16,7 +16,7 @@ contains
     n_genes, n_families, distances, gene_to_fam, dscale, &
     loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, &
     iv, liv, wv, lv, diagl, w_init, z_mat, rw, ww, res, pi, yhat_tmp, &
-    span, degree, mode, n_iters, ierr)
+    span, degree, mode, n_iters, low_sd_cutoff, excluded_low_sd, means_aux, ierr)
 
       use, intrinsic :: iso_fortran_env, only: real64, int32
       implicit none
@@ -48,6 +48,10 @@ contains
       integer(int32), intent(inout) :: stack_right_tmp(n_genes)
       !| Pre-allocated work array for family distances (dimension n_genes)
       real(real64),   intent(out)   :: family_distances(n_genes)
+      !| Work array for saving raw means 
+      real(real64), intent(inout) :: means_aux(n_families)
+      !| Mask to save those families that have low sd 
+      integer(int32), intent(out) :: excluded_low_sd(n_families)
 
       ! LOESS workspace
       !| Length of integer workspace
@@ -78,13 +82,15 @@ contains
       integer(int32), intent(in)   :: mode
       !| Number of iterations for robust LOESS fitting
       integer(int32), intent(in)   :: n_iters
+      !| cutoff used to filter families with low std
+      real(real64),   intent(out) :: low_sd_cutoff
       !| Error code: 0=ok, non-zero indicates an error
       integer(int32), intent(out)  :: ierr
 
       ! Local variables
-      integer(int32) :: i, j, family_idx, n_in_family, n_valid
+      integer(int32) :: i, j, family_idx, n_in_family, n_valid, k
       real(real64)   :: median_dist, stddev_dist, mean_dist, sumsq
-      real(real64) :: xmin, xmax
+      real(real64) :: xmin, xmax, eps_mean, eps_sd, std_median
       
 
       ! Initialize error code and output arrays
@@ -103,8 +109,11 @@ contains
           end if
       end do
 
+      
+
+      means_aux = -1.0_real64
       ! ------------------------------------------------------------
-      ! PASS 1: compute (median, stddev) per family; store COMPACT
+      ! PASS 1: compute (mean, stddev) per family
       ! ------------------------------------------------------------
       do family_idx = 1, n_families
 
@@ -117,37 +126,88 @@ contains
           end do
 
           if (n_in_family <= 1) cycle
-
-          do j = 1, n_in_family
-              perm_tmp(j) = j
-              stack_left_tmp(j) = 0
-              stack_right_tmp(j) = 0
-          end do
-
-          call sort_array( &
-              family_distances(1:n_in_family), perm_tmp(1:n_in_family), &
-              stack_left_tmp(1:n_in_family), stack_right_tmp(1:n_in_family))
-
-          if (mod(n_in_family, 2) == 0) then
-              median_dist = 0.5_real64 * ( &
-                  family_distances(perm_tmp(n_in_family/2)) + &
-                  family_distances(perm_tmp(n_in_family/2 + 1)) )
-          else
-              median_dist = family_distances(perm_tmp((n_in_family + 1)/2))
-          end if
-
           mean_dist = sum(family_distances(1:n_in_family)) / real(n_in_family, real64)
           sumsq     = sum((family_distances(1:n_in_family) - mean_dist)**2)
           stddev_dist = sqrt(sumsq / real(n_in_family - 1, real64))
 
           n_valid = n_valid + 1
-          loess_x(n_valid) = median_dist
+          loess_x(n_valid) = mean_dist
+          means_aux(family_idx) = mean_dist
           loess_y(n_valid) = stddev_dist
           indices_used(n_valid) = family_idx
       end do
 
       if (n_valid <= 1) then
-          ! not enough points; leave dscale zeros
+        low_sd_cutoff = 0.0_real64
+        return
+      end if
+
+      do i = 1, n_valid
+          perm_tmp(i) = i
+      end do
+
+      call sort_array(loess_x(1:n_valid), perm_tmp(1:n_valid), stack_left_tmp(1:n_valid), stack_right_tmp(1:n_valid))
+      call calc_percentile(loess_x(1:n_valid), perm_tmp(1:n_valid), 5.0_real64, eps_mean, ierr)
+      if (is_err(ierr)) return
+
+      eps_mean = max(eps_mean, EPS_LOESS)
+
+      call sort_array(loess_y(1:n_valid), perm_tmp(1:n_valid), stack_left_tmp(1:n_valid), stack_right_tmp(1:n_valid))
+      if (mod(n_valid, 2) == 0) then
+          std_median = 0.5_real64 * ( &
+              loess_y(perm_tmp(n_valid/2)) + &
+              loess_y(perm_tmp(n_valid/2 + 1)) )
+      else
+          std_median = loess_y(perm_tmp((n_valid + 1)/2))
+      end if
+
+      eps_sd = max(1.0e-13_real64 * std_median, EPS_LOESS)
+
+      do i = 1, n_valid 
+
+        call logx(loess_x(i) + eps_mean, 2.0_real64, loess_x(i), ierr) 
+        if (is_err(ierr)) return 
+        
+        call logx(loess_y(i) + eps_sd, 2.0_real64, loess_y(i), ierr) 
+        if (is_err(ierr)) return 
+      end do
+
+      if (is_err(ierr)) return
+
+      call sort_array(loess_y(1:n_valid), perm_tmp(1:n_valid), stack_left_tmp(1:n_valid), stack_right_tmp(1:n_valid))
+      call calc_percentile(loess_y(1:n_valid), perm_tmp(1:n_valid), 1.0_real64, low_sd_cutoff, ierr)
+
+      if (is_err(ierr)) return
+
+      excluded_low_sd = 1_int32
+      k = 0
+
+      do i = 1, n_valid
+          if (loess_y(i) > low_sd_cutoff .or. is_close(loess_y(i), low_sd_cutoff)) then
+              family_idx = indices_used(i) 
+              excluded_low_sd(family_idx) = 0_int32
+              k = k + 1
+              loess_x(k)      = loess_x(i)
+              loess_y(k)      = loess_y(i)
+              indices_used(k) = indices_used(i)
+          end if
+      end do
+
+      n_valid = k
+
+
+      if (n_valid <= 1) then
+          ! FALLBACK: if there's not enough points for LOESS, 
+          ! we use the global median for all families.
+          do family_idx = 1, n_families
+             if (means_aux(family_idx) >= 0.0_real64) then
+                dscale(family_idx) = std_median
+             else
+                dscale(family_idx) = 0.0_real64
+             end if
+          end do
+          
+          low_sd_cutoff = max(2.0_real64**low_sd_cutoff - eps_sd, 0.0_real64)
           return
       end if
 
@@ -155,15 +215,18 @@ contains
       xmax = maxval(loess_x(1:n_valid))
       
       if (xmax == xmin) then
-        ! Degenerate: all x are identical => LOESS undefined.
-        ! Fallback: just map and back directly 
-        do j = 1, n_valid
-          family_idx = indices_used(j)
-          dscale(family_idx) = loess_y(j)
+        ! Fallback: constant prediction 
+        do family_idx = 1, n_families
+          if (means_aux(family_idx) >= 0.0_real64) then
+            dscale(family_idx) = std_median
+          else
+            dscale(family_idx) = 0.0_real64
+          end if
         end do
+        low_sd_cutoff = max(2.0_real64**low_sd_cutoff - eps_sd, 0.0_real64)
+
         return
       end if
-
 
       ! ------------------------------------------------------------
       ! LOESS GLOBAL: smooth y_ref as function of x_ref (once)
@@ -183,6 +246,24 @@ contains
               rw(1:n_valid), ww(1:n_valid), res(1:n_valid), pi(1:n_valid), yhat_tmp(1:n_valid), ierr)
       end if
 
+      if (is_err(ierr)) return      
+
+      xmin = minval(loess_x(1:n_valid))
+      xmax = maxval(loess_x(1:n_valid))
+
+      do i = 1, n_families
+        if (means_aux(i) >= 0.0_real64) then
+          call logx(means_aux(i) + eps_mean, 2.0_real64, z_mat(i,1), ierr)
+          if (is_err(ierr)) return
+          if (z_mat(i,1) < xmin) z_mat(i,1) = xmin
+          if (z_mat(i,1) > xmax) z_mat(i,1) = xmax
+        else
+          z_mat(i,1) = xmin 
+        end if
+      end do
+
+      call lowese(iv, liv, lv, wv, n_families, z_mat(1:n_families,1:1), yhat_tmp(1:n_families))
+
       if (is_err(ierr)) then
           dscale = -1.0_real64
           return
@@ -191,10 +272,23 @@ contains
       ! ------------------------------------------------------------
       ! Map compact results back to full dscale
       ! ------------------------------------------------------------
-      do j = 1, n_valid
-          family_idx = indices_used(j)
-          dscale(family_idx) = yhat_tmp(j)
+      do family_idx = 1, n_families
+        if (means_aux(family_idx) < 0.0_real64) then
+          dscale(family_idx) = 0.0_real64
+        else
+          dscale(family_idx) = max(2.0_real64**yhat_tmp(family_idx) - eps_sd, 0.0_real64)
+        end if
       end do
+
+      do i = 1, n_valid
+          ! linear scale for return
+          loess_x(i) = max(2.0_real64**loess_x(i) - eps_mean, 0.0_real64)
+          loess_y(i) = max(2.0_real64**loess_y(i) - eps_sd, 0.0_real64)
+      end do
+
+      low_sd_cutoff = max(2.0_real64**low_sd_cutoff - eps_sd, 0.0_real64)
+
+      
 
   end subroutine compute_family_scaling
 
@@ -224,9 +318,12 @@ contains
 
     ! Local work arrays
     real(real64) :: family_distances(n_genes)
-    integer(int32) :: perm_tmp(n_genes)
-    integer(int32) :: stack_left_tmp(n_genes)
-    integer(int32) :: stack_right_tmp(n_genes)
+    integer(int32), allocatable :: perm_tmp(:)
+    integer(int32), allocatable :: stack_left_tmp(:)
+    integer(int32), allocatable :: stack_right_tmp(:)
+    real(real64) :: low_sd_cutoff
+    integer(int32), allocatable :: excluded_low_sd(:)
+    real(real64), allocatable :: means_aux(:)
 
     ! LOESS workspace
     integer(int32) :: liv, lv, istat
@@ -253,7 +350,9 @@ contains
     ! For robust we also need arrays sized to n_valid (<= n_families).
     allocate(diagl(n_families), w_init(n_families), z_mat(n_families,1), &
              rw(n_families), ww(n_families), res(n_families), pi(n_families), &
-             yhat_tmp(n_families), stat=istat)
+             yhat_tmp(n_families), perm_tmp(n_genes), stack_left_tmp(n_genes), &
+             stack_right_tmp(n_genes), excluded_low_sd(n_families), means_aux(n_families), stat=istat)
+
     call check_alloc_stat(istat, ierr)
     if(is_err(ierr)) return
 
@@ -267,7 +366,7 @@ contains
         n_genes, n_families, distances, gene_to_fam, dscale, &
         loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, &
         iv, liv, wv, lv, diagl, w_init, z_mat, rw, ww, res, pi, yhat_tmp, &
-        span, degree, mode, n_iters, ierr)
+        span, degree, mode, n_iters, low_sd_cutoff, excluded_low_sd, means_aux, ierr)
 
     deallocate(iv, wv, diagl, w_init, z_mat, rw, ww, res, pi, yhat_tmp)
 
@@ -445,133 +544,6 @@ contains
   end subroutine detect_outliers
 end module tox_get_outliers
 
-!> R wrapper for compute_family_scaling (main version with automatic allocation).
-!| Calls compute_family_scaling_alloc with standard Fortran types for R interface.
-!| This is the recommended version for most users as it handles memory allocation automatically.
-subroutine compute_family_scaling_r(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, ierr)
-  use tox_get_outliers, only: compute_family_scaling_alloc
-  use, intrinsic :: iso_fortran_env, only: real64, int32
-  implicit none
-
-  !| Total number of genes
-  integer(int32), intent(in) :: n_genes
-  !| Total number of gene families
-  integer(int32), intent(in) :: n_families
-  !| Array of Euclidean distances for each gene
-  real(real64), intent(in) :: distances(n_genes)
-  !| Mapping of each gene to its family (1-based)
-  integer(int32), intent(in) :: gene_to_fam(n_genes)
-  !| Output: array of scaling factors per family
-  real(real64), intent(out) :: dscale(n_families)
-  !| Reference x-coordinates.
-  real(real64), intent(inout) :: loess_x(n_families)
-  !| Reference y-coordinates (length n_total).
-  real(real64), intent(inout) :: loess_y(n_families)
-  !| Indices of reference points used for smoothing.
-  integer(int32), intent(inout) :: indices_used(n_families)
-  !| Error code: 0=ok, 201=invalid family indices
-  integer(int32), intent(out) :: ierr
-  call compute_family_scaling_alloc(n_genes, n_families, distances, gene_to_fam, dscale, &
-      loess_x, loess_y, indices_used, ierr)
-end subroutine compute_family_scaling_r
-
-!> R wrapper for compute_rdi.
-!| Calls compute_rdi with standard Fortran types for R interface.
-!| Outputs both unsorted and sorted RDI, permutation, and sorting workspace arrays for downstream use.
-subroutine compute_rdi_r(n_genes, n_families, distances, gene_to_fam, dscale, rdi, sorted_rdi, perm, stack_left, stack_right)
-  use tox_get_outliers, only: compute_rdi
-  use, intrinsic :: iso_fortran_env, only: real64, int32
-  implicit none
-
-  !| Total number of genes
-  integer(int32), intent(in) :: n_genes
-  !| Total number of families
-  integer(int32), intent(in) :: n_families
-  !| Array of Euclidean distances for each gene to its centroid
-  real(real64), intent(in) :: distances(n_genes)
-  !| Gene-to-family mapping (1-based indexing)
-  integer(int32), intent(in) :: gene_to_fam(n_genes)
-  !| Array of scaling factors for each family
-  real(real64), intent(in) :: dscale(n_families)
-  !| Output array of RDI values for each gene
-  real(real64), intent(out) :: rdi(n_genes)
-  !| Work array for sorting (dimension n_genes)
-  real(real64), intent(inout) :: sorted_rdi(n_genes)
-  !| Permutation array for sorting (dimension n_genes, should be pre-initialized with 1:n_genes)
-  integer(int32), intent(inout) :: perm(n_genes)
-  !| Stack array for sorting (dimension n_genes)
-  integer(int32), intent(inout) :: stack_left(n_genes)
-  !| Stack array for sorting (dimension n_genes)
-  integer(int32), intent(inout) :: stack_right(n_genes)
-  call compute_rdi(n_genes, distances, gene_to_fam, dscale, rdi, sorted_rdi, perm, stack_left, stack_right)
-end subroutine compute_rdi_r
-
-!> R wrapper for identify_outliers.
-!| Calls identify_outliers with standard Fortran types for R interface.
-subroutine identify_outliers_r(n_genes, rdi, sorted_rdi, is_outlier, threshold, percentile)
-  use tox_get_outliers, only: identify_outliers
-  use, intrinsic :: iso_fortran_env, only: real64, int32
-  implicit none
-
-  !| Total number of genes
-  integer(int32), intent(in) :: n_genes
-  !| Array of RDI values for each gene
-  real(real64), intent(in) :: rdi(n_genes)
-  !| Sorted RDI array (must be filtered to remove negatives and sorted in ascending order before calling)
-  real(real64), intent(in) :: sorted_rdi(n_genes)
-  !| Output boolean array indicating outliers
-  logical, intent(out) :: is_outlier(n_genes)
-  !| Output threshold value used for detection
-  real(real64), intent(out) :: threshold
-  !| Percentile threshold (default: 95 for top 5%)
-  real(real64), intent(in) :: percentile
-  call identify_outliers(n_genes, rdi, sorted_rdi, is_outlier, threshold, percentile)
-end subroutine identify_outliers_r
-
-!> R wrapper for detect_outliers.
-!| Calls detect_outliers with standard Fortran types for R interface.
-subroutine detect_outliers_r(n_genes, n_families, distances, gene_to_fam, &
-                            work_array, perm, stack_left, stack_right, &
-                            is_outlier, loess_x, loess_y, loess_n, ierr, &
-                            percentile)
-  use tox_get_outliers, only: detect_outliers
-  use, intrinsic :: iso_fortran_env, only: real64, int32
-  implicit none
-
-  !| Total number of genes
-  integer(int32), intent(in) :: n_genes
-  !| Total number of gene families
-  integer(int32), intent(in) :: n_families
-  !| Array of Euclidean distances for each gene to its centroid
-  real(real64), intent(in) :: distances(n_genes)
-  !| Gene-to-family mapping (1-based indexing)
-  integer(int32), intent(in) :: gene_to_fam(n_genes)
-  !| Work array for sorting (dimension n_genes)
-  real(real64), intent(inout) :: work_array(n_genes)
-  !| Permutation array for sorting (dimension n_genes)
-  integer(int32), intent(inout) :: perm(n_genes)
-  !| Stack array for left indices during sorting
-  integer(int32), intent(inout) :: stack_left(n_genes)
-  !| Stack array for right indices during sorting
-  integer(int32), intent(inout) :: stack_right(n_genes)
-  !| Output boolean array indicating outliers
-  logical, intent(out) :: is_outlier(n_genes)
-  !| Reference x-coordinates.
-  real(real64), intent(inout) :: loess_x(n_families)
-  !| Reference y-coordinates (length n_total).
-  real(real64), intent(inout) :: loess_y(n_families)
-  !| Indices of reference points used for smoothing.
-  integer(int32), intent(inout) :: loess_n(n_families)
-  !| Error code: 0=ok, 201=invalid family indices
-  integer(int32), intent(out) :: ierr
-  !| (optional) Percentile threshold for outlier detection (default: 95)
-  real(real64), intent(in), optional :: percentile
-  call detect_outliers(n_genes, n_families, distances, gene_to_fam, &
-                      work_array, perm, stack_left, stack_right, &
-                      is_outlier, loess_x, loess_y, loess_n, ierr, &
-                      percentile)
-end subroutine detect_outliers_r
 
 !> C wrapper for compute_family_scaling (main version with automatic allocation).
 !| Calls compute_family_scaling_alloc with C-compatible types for external interface.
@@ -733,7 +705,7 @@ end subroutine detect_outliers_c
 subroutine compute_family_scaling_expert_c(n_genes, n_families, distances, gene_to_fam, dscale, &
   loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, &
   iv, liv, wv, lv, diagl, w_init, z_mat, rw, ww, res, pi, yhat_tmp, &
-  span, degree, mode, n_iters, ierr) bind(C, name="compute_family_scaling_expert_c")
+  span, degree, mode, n_iters, low_sd_cutoff, excluded_low_sd, means_aux, ierr) bind(C, name="compute_family_scaling_expert_c")
 
   use, intrinsic :: iso_c_binding, only : c_int, c_double
   use tox_get_outliers, only: compute_family_scaling
@@ -795,11 +767,17 @@ subroutine compute_family_scaling_expert_c(n_genes, n_families, distances, gene_
   integer(c_int), intent(in) :: mode
   !| Number of iterations for LOESS
   integer(c_int), intent(in) :: n_iters
+  !| cutoff used to filter families with low std
+  real(c_double), intent(out), target :: low_sd_cutoff
+  !| Mask to save those families that have low sd 
+  integer(c_int), intent(out), target :: excluded_low_sd(n_families)
+  !| Work array for saving raw means 
+  real(c_double), intent(inout), target :: means_aux(n_families)
   !| Error code: 0=ok, 201=invalid family indices
   integer(c_int), intent(out) :: ierr
 
   call compute_family_scaling(n_genes, n_families, distances, gene_to_fam, dscale, &
     loess_x, loess_y, indices_used, perm_tmp, stack_left_tmp, stack_right_tmp, family_distances, &
     iv, liv, wv, lv, diagl, w_init, z_mat, rw, ww, res, pi, yhat_tmp, &
-    span, degree, mode, n_iters, ierr)
+    span, degree, mode, n_iters, low_sd_cutoff, excluded_low_sd, means_aux, ierr)
 end subroutine compute_family_scaling_expert_c

@@ -26,7 +26,7 @@ def test_compute_family_scaling_basic():
     print("\n[test_compute_family_scaling_basic] Basic family scaling test")
 
     # Updated to use more families and genes
-    n_families = 6
+    n_families = 10  # Incremented number of families
     genes_per_fam = 4
     n_genes = n_families * genes_per_fam
 
@@ -37,7 +37,11 @@ def test_compute_family_scaling_basic():
         np.random.uniform(3.0, 4.0, genes_per_fam),  # Family 3
         np.random.uniform(4.0, 5.0, genes_per_fam),  # Family 4
         np.random.uniform(5.0, 6.0, genes_per_fam),  # Family 5
-        np.random.uniform(6.0, 7.0, genes_per_fam)   # Family 6
+        np.random.uniform(6.0, 7.0, genes_per_fam),  # Family 6
+        np.random.uniform(7.0, 8.0, genes_per_fam),  # Family 7
+        np.random.uniform(8.0, 9.0, genes_per_fam),  # Family 8
+        np.random.uniform(9.0, 10.0, genes_per_fam), # Family 9
+        np.random.uniform(10.0, 11.0, genes_per_fam) # Family 10
     ])
     gene_to_fam = np.concatenate([
         np.full(genes_per_fam, 1),
@@ -45,7 +49,11 @@ def test_compute_family_scaling_basic():
         np.full(genes_per_fam, 3),
         np.full(genes_per_fam, 4),
         np.full(genes_per_fam, 5),
-        np.full(genes_per_fam, 6)
+        np.full(genes_per_fam, 6),
+        np.full(genes_per_fam, 7),
+        np.full(genes_per_fam, 8),
+        np.full(genes_per_fam, 9),
+        np.full(genes_per_fam, 10)
     ]).astype(np.int32)
 
     result = tox_compute_family_scaling(distances, gene_to_fam)
@@ -58,7 +66,7 @@ def test_compute_family_scaling_basic():
     print("  Indices used:", result['indices_used'])
 
     # Verify basic properties
-    assert len(result['dscale']) == n_families  # Six families
+    assert len(result['dscale']) == n_families  # Ten families
     assert all(np.isfinite(result['dscale']))
     assert all(result['dscale'] > 0)  # Scaling factors should be positive
 
@@ -132,12 +140,13 @@ def test_compute_family_scaling_edge_cases():
 
     print("Edge cases test passed ✓")
 
+    
 def test_tox_compute_family_scaling_expert():
     """Test expert version with user-provided work arrays"""
     print("\n[test_compute_family_scaling_expert] Expert version test")
 
     # Test data
-    n_families = 6
+    n_families = 10  # Incremented number of families
     genes_per_fam = 4
     n_genes = n_families * genes_per_fam
     span = 0.7
@@ -151,7 +160,11 @@ def test_tox_compute_family_scaling_expert():
         np.random.uniform(3.0, 4.0, genes_per_fam),  # Family 3
         np.random.uniform(4.0, 5.0, genes_per_fam),  # Family 4
         np.random.uniform(5.0, 6.0, genes_per_fam),  # Family 5
-        np.random.uniform(6.0, 7.0, genes_per_fam)   # Family 6
+        np.random.uniform(6.0, 7.0, genes_per_fam),  # Family 6
+        np.random.uniform(7.0, 8.0, genes_per_fam),  # Family 7
+        np.random.uniform(8.0, 9.0, genes_per_fam),  # Family 8
+        np.random.uniform(9.0, 10.0, genes_per_fam), # Family 9
+        np.random.uniform(10.0, 11.0, genes_per_fam) # Family 10
     ])
     gene_to_fam = np.concatenate([
         np.full(genes_per_fam, 1),
@@ -159,7 +172,11 @@ def test_tox_compute_family_scaling_expert():
         np.full(genes_per_fam, 3),
         np.full(genes_per_fam, 4),
         np.full(genes_per_fam, 5),
-        np.full(genes_per_fam, 6)
+        np.full(genes_per_fam, 6),
+        np.full(genes_per_fam, 7),
+        np.full(genes_per_fam, 8),
+        np.full(genes_per_fam, 9),
+        np.full(genes_per_fam, 10)
     ]).astype(np.int32)
 
     # Pre-allocate work arrays (user responsibility)
@@ -179,7 +196,7 @@ def test_tox_compute_family_scaling_expert():
     print("  Work arrays also returned in result")
 
     # Verify basic properties
-    assert len(result['dscale']) == n_families  # Six families
+    assert len(result['dscale']) == n_families  # Ten families
     assert all(np.isfinite(result['dscale']))
     assert all(result['dscale'] > 0)  # Scaling factors should be positive
 

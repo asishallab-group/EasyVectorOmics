@@ -414,8 +414,6 @@ contains
     integer(int32) :: i, j
     real(real64) :: tol
 
-
-
     ! Initialize variables
     n = size(y)
     call set_ok(ierr)
@@ -444,6 +442,7 @@ contains
     end if
 
     if (n == 1) then
+      write(*, '(A)') "LOESS: Single point detected. Skipping adjustment (yhat = y)."
       yhat(1) = y(1)
       call set_ok(ierr)
       return
@@ -454,6 +453,7 @@ contains
 
     range_x = maxval(x) - minval(x)
     if (range_x <= EPS_LOESS) then
+      write(*, '(A, E12.4)') "LOESS: Range of x is too small (<= EPS). Skipping adjustment. Range =", range_x
       yhat = y
       call set_ok(ierr)
       return
@@ -484,6 +484,8 @@ contains
 
     if (uniq_count < need_uniq) then
       ! a lot of same values to adjust
+      write(*, '(A, I2, A, I2, A)') "LOESS: Insufficient unique points (Found ", uniq_count, &
+                                    " but need ", need_uniq, "). Using identity mapping."
       yhat = y
       return
     end if

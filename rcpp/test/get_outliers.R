@@ -306,7 +306,9 @@ test_detect_outliers_mixed_sizes <- function() {
     runif(12, 3, 4),  # Family 3: 12 genes
     runif(6, 4, 5),   # Family 4: 6 genes
     runif(9, 5, 6),   # Family 5: 9 genes
-    runif(7, 6, 7)    # Family 6: 7 genes
+    runif(7, 6, 7),   # Family 6: 7 genes
+    runif(11, 7, 8),  # Family 7: 11 genes
+    runif(5, 8, 9)    # Family 8: 5 genes
   )
   gene_to_fam <- c(
     rep(1, 10),  # Family 1
@@ -314,9 +316,11 @@ test_detect_outliers_mixed_sizes <- function() {
     rep(3, 12),  # Family 3
     rep(4, 6),   # Family 4
     rep(5, 9),   # Family 5
-    rep(6, 7)    # Family 6
+    rep(6, 7),   # Family 6
+    rep(7, 11),  # Family 7
+    rep(8, 5)    # Family 8
   )
-  n_families <- 6
+  n_families <- 8
   percentile <- 95.0
 
   result <- tox_detect_outliers(distances, gene_to_fam, n_families, percentile)
@@ -332,30 +336,32 @@ test_detect_outliers_mixed_sizes <- function() {
 test_detect_outliers_large_dataset <- function() {
   cat("\n[test_detect_outliers_large_dataset] Large dataset test\n")
   set.seed(123)  # For reproducibility
-  n_genes <- 60
-  n_families <- 6
-  
+  n_genes <- 92
+  n_families <- 10
+
   # Create synthetic data with some clear outliers
   distances <- c(
     rnorm(10, 1, 0.1),    # Family 1: tight cluster around 1
     rnorm(10, 2, 0.1),    # Family 2: tight cluster around 2
     rnorm(10, 3, 0.1),    # Family 3: tight cluster around 3
     rnorm(10, 4, 0.1),    # Family 4: tight cluster around 4
-    rnorm(10, 5, 0.1),     # Family 5: tight cluster around 5
-    rnorm(8, 6, 0.1),     # Family 6: tight cluster around 6
+    rnorm(10, 5, 0.1),    # Family 5: tight cluster around 5
+    rnorm(10, 6, 0.1),    # Family 6: tight cluster around 6
+    rnorm(10, 7, 0.1),    # Family 7: tight cluster around 7
+    rnorm(10, 8, 0.1),    # Family 8: tight cluster around 8
+    rnorm(10, 9, 0.1),    # Family 9: tight cluster around 9
     c(20, 25)             # Two clear outliers
   )
   # Map each distance to a family index. The constructed distances vector has
-  # 10+10+10+10+8+2 = 50 elements, so create a matching mapping of length 50.
-  gene_to_fam <- rep(1:6, each = 10)
+  # 10+10+10+10+10+10+10+10+10+2 = 102 elements, so create a matching mapping of length 102.
+  gene_to_fam <- c(rep(1:10, each = 10), 9, 10)
   percentile <- 90.0
-  
+
   result <- tox_detect_outliers(distances, gene_to_fam, n_families, percentile)
-  
   # Verify large dataset handling
   stopifnot(length(result$is_outlier) == n_genes)
   stopifnot(sum(result$is_outlier) >= 0)  # At least 0 outliers detected
-  
+
   cat("Large dataset test passed ✓\n")
 }
 
@@ -369,7 +375,7 @@ test_compute_family_scaling_expert_basic <- function() {
   set.seed(42)  # For reproducibility
 
   # Test data
-  n_families <- 6
+  n_families <- 10  # Incremented number of families
   genes_per_fam <- 4
   n_genes <- n_families * genes_per_fam
   span <- 0.7
@@ -383,7 +389,11 @@ test_compute_family_scaling_expert_basic <- function() {
     runif(genes_per_fam, 3.0, 4.0),  # Family 3
     runif(genes_per_fam, 4.0, 5.0),  # Family 4
     runif(genes_per_fam, 5.0, 6.0),  # Family 5
-    runif(genes_per_fam, 6.0, 7.0)   # Family 6
+    runif(genes_per_fam, 6.0, 7.0),  # Family 6
+    runif(genes_per_fam, 7.0, 8.0),  # Family 7
+    runif(genes_per_fam, 8.0, 9.0),  # Family 8
+    runif(genes_per_fam, 9.0, 10.0), # Family 9
+    runif(genes_per_fam, 10.0, 11.0) # Family 10
   )
   gene_to_fam <- rep(1:n_families, each = genes_per_fam)
 
@@ -404,7 +414,7 @@ test_compute_family_scaling_expert_basic <- function() {
   cat("  Scaling factors:", result$dscale, "\n")
 
   # Verify basic properties
-  stopifnot(length(result$dscale) == n_families)  # Six families
+  stopifnot(length(result$dscale) == n_families)  # Ten families
   stopifnot(all(is.finite(result$dscale)))
   stopifnot(all(result$dscale > 0))  # Scaling factors should be positive
 
@@ -417,7 +427,7 @@ test_compute_family_scaling_expert_consistency <- function() {
   set.seed(42)  # For reproducibility
 
   # Test data
-  n_families <- 6
+  n_families <- 10  # Incremented number of families
   genes_per_fam <- 4
   n_genes <- n_families * genes_per_fam
   span <- 0.7
@@ -431,7 +441,11 @@ test_compute_family_scaling_expert_consistency <- function() {
     runif(genes_per_fam, 3.0, 4.0),  # Family 3
     runif(genes_per_fam, 4.0, 5.0),  # Family 4
     runif(genes_per_fam, 5.0, 6.0),  # Family 5
-    runif(genes_per_fam, 6.0, 7.0)   # Family 6
+    runif(genes_per_fam, 6.0, 7.0),  # Family 6
+    runif(genes_per_fam, 7.0, 8.0),  # Family 7
+    runif(genes_per_fam, 8.0, 9.0),  # Family 8
+    runif(genes_per_fam, 9.0, 10.0), # Family 9
+    runif(genes_per_fam, 10.0, 11.0) # Family 10
   )
   gene_to_fam <- rep(1:n_families, each = genes_per_fam)
 

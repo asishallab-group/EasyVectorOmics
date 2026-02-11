@@ -80,6 +80,7 @@ extern "C" {
           double* diagl, double* w_init, double* z_mat,
           double* rw, double* ww, double* res, int* pi, double* yhat_tmp,
           double* span, int* degree, int* mode, int* n_iters,
+          double* low_sd_cutoff, int* excluded_low_sd, double* means_aux,
           int* ierr
       );
 
@@ -460,6 +461,7 @@ List tox_compute_family_scaling_expert_rcpp(NumericVector distances, IntegerVect
     NumericVector loess_x(n_families);
     NumericVector loess_y(n_families);
     IntegerVector indices_used(n_families);
+    IntegerVector excluded_low_sd(n_families);
     NumericVector wv(lv);
     NumericVector diagl(n_genes);
     NumericVector w_init(n_genes);
@@ -469,7 +471,9 @@ List tox_compute_family_scaling_expert_rcpp(NumericVector distances, IntegerVect
     NumericVector res(n_genes);
     NumericVector yhat_tmp(n_genes);
     IntegerVector pi(n_genes);
+    NumericVector means_aux(n_families);  
 
+    double low_sd_cutoff = 0.0;
     int ierr = 0;
 
     compute_family_scaling_expert_c(
@@ -484,7 +488,7 @@ List tox_compute_family_scaling_expert_rcpp(NumericVector distances, IntegerVect
         wv.begin(), &lv,    
         diagl.begin(), w_init.begin(), z_mat.begin(),
         rw.begin(), ww.begin(), res.begin(), pi.begin(), yhat_tmp.begin(),
-        &span, &degree, &mode, &n_iters,
+        &span, &degree, &mode, &n_iters, &low_sd_cutoff, excluded_low_sd.begin(), means_aux.begin(),
         &ierr
     );
 
@@ -493,6 +497,9 @@ List tox_compute_family_scaling_expert_rcpp(NumericVector distances, IntegerVect
         Named("loess_x") = loess_x,
         Named("loess_y") = loess_y,
         Named("indices_used") = indices_used,
+        Named("excluded_low_sd") = excluded_low_sd,
+        Named("means_aux") = means_aux,
+        Named("low_sd_cutoff") = low_sd_cutoff,
         Named("ierr") = ierr
     );
 }
