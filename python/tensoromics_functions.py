@@ -1073,7 +1073,7 @@ def tox_root_mean_sq_normalization(input_matrix):
     _readonly(result)
     return result
 
-#> tox_normalization:normalize_by_std_dev: Normalize gene expression values by standard deviation using loess
+#> tox_normalization:normalize_by_std_dev_c: Normalize gene expression values by standard deviation using loess
 def tox_normalize_by_std_dev(input_matrix, span = 0.7, degree = 2):
     """
     Normalize gene expression values by standard deviation using LOESS

@@ -361,6 +361,21 @@ tox_root_mean_sq_normalization <- function(input_matrix) {
   return(matrix(result$output_vector, nrow = nrow(input_matrix), ncol = ncol(input_matrix), dimnames = dimnames(input_matrix)))
 }
 
+#> tox_normalization:normalize_by_std_dev_c: Normalize gene expression values by standard deviation using loess
+#' Normalize gene expression values by standard deviation
+#'
+#' This function wraps the Fortran subroutine `root_mean_sq_normalization`
+#' to normalize each gene's expression across tissues by the standard deviation.
+#'
+#' @param input_matrix A numeric matrix with genes as rows and tissues as columns.
+#' @return A normalized numeric matrix with the same dimensions and names as the input.
+#' @details
+#' - The input matrix is flattened into a column-major vector.
+#' - Calls a Fortran routine that normalizes each gene across tissues.
+#' - Restores the original row and column names after normalization.
+#'
+#' @examples
+#' normalized_matrix <- tox_root_mean_sq_normalization(input_matrix)
 tox_normalize_by_std_dev <- function(input_matrix, span = 0.7, degree = 2) {
 
 
