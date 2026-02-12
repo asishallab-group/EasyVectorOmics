@@ -44,7 +44,7 @@ contains
   !> Complete normalization pipeline for gene expression data.
   !! Performs: std dev normalization, quantile normalization, replicate averaging, log2(x+1) transformation.
   !! Final result is in buf_log. If fold change is needed, call calc_fchange separately.
-  pure subroutine normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ierr)
+  pure subroutine normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, loess_x, loess_y, indices_used, yhat_global, span, degree, use_quantile, ierr)
 
     !| Number of genes (rows)
     integer(int32), intent(in) :: n_genes
@@ -78,26 +78,57 @@ contains
     integer(int32), intent(in) :: group_s(n_grps)
     !| Number of columns per replicate group (n_grps)
     integer(int32), intent(in) :: group_c(n_grps)
+    ! Buffers for LOESS fitting 
+    !| Mean values (X-axis for LOESS)
+    real(real64), intent(inout) :: loess_x(n_genes)
+    !| Empirical standard deviation values (Y-axis for LOESS)
+    real(real64), intent(inout) :: loess_y(n_genes)
+    !| Mapping back to gene indices
+    integer(int32), intent(inout) :: indices_used(n_genes)
+    !| Fitted standard deviation values (LOESS predictions)
+    real(real64), intent(out) :: yhat_global(n_genes)
+
+    !| LOESS span parameter
+    real(real64), intent(in) :: span
+    !| LOESS degree parameter
+    integer(int32), intent(in) :: degree
+    !| Use quantile normalization (optional, default = 1). 0 = skip quantile, 1 = use quantile
+    integer(int32), intent(in), optional :: use_quantile
     !| Error code
     integer(int32), intent(out) :: ierr
 
+    ! Local variables
+    integer(int32) :: do_quantile
+
     ! Error handling
     call set_ok(ierr)
+    
+    ! Set default value for quantile normalization
+    if (present(use_quantile)) then
+        do_quantile = use_quantile
+    else
+        do_quantile = 0  ! default: don't use quantile normalization
+    end if
     if (n_genes <= 0 .or. n_tissues <= 0 .or. n_grps <= 0 .or. max_stack <= 0) then
       call set_err(ierr, ERR_EMPTY_INPUT)
       return
     end if
 
     ! Step 1: Normalize per-gene by std dev
-    call root_mean_sq_normalization(n_genes, n_tissues, input_matrix, buf_stddev, ierr)
+    call normalize_by_std_dev(n_genes, n_tissues, input_matrix, buf_stddev, loess_x, loess_y, indices_used, yhat_global, span, degree, ierr)
     if (is_err(ierr)) return
 
-    ! Step 2: Quantile normalization
-    call quantile_normalization(n_genes, n_tissues, buf_stddev, buf_quant, temp_col, rank_means, perm, stack_left, stack_right, max_stack, ierr)
-    if (is_err(ierr)) return
-
-    ! Step 3: Average replicates
-    call calc_tiss_avg(n_genes, n_grps, group_s, group_c, buf_quant, buf_avg, ierr)
+    ! Step 2: Quantile normalization (conditional)
+    if (do_quantile /= 0) then
+        call quantile_normalization(n_genes, n_tissues, buf_stddev, buf_quant, temp_col, rank_means, perm, stack_left, stack_right, max_stack, ierr)
+        if (is_err(ierr)) return
+        
+        ! Step 3: Average replicates (using quantile-normalized data)
+        call calc_tiss_avg(n_genes, n_grps, group_s, group_c, buf_quant, buf_avg, ierr)
+    else
+        ! Step 3: Average replicates (using std-dev normalized data directly)
+        call calc_tiss_avg(n_genes, n_grps, group_s, group_c, buf_stddev, buf_avg, ierr)
+    end if
     if (is_err(ierr)) return
 
     ! Step 4: Log2(x+1) transformation
@@ -755,61 +786,12 @@ pure subroutine calc_fchange_c(n_genes, n_cols, n_pairs, control_cols, cond_cols
   call calc_fchange(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_matrix, o_matrix, ierr)
 end subroutine calc_fchange_c
 
-!> R/Fortran wrapper for normalization pipeline.
-!| Provides an interface for R (.Fortran) and Fortran code to call the normalization pipeline routine.
-!| Performs: std dev normalization, quantile normalization, replicate averaging, log2(x+1) transformation.
-!| Final result is in buf_log. If fold change is needed, call calc_fchange separately.
-
-pure subroutine normalization_pipeline_r(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ierr)
-  use tox_normalization, only: normalization_pipeline
-  use, intrinsic :: iso_fortran_env, only: real64, int32
-  implicit none
-
-  !| Number of genes (rows)
-  integer(int32), intent(in) :: n_genes
-  !| Number of tissues (columns)
-  integer(int32), intent(in) :: n_tissues
-  !| Number of replicate groups
-  integer(int32), intent(in) :: n_grps
-  !| Flattened input matrix (n_genes * n_tissues), column-major
-  real(real64), intent(in) :: input_matrix(n_genes * n_tissues)
-  !| Buffer for std dev normalization (n_genes * n_tissues)
-  real(real64), intent(out) :: buf_stddev(n_genes * n_tissues)
-  !| Buffer for quantile normalization (n_genes * n_tissues)
-  real(real64), intent(out) :: buf_quant(n_genes * n_tissues)
-  !| Buffer for replicate averaging (n_genes * n_grps)
-  real(real64), intent(out) :: buf_avg(n_genes * n_grps)
-  !| Buffer for log2(x+1) transformation (n_genes * n_grps)
-  real(real64), intent(out) :: buf_log(n_genes * n_grps)
-  !| Temporary column vector for sorting (n_genes)
-  real(real64), intent(out) :: temp_col(n_genes)
-  !| Buffer for rank means (n_genes)
-  real(real64), intent(out) :: rank_means(n_genes)
-  !| Permutation vector for sorting (n_genes)
-  integer(int32), intent(out) :: perm(n_genes)
-  !| Stack size for quicksort
-  integer(int32), intent(in) :: max_stack
-  !| Left stack for quicksort (max_stack)
-  integer(int32), intent(out) :: stack_left(max_stack)
-  !| Right stack for quicksort (max_stack)
-  integer(int32), intent(out) :: stack_right(max_stack)
-  !| Start column index for each replicate group (n_grps)
-  integer(int32), intent(in) :: group_s(n_grps)
-  !| Number of columns per replicate group (n_grps)
-  integer(int32), intent(in) :: group_c(n_grps)
-  !| Error code
-  integer(int32), intent(out) :: ierr
-
-  call normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ierr)
-
-end subroutine normalization_pipeline_r
-
 !> C/Python wrapper for normalization pipeline.
 !| Provides a C/Python-compatible interface to the normalization pipeline routine.
 !| Suitable for use with ctypes. Performs: std dev normalization, quantile normalization, replicate averaging, log2(x+1) transformation.
 !| Final result is in buf_log. If fold change is needed, call calc_fchange separately.
 
-pure subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ierr) bind(C, name="normalization_pipeline_c")
+pure subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, loess_x, loess_y, indices_used, yhat_global, span, degree, use_quantile, ierr) bind(C, name="normalization_pipeline_c")
   use, intrinsic :: iso_c_binding, only : c_int, c_double
   use tox_normalization, only: normalization_pipeline
   implicit none
@@ -846,10 +828,26 @@ pure subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_s
   integer(c_int), intent(in), target :: group_s(n_grps)
   !| Number of columns per replicate group (n_grps)
   integer(c_int), intent(in), target :: group_c(n_grps)
+  ! Buffers for LOESS fitting 
+  !| Mean values (X-axis for LOESS)
+  real(c_double), intent(inout), target :: loess_x(n_genes)
+  !| Empirical standard deviation values (Y-axis for LOESS)
+  real(c_double), intent(inout), target :: loess_y(n_genes)
+  !| Mapping back to gene indices
+  integer(c_int), intent(inout), target :: indices_used(n_genes)
+  !| Fitted standard deviation values (LOESS predictions)
+  real(c_double), intent(out), target :: yhat_global(n_genes)
+
+  !| LOESS span parameter
+  real(c_double), intent(in), target :: span
+  !| LOESS degree parameter
+  integer(c_int), intent(in), target :: degree
+  !| Use quantile normalization (optional, default = 1). 0 = skip quantile, 1 = use quantile
+  integer(c_int), intent(in), target :: use_quantile
   !| Error code
   integer(c_int), intent(out) :: ierr
 
-  call normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, ierr)
+  call normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, loess_x, loess_y, indices_used, yhat_global, span, degree, use_quantile, ierr)
 end subroutine normalization_pipeline_c
 
 !> C-compatible wrapper for normalize_unit_length
