@@ -44,7 +44,7 @@ contains
   !> Complete normalization pipeline for gene expression data.
   !! Performs: std dev normalization, quantile normalization, replicate averaging, log2(x+1) transformation.
   !! Final result is in buf_log. If fold change is needed, call calc_fchange separately.
-  pure subroutine normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, loess_x, loess_y, indices_used, yhat_global, span, degree, use_quantile, ierr)
+  subroutine normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, loess_x, loess_y, indices_used, yhat_global, span, degree, use_quantile, ierr)
 
     !| Number of genes (rows)
     integer(int32), intent(in) :: n_genes
@@ -261,6 +261,7 @@ contains
 
       ! Error handling
       call set_ok(ierr)
+      
       if (n_genes <= 0 .or. n_tissues <= 0) then
         call set_err(ierr, ERR_EMPTY_INPUT)
         return
@@ -537,6 +538,7 @@ pure subroutine root_mean_sq_normalization_r(n_genes, n_tissues, input_matrix, o
   
 end subroutine root_mean_sq_normalization_r
 
+
 !> C/Python wrapper for normalization by standard deviation.
 !| Provides a C/Python-compatible interface to the normalization routine.
 pure subroutine root_mean_sq_normalization_c(n_genes, n_tissues, input_matrix, output_matrix, ierr) bind(C, name="root_mean_sq_normalization_c")
@@ -558,6 +560,46 @@ pure subroutine root_mean_sq_normalization_c(n_genes, n_tissues, input_matrix, o
   call root_mean_sq_normalization(n_genes, n_tissues, input_matrix, output_matrix, ierr)
 
 end subroutine root_mean_sq_normalization_c
+
+!> C/Python wrapper for LOESS-stabilized standard deviation normalization.
+!| Provides a C/Python-compatible interface to the normalize_by_std_dev routine.
+!| Input and output matrices are flattened in column-major order.
+subroutine normalize_by_std_dev_c(n_genes, n_tissues, input_matrix, output_matrix, &
+                                   loess_x, loess_y, indices_used, yhat_global, &
+                                   span, degree, ierr) bind(C, name="normalize_by_std_dev_c")
+  use, intrinsic :: iso_c_binding, only: c_int, c_double
+  use tox_normalization, only: normalize_by_std_dev
+  implicit none
+
+  !| Number of genes (rows)
+  integer(c_int), intent(in), target :: n_genes
+  !| Number of tissues (columns)
+  integer(c_int), intent(in), target :: n_tissues
+  !| Flattened input matrix (n_genes * n_tissues), column-major
+  real(c_double), intent(in), target :: input_matrix(n_genes * n_tissues)
+  !| Flattened output matrix (n_genes * n_tissues), column-major
+  real(c_double), intent(out), target :: output_matrix(n_genes * n_tissues)
+  !| Mean values for LOESS (X-axis)
+  real(c_double), intent(inout), target :: loess_x(n_genes)
+  !| Standard deviation values for LOESS (Y-axis)
+  real(c_double), intent(inout), target :: loess_y(n_genes)
+  !| Gene indices used in LOESS fitting
+  integer(c_int), intent(inout), target :: indices_used(n_genes)
+  !| LOESS fitted values (predictions)
+  real(c_double), intent(out), target :: yhat_global(n_genes)
+  !| LOESS span parameter
+  real(c_double), intent(in), target :: span
+  !| LOESS degree parameter
+  integer(c_int), intent(in), target :: degree
+  !| Error code
+  integer(c_int), intent(out), target:: ierr
+
+  ! Call the internal routine with 2D arrays
+  call normalize_by_std_dev(n_genes, n_tissues, input_matrix, output_matrix, &
+                             loess_x, loess_y, indices_used, yhat_global, &
+                             span, degree, ierr)
+
+end subroutine normalize_by_std_dev_c
 
 
 !> R/Fortran wrapper for quantile normalization.
@@ -791,17 +833,17 @@ end subroutine calc_fchange_c
 !| Suitable for use with ctypes. Performs: std dev normalization, quantile normalization, replicate averaging, log2(x+1) transformation.
 !| Final result is in buf_log. If fold change is needed, call calc_fchange separately.
 
-pure subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, loess_x, loess_y, indices_used, yhat_global, span, degree, use_quantile, ierr) bind(C, name="normalization_pipeline_c")
+subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, loess_x, loess_y, indices_used, yhat_global, span, degree, use_quantile, ierr) bind(C, name="normalization_pipeline_c")
   use, intrinsic :: iso_c_binding, only : c_int, c_double
   use tox_normalization, only: normalization_pipeline
   implicit none
 
   !| Number of genes (rows)
-  integer(c_int), intent(in), value :: n_genes
+  integer(c_int), intent(in), target :: n_genes
   !| Number of tissues (columns)
-  integer(c_int), intent(in), value :: n_tissues
+  integer(c_int), intent(in), target :: n_tissues
   !| Number of replicate groups
-  integer(c_int), intent(in), value :: n_grps
+  integer(c_int), intent(in), target :: n_grps
   !| Flattened input matrix (n_genes * n_tissues), column-major
   real(c_double), intent(in), target :: input_matrix(n_genes * n_tissues)
   !| Buffer for std dev normalization (n_genes * n_tissues)
@@ -819,7 +861,7 @@ pure subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_s
   !| Permutation vector for sorting (n_genes)
   integer(c_int), intent(out), target :: perm(n_genes)
   !| Stack size for quicksort
-  integer(c_int), intent(in), value :: max_stack
+  integer(c_int), intent(in), target :: max_stack
   !| Left stack for quicksort (max_stack)
   integer(c_int), intent(out), target :: stack_left(max_stack)
   !| Right stack for quicksort (max_stack)
@@ -845,7 +887,7 @@ pure subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_s
   !| Use quantile normalization (optional, default = 1). 0 = skip quantile, 1 = use quantile
   integer(c_int), intent(in), target :: use_quantile
   !| Error code
-  integer(c_int), intent(out) :: ierr
+  integer(c_int), intent(out), target :: ierr
 
   call normalization_pipeline(n_genes, n_tissues, input_matrix, buf_stddev, buf_quant, buf_avg, buf_log, temp_col, rank_means, perm, stack_left, stack_right, max_stack, group_s, group_c, n_grps, loess_x, loess_y, indices_used, yhat_global, span, degree, use_quantile, ierr)
 end subroutine normalization_pipeline_c

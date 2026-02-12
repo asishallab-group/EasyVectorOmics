@@ -1073,6 +1073,63 @@ def tox_root_mean_sq_normalization(input_matrix):
     _readonly(result)
     return result
 
+#> tox_normalization:normalize_by_std_dev: Normalize gene expression values by standard deviation using loess
+def tox_normalize_by_std_dev(input_matrix, span = 0.7, degree = 2):
+    """
+    Normalize gene expression values by standard deviation using LOESS
+
+    Args:
+        input_matrix: A numeric matrix with genes as rows and tissues as columns
+
+    Returns:
+        numpy.ndarray: Normalized matrix with same dimensions as input
+    """
+    input_matrix = np.asarray(input_matrix, dtype=np.float64)
+    n_genes, n_tissues = input_matrix.shape
+
+    # Validate input data
+    if np.any(np.isnan(input_matrix)):
+        raise ValueError(f"Input matrix contains NaN values: {np.sum(np.isnan(input_matrix))}")
+    if np.any(np.isinf(input_matrix)):
+        raise ValueError(f"Input matrix contains infinite values: {np.sum(np.isinf(input_matrix))}")
+
+    # Flatten input and prepare output
+    input_flat = np.asfortranarray(input_matrix).ravel(order='F')
+    output_flat = np.zeros_like(input_flat)
+    loess_x = np.zeros(n_genes, dtype=np.float64)
+    loess_y = np.zeros(n_genes, dtype=np.float64)
+    yhat_global = np.zeros(n_genes, dtype=np.float64)
+    indices_used = np.zeros(n_genes, dtype=np.int32)
+    ierr = ctypes.c_int(0)
+
+    # Setup C wrapper
+    normalize_c = lib.normalize_by_std_dev_c
+    normalize_c.argtypes = [
+        ctypes.POINTER(ctypes.c_int),  # n_genes
+        ctypes.POINTER(ctypes.c_int),  # n_tissues
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # input
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # output
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_x
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_y
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # indices_used
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # yhat_global
+        ctypes.POINTER(ctypes.c_double),  # span
+        ctypes.POINTER(ctypes.c_int),  # degree
+        ctypes.POINTER(ctypes.c_int)  # ierr
+    ]
+    normalize_c.restype = None
+
+    # Call Fortran routine
+    normalize_c(ctypes.byref(ctypes.c_int(n_genes)), ctypes.byref(ctypes.c_int(n_tissues)), input_flat, output_flat, loess_x, loess_y, indices_used, yhat_global, ctypes.byref(ctypes.c_double(span)), ctypes.byref(ctypes.c_int(degree)), ctypes.byref(ierr))
+    check_err_code(ierr.value)
+
+    # Reshape and return
+    result = output_flat.reshape((n_genes, n_tissues), order='F')
+
+    # Mark output as read-only
+    _readonly(result)
+    return result
+
 
 #> tox_normalization:quantile_normalization_c: Quantile normalization of gene expression values
 def tox_quantile_normalization(input_matrix):
@@ -1225,7 +1282,7 @@ def tox_calculate_tissue_averages(input_matrix, group_starts, group_counts):
 
 
 #> tox_normalization:normalization_pipeline_c: Complete normalization pipeline for gene expression data (up to log2(x+1))
-def tox_normalization_pipeline(input_matrix, group_starts, group_counts):
+def tox_normalization_pipeline(input_matrix, group_starts, group_counts, span=0.7, degree=2, use_quantile=0):
     """
     Complete normalization pipeline for gene expression data (up to log2(x+1))
     Mirrors Fortran normalization_pipeline (no fold change).
@@ -1234,6 +1291,9 @@ def tox_normalization_pipeline(input_matrix, group_starts, group_counts):
         input_matrix: Numeric matrix (genes x tissues)
         group_starts: Integer array, start column index for each replicate group (1-based)
         group_counts: Integer array, number of columns per replicate group
+        span: Float, span parameter for loess normalization
+        degree: Integer, degree parameter for loess normalization
+        use_quantile: Integer, whether to apply quantile normalization
 
     Returns:
         numpy.ndarray: log2(x+1) normalized expression (genes x groups)
@@ -1253,7 +1313,11 @@ def tox_normalization_pipeline(input_matrix, group_starts, group_counts):
     buf_log = np.zeros(n_genes * n_grps, dtype=np.float64)
     temp_col = np.zeros(n_genes, dtype=np.float64)
     rank_means = np.zeros(n_genes, dtype=np.float64)
+    loess_x = np.zeros(n_genes, dtype=np.float64)
+    loess_y = np.zeros(n_genes, dtype=np.float64)
+    yhat_global = np.zeros(n_genes, dtype=np.float64)
     perm = np.zeros(n_genes, dtype=np.int32)
+    indices_used = np.zeros(n_genes, dtype=np.int32)
     max_stack = max(2 * n_genes, 2)
     stack_left = np.zeros(max_stack, dtype=np.int32)
     stack_right = np.zeros(max_stack, dtype=np.int32)
@@ -1262,8 +1326,8 @@ def tox_normalization_pipeline(input_matrix, group_starts, group_counts):
     # Setup C wrapper
     normalization_pipeline_c = lib.normalization_pipeline_c
     normalization_pipeline_c.argtypes = [
-        ctypes.c_int,  # n_genes
-        ctypes.c_int,  # n_tissues
+        ctypes.POINTER(ctypes.c_int),  # n_genes
+        ctypes.POINTER(ctypes.c_int),  # n_tissues
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # input_flat
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # buf_stddev
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # buf_quant
@@ -1274,19 +1338,26 @@ def tox_normalization_pipeline(input_matrix, group_starts, group_counts):
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # perm
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_left
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # stack_right
-        ctypes.c_int,  # max_stack
+        ctypes.POINTER(ctypes.c_int),  # max_stack
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # group_starts
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # group_counts
-        ctypes.c_int,  # n_grps
+        ctypes.POINTER(ctypes.c_int),  # n_grps
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_x
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_y
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # indices_used
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # yhat_global
+        ctypes.POINTER(ctypes.c_double),  # span
+        ctypes.POINTER(ctypes.c_int),  # degree
+        ctypes.POINTER(ctypes.c_int),  # use_quantile
         ctypes.POINTER(ctypes.c_int)  # ierr
     ]
     normalization_pipeline_c.restype = None
 
     # Call Fortran routine
     normalization_pipeline_c(
-        n_genes, n_tissues, input_flat, buf_stddev, buf_quant, buf_avg, buf_log,
-        temp_col, rank_means, perm, stack_left, stack_right, max_stack,
-        group_starts, group_counts, n_grps, ctypes.byref(ierr)
+        ctypes.byref(ctypes.c_int(n_genes)), ctypes.byref(ctypes.c_int(n_tissues)), input_flat, buf_stddev, buf_quant, buf_avg, buf_log,
+        temp_col, rank_means, perm, stack_left, stack_right, ctypes.byref(ctypes.c_int(max_stack)),
+        group_starts, group_counts, ctypes.byref(ctypes.c_int(n_grps)), loess_x, loess_y, indices_used, yhat_global, ctypes.byref(ctypes.c_double(span)), ctypes.byref(ctypes.c_int(degree)), ctypes.byref(ctypes.c_int(use_quantile)), ctypes.byref(ierr)
     )
     check_err_code(ierr.value)
 

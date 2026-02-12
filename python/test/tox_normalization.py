@@ -10,7 +10,7 @@ import os
 # Add parent directory to path to import tensoromics_functions
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 from tensoromics_functions import (
-    tox_root_mean_sq_normalization,
+    tox_normalize_by_std_dev,
     tox_quantile_normalization,
     tox_log2_transformation,
     tox_calculate_tissue_averages,
@@ -78,24 +78,25 @@ def print_matrix(name, mat):
         print(f"  Row {i+1}: {row}")
 
 def test_tox_normalize_example_1():
-    """Example 1: Simple 2x3 matrix normalization"""
+    """Example 1: Simple matrix normalization with LOESS"""
     print("="*50)
-    print("TOX_NORMALIZE EXAMPLE 1: Simple 2x3 matrix")
+    print("TOX_NORMALIZE EXAMPLE 1: Matrix with LOESS")
     print("="*50)
     
-    # Input data
-    mat = np.array([[1.0, 2.0, 3.0], 
-                    [4.0, 5.0, 6.0]], dtype=np.float64)
+    # Input data - need at least 10 genes for LOESS
+    mat = np.array([[1.0 + i, 2.0 + i, 3.0 + i] for i in range(10)], dtype=np.float64)
     
     print_matrix("Input", mat)
     
-    # Call tox function
-    result = tox_root_mean_sq_normalization(mat)
+    # Call tox function with LOESS parameters
+    span = 0.75
+    degree = 2
+    result = tox_normalize_by_std_dev(mat, span=span, degree=degree)
     print_matrix("Output", result)
     
-    # Manual verification
-    print("\nManual verification:")
-    for i in range(mat.shape[0]):
+    # Manual verification (first 3 genes only for brevity)
+    print("\nManual verification (first 3 genes):")
+    for i in range(min(3, mat.shape[0])):
         row = mat[i, :]
         std_dev = np.sqrt(np.mean(row**2))
         normalized_row = row / std_dev
@@ -106,17 +107,19 @@ def test_tox_normalize_example_1():
     print("✓ Test passed!")
 
 def test_tox_normalize_example_2():
-    """Example 2: Large values"""
+    """Example 2: Large values with LOESS"""
     print("="*50)
-    print("TOX_NORMALIZE EXAMPLE 2: Large values")
+    print("TOX_NORMALIZE EXAMPLE 2: Large values with LOESS")
     print("="*50)
     
-    mat = np.array([[1e6, 2e6], 
-                    [3e6, 4e6]], dtype=np.float64)
+    # Need at least 10 genes for LOESS
+    mat = np.array([[1e6 + i*1e5, 2e6 + i*1e5] for i in range(10)], dtype=np.float64)
     
     print_matrix("Input", mat)
     
-    result = tox_root_mean_sq_normalization(mat)
+    span = 0.75
+    degree = 2
+    result = tox_normalize_by_std_dev(mat, span=span, degree=degree)
     print_matrix("Output", result)
     
     assert np.all(np.isfinite(result)), "All results should be finite"
@@ -324,7 +327,7 @@ def test_error_handling():
     mat_nan = np.array([[1.0, np.nan], [3.0, 4.0]], dtype=np.float64)
     
     try:
-        tox_root_mean_sq_normalization(mat_nan)
+        tox_normalize_by_std_dev(mat_nan, span=0.75, degree=2)
         assert False, "Should have raised ValueError for NaN input"
     except ValueError as e:
         print(f"✓ Correctly caught NaN error: {e}")
@@ -334,7 +337,7 @@ def test_error_handling():
     mat_inf = np.array([[1.0, np.inf], [3.0, 4.0]], dtype=np.float64)
     
     try:
-        tox_root_mean_sq_normalization(mat_inf)
+        tox_normalize_by_std_dev(mat_inf, span=0.75, degree=2)
         assert False, "Should have raised ValueError for infinite input"
     except ValueError as e:
         print(f"✓ Correctly caught infinite error: {e}")

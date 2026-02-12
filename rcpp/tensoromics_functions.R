@@ -361,6 +361,14 @@ tox_root_mean_sq_normalization <- function(input_matrix) {
   return(matrix(result$output_vector, nrow = nrow(input_matrix), ncol = ncol(input_matrix), dimnames = dimnames(input_matrix)))
 }
 
+tox_normalize_by_std_dev <- function(input_matrix, span = 0.7, degree = 2) {
+
+
+  result <- tox_normalize_by_std_dev_rcpp(input_matrix, span, degree)
+  return(matrix(result$output_vector, nrow = nrow(input_matrix), ncol = ncol(input_matrix), dimnames = dimnames(input_matrix)))
+}
+
+
 #> tox_normalization:quantile_normalization_c: Quantile normalization of gene expression values
 #' Quantile normalization of gene expression values
 #'
@@ -506,13 +514,13 @@ tox_calculate_fold_changes <- function(df, control_pattern, condition_patterns) 
 #' @param input_matrix Numeric matrix (genes x tissues)
 #' @param group_s Integer vector: start column index for each replicate group (1-based)
 #' @param group_c Integer vector: number of columns per replicate group
-tox_normalization_pipeline <- function(input_matrix, group_s, group_c) {
+tox_normalization_pipeline <- function(input_matrix, group_s, group_c, span = 0.7, degree = 2, use_quantile = 0) {
   validate_matrix(input_matrix)
   group_s <- as.integer(group_s)
   group_c <- as.integer(group_c)
   validate_group_vectors(group_s, group_c, ncol(input_matrix))
 
-  result <- tox_normalization_pipeline_rcpp(input_matrix, group_s, group_c)
+  result <- tox_normalization_pipeline_rcpp(input_matrix, group_s, group_c, span, degree, use_quantile)
 
   check_err_code(result$ierr)
 

@@ -41,7 +41,7 @@ if (diagnostics$problems$na_count > 0 || diagnostics$problems$inf_count > 0 || d
 }
 
 # === Apply normalization steps sequentially ===
-normalized_matrix_std <- tox_root_mean_sq_normalization(df_matrix_clean)    # Normalize by standard deviation
+normalized_matrix_std <- tox_normalize_by_std_dev(df_matrix_clean)    # Normalize by standard deviation
 normalized_matrix_qtl <- tox_quantile_normalization(normalized_matrix_std)  # Apply quantile normalization
 normalized_matrix_log <- tox_log2_transformation(normalized_matrix_qtl)     # Log2(x+1) transformation
 averaged_df <- tox_calculate_tissue_averages(normalized_matrix_log)         # Average replicates by tissue

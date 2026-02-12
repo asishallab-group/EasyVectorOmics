@@ -44,8 +44,11 @@ extern "C" {
 
     void construct_neighborhoods_c( int* n_points, double* x_star, int* n_genes_S, double* mean_S, int* n_reps_S, double* resid_S, double* neighborhood_residuals, int* neighborhood_indices, int* n_neighbors, int* ierr);
 
-    void normalize_by_std_dev_c(int n_genes, int n_tissues,
-                                double *input_matrix, double *output_matrix, int *ierr);
+    void normalize_by_std_dev_c(int *n_genes, int *n_tissues,
+                                double *input_matrix, double *output_matrix, double *loess_x, 
+                                double *loess_y, int *indices_used, double *yhat_global, double *span,
+                                int *degree, int *ierr);
+
     void quantile_normalization_c(int n_genes, int n_tissues, double *input_matrix, double *output_matrix,
                                   double *temp_col, double *rank_means,
                                   int *perm, int *stack_left, int *stack_right,
@@ -58,12 +61,14 @@ extern "C" {
     void calc_fchange_c(int n_genes, int n_cols, int n_pairs,int *control_cols, int *cond_cols,
                         double *input_matrix, double *output_matrix, int *ierr);
 
-    void normalization_pipeline_c(int n_genes, int n_tissues,
+    void normalization_pipeline_c(int *n_genes, int *n_tissues,
                                   double *input_matrix, double *buf_stddev, double *buf_quant,
                                   double *buf_avg, double *buf_log, double *temp_col,
                                   double *rank_means, int *perm, int *stack_left,
-                                  int *stack_right, int max_stack,
-                                  int *group_s, int *group_c, int n_grps, int *ierr);
+                                  int *stack_right, int *max_stack,
+                                  int *group_s, int *group_c, int *n_grps, double *loess_x, 
+                                  double *loess_y, int *indices_used, double *yhat_global, double *span,
+                                  int *degree, int *use_quantile, int *ierr);
 
       void compute_family_scaling_c(
         int n_genes, int n_families,
@@ -255,6 +260,30 @@ List tox_root_mean_sq_normalization_rcpp(NumericMatrix input) {
     );
 }
 
+// [[Rcpp::export]]
+List tox_normalize_by_std_dev_rcpp(NumericMatrix input, double span, int degree) {
+    int n_genes = input.nrow();
+    int n_tissues = input.ncol();
+    NumericMatrix output(n_genes, n_tissues);
+    NumericVector loess_x(n_genes);
+    NumericVector loess_y(n_genes);
+    NumericVector yhat_global(n_genes);
+    IntegerVector indices_used(n_genes);
+    int ierr = 0;
+
+    normalize_by_std_dev_c(&n_genes, &n_tissues, input.begin(), output.begin(), loess_x.begin(), loess_y.begin(), indices_used.begin(), yhat_global.begin(),
+                                     &span, &degree, &ierr);
+
+    return List::create(
+        Named("output_vector") = output,
+        Named("loess_x") = loess_x,
+        Named("loess_y") = loess_y,
+        Named("yhat_global") = yhat_global,
+        Named("indices_used") = indices_used,
+        Named("ierr") = ierr
+    );
+}
+
 /**
  * Perform quantile normalization
  */
@@ -383,7 +412,7 @@ List tox_mean_vector_rcpp(NumericMatrix expression_vectors, IntegerVector gene_i
  * Perform normalization pipeline
  */
 // [[Rcpp::export]]
-List tox_normalization_pipeline_rcpp(NumericMatrix input, IntegerVector group_s, IntegerVector group_c) {
+List tox_normalization_pipeline_rcpp(NumericMatrix input, IntegerVector group_s, IntegerVector group_c, double span, int degree, int use_quantile) {
     int n_genes = input.nrow();
     int n_tissues = input.ncol();
     int n_grps = group_s.size();
@@ -396,18 +425,24 @@ List tox_normalization_pipeline_rcpp(NumericMatrix input, IntegerVector group_s,
     NumericMatrix buf_log(n_genes, n_grps);
     NumericVector temp_col(n_genes);
     NumericVector rank_means(n_genes);
+    NumericVector loess_x(n_genes);
+    NumericVector loess_y(n_genes);
+    NumericVector yhat_global(n_genes);
     IntegerVector perm(n_genes);
     IntegerVector stack_left(max_stack);
     IntegerVector stack_right(max_stack);
+    IntegerVector indices_used(n_genes);
     int ierr = 0;
 
 
-     normalization_pipeline_c(n_genes, n_tissues, input.begin(),
+     normalization_pipeline_c(&n_genes, &n_tissues, input.begin(),
                                      buf_stddev.begin(), buf_quant.begin(),
                                      buf_avg.begin(), buf_log.begin(),
                                      temp_col.begin(), rank_means.begin(), perm.begin(),
-                                     stack_left.begin(), stack_right.begin(), max_stack,
-                                     group_s.begin(), group_c.begin(), n_grps, &ierr);
+                                     stack_left.begin(), stack_right.begin(), &max_stack,
+                                     group_s.begin(), group_c.begin(), &n_grps,
+                                     loess_x.begin(), loess_y.begin(), indices_used.begin(), yhat_global.begin(),
+                                     &span, &degree, &use_quantile, &ierr);
 
     return List::create(
         Named("buf_stddev") = buf_stddev,
@@ -416,6 +451,10 @@ List tox_normalization_pipeline_rcpp(NumericMatrix input, IntegerVector group_s,
         Named("buf_log") = buf_log,
         Named("rank_means") = rank_means,
         Named("perm") = perm,
+        Named("loess_x") = loess_x,
+        Named("loess_y") = loess_y,
+        Named("yhat_global") = yhat_global,
+        Named("indices_used") = indices_used,
         Named("ierr") = ierr
     );
 }
