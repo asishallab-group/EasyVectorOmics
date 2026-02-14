@@ -151,10 +151,10 @@ contains
       integer(int32), intent(in) :: n_genes
       !| Number of tissues (columns)
       integer(int32), intent(in) :: n_tissues
-      !| Input matrix indexed as (n_genes, n_tissues)
-      real(real64), intent(in) :: input_matrix(n_genes, n_tissues)
+      !| Input matrix indexed as (n_genes * n_tissues)
+      real(real64), intent(in) :: input_matrix(n_genes * n_tissues)
       !| Output normalized matrix (same shape as input)
-      real(real64), intent(out) :: output_matrix(n_genes, n_tissues)
+      real(real64), intent(out) :: output_matrix(n_genes * n_tissues)
 
       ! Buffers for LOESS fitting (preallocated to avoid internal allocations)
       !| Mean values (X-axis for LOESS)
@@ -183,61 +183,49 @@ contains
       n_valid = 0
       yhat_global = 0.0_real64
 
-      ! ------------------------------------------------------------
-      ! Step 1: Calculate empirical statistics and compact valid data
-      ! ------------------------------------------------------------
+      ! Step 1: stats per gene (genes are rows, tissues are columns)
       do i_gene = 1, n_genes
-          ! Compute mean expression for the gene
-          mean_val = sum(input_matrix(i_gene, :)) / real(n_tissues, real64)
+        mean_val = 0.0_real64
+        sq_sum   = 0.0_real64
+        do i_tissue = 1, n_tissues
+          ! column-major flatten of (n_genes, n_tissues)
+          ! idx = (col-1)*n_genes + row
+          mean_val = mean_val + input_matrix((i_tissue-1)*n_genes + i_gene)
+          sq_sum   = sq_sum   + input_matrix((i_tissue-1)*n_genes + i_gene)**2
+        end do
+        mean_val = mean_val / real(n_tissues, real64)
+        loess_x(i_gene) = mean_val
+        loess_y(i_gene) = sqrt(max(0.0_real64, (sq_sum/real(n_tissues,real64)) - mean_val**2))
 
-          ! Compute population standard deviation (SD = sqrt(E[X^2] - (E[X])^2))
-          sq_sum = sum(input_matrix(i_gene, :)**2)
-          loess_y(i_gene) = sqrt(max(0.0_real64, (sq_sum / real(n_tissues, real64)) - mean_val**2))
-          loess_x(i_gene) = mean_val
-
-          ! Filter out genes with zero variance (not informative for LOESS)
-          if (loess_y(i_gene) < eps) cycle
-
-          ! Compact valid data for LOESS fitting
-          n_valid = n_valid + 1
-          loess_x(n_valid) = loess_x(i_gene)
-          loess_y(n_valid) = loess_y(i_gene)
-          indices_used(n_valid) = i_gene
+        if (loess_y(i_gene) < eps) cycle
+        n_valid = n_valid + 1
+        loess_x(n_valid) = loess_x(i_gene)
+        loess_y(n_valid) = loess_y(i_gene)
+        indices_used(n_valid) = i_gene
       end do
 
-      ! Check if there are enough valid points for LOESS fitting
       if (n_valid < 5) then
-          call set_err(ierr, ERR_INVALID_INPUT)
-          return
+        call set_err(ierr, ERR_INVALID_INPUT)
+        return
       end if
 
-      ! ------------------------------------------------------------
-      ! Step 2: Perform LOESS fitting (robust mode)
-      ! ------------------------------------------------------------
       call loess_alloc(x=loess_x(1:n_valid), y=loess_y(1:n_valid), &
-                       span=span, degree=degree, yhat=yhat_global(1:n_valid), &
-                       mode=1, n_iters=3, ierr=ierr)
-
-      ! Exit if LOESS fitting fails
+                      span=span, degree=degree, yhat=yhat_global(1:n_valid), &
+                      mode=1, n_iters=3, ierr=ierr)
       if (is_err(ierr)) return
 
-      ! ------------------------------------------------------------
-      ! Step 3: Normalize the input matrix using stabilized SD
-      ! ------------------------------------------------------------
-      ! Initialize output matrix (invalid genes remain unchanged)
+      ! Step 3: apply normalization
       output_matrix = input_matrix
-
       do i_gene = 1, n_valid
-          fitted_sd = yhat_global(i_gene)
+        fitted_sd = yhat_global(i_gene)
+        if (fitted_sd < eps) fitted_sd = loess_y(i_gene)
 
-          ! Safety check: use empirical SD if LOESS prediction is invalid
-          if (fitted_sd < eps) fitted_sd = loess_y(i_gene)
-
-          ! Normalize the gene's expression vector by the stabilized SD
-          output_matrix(indices_used(i_gene), :) = input_matrix(indices_used(i_gene), :) / fitted_sd
+        do i_tissue = 1, n_tissues
+          output_matrix((i_tissue-1)*n_genes + indices_used(i_gene)) = &
+            input_matrix((i_tissue-1)*n_genes + indices_used(i_gene)) / fitted_sd
+        end do
       end do
-
-  end subroutine normalize_by_std_dev
+    end subroutine normalize_by_std_dev
   
   !> Normalizes each gene's expression vector using `sqrt(mean(x^2))`
   !| across tissues (not classical standard deviation).
@@ -617,9 +605,9 @@ pure subroutine quantile_normalization_r(n_genes, n_tissues, input_matrix, outpu
   !| Stack size for sorting
   integer(int32), intent(in) :: max_stack
   !| Input matrix (n_genes x n_tissues)
-  real(real64), intent(in)  :: input_matrix(n_genes, n_tissues)
+  real(real64), intent(in)  :: input_matrix(n_genes * n_tissues)
   !| Output normalized matrix (same shape as input)
-  real(real64), intent(out) :: output_matrix(n_genes, n_tissues)
+  real(real64), intent(out) :: output_matrix(n_genes * n_tissues)
   !| Temporary vector for column sorting (size n_genes)
   real(real64), intent(out) :: temp_col(n_genes)
   !| Preallocated vector to store rank means (size n_genes)
