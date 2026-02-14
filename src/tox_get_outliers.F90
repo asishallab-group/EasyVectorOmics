@@ -3,7 +3,7 @@ module tox_get_outliers
   use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
   use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
-  use f42_utils, only: sort_array, calc_percentile, logx, is_close
+  use f42_utils, only: sort_array, calc_percentile, logx, is_close, compute_empirical_p_values
   use tox_errors, only: ERR_INVALID_INPUT, set_ok, set_err_once, check_alloc_stat, is_err
   use tox_loess, only: tox_loess_required_workspace, loess_fit_robust, loess_fit_plain, EPS_LOESS, lowese
   implicit none
@@ -430,13 +430,13 @@ contains
 
     ! Sort RDI values using the tox_sorting module
     call sort_array(sorted_rdi, perm, stack_left, stack_right)
-    
+
   end subroutine compute_rdi
 
   !> Identify gene outliers based on the top percentile of RDI values.
-  !| Expects sorted_rdi to be filtered (no negative values) and sorted in ascending order before calling.
-  !| If sorted_rdi contains negatives or is not sorted, results may be invalid.
-  pure subroutine identify_outliers(n_genes, rdi, sorted_rdi, is_outlier, threshold, percentile)
+  !| Expects sorted_rdi to be filtered (no negative values) and perm should be sorted in ascending order before calling.
+  !| If sorted_rdi contains negatives or perm is not sorted, results may be invalid.
+  pure subroutine identify_outliers(n_genes, rdi, sorted_rdi, perm, is_outlier, threshold, p_values, percentile)
     implicit none
 
     !| Total number of genes
@@ -445,12 +445,17 @@ contains
     real(real64), intent(in) :: rdi(n_genes)
     !| Sorted RDI array (must be filtered to remove negatives and sorted in ascending order before calling)
     real(real64), intent(in) :: sorted_rdi(n_genes)
+    !| Permutation array with sorted indices
+    integer(int32), intent(inout) :: perm(n_genes)
     !| Output boolean array indicating outliers
     logical, intent(out) :: is_outlier(n_genes)
     !| Output threshold value used for detection
     real(real64), intent(out) :: threshold
     !| (optional) Percentile threshold (default: 95 for top 5%)
     real(real64), intent(in), optional :: percentile
+    !| Empirical one-sided upper-tail p-values for each gene. Returned in the same order as the input RDI array. Because distances are non-negative, a one-sided upper-tail empirical p-value is used.
+    real(real64), intent(out) :: p_values(n_genes)
+
        
     integer(int32) :: i, idx
     real(real64) :: perc_pos, percentile_val
@@ -473,18 +478,21 @@ contains
     if (idx > n_genes) idx = n_genes
 
     ! Get the threshold value from the sorted array (sorted_rdi must be ascending)
-    threshold = sorted_rdi(idx)
+    threshold = sorted_rdi(perm(idx))
 
     ! Mark genes as outliers if their RDI exceeds the threshold (and is positive)
     do i = 1, n_genes
       is_outlier(i) = (rdi(i) >= threshold .and. rdi(i) > 0.0_real64)
     end do
+
+    call compute_empirical_p_values(n_genes, rdi, sorted_rdi, perm, p_values, 1.0_real64)
+
   end subroutine identify_outliers
 
   !> Main routine to detect outliers using RDI and LOESS-based scaling.
   subroutine detect_outliers(n_genes, n_families, distances, gene_to_fam, &
                             work_array, perm, stack_left, stack_right, &
-                            is_outlier, loess_x, loess_y, loess_n, ierr, &
+                            is_outlier, loess_x, loess_y, loess_n, p_values, ierr, &
                             percentile)
     implicit none
 
@@ -516,6 +524,8 @@ contains
     integer(int32), intent(out) :: ierr
     !| (optional) Percentile threshold for outlier detection (default: 95)
     real(real64), intent(in), optional :: percentile
+    !| Empirical one-sided upper-tail p-values for each gene. Returned in the same order as the input RDI array. Because distances are non-negative, a one-sided upper-tail empirical p-value is used.
+    real(real64), intent(out) :: p_values(n_genes)
 
     ! Local variables
     real(real64) :: dscale(n_families)
@@ -540,7 +550,7 @@ contains
                                 loess_x, loess_y, loess_n, ierr)
     if (is_err(ierr)) return
     call compute_rdi(n_genes, distances, gene_to_fam, dscale, rdi, work_array, perm, stack_left, stack_right)
-    call identify_outliers(n_genes, rdi, work_array, is_outlier, threshold, percentile_val)
+    call identify_outliers(n_genes, rdi, work_array, perm, is_outlier, threshold, p_values, percentile_val)
   end subroutine detect_outliers
 end module tox_get_outliers
 
@@ -608,24 +618,28 @@ end subroutine compute_rdi_c
 
 !> C wrapper for identify_outliers.
 !| Calls identify_outliers with C-compatible types for external interface.
-subroutine identify_outliers_c(n_genes, rdi, sorted_rdi, is_outlier_int, threshold, percentile) &
+subroutine identify_outliers_c(n_genes, rdi, sorted_rdi, perm, is_outlier_int, threshold, p_values, percentile) &
                               bind(C, name="identify_outliers_c")
   use, intrinsic :: iso_c_binding, only : c_int, c_double
   use tox_get_outliers, only: identify_outliers
   implicit none
 
   !| Total number of genes
-  integer(c_int), intent(in), value :: n_genes
+  integer(c_int), intent(in), target :: n_genes
   !| Array of RDI values for each gene
   real(c_double), intent(in), target :: rdi(n_genes)
-  !| Sorted RDI array (must be sorted in ascending order before calling)
+  !| Filtered RDI array (no negatives, no NaNs)
   real(c_double), intent(in), target :: sorted_rdi(n_genes)
+  !| Permutation array with sorted indices
+  integer(c_int), intent(inout) :: perm(n_genes)
   !| Output integer array indicating outliers (1=outlier, 0=not)
   integer(c_int), intent(out), target :: is_outlier_int(n_genes)
   !| Output threshold value used for detection
-  real(c_double), intent(out) :: threshold
+  real(c_double), intent(out), target :: threshold
   !| Percentile threshold for outlier detection
-  real(c_double), intent(in), value :: percentile
+  real(c_double), intent(in), target :: percentile
+  !| Empirical one-sided upper-tail p-values for each gene. Returned in the same order as the input RDI array. Because distances are non-negative, a one-sided upper-tail empirical p-value is used.
+  real(c_double), intent(out), target :: p_values(n_genes)
   logical :: is_outlier(n_genes)
   integer :: i
 
@@ -634,7 +648,7 @@ subroutine identify_outliers_c(n_genes, rdi, sorted_rdi, is_outlier_int, thresho
     is_outlier(i) = (is_outlier_int(i) /= 0)
   end do
 
-  call identify_outliers(n_genes, rdi, sorted_rdi, is_outlier, threshold, percentile)
+  call identify_outliers(n_genes, rdi, sorted_rdi, perm, is_outlier, threshold, p_values, percentile)
   ! Convert logical (.true./.false.) to integer (1/0)
   do i = 1, n_genes
     if (is_outlier(i)) then
@@ -650,14 +664,14 @@ end subroutine identify_outliers_c
 !| Calls detect_outliers with C-compatible types for external interface.
 subroutine detect_outliers_c(n_genes, n_families, distances, gene_to_fam, &
                           work_array, perm, stack_left, stack_right, &
-                          is_outlier_int, loess_x, loess_y, loess_n, ierr, &
+                          is_outlier_int, loess_x, loess_y, loess_n, p_values, ierr, &
                           percentile) bind(C, name="detect_outliers_c")
   use, intrinsic :: iso_c_binding, only : c_int, c_double
   use tox_get_outliers, only: detect_outliers
   implicit none
 
   !| Total number of genes
-  integer(c_int), intent(in), value :: n_genes, n_families
+  integer(c_int), intent(in), target :: n_genes, n_families
   !| Array of Euclidean distances for each gene to its centroid
   real(c_double), intent(in), target :: distances(n_genes)
   !| Gene-to-family mapping (1-based indexing)
@@ -678,15 +692,17 @@ subroutine detect_outliers_c(n_genes, n_families, distances, gene_to_fam, &
   real(c_double), intent(inout), target :: loess_y(n_families)
   !| Indices of reference points used for smoothing
   integer(c_int), intent(inout), target :: loess_n(n_families)
+  !| Empirical one-sided upper-tail p-values for each gene. Returned in the same order as the input RDI array. Because distances are non-negative, a one-sided upper-tail empirical p-value is used.
+    real(c_double), intent(out) :: p_values(n_genes)
   !| Error code: 0=ok, 201=invalid family indices
-  integer(c_int), intent(out) :: ierr
+  integer(c_int), intent(out), target :: ierr
   !| Percentile threshold for outlier detection
-  real(c_double), intent(in), value :: percentile
+  real(c_double), intent(in), target :: percentile
   logical :: is_outlier(n_genes)
   integer :: i
   call detect_outliers(n_genes, n_families, distances, gene_to_fam, &
                     work_array, perm, stack_left, stack_right, &
-                    is_outlier, loess_x, loess_y, loess_n, ierr, &
+                    is_outlier, loess_x, loess_y, loess_n, p_values, ierr, &
                     percentile)
 
   ! Convert logical (.true./.false.) to integer (1/0) for is_outlier

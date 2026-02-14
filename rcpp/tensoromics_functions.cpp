@@ -102,22 +102,23 @@ extern "C" {
       );
 
       void identify_outliers_c(
-        int n_genes,
-        double* rdi, double* sorted_rdi,
+        int* n_genes,
+        double* rdi, double* sorted_rdi, int* perm,
         int* is_outlier_int,
         double* threshold,
-        double percentile
+        double* p_values,
+        double* percentile
       );
 
       void detect_outliers_c(
-        int n_genes, int n_families,
+        int* n_genes, int* n_families,
         double* distances, int* gene_to_fam,
         double* work_array,
         int* perm, int* stack_left, int* stack_right,
         int* is_outlier_int,
         double* loess_x, double* loess_y, int* loess_n,
-        int* ierr,
-        double percentile
+        double* p_values, int* ierr,
+        double* percentile
       );
 
 
@@ -177,6 +178,11 @@ extern "C" {
     void tox_loess_c(
         double* x, double* y, int* n, double* span, int* degree,
         double* yhat, int* mode, int* n_iters, int* ierr
+    );
+
+    void empirical_p_values_c(
+        int* n_genes, double* rdi, double* sorted_rdi, int* perm,
+        double* p_values, double* c_const, int* ierr
     );
 }
 
@@ -577,17 +583,34 @@ List tox_compute_rdi_rcpp(NumericVector distances, IntegerVector gene_to_fam, Nu
 // [[Rcpp::export]]
 List tox_identify_outliers_rcpp(NumericVector rdi, double percentile) {
   int n_genes = rdi.size();
+
   NumericVector sorted_rdi = clone(rdi);
-  std::sort(sorted_rdi.begin(), sorted_rdi.end());
+
+  // clamp negatives to 0 
+  std::transform(sorted_rdi.begin(), sorted_rdi.end(), sorted_rdi.begin(),
+                 [](double v) { return v < 0.0 ? 0.0 : v; });
+
+  // 0-based indices
+  IntegerVector perm(n_genes);
+  std::iota(perm.begin(), perm.end(), 0);
+
+  std::sort(perm.begin(), perm.end(), [&](int i, int j) {
+    return sorted_rdi[i] < sorted_rdi[j];
+  });
+
+  // 1-based 
+  for (int k = 0; k < n_genes; ++k) perm[k] += 1;
+
   IntegerVector is_outlier_int(n_genes);
   double threshold = 0.0;
+  NumericVector p_values(n_genes);
 
   identify_outliers_c(
-    n_genes,
-    rdi.begin(), sorted_rdi.begin(),
+    &n_genes,
+    rdi.begin(), sorted_rdi.begin(), perm.begin(),
     is_outlier_int.begin(),
-    &threshold,
-    percentile
+    &threshold, p_values.begin(),
+    &percentile
   );
 
   // Convert integer 0/1 flags to logical vector for R
@@ -598,7 +621,9 @@ List tox_identify_outliers_rcpp(NumericVector rdi, double percentile) {
 
   return List::create(
     Named("is_outlier") = is_outlier,
-    Named("threshold") = threshold
+    Named("threshold") = threshold,
+    Named("p_values") = p_values,
+    Named("perm") = perm
   );
 }
 
@@ -606,6 +631,7 @@ List tox_identify_outliers_rcpp(NumericVector rdi, double percentile) {
 List tox_detect_outliers_rcpp(NumericVector distances, IntegerVector gene_to_fam, int n_families, double percentile) {
   int n_genes = distances.size();
   NumericVector work_array(n_genes);
+  NumericVector p_values(n_genes);
   IntegerVector perm(n_genes);
   IntegerVector stack_left(n_genes);
   IntegerVector stack_right(n_genes);
@@ -616,14 +642,14 @@ List tox_detect_outliers_rcpp(NumericVector distances, IntegerVector gene_to_fam
   int ierr = 0;
 
   detect_outliers_c(
-    n_genes, n_families,
+    &n_genes, &n_families,
     distances.begin(), gene_to_fam.begin(),
     work_array.begin(),
     perm.begin(), stack_left.begin(), stack_right.begin(),
     is_outlier_int.begin(),
     loess_x.begin(), loess_y.begin(), loess_n.begin(),
-    &ierr,
-    percentile
+    p_values.begin(), &ierr,
+    &percentile
   );
 
   // Convert integer flags to logical vector for R
@@ -637,6 +663,7 @@ List tox_detect_outliers_rcpp(NumericVector distances, IntegerVector gene_to_fam
     Named("loess_x") = loess_x,
     Named("loess_y") = loess_y,
     Named("loess_n") = loess_n,
+    Named("p_values") = p_values,
     Named("ierr") = ierr
   );
 }
@@ -1361,4 +1388,43 @@ Rcpp::List tox_fjct_compute_contribution_scores_rcpp(
         Rcpp::Named("contribution_scores") = contribution_scores,
         Rcpp::Named("ierr") = ierr
     );
+}
+
+// [[Rcpp::export]]
+NumericVector tox_empirical_p_values_rcpp(
+    Rcpp::NumericVector distribution,
+    double c_const
+) {
+    int n_genes = distribution.size();
+    Rcpp::NumericVector p_values(n_genes);
+    NumericVector sorted_rdi = clone(distribution);
+
+    // clamp negatives to 0 
+    std::transform(sorted_rdi.begin(), sorted_rdi.end(), sorted_rdi.begin(),
+                    [](double v) { return v < 0.0 ? 0.0 : v; });
+
+    // 0-based indices
+    IntegerVector perm(n_genes);
+    std::iota(perm.begin(), perm.end(), 0);
+
+    std::sort(perm.begin(), perm.end(), [&](int i, int j) {
+        return sorted_rdi[i] < sorted_rdi[j];
+    });
+
+    // 1-based 
+    for (int k = 0; k < n_genes; ++k) perm[k] += 1;
+    
+    int ierr = 0;
+
+    empirical_p_values_c(
+        &n_genes,
+        distribution.begin(),
+        sorted_rdi.begin(),
+        perm.begin(),
+        p_values.begin(),
+        &c_const,
+        &ierr
+    );
+
+    return p_values;
 }

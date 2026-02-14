@@ -166,12 +166,14 @@ tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile =
   # Check for error (ierr returned by the Rcpp wrapper)
   check_err_code(result$ierr)
 
+  print(result$p_values)
   # Return structured result
   return(list(
     is_outlier = result$is_outlier,
     loess_x = result$loess_x,
     loess_y = result$loess_y,
-    loess_n = result$loess_n
+    loess_n = result$loess_n,
+    p_values = result$p_values
   ))
 
 }
@@ -327,10 +329,13 @@ tox_identify_outliers <- function(rdi, percentile = 95.0) {
   n_genes <- as.integer(length(rdi))
   # Call the Rcpp forwarder
   result <- tox_identify_outliers_rcpp(rdi, percentile)
+
   # Return structured result
   return(list(
     is_outlier = result$is_outlier,
-    threshold = result$threshold
+    threshold = result$threshold,
+    p_values = result$p_values,
+    perm = result$perm
   ))
 
 }
@@ -1642,4 +1647,23 @@ tox_fjct_compute_contribution_scores <- function(
 
   check_err_code(result$ierr)
   result
+}
+
+#> f42_utils:compute_empirical_p_values_c: Compute empirical p-values
+#' Calculate empirical p-values for a given distribution
+#' Because distances are non-negative, a one-sided upper-tail empirical p-value is used.
+#' @param distribution A numeric vector representing the distribution of values.
+#' @param c_const A constant used in the computation, typically 1.
+#'
+#' @return A numeric vector of p-values corresponding to the input distribution.
+#' @export
+#'
+#' @examples
+#' distribution <- c(0.5, 1.2, 0.8, 0.3)
+#' c_const <- 1
+#' p_values <- compute_empirical_p_values(distribution, c_const)
+#' print(p_values)
+compute_empirical_p_values <- function(distribution, c_const) {
+  result <- tox_empirical_p_values_rcpp(distribution, c_const)
+  return(result)
 }

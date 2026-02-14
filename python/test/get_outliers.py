@@ -140,7 +140,8 @@ def test_compute_family_scaling_edge_cases():
 
     print("Edge cases test passed ✓")
 
-    
+
+
 def test_tox_compute_family_scaling_expert():
     """Test expert version with user-provided work arrays"""
     print("\n[test_compute_family_scaling_expert] Expert version test")

@@ -2012,32 +2012,43 @@ def tox_identify_outliers(rdi, threshold=None, percentile=95.0):
             - threshold: Threshold value used for detection
     """
     rdi = np.ascontiguousarray(rdi, dtype=np.float64)
+    
     n_genes = len(rdi)
 
+    p_values = np.ones(n_genes, dtype=np.float64)
+
     # Prepare sorted RDI (copy and filter out negatives)
+    # --- Build sorted_rdi (clamped) and perm (1-based, sorts sorted_rdi ascending) ---
     sorted_rdi = rdi.copy()
-    sorted_rdi[sorted_rdi < 0] = 0.0  # Filter out error values
-    sorted_rdi.sort()  # Sort in ascending order
+    sorted_rdi[sorted_rdi < 0.0] = 0.0
+
+    # argsort gives 0-based indices; use stable sort to keep deterministic behavior on ties
+    perm0 = np.argsort(sorted_rdi, kind="mergesort").astype(np.int32)
+    perm = np.ascontiguousarray(perm0 + 1, dtype=np.int32)  # Fortran expects 1-based
+
 
     # Prepare output arrays
     outliers_int = np.zeros(n_genes, dtype=np.int32)
     threshold_out = ctypes.c_double(0.0)
+    n_genes_c = ctypes.c_int(n_genes)
 
     # Setup C wrapper
     identify_outliers_c = lib.identify_outliers_c
     identify_outliers_c.argtypes = [
-        ctypes.c_int,  # n_genes
+        ctypes.POINTER(ctypes.c_int),  # n_genes
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # rdi
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # sorted_rdi
+        np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # perm
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # is_outlier_int
         ctypes.POINTER(ctypes.c_double),  # threshold (output)
-        ctypes.c_double,  # percentile
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # p_values
+        ctypes.POINTER(ctypes.c_double),  # percentile
     ]
     identify_outliers_c.restype = None
 
     # Call Fortran routine
-    identify_outliers_c(n_genes, rdi, sorted_rdi, outliers_int,
-                        ctypes.byref(threshold_out), ctypes.c_double(percentile))
+    identify_outliers_c(ctypes.byref(n_genes_c), rdi, sorted_rdi, perm, outliers_int,
+                        ctypes.byref(threshold_out), p_values, ctypes.c_double(percentile))
 
     # Mark output as read-only
     _readonly(outliers_int)
@@ -2078,13 +2089,18 @@ def tox_detect_outliers(distances, gene_to_fam, percentile=95.0):
     loess_x = np.zeros(n_families, dtype=np.float64)
     loess_y = np.zeros(n_families, dtype=np.float64)
     loess_n = np.zeros(n_families, dtype=np.int32)
+    p_values = np.zeros(n_genes, dtype=np.float64)
     error_code = ctypes.c_int(0)
+    n_genes_c    = ctypes.c_int(n_genes)
+    n_families_c = ctypes.c_int(n_families)
+    percentile_c = ctypes.c_double(percentile)   # <-- float -> c_double
+
 
     # Setup C wrapper
     detect_outliers_c = lib.detect_outliers_c
     detect_outliers_c.argtypes = [
-        ctypes.c_int,  # n_genes
-        ctypes.c_int,  # n_families
+        ctypes.POINTER(ctypes.c_int),  # n_genes
+        ctypes.POINTER(ctypes.c_int),  # n_families
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # distances
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # gene_to_fam
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # work_array
@@ -2095,17 +2111,18 @@ def tox_detect_outliers(distances, gene_to_fam, percentile=95.0):
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_x
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # loess_y
         np.ctypeslib.ndpointer(dtype=np.int32, flags="C_CONTIGUOUS"),    # loess_n
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # p_values
         ctypes.POINTER(ctypes.c_int),  # error_code
-        ctypes.c_double,  # percentile
+        ctypes.POINTER(ctypes.c_double),  # percentile
     ]
     detect_outliers_c.restype = None
 
     # Call Fortran routine
     detect_outliers_c(
-        n_genes, n_families, distances, gene_to_fam,
+        ctypes.byref(n_genes_c), ctypes.byref(n_families_c), distances, gene_to_fam,
         work_array, perm, stack_left, stack_right,
-        outliers_int, loess_x, loess_y, loess_n,
-        ctypes.byref(error_code), ctypes.c_double(percentile)
+        outliers_int, loess_x, loess_y, loess_n, p_values,
+        ctypes.byref(error_code), ctypes.byref(percentile_c)
     )
 
     # Check for errors
@@ -2118,7 +2135,8 @@ def tox_detect_outliers(distances, gene_to_fam, percentile=95.0):
         'outliers': outliers_int,
         'loess_x': loess_x,
         'loess_y': loess_y,
-        'loess_n': loess_n
+        'loess_n': loess_n,
+        'p_values': p_values
     }
 
 
@@ -5117,3 +5135,71 @@ def fjct_compute_contribution_scores(
         "contribution_scores": contrib,
         "ierr": ierr.value,
     }
+
+import ctypes
+import numpy as np
+
+#> f42_utils:compute_empirical_p_values_c: Compute empirical p-values from a distribution
+def compute_empirical_p_values(distribution, c_const):
+    """
+    Compute empirical one-sided upper-tail empirical p-values from a distribution.
+
+    Args:
+        distribution (array-like): Input distribution (1D). May contain negatives (treated as invalid).
+        c_const (float): Stability constant (usually 1.0).
+
+    Returns:
+        np.ndarray: Empirical p-values in the SAME order as `distribution`.
+    Raises:
+        RuntimeError: If Fortran routine returns error
+    """
+    # --- Input validation / conversion ---
+    dist = np.ascontiguousarray(distribution, dtype=np.float64)
+    n_elements = dist.size
+    if n_elements == 0:
+        return np.ascontiguousarray([], dtype=np.float64)
+
+    c_const = float(c_const)
+
+    # --- Build sorted_rdi (clamped) and perm (1-based, sorts sorted_rdi ascending) ---
+    sorted_rdi = dist.copy()
+    sorted_rdi[sorted_rdi < 0.0] = 0.0
+
+    # argsort gives 0-based indices; use stable sort to keep deterministic behavior on ties
+    perm0 = np.argsort(sorted_rdi, kind="mergesort").astype(np.int32)
+    perm = np.ascontiguousarray(perm0 + 1, dtype=np.int32)  # Fortran expects 1-based
+
+    # --- Outputs ---
+    p_values = np.zeros(n_elements, dtype=np.float64)
+
+    # --- ctypes setup ---
+    n_c = ctypes.c_int(int(n_elements))
+    c_c = ctypes.c_double(c_const)
+    ierr = ctypes.c_int(0)
+
+    empirical_p_values_c = lib.empirical_p_values_c
+    empirical_p_values_c.argtypes = [
+        ctypes.POINTER(ctypes.c_int),  # n_elements
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # distribution (rdi)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # sorted_rdi
+        np.ctypeslib.ndpointer(dtype=np.int32,  flags="C_CONTIGUOUS"),   # perm (1-based)
+        np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # p_values
+        ctypes.POINTER(ctypes.c_double),  # c_const
+        ctypes.POINTER(ctypes.c_int)      # ierr
+    ]
+    empirical_p_values_c.restype = None
+
+    # --- Call Fortran routine (IMPORTANT: order matters) ---
+    empirical_p_values_c(
+        ctypes.byref(n_c),
+        dist,
+        sorted_rdi,
+        perm,
+        p_values,
+        ctypes.byref(c_c),
+        ctypes.byref(ierr),
+    )
+
+    check_err_code(ierr.value)
+    _readonly(p_values)
+    return p_values

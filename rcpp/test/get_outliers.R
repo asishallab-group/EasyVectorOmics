@@ -206,7 +206,7 @@ test_identify_outliers_percentile_0 <- function() {
   percentile <- 0.0
   
   result <- tox_identify_outliers(rdi, percentile)
-  
+
   # Verify all are outliers at 0% percentile
   stopifnot(all(result$is_outlier))
   

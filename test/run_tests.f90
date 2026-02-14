@@ -28,7 +28,8 @@ program main
   use mod_test_tox_clustering
   use mod_test_normalize_by_std_dev
   use mod_test_data_integration
-
+  use mod_test_empirical_pvalue
+  
   implicit none
 
   ! Type for suite registry
@@ -116,6 +117,8 @@ contains
     call add_suite("tox_clustering", run_all_tests_tox_clustering, run_named_tests_tox_clustering)
     call add_suite("normalize_by_std_dev",run_all_tests_normalize_by_std_dev, run_named_tests_normalize_by_std_dev)
     call add_suite("tox_data_integration", run_all_tests_tox_data_integration, run_named_tests_tox_data_integration)
+    call add_suite("empirical_pvalue", run_all_tests_epv, run_named_tests_epv)
+
   end subroutine initialize_suites
   
 
