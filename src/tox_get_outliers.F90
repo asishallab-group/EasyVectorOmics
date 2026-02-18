@@ -89,7 +89,7 @@ contains
 
       ! Local variables
       integer(int32) :: i, j, family_idx, n_in_family, n_valid, k
-      real(real64)   :: median_dist, stddev_dist, mean_dist, sumsq
+      real(real64)   :: median_dist, stddev_dist, mean_dist, sumsq, dist_val
       real(real64) :: xmin, xmax, eps_mean, eps_sd, std_median
       
 
@@ -113,29 +113,46 @@ contains
 
       means_aux = -1.0_real64
       ! ------------------------------------------------------------
-      ! PASS 1: compute (mean, stddev) per family
+      ! PASS 1: compute (mean, stddev) per family 
       ! ------------------------------------------------------------
+      
+      w_init = 0.0_real64    ! Usado aquí temporalmente como sum(x)
+      rw     = 0.0_real64    ! Usado aquí temporalmente como sum(x^2)
+      pi     = 0             ! Usado aquí temporalmente como count(n)
+
+      do i = 1, n_genes
+          family_idx = gene_to_fam(i)
+          dist_val = abs(distances(i))
+          
+          pi(family_idx) = pi(family_idx) + 1
+          w_init(family_idx) = w_init(family_idx) + dist_val
+          rw(family_idx) = rw(family_idx) + (dist_val**2)
+      end do
+
+      n_valid = 0
       do family_idx = 1, n_families
-
-          n_in_family = 0
-          do i = 1, n_genes
-              if (gene_to_fam(i) == family_idx) then
-                  n_in_family = n_in_family + 1
-                  family_distances(n_in_family) = abs(distances(i))
-              end if
-          end do
-
+          n_in_family = pi(family_idx)
+          
           if (n_in_family <= 1) cycle
-          mean_dist = sum(family_distances(1:n_in_family)) / real(n_in_family, real64)
-          sumsq     = sum((family_distances(1:n_in_family) - mean_dist)**2)
+          
+          n_valid = n_valid + 1
+          
+          mean_dist = w_init(family_idx) / real(n_in_family, real64)
+          
+          ! Var = (SumSq - (Sum^2)/N) / (N-1)
+          sumsq = max(0.0_real64, rw(family_idx) - (w_init(family_idx)**2 / real(n_in_family, real64)))
           stddev_dist = sqrt(sumsq / real(n_in_family - 1, real64))
 
-          n_valid = n_valid + 1
           loess_x(n_valid) = mean_dist
           means_aux(family_idx) = mean_dist
           loess_y(n_valid) = stddev_dist
           indices_used(n_valid) = family_idx
       end do
+      
+      ! Clean arrays before loess use them
+      w_init = 0.0_real64
+      rw = 0.0_real64
+      pi = 0
 
       if (n_valid <= 1) then
         low_sd_cutoff = 0.0_real64
