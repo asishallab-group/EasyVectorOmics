@@ -2,7 +2,7 @@
 module tox_get_outliers
   use safeguard
   use, intrinsic :: iso_fortran_env, only: real64, int32
-  use, intrinsic :: ieee_arithmetic, only: ieee_is_nan
+  use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_value, ieee_quiet_nan
   use f42_utils, only: sort_array, calc_percentile, logx, is_close, compute_empirical_p_values
   use tox_errors, only: ERR_INVALID_INPUT, set_ok, set_err_once, check_alloc_stat, is_err
   use tox_loess, only: tox_loess_required_workspace, loess_fit_robust, loess_fit_plain, EPS_LOESS, lowese
@@ -35,9 +35,9 @@ contains
 
       ! Buffers (reused)
       !| Reference x-coordinates for LOESS smoothing
-      real(real64),   intent(inout) :: loess_x(n_families)
+      real(real64),   intent(out) :: loess_x(n_families)
       !| Reference y-coordinates for LOESS smoothing
-      real(real64),   intent(inout) :: loess_y(n_families)
+      real(real64),   intent(out) :: loess_y(n_families)
       !| Indices of reference points used for smoothing
       integer(int32), intent(inout) :: indices_used(n_families)
       !| Permutation array for sorting gene distances
@@ -116,7 +116,7 @@ contains
       ! PASS 1: compute (mean, stddev) per family
       ! ------------------------------------------------------------
       do family_idx = 1, n_families
-
+         
           n_in_family = 0
           do i = 1, n_genes
               if (gene_to_fam(i) == family_idx) then
@@ -130,11 +130,13 @@ contains
           sumsq     = sum((family_distances(1:n_in_family) - mean_dist)**2)
           stddev_dist = sqrt(sumsq / real(n_in_family - 1, real64))
 
-          n_valid = n_valid + 1
-          loess_x(n_valid) = mean_dist
-          means_aux(family_idx) = mean_dist
-          loess_y(n_valid) = stddev_dist
-          indices_used(n_valid) = family_idx
+	  if (mean_dist > 0.0_real64) then
+	          n_valid = n_valid + 1
+        	  loess_x(n_valid) = mean_dist
+	          means_aux(family_idx) = mean_dist
+        	  loess_y(n_valid) = stddev_dist
+	          indices_used(n_valid) = family_idx
+	  end if
       end do
 
       if (n_valid <= 1) then
@@ -272,6 +274,7 @@ contains
       ! ------------------------------------------------------------
       ! Map compact results back to full dscale
       ! ------------------------------------------------------------
+
       do family_idx = 1, n_families
         if (means_aux(family_idx) < 0.0_real64) then
           dscale(family_idx) = 0.0_real64
@@ -286,8 +289,14 @@ contains
           loess_y(i) = max(2.0_real64**loess_y(i) - eps_sd, 0.0_real64)
       end do
 
-      low_sd_cutoff = max(2.0_real64**low_sd_cutoff - eps_sd, 0.0_real64)
+      if (n_valid < n_families) then
+	  loess_x(n_valid + 1 : ) = ieee_value(0.0_real64, ieee_quiet_nan)
+          loess_y(n_valid + 1 : ) = ieee_value(0.0_real64, ieee_quiet_nan)
+          indices_used(n_valid+1:n_families) = 0_int32
+      end if
 
+
+      low_sd_cutoff = max(2.0_real64**low_sd_cutoff - eps_sd, 0.0_real64)
       
 
   end subroutine compute_family_scaling
