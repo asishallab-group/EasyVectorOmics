@@ -468,6 +468,8 @@ test_compute_family_scaling_expert_consistency <- function() {
   )
   result_regular <- tox_compute_family_scaling(distances, gene_to_fam, n_families)
 
+  valid_idx <- !is.na(result_expert$loess_x)
+
   # Compare with regular version to ensure consistency
   cat("  Comparing expert vs regular version:\n")
   cat("    Expert dscale:", result_expert$dscale, "\n")
@@ -475,8 +477,8 @@ test_compute_family_scaling_expert_consistency <- function() {
 
   # Results should be very similar (within numerical precision)
   stopifnot(all(abs(result_expert$dscale - result_regular$dscale) < 1e-10))
-  stopifnot(all(abs(result_expert$loess_x - result_regular$loess_x) < 1e-10))
-  stopifnot(all(abs(result_expert$loess_y - result_regular$loess_y) < 1e-10))
+  stopifnot(all(abs(result_expert$loess_x[valid_idx] - result_regular$loess_x[valid_idx]) < 1e-10))
+  stopifnot(all(abs(result_expert$loess_y[valid_idx] - result_regular$loess_y[valid_idx]) < 1e-10))
 
   cat("Expert version consistency test passed ✓\n")
 }

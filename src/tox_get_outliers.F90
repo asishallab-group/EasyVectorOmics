@@ -112,13 +112,14 @@ contains
       
 
       means_aux = -1.0_real64
+
       ! ------------------------------------------------------------
       ! PASS 1: compute (mean, stddev) per family 
       ! ------------------------------------------------------------
       
       w_init = 0.0_real64    
       rw     = 0.0_real64    
-      pi     = 0            
+      pi     = 0             
 
       do i = 1, n_genes
           family_idx = gene_to_fam(i)
@@ -143,16 +144,12 @@ contains
           sumsq = max(0.0_real64, rw(family_idx) - (w_init(family_idx)**2 / real(n_in_family, real64)))
           stddev_dist = sqrt(sumsq / real(n_in_family - 1, real64))
 
-          if (mean_dist > 0.0_real64) then
-                  n_valid = n_valid + 1
-                  loess_x(n_valid) = mean_dist
-                  means_aux(family_idx) = mean_dist
-                  loess_y(n_valid) = stddev_dist
-                  indices_used(n_valid) = family_idx
-          end if
+          loess_x(n_valid) = mean_dist
+          means_aux(family_idx) = mean_dist
+          loess_y(n_valid) = stddev_dist
+          indices_used(n_valid) = family_idx
       end do
       
-      ! Clean arrays before loess use them
       w_init = 0.0_real64
       rw = 0.0_real64
       pi = 0
