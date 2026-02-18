@@ -8,7 +8,7 @@ module f42_utils
   use tox_errors, only: ERR_INVALID_INPUT, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, set_ok, set_err_once, set_err, validate_in_range_real, is_err
   use, intrinsic :: ieee_arithmetic, only: ieee_next_after, ieee_value, ieee_positive_inf, ieee_negative_inf, ieee_is_finite, ieee_is_nan
   implicit none
-
+  public :: init_random, rand_range
   public :: sort_real, sort_integer, sort_character
   public :: sort_array
   public :: compute_edf, compute_edf_alloc

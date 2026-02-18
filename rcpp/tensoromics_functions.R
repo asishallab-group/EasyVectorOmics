@@ -34,10 +34,11 @@ source("rcpp/error_handling.R")
 #' 
 tox_euclidean_distance <- function(vec1, vec2) {
   # Input validation
-  validate_numeric_vector(vec1, "vec1")
-  validate_numeric_vector(vec2, "vec2")
-  validate_same_length(vec1, vec2, "vec1", "vec2")
-  validate_nonempty(vec1, "vec1")
+   validate_numeric_vector(vec1)
+   validate_numeric_vector(vec2)
+   validate_same_length(vec1, vec2)
+   validate_nonempty(vec1)
+
 
   # Call Rcpp wrapper 
   return(tox_euclidean_distance_rcpp(as.numeric(vec1), as.numeric(vec2)))
@@ -57,31 +58,20 @@ tox_euclidean_distance <- function(vec1, vec2) {
 #' @return Numeric vector of distances from each gene to its family centroid
 #' 
 tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
- #Convert to appropriate types
-  genes <- as.numeric(genes)
-  centroids <- as.numeric(centroids)
-  gene_to_fam <- as.integer(gene_to_fam)
-  d <- as.integer(d)
-
-  # Input validation
-  validate_numeric_vector(genes, "genes")
-  validate_numeric_vector(centroids, "centroids")
-  validate_positive_integer_scalar(d, "d")
+  # R-layer validation in rcpp/ (kept here because r/ must not be changed)
+  validate_numeric_vector(genes)
+  validate_numeric_vector(centroids)
+  validate_positive_integer_scalar(d)
 
 #  # Validate flattened lengths are compatible with d
-  validate_divisible_length(genes, d, "genes")
-  validate_divisible_length(centroids, d, "centroids")
+  validate_divisible_length(genes, d)
+  validate_divisible_length(centroids, d)
   # Calculate dimensions
   n_genes <- as.integer(length(genes) / d)
   n_families <- as.integer(length(centroids) / d)
-  validate_gene_to_family(gene_to_fam, n_genes, n_families, "gene_to_fam")
-  validate_length_equals_n(gene_to_fam, n_genes, "gene_to_fam")
-# Call Rcpp wrapper
-  # Ensure proper types and call low-level Rcpp helper which wraps the Fortran call
-  genes <- as.numeric(genes)
-  centroids <- as.numeric(centroids)
-  gene_to_fam <- as.integer(gene_to_fam)
-  d <- as.integer(d)
+  validate_gene_to_family(gene_to_fam, n_genes, n_families)
+  validate_length_equals_n(gene_to_fam, n_genes)
+
   return(tox_distance_to_centroid_rcpp(genes, centroids, gene_to_fam, d))
 }
 
@@ -104,18 +94,18 @@ tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
 #'   \item{n_selected_axes}{Number of axes used in calculation}
 #' 
 tox_calculate_tissue_versatility <- function(expression_vectors, vector_selection, axis_selection) {
-  # R-layer validation (kept in rcpp/ to avoid touching r/)
-  validate_numeric_matrix(expression_vectors, "expression_vectors")
+ # R-layer validation (kept in rcpp/ to avoid touching r/)
+  validate_numeric_matrix(expression_vectors)
   n_axes <- nrow(as.matrix(expression_vectors))
   n_vectors <- ncol(as.matrix(expression_vectors))
 
   # Ensure selection vectors have correct lengths and types
   #Input validation
-  validate_numeric_matrix(expression_vectors, "expression_vectors")
+  validate_numeric_matrix(expression_vectors)
 
   # Ensure selectors have expected lengths
-    validate_logical_or_index_vector(vector_selection, expected_length = n_vectors, name = "vector_selection")
-    validate_logical_or_index_vector(axis_selection, expected_length = n_axes, name = "axis_selection")
+  validate_logical_or_index_vector(vector_selection)
+  validate_logical_or_index_vector(axis_selection)
 
   #Convert to appropriate types for Rcpp
   if (is.numeric(vector_selection)) {
@@ -128,6 +118,7 @@ tox_calculate_tissue_versatility <- function(expression_vectors, vector_selectio
   } else {
     axis_selection <- as.integer(axis_selection)
   }
+
 
   # Call Rcpp wrapper
   result <- tox_calculate_tissue_versatility_rcpp(expression_vectors, vector_selection, axis_selection)
@@ -167,12 +158,12 @@ tox_calculate_tissue_versatility <- function(expression_vectors, vector_selectio
 #'   - loess_n: Number of genes used per family
 tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile = 95.0) {
   # Input validation
-  validate_numeric_vector(distances, "distances")
+  validate_numeric_vector(distances)
   n_genes <- as.integer(length(distances))
   gene_to_fam <- as.integer(gene_to_fam)
-  validate_integer_vector(gene_to_fam, "gene_to_fam")
-  validate_length_equals_n(gene_to_fam, n_genes, "gene_to_fam")
-  validate_index_bounds(gene_to_fam, low = 1, high = n_families, name = "gene_to_fam")
+  validate_integer_vector(gene_to_fam)
+  validate_length_equals_n(gene_to_fam, n_genes)
+  validate_index_bounds(gene_to_fam, low = 1, high = n_families)
 
   # Call Rcpp wrapper
   result <- tox_detect_outliers_rcpp(distances, gene_to_fam, n_families, percentile)
@@ -207,10 +198,10 @@ tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile =
 #'   - indices_used: Number of genes used per family
 tox_compute_family_scaling <- function(distances, gene_to_fam, n_families) {
   # Input validation
-  validate_numeric_vector(distances, "distances")
+  validate_numeric_vector(distances)
   n_genes <- as.integer(length(distances))
-  validate_length_equals_n(gene_to_fam, n_genes, "gene_to_fam")
-  validate_index_bounds(gene_to_fam, low = 1, high = n_families, name = "gene_to_fam")
+  validate_length_equals_n(gene_to_fam, n_genes)
+  validate_index_bounds(gene_to_fam, low = 1, high = n_families)
 
   # Call the Rcpp forwarder.
   result <- tox_compute_family_scaling_rcpp(distances, gene_to_fam, n_families)
@@ -255,14 +246,15 @@ tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families
                                               perm_tmp, stack_left_tmp, stack_right_tmp,
                                               family_distances) {
 # Input validation
-  validate_numeric_vector(distances, "distances")
+  validate_numeric_vector(distances)
   n_genes <- as.integer(length(distances))
-  validate_length_equals_n(gene_to_fam, n_genes, "gene_to_fam")
-  validate_index_bounds(gene_to_fam, low = 1, high = n_families, name = "gene_to_fam")
-  validate_length_equals_n(perm_tmp, n_genes, "perm_tmp")
-  validate_length_equals_n(stack_left_tmp, n_genes, "stack_left_tmp")
-  validate_length_equals_n(stack_right_tmp, n_genes, "stack_right_tmp")
-  validate_length_equals_n(family_distances, n_genes, "family_distances")
+  validate_length_equals_n(gene_to_fam, n_genes)
+  validate_index_bounds(gene_to_fam, low = 1, high = n_families)
+  validate_length_equals_n(perm_tmp, n_genes)
+  validate_length_equals_n(stack_left_tmp, n_genes)
+  validate_length_equals_n(stack_right_tmp, n_genes)
+  validate_length_equals_n(family_distances, n_genes)
+
 
   # Call the Rcpp forwarder.
   result <- tox_compute_family_scaling_expert_rcpp(n_families, distances, gene_to_fam, perm_tmp, stack_left_tmp, stack_right_tmp,
@@ -300,11 +292,11 @@ tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families
 #'   - sorted_rdi: RDI values sorted in ascending order
 tox_compute_rdi <- function(distances, gene_to_fam, dscale) {
 # Input validation
-  validate_numeric_vector(distances, "distances")
+  validate_numeric_vector(distances)
   n_genes <- as.integer(length(distances))
-  validate_length_equals_n(gene_to_fam, n_genes, "gene_to_fam")
+  validate_length_equals_n(gene_to_fam, n_genes)
   n_families <- as.integer(length(dscale))
-  validate_index_bounds(gene_to_fam, low = 1, high = n_families, name = "gene_to_fam")
+  validate_index_bounds(gene_to_fam, low = 1, high = n_families)
 
   # Call Rcpp forwarder
   result <- tox_compute_rdi_rcpp(distances, gene_to_fam, dscale)
@@ -359,7 +351,7 @@ tox_identify_outliers <- function(rdi, percentile = 95.0) {
 #' normalized_matrix <- tox_normalize_by_std_dev(input_matrix)
 tox_normalize_by_std_dev <- function(input_matrix) {
   # Validate input matrix values (NA / Inf / NaN)
-  validate_numeric_matrix_values(input_matrix, "input_matrix")
+  validate_numeric_matrix_values(input_matrix)
   result <- tox_normalize_by_std_dev_rcpp(input_matrix)  
   return(matrix(result$output_vector, nrow = nrow(input_matrix), ncol = ncol(input_matrix), dimnames = dimnames(input_matrix)))
 }
@@ -380,7 +372,7 @@ tox_normalize_by_std_dev <- function(input_matrix) {
 #' @examples
 #' normalized_matrix <- tox_quantile_normalization(input_matrix)
 tox_quantile_normalization <- function(input_matrix) {
-  validate_matrix(input_matrix, "input_matrix")
+  validate_matrix(input_matrix)
   n_genes <- nrow(input_matrix)
   n_tissues <- ncol(input_matrix)
   result <- tox_quantile_normalization_rcpp(input_matrix)
@@ -407,7 +399,7 @@ tox_quantile_normalization <- function(input_matrix) {
 #' @examples
 #' log_matrix <- tox_log2_transformation(input_matrix)
 tox_log2_transformation <- function(input_matrix) {
-  validate_matrix(input_matrix, "input_matrix")
+  validate_matrix(input_matrix)
   n_genes <- nrow(input_matrix)
   n_tissues <- ncol(input_matrix)
   result <- tox_log2_transformation_rcpp(input_matrix)
@@ -434,7 +426,7 @@ tox_log2_transformation <- function(input_matrix) {
 #' @examples
 #' averaged_df <- tox_calculate_tissue_averages(df)
 tox_calculate_tissue_averages <- function(df) {
-  validate_matrix(as.matrix(df), "df")
+  validate_matrix(as.matrix(df))
 
   tissue_groups <- as.character(sapply(colnames(df), tox_parse_tissue_group))
   unique_groups <- unique(tissue_groups)
@@ -458,7 +450,7 @@ tox_calculate_tissue_averages <- function(df) {
     }
   }
 
-  result <- tox_calc_tiss_avg_rcpp(as.matrix(df), group_starts, group_counts)
+  result <- tox_calc_tiss_avg_rcpp(df, group_starts, group_counts)
   
   check_err_code(result$ierr)
 
@@ -477,10 +469,12 @@ tox_calculate_tissue_averages <- function(df) {
 #' @param df A data frame with genes as rows and tissues/conditions as columns.
 #' @param control_pattern A string pattern to detect control columns.
 #' @param condition_patterns A character vector with patterns to detect condition columns.
-tox_calculate_fc_by_patterns <- function(df, control_pattern, condition_patterns) {
-  validate_matrix(as.matrix(df), "df")
-  validate_string_scalar(control_pattern, "control_pattern")
-  validate_character_vector(condition_patterns, "condition_patterns")
+#' @return A data frame with log2 fold changes for each gene and condition, with genes as rows and conditions as columns.
+tox_calculate_fold_changes <- function(df, control_pattern, condition_patterns) {
+  validate_matrix(df)
+  validate_string_scalar(control_pattern)
+  validate_character_vector(condition_patterns) 
+ 
 
   # --- Identify control and condition columns ---
   indices_info <- tox_prepare_indices_by_patterns(df, control_pattern, condition_patterns)
@@ -490,7 +484,7 @@ tox_calculate_fc_by_patterns <- function(df, control_pattern, condition_patterns
 
   n_pairs <- length(control_cols)
 
-  result <- tox_calc_fchange_rcpp(as.matrix(df), control_cols, condition_cols)
+  result <- tox_calc_fchange_rcpp(df, control_cols, condition_cols)
 
   check_err_code(result$ierr)
   
@@ -509,8 +503,10 @@ tox_calculate_fc_by_patterns <- function(df, control_pattern, condition_patterns
 #' @param input_matrix Numeric matrix (genes x tissues)
 #' @param group_s Integer vector: start column index for each replicate group (1-based)
 #' @param group_c Integer vector: number of columns per replicate group
+#' 
+#' @return Numeric matrix with log2-transformed average expression values for each tissue group, with genes as rows and tissue groups as columns.
 tox_normalization_pipeline <- function(input_matrix, group_s, group_c) {
-  validate_matrix(input_matrix, "input_matrix")
+  validate_matrix(input_matrix)
   group_s <- as.integer(group_s)
   group_c <- as.integer(group_c)
   validate_group_vectors(group_s, group_c, ncol(input_matrix))
@@ -903,9 +899,8 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
   n_vectors <- ncol(as.matrix(expression_vectors))
   validate_length_equals_n(gene_to_centroid, n_vectors)
 
-  if (any(is.na(gene_to_centroid))) stop("`gene_to_centroid` must not contain NA values.")
-  if (any(gene_to_centroid < 0L)) stop("`gene_to_centroid` must not contain negative indices.")
-
+  
+  
   result <- tox_compute_shift_vector_field_rcpp(expression_vectors, family_centroids, gene_to_centroid)
   check_err_code(result$ierr)
   return(list(shift_vectors = result$shift_vectors))
@@ -968,6 +963,16 @@ tox_mean_vector <- function(expression_vectors, gene_indices) {
 # ============================================================
 
 #> f42_array_utils:get_array_metadata_c: Get array metadata from serialized file
+#' Get array metadata from serialized file
+#' @param filename Path to the serialized array file
+#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
+#' @param with_clen Logical indicating whether to also read character length metadata (default: FALSE)
+#' @return A list containing:
+#' \describe{
+#'   \item{dims}{Integer vector of array dimensions}
+#'   \item{ndim}{Integer scalar of number of dimensions}
+#'   \item{clen}{Integer scalar of character length (only if with_clen = TRUE)}
+#' }
 tox_get_array_metadata <- function(filename, max_dims = 5L, with_clen = FALSE) {
   # Coerce to expected base types
   filename  <- as.character(filename)
@@ -1001,6 +1006,9 @@ tox_get_array_metadata <- function(filename, max_dims = 5L, with_clen = FALSE) {
 #  2) Deserialization (int / real / char)
 # ============================================================
 #> f42_deserialize_int:deserialize_int_nd_C: Deserialize integer array from file
+#' @param filename Path to the serialized integer array file
+#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
+#' @return An integer array with dimensions as specified in the file
 tox_deserialize_int_array <- function(filename, max_dims = 5L) {
   # validate inputs
   validate_filename(filename)
@@ -1020,6 +1028,9 @@ tox_deserialize_int_array <- function(filename, max_dims = 5L) {
 }
 
 #> f42_deserialize_real:deserialize_real_nd_C: Deserialize real/double array from file
+#' @param filename Path to the serialized real array file
+#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
+#' @return A numeric array with dimensions as specified in the file
 tox_deserialize_real_array <- function(filename, max_dims = 5L) {
 #validate inputs
   validate_filename(filename)
@@ -1045,6 +1056,9 @@ tox_deserialize_real_array <- function(filename, max_dims = 5L) {
   }
 
 #> f42_deserialize_char:deserialize_char_nd_C: Deserialize character array from file
+#' @param filename Path to the serialized character array file
+#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
+#' @return A character array with dimensions as specified in the file
 tox_deserialize_char_array <- function(filename, max_dims = 5L) {
   #validate inputs
   validate_filename(filename)
@@ -1073,6 +1087,9 @@ tox_deserialize_char_array <- function(filename, max_dims = 5L) {
 # ============================================================
 
 #> f42_serialize_int:serialize_int_nd_C: Serialize integer array to file
+#' @param arr An integer array to serialize
+#' @param filename Path to the output file where the array will be serialized
+#' @return NULL (invisible) - the function is called for its side effect of writing to a file
 tox_serialize_int_array <- function(arr, filename) {
   #validate inputs
   validate_array_or_vector(arr)
@@ -1090,6 +1107,9 @@ tox_serialize_int_array <- function(arr, filename) {
 }
 
 #> f42_serialize_real:serialize_real_nd_C: Serialize real/double array to file
+#' @param arr A numeric array to serialize
+#' @param filename Path to the output file where the array will be serialized
+#' @return NULL (invisible) - the function is called for its side effect of writing to a file
 tox_serialize_real_array <- function(arr, filename) {
   #validate inputs
   validate_array_or_vector(arr)
@@ -1131,6 +1151,9 @@ tox_serialize_char_array <- function(arr, filename) {
 #  Deserialization (logical / complex)
 # ============================================================
 #> f42_deserialize_logical:deserialize_logical_nd_C: Deserialize logical array from file
+#' @param filename Path to the serialized logical array file
+#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
+#' @return A logical array with dimensions as specified in the file
 tox_deserialize_logical_array <- function(filename, max_dims = 5L) {
   # validate inputs
   validate_filename(filename)
@@ -1154,6 +1177,9 @@ tox_deserialize_logical_array <- function(filename, max_dims = 5L) {
 }
 
 #> f42_deserialize_complex:deserialize_complex_nd_C: Deserialize complex array from file
+#' @param filename Path to the serialized complex array file
+#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
+#' @return A complex array with dimensions as specified in the file
 tox_deserialize_complex_array <- function(filename, max_dims = 5L) {
   # validate inputs
   validate_filename(filename)
@@ -1181,6 +1207,9 @@ tox_deserialize_complex_array <- function(filename, max_dims = 5L) {
 # ============================================================
 
 #> f42_serialize_logical:serialize_logical_nd_C: Serialize logical array to file
+#' @param arr A logical array to serialize
+#' @param filename Path to the output file where the array will be serialized
+#' @return NULL (invisible) - the function is called for its side effect of
 tox_serialize_logical_array <- function(arr, filename) {
   # validate inputs
   validate_array_or_vector(arr)
@@ -1198,6 +1227,9 @@ tox_serialize_logical_array <- function(arr, filename) {
 }
 
 #> f42_serialize_complex:serialize_complex_nd_C: Serialize complex array to file
+#' @param arr A complex array to serialize
+#' @param filename Path to the output file where the array will be serialized
+#' @return NULL (invisible) - the function is called for its side effect of
 tox_serialize_complex_array <- function(arr, filename) {
   # validate inputs
   validate_array_or_vector(arr)
@@ -1221,6 +1253,9 @@ tox_serialize_complex_array <- function(arr, filename) {
 # ============================================================
 
 #> f42_kd_tree:build_kd_index_c: Build KD-tree index for multidimensional data
+#' @param X A numeric matrix of shape (dimensions x points) representing the data to index
+#' @param dim_order integer vector specifying the order of dimensions to use for building the KD-tree. 
+#' @return An integer vector of indices representing the KD-tree order of the points
 build_kd_index <- function(X, dim_order = NULL) {
   # Input validation using standardized validation functions
   validate_numeric_matrix(X, "X")
@@ -1250,6 +1285,9 @@ build_kd_index <- function(X, dim_order = NULL) {
 
 #> f42_kd_tree:build_spherical_kd_c: Build spherical KD-tree index
 #' Build Spherical KD-Tree index (R-level wrapper)
+#' @param V A numeric matrix of shape (dimensions x points) representing the data to index
+#' @param dim_order integer vector specifying the order of dimensions to use for building the KD
+#' @return An integer vector of indices representing the spherical KD-tree order of the points
 build_spherical_kd <- function(V, dim_order = NULL) {
   # R-layer validation
   validate_numeric_matrix(V, "V")
@@ -1281,6 +1319,10 @@ build_spherical_kd <- function(V, dim_order = NULL) {
 }
 #> f42_helper: Get a point from the KD index
 #' Get a point from the KD index (R-level helper)
+#' @param X A numeric matrix of shape (dimensions x points) representing the original data
+#' @param kd_ix An integer vector of indices representing the KD-tree order of the points
+#' @param position An integer scalar specifying the position in the KD index to retrieve
+#' @return A numeric vector representing the point at the specified position in the KD index
 get_kd_point <- function(X, kd_ix, position) {
   # Input validation using standardized validation functions
   validate_numeric_matrix(X, "X")
@@ -1298,8 +1340,10 @@ get_kd_point <- function(X, kd_ix, position) {
 #  5) BST index + range query
 # ============================================================
 
-#> f42_binary_search_tree:build_bst_index_c: Build binary search tree index
-#  BST index
+#> f42_binary_search_tree:build_bst_index_c: Build binary search tree index for a numeric vector
+#'@param x A numeric vector for which to build the BST index
+#' @return An integer vector of indices representing the BST order of the input vector
+
 build_bst_index <- function(x) {
   # Accept either a numeric vector or a single-column numeric matrix
   validate_numeric_vector(x, "x")
@@ -1327,6 +1371,16 @@ get_sorted_value <- function(x, ix, position) {
 # ============================================================
 # BST range query
 #> f42_binary_search_tree:bst_range_query_c: Query BST index for values in range
+#'@param x A numeric vector of values corresponding to the BST index
+#' @param ix An integer vector of indices representing the BST order of the input vector
+#' @param lo A numeric scalar representing the lower bound of the query range
+#' @param hi A numeric scalar representing the upper bound of the query range
+#' @return A list containing:
+#' \describe{
+#'  \item{indices}{Integer vector of original indices of values in the range [lo, hi]}
+#' \item{count}{Integer scalar of the number of values in the range}
+#' }
+#' 
 bst_range_query <- function(x, ix, lo, hi) {
 
   validate_numeric_vector(x, "x")
@@ -1358,6 +1412,11 @@ bst_range_query <- function(x, ix, lo, hi) {
 # ============================================================
 
 #> tox_helper: which() helper function via C backend
+#' This function takes a logical or integer mask and returns the indices of the TRUE or non-zero elements, up to a specified maximum.
+#' @param mask A logical or integer vector serving as the mask for which to find indices.
+#' @param m_max An integer scalar specifying the maximum number of indices to return (default: length of mask).
+#' @return An integer vector of indices corresponding to the TRUE or non-zero elements in the
+#' 
 tox_which <- function(mask, m_max = length(mask)) {
   validate_integer_vector(as.integer(mask), "mask")
 
@@ -1377,6 +1436,18 @@ tox_which <- function(mask, m_max = length(mask)) {
 # ============================================================
 
 #> f42_utils:loess_smooth_2d_c: 2D LOESS smoothing for trajectory data
+#'@param x_ref Numeric vector of reference x-coordinates (length n_ref)
+#' @param y_ref Numeric vector or matrix of reference y-coordinates (length n_ref or n_ref x n_y)
+#' @param x_query Numeric vector of query x-coordinates (length n_query)
+#' @param indices_used Integer vector of indices (1-based) indicating which reference points to
+#' @param kernel_sigma Numeric scalar for the Gaussian kernel bandwidth
+#' @param kernel_cutoff Numeric scalar for the Gaussian kernel cutoff distance
+#' @return A list containing:
+#' \describe{
+#'  \item{y_out}{Numeric matrix of smoothed y-coordinates for the query points (n_query x n_y)}
+#' \item{smoothed_values}{Numeric vector of smoothed values (flattened by_out)}
+#' }
+#' 
 tox_loess_smooth_2d <- function(
   x_ref,
   y_ref,
@@ -1454,7 +1525,7 @@ tox_loess_smooth_2d <- function(
 #' @param vecs_selection_mask Logical or integer vector (length n_vecs)
 #' @param axes_selection_mask Logical or integer vector (length n_axes)
 #' @return Matrix of projections (n_selected_axes x n_selected_vecs)
-#' @export
+#'
 tox_omics_vector_RAP_projection <- function(vecs, vecs_selection_mask, axes_selection_mask) {
   validate_numeric_matrix(vecs, "vecs")
   n_axes <- nrow(vecs)
@@ -1478,7 +1549,7 @@ tox_omics_vector_RAP_projection <- function(vecs, vecs_selection_mask, axes_sele
 #' @param vecs_selection_mask Logical or integer vector (length n_vecs)
 #' @param axes_selection_mask Logical or integer vector (length n_axes)
 #' @return Matrix of projections (n_selected_axes x n_selected_vecs)
-#' @export
+#' 
 tox_omics_field_RAP_projection <- function(vecs, vecs_selection_mask, axes_selection_mask) {
   validate_numeric_matrix(vecs, "vecs")
   n_axes <- nrow(vecs) / 2
@@ -1497,7 +1568,7 @@ tox_omics_field_RAP_projection <- function(vecs, vecs_selection_mask, axes_selec
 #' 
 #' @param vec Numeric vector (RAP-projected and normalized shift vector)
 #' @return Numeric vector of fractional axis contributions (sums to 1)
-#' @export
+#' 
 tox_relative_axes_changes_from_shift_vector <- function(vec) {
   validate_numeric_vector(vec, "vec")
   
@@ -1516,17 +1587,16 @@ tox_relative_axes_changes_from_shift_vector <- function(vec) {
 #' 
 #' @param vec Numeric vector (shift vector)
 #' @return Numeric vector of fractional axis changes (sums to 1)
-#' @export
+#' 
 relative_axes_changes_from_shift_vector <- function(vec) {
   tox_relative_axes_changes_from_shift_vector(vec)
 }
-
+#> tox_relative_axis_plane_tools:relative_axes_expression_from_expression_vector_c: Compute relative axis contributions from expression vector
 #' Compute relative axis contributions from a RAP-projected and normalized expression vector
 #' 
 #' @param vec Numeric vector (RAP-projected and normalized expression vector)
 #' @return Numeric vector of fractional axis contributions (sums to 1)
-#> tox_relative_axis_plane_tools:relative_axes_expression_from_expression_vector_c: Compute relative axis contributions from expression vector
-#' @export
+#'
 tox_relative_axes_expression_from_expression_vector <- function(vec) {
   validate_numeric_vector(vec, "vec")
   
@@ -1545,7 +1615,7 @@ tox_relative_axes_expression_from_expression_vector <- function(vec) {
 #' 
 #' @param vec Numeric vector (RAP-projected and normalized expression vector)
 #' @return Numeric vector of fractional axis contributions (sums to 1)
-#' @export
+#' 
 relative_axes_expression_from_expression_vector <- function(vec) {
   tox_relative_axes_expression_from_expression_vector(vec)
 }
@@ -1557,7 +1627,7 @@ relative_axes_expression_from_expression_vector <- function(vec) {
 #' @param v2 Numeric vector (second normalized vector in RAP space)
 #' @param selected_axes_for_signed Integer vector of length 3 (axes for directionality, ignored if length(v1) <= 3). Default: c(1, 2, 3)
 #' @return Signed angle in radians [-pi, pi]
-#' @export
+#' 
 tox_clock_hand_angle_between_vectors <- function(v1, v2, selected_axes_for_signed = c(1L, 2L, 3L)) {
   validate_numeric_vector(v1, "v1")
   validate_numeric_vector(v2, "v2")
@@ -1587,7 +1657,7 @@ tox_clock_hand_angle_between_vectors <- function(v1, v2, selected_axes_for_signe
 #' @param vecs_selection_mask Integer or logical vector (length n_vecs). Default: rep(1, ncol(origins)) (all vectors selected)
 #' @param selected_axes_for_signed Integer vector of length 3 (axes for directionality). Default: c(1, 2, 3)
 #' @return Numeric vector of signed angles (radians)
-#' @export
+#' 
 tox_clock_hand_angles_for_shift_vectors <- function(origins, targets, vecs_selection_mask = rep(1L, ncol(origins)), selected_axes_for_signed = c(1L, 2L, 3L)) {
   validate_numeric_matrix(origins, "origins")
   validate_numeric_matrix(targets, "targets")
@@ -1609,7 +1679,6 @@ tox_clock_hand_angles_for_shift_vectors <- function(origins, targets, vecs_selec
   return(res$signed_angles)
 }
 #> tox_clustering:cluster_factor_trajectories_k_means_c: K-means clustering on factor trajectories
-#' K-means clustering on factor trajectories
 #'
 #' Performs k-means clustering on factor trajectories (factor evolution over time).
 #' All validation is performed in R. Returns centroids, labels, label_counts, and ierr.
@@ -1621,7 +1690,7 @@ tox_clock_hand_angles_for_shift_vectors <- function(origins, targets, vecs_selec
 #' @param centroids Numeric matrix (n_factors x n_clusters)
 #' @param max_iterations Maximum number of iterations (integer)
 #' @return List with centroids, labels, label_counts, ierr
-#' @export
+#' 
 tox_cluster_factor_trajectories_k_means <- function(n_clusters, trajectories, n_factors, n_samples, n_timepoints, centroids, max_iterations = 300) {
   validate_positive_integer_scalar(n_clusters, "n_clusters")
   validate_numeric_vector(trajectories, "trajectories")
@@ -1647,7 +1716,6 @@ tox_cluster_factor_trajectories_k_means <- function(n_clusters, trajectories, n_
 }
 
 #> tox_clustering:k_means_clustering_c: K-means clustering (general)
-#' K-means clustering (general)
 #'
 #' Performs k-means clustering on general data points.
 #' All validation is performed in R. Returns centroids, labels, label_counts, and ierr.
@@ -1658,7 +1726,7 @@ tox_cluster_factor_trajectories_k_means <- function(n_clusters, trajectories, n_
 #' @param centroids Numeric matrix (n_dims x n_clusters)
 #' @param max_iterations Maximum number of iterations (integer)
 #' @return List with centroids, labels, label_counts, ierr
-#' @export
+#' 
 tox_k_means_clustering <- function(n_clusters, data_points, n_points, n_dims, centroids, max_iterations = 300) {
   validate_positive_integer_scalar(n_clusters, "n_clusters")
   validate_numeric_matrix(data_points, "data_points")
@@ -1673,72 +1741,4 @@ tox_k_means_clustering <- function(n_clusters, data_points, n_points, n_dims, ce
   return(res)
 }
 
-# ===================================================================
-# FOLD CHANGE CALCULATION
-# ===================================================================
 
-#> tox_helper: Calculate fold changes between control and condition columns
-#' Calculate fold changes between control and condition columns
-#' 
-#' Computes log2 fold changes between control and condition columns.
-#' This function calculates the mean of control columns and condition columns
-#' separately, then computes the log2 fold change as log2(condition_mean / control_mean).
-#' 
-#' @param df Numeric matrix with genes as rows and samples/conditions as columns
-#' @param control_pattern Character string or vector to identify control columns (matched against colnames)
-#' @param condition_patterns Character string or vector to identify condition columns (matched against colnames)
-#' 
-#' @return Data frame with genes as rows and fold change values as columns
-#' 
-tox_calculate_fold_changes <- function(df, control_pattern, condition_patterns) {
-  # Input validation
-  validate_numeric_matrix(df, "df")
-  
-  # Ensure df has row and column names
-  if (is.null(rownames(df))) {
-    rownames(df) <- paste0("gene", 1:nrow(df))
-  }
-  if (is.null(colnames(df))) {
-    colnames(df) <- paste0("sample", 1:ncol(df))
-  }
-  
-  # Find control and condition column indices
-  control_cols <- which(grepl(control_pattern, colnames(df), fixed = TRUE))
-  
-  if (length(control_cols) == 0) {
-    stop(paste("No columns matched control_pattern:", control_pattern))
-  }
-  
-  # Calculate fold changes for each condition pattern
-  fold_changes <- NULL
-  
-  for (pattern in condition_patterns) {
-    condition_cols <- which(grepl(pattern, colnames(df), fixed = TRUE))
-    
-    if (length(condition_cols) == 0) {
-      warning(paste("No columns matched condition_pattern:", pattern))
-      next
-    }
-    
-    # Calculate mean expression for control and condition
-    control_mean <- rowMeans(df[, control_cols, drop = FALSE])
-    condition_mean <- rowMeans(df[, condition_cols, drop = FALSE])
-    
-    # Calculate log2 fold change
-    # Add small pseudocount to avoid log(0)
-    pseudocount <- 1e-8
-    fc <- log2((condition_mean + pseudocount) / (control_mean + pseudocount))
-    
-    if (is.null(fold_changes)) {
-      fold_changes <- data.frame(fc)
-      colnames(fold_changes) <- paste0("FC_", pattern)
-    } else {
-      fold_changes[[paste0("FC_", pattern)]] <- fc
-    }
-  }
-  
-  # Set row names to gene names from input
-  rownames(fold_changes) <- rownames(df)
-  
-  return(fold_changes)
-}
