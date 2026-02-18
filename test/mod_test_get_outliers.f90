@@ -20,7 +20,7 @@ contains
 
   !> @brief Get array of all available tests (as subroutine, not function).
   subroutine get_all_tests(all_tests)
-    type(test_case), intent(out) :: all_tests(23)
+    type(test_case), intent(out) :: all_tests(24)
     all_tests(1) = test_case("test_scaling_basic", test_scaling_basic)
     all_tests(2) = test_case("test_rdi_basic", test_rdi_basic)
     all_tests(3) = test_case("test_identify_outliers_basic", test_identify_outliers_basic)
@@ -44,13 +44,14 @@ contains
     all_tests(21) = test_case("test_outliers_orphan_genes", test_outliers_orphan_genes)
     all_tests(22) = test_case("test_outliers_extreme_detection", test_outliers_extreme_detection)
     all_tests(23) = test_case("test_outliers_nan_handling", test_outliers_nan_handling)
+    all_tests(24) = test_case("test_scaling_performance_benchmark",test_scaling_performance_benchmark)
 
   end subroutine get_all_tests
 
   !> @brief Run specific get_outliers tests by name.
   subroutine run_named_tests_get_outliers(test_names)
     character(len=*), intent(in) :: test_names(:)
-    type(test_case) :: all_tests(23)
+    type(test_case) :: all_tests(24)
     integer(int32) :: i, j
     logical :: found
 
@@ -74,7 +75,7 @@ contains
 
   !> @brief Run all tox_get_outliers tests.
   subroutine run_all_tests_get_outliers()
-    type(test_case) :: all_tests(23)
+    type(test_case) :: all_tests(24)
     integer(int32) :: i
     call get_all_tests(all_tests)
     do i = 1, size(all_tests)
@@ -135,6 +136,64 @@ contains
     call assert_true(all(loess_x > 0.0_real64), 'loess_x should be > 0 for valid families')
     call assert_true(all(loess_y > 0.0_real64), 'loess_y should be > 0 for valid families')
   end subroutine test_scaling_basic
+
+  !> Benchmark:9k families and 20k genes
+  subroutine test_scaling_performance_benchmark()
+    use, intrinsic :: iso_fortran_env, only: int32, real64
+    use tox_errors, only: is_err
+    implicit none
+
+    integer(int32), parameter :: n_families = 20000_int32
+    integer(int32), parameter :: n_genes = 200000_int32
+
+    real(real64), allocatable :: distances(:)
+    integer(int32), allocatable :: gene_to_fam(:)
+    real(real64), allocatable :: dscale(:)
+    real(real64), allocatable :: loess_x(:), loess_y(:)
+    integer(int32), allocatable :: indices_used(:)
+    
+    integer(int32) :: ierr, i, f_idx
+    real(real64)    :: t1, t2
+    real(real64)    :: dummy_val
+
+    allocate(distances(n_genes), gene_to_fam(n_genes))
+    allocate(dscale(n_families), loess_x(n_families), loess_y(n_families))
+    allocate(indices_used(n_families))
+
+    ! Distribute 20k genes in 9k families
+    do i = 1, n_genes
+       ! make sure all families have genes
+       f_idx = mod(i, n_families) + 1
+       gene_to_fam(i) = f_idx
+       ! random distances to make sure we have stddev > 0
+       call random_number(dummy_val)
+       distances(i) = real(f_idx, real64) * 0.5_real64 + dummy_val
+    end do
+
+    print *, "--- Starting Benchmark ---"
+    print *, "Genes: ", n_genes
+    print *, "Families: ", n_families
+
+    ! 2. Timing subroutine
+    call cpu_time(t1)
+    
+    call compute_family_scaling_alloc(n_genes, n_families, distances, gene_to_fam, dscale, &
+                                      loess_x, loess_y, indices_used, ierr)
+    
+    call cpu_time(t2)
+
+    ! 3. Results
+    if (ierr == 0) then
+       print *, "Total time: ", (t2 - t1), " seconds."
+       print *, "First 5 dscales: ", dscale(1:5)
+    else
+       print *, "Error detected during scaling: ", ierr
+    end if
+
+    ! Clear memory
+    deallocate(distances, gene_to_fam, dscale, loess_x, loess_y, indices_used)
+
+  end subroutine test_scaling_performance_benchmark
 
 
   !> Test: Basic RDI calculation.
