@@ -272,6 +272,101 @@ void compute_shift_vector_field_c(
   int* ierr
 );
 
+void detect_neofunctionalization_c(
+  double* ancestors,
+  int* n_families,
+  double* genes,
+  int* n_axes,
+  int* gene_to_fam,
+  int* n_genes,
+  double* thresholds,
+  int* neofunc,
+  int* ierr
+);
+
+void mask_check_state_c(
+  int* bit_mask,
+  int* n_mask_chunks,
+  int* i_gene,
+  int* state,
+  int* ierr
+);
+
+void mask_chunk_count_c(
+  int* n_genes,
+  int* count,
+  int* ierr
+);
+
+void calc_work_arr_paralog_subsets_size(
+  int* max_subset_size,
+  int* n_genes,
+  int* work_array_size,
+  int* filtered_paralogs_mask,
+  int* n_mask_chunks,
+  int* ierr
+);
+
+void filter_paralogs_by_pattern_dosage_effect(
+  double* gene_angles,
+  double* threshold,
+  int* n_genes,
+  int* n_families,
+  int* gene_to_fam,
+  int* masks,
+  int* n_mask_chunks,
+  int* ierr
+);
+
+void filter_paralogs_by_pattern_subfunctionalization_c(
+  double* gene_angles,
+  double* threshold,
+  int* n_genes,
+  int* n_families,
+  int* gene_to_fam,
+  int* masks,
+  int* n_mask_chunks,
+  int* ierr
+);
+
+void detect_subfunctionalization_c(
+  double* ancestor,
+  double* genes,
+  int* n_genes,
+  int* n_dims,
+  double* rdi_threshold,
+  int* filtered_paralogs_mask,
+  int* n_mask_chunks,
+  int* n_results,
+  int* max_subset_size,
+  int* work_arr_paralog_subsets,
+  int* n_paralog_subsets,
+  int* active_mask,
+  double* temp_paralog_vector,
+  double* paralog_norms,
+  int* sorted_paralog_norms_perm,
+  double* temp_work_array,
+  int* ierr
+);
+
+void detect_dosage_effect_c(
+  double* ancestor,
+  double* genes,
+  int* n_genes,
+  int* n_dims,
+  int* filtered_paralogs_mask,
+  int* n_mask_chunks,
+  int* n_results,
+  int* max_subset_size,
+  int* work_arr_paralog_subsets,
+  int* n_paralog_subsets,
+  int* active_mask,
+  double* temp_paralog_vector,
+  double* max_angle,
+  double* gain_gamma,
+  int* ierr
+);
+
 void mean_vector_c(
   double* expression_vectors,
   int* n_axes,
@@ -585,10 +680,16 @@ void validate_all_data_C(
   int* ierr
 );
 }
-
-/**
- * compute k-means clustering for factor trajectories
- */
+//' Calculate k-means clustering of factor trajectories
+//'
+//' @param trajectories Numeric vector of trajectories (factors x samples x timepoints)
+//' @param centroids Numeric matrix to store cluster centroids (factors x clusters)
+//' @param n_clusters Integer number of clusters
+//' @param n_factors Integer number of factors
+//' @param n_samples Integer number of samples
+//' @param n_timepoints Integer number of timepoints
+//' @param max_iterations Integer maximum number of k-means iterations
+//' @return List with centroids, labels, and label counts
 // [[Rcpp::export]]
 List tox_cluster_factor_trajectories_k_means_rcpp(NumericVector trajectories,
                                                   NumericMatrix centroids,
@@ -621,9 +722,15 @@ List tox_cluster_factor_trajectories_k_means_rcpp(NumericVector trajectories,
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate k-means clustering
- */
+//' Calculate k-means clustering of data points
+//'
+//' @param data_points Numeric matrix of data points (points x dimensions)
+//' @param centroids Numeric matrix to store cluster centroids (clusters x dimensions)
+//' @param n_clusters Integer number of clusters
+//' @param n_points Integer number of data points
+//' @param n_dims Integer number of dimensions
+//' @param max_iterations Integer maximum number of k-means iterations
+//' @return List with centroids, labels, and label counts
 // [[Rcpp::export]]
 List tox_k_means_clustering_rcpp(int n_clusters,
                                 NumericMatrix data_points,
@@ -654,9 +761,12 @@ List tox_k_means_clustering_rcpp(int n_clusters,
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate Euclidean distance between two vectors
- */
+
+//' Calculate Euclidean distance between two vectors
+//'
+//' @param vec1 First numeric vector
+//' @param vec2 Second numeric vector
+//' @return Euclidean distance (double)
 // [[Rcpp::export]]
 double tox_euclidean_distance_rcpp(NumericVector vec1, NumericVector vec2) {
     int d = vec1.length();
@@ -670,9 +780,11 @@ double tox_euclidean_distance_rcpp(NumericVector vec1, NumericVector vec2) {
     return result;
 }
 
-/**
- * Calculate relative axis changes from a shift vector
- */
+
+//' Calculate relative axis changes from a shift vector
+
+//' @param vec Numeric vector of shift values
+//' @return List with contributions 
 // [[Rcpp::export]]
 List tox_relative_axes_changes_from_shift_vector_rcpp(NumericVector vec) {
     int n_axes = vec.length();
@@ -688,9 +800,10 @@ List tox_relative_axes_changes_from_shift_vector_rcpp(NumericVector vec) {
                         Named("ierr") = ierr);
 }
  
-/**
- * Calculate relative axis expression from an expression vector
- */
+//' Calculate relative axis expression from an expression vector
+//'
+//' @param vec Numeric vector of expression values
+//' @return List with contributions
 // [[Rcpp::export]]
 List tox_relative_axes_expression_from_expression_vector_rcpp(NumericVector vec) {
     int n_axes = vec.length();
@@ -706,9 +819,13 @@ List tox_relative_axes_expression_from_expression_vector_rcpp(NumericVector vec)
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate signed clock hand angle between two vectors
- */
+
+//' Calculate clock hand angle between two vectors
+//'
+//' @param v1 First numeric vector
+//' @param v2 Second numeric vector
+//' @param selected_axes_for_signed Integer vector of axes to consider for signed angle calculation
+//' @return List with signed angle
 // [[Rcpp::export]]
 List tox_clock_hand_angle_between_vectors_rcpp(NumericVector v1,
                                                  NumericVector v2,
@@ -728,9 +845,13 @@ List tox_clock_hand_angle_between_vectors_rcpp(NumericVector v1,
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate signed rotation angles for pairs of shift vectors
- */
+//' Calculate clock hand angles for shift vectors
+//'
+//' @param origins Numeric matrix of origin vectors (axes x vectors)
+//' @param targets Numeric matrix of target vectors (axes x vectors)
+//' @param vecs_selection_mask Integer vector indicating selected vectors
+//' @param selected_axes_for_signed Integer vector indicating selected axes for signed angle calculation
+//' @return List with signed angles 
 // [[Rcpp::export]]
 List tox_clock_hand_angles_for_shift_vectors_rcpp(NumericMatrix origins,
                                                            NumericMatrix targets,
@@ -763,9 +884,14 @@ List tox_clock_hand_angles_for_shift_vectors_rcpp(NumericMatrix origins,
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate distances from genes to their family centroids
- */
+
+//' Calculate distances from genes to their family centroids
+//'
+//' @param genes Numeric vector of gene expression values
+//' @param centroids Numeric vector of family centroid values
+//' @param gene_to_fam Integer vector mapping each gene to its family
+//' @param d Number of dimensions
+//' @return Numeric vector of distances
 // [[Rcpp::export]]
 NumericVector tox_distance_to_centroid_rcpp(NumericVector genes,
                                            NumericVector centroids,
@@ -787,9 +913,13 @@ NumericVector tox_distance_to_centroid_rcpp(NumericVector genes,
     return distances;
 }
 
-/**
- * Calculate Tissue Versatility
- */
+
+//' Calculate Tissue Versatility
+//'
+//' @param expression_vectors Numeric matrix of expression vectors (axes x vectors)
+//' @param vector_selection Integer vector indicating selected vectors
+//' @param axis_selection Integer vector indicating selected axes
+//' @return List with tissue versatilities, angles, and selection counts
 // [[Rcpp::export]]
 List tox_calculate_tissue_versatility_rcpp(NumericMatrix expression_vectors,
                                            IntegerVector vector_selection,
@@ -821,9 +951,11 @@ List tox_calculate_tissue_versatility_rcpp(NumericMatrix expression_vectors,
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate normalization by standard deviation
- */
+
+//' Normalize gene expression values by standard deviation
+//'
+//' @param input Numeric matrix (genes x tissues)
+//' @return List with normalized output matrix 
 // [[Rcpp::export]]
 List tox_normalize_by_std_dev_rcpp(NumericMatrix input) {
     int n_genes = input.nrow();
@@ -841,9 +973,11 @@ List tox_normalize_by_std_dev_rcpp(NumericMatrix input) {
                         Named("ierr") = ierr);
 }
 
-/**
- * Perform quantile normalization
- */
+
+//' Perform quantile normalization of gene expression values
+//'
+//' @param input Numeric matrix (genes x tissues)
+//' @return List with quantile-normalized output matrix and intermediate results
 // [[Rcpp::export]]
 List tox_quantile_normalization_rcpp(NumericMatrix input) {
     int n_genes = input.nrow();
@@ -877,9 +1011,10 @@ List tox_quantile_normalization_rcpp(NumericMatrix input) {
                         Named("ierr") = ierr);
 }
 
-/**
- * Perform log2 transformation
- */
+//' Apply log2(x + 1) transformation to gene expression values
+//'
+//' @param input Numeric matrix (genes x tissues)
+//' @return List with log2-transformed output matrix
 // [[Rcpp::export]]
 List tox_log2_transformation_rcpp(NumericMatrix input) {
     int n_genes = input.nrow();
@@ -898,9 +1033,13 @@ List tox_log2_transformation_rcpp(NumericMatrix input) {
 }
 
 
-/**
- * Calculate tissue averages
- */
+
+//' Calculate average expression across replicates for each tissue group
+//'
+//' @param input Numeric matrix (genes x samples)
+//' @param group_s Integer vector: start column index for each group
+//' @param group_c Integer vector: number of columns per group
+//' @return List with averaged output matrix 
 // [[Rcpp::export]]
 List tox_calc_tiss_avg_rcpp(NumericMatrix input,
                             IntegerVector group_s,
@@ -922,9 +1061,13 @@ List tox_calc_tiss_avg_rcpp(NumericMatrix input,
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate fold change
- */
+
+//' Calculate fold change between control and condition columns
+//'
+//' @param input Numeric matrix (genes x samples)
+//' @param control_cols Integer vector of control column indices
+//' @param cond_cols Integer vector of condition column indices
+//' @return List with fold change output matrix 
 // [[Rcpp::export]]
 List tox_calc_fchange_rcpp(NumericMatrix input,
                            IntegerVector control_cols,
@@ -949,9 +1092,12 @@ List tox_calc_fchange_rcpp(NumericMatrix input,
 }
 
 
-/**
- * Perform normalization pipeline
- */
+//' Complete normalization pipeline for gene expression data
+//'
+//' @param input Numeric matrix (genes x tissues)
+//' @param group_s Integer vector: start column index for each group
+//' @param group_c Integer vector: number of columns per group
+//' @return List with pipeline output matrices
 // [[Rcpp::export]]
 List tox_normalization_pipeline_rcpp(NumericMatrix input,
                                      IntegerVector group_s,
@@ -1000,9 +1146,13 @@ List tox_normalization_pipeline_rcpp(NumericMatrix input,
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate shift vector field
- */
+
+//' Calculate shift vector field for gene expression vectors
+//'
+//' @param expression_vectors Numeric matrix (axes x genes)
+//' @param family_centroids Numeric matrix (axes x families)
+//' @param gene_to_centroid Integer vector mapping each gene to its centroid
+//' @return List with shift vectors 
 // [[Rcpp::export]]
 List tox_compute_shift_vector_field_rcpp(NumericMatrix expression_vectors,
                                          NumericMatrix family_centroids,
@@ -1031,9 +1181,12 @@ List tox_compute_shift_vector_field_rcpp(NumericMatrix expression_vectors,
 }
 
 
-/**
- * Calculate mean vector
- */
+
+//' Compute the element-wise mean for a given set of gene expression vectors
+//'
+//' @param expression_vectors Numeric matrix (axes x genes)
+//' @param gene_indices Integer vector of gene indices to include in the mean
+//' @return List with centroid vector 
 // [[Rcpp::export]]
 List tox_mean_vector_rcpp(NumericMatrix expression_vectors,
                           IntegerVector gene_indices) {
@@ -1056,9 +1209,15 @@ List tox_mean_vector_rcpp(NumericMatrix expression_vectors,
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate group centroids
- */
+
+//' Calculate gene family centroids
+//'
+//' @param expression_vectors Numeric matrix (axes x genes)
+//' @param gene_to_family Integer vector mapping genes to family IDs
+//' @param n_families Integer number of gene families
+//' @param ortholog_set Integer vector indicating ortholog subset
+//' @param mode Character string for mode ('all' or 'ortho')
+//' @return List with centroid matrix
 // [[Rcpp::export]]
 List tox_group_centroid_rcpp(NumericMatrix expression_vectors,
                              IntegerVector gene_to_family,
@@ -1098,9 +1257,336 @@ List tox_group_centroid_rcpp(NumericMatrix expression_vectors,
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate family scaling
- */
+
+  //' Detect neofunctionalization for genes
+  //'
+  //' @param ancestors Numeric matrix of ancestor vectors (axes x families)
+  //' @param genes Numeric matrix of gene vectors (axes x genes)
+  //' @param gene_to_fam Integer vector mapping each gene to its family index
+  //' @param thresholds Numeric vector of per-axis thresholds
+  //' @return List with neofunctionalization matrix
+  // [[Rcpp::export]]
+  List tox_detect_neofunctionalization_rcpp(NumericMatrix ancestors,
+                        NumericMatrix genes,
+                        IntegerVector gene_to_fam,
+                        NumericVector thresholds) {
+    int n_axes = ancestors.nrow();
+    int n_families = ancestors.ncol();
+    int n_genes = genes.ncol();
+
+    IntegerMatrix neofunc_int(n_genes, n_axes);
+    int ierr = 0;
+
+    detect_neofunctionalization_c(ancestors.begin(),
+                    &n_families,
+                    genes.begin(),
+                    &n_axes,
+                    gene_to_fam.begin(),
+                    &n_genes,
+                    thresholds.begin(),
+                    neofunc_int.begin(),
+                    &ierr);
+
+    LogicalMatrix neofunc(n_genes, n_axes);
+    for (int j = 0; j < n_axes; ++j) {
+      for (int i = 0; i < n_genes; ++i) {
+        neofunc(i, j) = (neofunc_int(i, j) != 0);
+      }
+    }
+
+    return List::create(Named("neofunc") = neofunc,
+                        Named("ierr") = ierr);
+  }
+
+
+//' Check the state of a specific gene in a bit mask
+//'
+//' @param bit_mask Integer vector representing a chunked bit mask
+//' @param i_gene Integer index of the gene to check
+//' @return List with logical state 
+// [[Rcpp::export]]
+List tox_mask_check_state_rcpp(IntegerVector bit_mask, int i_gene) {
+    int n_mask_chunks = bit_mask.size();
+    int state = 0;
+    int ierr = 0;
+
+    mask_check_state_c(bit_mask.begin(),
+                       &n_mask_chunks,
+                       &i_gene,
+                       &state,
+                       &ierr);
+
+    return List::create(Named("state") = (state != 0),
+                        Named("ierr") = ierr);
+}
+
+
+  //' Compute number of 32-bit chunks needed to encode n_genes in a bit mask
+  //'
+  //' @param n_genes Number of genes to encode
+  //' @return List with count of chunks 
+  // [[Rcpp::export]]
+  List tox_mask_chunk_count_rcpp(int n_genes) {
+    int count = 0;
+    int ierr = 0;
+
+    mask_chunk_count_c(&n_genes, &count, &ierr);
+
+    return List::create(Named("count") = count,
+                        Named("ierr") = ierr);
+  }
+
+
+  //' Compute required work array size for paralog subset analysis
+  //'
+  //' @param max_subset_size Desired maximum subset size
+  //' @param n_genes Number of genes
+  //' @param filtered_paralogs_mask Chunked bit mask of filtered paralogs
+  //' @return List with adjusted max subset size and work array size
+  // [[Rcpp::export]]
+  List tox_calc_work_arr_paralog_subsets_size_rcpp(int max_subset_size,
+                           int n_genes,
+                           IntegerVector filtered_paralogs_mask) {
+    int n_mask_chunks = filtered_paralogs_mask.size();
+    int work_array_size = 0;
+    int ierr = 0;
+
+    calc_work_arr_paralog_subsets_size(&max_subset_size,
+                       &n_genes,
+                       &work_array_size,
+                       filtered_paralogs_mask.begin(),
+                       &n_mask_chunks,
+                       &ierr);
+
+    return List::create(Named("actual_max_subset_size") = max_subset_size,
+                        Named("work_array_size") = work_array_size,
+                        Named("ierr") = ierr);
+  }
+
+
+  //' Filter paralogs by dosage-effect pattern
+  //'
+  //' @param gene_angles Angles for all genes
+  //' @param threshold Filtering threshold
+  //' @param gene_to_fam Gene-to-family mapping
+  //' @param n_families Number of families
+  //' @return List with masks 
+  // [[Rcpp::export]]
+  List tox_filter_paralogs_by_pattern_dosage_effect_rcpp(NumericVector gene_angles,
+                               double threshold,
+                               IntegerVector gene_to_fam,
+                               int n_families) {
+    int n_genes = gene_angles.size();
+    int n_mask_chunks = (n_genes + 31) / 32;
+    IntegerMatrix masks(n_mask_chunks, n_families);
+    int ierr = 0;
+
+    filter_paralogs_by_pattern_dosage_effect(gene_angles.begin(),
+                         &threshold,
+                         &n_genes,
+                         &n_families,
+                         gene_to_fam.begin(),
+                         masks.begin(),
+                         &n_mask_chunks,
+                         &ierr);
+
+    return List::create(Named("masks") = masks,
+                        Named("ierr") = ierr);
+  }
+
+
+  //' Filter paralogs by subfunctionalization pattern
+  //'
+  //' @param gene_angles Angles for all genes
+  //' @param threshold Filtering threshold
+  //' @param gene_to_fam Gene-to-family mapping
+  //' @param n_families Number of families
+  //' @return List with masks
+  // [[Rcpp::export]]
+  List tox_filter_paralogs_by_pattern_subfunctionalization_rcpp(NumericVector gene_angles,
+                                  double threshold,
+                                  IntegerVector gene_to_fam,
+                                  int n_families) {
+    int n_genes = gene_angles.size();
+    int n_mask_chunks = (n_genes + 31) / 32;
+    IntegerMatrix masks(n_mask_chunks, n_families);
+    int ierr = 0;
+
+    filter_paralogs_by_pattern_subfunctionalization_c(gene_angles.begin(),
+                              &threshold,
+                              &n_genes,
+                              &n_families,
+                              gene_to_fam.begin(),
+                              masks.begin(),
+                              &n_mask_chunks,
+                              &ierr);
+
+    return List::create(Named("masks") = masks,
+                        Named("ierr") = ierr);
+  }
+
+  //' Detect subfunctionalization among paralogs
+  //'
+  //' @param ancestor Ancestor vector
+  //' @param genes Gene matrix (dims x genes)
+  //' @param rdi_threshold Maximum residual distance
+  //' @param filtered_paralogs_mask Chunked bit mask of filtered paralogs
+  //' @param max_subset_size Desired maximum subset size
+  //' @param paralog_norms Norm of each paralog vector
+  //' @param sorted_paralog_norms_perm Permutation of indices sorted by paralog norm
+  //' @return List with n_results, results matrix and actual_max_subset_size
+  // [[Rcpp::export]]
+  List tox_detect_subfunctionalization_rcpp(NumericVector ancestor,
+                                            NumericMatrix genes,
+                                            double rdi_threshold,
+                                            IntegerVector filtered_paralogs_mask,
+                                            int max_subset_size,
+                                            NumericVector paralog_norms,
+                                            IntegerVector sorted_paralog_norms_perm) {
+    int n_dims = ancestor.size();
+    int n_genes = genes.ncol();
+    int n_mask_chunks = filtered_paralogs_mask.size();
+    int ierr = 0;
+
+    int work_array_size = 0;
+    calc_work_arr_paralog_subsets_size(&max_subset_size,
+                       &n_genes,
+                       &work_array_size,
+                       filtered_paralogs_mask.begin(),
+                       &n_mask_chunks,
+                       &ierr);
+
+    if (work_array_size < 0) {
+      work_array_size = 0;
+    }
+
+    int n_paralog_subsets = work_array_size;
+    IntegerMatrix work_arr_paralog_subsets(n_mask_chunks, n_paralog_subsets);
+    IntegerVector active_mask(n_mask_chunks);
+    NumericVector temp_paralog_vector(n_dims);
+    NumericVector temp_work_array(n_genes);
+    int n_results = 0;
+
+    detect_subfunctionalization_c(ancestor.begin(),
+                    genes.begin(),
+                    &n_genes,
+                    &n_dims,
+                    &rdi_threshold,
+                    filtered_paralogs_mask.begin(),
+                    &n_mask_chunks,
+                    &n_results,
+                    &max_subset_size,
+                    work_arr_paralog_subsets.begin(),
+                    &n_paralog_subsets,
+                    active_mask.begin(),
+                    temp_paralog_vector.begin(),
+                    paralog_norms.begin(),
+                    sorted_paralog_norms_perm.begin(),
+                    temp_work_array.begin(),
+                    &ierr);
+
+    if (n_results < 0) {
+      n_results = 0;
+    }
+    if (n_results > n_paralog_subsets) {
+      n_results = n_paralog_subsets;
+    }
+
+    IntegerMatrix results(n_mask_chunks, n_results);
+    for (int j = 0; j < n_results; ++j) {
+      for (int i = 0; i < n_mask_chunks; ++i) {
+        results(i, j) = work_arr_paralog_subsets(i, j);
+      }
+    }
+
+    return List::create(Named("n_results") = n_results,
+              Named("results") = results,
+              Named("actual_max_subset_size") = max_subset_size,
+              Named("ierr") = ierr);
+  }
+
+  //' Detect dosage effect among paralogs
+  //'
+  //' @param ancestor Ancestor vector
+  //' @param genes Gene matrix (dims x genes)
+  //' @param filtered_paralogs_mask Chunked bit mask of filtered paralogs
+  //' @param max_subset_size Desired maximum subset size
+  //' @param gain_gamma Required gain threshold
+  //' @param max_angle Maximum angle threshold (radians)
+  //' @return List with n_results, results matrix and actual_max_subset_size
+  // [[Rcpp::export]]
+  List tox_detect_dosage_effect_rcpp(NumericVector ancestor,
+                     NumericMatrix genes,
+                     IntegerVector filtered_paralogs_mask,
+                     int max_subset_size,
+                     double gain_gamma,
+                     double max_angle) {
+    int n_dims = ancestor.size();
+    int n_genes = genes.ncol();
+    int n_mask_chunks = filtered_paralogs_mask.size();
+    int ierr = 0;
+
+    int work_array_size = 0;
+    calc_work_arr_paralog_subsets_size(&max_subset_size,
+                       &n_genes,
+                       &work_array_size,
+                       filtered_paralogs_mask.begin(),
+                       &n_mask_chunks,
+                       &ierr);
+
+    if (work_array_size < 0) {
+      work_array_size = 0;
+    }
+
+    int n_paralog_subsets = work_array_size;
+    IntegerMatrix work_arr_paralog_subsets(n_mask_chunks, n_paralog_subsets);
+    IntegerVector active_mask(n_mask_chunks);
+    NumericVector temp_paralog_vector(n_dims);
+    int n_results = 0;
+
+    detect_dosage_effect_c(ancestor.begin(),
+                 genes.begin(),
+                 &n_genes,
+                 &n_dims,
+                 filtered_paralogs_mask.begin(),
+                 &n_mask_chunks,
+                 &n_results,
+                 &max_subset_size,
+                 work_arr_paralog_subsets.begin(),
+                 &n_paralog_subsets,
+                 active_mask.begin(),
+                 temp_paralog_vector.begin(),
+                 &max_angle,
+                 &gain_gamma,
+                 &ierr);
+
+    if (n_results < 0) {
+      n_results = 0;
+    }
+    if (n_results > n_paralog_subsets) {
+      n_results = n_paralog_subsets;
+    }
+
+    IntegerMatrix results(n_mask_chunks, n_results);
+    for (int j = 0; j < n_results; ++j) {
+      for (int i = 0; i < n_mask_chunks; ++i) {
+        results(i, j) = work_arr_paralog_subsets(i, j);
+      }
+    }
+
+    return List::create(Named("n_results") = n_results,
+              Named("results") = results,
+              Named("actual_max_subset_size") = max_subset_size,
+              Named("ierr") = ierr);
+  }
+
+
+//' Compute family scaling factors using LOESS smoothing
+//'
+//' @param distances Numeric vector of gene distances
+//' @param gene_to_fam Integer vector mapping genes to family indices
+//' @param n_families Integer number of families
+//' @return List with scaling factors, and loess fit
 // [[Rcpp::export]]
 List tox_compute_family_scaling_rcpp(NumericVector distances,
                                      IntegerVector gene_to_fam,
@@ -1128,9 +1614,17 @@ List tox_compute_family_scaling_rcpp(NumericVector distances,
                         Named("indices_used") = indices_used,
                         Named("ierr") = ierr);
 }
-/**
- * Calculate family scaling with expert parameters
- */
+
+//' Expert version of compute_family_scaling with user-provided work arrays
+//'
+//' @param n_families Integer number of families
+//' @param distances Numeric vector of gene distances
+//' @param gene_to_fam Integer vector mapping genes to family indices
+//' @param perm_tmp Pre-allocated permutation array
+//' @param stack_left_tmp Pre-allocated stack array (left)
+//' @param stack_right_tmp Pre-allocated stack array (right)
+//' @param family_distances Pre-allocated work array for family distances
+//' @return List with scaling factors, loess fit, amd work array
 // [[Rcpp::export]]
 List tox_compute_family_scaling_expert_rcpp(int n_families,
                                             NumericVector distances,
@@ -1170,9 +1664,13 @@ List tox_compute_family_scaling_expert_rcpp(int n_families,
                         Named("family_distances") = family_distances,
                         Named("ierr") = ierr);
 }
-/**
- * Calculate relative distance index (RDI) for each gene
- */
+
+
+//' Identify outliers based on RDI percentiles
+//'
+//' @param rdi Numeric vector of RDI values
+//' @param percentile Percentile threshold
+//' @return List with logical outlier vector and threshold value
 // [[Rcpp::export]]
 List tox_compute_rdi_rcpp(NumericVector distances,
                           IntegerVector gene_to_fam,
@@ -1202,9 +1700,11 @@ List tox_compute_rdi_rcpp(NumericVector distances,
                         Named("stack_left") = stack_left,
                         Named("stack_right") = stack_right);
 }
-/**
- * Calculate outliers based on RDI values and a specified percentile threshold
- */
+//' Identify outliers based on RDI percentiles
+//'
+//' @param rdi Numeric vector of RDI values
+//' @param percentile Percentile threshold
+//' @return List with logical outlier vector and threshold value
 // [[Rcpp::export]]
 List tox_identify_outliers_rcpp(NumericVector rdi, double percentile) {
     int n_genes = rdi.size();
@@ -1229,9 +1729,14 @@ List tox_identify_outliers_rcpp(NumericVector rdi, double percentile) {
     return List::create(Named("is_outlier") = is_outlier,
                         Named("threshold") = threshold);
 }
-/**
- * Calculate outliers based on distances, gene-to-family mapping, and a specified percentile threshold
- */
+
+//' Complete outlier detection workflow
+//'
+//' @param distances Numeric vector of gene distances
+//' @param gene_to_fam Integer vector mapping genes to family indices
+//' @param n_families Integer number of families
+//' @param percentile Percentile threshold for outlier detection
+//' @return List with outlier flags, and loess fit
 // [[Rcpp::export]]
 List tox_detect_outliers_rcpp(NumericVector distances,
                               IntegerVector gene_to_fam,
@@ -1275,9 +1780,11 @@ List tox_detect_outliers_rcpp(NumericVector distances,
                         Named("loess_n") = loess_n,
                         Named("ierr") = ierr);
 }
-/**
- * Calculate k-d tree index for a set of points given a specified dimension order
- */
+//' Build a k-d tree index for efficient nearest neighbor search
+//'
+//' @param X Numeric matrix of data points (dimensions x points)
+//' @param dim_order Integer vector specifying the order of dimensions for splitting
+//' @return List with k-d tree index 
 // [[Rcpp::export]]
 List tox_build_kd_index_rcpp(NumericMatrix X, IntegerVector dim_order) {
     int d = X.nrow();
@@ -1307,9 +1814,12 @@ List tox_build_kd_index_rcpp(NumericMatrix X, IntegerVector dim_order) {
                         Named("ierr") = ierr);
 }
 
-/**
- * Identify indices of non-zero elements in a binary mask vector, up to a specified maximum number of indices
- */
+//'Identify indices of non-zero elements in a mask vector
+//'
+//' @param mask Integer vector mask (0/1 values)
+//' @param n Length of the mask vector
+//' @param m_max Maximum number of indices to return
+//' @return List with output indices and number of indices found
 // [[Rcpp::export]]
 List tox_which_rcpp(IntegerVector mask, int n, int m_max) {
     IntegerVector idx_out(m_max);
@@ -1328,9 +1838,18 @@ List tox_which_rcpp(IntegerVector mask, int n, int m_max) {
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate LOESS smoothing for 2D data given reference points, query points, and kernel parameters
- */
+//' Perform 2D LOESS smoothing for gene family scaling
+//'
+//' @param n_total Total number of data points
+//' @param n_target Number of target points to predict
+//' @param x_ref Numeric vector of reference x values
+//' @param y_ref Numeric vector of reference y values
+//' @param indices_used Integer vector of indices of reference points used in the fit
+//' @param n_used Number of reference points used in the fit
+//' @param x_query Numeric vector of x values for target points
+//' @param kernel_sigma Numeric value for kernel bandwidth
+//' @param kernel_cutoff Numeric value for kernel cutoff distance
+//' @return List with predicte y values
 // [[Rcpp::export]]
 List tox_loess_smooth_2d_rcpp(int n_total,
                              int n_target,
@@ -1373,11 +1892,13 @@ inline std::vector<char> filename_to_ascii(const std::string& filename, int& out
     return ascii;
 }
 
-/**
- * Calculate serialization of integer arrays to binary files with specified filenames
- */
+//' Calculate serialization of integer arrays to binary files with specified filenames
+//'
+//' @param arr Integer vector (potentially with dim attribute for multi-dimensional arrays)
+//' @param filename String specifying the output filename for serialization
+//' @return  error code from serialization function
 // [[Rcpp::export]]
-List tox_serialize_int_array_rcpp(IntegerVector arr, std::string filename) {
+int tox_serialize_int_array_rcpp(IntegerVector arr, std::string filename) {
     IntegerVector dim = arr.hasAttribute("dim")
                             ? as<IntegerVector>(arr.attr("dim"))
                             : IntegerVector::create((int)arr.size());
@@ -1398,13 +1919,16 @@ List tox_serialize_int_array_rcpp(IntegerVector arr, std::string filename) {
                        &fn_len,
                        &ierr);
 
-    return List::create(Named("ierr") = ierr);
+    return ierr;
 }
-/**
- * Calculate serialization of real (double) arrays to binary files with specified filenames
- */
+
+//' Calculate serialization of real (double) arrays to binary files with specified filenames
+//'
+//' @param arr Numeric vector (potentially with dim attribute for multi-dimensional arrays)
+//' @param filename String specifying the output filename for serialization
+//' @return  error code from serialization function
 // [[Rcpp::export]]
-List tox_serialize_real_array_rcpp(NumericVector arr, std::string filename) {
+int tox_serialize_real_array_rcpp(NumericVector arr, std::string filename) {
     IntegerVector dim = arr.hasAttribute("dim")
                             ? as<IntegerVector>(arr.attr("dim"))
                             : IntegerVector::create((int)arr.size());
@@ -1425,13 +1949,16 @@ List tox_serialize_real_array_rcpp(NumericVector arr, std::string filename) {
                         &fn_len,
                         &ierr);
 
-    return List::create(Named("ierr") = ierr);
+    return ierr;
 }
-/**
- * Calculate serialization of character arrays to binary files with specified filenames, including handling of string lengths and padding
- */
+
+//' Calculate serialization of character arrays to binary files with specified filenames, including conversion to fixed-length ASCII representation
+//'
+//' @param carr Character vector (potentially with dim attribute for multi-dimensional arrays)
+//' @param filename String specifying the output filename for serialization
+//' @return  error code from serialization function
 // [[Rcpp::export]]
-List tox_serialize_char_array_rcpp(CharacterVector carr, std::string filename) {
+int tox_serialize_char_array_rcpp(CharacterVector carr, std::string filename) {
     IntegerVector dim = carr.hasAttribute("dim")
                             ? as<IntegerVector>(carr.attr("dim"))
                             : IntegerVector::create((int)carr.size());
@@ -1477,14 +2004,16 @@ List tox_serialize_char_array_rcpp(CharacterVector carr, std::string filename) {
                         &fn_len,
                         &ierr);
 
-    return List::create(Named("ierr") = ierr);
+    return ierr;
 }
 
-/**
- * Calculate serialization of logical (boolean) arrays to binary files with specified filenames, including conversion to integer representation for storage
- */
+//' Calculate serialization of logical arrays to binary files with specified filenames, including conversion to integer representation
+//'
+//' @param arr Logical vector (potentially with dim attribute for multi-dimensional arrays)
+//' @param filename String specifying the output filename for serialization
+//' @return  error code from serialization function
 // [[Rcpp::export]]
-List tox_serialize_logical_array_rcpp(LogicalVector arr, std::string filename) {
+int tox_serialize_logical_array_rcpp(LogicalVector arr, std::string filename) {
     IntegerVector dim = arr.hasAttribute("dim")
                             ? as<IntegerVector>(arr.attr("dim"))
                             : IntegerVector::create((int)arr.size());
@@ -1516,15 +2045,17 @@ List tox_serialize_logical_array_rcpp(LogicalVector arr, std::string filename) {
                            &fn_len,
                            &ierr);
 
-    return List::create(Named("ierr") = ierr);
+    return ierr;
 }
 
 
-/**
- * Calculate serialization of complex arrays to binary files with specified filenames
- */
+//' Calculate serialization of complex arrays to binary files with specified filenames, including conversion to interleaved real/imaginary representation
+//'
+//' @param arr Complex vector (potentially with dim attribute for multi-dimensional arrays)
+//' @param filename String specifying the output filename for serialization
+//' @return  error code from serialization function
 // [[Rcpp::export]]
-List tox_serialize_complex_array_rcpp(ComplexVector arr, std::string filename) {
+int tox_serialize_complex_array_rcpp(ComplexVector arr, std::string filename) {
     IntegerVector dim = arr.hasAttribute("dim")
                             ? as<IntegerVector>(arr.attr("dim"))
                             : IntegerVector::create((int)arr.size());
@@ -1546,11 +2077,13 @@ List tox_serialize_complex_array_rcpp(ComplexVector arr, std::string filename) {
                            &fn_len,
                            &ierr);
 
-    return List::create(Named("ierr") = ierr);
+    return ierr;
 }
-/**
- * Calculate deserialization of integer arrays from binary files with specified filenames
- */
+//' Calculate deserialization of integer arrays from binary files with specified filenames
+//'
+//' @param filename String specifying the input filename for deserialization
+//' @param max_dims Maximum number of dimensions to read (default 5)
+//' @return List with deserialized values and dimensions
 // [[Rcpp::export]]
 List tox_deserialize_int_array_rcpp(std::string filename, int max_dims = 5) {
     int fn_len = 0;
@@ -1592,9 +2125,11 @@ List tox_deserialize_int_array_rcpp(std::string filename, int max_dims = 5) {
 }
 
 
-/**
- * Calculate deserialization of real (numeric) arrays from binary files with specified filenames
- */
+//' Calculate deserialization of real (double) arrays from binary files with specified filenames
+//'
+//' @param filename String specifying the input filename for deserialization
+//' @param max_dims Maximum number of dimensions to read (default 5)
+//' @return List with deserialized values and dimensions
 // [[Rcpp::export]]
 List tox_deserialize_real_array_rcpp(std::string filename, int max_dims = 5) {
     int fn_len = 0;
@@ -1634,9 +2169,12 @@ List tox_deserialize_real_array_rcpp(std::string filename, int max_dims = 5) {
                         Named("ndim") = ndims,
                         Named("ierr") = ierr);
 }
-/**
- * Calculate deserialization of character arrays from binary files with specified filenames
- */
+
+//' Calculate deserialization of real (double) arrays from binary files with specified filenames
+//'
+//' @param filename String specifying the input filename for deserialization
+//' @param max_dims Maximum number of dimensions to read (default 5)
+//' @return List with deserialized values and dimensions
 // [[Rcpp::export]]
 List tox_deserialize_char_array_rcpp(std::string filename, int max_dims = 5) {
     int fn_len = 0;
@@ -1700,9 +2238,12 @@ List tox_deserialize_char_array_rcpp(std::string filename, int max_dims = 5) {
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate deserialization of logical (boolean) arrays from binary files with specified filenames
- */
+
+//' Calculate deserialization of character arrays from binary files with specified filenames, including conversion from fixed-length ASCII representation
+//'
+//' @param filename String specifying the input filename for deserialization
+//' @param max_dims Maximum number of dimensions to read (default 5)
+//' @return List with deserialized values and dimensions
 // [[Rcpp::export]]
 List tox_deserialize_logical_array_rcpp(std::string filename, int max_dims = 5) {
     int fn_len = 0;
@@ -1749,9 +2290,12 @@ List tox_deserialize_logical_array_rcpp(std::string filename, int max_dims = 5) 
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate deserialization of complex arrays from binary files with specified filenames
- */
+
+//' Calculate deserialization of complex arrays from binary files with specified filenames, including conversion from interleaved real/imaginary representation
+//'
+//' @param filename String specifying the input filename for deserialization
+//' @param max_dims Maximum number of dimensions to read (default 5)
+//' @return List with deserialized values and dimensions
 // [[Rcpp::export]]
 List tox_deserialize_complex_array_rcpp(std::string filename, int max_dims = 5) {
     int fn_len = 0;
@@ -1791,9 +2335,13 @@ List tox_deserialize_complex_array_rcpp(std::string filename, int max_dims = 5) 
                         Named("ndim") = ndims,
                         Named("ierr") = ierr);
 }
-/**
- * Calculate metadata of arrays stored in binary files with specified filenames.
- */
+
+//' Calculate retrieval of array metadata (dimensions, number of dimensions, and optionally character length) from binary files with specified filenames
+//'
+//' @param filename String specifying the input filename for metadata retrieval
+//' @param max_dims Maximum number of dimensions to read (default 5)
+//' @param with_clen Logical indicating whether to include character length in the output (default FALSE)
+//' @return List with dimensions, number of dimensions, and optionally character length
 // [[Rcpp::export]]
 List tox_get_array_metadata_rcpp(std::string filename,
                                 int dims_out_capacity = 5,
@@ -1825,9 +2373,10 @@ List tox_get_array_metadata_rcpp(std::string filename,
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate binary search tree index for a set of values, returning sorted indices and auxiliary stacks for traversal
- */
+//' Build a binary search tree index for a numeric vector, returning sorted indices and auxiliary stacks for traversal
+//'
+//' @param values Numeric vector to index
+//' @return List with sorted indices and traversal stacks
 // [[Rcpp::export]]
 IntegerVector build_bst_index_rcpp(NumericVector values) {
     int num_values = static_cast<int>(values.size());
@@ -1846,9 +2395,14 @@ IntegerVector build_bst_index_rcpp(NumericVector values) {
     // Return sorted indices (1-based Fortran indices preserved)
     return sorted_indices;
 }
-/**
- * Perform a range query on a binary search tree index, returning indices of values within specified bounds
- */
+
+//' Perform a range query on a binary search tree index for a numeric vector, returning indices of values within the specified bounds
+//'
+//' @param values Numeric vector to query
+//' @param sorted_indices Integer vector of sorted indices from the BST index
+//' @param lower_bound Numeric value specifying the lower bound of the range query
+//' @param upper_bound Numeric value specifying the upper bound of the range query
+//' @return List with output indices of values within the range and number of matches
 // [[Rcpp::export]]
 List bst_range_query_rcpp(NumericVector values,
                           IntegerVector sorted_indices,
@@ -1873,9 +2427,11 @@ List bst_range_query_rcpp(NumericVector values,
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate spherical k-d tree index for a set of points given a specified dimension order, returning indices and auxiliary stacks for traversal
- */
+//' Build a spherical k-d tree index for a numeric matrix, returning sorted indices and auxiliary stacks for traversal
+//'
+//' @param V Numeric matrix of data points (dimensions x points)
+//' @param dim_order Integer vector specifying the order of dimensions for splitting
+//' @return List with spherical k-d tree index 
 // [[Rcpp::export]]
 List tox_build_spherical_kd_rcpp(NumericMatrix V, IntegerVector dim_order) {
     int d = V.nrow();
@@ -1905,9 +2461,16 @@ List tox_build_spherical_kd_rcpp(NumericMatrix V, IntegerVector dim_order) {
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate reading of expression vectors from TSV files given lists of filenames, gene IDs, value columns, and formatting parameters, returning expression vectors
- */
+//' Calculate reading of expression vectors from TSV files
+//'
+//' @param file_list_raw Raw matrix of filenames (one per column) for TSV files to read
+//' @param gene_ids_raw Raw matrix of gene IDs to match against the TSV files
+//' @param value_cols Integer vector of column indices in the TSV files that contain expression values
+//' @param delimiter_raw Raw vector specifying the delimiter used in the TSV files
+//' @param n_samples Integer specifying the expected number of samples (rows) in the TSV files
+//' @param n_header_rows Integer specifying the number of header rows to skip in the TSV files
+//' @param gene_col Integer specifying the column index in the TSV files that contains gene IDs
+//' @return List with expression vector matrix and error code from reading function
 // [[Rcpp::export]]
 List tox_read_expression_vectors_tsv_rcpp(RawMatrix file_list_raw,
                                          RawMatrix gene_ids_raw,
@@ -1943,9 +2506,15 @@ List tox_read_expression_vectors_tsv_rcpp(RawMatrix file_list_raw,
     return List::create(Named("expression_vectors") = expression_vectors,
                         Named("ierr") = ierr);
 }
-/**
- * Calculate reading of gene IDs from TSV files given filenames, expected number of genes, formatting parameters, and column indices, returning raw gene ID data
- */
+
+ //' Calculate reading of gene IDs from TSV files, returning a raw matrix of gene IDs and an error code
+ //'
+ //' @param filename_raw Raw vector specifying the filename of the TSV file to read
+ //' @param n_genes Integer specifying the expected number of genes (columns) in the TSV
+ //' @param gene_ids_len Integer specifying the maximum length of gene IDs (rows) to read from the TSV file
+ //' @param n_header_rows Integer specifying the number of header rows to skip in the TSV file 
+ //' @param gene_col Integer specifying the column index in the TSV file that contains gene IDs
+ //' @return List with raw matrix of gene IDs and error code from reading function         
 // [[Rcpp::export]]
 List tox_read_gene_ids_from_tsv_file_rcpp(RawVector filename_raw,
                                          int n_genes,
@@ -1971,9 +2540,13 @@ List tox_read_gene_ids_from_tsv_file_rcpp(RawVector filename_raw,
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate reading of orthofinder files given filenames, gene IDs, number of families, and family ID lengths, returning raw family ID data, gene-to-family mappings
- */
+//' Calculate reading of OrthoFinder output files to extract family IDs and gene-to-family mappings
+//'
+//' @param filename_raw Raw vector specifying the filename of the OrthoFinder output file to read
+//' @param gene_ids_raw Raw matrix of gene IDs to match against the OrthoFinder output file
+//' @param n_families Integer specifying the expected number of families (columns) in the OrthoFinder output file
+//' @param family_ids_len Integer specifying the maximum length of family IDs (rows) to read from the OrthoFinder output file
+//' @return List with raw matrix of family IDs, integer vector mapping genes to families, and error code from reading function
 // [[Rcpp::export]]
 List tox_read_orthofinder_file_rcpp(RawVector filename_raw,
                                    RawMatrix gene_ids_raw,
@@ -2004,11 +2577,17 @@ List tox_read_orthofinder_file_rcpp(RawVector filename_raw,
                         Named("ierr") = ierr);
 }
 
-/**
- * Calculate validation of data structure for gene IDs, family IDs, gene-to-family mappings, expression vectors, family centroids, and shift vectors
- */
+//' Calculate validation of data structure for gene IDs, family IDs, gene-to-family mappings, expression vectors, family centroids, and shift vectors
+//'
+//' @param gene_ids_raw Raw matrix of gene IDs to validate
+//' @param gene_family_ids_raw Raw matrix of family IDs to validate
+//' @param gene_to_fam Integer vector mapping genes to families to validate
+//' @param expression_vectors Numeric matrix of expression vectors to validate
+//' @param family_centroids Numeric matrix of family centroids to validate
+//' @param shift_vectors Numeric matrix of shift vectors to validate
+//' @return  error code from validation function
 // [[Rcpp::export]]
-List tox_validate_data_structure_rcpp(RawMatrix gene_ids_raw,
+int tox_validate_data_structure_rcpp(RawMatrix gene_ids_raw,
                                      RawMatrix gene_family_ids_raw,
                                      IntegerVector gene_to_fam,
                                      NumericMatrix expression_vectors,
@@ -2034,12 +2613,16 @@ List tox_validate_data_structure_rcpp(RawMatrix gene_ids_raw,
                              shift_vectors.begin(),
                              &ierr);
 
-    return List::create(Named("ierr") = ierr);
+    return ierr;
 }
-/**
- * Calculate filtering of unassigned genes based on gene IDs and gene-to-family mappings, returning a mask of genes to keep, the number of genes kept
- */
+
+//' Calculate filtering of unassigned genes based on gene IDs and gene-to-family mappings
+//'
+//' @param gene_ids_raw Raw matrix of gene IDs to filter
+//' @param gene_to_fam Integer vector mapping genes to families to use for filtering
+//' @return List with integer mask indicating which genes are assigned to families, number of genes kept after filtering, and error code from filtering function
 // [[Rcpp::export]]
+
 List tox_filter_unassigned_genes_rcpp(RawMatrix gene_ids_raw,
                                      IntegerVector gene_to_fam) {
     int gene_ids_len = gene_ids_raw.nrow();
@@ -2060,11 +2643,13 @@ List tox_filter_unassigned_genes_rcpp(RawMatrix gene_ids_raw,
                         Named("n_genes_kept") = n_genes_kept,
                         Named("ierr") = ierr);
 }
-/**
- * Calculate validation of gene-to-family mapping based on gene IDs, family IDs, and mapping vectors
- */
+//' Calculate validation of gene-to-family mapping based on integer vector mapping genes to families and the number of families
+//'
+//' @param gene_to_fam Integer vector mapping genes to families to validate
+//' @param n_families Integer specifying the expected number of families for validation
+//' @return  error code from validation function
 // [[Rcpp::export]]
-List tox_validate_gene_to_family_mapping_rcpp(IntegerVector gene_to_fam,
+int tox_validate_gene_to_family_mapping_rcpp(IntegerVector gene_to_fam,
                                              int n_families) {
     int n_genes = gene_to_fam.size();
     int ierr = 0;
@@ -2074,14 +2659,15 @@ List tox_validate_gene_to_family_mapping_rcpp(IntegerVector gene_to_fam,
                                      &n_families,
                                      &ierr);
 
-    return List::create(Named("ierr") = ierr);
+    return ierr;
 }
-/**
- * 
- * Calculate validation of expression data based on expression vectors and non-negativity checks
- */
+//' Calculate validation of expression data based on expression vector matrix and checks for NaN, infinite, or optionally negative values
+//'
+//' @param expression_vectors Numeric matrix of expression vectors to validate
+//' @param check_non_negative Logical indicating whether to check for negative values in the expression data (default FALSE)
+//' @return  error code from validation function
 // [[Rcpp::export]]
-List tox_validate_expression_data_rcpp(NumericMatrix expression_vectors,
+int tox_validate_expression_data_rcpp(NumericMatrix expression_vectors,
                                       bool check_non_negative) {
     int n_samples = expression_vectors.nrow();
     int n_genes = expression_vectors.ncol();
@@ -2094,13 +2680,14 @@ List tox_validate_expression_data_rcpp(NumericMatrix expression_vectors,
                               &flag,
                               &ierr);
 
-    return List::create(Named("ierr") = ierr);
+    return ierr;
 }
-/**
- * Calculate validation of family centroids based on centroid vectors and checks for finiteness
- */
+//' Calculate validation of family centroids based on family centroid matrix and checks for NaN or infinite values
+//'
+//' @param family_centroids Numeric matrix of family centroids to validate
+//' @return List with error code from validation function
 // [[Rcpp::export]]
-List tox_validate_family_centroids_rcpp(NumericMatrix family_centroids) {
+int tox_validate_family_centroids_rcpp(NumericMatrix family_centroids) {
     int n_samples = family_centroids.nrow();
     int n_families = family_centroids.ncol();
     int ierr = 0;
@@ -2110,14 +2697,17 @@ List tox_validate_family_centroids_rcpp(NumericMatrix family_centroids) {
                                 &n_samples,
                                 &ierr);
 
-    return List::create(Named("ierr") = ierr);
+    return ierr;
 }
-/**
- * 
- * Calculate validation of shift vectors based on shift vector matrices, expression vectors, family centroids, and gene-to-family mappings
- */
+//' Calculate validation of shift vectors based on shift vector matrix, expression vectors, family centroids, and gene-to-family mappings
+//'
+//' @param shift_vectors Numeric matrix of shift vectors to validate
+//' @param expression_vectors Numeric matrix of expression vectors to use for validation
+//' @param family_centroids Numeric matrix of family centroids to use for validation
+//' @param gene_to_fam Integer vector mapping genes to families to use for validation
+//' @return List with error code from validation function
 // [[Rcpp::export]]
-List tox_validate_shift_vectors_rcpp(NumericMatrix shift_vectors,
+int tox_validate_shift_vectors_rcpp(NumericMatrix shift_vectors,
                                      NumericMatrix expression_vectors,
                                      NumericMatrix family_centroids,
                                      IntegerVector gene_to_fam) {
@@ -2135,14 +2725,15 @@ List tox_validate_shift_vectors_rcpp(NumericMatrix shift_vectors,
                              &n_families,
                              &ierr);
 
-    return List::create(Named("ierr") = ierr);
+    return ierr;
 }
-/**
- * 
- * Calculate validation of string array uniqueness based on raw string data, string lengths, and counts
- */
+
+//' Calculate validation of string array uniqueness based on raw matrix of strings, checking for duplicates
+//'
+//' @param string_arr_raw Raw matrix of strings to validate for uniqueness
+//' @return List with error code from validation function
 // [[Rcpp::export]]
-List tox_validate_string_array_uniqueness_rcpp(RawMatrix string_arr_raw) {
+int tox_validate_string_array_uniqueness_rcpp(RawMatrix string_arr_raw) {
     int str_len = string_arr_raw.nrow();
     int n_strings = string_arr_raw.ncol();
     int ierr = 0;
@@ -2152,14 +2743,20 @@ List tox_validate_string_array_uniqueness_rcpp(RawMatrix string_arr_raw) {
                                        &n_strings,
                                        &ierr);
 
-    return List::create(Named("ierr") = ierr);
+    return ierr;
 }
 
-/**
- * Calculate validation of data structure for gene IDs, family IDs, gene-to-family mappings, expression vectors, family centroids, and shift vectors
- */
+//' Calculate validation of all data components together, including gene IDs, family IDs, gene-to-family mappings, expression vectors, family centroids, and shift vectors
+//'
+//' @param gene_ids_raw Raw matrix of gene IDs to validate
+//' @param gene_family_ids_raw Raw matrix of family IDs to validate
+//' @param gene_to_fam Integer vector mapping genes to families to validate
+//' @param expression_vectors Numeric matrix of expression vectors to validate
+//' @param family_centroids Numeric matrix of family centroids to validate
+//' @param shift_vectors Numeric matrix of shift vectors to validate
+//' @return List with error code from validation function
 // [[Rcpp::export]]
-List tox_validate_all_data_rcpp(RawMatrix gene_ids_raw,
+int tox_validate_all_data_rcpp(RawMatrix gene_ids_raw,
                                RawMatrix gene_family_ids_raw,
                                IntegerVector gene_to_fam,
                                NumericMatrix expression_vectors,
@@ -2185,14 +2782,16 @@ List tox_validate_all_data_rcpp(RawMatrix gene_ids_raw,
                         shift_vectors.begin(),
                         &ierr);
 
-    return List::create(Named("ierr") = ierr);
+    return ierr;
 }
 
 
-/**
- * 
- * Calculate projection of expression vectors onto family centroids using RAP method
- */
+//' Calculate projection of expression vectors onto family centroids using the RAP method, with selection masks for vectors and axes
+//'
+//' @param vecs Numeric matrix of expression vectors (dimensions x vectors)
+//' @param vecs_selection_mask Integer vector indicating which vectors to include in the projection (1 for include, 0 for exclude)
+//' @param axes_selection_mask Integer vector indicating which dimensions (axes) to include in the projection
+//' @return List with matrix of projected values and error code from projection function
 // [[Rcpp::export]]
 List tox_omics_vector_RAP_projection_rcpp(NumericMatrix vecs,
                                          IntegerVector vecs_selection_mask,
@@ -2223,11 +2822,12 @@ List tox_omics_vector_RAP_projection_rcpp(NumericMatrix vecs,
                         Named("ierr") = ierr);
 }
 
-/**
- * 
- * Calculate projection of expression vectors onto family centroids using RAP method
- */
-
+//' Calculate projection of expression vectors onto family centroids using RAP method, with optimized C implementation for field-based projections
+//'
+//' @param vecs Numeric matrix of expression vectors (dimensions x vectors)
+//' @param vecs_selection_mask Integer vector indicating which vectors to include in the projection (1 for include, 0 for exclude)
+//' @param axes_selection_mask Integer vector indicating which dimensions (axes) to include in the projection
+//' @return List with matrix of projected values and error code from projection function
 // [[Rcpp::export]]
 List tox_omics_field_RAP_projection_rcpp(NumericMatrix vecs,
                                         IntegerVector vecs_selection_mask,

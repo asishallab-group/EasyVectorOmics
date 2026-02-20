@@ -75,6 +75,11 @@ tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
   return(tox_distance_to_centroid_rcpp(genes, centroids, gene_to_fam, d))
 }
 
+
+# ===================================================================
+# TISSUE VERSATITITY FUNCTIONS
+# ===================================================================
+
 #> tox_tissue_versatility:compute_tissue_versatility_c: Computes normalized tissue versatility for selected expression vectors
 #' Calculate Tissue Versatility
 #' 
@@ -258,8 +263,7 @@ tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families
 
   # Call the Rcpp forwarder.
   result <- tox_compute_family_scaling_expert_rcpp(n_families, distances, gene_to_fam, perm_tmp, stack_left_tmp, stack_right_tmp,
-    family_distances
-  )
+    family_distances)
 
    # Check for error
   check_err_code(result$ierr)
@@ -332,8 +336,10 @@ tox_identify_outliers <- function(rdi, percentile = 95.0) {
 
 }
 
+# ===================================================================
 # NORMALIZATION FUNCTIONS
 # ===================================================================
+
 #> tox_normalization:normalize_by_std_dev_c: Normalize gene expression values by standard deviation
 #' Normalize gene expression values by standard deviation
 #'
@@ -869,6 +875,28 @@ tox_prepare_indices_by_patterns <- function(df, control_pattern, condition_patte
 
   return(list(control_cols = control_cols, condition_cols = condition_cols, condition_labels = condition_labels))
 }
+
+##################################################
+## Helper functions for KD-tree
+##################################################
+
+
+#> f42_helper: Get a point from the KD index
+#' Get a point from the KD index (R-level helper)
+#' @param X A numeric matrix of shape (dimensions x points) representing the original data
+#' @param kd_ix An integer vector of indices representing the KD-tree order of the points
+#' @param position An integer scalar specifying the position in the KD index to retrieve
+#' @return A numeric vector representing the point at the specified position in the KD index
+get_kd_point <- function(X, kd_ix, position) {
+  # Input validation using standardized validation functions
+  validate_numeric_matrix(X, "X")
+  validate_array_or_vector(kd_ix, "kd_ix")
+  
+  # Extract the point at the specified position
+  # Note: X is organized as (dimensions, points), so we need to extract column kd_ix[position]
+  X[, kd_ix[position], drop = FALSE]
+}
+  
 # ===================================================================
 # SHIFT VECTOR FIELD FUNCTIONS
 # ===================================================================
@@ -903,7 +931,7 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
   
   result <- tox_compute_shift_vector_field_rcpp(expression_vectors, family_centroids, gene_to_centroid)
   check_err_code(result$ierr)
-  return(list(shift_vectors = result$shift_vectors))
+  return (result)
 }
 
 
@@ -923,8 +951,7 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
 #' @param ortholog_set: Logical array indicating if a gene is part of a specific subset (e.g., orthologs)
 #' @param mode: Character string indicating the mode of operation ('all' or 'ortho')
 #'
-#' @return List containing:
-#'   \item{centroid_matrix}{The computed centroids for each gene family}
+#' @return Numeric Vector of length n_families representing the computed centroids for each gene family
 #'
 
  
@@ -958,8 +985,245 @@ tox_mean_vector <- function(expression_vectors, gene_indices) {
   return(result)
 }
 
+# ===================================================================
+# PARALOG ANALYSIS FUNCTIONS
+# ===================================================================
+
+#> tox_paralog_analysis:detect_neofunctionalization_c: Identify neofunctionalization for genes
+#' Identify neofunctionalization for genes
+#'
+#' Checks whether expression differences between genes and their mapped ancestors
+#' exceed per-axis thresholds.
+#'
+#' @param ancestors Numeric matrix (n_axes x n_families) of ancestor vectors.
+#' @param genes Numeric matrix (n_axes x n_genes) of gene vectors.
+#' @param gene_to_fam Integer vector of length n_genes mapping genes to family indices (1-based).
+#' @param thresholds Numeric vector of length n_axes with per-axis thresholds.
+#' @return Logical matrix of shape (n_genes x n_axes), where TRUE indicates neofunctionalization.
+tox_detect_neofunctionalization <- function(ancestors, genes, gene_to_fam, thresholds) {
+  validate_numeric_matrix(ancestors)
+  validate_numeric_matrix(genes)
+
+  n_axes <- nrow(ancestors)
+  n_families <- ncol(ancestors)
+  n_genes <- ncol(genes)
+
+  gene_to_fam <- as.integer(gene_to_fam)
+  thresholds <- as.numeric(thresholds)
+
+  validate_length_equals_n(gene_to_fam, n_genes)
+  validate_index_bounds(gene_to_fam, low = 1, high = n_families)
+  validate_length_equals_n(thresholds, n_axes)
+
+  result <- tox_detect_neofunctionalization_rcpp(ancestors, genes, gene_to_fam, thresholds)
+  check_err_code(result$ierr)
+
+  return(result$neofunc)
+}
+
+#> tox_paralog_analysis:mask_check_state_c: Check the state of a specific gene in a bit mask
+#' Check the state of a specific gene in a bit mask.
+#'
+#' @param bit_mask Integer vector representing a bit mask (chunks of 32 bits).
+#' @param i_gene Integer index of the gene to check (1-based).
+#' @return Logical value indicating inactive (FALSE) or active (TRUE).
+tox_mask_check_state <- function(bit_mask, i_gene) {
+  bit_mask <- as.integer(bit_mask)
+  i_gene <- as.integer(i_gene)
+
+  validate_integer_vector(bit_mask)
+  validate_positive_integer_scalar(i_gene)
+  validate_index_bounds(i_gene, low = 1, high = length(bit_mask) * 32)
+
+  result <- tox_mask_check_state_rcpp(bit_mask, i_gene)
+  check_err_code(result$ierr)
+
+  return(as.logical(result$state))
+}
+
+#> tox_paralog_analysis:mask_chunk_count_c: Compute the number of 32-bit chunks needed to encode a given number of genes
+#' Compute number of 32-bit chunks needed for a gene mask.
+#'
+#' @param n_genes Number of genes to encode.
+#' @return Integer count of 32-bit chunks.
+tox_mask_chunk_count <- function(n_genes) {
+  n_genes <- as.integer(n_genes)
+  validate_positive_integer_scalar(n_genes)
+
+  result <- tox_mask_chunk_count_rcpp(n_genes)
+  check_err_code(result$ierr)
+
+  return(as.integer(result$count))
+}
+
+#> tox_paralog_analysis:calc_work_arr_paralog_subsets_size_c: Calculate the required work array size for paralog subset analysis
+#' Calculate required work array size for paralog subset analysis.
+#'
+#' @param max_subset_size Desired maximum subset size.
+#' @param n_genes Total number of genes.
+#' @param filtered_paralogs_mask Integer bit mask (chunks of 32 bits).
+#' @return List with actual_max_subset_size and work_array_size.
+tox_calc_work_arr_paralog_subsets_size <- function(max_subset_size, n_genes, filtered_paralogs_mask) {
+  max_subset_size <- as.integer(max_subset_size)
+  n_genes <- as.integer(n_genes)
+  filtered_paralogs_mask <- as.integer(filtered_paralogs_mask)
+
+  validate_positive_integer_scalar(max_subset_size)
+  validate_positive_integer_scalar(n_genes)
+  validate_integer_vector(filtered_paralogs_mask)
+
+  result <- tox_calc_work_arr_paralog_subsets_size_rcpp(max_subset_size, n_genes, filtered_paralogs_mask)
+  check_err_code(result$ierr)
+
+  return(list(
+    actual_max_subset_size = as.integer(result$actual_max_subset_size),
+    work_array_size = as.integer(result$work_array_size)
+  ))
+}
+
+#> tox_paralog_analysis:filter_paralogs_by_pattern_dosage_effect_c: Filter paralogs by dosage effect using angle threshold, within the grouped slice
+#' Filter paralogs by dosage-effect pattern.
+#'
+#' @param gene_angles Numeric vector of gene angles.
+#' @param threshold Numeric filtering threshold.
+#' @param gene_to_fam Integer vector mapping genes to family indices.
+#' @param n_families Number of families.
+#' @return Integer matrix mask (n_mask_chunks x n_families).
+tox_filter_paralogs_by_pattern_dosage_effect <- function(gene_angles, threshold, gene_to_fam, n_families) {
+  gene_angles <- as.numeric(gene_angles)
+  gene_to_fam <- as.integer(gene_to_fam)
+  threshold <- as.numeric(threshold)
+  n_families <- as.integer(n_families)
+
+  validate_numeric_vector(gene_angles)
+  validate_length_equals_n(gene_to_fam, length(gene_angles))
+  validate_positive_integer_scalar(n_families)
+  validate_index_bounds(gene_to_fam, low = 1, high = n_families)
+
+  result <- tox_filter_paralogs_by_pattern_dosage_effect_rcpp(gene_angles, threshold, gene_to_fam, n_families)
+  check_err_code(result$ierr)
+
+  return(result$masks)
+}
+
+#> tox_paralog_analysis:filter_paralogs_by_pattern_subfunctionalization_c: Filter paralogs by subfunctionalization pattern using angle threshold, within the grouped slice
+#' Filter paralogs by subfunctionalization pattern.
+#'
+#' @param gene_angles Numeric vector of gene angles.
+#' @param threshold Numeric filtering threshold.
+#' @param gene_to_fam Integer vector mapping genes to family indices.
+#' @param n_families Number of families.
+#' @return Integer matrix mask (n_mask_chunks x n_families).
+tox_filter_paralogs_by_pattern_subfunctionalization <- function(gene_angles, threshold, gene_to_fam, n_families) {
+  gene_angles <- as.numeric(gene_angles)
+  gene_to_fam <- as.integer(gene_to_fam)
+  threshold <- as.numeric(threshold)
+  n_families <- as.integer(n_families)
+
+  validate_numeric_vector(gene_angles)
+  validate_length_equals_n(gene_to_fam, length(gene_angles))
+  validate_positive_integer_scalar(n_families)
+  validate_index_bounds(gene_to_fam, low = 1, high = n_families)
+
+  result <- tox_filter_paralogs_by_pattern_subfunctionalization_rcpp(gene_angles, threshold, gene_to_fam, n_families)
+  check_err_code(result$ierr)
+
+  return(result$masks)
+}
+
+#> tox_paralog_analysis:detect_subfunctionalization_c: Detect subfunctionalization among paralogs based on residual distance and pruning
+#' Detect subfunctionalization among paralogs.
+#'
+#' @param ancestor Numeric vector (n_dims).
+#' @param genes Numeric matrix (n_dims x n_genes).
+#' @param rdi_threshold Numeric residual distance threshold.
+#' @param filtered_paralogs_mask Integer bit mask (chunks of 32 bits).
+#' @param max_subset_size Desired maximum subset size.
+#' @param paralog_norms Numeric vector of paralog norms (length n_genes).
+#' @param sorted_paralog_norms_perm Integer permutation vector (length n_genes).
+#' @return List with n_results and results matrix.
+tox_detect_subfunctionalization <- function(ancestor, genes, rdi_threshold,
+                                            filtered_paralogs_mask, max_subset_size,
+                                            paralog_norms, sorted_paralog_norms_perm) {
+  ancestor <- as.numeric(ancestor)
+  genes <- as.matrix(genes)
+  filtered_paralogs_mask <- as.integer(filtered_paralogs_mask)
+  max_subset_size <- as.integer(max_subset_size)
+  paralog_norms <- as.numeric(paralog_norms)
+  sorted_paralog_norms_perm <- as.integer(sorted_paralog_norms_perm)
+
+  validate_numeric_vector(ancestor)
+  validate_numeric_matrix(genes)
+  validate_integer_vector(filtered_paralogs_mask)
+  validate_positive_integer_scalar(max_subset_size)
+
+  n_genes <- ncol(genes)
+  validate_length_equals_n(paralog_norms, n_genes)
+  validate_length_equals_n(sorted_paralog_norms_perm, n_genes)
+  validate_index_bounds(sorted_paralog_norms_perm, low = 1, high = n_genes)
+
+  result <- tox_detect_subfunctionalization_rcpp(
+    ancestor,
+    genes,
+    as.numeric(rdi_threshold),
+    filtered_paralogs_mask,
+    max_subset_size,
+    paralog_norms,
+    sorted_paralog_norms_perm
+  )
+  check_err_code(result$ierr)
+
+  return(list(
+    n_results = as.integer(result$n_results),
+    results = result$results
+  ))
+}
+
+#> tox_paralog_analysis:detect_dosage_effect_c: Detect dosage effect among paralogs using gain and angle thresholds
+#' Detect dosage effect among paralogs.
+#'
+#' @param ancestor Numeric vector (n_dims).
+#' @param genes Numeric matrix (n_dims x n_genes).
+#' @param filtered_paralogs_mask Integer bit mask (chunks of 32 bits).
+#' @param max_subset_size Desired maximum subset size.
+#' @param gain_gamma Numeric gain threshold.
+#' @param max_angle Numeric maximum angle threshold (radians).
+#' @return List with n_results and results matrix.
+tox_detect_dosage_effect <- function(ancestor, genes,
+                                     filtered_paralogs_mask, max_subset_size,
+                                     gain_gamma = 0.1, max_angle = pi) {
+  ancestor <- as.numeric(ancestor)
+  genes <- as.matrix(genes)
+  filtered_paralogs_mask <- as.integer(filtered_paralogs_mask)
+  max_subset_size <- as.integer(max_subset_size)
+  gain_gamma <- as.numeric(gain_gamma)
+  max_angle <- as.numeric(max_angle)
+
+  validate_numeric_vector(ancestor)
+  validate_numeric_matrix(genes)
+  validate_integer_vector(filtered_paralogs_mask)
+  validate_positive_integer_scalar(max_subset_size)
+  validate_positive_numeric_scalar(gain_gamma)
+  validate_positive_numeric_scalar(max_angle)
+
+  result <- tox_detect_dosage_effect_rcpp(
+    ancestor,
+    genes,
+    filtered_paralogs_mask,
+    max_subset_size,
+    gain_gamma,
+    max_angle
+  )
+  check_err_code(result$ierr)
+
+  return(list(
+    n_results = as.integer(result$n_results),
+    results = result$results
+  ))
+}
+
 # ============================================================
-#  1) Array metadata wrapper
+#   ARRY UTTLITIES FUNCTIONS
 # ============================================================
 
 #> f42_array_utils:get_array_metadata_c: Get array metadata from serialized file
@@ -999,441 +1263,6 @@ tox_get_array_metadata <- function(filename, max_dims = 5L, with_clen = FALSE) {
     ))
 }
 }
-
-
-
-# ============================================================
-#  2) Deserialization (int / real / char)
-# ============================================================
-#> f42_deserialize_int:deserialize_int_nd_C: Deserialize integer array from file
-#' @param filename Path to the serialized integer array file
-#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
-#' @return An integer array with dimensions as specified in the file
-tox_deserialize_int_array <- function(filename, max_dims = 5L) {
-  # validate inputs
-  validate_filename(filename)
-  validate_max_dims(max_dims)
-  validate_file_exists(filename)
-
-  meta <- tox_get_array_metadata(filename, max_dims)
-  total_size <- prod(meta$dims)
-
-  filename_ascii <- utf8ToInt(filename)
- # Call Rcpp wrapper
-  result <- tox_deserialize_int_array_rcpp(filename, max_dims)
-  
-  check_err_code(result$ierr)
-
-  array(result$values, dim = result$dims[1:result$ndim])
-}
-
-#> f42_deserialize_real:deserialize_real_nd_C: Deserialize real/double array from file
-#' @param filename Path to the serialized real array file
-#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
-#' @return A numeric array with dimensions as specified in the file
-tox_deserialize_real_array <- function(filename, max_dims = 5L) {
-#validate inputs
-  validate_filename(filename)
-  validate_max_dims(max_dims)
-  validate_file_exists(filename)
-
-  meta <- tox_get_array_metadata(filename, max_dims)
-  total_size <- prod(meta$dims)
-
-  # Coerce to base types
-  filename <- as.character(filename)
-  max_dims <- as.integer(max_dims)
-
- 
-  # Call Rcpp wrapper
-  result <- tox_deserialize_real_array_rcpp(filename, max_dims)
-
-  # Check error code
-  check_err_code(result$ierr)
-
-  # Shape flat vector into array
-  array(result$values, dim = result$dims[1:result$ndim])
-  }
-
-#> f42_deserialize_char:deserialize_char_nd_C: Deserialize character array from file
-#' @param filename Path to the serialized character array file
-#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
-#' @return A character array with dimensions as specified in the file
-tox_deserialize_char_array <- function(filename, max_dims = 5L) {
-  #validate inputs
-  validate_filename(filename)
-  validate_max_dims(max_dims)
-  validate_file_exists(filename)
-  # Load metadata dimensions + clen
-  meta <- tox_get_array_metadata(filename, max_dims, with_clen = TRUE)
-  
-  # Coerce to base types
-  filename <- as.character(filename)
-  max_dims <- as.integer(max_dims)
-
-  # Call Rcpp wrapper
-  result <- tox_deserialize_char_array_rcpp(filename, max_dims)
-
-  # Check error code
-  check_err_code(result$ierr)
-
-  # Shape flat vector into array
-  array(result$values, dim = result$dims[1:result$ndim])
-}
-
-
-# ============================================================
-#  3) Serialization (int / real / char)
-# ============================================================
-
-#> f42_serialize_int:serialize_int_nd_C: Serialize integer array to file
-#' @param arr An integer array to serialize
-#' @param filename Path to the output file where the array will be serialized
-#' @return NULL (invisible) - the function is called for its side effect of writing to a file
-tox_serialize_int_array <- function(arr, filename) {
-  #validate inputs
-  validate_array_or_vector(arr)
-  validate_filename(filename)
-  
-  # Coerce to base types
-  filename <- as.character(filename)
-  arr <- as.array(arr)
-
-
-  result <- tox_serialize_int_array_rcpp(arr, filename)
-
-  check_err_code(result$ierr)
-  invisible(NULL)
-}
-
-#> f42_serialize_real:serialize_real_nd_C: Serialize real/double array to file
-#' @param arr A numeric array to serialize
-#' @param filename Path to the output file where the array will be serialized
-#' @return NULL (invisible) - the function is called for its side effect of writing to a file
-tox_serialize_real_array <- function(arr, filename) {
-  #validate inputs
-  validate_array_or_vector(arr)
-  validate_filename(filename)
-  
-
-  # Coerce to base types
-    filename <- as.character(filename)
-    arr <- as.array(arr)
-
-  # Call Rcpp wrapper
-  result <- tox_serialize_real_array_rcpp(arr, filename)
-
-  check_err_code(result$ierr)
-  invisible(NULL)
-}
-
-#> f42_serialize_char:serialize_char_nd_C: Serialize character array to file
-tox_serialize_char_array <- function(arr, filename) {
-  #validate inputs
-  validate_array_or_vector(arr)
-  validate_filename(filename)
-
- 
-  # Coerce to base types
-  filename <- as.character(filename)
-  arr <- as.array(arr)
-
-   
-  # Call Rcpp wrapper
-  result <- tox_serialize_char_array_rcpp(arr, filename)
-
-  check_err_code(result$ierr)
-  invisible(NULL)
-}
-
-
-# ============================================================
-#  Deserialization (logical / complex)
-# ============================================================
-#> f42_deserialize_logical:deserialize_logical_nd_C: Deserialize logical array from file
-#' @param filename Path to the serialized logical array file
-#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
-#' @return A logical array with dimensions as specified in the file
-tox_deserialize_logical_array <- function(filename, max_dims = 5L) {
-  # validate inputs
-  validate_filename(filename)
-  validate_max_dims(max_dims)
-  
-
-  meta <- tox_get_array_metadata(filename, max_dims, with_clen = FALSE)
-  
-  # Coerce to base types
-  filename <- as.character(filename)
-  max_dims <- as.integer(max_dims)
-
-  # Call Rcpp wrapper
-  result <- tox_deserialize_logical_array_rcpp(filename, max_dims)
-
-  # Check error code
-  check_err_code(result$ierr)
-
-  # Shape flat vector into array
-  array(result$values, dim = result$dims[1:result$ndim])
-}
-
-#> f42_deserialize_complex:deserialize_complex_nd_C: Deserialize complex array from file
-#' @param filename Path to the serialized complex array file
-#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
-#' @return A complex array with dimensions as specified in the file
-tox_deserialize_complex_array <- function(filename, max_dims = 5L) {
-  # validate inputs
-  validate_filename(filename)
-  validate_max_dims(max_dims)
-  
-
-  meta <- tox_get_array_metadata(filename, max_dims, with_clen = FALSE)
-  
-  # Coerce to base types
-  filename <- as.character(filename)
-  max_dims <- as.integer(max_dims)
-
-  # Call Rcpp wrapper
-  result <- tox_deserialize_complex_array_rcpp(filename, max_dims)
-
-  # Check error code
-  check_err_code(result$ierr)
-
-  # Shape flat vector into array
-  array(result$values, dim = result$dims[1:result$ndim])
-}
-
-# ============================================================
-#  Serialization (logical / complex)
-# ============================================================
-
-#> f42_serialize_logical:serialize_logical_nd_C: Serialize logical array to file
-#' @param arr A logical array to serialize
-#' @param filename Path to the output file where the array will be serialized
-#' @return NULL (invisible) - the function is called for its side effect of
-tox_serialize_logical_array <- function(arr, filename) {
-  # validate inputs
-  validate_array_or_vector(arr)
-  validate_filename(filename)
-  
-  # Coerce to base types
-  filename <- as.character(filename)
-  arr <- as.array(arr)
-
-  # Call Rcpp wrapper
-  result <- tox_serialize_logical_array_rcpp(arr, filename)
-
-  check_err_code(result$ierr)
-  invisible(NULL)
-}
-
-#> f42_serialize_complex:serialize_complex_nd_C: Serialize complex array to file
-#' @param arr A complex array to serialize
-#' @param filename Path to the output file where the array will be serialized
-#' @return NULL (invisible) - the function is called for its side effect of
-tox_serialize_complex_array <- function(arr, filename) {
-  # validate inputs
-  validate_array_or_vector(arr)
-  validate_filename(filename)
-  
-  # Coerce to base types
-  filename <- as.character(filename)
-  arr <- as.array(arr)
-
-  # Call Rcpp wrapper
-  result <- tox_serialize_complex_array_rcpp(arr, filename)
-
-  check_err_code(result$ierr)
-  invisible(NULL)
-}
-
-
-
-# ============================================================
-#  4) KD-tree index (multidimensional) + spherical KD
-# ============================================================
-
-#> f42_kd_tree:build_kd_index_c: Build KD-tree index for multidimensional data
-#' @param X A numeric matrix of shape (dimensions x points) representing the data to index
-#' @param dim_order integer vector specifying the order of dimensions to use for building the KD-tree. 
-#' @return An integer vector of indices representing the KD-tree order of the points
-build_kd_index <- function(X, dim_order = NULL) {
-  # Input validation using standardized validation functions
-  validate_numeric_matrix(X, "X")
-  
-  d <- as.integer(nrow(X))
-  n <- as.integer(ncol(X))
-  
-  if (is.null(dim_order)) {
-    dim_order <- 1:d  # Default: use dimensions in order
-  }
-  
-  # Convert and validate dim_order
-  dim_order <- as.integer(dim_order)
-  
-  # Ensure X is a numeric (double) matrix with expected dimensions
-  X <- matrix(as.numeric(X), nrow = d, ncol = n)
-  
-  # Call low-level Rcpp wrapper with explicit dimensions (num_dimensions, num_points)
-  result <- tox_build_kd_index_rcpp(X, dim_order)
-  
-  # Check backend error code
-  check_err_code(result$ierr)
-  
-  # Return KD index vector
-  result$kd_ix
-}
-
-#> f42_kd_tree:build_spherical_kd_c: Build spherical KD-tree index
-#' Build Spherical KD-Tree index (R-level wrapper)
-#' @param V A numeric matrix of shape (dimensions x points) representing the data to index
-#' @param dim_order integer vector specifying the order of dimensions to use for building the KD
-#' @return An integer vector of indices representing the spherical KD-tree order of the points
-build_spherical_kd <- function(V, dim_order = NULL) {
-  # R-layer validation
-  validate_numeric_matrix(V, "V")
-  
-  d <- as.integer(nrow(V))
-  n <- as.integer(ncol(V))
-  
-  if (is.null(dim_order)) {
-    dim_order <- 1:d  # Default: use dimensions in order
-  }
-  
-  # Validate dim_order
-  validate_logical_or_index_vector(dim_order, NULL, "dim_order")
-  dim_order <- as.integer(dim_order)
-  
-  # Ensure V is a numeric (double) matrix with expected dimensions
-  V <- matrix(as.numeric(V), nrow = d, ncol = n)
-  
-  # Call Rcpp wrapper (which wraps the Fortran call)
-  # Underlying Fortran computes and returns its own `dimension_order`.
-  # Do not pass `dim_order` to the low-level routine; it returns its own ordering.
-  result <- tox_build_spherical_kd_rcpp(V,dim_order)
-  
-  # Check backend error code
-  check_err_code(result$ierr)
-  
-  # Return sphere index vector
-  result$sphere_ix
-}
-#> f42_helper: Get a point from the KD index
-#' Get a point from the KD index (R-level helper)
-#' @param X A numeric matrix of shape (dimensions x points) representing the original data
-#' @param kd_ix An integer vector of indices representing the KD-tree order of the points
-#' @param position An integer scalar specifying the position in the KD index to retrieve
-#' @return A numeric vector representing the point at the specified position in the KD index
-get_kd_point <- function(X, kd_ix, position) {
-  # Input validation using standardized validation functions
-  validate_numeric_matrix(X, "X")
-  validate_array_or_vector(kd_ix, "kd_ix")
-  
-  # Extract the point at the specified position
-  # Note: X is organized as (dimensions, points), so we need to extract column kd_ix[position]
-  X[, kd_ix[position], drop = FALSE]
-}
-  
-
-
-
-# ============================================================
-#  5) BST index + range query
-# ============================================================
-
-#> f42_binary_search_tree:build_bst_index_c: Build binary search tree index for a numeric vector
-#'@param x A numeric vector for which to build the BST index
-#' @return An integer vector of indices representing the BST order of the input vector
-
-build_bst_index <- function(x) {
-  # Accept either a numeric vector or a single-column numeric matrix
-  validate_numeric_vector(x, "x")
-
-  # Convert to appropriate type for Rcpp
-  x <- as.numeric(x)
-
-  # Call Rcpp wrapper (returns IntegerVector of indices)
-  result <- build_bst_index_rcpp(x)
-
-  # Return index vector
-  return(result)
-}
- 
-#> f42_helper: Get sorted value by BST index
-#' Get sorted value by BST index (R helper)
-get_sorted_value <- function(x, ix, position) {
-  validate_numeric_vector(x, "x")
-  ix <- as.integer(ix)
-  position <- as.integer(position)
-  validate_array_or_vector(ix, "ix")
-  return(as.numeric(x)[ix[position]])
-}
-
-# ============================================================
-# BST range query
-#> f42_binary_search_tree:bst_range_query_c: Query BST index for values in range
-#'@param x A numeric vector of values corresponding to the BST index
-#' @param ix An integer vector of indices representing the BST order of the input vector
-#' @param lo A numeric scalar representing the lower bound of the query range
-#' @param hi A numeric scalar representing the upper bound of the query range
-#' @return A list containing:
-#' \describe{
-#'  \item{indices}{Integer vector of original indices of values in the range [lo, hi]}
-#' \item{count}{Integer scalar of the number of values in the range}
-#' }
-#' 
-bst_range_query <- function(x, ix, lo, hi) {
-
-  validate_numeric_vector(x, "x")
-  validate_integer_vector(as.integer(ix), "ix")
-  validate_equal_length(x, ix, "x", "ix")
-
- # Convert types for Rcpp
-  x  <- as.numeric(x)
-  ix <- as.integer(ix)
-  lo <- as.numeric(lo)
-  hi <- as.numeric(hi)
-
-  # Call Rcpp wrapper
-  result <- bst_range_query_rcpp(x, ix, lo, hi)
-
-  # Check for errors
-  check_err_code(result$ierr)
-
-  # Keep the same public return structure as old version
-  list(
-    indices = result$indices,
-    count   = result$count
-  )
-}
-
-
-# ============================================================
-#  6) which() helper via C backend
-# ============================================================
-
-#> tox_helper: which() helper function via C backend
-#' This function takes a logical or integer mask and returns the indices of the TRUE or non-zero elements, up to a specified maximum.
-#' @param mask A logical or integer vector serving as the mask for which to find indices.
-#' @param m_max An integer scalar specifying the maximum number of indices to return (default: length of mask).
-#' @return An integer vector of indices corresponding to the TRUE or non-zero elements in the
-#' 
-tox_which <- function(mask, m_max = length(mask)) {
-  validate_integer_vector(as.integer(mask), "mask")
-
-  result <- tox_which_rcpp(
-    mask = as.integer(mask),
-    m_max = as.integer(m_max)
-  )
-
-  check_err_code(result$ierr)
-
-  result$idx_out[seq_len(result$m_out)]
-}
-
-
-# ============================================================
-#  7) LOESS smoothing (2D)
-# ============================================================
 
 #> f42_utils:loess_smooth_2d_c: 2D LOESS smoothing for trajectory data
 #'@param x_ref Numeric vector of reference x-coordinates (length n_ref)
@@ -1517,6 +1346,411 @@ tox_loess_smooth_2d <- function(
   )
 }
 
+
+# ============================================================
+#  DESERIALIZATION FUNCTIONS 
+# ============================================================
+#> f42_deserialize_int:deserialize_int_nd_C: Deserialize integer array from file
+#' @param filename Path to the serialized integer array file
+#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
+#' @return An integer array with dimensions as specified in the file
+tox_deserialize_int_array <- function(filename, max_dims = 5L) {
+  # validate inputs
+  validate_filename(filename)
+  validate_max_dims(max_dims)
+  validate_file_exists(filename)
+
+  meta <- tox_get_array_metadata(filename, max_dims)
+  total_size <- prod(meta$dims)
+
+  filename_ascii <- utf8ToInt(filename)
+ # Call Rcpp wrapper
+  result <- tox_deserialize_int_array_rcpp(filename, max_dims)
+  
+  check_err_code(result$ierr)
+
+  array(result$values, dim = result$dims[1:result$ndim])
+}
+
+#> f42_deserialize_real:deserialize_real_nd_C: Deserialize real/double array from file
+#' @param filename Path to the serialized real array file
+#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
+#' @return A numeric array with dimensions as specified in the file
+tox_deserialize_real_array <- function(filename, max_dims = 5L) {
+#validate inputs
+  validate_filename(filename)
+  validate_max_dims(max_dims)
+  validate_file_exists(filename)
+
+  meta <- tox_get_array_metadata(filename, max_dims)
+  total_size <- prod(meta$dims)
+
+  # Coerce to base types
+  filename <- as.character(filename)
+  max_dims <- as.integer(max_dims)
+
+ 
+  # Call Rcpp wrapper
+  result <- tox_deserialize_real_array_rcpp(filename, max_dims)
+
+  # Check error code
+  check_err_code(result$ierr)
+
+  # Shape flat vector into array
+  array(result$values, dim = result$dims[1:result$ndim])
+  }
+
+#> f42_deserialize_char:deserialize_char_nd_C: Deserialize character array from file
+#' @param filename Path to the serialized character array file
+#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
+#' @return A character array with dimensions as specified in the file
+tox_deserialize_char_array <- function(filename, max_dims = 5L) {
+  #validate inputs
+  validate_filename(filename)
+  validate_max_dims(max_dims)
+  validate_file_exists(filename)
+  # Load metadata dimensions + clen
+  meta <- tox_get_array_metadata(filename, max_dims, with_clen = TRUE)
+  
+  # Coerce to base types
+  filename <- as.character(filename)
+  max_dims <- as.integer(max_dims)
+
+  # Call Rcpp wrapper
+  result <- tox_deserialize_char_array_rcpp(filename, max_dims)
+
+  # Check error code
+  check_err_code(result$ierr)
+
+  # Shape flat vector into array
+  array(result$values, dim = result$dims[1:result$ndim])
+}
+#> f42_deserialize_logical:deserialize_logical_nd_C: Deserialize logical array from file
+#' @param filename Path to the serialized logical array file
+#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
+#' @return A logical array with dimensions as specified in the file
+tox_deserialize_logical_array <- function(filename, max_dims = 5L) {
+  # validate inputs
+  validate_filename(filename)
+  validate_max_dims(max_dims)
+  
+
+  meta <- tox_get_array_metadata(filename, max_dims, with_clen = FALSE)
+  
+  # Coerce to base types
+  filename <- as.character(filename)
+  max_dims <- as.integer(max_dims)
+
+  # Call Rcpp wrapper
+  result <- tox_deserialize_logical_array_rcpp(filename, max_dims)
+
+  # Check error code
+  check_err_code(result$ierr)
+
+  # Shape flat vector into array
+  array(result$values, dim = result$dims[1:result$ndim])
+}
+
+#> f42_deserialize_complex:deserialize_complex_nd_C: Deserialize complex array from file
+#' @param filename Path to the serialized complex array file
+#' @param max_dims Maximum number of dimensions to read from the file (default: 5)
+#' @return A complex array with dimensions as specified in the file
+tox_deserialize_complex_array <- function(filename, max_dims = 5L) {
+  # validate inputs
+  validate_filename(filename)
+  validate_max_dims(max_dims)
+  
+
+  meta <- tox_get_array_metadata(filename, max_dims, with_clen = FALSE)
+  
+  # Coerce to base types
+  filename <- as.character(filename)
+  max_dims <- as.integer(max_dims)
+
+  # Call Rcpp wrapper
+  result <- tox_deserialize_complex_array_rcpp(filename, max_dims)
+
+  # Check error code
+  check_err_code(result$ierr)
+
+  # Shape flat vector into array
+  array(result$values, dim = result$dims[1:result$ndim])
+}
+
+# ============================================================
+#  SERIALIZATION FUNCTIONS 
+# ============================================================
+
+#> f42_serialize_int:serialize_int_nd_C: Serialize integer array to file
+#' @param arr An integer array to serialize
+#' @param filename Path to the output file where the array will be serialized
+#' @return NULL (invisible) - the function is called for its side effect of writing to a file
+tox_serialize_int_array <- function(arr, filename) {
+  #validate inputs
+  validate_array_or_vector(arr)
+  validate_filename(filename)
+  
+  # Coerce to base types
+  filename <- as.character(filename)
+  arr <- as.array(arr)
+
+
+  ierr <- tox_serialize_int_array_rcpp(arr, filename)
+
+  check_err_code(ierr)
+  invisible(NULL)
+}
+
+#> f42_serialize_real:serialize_real_nd_C: Serialize real/double array to file
+#' @param arr A numeric array to serialize
+#' @param filename Path to the output file where the array will be serialized
+#' @return NULL (invisible) - the function is called for its side effect of writing to a file
+tox_serialize_real_array <- function(arr, filename) {
+  #validate inputs
+  validate_array_or_vector(arr)
+  validate_filename(filename)
+  
+
+  # Coerce to base types
+    filename <- as.character(filename)
+    arr <- as.array(arr)
+
+  # Call Rcpp wrapper
+  ierr <- tox_serialize_real_array_rcpp(arr, filename)
+
+  check_err_code(ierr)
+  invisible(NULL)
+}
+
+#> f42_serialize_char:serialize_char_nd_C: Serialize character array to file
+tox_serialize_char_array <- function(arr, filename) {
+  #validate inputs
+  validate_array_or_vector(arr)
+  validate_filename(filename)
+
+ 
+  # Coerce to base types
+  filename <- as.character(filename)
+  arr <- as.array(arr)
+
+   
+  # Call Rcpp wrapper
+  ierr <- tox_serialize_char_array_rcpp(arr, filename)
+
+  check_err_code(ierr)
+  invisible(NULL)
+}
+
+#> f42_serialize_logical:serialize_logical_nd_C: Serialize logical array to file
+#' @param arr A logical array to serialize
+#' @param filename Path to the output file where the array will be serialized
+#' @return NULL (invisible) - the function is called for its side effect of
+tox_serialize_logical_array <- function(arr, filename) {
+  # validate inputs
+  validate_array_or_vector(arr)
+  validate_filename(filename)
+  
+  # Coerce to base types
+  filename <- as.character(filename)
+  arr <- as.array(arr)
+
+  # Call Rcpp wrapper
+  ierr <- tox_serialize_logical_array_rcpp(arr, filename)
+
+  check_err_code(ierr)
+  invisible(NULL)
+}
+
+#> f42_serialize_complex:serialize_complex_nd_C: Serialize complex array to file
+#' @param arr A complex array to serialize
+#' @param filename Path to the output file where the array will be serialized
+#' @return NULL (invisible) - the function is called for its side effect of
+tox_serialize_complex_array <- function(arr, filename) {
+  # validate inputs
+  validate_array_or_vector(arr)
+  validate_filename(filename)
+  
+  # Coerce to base types
+  filename <- as.character(filename)
+  arr <- as.array(arr)
+
+  # Call Rcpp wrapper
+  ierr <- tox_serialize_complex_array_rcpp(arr, filename)
+
+  check_err_code(ierr)
+  invisible(NULL)
+}
+
+
+
+# ============================================================
+# KD TREE FUNCTIONS
+# ============================================================
+
+#> f42_kd_tree:build_kd_index_c: Build KD-tree index for multidimensional data
+#' @param X A numeric matrix of shape (dimensions x points) representing the data to index
+#' @param dim_order integer vector specifying the order of dimensions to use for building the KD-tree. 
+#' @return An integer vector of indices representing the KD-tree order of the points
+build_kd_index <- function(X, dim_order = NULL) {
+  # Input validation using standardized validation functions
+  validate_numeric_matrix(X, "X")
+  
+  d <- as.integer(nrow(X))
+  n <- as.integer(ncol(X))
+  
+  if (is.null(dim_order)) {
+    dim_order <- 1:d  # Default: use dimensions in order
+  }
+  
+  # Convert and validate dim_order
+  dim_order <- as.integer(dim_order)
+  
+  # Ensure X is a numeric (double) matrix with expected dimensions
+  X <- matrix(as.numeric(X), nrow = d, ncol = n)
+  
+  # Call low-level Rcpp wrapper with explicit dimensions (num_dimensions, num_points)
+  result <- tox_build_kd_index_rcpp(X, dim_order)
+  
+  # Check backend error code
+  check_err_code(result$ierr)
+  
+  # Return KD index vector
+  result$kd_ix
+}
+
+#> f42_kd_tree:build_spherical_kd_c: Build spherical KD-tree index
+#' Build Spherical KD-Tree index (R-level wrapper)
+#' @param V A numeric matrix of shape (dimensions x points) representing the data to index
+#' @param dim_order integer vector specifying the order of dimensions to use for building the KD
+#' @return An integer vector of indices representing the spherical KD-tree order of the points
+build_spherical_kd <- function(V, dim_order = NULL) {
+  # R-layer validation
+  validate_numeric_matrix(V, "V")
+  
+  d <- as.integer(nrow(V))
+  n <- as.integer(ncol(V))
+  
+  if (is.null(dim_order)) {
+    dim_order <- 1:d  # Default: use dimensions in order
+  }
+  
+  # Validate dim_order
+  validate_logical_or_index_vector(dim_order, NULL, "dim_order")
+  dim_order <- as.integer(dim_order)
+  
+  # Ensure V is a numeric (double) matrix with expected dimensions
+  V <- matrix(as.numeric(V), nrow = d, ncol = n)
+  
+  # Call Rcpp wrapper (which wraps the Fortran call)
+  # Underlying Fortran computes and returns its own `dimension_order`.
+  # Do not pass `dim_order` to the low-level routine; it returns its own ordering.
+  result <- tox_build_spherical_kd_rcpp(V,dim_order)
+  
+  # Check backend error code
+  check_err_code(result$ierr)
+  
+  # Return sphere index vector
+  result$sphere_ix
+}
+
+
+# ============================================================
+#  BINARY SEARCH TREE FUNCTIONS
+# ============================================================
+
+#> f42_binary_search_tree:build_bst_index_c: Build binary search tree index for a numeric vector
+#'@param x A numeric vector for which to build the BST index
+#' @return An integer vector of indices representing the BST order of the input vector
+
+build_bst_index <- function(x) {
+  # Accept either a numeric vector or a single-column numeric matrix
+  validate_numeric_vector(x, "x")
+
+  # Convert to appropriate type for Rcpp
+  x <- as.numeric(x)
+
+  # Call Rcpp wrapper (returns IntegerVector of indices)
+  result <- build_bst_index_rcpp(x)
+
+  # Return index vector
+  return(result)
+}
+ 
+#> f42_helper: Get sorted value by BST index
+#' Get sorted value by BST index (R helper)
+get_sorted_value <- function(x, ix, position) {
+  validate_numeric_vector(x, "x")
+  ix <- as.integer(ix)
+  position <- as.integer(position)
+  validate_array_or_vector(ix, "ix")
+  return(as.numeric(x)[ix[position]])
+}
+
+
+#> f42_binary_search_tree:bst_range_query_c: Query BST index for values in range
+#'@param x A numeric vector of values corresponding to the BST index
+#' @param ix An integer vector of indices representing the BST order of the input vector
+#' @param lo A numeric scalar representing the lower bound of the query range
+#' @param hi A numeric scalar representing the upper bound of the query range
+#' @return A list containing:
+#' \describe{
+#'  \item{indices}{Integer vector of original indices of values in the range [lo, hi]}
+#' \item{count}{Integer scalar of the number of values in the range}
+#' }
+#' 
+bst_range_query <- function(x, ix, lo, hi) {
+
+  validate_numeric_vector(x, "x")
+  validate_integer_vector(as.integer(ix), "ix")
+  validate_equal_length(x, ix, "x", "ix")
+
+ # Convert types for Rcpp
+  x  <- as.numeric(x)
+  ix <- as.integer(ix)
+  lo <- as.numeric(lo)
+  hi <- as.numeric(hi)
+
+  # Call Rcpp wrapper
+  result <- bst_range_query_rcpp(x, ix, lo, hi)
+
+  # Check for errors
+  check_err_code(result$ierr)
+
+  # Keep the same public return structure as old version
+  list(
+    indices = result$indices,
+    count   = result$count
+  )
+}
+
+
+# ============================================================
+#  ARRAY MASKING AND INDEXING FUNCTIONS
+# ============================================================
+
+#> tox_helper: which() helper function via C backend
+#' This function takes a logical or integer mask and returns the indices of the TRUE or non-zero elements, up to a specified maximum.
+#' @param mask A logical or integer vector serving as the mask for which to find indices.
+#' @param m_max An integer scalar specifying the maximum number of indices to return (default: length of mask).
+#' @return An integer vector of indices corresponding to the TRUE or non-zero elements in the
+#' 
+tox_which <- function(mask, m_max = length(mask)) {
+  validate_integer_vector(as.integer(mask), "mask")
+
+  result <- tox_which_rcpp(
+    mask = as.integer(mask),
+    m_max = as.integer(m_max)
+  )
+
+  check_err_code(result$ierr)
+
+  result$idx_out[seq_len(result$m_out)]
+}
+
+# ============================================================
+#  RELATIVE AXIS PLANE TOOLS FUNCTIONS
+# ============================================================
+
 #> tox_relative_axis_plane_tools:omics_vector_RAP_projection_c: Project vectors onto Relative Axis Plane
 #' Project selected vectors onto a Relative Axis Plane (RAP)
 #' 
@@ -1582,43 +1816,6 @@ tox_relative_axes_changes_from_shift_vector <- function(vec) {
   return(res$contributions)
 }
 
-#> f42_helper: Compute relative axis changes from shift vector (alias)
-#' Compute relative axis changes from a shift vector (alias for tox_relative_axes_changes_from_shift_vector)
-#' 
-#' @param vec Numeric vector (shift vector)
-#' @return Numeric vector of fractional axis changes (sums to 1)
-#' 
-relative_axes_changes_from_shift_vector <- function(vec) {
-  tox_relative_axes_changes_from_shift_vector(vec)
-}
-#> tox_relative_axis_plane_tools:relative_axes_expression_from_expression_vector_c: Compute relative axis contributions from expression vector
-#' Compute relative axis contributions from a RAP-projected and normalized expression vector
-#' 
-#' @param vec Numeric vector (RAP-projected and normalized expression vector)
-#' @return Numeric vector of fractional axis contributions (sums to 1)
-#'
-tox_relative_axes_expression_from_expression_vector <- function(vec) {
-  validate_numeric_vector(vec, "vec")
-  
-  # Handle zero vector case - return zero contributions
-  if (all(vec == 0)) {
-    return(rep(0.0, length(vec)))
-  }
-  
-  res <- tox_relative_axes_expression_from_expression_vector_rcpp(vec)
-  check_err_code(res$ierr)
-  return(res$contributions)
-}
-
-#> f42_helper: Compute relative axis contributions (alias)
-#' Compute relative axis contributions from a RAP-projected and normalized expression vector (alias for tox_relative_axes_expression_from_expression_vector)
-#' 
-#' @param vec Numeric vector (RAP-projected and normalized expression vector)
-#' @return Numeric vector of fractional axis contributions (sums to 1)
-#' 
-relative_axes_expression_from_expression_vector <- function(vec) {
-  tox_relative_axes_expression_from_expression_vector(vec)
-}
 
 #> tox_relative_axis_plane_tools:clock_hand_angle_between_vectors_c: Compute signed angle between two vectors
 #' Compute signed clock hand angle between two RAP-projected and normalized vectors
@@ -1678,6 +1875,30 @@ tox_clock_hand_angles_for_shift_vectors <- function(origins, targets, vecs_selec
   check_err_code(res$ierr)
   return(res$signed_angles)
 }
+
+#> tox_relative_axis_plane_tools:relative_axes_expression_from_expression_vector_c: Compute relative axis contributions from expression vector
+#' Compute relative axis contributions from a RAP-projected and normalized expression vector
+#' 
+#' @param vec Numeric vector (RAP-projected and normalized expression vector)
+#' @return Numeric vector of fractional axis contributions (sums to 1)
+#'
+tox_relative_axes_expression_from_expression_vector <- function(vec) {
+  validate_numeric_vector(vec, "vec")
+  
+  # Handle zero vector case - return zero contributions
+  if (all(vec == 0)) {
+    return(rep(0.0, length(vec)))
+  }
+  
+  res <- tox_relative_axes_expression_from_expression_vector_rcpp(vec)
+  check_err_code(res$ierr)
+  return(res$contributions)
+}
+
+# ============================================================
+#  CLUSTERING FUNCTIONS
+# ============================================================
+
 #> tox_clustering:cluster_factor_trajectories_k_means_c: K-means clustering on factor trajectories
 #'
 #' Performs k-means clustering on factor trajectories (factor evolution over time).

@@ -194,13 +194,13 @@ validate_data_structure <- function(n_genes, n_families, n_samples, d,
   fam_matrix <- as.matrix(family_centroids)
   shift_matrix <- as.matrix(shift_vectors)
 
-  result<- tox_validate_data_structure_rcpp(n_genes, n_families, n_samples, d,
+  ierr <- tox_validate_data_structure_rcpp(n_genes, n_families, n_samples, d,
                                     gene_ids, gene_family_ids,
                                     gene_to_fam, expression_vectors,
                                     family_centroids, shift_vectors)
 
-  check_err_code(result$ierr)
-  list(ierr = result$ierr)
+  check_err_code(ierr)
+  list(ierr = ierr)
 }
 
 #' Validate gene to family mapping
@@ -208,9 +208,9 @@ validate_data_structure <- function(n_genes, n_families, n_samples, d,
 #' @param n_genes Number of genes
 #' @param n_families Number of gene families
 validate_gene_to_family_mapping <- function(gene_to_fam, n_genes, n_families) {
-  result <- tox_validate_gene_to_family_mapping_rcpp(gene_to_fam, n_genes, n_families)
-  check_err_code(result$ierr)
-  list(ierr = result$ierr)
+  ierr <- tox_validate_gene_to_family_mapping_rcpp(gene_to_fam, n_genes, n_families)
+  check_err_code(ierr)
+  list(ierr = ierr)
 }
 
 #' Validate expression data
@@ -221,11 +221,11 @@ validate_gene_to_family_mapping <- function(gene_to_fam, n_genes, n_families) {
 validate_expression_data <- function(expression_vectors, n_genes, n_samples, check_non_negative = TRUE) {
   expr_matrix <- as.matrix(expression_vectors)
 
-  result <- tox_validate_expression_data_rcpp(expression_vectors, 
+  ierr <- tox_validate_expression_data_rcpp(expression_vectors, 
   n_genes, n_samples, check_non_negative)
 
-  check_err_code(result$ierr)
-  list(ierr = result$ierr)
+  check_err_code(ierr)
+  list(ierr = ierr)
 }
 
 #' Validate family centroids
@@ -234,13 +234,13 @@ validate_expression_data <- function(expression_vectors, n_genes, n_samples, che
 #' @param n_samples Number of samples
 validate_family_centroids <- function(family_centroids, n_families, n_samples) {
   fam_matrix <- as.matrix(family_centroids)
-  result <- tox_validate_family_centroids_rcpp(
+  ierr <- tox_validate_family_centroids_rcpp(
     family_centroids,
     n_families,
     n_samples
   )
-  check_err_code(result$ierr)
-  list(ierr = result$ierr)
+  check_err_code(ierr)
+  list(ierr = ierr)
 }
 
 #' Validate shift vectors
@@ -257,10 +257,10 @@ validate_shift_vectors <- function(shift_vectors, expression_vectors, family_cen
   n_genes <- ncol(expr_matrix)
   n_families <- ncol(fam_matrix)
 
-  result <- tox_validate_shift_vectors_rcpp(shift_vectors, 
+  ierr <- tox_validate_shift_vectors_rcpp(shift_vectors, 
   expression_vectors, family_centroids, gene_to_fam, n_samples)
-  check_err_code(result$ierr)
-  list(ierr = result$ierr)
+  check_err_code(ierr)
+  list(ierr = ierr)
 }
 
 #' Validate uniqueness of string array
@@ -270,9 +270,9 @@ validate_shift_vectors <- function(shift_vectors, expression_vectors, family_cen
 validate_string_array_uniqueness <- function(string_arr, n_strings) {
   n_strings <- as.integer(n_strings)
 
-  result <- tox_validate_string_array_uniqueness_rcpp(string_arr, n_strings)
-  check_err_code(result$ierr)
-  list(ierr = result$ierr)
+  ierr <- tox_validate_string_array_uniqueness_rcpp(string_arr, n_strings)
+  check_err_code(ierr)
+  list(ierr = ierr)
 }
 
 #' Validate all data components together
@@ -297,13 +297,13 @@ validate_all_data <- function(n_genes, n_families, n_samples,
   fam_matrix <- as.matrix(family_centroids)
   shift_matrix <- as.matrix(shift_vectors)
 
-  result <- tox_validate_all_data_rcpp(n_genes, n_families, n_samples,
+  ierr <- tox_validate_all_data_rcpp(n_genes, n_families, n_samples,
                               gene_ids, gene_family_ids,
                               gene_to_fam, expression_vectors,
                               family_centroids, shift_vectors)
 
-  check_err_code(result$ierr)
-  list(ierr = result$ierr)
+  check_err_code(ierr)
+  list(ierr = ierr)
 }
 
 
