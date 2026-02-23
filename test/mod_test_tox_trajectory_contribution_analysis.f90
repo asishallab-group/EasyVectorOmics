@@ -53,31 +53,31 @@ contains
     !> Test for compute_velocity_trajectory
     subroutine test_compute_velocity_trajectory()
         integer(int32), parameter :: n_timepoints = 5
-        real(real64) :: trajectory(n_timepoints), velocity(n_timepoints), expected_velocity(n_timepoints)
+        real(real64) :: trajectory(n_timepoints), velocity(n_timepoints-1), expected_velocity(n_timepoints-1)
         integer(int32) :: ierr
 
         ! Simple increasing sequence
         trajectory = [1.0_real64, 2.0_real64, 4.0_real64, 7.0_real64, 11.0_real64]
-        expected_velocity = [0.0_real64, 1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64]
+        expected_velocity = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64]
 
         call compute_velocity_trajectory(trajectory, velocity, n_timepoints, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_compute_velocity_trajectory: ierr")
-        call assert_equal_array_real(velocity, expected_velocity, n_timepoints, TOL, "test_compute_velocity_trajectory: velocity")
+        call assert_equal_array_real(velocity, expected_velocity, n_timepoints-1, TOL, "test_compute_velocity_trajectory: velocity")
     end subroutine test_compute_velocity_trajectory
 
     !> Test for compute_acceleration_from_velocity_trajectory
     subroutine test_compute_acceleration_from_velocity_trajectory()
         integer(int32), parameter :: n_timepoints = 5
-        real(real64) :: velocity(n_timepoints), acceleration(n_timepoints), expected_acceleration(n_timepoints)
+        real(real64) :: velocity(n_timepoints-1), acceleration(n_timepoints-2), expected_acceleration(n_timepoints-2)
         integer(int32) :: ierr
 
         ! Simple increasing velocity
-        velocity = [0.0_real64, 1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64]
-        expected_acceleration = [0.0_real64, 0.0_real64, 1.0_real64, 1.0_real64, 1.0_real64]
+        velocity = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64]
+        expected_acceleration = [1.0_real64, 1.0_real64, 1.0_real64]
 
         call compute_acceleration_from_velocity_trajectory(velocity, acceleration, n_timepoints, ierr)
         call assert_equal_int(ierr, ERR_OK, "test_compute_acceleration_from_velocity_trajectory: ierr")
-        call assert_equal_array_real(acceleration, expected_acceleration, n_timepoints, TOL, "test_compute_acceleration_from_velocity_trajectory: acceleration")
+        call assert_equal_array_real(acceleration, expected_acceleration, n_timepoints-2, TOL, "test_compute_acceleration_from_velocity_trajectory: acceleration")
     end subroutine test_compute_acceleration_from_velocity_trajectory
 
     !> Run all tox_trajectory_contribution_analysis tests.
@@ -121,8 +121,8 @@ contains
 
    subroutine test_compute_velocity_trajectories()
         real(real64) :: trajectories(2,2,4)  ! (n_factors, n_samples, n_timepoints)
-        real(real64) :: velocity(2,2,4)
-        real(real64) :: expected(2,2,4)
+       real(real64) :: velocity(3,2,2)      ! (n_timepoints-1, n_factors, n_samples)
+       real(real64) :: expected(3,2,2)
         integer(int32) :: ierr
         integer(int32) :: factor, sample, t
 
@@ -140,12 +140,12 @@ contains
             14.0_real64, 0.0_real64], & 
             shape=[2,2,4])
 
-        ! Compute expected velocities: velocity(t) = trajectory(t) - trajectory(t-1)
+        ! Compute expected compact velocities: velocity(t) = trajectory(t+1) - trajectory(t)
         expected = 0.0_real64
         do sample = 1, 2
             do factor = 1, 2
-                do t = 2, 4
-                    expected(factor, sample, t) = trajectories(factor, sample, t) - trajectories(factor, sample, t - 1)
+                do t = 1, 3
+                    expected(t, factor, sample) = trajectories(factor, sample, t+1) - trajectories(factor, sample, t)
                 end do
             end do
         end do
@@ -161,8 +161,8 @@ contains
         call assert_equal_int(ierr, ERR_OK, "compute_velocity_trajectories: expected OK status")
 
         ! Debug: print computed vs expected
-        print *, "Computed velocity (1,1,:):", velocity(1,1,:)
-        print *, "Expected velocity (1,1,:):", expected(1,1,:)
+        print *, "Computed velocity (:,1,1):", velocity(:,1,1)
+        print *, "Expected velocity (:,1,1):", expected(:,1,1)
 
         call assert_equal_array_real(reshape(velocity, [size(velocity)]), &
                                      reshape(expected, [size(expected)]), &
@@ -171,30 +171,28 @@ contains
     end subroutine test_compute_velocity_trajectories
 
     subroutine test_compute_acceleration_from_velocity()
-        real(real64) :: velocity(2,2,4)
-        real(real64) :: acceleration(2,2,4)
-        real(real64) :: expected(2,2,4)
+        real(real64) :: velocity(3,2,2)      ! (n_timepoints-1, n_factors, n_samples)
+        real(real64) :: acceleration(2,2,2)  ! (n_timepoints-2, n_factors, n_samples)
+        real(real64) :: expected(2,2,2)
         integer(int32) :: ierr
         integer(int32) :: factor, sample, t
 
-        ! Reshape to (n_factors=2, n_samples=2, n_timepoints=4)
+        ! Compact velocity layout: (time=3, factor=2, sample=2)
          velocity = reshape([ &
             0.0_real64, 0.0_real64, &      
             0.0_real64, 0.0_real64, &     
             1.0_real64, -1.0_real64, &     
             3.0_real64, 2.0_real64, &      
             2.0_real64, 0.0_real64, &      
-            4.0_real64, 1.0_real64, &      
-            3.0_real64, 1.0_real64, &      
-            5.0_real64, 0.0_real64], &    
-            shape=[2,2,4])
+            4.0_real64, 1.0_real64], &
+            shape=[3,2,2])
 
 
         expected = 0.0_real64
         do sample = 1, 2
             do factor = 1, 2
-                do t = 3, 4
-                    expected(factor, sample, t) = velocity(factor, sample, t) - velocity(factor, sample, t - 1)
+                do t = 1, 2
+                    expected(t, factor, sample) = velocity(t+1, factor, sample) - velocity(t, factor, sample)
                 end do
             end do
         end do
@@ -214,8 +212,8 @@ contains
         real(real64) :: C_acc(1,2,2)
         real(real64) :: series_vel(1,2,2,4)
         real(real64) :: series_acc(1,2,2,4)
-        real(real64) :: velocity(2,1,4)
-        real(real64) :: acceleration(2,1,4)
+        real(real64) :: velocity(3,2,1)
+        real(real64) :: acceleration(2,2,1)
         real(real64) :: expected_total_vel, expected_total_acc
         real(real64) :: expected_series_vel(4), expected_series_acc(4)
         real(real64) :: factor_velocity(3,2)
@@ -247,8 +245,8 @@ contains
         call compute_acceleration_from_velocity(velocity, acceleration, 2, 1, 4, ierr)
         call assert_equal_int(ierr, ERR_OK, "acceleration back-reference")
 
-        factor_velocity(:,1)    = velocity(1,1,2:4)
-        dependent_velocity = velocity(2,1,2:4)
+        factor_velocity(:,1) = velocity(:,1,1)
+        dependent_velocity = velocity(:,2,1)
 
         call compute_contributions(factor_velocity(:,1), dependent_velocity, &
             int(size(dependent_velocity), kind=int32), mode, raw_velocity_contrib, expected_total_vel, ierr)
@@ -257,8 +255,8 @@ contains
         expected_series_vel = 0.0_real64
         expected_series_vel(2:4) = raw_velocity_contrib
 
-        factor_acceleration (:,1)   = acceleration(1,1,3:4)
-        dependent_acceleration = acceleration(2,1,3:4)
+        factor_acceleration(:,1) = acceleration(:,1,1)
+        dependent_acceleration = acceleration(:,2,1)
 
         call compute_contributions(factor_acceleration(:,1), dependent_acceleration, &
             int(size(dependent_acceleration), kind=int32), mode, raw_acceleration_contrib, expected_total_acc, ierr)
