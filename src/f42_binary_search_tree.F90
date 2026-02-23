@@ -172,11 +172,11 @@ subroutine bst_range_query_C(values, sorted_indices, num_values, lower_bound, up
   !! Input real array (C-style)
   integer(c_int), intent(in) :: sorted_indices(num_values)  
   !! Permutation index array (C-style)
-  integer(c_int), value :: num_values               
+  integer(c_int), intent(in) :: num_values               
   !! Number of elements
-  real(c_double), value :: lower_bound              
+  real(c_double), intent(in) :: lower_bound              
   !! Lower bound of range
-  real(c_double), value :: upper_bound              
+  real(c_double), intent(in) :: upper_bound              
   !! Upper bound of range
   integer(c_int), intent(out) :: output_indices(num_values)  
   !! Output array (C-style)
@@ -195,7 +195,7 @@ subroutine build_bst_index_C(values, num_values, sorted_indices, left_stack, rig
   use, intrinsic :: iso_c_binding, only: c_int, c_double
   use f42_binary_search_tree
   implicit none
-  integer(c_int), value :: num_values               
+  integer(c_int), intent(in) :: num_values               
   !! Number of elements
   real(c_double), intent(in) :: values(num_values)    
   !! Input real array (C-style)

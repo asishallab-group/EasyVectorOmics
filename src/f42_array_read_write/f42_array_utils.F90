@@ -267,7 +267,7 @@ subroutine get_array_metadata_C(filename_raw, fn_len, dims_out, dims_out_capacit
   implicit none
 
   ! Input
-  integer(c_int), value :: fn_len
+  integer(c_int), intent(in) :: fn_len
     !! Length of the filename array
   character(kind=c_char, len=1), intent(in) :: filename_raw(fn_len)
     !! Array of ASCII characters representing the filename

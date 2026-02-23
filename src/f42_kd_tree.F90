@@ -199,7 +199,7 @@ contains
         !! Stack for recursive calls
         integer(int32), intent(out) :: sphere_indices(num_vectors)  
         !! Output index array
-        integer(int32), intent(out) :: dimension_order(num_dimensions)  
+        integer(int32), intent(in) :: dimension_order(num_dimensions)  
         !! Dimension order
         integer(int32), intent(out) :: workspace(num_vectors)     
         !! Workspace array
@@ -304,7 +304,7 @@ subroutine build_spherical_kd_r(vectors, num_dimensions, num_vectors, sphere_ind
     !! Input vectors
     integer(int32), intent(out) :: sphere_indices(num_vectors)  
     !! Output indices
-    integer(int32), intent(out) :: dimension_order(num_dimensions)  
+    integer(int32), intent(in) :: dimension_order(num_dimensions)  
     !! Dimension order
     integer(int32), intent(out) :: workspace(num_vectors)     
     !! Workspace
@@ -333,8 +333,8 @@ subroutine build_kd_index_C(points, num_dimensions, num_points, kd_indices, dime
     use, intrinsic :: iso_fortran_env, only : int32
     use f42_kd_tree, only: build_kd_index
     implicit none
-    integer(c_int), value :: num_dimensions
-    integer(c_int), value :: num_points
+    integer(c_int), intent(in) :: num_dimensions
+    integer(c_int), intent(in) :: num_points
     real(c_double), intent(in) :: points(num_dimensions,num_points)
     integer(c_int), intent(in) :: dimension_order(num_dimensions)
     integer(c_int), intent(out) :: kd_indices(num_points)
@@ -351,3 +351,29 @@ subroutine build_kd_index_C(points, num_dimensions, num_points, kd_indices, dime
     call build_kd_index(points, num_dimensions, num_points, kd_indices, dimension_order, &
                       workspace, value_buffer, permutation, left_stack, right_stack, recursion_stack, ierr)
 end subroutine build_kd_index_C
+
+!> C interface for building spherical KD index
+subroutine build_spherical_kd_C(vectors, num_dimensions, num_vectors, sphere_indices, dimension_order, &
+                               workspace, value_buffer, permutation, left_stack, right_stack, ierr) &
+                               bind(C, name="build_spherical_kd_C")
+    use, intrinsic :: iso_c_binding, only: c_int, c_double
+    use, intrinsic :: iso_fortran_env, only : int32
+    use f42_kd_tree, only: build_spherical_kd
+    implicit none
+    integer(c_int), intent(in) :: num_dimensions
+    integer(c_int), intent(in) :: num_vectors
+    real(c_double), intent(in) :: vectors(num_dimensions, num_vectors)
+    integer(c_int), intent(in) :: dimension_order(num_dimensions)
+    integer(c_int), intent(out) :: sphere_indices(num_vectors)
+    integer(c_int), intent(out) :: workspace(num_vectors)
+    real(c_double), intent(out) :: value_buffer(num_vectors)
+    integer(c_int), intent(out) :: permutation(num_vectors)
+    integer(c_int), intent(out) :: left_stack(num_vectors)
+    integer(c_int), intent(out) :: right_stack(num_vectors)
+    integer(c_int), intent(out) :: ierr
+
+    integer(int32) :: recursion_stack(3, num_vectors)
+
+    call build_spherical_kd(vectors, num_dimensions, num_vectors, sphere_indices, dimension_order, &
+                          workspace, value_buffer, permutation, left_stack, right_stack, recursion_stack, ierr)
+end subroutine build_spherical_kd_C

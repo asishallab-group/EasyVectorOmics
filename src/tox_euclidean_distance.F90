@@ -83,7 +83,7 @@ subroutine euclidean_distance_c(vec1, vec2, d, result) bind(C, name="euclidean_d
   implicit none
 
   !| Dimension of both vectors
-  integer(c_int), intent(in), value :: d
+  integer(c_int), intent(in) :: d
   !| First expression vector
   real(c_double), intent(in), target :: vec1(d)
   !| Second expression vector
@@ -128,11 +128,11 @@ subroutine distance_to_centroid_c(n_genes, n_families, genes, centroids, &
   implicit none
 
   !| Total number of genes
-  integer(c_int), intent(in), value :: n_genes
+  integer(c_int), intent(in) :: n_genes
   !| Total number of gene families
-  integer(c_int), intent(in), value :: n_families
+  integer(c_int), intent(in) :: n_families
   !| Expression vector dimension
-  integer(c_int), intent(in), value :: d
+  integer(c_int), intent(in) :: d
   !| Gene expression matrix (d × n_genes), column-major
   real(c_double), intent(in), target :: genes(d, n_genes)
   !| Family centroid matrix (d × n_families), column-major

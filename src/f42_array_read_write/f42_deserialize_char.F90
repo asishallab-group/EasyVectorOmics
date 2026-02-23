@@ -283,13 +283,13 @@ subroutine deserialize_char_nd_C(raw_chars, clen, total_array_size, &
   implicit none
 
   ! Arguments
-  integer(c_int), value       :: clen
+  integer(c_int), intent(in)  :: clen
   !! Length of each character string
-  integer(c_int), value       :: total_array_size
+  integer(c_int), intent(in)  :: total_array_size
   !! Total size of the array
   character(kind=c_char, len=1), intent(out) :: raw_chars(clen, total_array_size)
   !! Output array of c_chars, preallocated by C/Python (2D: clen x total_array_size)
-  integer(c_int), value       :: fn_len
+  integer(c_int), intent(in)  :: fn_len
   !! Length of the filename array
   character(kind=c_char, len=1), intent(in)  :: filename_c(fn_len)
   !! c_char array representing the filename

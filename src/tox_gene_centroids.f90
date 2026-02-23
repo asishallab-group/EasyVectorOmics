@@ -157,13 +157,13 @@ pure subroutine mean_vector_c(expression_vectors, n_axes, n_genes, gene_indices,
   use tox_gene_centroids, only: mean_vector
   implicit none
   !| Number of axes (tissues/dimensions).
-  integer(c_int), intent(in), value :: n_axes
+  integer(c_int), intent(in) :: n_axes
   !| Total number of genes in the input matrix.
-  integer(c_int), intent(in), value :: n_genes
+  integer(c_int), intent(in) :: n_genes
   !| The input matrix of all gene expression vectors (n_axes x n_genes).
   real(c_double), intent(in) :: expression_vectors(n_axes, n_genes)
   !| The number of genes in the current family to be averaged.
-  integer(c_int), intent(in), value :: n_selected_genes
+  integer(c_int), intent(in) :: n_selected_genes
   !| An array containing the column indices of the selected genes in 'expression_vectors'.
   integer(c_int), intent(in) :: gene_indices(n_selected_genes)
   !| The output vector representing the computed centroid.
@@ -186,13 +186,13 @@ pure subroutine group_centroid_c(expression_vectors, n_axes, n_genes, gene_to_fa
   use tox_conversions, only: c_char_1d_as_string, c_int_as_logical
   implicit none
   !| Number of axes (tissues/dimensions).
-  integer(c_int), intent(in), value :: n_axes
+  integer(c_int), intent(in) :: n_axes
   !| Total number of genes.
-  integer(c_int), intent(in), value :: n_genes
+  integer(c_int), intent(in) :: n_genes
   !| Total number of families.
-  integer(c_int), intent(in), value :: n_families
+  integer(c_int), intent(in) :: n_families
   !| The allocated length of the 'selected_indices' array.
-  integer(c_int), intent(in), value :: selected_indices_len
+  integer(c_int), intent(in) :: selected_indices_len
   !| Input expression vectors (passed from C).
   real(c_double), intent(in) :: expression_vectors(n_axes, n_genes)
   !| Array mapping gene index to family ID.

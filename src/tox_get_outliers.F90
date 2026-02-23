@@ -525,7 +525,7 @@ end subroutine detect_outliers_r
   implicit none
 
   !| Total number of genes
-  integer(c_int), intent(in), value :: n_genes, n_families
+  integer(c_int), intent(in) :: n_genes, n_families
   !| Array of Euclidean distances for each gene
   real(c_double), intent(in), target :: distances(n_genes)
   !| Mapping of each gene to its family (1-based)
@@ -561,7 +561,7 @@ use, intrinsic :: iso_c_binding, only : c_int, c_double
 use tox_get_outliers, only: compute_family_scaling_alloc
 implicit none
 !| Total number of genes
-integer(c_int), intent(in), value :: n_genes, n_families
+integer(c_int), intent(in) :: n_genes, n_families
 !| Array of Euclidean distances for each gene
 real(c_double), intent(in), target :: distances(n_genes)
 !| Mapping of each gene to its family (1-based)
@@ -589,7 +589,7 @@ subroutine compute_rdi_c(n_genes, n_families, distances, gene_to_fam, dscale, rd
   implicit none
 
   !| Total number of genes
-  integer(c_int), intent(in), value :: n_genes, n_families
+  integer(c_int), intent(in) :: n_genes, n_families
   !| Array of Euclidean distances for each gene to its centroid
   real(c_double), intent(in), target :: distances(n_genes)
   !| Gene-to-family mapping (1-based indexing)
@@ -618,7 +618,7 @@ subroutine identify_outliers_c(n_genes, rdi, sorted_rdi, is_outlier_int, thresho
   implicit none
 
   !| Total number of genes
-  integer(c_int), intent(in), value :: n_genes
+  integer(c_int), intent(in) :: n_genes
   !| Array of RDI values for each gene
   real(c_double), intent(in), target :: rdi(n_genes)
   !| Sorted RDI array (must be sorted in ascending order before calling)
@@ -628,7 +628,7 @@ subroutine identify_outliers_c(n_genes, rdi, sorted_rdi, is_outlier_int, thresho
   !| Output threshold value used for detection
   real(c_double), intent(out) :: threshold
   !| Percentile threshold for outlier detection
-  real(c_double), intent(in), value :: percentile
+  real(c_double), intent(in) :: percentile
   logical :: is_outlier(n_genes)
   integer :: i
 
@@ -660,7 +660,7 @@ subroutine detect_outliers_c(n_genes, n_families, distances, gene_to_fam, &
   implicit none
 
   !| Total number of genes
-  integer(c_int), intent(in), value :: n_genes, n_families
+  integer(c_int), intent(in) :: n_genes, n_families
   !| Array of Euclidean distances for each gene to its centroid
   real(c_double), intent(in), target :: distances(n_genes)
   !| Gene-to-family mapping (1-based indexing)
@@ -684,7 +684,7 @@ subroutine detect_outliers_c(n_genes, n_families, distances, gene_to_fam, &
   !| Error code: 0=ok, 201=invalid family indices
   integer(c_int), intent(out) :: ierr
   !| Percentile threshold for outlier detection
-  real(c_double), intent(in), value :: percentile
+  real(c_double), intent(in) :: percentile
   logical :: is_outlier(n_genes)
   integer :: i
   call detect_outliers(n_genes, n_families, distances, gene_to_fam, &

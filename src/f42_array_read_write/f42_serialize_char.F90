@@ -264,15 +264,15 @@ subroutine serialize_char_nd_C(raw_chars, dims, ndim, clen, filename_c, fn_len, 
   use tox_errors
   implicit none
 
-  integer(c_int), intent(in), value :: ndim
+  integer(c_int), intent(in) :: ndim
     !! Number of dimensions
   integer(c_int), intent(in) :: dims(ndim)
     !! Dimensions of the array
-  integer(c_int), value :: clen
+  integer(c_int), intent(in) :: clen
     !! Length of each string
   character(kind=c_char, len=1), intent(in) :: raw_chars(clen, product(dims))
     !! Raw chars array
-  integer(c_int), value :: fn_len
+  integer(c_int), intent(in) :: fn_len
     !! length of the filename array
   character(kind=c_char, len=1), intent(in) :: filename_c(fn_len)
     !! filename as c_char array
