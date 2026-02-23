@@ -13,13 +13,30 @@ lib = ctypes.CDLL(dll_path)
 
 #> f42_helper: convert a filename to ASCII chars to transfer it as integer to fortran
 def _filename_to_ascii_array(filename):
+    """
+    Convert a filename string to an ASCII integer array.
+
+    Args:
+        filename: Input filename.
+
+    Returns:
+        element1: description.
+    """
     ascii_arr = np.array([ord(c) for c in filename], dtype=np.int32)
     return ascii_arr, np.int32(len(ascii_arr))
 
 
 #> f42_helper: Mark all given NumPy arrays as read-only
 def _readonly(*arrays: np.ndarray) -> None:
-    """Mark all given NumPy arrays as read-only."""
+    """
+    Mark all given NumPy arrays as read-only.
+
+    Args:
+        arrays: One or more NumPy arrays.
+
+    Returns:
+        element1: Updates arrays in place.
+    """
     for a in arrays:
         if isinstance(a, np.ndarray):
             a.flags.writeable = False
@@ -29,7 +46,15 @@ def _readonly(*arrays: np.ndarray) -> None:
 
 #> f42_helper: converts a c_char array back to a string
 def _c_char_array_to_string(c_array):
-    """Convert c_char array back to string"""
+    """
+    Convert a C char array back to a Python string.
+
+    Args:
+        c_array: Input C char buffer.
+
+    Returns:
+        element1: Decoded ASCII string up to null terminator.
+    """
     # Find null terminator or use full length
     bytes_list = []
     for i in range(len(c_array)):
@@ -42,7 +67,16 @@ def _c_char_array_to_string(c_array):
 
 #> f42_helper: Convert list of strings to flat c_char array
 def _strings_to_c_char_matrix(strings, max_length):
-    """Convert list of strings to flat c_char array (Fortran-compatible, NumPy-wrapped)"""
+    """
+    Convert a list of strings to a Fortran-compatible char matrix.
+
+    Args:
+        strings: Input strings.
+        max_length: Fixed length per string.
+
+    Returns:
+        element1: Character matrix with shape (n_strings, max_length).
+    """
     import numpy as np
     n_strings = len(strings)
     total_size = n_strings * max_length
@@ -71,7 +105,16 @@ def _strings_to_c_char_matrix(strings, max_length):
 
 #> f42_helper: Convert numpy string array to c_char matrix
 def _string_array_to_c_char_matrix(string_array, max_length):
-    """Convert numpy string array to c_char matrix"""
+    """
+    Convert a NumPy string array to a C-compatible char matrix.
+
+    Args:
+        string_array: Input NumPy string array.
+        max_length: Fixed length per string.
+
+    Returns:
+        element1: Byte matrix of encoded strings.
+    """
     import numpy as np
 
     # Flatten the array and convert to list of strings
@@ -94,7 +137,16 @@ def _string_array_to_c_char_matrix(string_array, max_length):
 
 #> f42_helper: Faster version using bytes operations
 def _c_char_matrix_to_strings(matrix, n_strings):
-    """Faster version using bytes operations"""
+    """
+    Convert a C char matrix into Python strings.
+
+    Args:
+        matrix: Character matrix.
+        n_strings: Number of strings to decode.
+
+    Returns:
+        element1: Decoded strings.
+    """
     import numpy as np
 
     strings = []
@@ -125,7 +177,16 @@ def _c_char_matrix_to_strings(matrix, n_strings):
 
 #> f42_helper: Convert string to c_char array with null termination
 def _string_to_c_char_array(s, length):
-    """Convert string to c_char array with null termination"""
+    """
+    Convert a Python string to a null-terminated C char array.
+
+    Args:
+        s: Input string.
+        length: Output array length.
+
+    Returns:
+        element1: Byte array with null termination when possible.
+    """
     if s is None:
         s = ""
 
@@ -147,9 +208,15 @@ def _string_to_c_char_array(s, length):
 #> f42_array_utils:get_array_metadata_C: Helper function to read dimensions of integer/real array
 def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
     """
-    Reads dimensions (and optionally character length) of an array file.
-    with_clen=True -> returns (dims, clen)
-    with_clen=False -> returns dims only
+    Read dimensions (and optionally character length) of a serialized array file.
+
+    Args:
+        filename: Path to serialized file.
+        max_dims: Maximum number of dimensions to read.
+        with_clen: Whether to return character length metadata.
+
+    Returns:
+        element1: description.
     """
     filename_c = _string_to_c_char_array(filename, len(filename) + 1)
     fn_len = len(filename_c)
@@ -194,7 +261,14 @@ def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
 #> f42_serialize_int:serialize_int_nd_C: Serialize an n-dimensional array of type 'int'
 def tox_serialize_int_nd(arr: np.ndarray, filename: str):
     """
-    Serializes an n-dimensional integer32 array to a binary file
+    Serialize an n-dimensional int32 array to a binary file.
+
+    Args:
+        arr: Input int32 array.
+        filename: Output file path.
+
+    Returns:
+        element1: Writes array data to disk.
     """
     if not isinstance(arr, np.ndarray) or arr.dtype != np.int32:
         raise ValueError("arr must be a numpy array of int32")
@@ -240,7 +314,13 @@ def tox_serialize_int_nd(arr: np.ndarray, filename: str):
 #> f42_deserialize_int:deserialize_int_nd_C: Deserialize an n-dimensional array of type 'int'
 def tox_deserialize_int_nd(filename):
     """
-    Deserializes an n-dimensional int32-Array.
+    Deserialize an n-dimensional int32 array from a binary file.
+
+    Args:
+        filename: Input file path.
+
+    Returns:
+        element1: Deserialized int32 array.
     """
     # read size of the array
     dims = tox_get_array_metadata(filename)
@@ -269,7 +349,14 @@ def tox_deserialize_int_nd(filename):
 #> f42_serialize_real:serialize_real_nd_C: Serialize an n-dimensional array of type 'float'
 def tox_serialize_real_nd(arr: np.ndarray, filename: str):
     """
-    Serializes an n-dimensional real64 array to a binary file
+    Serialize an n-dimensional float64 array to a binary file.
+
+    Args:
+        arr: Input float64 array.
+        filename: Output file path.
+
+    Returns:
+        element1: Writes array data to disk.
     """
     if not isinstance(arr, np.ndarray) or arr.dtype != np.float64:
         raise ValueError("arr must be a numpy array of float64")
@@ -315,7 +402,13 @@ def tox_serialize_real_nd(arr: np.ndarray, filename: str):
 #> f42_deserialize_real:deserialize_real_nd_C: Deserialize an n-dimensional array of type 'float'
 def tox_deserialize_real_nd(filename):
     """
-    Deserializes an n-dimensional array of type real64
+    Deserialize an n-dimensional float64 array from a binary file.
+
+    Args:
+        filename: Input file path.
+
+    Returns:
+        element1: Deserialized float64 array.
     """
     #read dimensions
     dims = tox_get_array_metadata(filename)
@@ -344,7 +437,14 @@ def tox_deserialize_real_nd(filename):
 #> f42_serialize_char:serialize_char_nd_C: Serialize an n-dimensional array of type 'str'
 def tox_serialize_char_nd(arr: np.ndarray, filename: str):
     """
-    Serializes an n-dimensional character array to a binary file
+    Serialize an n-dimensional Unicode character array to a binary file.
+
+    Args:
+        arr: Input Unicode array.
+        filename: Output file path.
+
+    Returns:
+        element1: Writes array data to disk.
     """
     if not isinstance(arr, np.ndarray) or arr.dtype.kind != 'U':
         raise ValueError("arr must be a numpy array of strings (dtype='U')")
@@ -391,7 +491,13 @@ def tox_serialize_char_nd(arr: np.ndarray, filename: str):
 #> f42_deserialize_char:deserialize_char_nd_C: Deserialize an n-dimensional array of type 'str'
 def tox_deserialize_char_nd(filename):
     """
-    Deserializes an n-dimensional character array from a binary file
+    Deserialize an n-dimensional Unicode array from a binary file.
+
+    Args:
+        filename: Input file path.
+
+    Returns:
+        element1: Deserialized Unicode array.
     """
     # Read dimensions and clen from file metadata
     dims, clen = tox_get_array_metadata(filename, with_clen=True)  # Sie müssen diese Funktion anpassen oder erstellen
@@ -438,8 +544,14 @@ def tox_deserialize_char_nd(filename):
 #> f42_serialize_logical:serialize_logical_nd_C: Serialize an n-dimensional array of type 'bool'
 def tox_serialize_logical_nd(arr: np.ndarray, filename: str):
     """
-    Serializes an n-dimensional logical array to a binary file
-    Converts Python booleans to C integers (1 for True, 0 for False)
+    Serialize an n-dimensional boolean array to a binary file.
+
+    Args:
+        arr: Input boolean array.
+        filename: Output file path.
+
+    Returns:
+        element1: Writes array data to disk.
     """
     if not isinstance(arr, np.ndarray) or arr.dtype != np.bool_:
         raise ValueError("arr must be a numpy array of bool")
@@ -486,8 +598,13 @@ def tox_serialize_logical_nd(arr: np.ndarray, filename: str):
 #> f42_deserialize_logical:deserialize_logical_nd_C: Deserialize an n-dimensional array of type 'bool'
 def tox_deserialize_logical_nd(filename):
     """
-    Deserializes an n-dimensional logical array.
-    Converts C integers (1 for True, 0 for False) back to Python booleans
+    Deserialize an n-dimensional boolean array from a binary file.
+
+    Args:
+        filename: Input file path.
+
+    Returns:
+        element1: Deserialized boolean array.
     """
     # read size of the array
     dims = tox_get_array_metadata(filename)
@@ -519,7 +636,14 @@ def tox_deserialize_logical_nd(filename):
 #> f42_serialize_complex:serialize_complex_nd_C: Serialize an n-dimensional array of type 'complex'
 def tox_serialize_complex_nd(arr: np.ndarray, filename: str):
     """
-    Serializes an n-dimensional complex128 array to a binary file
+    Serialize an n-dimensional complex128 array to a binary file.
+
+    Args:
+        arr: Input complex128 array.
+        filename: Output file path.
+
+    Returns:
+        element1: Writes array data to disk.
     """
     if not isinstance(arr, np.ndarray) or arr.dtype != np.complex128:
         raise ValueError("arr must be a numpy array of complex128")
@@ -565,7 +689,13 @@ def tox_serialize_complex_nd(arr: np.ndarray, filename: str):
 #> f42_deserialize_complex:deserialize_complex_nd_C: Deserialize an n-dimensional array of type 'complex'
 def tox_deserialize_complex_nd(filename):
     """
-    Deserializes an n-dimensional array of type complex128
+    Deserialize an n-dimensional complex128 array from a binary file.
+
+    Args:
+        filename: Input file path.
+
+    Returns:
+        element1: Deserialized complex128 array.
     """
     # read dimensions
     dims = tox_get_array_metadata(filename)
@@ -596,11 +726,11 @@ def build_bst_index(values):
     """
     Build a BST index for the given values.
 
-    Parameters:
-    values (np.array): 1D array of values to index
+    Args:
+        values: 1D array of values to index.
 
     Returns:
-    np.array: BST indices (1-based)
+        element1: BST indices (1-based).
     """
     values = np.ascontiguousarray(values, dtype=np.float64)
     n = len(values)
@@ -632,12 +762,12 @@ def build_spherical_kd(vectors, dimension_order=None):
     """
     Build a spherical KD-Tree index for unit vectors.
 
-    Parameters:
-    vectors (np.array): 2D array of unit vectors (d x n, Fortran order)
-    dimension_order (np.array): Order of dimensions for splitting (1-based)
+    Args:
+        vectors: 2D array of unit vectors (d x n, Fortran order).
+        dimension_order: Order of dimensions for splitting (1-based).
 
     Returns:
-    np.array: Spherical KD-Tree indices (1-based Fortran indices)
+        element1: Spherical KD-Tree indices (1-based Fortran indices).
     """
     vectors = np.asfortranarray(vectors, dtype=np.float64)
     d, n = vectors.shape
@@ -697,14 +827,14 @@ def bst_range_query(values, indices, lower_bound, upper_bound):
     """
     Perform a range query on BST-indexed values.
 
-    Parameters:
-    values (np.array): Original values array
-    indices (np.array): BST indices from build_bst_index
-    lower_bound (float): Lower bound of range (inclusive)
-    upper_bound (float): Upper bound of range (inclusive)
+    Args:
+        values: Original values array.
+        indices: BST indices from build_bst_index.
+        lower_bound: Lower bound of range (inclusive).
+        upper_bound: Upper bound of range (inclusive).
 
     Returns:
-    dictionary: (matching_indices, count) where matching_indices are 1-based Fortran indices
+        element1: description.
     """
     values = np.ascontiguousarray(values, dtype=np.float64)
     indices = np.ascontiguousarray(indices, dtype=np.int32)
@@ -745,12 +875,12 @@ def build_kd_index(points, dimension_order=None):
     """
     Build a KD-Tree index for the given points.
 
-    Parameters:
-    points (np.array): 2D array of points (d x n, Fortran order)
-    dimension_order (np.array): Order of dimensions for splitting (1-based)
+    Args:
+        points: 2D array of points (d x n, Fortran order).
+        dimension_order: Order of dimensions for splitting (1-based).
 
     Returns:
-    np.array: KD-Tree indices (1-based Fortran indices)
+        element1: KD-Tree indices (1-based Fortran indices).
     """
     points = np.asfortranarray(points, dtype=np.float64)
     d, n = points.shape
@@ -802,14 +932,14 @@ def build_kd_index(points, dimension_order=None):
 def tox_vector_RAP_projection(vecs, vecs_selection_mask, axes_selection_mask):
     """
     Project selected vectors onto RAP constructed from selected axes.
+
     Args:
-        vecs: Expression vectors (n_axes x n_vecs)
-        vecs_selection_mask: Boolean/integer array (length n_vecs)
-        axes_selection_mask: Boolean/integer array (length n_axes)
+        vecs: Expression vectors (n_axes x n_vecs).
+        vecs_selection_mask: Boolean/integer array (length n_vecs).
+        axes_selection_mask: Boolean/integer array (length n_axes).
+
     Returns:
-        np.ndarray: Projected vectors (n_selected_axes x n_selected_vecs)
-    Raises:
-        RuntimeError: If Fortran routine returns error
+        element1: Projected vectors (n_selected_axes x n_selected_vecs).
     """
     vecs = np.asfortranarray(vecs, dtype=np.float64)
     vecs_selection_mask = np.ascontiguousarray(vecs_selection_mask, dtype=np.int32)
@@ -855,14 +985,14 @@ def tox_vector_RAP_projection(vecs, vecs_selection_mask, axes_selection_mask):
 def tox_field_RAP_projection(vecs, vecs_selection_mask, axes_selection_mask):
     """
     Project selected vector fields onto RAP constructed from selected axes.
+
     Args:
-        vecs: Vector fields (2*n_axes x n_vecs)
-        vecs_selection_mask: Boolean/integer array (length n_vecs)
-        axes_selection_mask: Boolean/integer array (length n_axes)
+        vecs: Vector fields (2*n_axes x n_vecs).
+        vecs_selection_mask: Boolean/integer array (length n_vecs).
+        axes_selection_mask: Boolean/integer array (length n_axes).
+
     Returns:
-        np.ndarray: Projected vectors (n_selected_axes x n_selected_vecs)
-    Raises:
-        RuntimeError: If Fortran routine returns error
+        element1: Projected vectors (n_selected_axes x n_selected_vecs).
     """
     vecs = np.asfortranarray(vecs, dtype=np.float64)
     vecs_selection_mask = np.ascontiguousarray(vecs_selection_mask, dtype=np.int32)
@@ -911,14 +1041,12 @@ def tox_clock_hand_angle_between_vectors(v1, v2, selected_axes_for_signed):
     Calculate clock hand angle between two vectors
 
     Args:
-        v1: First vector (numpy array)
-        v2: Second vector (numpy array)
-        selected_axes_for_signed: Integer array of axes to use for signed angle (length n_dims)
+        v1: First vector (numpy array).
+        v2: Second vector (numpy array).
+        selected_axes_for_signed: Integer array of axes to use for signed angle (length n_dims).
 
     Returns:
-        float: Signed angle between vectors in degrees
-    Raises:
-        RuntimeError: If Fortran routine returns error
+        element1: Signed angle between vectors in degrees.
     """
     # Input validation and conversion
     v1 = np.ascontiguousarray(v1, dtype=np.float64)  # First vector
@@ -966,15 +1094,13 @@ def tox_clock_hand_angles_for_shift_vectors(origins, targets, vecs_selection_mas
     Calculate clock hand angles for shift vectors
 
     Args:
-        origins: Origin vectors (n_dims x n_vecs)
-        targets: Target vectors (n_dims x n_vecs)
-        vecs_selection_mask: Boolean array indicating which vectors to process
-        selected_axes_for_signed: Integer array of axes to use for signed angle (length n_dims)
+        origins: Origin vectors (n_dims x n_vecs).
+        targets: Target vectors (n_dims x n_vecs).
+        vecs_selection_mask: Boolean array indicating which vectors to process.
+        selected_axes_for_signed: Integer array of axes to use for signed angle (length n_dims).
 
     Returns:
-        numpy.ndarray: Signed angles for selected vectors in degrees
-    Raises:
-        RuntimeError: If Fortran routine returns error
+        element1: Signed angles for selected vectors in degrees.
     """
     # Input validation and conversion
     origins = np.asfortranarray(origins, dtype=np.float64)  # Origin vectors
@@ -1038,12 +1164,12 @@ def tox_clock_hand_angles_for_shift_vectors(origins, targets, vecs_selection_mas
 def relative_axes_changes_from_shift_vector(shift_vector):
     """
     Compute relative axis contributions from a shift vector (RAP space).
+
     Args:
-        shift_vector (array-like): Input vector (1D)
+        shift_vector: Input vector (1D).
+
     Returns:
-        np.ndarray: Relative axis contributions (sum to 1)
-    Raises:
-        RuntimeError: If Fortran routine returns error
+        element1: Relative axis contributions (sum to 1).
     """
     # Input validation and conversion
     vec = np.ascontiguousarray(shift_vector, dtype=np.float64)  # Shift vector
@@ -1076,12 +1202,12 @@ def relative_axes_changes_from_shift_vector(shift_vector):
 def relative_axes_expression_from_expression_vector(expression_vector):
     """
     Compute relative axis contributions from an expression vector (RAP space).
+
     Args:
-        expression_vector (array-like): Input vector (1D)
+        expression_vector: Input vector (1D).
+
     Returns:
-        np.ndarray: Relative axis contributions (sum to 1)
-    Raises:
-        RuntimeError: If Fortran routine returns error
+        element1: Relative axis contributions (sum to 1).
     """
     # Input validation and conversion
     vec = np.ascontiguousarray(expression_vector, dtype=np.float64)  # Expression vector
@@ -1116,10 +1242,10 @@ def tox_normalize_by_std_dev(input_matrix):
     Normalize gene expression values by standard deviation
 
     Args:
-        input_matrix: A numeric matrix with genes as rows and tissues as columns
+        input_matrix: A numeric matrix with genes as rows and tissues as columns.
 
     Returns:
-        numpy.ndarray: Normalized matrix with same dimensions as input
+        element1: Normalized matrix with same dimensions as input.
     """
     input_matrix = np.asarray(input_matrix, dtype=np.float64)
     n_genes, n_tissues = input_matrix.shape
@@ -1166,10 +1292,10 @@ def tox_quantile_normalization(input_matrix):
     Quantile normalization of gene expression values
 
     Args:
-        input_matrix: A numeric matrix with genes as rows and tissues as columns
+        input_matrix: A numeric matrix with genes as rows and tissues as columns.
 
     Returns:
-        numpy.ndarray: Quantile-normalized matrix with same dimensions as input
+        element1: Quantile-normalized matrix with same dimensions as input.
     """
     input_matrix = np.asarray(input_matrix, dtype=np.float64)
     n_genes, n_tissues = input_matrix.shape
@@ -1224,10 +1350,10 @@ def tox_log2_transformation(input_matrix):
     Apply log2(x + 1) transformation to gene expression values
 
     Args:
-        input_matrix: A numeric matrix with genes as rows and tissues as columns
+        input_matrix: A numeric matrix with genes as rows and tissues as columns.
 
     Returns:
-        numpy.ndarray: Log2-transformed matrix with same dimensions as input
+        element1: Log2-transformed matrix with same dimensions as input.
     """
     input_matrix = np.asarray(input_matrix, dtype=np.float64)
     n_genes, n_tissues = input_matrix.shape
@@ -1268,12 +1394,12 @@ def tox_calculate_tissue_averages(input_matrix, group_starts, group_counts):
     Calculate average expression across replicates for each tissue group
 
     Args:
-        input_matrix: A numeric matrix with genes as rows and tissue replicates as columns
-        group_starts: Array of starting column indices for each group (1-based for Fortran)
-        group_counts: Array of counts for each group
+        input_matrix: A numeric matrix with genes as rows and tissue replicates as columns.
+        group_starts: Array of starting column indices for each group (1-based for Fortran).
+        group_counts: Array of counts for each group.
 
     Returns:
-        numpy.ndarray: Matrix with genes as rows and averaged tissues as columns
+        element1: Matrix with genes as rows and averaged tissues as columns.
     """
     input_matrix = np.asarray(input_matrix, dtype=np.float64)
     group_starts = np.asarray(group_starts, dtype=np.int32)
@@ -1321,15 +1447,14 @@ def tox_calculate_tissue_averages(input_matrix, group_starts, group_counts):
 def tox_normalization_pipeline(input_matrix, group_starts, group_counts):
     """
     Complete normalization pipeline for gene expression data (up to log2(x+1))
-    Mirrors Fortran normalization_pipeline (no fold change).
 
     Args:
-        input_matrix: Numeric matrix (genes x tissues)
-        group_starts: Integer array, start column index for each replicate group (1-based)
-        group_counts: Integer array, number of columns per replicate group
+        input_matrix: Numeric matrix (genes x tissues).
+        group_starts: Integer array, start column index for each replicate group (1-based).
+        group_counts: Integer array, number of columns per replicate group.
 
     Returns:
-        numpy.ndarray: log2(x+1) normalized expression (genes x groups)
+        element1: log2(x+1) normalized expression (genes x groups).
     """
     input_matrix = np.asarray(input_matrix, dtype=np.float64)
     group_starts = np.asarray(group_starts, dtype=np.int32)
@@ -1401,12 +1526,12 @@ def tox_calculate_fold_changes(input_matrix, control_cols, condition_cols):
     Calculate log2 fold changes between control and condition columns
 
     Args:
-        input_matrix: A numeric matrix with genes as rows and tissues/conditions as columns
-        control_cols: Array of control column indices (1-based for Fortran)
-        condition_cols: Array of condition column indices (1-based for Fortran)
+        input_matrix: A numeric matrix with genes as rows and tissues/conditions as columns.
+        control_cols: Array of control column indices (1-based for Fortran).
+        condition_cols: Array of condition column indices (1-based for Fortran).
 
     Returns:
-        numpy.ndarray: Matrix with genes as rows and fold change values as columns
+        element1: Matrix with genes as rows and fold change values as columns.
     """
     input_matrix = np.asarray(input_matrix, dtype=np.float64)
     control_cols = np.asarray(control_cols, dtype=np.int32)
@@ -1457,23 +1582,17 @@ def tox_calculate_tissue_versatility(expression_vectors, vector_selection, axis_
     """
     Calculate Tissue Versatility
 
-    Computes normalized tissue versatility for selected expression vectors.
-    The metric is based on the angle between each gene expression vector and the space diagonal.
-    Versatility is normalized to [0, 1], where 0 means uniform expression and 1 means expression in only one axis.
-    This function automatically checks for errors and throws informative exceptions.
-
     Args:
-        expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors)
-        vector_selection: Boolean or integer array indicating which vectors to process (length n_vectors)
-        axis_selection: Boolean or integer array indicating which axes to include in calculation (length n_axes)
+        expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors).
+        vector_selection: Boolean or integer array indicating which vectors to process (length n_vectors).
+        axis_selection: Boolean or integer array indicating which axes to include in calculation (length n_axes).
 
     Returns:
         dict: Dictionary containing:
-            - tissue_versatilities: Normalized tissue versatility values [0,1] for selected vectors
-            - tissue_angles_deg: Angles in degrees [0,90] for selected vectors
-            - n_selected_vectors: Number of vectors processed
-            - n_selected_axes: Number of axes used in calculation
-
+        - tissue_versatilities: Normalized tissue versatility values [0,1] for selected vectors
+        - tissue_angles_deg: Angles in degrees [0,90] for selected vectors
+        - n_selected_vectors: Number of vectors processed
+        - n_selected_axes: Number of axes used in calculation
     """
     # Input validation
     if not isinstance(expression_vectors, np.ndarray):
@@ -1565,11 +1684,11 @@ def tox_euclidean_distance(vec1, vec2):
     Calculate Euclidean distance between two vectors
 
     Args:
-        vec1: First vector (numpy array)
-        vec2: Second vector (numpy array)
+        vec1: First vector (numpy array).
+        vec2: Second vector (numpy array).
 
     Returns:
-        float: Euclidean distance between the vectors
+        element1: Euclidean distance between the vectors.
     """
     # Input validation
     if not isinstance(vec1, np.ndarray):
@@ -1619,13 +1738,13 @@ def tox_distance_to_centroid(genes, centroids, gene_to_fam, d):
     Calculate distance from each gene to its family centroid
 
     Args:
-        genes: Gene expression data as flat array (n_genes * d elements)
-        centroids: Family centroids as flat array (n_families * d elements)
-        gene_to_fam: Gene-to-family mapping (0 = no family, >0 = family index)
-        d: Number of dimensions
+        genes: Gene expression data as flat array (n_genes * d elements).
+        centroids: Family centroids as flat array (n_families * d elements).
+        gene_to_fam: Gene-to-family mapping (0 = no family, >0 = family index).
+        d: Number of dimensions.
 
     Returns:
-        numpy.ndarray: Distances from each gene to its centroid (-1 for invalid families)
+        element1: Distances from each gene to its centroid (-1 for invalid families).
     """
     # Input validation
     if not isinstance(genes, np.ndarray):
@@ -1694,15 +1813,15 @@ def tox_loess_smooth_2d(x_ref, y_ref, indices_used, x_query, kernel_sigma, kerne
     LOESS smoothing in 2D
 
     Args:
-        x_ref: Reference x values
-        y_ref: Reference y values
-        indices_used: Indices of points to use (1-based for Fortran)
-        x_query: Query x values where to compute smoothed y
-        kernel_sigma: Kernel bandwidth parameter
-        kernel_cutoff: Kernel cutoff parameter
+        x_ref: Reference x values.
+        y_ref: Reference y values.
+        indices_used: Indices of points to use (1-based for Fortran).
+        x_query: Query x values where to compute smoothed y.
+        kernel_sigma: Kernel bandwidth parameter.
+        kernel_cutoff: Kernel cutoff parameter.
 
     Returns:
-        numpy.ndarray: Smoothed y values at query points
+        element1: Smoothed y values at query points.
     """
     # Input validation and conversion
     x_ref = np.ascontiguousarray(x_ref, dtype=np.float64)
@@ -1778,8 +1897,8 @@ def tox_compute_family_scaling(distances, gene_to_fam):
     Compute family scaling factors for outlier detection
 
     Args:
-        distances: Gene distances to family centroids
-        gene_to_fam: Gene-to-family mapping
+        distances: Gene distances to family centroids.
+        gene_to_fam: Gene-to-family mapping.
 
     Returns:
         dict: Dictionary containing scaling factors and intermediate results
@@ -1850,17 +1969,13 @@ def tox_compute_family_scaling_expert(distances, gene_to_fam, perm_tmp, stack_le
     """
     Expert version of compute_family_scaling with user-provided work arrays
 
-    This version requires pre-allocated work arrays for maximum performance and control.
-    Use this when you need fine-grained control over memory allocation or are calling
-    this function many times in a tight loop.
-
     Args:
-        distances: Gene distances to family centroids
-        gene_to_fam: Gene-to-family mapping
-        perm_tmp: Pre-allocated permutation array for sorting (n_genes)
-        stack_left_tmp: Pre-allocated stack array for sorting (n_genes)
-        stack_right_tmp: Pre-allocated stack array for sorting (n_genes)
-        family_distances: Pre-allocated work array for family distances (n_genes)
+        distances: Gene distances to family centroids.
+        gene_to_fam: Gene-to-family mapping.
+        perm_tmp: Pre-allocated permutation array for sorting (n_genes).
+        stack_left_tmp: Pre-allocated stack array for sorting (n_genes).
+        stack_right_tmp: Pre-allocated stack array for sorting (n_genes).
+        family_distances: Pre-allocated work array for family distances (n_genes).
 
     Returns:
         dict: Dictionary containing scaling factors and intermediate results
@@ -1955,12 +2070,12 @@ def tox_compute_rdi(distances, gene_to_fam, dscale):
     Compute Relative Distance Index (RDI) for outlier detection
 
     Args:
-        distances: Gene distances to centroids
-        gene_to_fam: Gene-to-family mapping
-        dscale: Family scaling factors
+        distances: Gene distances to centroids.
+        gene_to_fam: Gene-to-family mapping.
+        dscale: Family scaling factors.
 
     Returns:
-        numpy.ndarray: RDI values for each gene
+        element1: RDI values for each gene.
     """
     distances = np.ascontiguousarray(distances, dtype=np.float64)
     gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
@@ -2009,14 +2124,14 @@ def tox_identify_outliers(rdi, threshold=None, percentile=95.0):
     Identify outliers based on RDI percentile or threshold
 
     Args:
-        rdi: Relative Distance Index values
-        threshold: Fixed RDI threshold (if None, uses percentile)
-        percentile: Percentile threshold for outlier detection (default: 95 for top 5%)
+        rdi: Relative Distance Index values.
+        threshold: Fixed RDI threshold (if None, uses percentile).
+        percentile: Percentile threshold for outlier detection (default: 95 for top 5%).
 
     Returns:
         dict: Dictionary containing:
-            - outliers: Boolean array indicating outliers
-            - threshold: Threshold value used for detection
+        - outliers: Boolean array indicating outliers
+        - threshold: Threshold value used for detection
     """
     rdi = np.ascontiguousarray(rdi, dtype=np.float64)
     n_genes = len(rdi)
@@ -2062,9 +2177,9 @@ def tox_detect_outliers(distances, gene_to_fam, percentile=95.0):
     Complete outlier detection pipeline
 
     Args:
-        distances: Gene distances to centroids
-        gene_to_fam: Gene-to-family mapping
-        percentile: Percentile threshold for outlier detection (default: 95 for top 5%)
+        distances: Gene distances to centroids.
+        gene_to_fam: Gene-to-family mapping.
+        percentile: Percentile threshold for outlier detection (default: 95 for top 5%).
 
     Returns:
         dict: Dictionary containing outliers and intermediate results
@@ -2136,13 +2251,12 @@ def tox_detect_outliers(distances, gene_to_fam, percentile=95.0):
 def tox_which(cond):
     """
     'which' utility for Python, like in R/MATLAB.
-    Returns indices of TRUE elements in a logical array.
 
     Args:
-        cond: Array of boolean/integer values (0/1)
+        cond: Array of boolean/integer values (0/1).
 
     Returns:
-        tuple: (idx_out, m_out) where idx_out contains 1-based indices and m_out is count
+        element1: (idx_out, m_out) where idx_out contains 1-based indices and m_out is count.
     """
     cond = np.ascontiguousarray(cond, dtype=np.int32)
 
@@ -2192,19 +2306,13 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
     """
     Calculate Shift Vector Field
 
-    Computes the shift vector field for each gene expression vector based on its family centroid.
-    The shift vector is defined as the difference between the gene expression vector and its corresponding family centroid,
-    starting at the expression vector and pointing to its family centroid.
-    This function automatically checks for errors and throws informative exceptions.
-
     Args:
-        expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors)
-        family_centroids: Matrix where each column is a family centroid vector (n_axes x n_families)
-        gene_to_centroid: Array mapping each gene to its corresponding family centroid index in family_centroids with length n_vectors (1 based for fortran)
+        expression_vectors: Matrix where each column is a gene expression vector (n_axes x n_vectors).
+        family_centroids: Matrix where each column is a family centroid vector (n_axes x n_families).
+        gene_to_centroid: Array mapping each gene to its corresponding family centroid index in family_centroids with length n_vectors (1 based for fortran).
 
     Returns:
-        shift_vectors: The computed shift vectors for each gene expression vector
-
+        element1: The computed shift vectors for each gene expression vector.
     """
 
     # Input validation
@@ -2296,24 +2404,15 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, mode, ort
     """
     Computes expression centroids for groups of genes.
 
-    Computes the centroids for each gene family based on the expression vectors of its member genes.
-    This function automatically checks for errors and throws informative exceptions.
-
     Args:
-        vectors : np.ndarray
-            A 2D NumPy array (n_axes x n_genes) of gene expression vectors.
-        gene_to_family_map : np.ndarray
-            A 1D NumPy array of length n_genes, mapping each gene to a family ID.
-        n_families : int
-            The total number of unique families.
-        mode : str
-            The calculation mode. 'all' or 'orthologs'.
-        ortholog_set : np.ndarray
-            (Optional) A 1D boolean NumPy array of length n_genes, indicating ortholog membership (only required in 'orthologs' mode).
+        expression_vectors: expression_vectors description.
+        gene_to_family: gene_to_family description.
+        n_families: int.
+        mode: str.
+        ortholog_set: np.ndarray.
 
     Returns:
-        np.ndarray
-            A read-only (n_axes x n_families) NumPy array containing the computed centroids.
+        element1: np.ndarray.
     """
 
     # 1) Validate and prepare inputs
@@ -2393,15 +2492,12 @@ def tox_mean_vector(expression_vectors, gene_indices):
     """
     Compute the element-wise mean for a given set of gene expression vectors.
 
-    This function wraps the Fortran subroutine `mean_vector_c`
-    to compute the centroid (mean vector) for a selected set of genes.
-
     Args:
         expression_vectors: 2D numpy array (n_axes x n_genes) of gene expression vectors.
         gene_indices: 1D numpy array of column indices of selected genes (1-based).
 
     Returns:
-        numpy.ndarray: 1D array of length n_axes representing the computed centroid.
+        element1: 1D array of length n_axes representing the computed centroid.
     """
     # Validate inputs
     if not isinstance(expression_vectors, np.ndarray) or expression_vectors.ndim != 2:
@@ -2454,23 +2550,14 @@ def compute_edf(values):
     """
     Compute Empirical Distribution Function (EDF) for given values.
 
-    This function computes the empirical cumulative distribution function (EDF)
-    for a set of observed data values. The EDF represents the proportion of values
-    less than or equal to each unique value in the dataset.
-
     Args:
-        values: Array of observed data values (e.g., contributions or spikes)
-                Can be list or numpy array
+        values: Array of observed data values (e.g., contributions or spikes).
 
     Returns:
         dict: Dictionary with keys:
-            - 'unique_values': Sorted unique data values (read-only numpy array)
-            - 'cdf_values': Corresponding cumulative frequencies between 0 and 1 (read-only)
-            - 'n_unique': Number of unique values found (int)
-
-    Raises:
-        RuntimeError: If error occurs during computation (invalid input, empty input)
-
+        - 'unique_values': Sorted unique data values (read-only numpy array)
+        - 'cdf_values': Corresponding cumulative frequencies between 0 and 1 (read-only)
+        - 'n_unique': Number of unique values found (int)
     """
     # Input validation and conversion
     values = np.asarray(values, dtype=np.float64)
@@ -2522,27 +2609,15 @@ def compute_edf_expert(values, perm):
     """
     Expert interface for Empirical Distribution Function (EDF) with pre-sorted permutation.
 
-    This function computes the EDF using a pre-sorted permutation array, allowing users
-    to have full control over the sorting algorithm or reuse existing permutations.
-
     Args:
-        values: Array of observed data values (e.g., contributions or spikes)
-        perm: Pre-sorted permutation indices (must be sorted by values[perm])
-              Array of 1-based indices in Fortran style
+        values: Array of observed data values (e.g., contributions or spikes).
+        perm: Pre-sorted permutation indices (must be sorted by values[perm]).
 
     Returns:
         dict: Dictionary with keys:
-            - 'unique_values': Sorted unique data values (read-only numpy array)
-            - 'cdf_values': Corresponding cumulative frequencies between 0 and 1 (read-only)
-            - 'n_unique': Number of unique values found (int)
-
-    Raises:
-        RuntimeError: If error occurs during computation (invalid input, empty input)
-
-    Note:
-        The perm array must be sorted such that values[perm[i]] is in ascending order.
-        This function skips the internal sorting step for better performance.
-
+        - 'unique_values': Sorted unique data values (read-only numpy array)
+        - 'cdf_values': Corresponding cumulative frequencies between 0 and 1 (read-only)
+        - 'n_unique': Number of unique values found (int)
     """
     # Input validation and conversion
     values = np.asarray(values, dtype=np.float64)
@@ -2600,27 +2675,15 @@ def tox_compute_baselines_factor_dependent(factor, dependent, mode):
     """
     Compute scalar baselines for a factor and dependent variable.
 
-    Calculates baseline values for two time series based on the specified mode:
-    - "raw" : No centering, baseline = 0
-    - "min" : Minimum-centered baseline
-    - "mean" : Mean-centered baseline
-
     Args:
-        factor (np.ndarray): 1D array of shape (n_timepoints,) — factor time series
-        dependent (np.ndarray): 1D array of shape (n_timepoints,) — dependent time series
-        mode (str): Baseline computation mode:
-            - "raw" : No centering, baseline = 0
-            - "min" : Minimum-centered baseline
-            - "mean" : Mean-centered baseline
+        factor: 1D array of shape (n_timepoints,) — factor time series.
+        dependent: 1D array of shape (n_timepoints,) — dependent time series.
+        mode: Baseline computation mode:.
 
     Returns:
         dict: Dictionary containing:
-            - 'baseline_factor': float, baseline value for factor
-            - 'baseline_dependent': float, baseline value for dependent variable
-
-    Raises:
-        ValueError: If factor and dependent have different lengths
-        RuntimeError: If error occurs during computation (invalid mode, etc.)
+        - 'baseline_factor': float, baseline value for factor
+        - 'baseline_dependent': float, baseline value for dependent variable
     """
     # Input validation and conversion
     factor = np.ascontiguousarray(factor, dtype=np.float64)
@@ -2677,13 +2740,13 @@ def tox_cluster_factor_trajectories_k_means(n_clusters, trajectories, n_factors,
     Wrapper for cluster_factor_trajectories_k_means_c: k-means clustering on factor trajectories.
 
     Args:
-        n_clusters (int): Number of clusters
-        trajectories (np.ndarray): Flattened trajectories (n_factors * n_samples * n_timepoints)
-        n_factors (int): Number of factors
-        n_samples (int): Number of samples
-        n_timepoints (int): Number of timepoints
-        centroids (np.ndarray): Initial centroids (n_factors x n_clusters)
-        max_iterations (int): Maximum number of iterations
+        n_clusters: Number of clusters.
+        trajectories: Flattened trajectories (n_factors * n_samples * n_timepoints).
+        n_factors: Number of factors.
+        n_samples: Number of samples.
+        n_timepoints: Number of timepoints.
+        centroids: Initial centroids (n_factors x n_clusters).
+        max_iterations: Maximum number of iterations.
 
     Returns:
         dict: {"centroids", "labels", "label_counts"}
@@ -2740,15 +2803,15 @@ def tox_k_means_clustering(data_points, centroids, max_iter):
     Wrapper for k_means_clustering_c: performs full k-means clustering.
 
     Args:
-        data_points (np.ndarray): 2D array of shape (n_dims, n_points)
-        centroids (np.ndarray): 2D array of shape (n_dims, n_clusters), initial centroids
-        max_iter (int): maximum number of iterations
+        data_points: 2D array of shape (n_dims, n_points).
+        centroids: 2D array of shape (n_dims, n_clusters), initial centroids.
+        max_iter: maximum number of iterations.
 
     Returns:
         dict: {
-            "centroids": np.ndarray of shape (n_dims, n_clusters),
-            "labels": np.ndarray of shape (n_points),
-            "label_counts": np.ndarray of shape (n_clusters)
+        "centroids": np.ndarray of shape (n_dims, n_clusters),
+        "labels": np.ndarray of shape (n_points),
+        "label_counts": np.ndarray of shape (n_clusters)
         }
     """
 
@@ -2804,15 +2867,15 @@ def tox_linkage_clustering(distances, method):
     Wrapper for linkage_clustering_c: performs hierarchical clustering.
 
     Args:
-        distances (np.ndarray): 2D array of shape (n_points, n_points), symmetric distance matrix
-        method (str): linkage method, one of "average", "weighted", "ward"
+        distances: 2D array of shape (n_points, n_points), symmetric distance matrix.
+        method: linkage method, one of "average", "weighted", "ward".
 
     Returns:
         dict: {
-            "merge_i": np.ndarray of shape (n_points - 1),
-            "merge_j": np.ndarray of shape (n_points - 1),
-            "heights": np.ndarray of shape (n_points - 1),
-            "cluster_sizes": np.ndarray of shape (n_points - 1)
+        "merge_i": np.ndarray of shape (n_points - 1),
+        "merge_j": np.ndarray of shape (n_points - 1),
+        "heights": np.ndarray of shape (n_points - 1),
+        "cluster_sizes": np.ndarray of shape (n_points - 1)
         }
     """
 
@@ -2875,10 +2938,10 @@ def tox_normalize_unit_length(vector):
     Normalize a vector to unit length in-place.
 
     Args:
-        vector (np.ndarray): 1D array of shape (n_dims,) to be normalized.
+        vector: 1D array of shape (n_dims,) to be normalized.
 
     Returns:
-        np.ndarray: The same array, normalized in-place.
+        element1: The same array, normalized in-place.
     """
 
     vector = np.ascontiguousarray(vector, dtype=np.float64)
@@ -2904,17 +2967,15 @@ def tox_normalize_unit_length(vector):
 def tox_detect_neofunctionalization(ancestors, genes, gene_to_fam, thresholds):
     """
     Identify neofunctionalization for genes by checking whether the difference
-    of expression to its ancestor exceeds the threshold for each axis.
 
     Args:
-        ancestors (np.ndarray): 2D array of shape (n_axes, n_families).
-        genes (np.ndarray): 2D array of shape (n_axes, n_genes).
-        gene_to_fam (np.ndarray): 1D integer array of length n_genes mapping gene index to family index.
-        thresholds (np.ndarray): 1D array of shape (n_axes,) with per-axis thresholds.
+        ancestors: 2D array of shape (n_axes, n_families).
+        genes: 2D array of shape (n_axes, n_genes).
+        gene_to_fam: 1D integer array of length n_genes mapping gene index to family index.
+        thresholds: 1D array of shape (n_axes,) with per-axis thresholds.
 
     Returns:
-        np.ndarray: Integer array of shape (n_genes, n_axes) with 0/1 values
-                    (non-zero interpreted as True).
+        element1: Integer array of shape (n_genes, n_axes) with 0/1 values.
     """
 
     # Ensure contiguous arrays with correct dtypes
@@ -2964,11 +3025,11 @@ def tox_mask_check_state(bit_mask, i_gene):
     Check the state of a specific gene in a bit mask.
 
     Args:
-        bit_mask (array-like): Integer array representing the bit mask (chunks of 32 bits).
-        i_gene (int): Index of the gene to check.
+        bit_mask: Integer array representing the bit mask (chunks of 32 bits).
+        i_gene: Index of the gene to check.
 
     Returns:
-        bool  # indicating inactive or active
+        element1: bool  # indicating inactive or active.
     """
     bit_mask = np.ascontiguousarray(bit_mask, dtype=np.int32)
     n_mask_chunks = ctypes.c_int(len(bit_mask))
@@ -2998,10 +3059,10 @@ def tox_mask_chunk_count(n_genes):
     Compute the number of 32-bit chunks needed to encode a given number of genes.
 
     Args:
-        n_genes (int): Number of genes to encode.
+        n_genes: Number of genes to encode.
 
     Returns:
-        int  # Number of 32-bit chunks required
+        element1: int  # Number of 32-bit chunks required.
     """
     n_genes = ctypes.c_int(n_genes)
     count = ctypes.c_int(0)
@@ -3029,14 +3090,14 @@ def tox_calc_work_arr_paralog_subsets_size(max_subset_size, n_genes, filtered_pa
     Calculate the required work array size for paralog subset analysis.
 
     Args:
-        max_subset_size (int): Maximum subset size (may be adjusted by the routine).
-        n_genes (int): Total number of genes.
-        filtered_paralogs_mask (array-like): Integer bit mask (chunks of 32 bits) marking filtered paralogs.
+        max_subset_size: Maximum subset size (may be adjusted by the routine).
+        n_genes: Total number of genes.
+        filtered_paralogs_mask: Integer bit mask (chunks of 32 bits) marking filtered paralogs.
 
     Returns:
         dict: {
-            'actual_max_subset_size': int,
-            'work_array_size': int
+        'actual_max_subset_size': int,
+        'work_array_size': int
         }
     """
     filtered_paralogs_mask = np.ascontiguousarray(filtered_paralogs_mask, dtype=np.int32)
@@ -3075,13 +3136,13 @@ def tox_filter_paralogs_by_pattern_dosage_effect(gene_angles, threshold,
     Filter paralogs by dosage effect using angle threshold, within the grouped slice.
 
     Args:
-        gene_angles (array-like): Angles for all genes (length = n_genes).
-        threshold (float): Filtering threshold.
+        gene_angles: Angles for all genes (length = n_genes).
+        threshold: Filtering threshold.
         gene_to_fam: Gene to family mapping (length = n_genes).
-        n_families (int): Number of families.
+        n_families: Number of families.
 
     Returns:
-        np.ndarray: int32 mask (chunks of 32 bits) with 1 for kept, 0 otherwise.
+        element1: int32 mask (chunks of 32 bits) with 1 for kept, 0 otherwise.
     """
     gene_angles = np.ascontiguousarray(gene_angles, dtype=np.float64)
     gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
@@ -3125,13 +3186,13 @@ def tox_filter_paralogs_by_pattern_subfunctionalization(gene_angles, threshold,
     Filter paralogs by subfunctionalization pattern using angle threshold, within the grouped slice.
 
     Args:
-        gene_angles (array-like): Angles for all genes (length = n_genes).
-        threshold (float): Filtering threshold.
-        gene_to_fam_Gene to family mapping = n_genes).
-        n_families (int): Number of families.
+        gene_angles: Angles for all genes (length = n_genes).
+        threshold: Filtering threshold.
+        gene_to_fam: gene_to_fam description.
+        n_families: Number of families.
 
     Returns:
-        np.ndarray: int32 mask (chunks of 32 bits) with 1 for kept, 0 otherwise.
+        element1: int32 mask (chunks of 32 bits) with 1 for kept, 0 otherwise.
     """
     gene_angles = np.ascontiguousarray(gene_angles, dtype=np.float64)
     gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
@@ -3175,13 +3236,13 @@ def tox_detect_subfunctionalization(ancestor, genes, rdi_threshold,
     Detect subfunctionalization among paralogs based on residual distance and pruning.
 
     Args:
-        ancestor (array-like): Vector (n_dims).
-        genes (array-like): 2D array (n_dims, n_genes), all genes.
-        rdi_threshold (float): Max allowed residual distance to ancestor.
-        filtered_paralogs_mask (array-like): int32 mask (chunks of 32 bits) for n_genes.
-        max_subset_size (int): Desired max subset size (may be adjusted).
-        paralog_norms (array-like): float64 norms for all genes (n_genes).
-        sorted_paralog_norms_perm (array-like): int32 permutation of norms (n_genes).
+        ancestor: Vector (n_dims).
+        genes: 2D array (n_dims, n_genes), all genes.
+        rdi_threshold: Max allowed residual distance to ancestor.
+        filtered_paralogs_mask: int32 mask (chunks of 32 bits) for n_genes.
+        max_subset_size: Desired max subset size (may be adjusted).
+        paralog_norms: float64 norms for all genes (n_genes).
+        sorted_paralog_norms_perm: int32 permutation of norms (n_genes).
 
     Returns:
         dict: { 'n_results': int, 'results': np.ndarray }
@@ -3256,12 +3317,12 @@ def tox_detect_dosage_effect(ancestor, genes,
     Detect dosage effect among paralogs using gain and angle thresholds.
 
     Args:
-        ancestor (array-like): Vector (n_dims).
-        genes (array-like): 2D array (n_dims, n_genes), all genes.
-        filtered_paralogs_mask (array-like): int32 mask (chunks of 32 bits) for n_genes.
-        max_subset_size (int): Desired max subset size (may be adjusted).
-        gain_gamma (float): Required magnitude gain (default 0.1).
-        max_angle (float): Maximum allowed angle in radians (default π).
+        ancestor: Vector (n_dims).
+        genes: 2D array (n_dims, n_genes), all genes.
+        filtered_paralogs_mask: int32 mask (chunks of 32 bits) for n_genes.
+        max_subset_size: Desired max subset size (may be adjusted).
+        gain_gamma: Required magnitude gain (default 0.1).
+        max_angle: Maximum allowed angle in radians (default π).
 
     Returns:
         dict: { 'n_results': int, 'results': np.ndarray }
@@ -3329,13 +3390,10 @@ def tox_normalize_variable_timeseries(v):
     Normalize a single variable across time using min-max scaling.
 
     Args:
-        v (array-like): 1D time series to normalize (length = n_points)
+        v: 1D time series to normalize (length = n_points).
 
     Returns:
-        np.ndarray: Normalized time series in [0,1]
-
-    Raises:
-        RuntimeError: If normalization fails
+        element1: Normalized time series in [0,1].
     """
     v_arr = np.asfortranarray(v, dtype=np.float64)
     n_points = ctypes.c_int(len(v_arr))
@@ -3370,13 +3428,10 @@ def tox_normalize_single_trajectory(trajectory):
     Normalize all factors in a single trajectory independently across time.
 
     Args:
-        trajectory (array-like): 2D array shape(n_timepoints, n_factors) for one sample
+        trajectory: 2D array shape(n_timepoints, n_factors) for one sample.
 
     Returns:
-        np.ndarray: Normalized trajectory shape(n_timepoints, n_factors) in [0,1]
-
-    Raises:
-        RuntimeError: If normalization fails
+        element1: Normalized trajectory shape(n_timepoints, n_factors) in [0,1].
     """
     traj_arr = np.asfortranarray(trajectory, dtype=np.float64)
     n_timepoints, n_factors = traj_arr.shape
@@ -3416,13 +3471,10 @@ def tox_normalize_all_trajectories(trajectories):
     Normalize all trajectories across multiple entities.
 
     Args:
-        trajectories (array-like): 3D array (n_factors × n_samples × n_timepoints)
+        trajectories: 3D array (n_factors × n_samples × n_timepoints).
 
     Returns:
-        np.ndarray: Normalized trajectories (n_factors × n_samples × n_timepoints) in [0,1]
-
-    Raises:
-        RuntimeError: If normalization fails
+        element1: Normalized trajectories (n_factors × n_samples × n_timepoints) in [0,1].
     """
     traj_arr = np.asfortranarray(trajectories, dtype=np.float64)
     n_factors, n_samples, n_timepoints = traj_arr.shape
@@ -3466,14 +3518,14 @@ def tox_compute_contributions(factor, dependent, mode):
     Compute contribution analysis for a factor–dependent pair.
 
     Args:
-        factor (np.ndarray): 1D array of shape (n_dims,) with factor time series.
-        dependent (np.ndarray): 1D array of shape (n_dims,) with dependent time series.
-        mode (str): Baseline mode ("raw", "min", "mean").
+        factor: 1D array of shape (n_dims,) with factor time series.
+        dependent: 1D array of shape (n_dims,) with dependent time series.
+        mode: Baseline mode ("raw", "min", "mean").
 
     Returns:
         dict: {
-            'local_contributions': np.ndarray, # 1D array of per-element contributions.
-            'total_contribution': float        # Sum of local contributions.
+        'local_contributions': np.ndarray, # 1D array of per-element contributions.
+        'total_contribution': float        # Sum of local contributions.
         }
     """
 
@@ -3519,17 +3571,17 @@ def tox_compute_all_contributions(trajectories, factor_indices, dependent_indice
     Compute contribution analysis for every selected factor–dependent pair.
 
     Args:
-        trajectories (np.ndarray): 3D array of shape (n_factors, n_samples, n_timepoints).
-        factor_indices (np.ndarray): 1D int32 array of length n_selected_factors.
-        dependent_indices (np.ndarray): 1D int32 array of length n_selected_dependents.
-        mode (str): Baseline mode ("raw", "min", "mean").
+        trajectories: 3D array of shape (n_factors, n_samples, n_timepoints).
+        factor_indices: 1D int32 array of length n_selected_factors.
+        dependent_indices: 1D int32 array of length n_selected_dependents.
+        mode: Baseline mode ("raw", "min", "mean").
 
     Returns:
         dict: {
-            "local_contributions": np.ndarray of shape
-                (n_timepoints, n_selected_factors, n_selected_dependents, n_samples),
-            "total_contributions": np.ndarray of shape
-                (n_selected_factors, n_selected_dependents, n_samples)
+        "local_contributions": np.ndarray of shape
+        (n_timepoints, n_selected_factors, n_selected_dependents, n_samples),
+        "total_contributions": np.ndarray of shape
+        (n_selected_factors, n_selected_dependents, n_samples)
         }
     """
     # Ensure Fortran-order contiguous arrays
@@ -3597,18 +3649,18 @@ def tox_perform_permutation_test(trajectories, factor_idx, dependent_idx, sample
     Perform permutation test for a given factor–dependent pair.
 
     Args:
-        trajectories (np.ndarray): 3D array of shape (n_factors, n_samples, n_timepoints).
-        factor_idx (int): Index of factor (1-based, Fortran convention).
-        dependent_idx (int): Index of dependent (1-based).
-        sample_idx (int): Index of sample (1-based).
-        mode (int): Baseline mode (1=RAW, 2=MIN, 3=MEAN).
-        n_permutations (int): Number of permutations to perform.
-        random_seed (int): Seed for RNG.
+        trajectories: 3D array of shape (n_factors, n_samples, n_timepoints).
+        factor_idx: Index of factor (1-based, Fortran convention).
+        dependent_idx: Index of dependent (1-based).
+        sample_idx: Index of sample (1-based).
+        mode: Baseline mode (1=RAW, 2=MIN, 3=MEAN).
+        n_permutations: Number of permutations to perform.
+        random_seed: Seed for RNG.
 
     Returns:
         dict: {
-            "local_contributions": np.ndarray of shape (n_timepoints, n_permutations),
-            "total_contributions": np.ndarray of shape (n_permutations,)
+        "local_contributions": np.ndarray of shape (n_timepoints, n_permutations),
+        "total_contributions": np.ndarray of shape (n_permutations,)
         }
     """
 
@@ -3681,16 +3733,15 @@ def tox_compute_p_values(local_contributions_observed,
     Compute p-values for observed contributions compared to permutation contributions.
 
     Args:
-        local_contributions_observed (np.ndarray): 1D array of shape (n_timepoints,)
-        total_contribution_observed (float): Observed total contribution
-        local_contributions_perm (np.ndarray): 2D array of shape (n_timepoints, n_permutations)
-        total_contributions_perm (np.ndarray): 1D array of shape (n_permutations,)
-        n_permutations (int): Number of permutations
+        local_contributions_observed: 1D array of shape (n_timepoints,).
+        total_contribution_observed: Observed total contribution.
+        local_contributions_perm: 2D array of shape (n_timepoints, n_permutations).
+        total_contributions_perm: 1D array of shape (n_permutations,).
 
     Returns:
         dict: {
-            "local_p_values": np.ndarray of shape (n_timepoints,),
-            "total_p_value": float
+        "local_p_values": np.ndarray of shape (n_timepoints,),
+        "total_p_value": float
         }
     """
 
