@@ -3547,7 +3547,10 @@ def tox_compute_velocity_trajectories(trajectories):
 
     # Fortran arrays are column-major, so keep the order as-is
     trajectories_f = np.asfortranarray(trajectories)
-    velocity_f = np.empty((n_factors, n_samples, n_timepoints), dtype=np.float64, order='F')
+    # Fortran output shape: (n_timepoints-1, n_factors, n_samples)
+    velocity_f_fort = np.empty((n_timepoints-1, n_factors, n_samples), dtype=np.float64, order='F')
+    # Python output shape: (n_factors, n_samples, n_timepoints)
+    velocity_f = np.zeros((n_factors, n_samples, n_timepoints), dtype=np.float64, order='F')
     ierr = ctypes.c_int(0)
 
     n_factors_c = ctypes.c_int(n_factors)
@@ -3566,18 +3569,21 @@ def tox_compute_velocity_trajectories(trajectories):
     ]
     compute_velocity.restype = None
 
+    # Fortran expects (n_timepoints-1, n_factors, n_samples)
     compute_velocity(
         trajectories_f,
         ctypes.byref(n_factors_c),
         ctypes.byref(n_samples_c),
         ctypes.byref(n_timepoints_c),
-        velocity_f,
+        velocity_f_fort,
         ctypes.byref(ierr),
     )
 
     check_err_code(ierr.value)
 
-    # Return as Fortran-ordered array (n_factors, n_samples, n_timepoints)
+    # Copy Fortran output to Python output, offset by 1 in time axis
+    if n_timepoints > 1:
+        velocity_f[:, :, 1:] = np.transpose(velocity_f_fort, (1, 2, 0))
     _readonly(velocity_f)
     return velocity_f
 
@@ -3603,8 +3609,12 @@ def tox_compute_acceleration_from_velocity(velocity):
         raise ValueError("velocity must be a 3D array (n_factors, n_samples, n_timepoints)")
     n_factors, n_samples, n_timepoints = velocity.shape
 
-    velocity_f = np.asfortranarray(velocity)
-    acceleration_f = np.empty((n_factors, n_samples, n_timepoints), dtype=np.float64, order='F')
+    # Transpose velocity to Fortran ABI: (n_timepoints, n_factors, n_samples)
+    velocity_f = np.asfortranarray(np.transpose(velocity, (2, 0, 1)))
+    # Fortran expects (n_timepoints-1, n_factors, n_samples) and must be F_CONTIGUOUS
+    velocity_f = velocity_f[1:, :, :].copy(order='F')
+    acceleration_f_fort = np.empty((n_timepoints-2, n_factors, n_samples), dtype=np.float64, order='F')
+    acceleration_f = np.zeros((n_factors, n_samples, n_timepoints), dtype=np.float64, order='F')
     ierr = ctypes.c_int(0)
 
     n_factors_c = ctypes.c_int(n_factors)
@@ -3627,13 +3637,15 @@ def tox_compute_acceleration_from_velocity(velocity):
         ctypes.byref(n_factors_c),
         ctypes.byref(n_samples_c),
         ctypes.byref(n_timepoints_c),
-        acceleration_f,
+        acceleration_f_fort,
         ctypes.byref(ierr),
     )
 
     check_err_code(ierr.value)
 
-    # Return as Fortran-ordered array (n_factors, n_samples, n_timepoints)
+    # Copy Fortran output to Python output, offset by 2 in time axis
+    if n_timepoints > 2:
+        acceleration_f[:, :, 2:] = np.transpose(acceleration_f_fort, (1, 2, 0))
     _readonly(acceleration_f)
     return acceleration_f
 
@@ -3821,7 +3833,7 @@ def tox_compute_velocity_trajectory(trajectory):
     trajectory = np.ascontiguousarray(trajectory, dtype=np.float64)
     if trajectory.ndim != 1:
         raise ValueError("trajectory must be a 1D array")
-    n_timepoints = ctypes.c_int(len(trajectory))
+    n_timepoints = len(trajectory)
     velocity = np.zeros_like(trajectory)
     ierr = ctypes.c_int(0)
     compute_velocity_c = lib.tox_compute_velocity_trajectory_c
@@ -3832,16 +3844,20 @@ def tox_compute_velocity_trajectory(trajectory):
         ctypes.POINTER(ctypes.c_int)
     ]
     compute_velocity_c.restype = None
+    # Fortran output is length n_timepoints-1
+    velocity_fort = np.zeros(n_timepoints-1, dtype=np.float64)
+    n_timepoints_c = ctypes.c_int(n_timepoints)
     compute_velocity_c(
         trajectory,
-        ctypes.byref(n_timepoints),
-        velocity,
+        ctypes.byref(n_timepoints_c),
+        velocity_fort,
         ctypes.byref(ierr)
     )
     check_err_code(ierr.value)
-
+    # Python expects first element zero, then differences
+    if n_timepoints > 1:
+        velocity[1:] = velocity_fort
     _readonly(velocity)
-
     return velocity
 
 
@@ -3863,7 +3879,7 @@ def tox_compute_acceleration_from_velocity_trajectory(velocity):
     velocity = np.ascontiguousarray(velocity, dtype=np.float64)
     if velocity.ndim != 1:
         raise ValueError("velocity must be a 1D array")
-    n_timepoints = ctypes.c_int(len(velocity))
+    n_timepoints = len(velocity)
     acceleration = np.zeros_like(velocity)
     ierr = ctypes.c_int(0)
     compute_accel_c = lib.tox_compute_acceleration_from_velocity_trajectory_c
@@ -3874,14 +3890,17 @@ def tox_compute_acceleration_from_velocity_trajectory(velocity):
         ctypes.POINTER(ctypes.c_int)
     ]
     compute_accel_c.restype = None
-    compute_accel_c(
-        velocity,
-        ctypes.byref(n_timepoints),
-        acceleration,
-        ctypes.byref(ierr)
-    )
-    check_err_code(ierr.value)
-
+    # Fortran output is length n_timepoints-2
+    if n_timepoints > 2:
+        acceleration_fort = np.zeros(n_timepoints-2, dtype=np.float64)
+        n_timepoints_c = ctypes.c_int(n_timepoints)
+        compute_accel_c(
+            velocity,
+            ctypes.byref(n_timepoints_c),
+            acceleration_fort,
+            ctypes.byref(ierr)
+        )
+        check_err_code(ierr.value)
+        acceleration[2:] = acceleration_fort
     _readonly(acceleration)
-
     return acceleration
