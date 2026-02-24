@@ -238,11 +238,11 @@ subroutine deserialize_int_nd_C(arr, arr_size, filename_raw, fn_len, ierr) bind(
     implicit none
 
     ! Inputs / Outputs
-    integer(c_int), intent(in)    :: arr_size           ! Buffer length
+    integer(c_int), value         :: arr_size           ! Buffer length
     !! Size of the array
     integer(c_int), intent(out)   :: arr(arr_size)      ! Preallocated buffer from C/Python
     !! preallocated array
-    integer(c_int), intent(in)    :: fn_len
+    integer(c_int), value         :: fn_len
     !! length of the filename
     character(kind=c_char, len=1), intent(in)    :: filename_raw(fn_len)
     !! Filename in ascii

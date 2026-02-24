@@ -236,13 +236,13 @@ subroutine serialize_int_nd_C(arr, dims, ndim, filename_raw, fn_len, ierr) bind(
   implicit none
 
   ! input
-  integer(c_int), intent(in) :: ndim
+  integer(c_int), intent(in), value :: ndim
     !! Number of dimensions
   integer(c_int), intent(in) :: dims(ndim)
     !! Dimensions of the array
   integer(c_int), intent(in) :: arr(product(dims))
     !! Pointer to the flat integer array  
-  integer(c_int), intent(in) :: fn_len
+  integer(c_int), intent(in), value :: fn_len
     !! Length of the filename array
   character(kind=c_char, len=1), intent(in) :: filename_raw(fn_len)
     !! Array of ASCII characters representing the filename

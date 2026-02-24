@@ -1178,9 +1178,9 @@ subroutine loess_smooth_2d_c(n_total, n_target, x_ref, y_ref, indices_used, n_us
   use f42_utils, only: loess_smooth_2d
   implicit none
   !| Total number of reference points.
-  integer(c_int), intent(in) :: n_total
+  integer(c_int), intent(in), value :: n_total
   !| Number of target points to smooth.
-  integer(c_int), intent(in) :: n_target
+  integer(c_int), intent(in), value :: n_target
   !| Reference x-coordinates.
   real(c_double), intent(in) :: x_ref(n_total)
   !| Reference y-coordinates (length n_total).
@@ -1188,13 +1188,13 @@ subroutine loess_smooth_2d_c(n_total, n_target, x_ref, y_ref, indices_used, n_us
   !| Indices of reference points used for smoothing (pre-filtered).
   integer(c_int), intent(in) :: indices_used(n_used)
   !| Number of indices actually used for smoothing.
-  integer(c_int), intent(in) :: n_used
+  integer(c_int), intent(in), value :: n_used
   !| Target x-coordinates to smooth.
   real(c_double), intent(in) :: x_query(n_target)
   !| Bandwidth parameter for the kernel.
-  real(c_double), intent(in) :: kernel_sigma
+  real(c_double), intent(in), value :: kernel_sigma
   !| Cutoff for the kernel.
-  real(c_double), intent(in) :: kernel_cutoff
+  real(c_double), intent(in), value :: kernel_cutoff
   !| Output smoothed values (length n_target).
   real(c_double), intent(out) :: y_out(n_target)
   !| Error code: 0=ok, 201=invalid input, 202=empty input
