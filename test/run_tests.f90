@@ -26,7 +26,7 @@ program main
   use mod_test_tox_traj_contrib_analysis
   use mod_test_normalization_unit_length
   use mod_test_tox_clustering
-  use mod_test_tox_traj_contrib_analysis
+  
 
   implicit none
 
