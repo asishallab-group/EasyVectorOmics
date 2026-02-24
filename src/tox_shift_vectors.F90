@@ -98,11 +98,11 @@ pure subroutine compute_shift_vector_field_c(d, n_genes, n_families, expression_
   implicit none
 
   !| Expression vector dimension
-  integer(c_int), intent(in) :: d
+  integer(c_int), intent(in), value :: d
   !| Total number of genes
-  integer(c_int), intent(in) :: n_genes
+  integer(c_int), intent(in), value :: n_genes
   !| Total number of families
-  integer(c_int), intent(in) :: n_families
+  integer(c_int), intent(in), value :: n_families
   !| Gene expression matrix `(d × n_genes)`
   real(c_double), intent(in), target :: expression_vectors(d, n_genes)
   !| Family centroid matrix `(d × n_families)`

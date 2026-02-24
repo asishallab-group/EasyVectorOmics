@@ -150,19 +150,19 @@ pure subroutine compute_tissue_versatility_c(n_axes, n_vectors, expression_vecto
   implicit none
 
   !| Number of axes (tissues/dimensions)
-  integer(c_int), intent(in) :: n_axes
+  integer(c_int), intent(in), value :: n_axes
   !| Number of expression vectors (genes)
-  integer(c_int), intent(in) :: n_vectors
+  integer(c_int), intent(in), value :: n_vectors
   !| 2D array (n_axes, n_vectors), each column is a gene expression vector (column-major)
   real(c_double), intent(in), target :: expression_vectors(n_axes, n_vectors)
   !| Integer array (n_vectors), 0/1 values. 0=not selected, 1=selected. Interpreted as logical internally.
   integer(c_int), intent(in), target :: exp_vecs_selection_index(n_vectors)
   !| Number of selected expression vectors (count of 1s in exp_vecs_selection_index)
-  integer(c_int), intent(in) :: n_selected_vectors
+  integer(c_int), intent(in), value :: n_selected_vectors
   !| Integer array (n_axes), 0/1 values. 0=not selected, 1=selected. Interpreted as logical internally.
   integer(c_int), intent(in), target :: axes_selection(n_axes)
   !| Number of selected axes (count of 1s in axes_selection)
-  integer(c_int), intent(in) :: n_selected_axes
+  integer(c_int), intent(in), value :: n_selected_axes
   !| Output, real array, length = n_selected_vectors, stores the calculated tissue versatilities for selected vectors
   real(c_double), intent(out), target :: tissue_versatilities(n_selected_vectors)
   !| Output, real array, length = n_selected_vectors, stores the calculated angles in degrees for selected vectors

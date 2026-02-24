@@ -247,11 +247,11 @@ subroutine deserialize_real_nd_C(arr, arr_size, filename_raw, fn_len, ierr) bind
     implicit none
 
     ! Inputs / Outputs
-    integer(c_int), intent(in)  :: arr_size  
+    integer(c_int), intent(in), value  :: arr_size  
     !! size of the output array
     real(c_double), intent(out)        :: arr(arr_size)
     !! output array
-    integer(c_int), intent(in)  :: fn_len
+    integer(c_int), intent(in), value  :: fn_len
     !! length of the filename
     character(kind=c_char, len=1), intent(in)         :: filename_raw(fn_len)
     !! Filename in ascii

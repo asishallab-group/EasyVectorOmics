@@ -384,7 +384,7 @@ subroutine relative_axes_changes_from_shift_vector_c(vec, n_axes, contributions,
 
    real(c_double), dimension(n_axes), intent(in) :: vec
       !! RAP-projected and normalized shift vector
-   integer(c_int), intent(in) :: n_axes
+   integer(c_int), intent(in), value :: n_axes
       !! Number of axes
    real(c_double), dimension(n_axes), intent(out) :: contributions
       !! Relative axis contributions (output), values in [0,1], sum to 1
@@ -418,7 +418,7 @@ subroutine relative_axes_expression_from_expression_vector_c(vec, n_axes, contri
 
    real(c_double), dimension(n_axes), intent(in) :: vec
       !! RAP-projected and normalized expression vector
-   integer(c_int), intent(in) :: n_axes
+   integer(c_int), intent(in), value :: n_axes
       !! Number of axes
    real(c_double), dimension(n_axes), intent(out) :: contributions
       !! Relative axis contributions (output), values in [0,1], sum to 1
@@ -462,17 +462,17 @@ subroutine omics_vector_RAP_projection_c(vecs, n_axes, n_vecs, vecs_selection_ma
 
    real(c_double), dimension(n_axes, n_vecs), intent(in) :: vecs
       !! matrix with expression vectors
-   integer(c_int), intent(in) :: n_axes
+   integer(c_int), intent(in), value :: n_axes
       !! number of axes
-   integer(c_int), intent(in) :: n_vecs
+   integer(c_int), intent(in), value :: n_vecs
       !! number of vectors per axis
    integer(c_int), dimension(n_vecs), intent(in) :: vecs_selection_mask
       !! `.true.` for vectors where projection is to be computed
-   integer(c_int), intent(in) :: n_selected_vecs
+   integer(c_int), intent(in), value :: n_selected_vecs
       !! count of `.true.` values in `vecs_selection_mask`
    integer(c_int), dimension(n_axes), intent(in) :: axes_selection_mask
       !! `.true.` for axes to be included in RAP
-   integer(c_int), intent(in) :: n_selected_axes
+   integer(c_int), intent(in), value :: n_selected_axes
       !! count of `.true.` values in `axes_selection_mask`
    real(c_double), dimension(n_selected_axes, n_selected_vecs), intent(out) :: projections
       !! projected vectors
@@ -516,17 +516,17 @@ subroutine omics_field_RAP_projection_c(vecs, n_axes, n_vecs, vecs_selection_mas
 
    real(c_double), dimension(2 * n_axes, n_vecs), intent(in) :: vecs
       !! matrix with vector fields, first n rows mean vector origin, last n rows vector targets
-   integer(c_int), intent(in) :: n_axes
+   integer(c_int), intent(in), value :: n_axes
       !! number of axes
-   integer(c_int), intent(in) :: n_vecs
+   integer(c_int), intent(in), value :: n_vecs
       !! number of vectors per axis
    integer(c_int), dimension(n_vecs), intent(in) :: vecs_selection_mask
       !! `.true.` for vectors where projection is to be computed
-   integer(c_int), intent(in) :: n_selected_vecs
+   integer(c_int), intent(in), value :: n_selected_vecs
       !! count of `.true.` values in `vecs_selection_mask`
    integer(c_int), dimension(n_axes), intent(in) :: axes_selection_mask
       !! `.true.` for axes to be included in RAP
-   integer(c_int), intent(in) :: n_selected_axes
+   integer(c_int), intent(in), value :: n_selected_axes
       !! count of `.true.` values in `axes_selection_mask`
    real(c_double), dimension(n_selected_axes, n_selected_vecs), intent(out) :: projections
       !! projected vectors
@@ -566,7 +566,7 @@ subroutine clock_hand_angle_between_vectors_c(v1, v2, n_dims, signed_angle, sele
       !! First normalized vector in RAP space
    real(c_double), dimension(n_dims), intent(in) :: v2
       !! Second normalized vector in RAP space  
-   integer(c_int), intent(in) :: n_dims
+   integer(c_int), intent(in), value :: n_dims
       !! Dimension of both vectors
    real(c_double), intent(out) :: signed_angle
       !! Signed angle between vectors in radians [-π, π]
@@ -614,13 +614,13 @@ subroutine clock_hand_angles_for_shift_vectors_c(origins, targets, n_dims, n_vec
       !! First set of RAP-projected, normalized vectors (e.g. expression centroids)
    real(c_double), dimension(n_dims, n_vecs), intent(in) :: targets
       !! Second set of RAP-projected, normalized vectors (e.g. paralogs)
-   integer(c_int), intent(in) :: n_dims
+   integer(c_int), intent(in), value :: n_dims
       !! Dimension of each vector in RAP space
-   integer(c_int), intent(in) :: n_vecs
+   integer(c_int), intent(in), value :: n_vecs
       !! Number of vector pairs
    integer(c_int), dimension(n_vecs), intent(in) :: vecs_selection_mask
       !! .true. for vector pairs where angle should be computed
-   integer(c_int), intent(in) :: n_selected_vecs
+   integer(c_int), intent(in), value :: n_selected_vecs
       !! Count of .true. values in vecs_selection_mask
    integer(c_int), dimension(3), intent(in) :: selected_axes_for_signed
       !! Indices of 3 axes to use for directionality calculation (ignored if n_dims <= 3)

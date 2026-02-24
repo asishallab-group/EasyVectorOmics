@@ -480,48 +480,6 @@ contains
     end subroutine get_min_distance_indices_helper
 end module tox_clustering
 
-!> C-compatible wrapper for cluster_factor_trajectories_k_means
-subroutine cluster_factor_trajectories_k_means_c(n_clusters, trajectories, n_factors, n_samples, n_timepoints, centroids, labels, label_counts, ierr, max_iterations) bind(C, name="cluster_factor_trajectories_k_means_c")
-    use tox_clustering, only: cluster_factor_trajectories_k_means
-    use, intrinsic :: iso_c_binding, only: c_int, c_double
-    M_USE_NULL_VALIDATION
-    implicit none
-
-    integer(c_int), intent(in), target :: n_clusters
-        !! number (`k`) of clusters
-    real(c_double), dimension(n_factors, n_samples, n_timepoints), intent(in), target :: trajectories
-        !! matrix with data points to cluster
-    integer(c_int), intent(in), target :: n_factors
-        !! number of factors
-    integer(c_int), intent(in), target :: n_samples
-        !! number of samples
-    integer(c_int), intent(in), target :: n_timepoints
-        !! number of timepoints
-    real(c_double), dimension(n_factors, n_clusters), intent(inout), target :: centroids
-        !! matrix with initial centroids of the clusters
-    integer(c_int), dimension(n_samples * n_timepoints), intent(out), target :: labels
-        !! cluster labels for each sample and timepoint pair
-    integer(c_int), dimension(n_clusters), intent(out), target :: label_counts
-        !! number of points assigned to each cluster
-    integer(c_int), intent(out), target :: ierr
-        !! Error code
-    integer(c_int), intent(in), target :: max_iterations
-        !! number of maximum iterations of the clustering
-
-    M_CHECK_IERR_NON_NULL
-    M_CHECK_NON_NULL(n_clusters)
-    M_CHECK_NON_NULL(trajectories)
-    M_CHECK_NON_NULL(n_factors)
-    M_CHECK_NON_NULL(n_samples)
-    M_CHECK_NON_NULL(n_timepoints)
-    M_CHECK_NON_NULL(centroids)
-    M_CHECK_NON_NULL(labels)
-    M_CHECK_NON_NULL(label_counts)
-    M_CHECK_NON_NULL(max_iterations)
-
-    call cluster_factor_trajectories_k_means(n_clusters, trajectories, n_factors, n_samples, n_timepoints, centroids, labels, label_counts, ierr, max_iterations)
-end subroutine cluster_factor_trajectories_k_means_c
-
 !> k-means clustering algorithm:
 !|
 !| 1. Assigns each data point to one of `k` clusters whose centroid is clostest

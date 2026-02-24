@@ -410,9 +410,9 @@ subroutine normalize_by_std_dev_c(n_genes, n_tissues, input_matrix, output_matri
   implicit none
 
   !| Number of genes (rows)
-  integer(c_int), intent(in) :: n_genes
+  integer(c_int), value :: n_genes
   !| Number of tissues (columns)
-  integer(c_int), intent(in) :: n_tissues
+  integer(c_int), value :: n_tissues
   !| Input matrix (flattened, n_genes * n_tissues)
   real(c_double), intent(in), target :: input_matrix(n_genes * n_tissues)
   !| Output normalized matrix (flattened, same shape as input)
@@ -470,11 +470,11 @@ subroutine quantile_normalization_c(n_genes, n_tissues, input_matrix, output_mat
   implicit none
 
   !| Number of genes (rows)
-  integer(c_int), intent(in) :: n_genes
+  integer(c_int), intent(in), value :: n_genes
   !| Number of tissues (columns)
-  integer(c_int), intent(in) :: n_tissues
+  integer(c_int), intent(in), value :: n_tissues
   !| Stack size for sorting
-  integer(c_int), intent(in) :: max_stack
+  integer(c_int), intent(in), value :: max_stack
   !| Input matrix (n_genes x n_tissues)
   real(c_double), intent(in), target :: input_matrix(n_genes, n_tissues)
   !| Output normalized matrix (same shape as input)
@@ -529,9 +529,9 @@ subroutine log2_transformation_c(n_genes, n_tissues, input_matrix, output_matrix
   implicit none
 
   !| Number of genes (rows)
-  integer(c_int), intent(in) :: n_genes
+  integer(c_int), intent(in), value :: n_genes
   !| Number of tissues (columns)
-  integer(c_int), intent(in) :: n_tissues
+  integer(c_int), intent(in), value :: n_tissues
   !| Input matrix (flattened, n_genes * n_tissues)
   real(c_double), intent(in), target :: input_matrix(n_genes * n_tissues)
   !| Output matrix (flattened, same shape as input)
@@ -578,9 +578,9 @@ subroutine calc_tiss_avg_c(n_gene, n_grps, group_s, group_c, input_matrix, outpu
   implicit none
 
   !| Number of genes (rows)
-  integer(c_int), intent(in) :: n_gene
+  integer(c_int), intent(in), value :: n_gene
   !| Number of tissue groups
-  integer(c_int), intent(in) :: n_grps
+  integer(c_int), intent(in), value :: n_grps
   !| Start column index for each group (length: n_grps)
   integer(c_int), intent(in), target :: group_s(n_grps)
   !| Number of columns per group (length: n_grps)
@@ -632,11 +632,11 @@ subroutine calc_fchange_c(n_genes, n_cols, n_pairs, control_cols, cond_cols, i_m
   implicit none
 
   !| Number of genes (rows)
-  integer(c_int), intent(in) :: n_genes
+  integer(c_int), intent(in), value :: n_genes
   !| Number of columns in the input matrix
-  integer(c_int), intent(in) :: n_cols
+  integer(c_int), intent(in), value :: n_cols
   !| Number of control-condition pairs
-  integer(c_int), intent(in) :: n_pairs
+  integer(c_int), intent(in), value :: n_pairs
   !| Control column indices (length n_pairs)
   integer(c_int), intent(in), target :: control_cols(n_pairs)
   !| Condition column indices (length n_pairs)
@@ -711,11 +711,11 @@ subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev
   implicit none
 
   !| Number of genes (rows)
-  integer(c_int), intent(in) :: n_genes
+  integer(c_int), intent(in), value :: n_genes
   !| Number of tissues (columns)
-  integer(c_int), intent(in) :: n_tissues
+  integer(c_int), intent(in), value :: n_tissues
   !| Number of replicate groups
-  integer(c_int), intent(in) :: n_grps
+  integer(c_int), intent(in), value :: n_grps
   !| Flattened input matrix (n_genes * n_tissues), column-major
   real(c_double), intent(in), target :: input_matrix(n_genes * n_tissues)
   !| Buffer for std dev normalization (n_genes * n_tissues)
@@ -733,7 +733,7 @@ subroutine normalization_pipeline_c(n_genes, n_tissues, input_matrix, buf_stddev
   !| Permutation vector for sorting (n_genes)
   integer(c_int), intent(out), target :: perm(n_genes)
   !| Stack size for quicksort
-  integer(c_int), intent(in) :: max_stack
+  integer(c_int), intent(in), value :: max_stack
   !| Left stack for quicksort (max_stack)
   integer(c_int), intent(out), target :: stack_left(max_stack)
   !| Right stack for quicksort (max_stack)
