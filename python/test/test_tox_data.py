@@ -10,34 +10,6 @@ ctypes.CDLL("libgomp.so.1", mode=ctypes.RTLD_GLOBAL)
 lib = ctypes.CDLL(dll_path)
 
 
-def cleanup_previous_artifacts():
-    files_to_remove = [
-        "test_archive_1_py.zip",
-        "test_archive_2_py.zip",
-        "test_archive_3_py.zip",
-        "test_archive_4_py.zip",
-        "test_non_standard_1.zip",
-        "test_non_standard_2.zip",
-        "gene_ids_v1.bin",
-        "kallisto_data_v1.bin",
-        "gene_to_fam_v1.bin",
-        "family_ids_v1.bin",
-        "family_centroids_v1.bin",
-        "shift_vectors_v1.bin",
-        "centroids.bin",
-        "temp_3d_int.bin",
-        "temp_1d_float.bin",
-        "temp_2d_char.bin",
-        "temp_1d_bool.bin",
-        "temp_complex_real.bin",
-        "temp_complex_imag.bin",
-        "manifest.txt",
-    ]
-    for file_name in files_to_remove:
-        if os.path.exists(file_name):
-            os.remove(file_name)
-
-
 from tensoromics_functions_tox_data import (
     read_expression_vectors_tsv,
     read_orthofinder_file,
@@ -67,8 +39,6 @@ from tensoromics_functions import (
 )
 
 # ---- Example: replicate Fortran test logic in Python ----
-
-cleanup_previous_artifacts()
 
 # Define your file lists (replace with your actual file paths)
 file = ["material/kallisto_sex_data_no_na.tsv"]
