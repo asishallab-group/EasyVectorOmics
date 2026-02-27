@@ -2702,7 +2702,7 @@ def tox_compute_baselines_factor_dependent(factor, dependent, mode):
     ierr = ctypes.c_int(0)
 
     # Setup C wrapper with proper type annotations
-    compute_baselines_c = lib.tox_compute_baselines_factor_dependent_c
+    compute_baselines_c = lib.compute_baselines_factor_dependent_c
     compute_baselines_c.argtypes = [
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # factor
         np.ctypeslib.ndpointer(dtype=np.float64, flags="C_CONTIGUOUS"),  # dependent

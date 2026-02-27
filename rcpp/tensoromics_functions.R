@@ -2137,7 +2137,7 @@ tox_compute_edf <- function(values, perm) {
   return(result)
 }
 
-#> f42_utils: which_c: Get indices of TRUE or non-zero elements in a mask
+#> f42_utils:which_c: Get indices of TRUE or non-zero elements in a mask
 #' This function takes a logical or integer mask and returns the indices of the TRUE or non-zero elements, up to a specified maximum.
 #' @param mask A logical or integer vector serving as the mask for which to find indices.
 #' @param m_max An integer scalar specifying the maximum number of indices to return (default: length of mask).
