@@ -140,6 +140,7 @@ tox_calculate_tissue_versatility <- function(expression_vectors, vector_selectio
   ))
 
 }
+
 # ===================================================================
 # OUTLIER DETECTION FUNCTIONS 
 # ===================================================================
@@ -1264,87 +1265,7 @@ tox_get_array_metadata <- function(filename, max_dims = 5L, with_clen = FALSE) {
 }
 }
 
-#> f42_utils:loess_smooth_2d_c: 2D LOESS smoothing for trajectory data
-#'@param x_ref Numeric vector of reference x-coordinates (length n_ref)
-#' @param y_ref Numeric vector or matrix of reference y-coordinates (length n_ref or n_ref x n_y)
-#' @param x_query Numeric vector of query x-coordinates (length n_query)
-#' @param indices_used Integer vector of indices (1-based) indicating which reference points to
-#' @param kernel_sigma Numeric scalar for the Gaussian kernel bandwidth
-#' @param kernel_cutoff Numeric scalar for the Gaussian kernel cutoff distance
-#' @return A list containing:
-#' \describe{
-#'  \item{y_out}{Numeric matrix of smoothed y-coordinates for the query points (n_query x n_y)}
-#' \item{smoothed_values}{Numeric vector of smoothed values (flattened by_out)}
-#' }
-#' 
-tox_loess_smooth_2d <- function(
-  x_ref,
-  y_ref,
-  x_query,
-  indices_used = NULL,
-  kernel_sigma,
-  kernel_cutoff
-) {
 
-
-
-
-  validate_numeric_vector(x_ref, "x_ref")
-  validate_numeric_vector(x_query, "x_query")
-
-  # y_ref can be vector or matrix; convert first, then validate
-  if (!is.matrix(y_ref)) {
-    y_ref <- matrix(y_ref, nrow = 1L)
-  }
-  validate_numeric_matrix(y_ref, "y_ref")
- 
-  # Indices used: default to all, then validate
-  # total number of reference points
-  n_total <- length(x_ref)
-  if (is.null(indices_used)) {
-    indices_used <- seq_len(n_total)
-  }
-  validate_index_vector(indices_used, n_total, "indices_used")
-
-  # Kernel parameters
-  validate_positive_numeric_scalar(kernel_sigma, "kernel_sigma")
-  validate_positive_numeric_scalar(kernel_cutoff, "kernel_cutoff")
-
-  ## 2) Convert to types suitable for Rcpp / Fortran
-
-  x_ref        <- as.numeric(x_ref)
-  x_query      <- as.numeric(x_query)
-  y_ref        <- matrix(as.numeric(y_ref), nrow = 1L)
-  indices_used <- as.integer(indices_used)
-  kernel_sigma <- as.numeric(kernel_sigma)
-  kernel_cutoff<- as.numeric(kernel_cutoff)
-
-  ## 3) Call Rcpp wrapper
-
-  result <- tox_loess_smooth_2d_rcpp(
-    n_total      = as.integer(n_total),
-    n_target     = as.integer(length(x_query)),
-    x_ref        = x_ref,
-    y_ref        = y_ref,
-    indices_used = indices_used,
-    n_used       = as.integer(length(indices_used)),
-    x_query      = x_query,
-    kernel_sigma = kernel_sigma,
-    kernel_cutoff= kernel_cutoff
-  )
-
-  ## 4) Error handling
-
-  check_err_code(result$ierr)
-
-  ## 5) Structured return
-
-  y_out <- result$y_out
-  list(
-    y_out           = y_out,
-    smoothed_values = as.vector(y_out)
-  )
-}
 
 
 # ============================================================
@@ -1724,28 +1645,6 @@ bst_range_query <- function(x, ix, lo, hi) {
 }
 
 
-# ============================================================
-#  ARRAY MASKING AND INDEXING FUNCTIONS
-# ============================================================
-
-#> tox_helper: which() helper function via C backend
-#' This function takes a logical or integer mask and returns the indices of the TRUE or non-zero elements, up to a specified maximum.
-#' @param mask A logical or integer vector serving as the mask for which to find indices.
-#' @param m_max An integer scalar specifying the maximum number of indices to return (default: length of mask).
-#' @return An integer vector of indices corresponding to the TRUE or non-zero elements in the
-#' 
-tox_which <- function(mask, m_max = length(mask)) {
-  validate_integer_vector(as.integer(mask), "mask")
-
-  result <- tox_which_rcpp(
-    mask = as.integer(mask),
-    m_max = as.integer(m_max)
-  )
-
-  check_err_code(result$ierr)
-
-  result$idx_out[seq_len(result$m_out)]
-}
 
 # ============================================================
 #  RELATIVE AXIS PLANE TOOLS FUNCTIONS
@@ -1962,4 +1861,300 @@ tox_k_means_clustering <- function(n_clusters, data_points, n_points, n_dims, ce
   return(res)
 }
 
+# ============================================================
+#  TRAJECTORY ANALYSIS FUNCTIONS
+# ============================================================
+#> tox_trajectory_contribution_analysis:compute_baselines_factor_dependent_c: Compute scalar baselines for a factor and dependent variable
+#' Compute scalar baselines for a factor and dependent variable
+#'
+#' @param factor Numeric vector (factor time series)
+#' @param dependent Numeric vector (dependent time series)
+#' @param mode Baseline computation mode: "raw", "min", or "mean"
+#' @return List with factor_baseline and dependent_baseline
+tox_compute_baselines_factor_dependent <- function(factor, dependent, mode = "raw") {
+  # Input validation 
+  validate_numeric_vector(factor)
+  validate_numeric_vector(dependent)
+  validate_same_length(factor, dependent, "factor", "dependent")
+  validate_nonempty(factor)
+  mode <- as.character(mode)
 
+  # Call Rcpp wrapper
+  result <- tox_compute_baselines_factor_dependent_rcpp(as.numeric(factor), as.numeric(dependent), mode)
+
+  # Error handling
+  check_err_code(result$ierr)
+
+  # Return structured result
+  return(list(
+    factor_baseline = result$factor_baseline,
+    dependent_baseline = result$dependent_baseline
+  ))
+}
+#> tox_trajectory_contribution_analysis:perform_permutation_test_c: Perform permutation test for trajectory contributions
+#' Perform permutation test for trajectory contributions
+#'
+#' @param trajectories 3D numeric array (factors x samples x timepoints)
+#' @param factor_idx Integer index of factor
+#' @param dependent_idx Integer index of dependent
+#' @param sample_idx Integer index of sample
+#' @param mode Baseline mode (1=RAW, 2=MIN, 3=MEAN)
+#' @param n_permutations Number of permutations
+#' @param random_seed Optional integer seed
+#' @return List with local_contributions (matrix), total_contributions (vector), ierr
+#' @examples
+#' res <- tox_perform_permutation_test(trajectories, 1, 2, 1, 1, 100)
+tox_perform_permutation_test <- function(trajectories, factor_idx, dependent_idx, sample_idx, mode, n_permutations, random_seed = NULL) {
+  # Input validation 
+  n_factors <- dim(trajectories)[1]
+  n_samples <- dim(trajectories)[2]
+  n_timepoints <- dim(trajectories)[3]
+  validate_positive_integer_scalar(factor_idx)
+  validate_positive_integer_scalar(dependent_idx)
+  validate_positive_integer_scalar(sample_idx)
+  validate_index_bounds(factor_idx, low = 1, high = n_factors)
+  validate_index_bounds(dependent_idx, low = 1, high = n_factors) # or n_dependents if different
+  validate_index_bounds(sample_idx, low = 1, high = n_samples)
+  validate_positive_integer_scalar(n_permutations)
+  factor_idx <- as.integer(factor_idx)
+  dependent_idx <- as.integer(dependent_idx)
+  sample_idx <- as.integer(sample_idx)
+  n_permutations <- as.integer(n_permutations)
+
+  # Call Rcpp wrapper 
+  result <- tox_perform_permutation_test_rcpp(
+    trajectories, n_factors, n_samples, n_timepoints, factor_idx, dependent_idx, sample_idx, mode, n_permutations, random_seed
+  )
+  # Error handling
+  check_err_code(result$ierr)
+
+  # Return structured result
+  return(list(
+    local_contributions = result$local_contributions,
+    total_contributions = result$total_contributions,
+    ierr = result$ierr
+  ))
+}
+#> tox_trajectory_contribution_analysis:compute_p_values_c: Compute p-values for observed vs permutation contributions
+#' Compute p-values for observed vs permutation contributions
+#'
+#' @param local_contributions_observed Numeric vector (n_timepoints)
+#' @param total_contribution_observed Numeric scalar
+#' @param local_contributions_perm Matrix (n_timepoints x n_permutations)
+#' @param total_contributions_perm Numeric vector (n_permutations)
+#' @return List with local_p_values (vector), total_p_value (scalar), ierr
+#' @examples
+#' res <- tox_compute_p_values(obs, obs_total, perm, perm_total)
+tox_compute_p_values <- function(local_contributions_observed, total_contribution_observed, local_contributions_perm, total_contributions_perm) {
+  # Input validation 
+  validate_numeric_vector(local_contributions_observed)
+  validate_numeric_vector(total_contribution_observed)
+  validate_numeric_matrix(local_contributions_perm)
+  validate_numeric_vector(total_contributions_perm)
+  
+  n_timepoints <- length(local_contributions_observed)
+  n_permutations <- ncol(local_contributions_perm)
+ 
+ 
+  # Call Rcpp wrapper 
+  result <- tox_compute_p_values_rcpp(
+    local_contributions_observed, total_contribution_observed, local_contributions_perm, total_contributions_perm, n_timepoints, n_permutations
+  )
+  # Error handling
+  check_err_code(result$ierr)
+
+  # Return structured result
+  return(list(
+    local_p_values = result$local_p_values,
+    total_p_value = result$total_p_value,
+    ierr = result$ierr
+  ))
+}
+#> tox_trajectory_contribution_analysis:compute_contributions_c: Compute contributions for a factor-dependent pair
+#' Compute contributions for a factor-dependent pair
+#'
+#' @param factor Numeric vector (n_timepoints)
+#' @param dependent Numeric vector (n_timepoints)
+#' @param mode Baseline mode (1=RAW, 2=MIN, 3=MEAN)
+#' @return List with local_contributions (vector), total_contribution (scalar), ierr
+#' @examples
+#' res <- tox_compute_contributions(factor, dependent, 1)
+tox_compute_contributions <- function(factor, dependent, mode) {
+  # Input validation 
+  validate_numeric_vector(factor)
+  validate_numeric_vector(dependent)
+  validate_same_length(factor, dependent, "factor", "dependent")
+  validate_nonempty(factor)
+  # Call Rcpp wrapper 
+  result <- tox_compute_contributions_rcpp(factor, dependent, mode)
+
+  # Error handling
+  check_err_code(result$ierr)
+
+   # Return structured result
+  return(list(
+    local_contributions = result$local_contributions,
+    total_contribution = result$total_contribution,
+    ierr = result$ierr
+  ))
+}
+
+#> tox_trajectory_contribution_analysis:compute_all_contributions_c: Compute all contributions for selected factor-dependent pairs
+#' Compute all contributions for selected factor-dependent pairs
+#'
+#' @param trajectories 3D numeric array (factors x samples x timepoints)
+#' @param factor_indices Integer vector of selected factor indices
+#' @param dependent_indices Integer vector of selected dependent indices
+#' @param mode Baseline mode (1=RAW, 2=MIN, 3=MEAN)
+#' @return List with local_contributions (4D array), total_contributions (3D array), ierr
+#' @examples
+#' res <- tox_compute_all_contributions(trajectories, 1:2, 1:2, 1)
+tox_compute_all_contributions <- function(trajectories, factor_indices, dependent_indices, mode) {
+  # Input validation
+
+  validate_integer_vector(factor_indices)
+  validate_integer_vector(dependent_indices)
+  n_factors <- dim(trajectories)[1]
+  n_samples <- dim(trajectories)[2]
+  n_timepoints <- dim(trajectories)[3]
+  n_selected_factors <- length(factor_indices)
+  n_selected_dependents <- length(dependent_indices)
+   # Call Rcpp wrapper
+  result <- tox_compute_all_contributions_rcpp(
+    trajectories, n_factors, n_samples, n_timepoints, factor_indices, n_selected_factors, dependent_indices, n_selected_dependents, mode
+  )
+  # Error handling
+  check_err_code(result$ierr)
+  
+  # Reshape to match Fortran output: (n_timepoints, n_selected_factors, n_selected_dependents, n_samples)
+  local_contributions <- array(result$local_contributions,
+    dim = c(n_timepoints, n_selected_factors, n_selected_dependents, n_samples))
+  total_contributions <- array(result$total_contributions,
+    dim = c(n_selected_factors, n_selected_dependents, n_samples))
+  
+  # Return structured result
+  return(list(
+    local_contributions = local_contributions,
+    total_contributions = total_contributions,
+    ierr = result$ierr
+  ))
+}
+
+# ============================================================
+#  UTILITY FUNCTION
+# ============================================================
+
+#> f42_utils:loess_smooth_2d_c: 2D LOESS smoothing for trajectory data
+#'@param x_ref Numeric vector of reference x-coordinates (length n_ref)
+#' @param y_ref Numeric vector or matrix of reference y-coordinates (length n_ref or n_ref x n_y)
+#' @param x_query Numeric vector of query x-coordinates (length n_query)
+#' @param indices_used Integer vector of indices (1-based) indicating which reference points to
+#' @param kernel_sigma Numeric scalar for the Gaussian kernel bandwidth
+#' @param kernel_cutoff Numeric scalar for the Gaussian kernel cutoff distance
+#' @return A list containing:
+#' \describe{
+#'  \item{y_out}{Numeric matrix of smoothed y-coordinates for the query points (n_query x n_y)}
+#' \item{smoothed_values}{Numeric vector of smoothed values (flattened by_out)}
+#' }
+#' 
+tox_loess_smooth_2d <- function(x_ref,y_ref,x_query,indices_used = NULL,kernel_sigma,kernel_cutoff) {
+
+ # Input validation
+
+  validate_numeric_vector(x_ref, "x_ref")
+  validate_numeric_vector(x_query, "x_query")
+
+  # y_ref can be vector or matrix; convert first, then validate
+  if (!is.matrix(y_ref)) {
+    y_ref <- matrix(y_ref, nrow = 1L)
+  }
+  validate_numeric_matrix(y_ref, "y_ref")
+ 
+  # Indices used: default to all, then validate
+  # total number of reference points
+  n_total <- length(x_ref)
+  if (is.null(indices_used)) {
+    indices_used <- seq_len(n_total)
+  }
+  validate_index_vector(indices_used, n_total, "indices_used")
+
+  # Kernel parameters
+  validate_positive_numeric_scalar(kernel_sigma, "kernel_sigma")
+  validate_positive_numeric_scalar(kernel_cutoff, "kernel_cutoff")
+
+  # Convert to types suitable for Rcpp / Fortran
+
+  x_ref        <- as.numeric(x_ref)
+  x_query      <- as.numeric(x_query)
+  y_ref        <- matrix(as.numeric(y_ref), nrow = 1L)
+  indices_used <- as.integer(indices_used)
+  kernel_sigma <- as.numeric(kernel_sigma)
+  kernel_cutoff<- as.numeric(kernel_cutoff)
+
+  # Call Rcpp wrapper
+
+  result <- tox_loess_smooth_2d_rcpp(
+    n_total      = as.integer(n_total),
+    n_target     = as.integer(length(x_query)),
+    x_ref        = x_ref,
+    y_ref        = y_ref,
+    indices_used = indices_used,
+    n_used       = as.integer(length(indices_used)),
+    x_query      = x_query,
+    kernel_sigma = kernel_sigma,
+    kernel_cutoff= kernel_cutoff
+  )
+
+  # Error handling
+
+  check_err_code(result$ierr)
+
+  # Return structured result
+
+  y_out <- result$y_out
+  list(
+    y_out           = y_out,
+    smoothed_values = as.vector(y_out)
+  )
+}
+
+#> f42_utils:compute_edf_c: Compute Empirical Distribution Function (EDF)
+#' Compute Empirical Distribution Function (EDF)
+#' @param values Numeric vector of observed values
+#' @param perm Integer vector of permutation indices (sorted by values[perm])
+#' @return List with unique_values, cdf_values, n_unique, ierr
+tox_compute_edf <- function(values, perm) {
+  # Input validation
+  validate_numeric_vector(values)
+  validate_integer_vector(perm)
+
+   # Call Rcpp wrapper
+  result <- tox_compute_edf_rcpp(values, perm)
+
+  # Error handling
+  check_err_code(result$ierr)
+  # Return structured result
+  return(result)
+}
+
+#> f42_utils: which_c: Get indices of TRUE or non-zero elements in a mask
+#' This function takes a logical or integer mask and returns the indices of the TRUE or non-zero elements, up to a specified maximum.
+#' @param mask A logical or integer vector serving as the mask for which to find indices.
+#' @param m_max An integer scalar specifying the maximum number of indices to return (default: length of mask).
+#' @return An integer vector of indices corresponding to the TRUE or non-zero elements in the
+#' 
+tox_which <- function(mask, m_max = length(mask)) {
+   # Input validation
+
+  validate_integer_vector(as.integer(mask), "mask")
+   # Call Rcpp wrapper
+  result <- tox_which_rcpp(
+    mask = as.integer(mask),
+    m_max = as.integer(m_max)
+  )
+  # Error handling
+  check_err_code(result$ierr)
+
+    # Return indices of TRUE/non-zero elements
+  result$idx_out[seq_len(result$m_out)]
+}

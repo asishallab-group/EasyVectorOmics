@@ -1,3 +1,4 @@
+
 #include <Rcpp.h>
 using namespace Rcpp;
 
@@ -9,145 +10,215 @@ using namespace Rcpp;
 // ===================================================================
 
 extern "C" {
+void compute_edf_c(
+    const double* values,
+    const int* n_values,
+    double* unique_values,
+    double* cdf_values,
+    int* n_unique,
+    int* ierr
+  );
+void compute_all_contributions_c(
+  const double* trajectories,
+  const int* n_factors,
+  const int* n_samples,
+  const int* n_timepoints,
+  const int* factor_indices,
+  const int* n_selected_factors,
+  const int* dependent_indices,
+  const int* n_selected_dependents,
+  const char* mode,
+  double* local_contributions,
+  double* total_contributions,
+  double* temp_factors,
+  double* temp_dependent,
+  int* ierr
+);
+void compute_baselines_factor_dependent_c(
+  const double* factor,
+  const double* dependent,
+  const int* n_timepoints,
+  const char* mode,
+  double* factor_baseline,
+  double* dependent_baseline,
+  int* ierr
+);
+void compute_contributions_c(
+  const double* factor,
+  const double* dependent,
+  const int* n_dims,
+  const char* mode,
+  double* local_contributions,
+  double* total_contribution,
+  int* ierr
+);
+void perform_permutation_test_c(
+  const double* trajectories,
+  const int* n_factors,
+  const int* n_samples,
+  const int* n_timepoints,
+  const int* factor_idx,
+  const int* dependent_idx,
+  const int* sample_idx,
+  const char* mode,
+  const int* n_permutations,
+  double* local_contributions,
+  double* total_contributions,
+  double* temp_factor,
+  double* temp_dependent,
+  int* ierr,
+  const int* random_seed
+);
+void compute_p_values_c(
+  const double* local_contributions_observed,
+  const double* total_contribution_observed,
+  const double* local_contributions_perm,
+  const double* total_contributions_perm,
+  const int* n_timepoints,
+  const int* n_permutations,
+  double* local_p_values,
+  double* total_p_value,
+  int* ierr
+);
 void cluster_factor_trajectories_k_means_c(
-  int* n_clusters,
-  double* trajectories,
-  int* n_factors,
-  int* n_samples,
-  int* n_timepoints,
+  const int* n_clusters,
+  const double* trajectories,
+  const int* n_factors,
+  const int* n_samples,
+  const int* n_timepoints,
   double* centroids,
   int* labels,
   int* label_counts,
-  int* max_iterations,
+  const int* max_iterations,
   int* ierr
 );
 
 void k_means_clustering_c(
-  int* n_clusters,
-  double* data_points,
-  int* n_points,
-  int* n_dims,
+  const int* n_clusters,
+  const double* data_points,
+  const int* n_points,
+  const int* n_dims,
   double* centroids,
   int* labels,
   int* label_counts,
-  int* max_iterations,
+  const int* max_iterations,
   int* ierr
 );
 
 void relative_axes_changes_from_shift_vector_c(
-  double* vec,
-  int* n_axes,
+  const double* vec,
+  const int* n_axes,
   double* contributions,
   int* ierr
 );
 
 void relative_axes_expression_from_expression_vector_c(
-  double* vec,
-  int* n_axes,
+  const double* vec,
+  const int* n_axes,
   double* contributions,
   int* ierr
 );
 
 void clock_hand_angle_between_vectors_c(
-  double* v1,
-  double* v2,
-  int* n_dims,
+  const double* v1,
+  const double* v2,
+  const int* n_dims,
   double* signed_angle,
-  int* selected_axes_for_signed,
+  const int* selected_axes_for_signed,
   int* ierr
 );
 
 void clock_hand_angles_for_shift_vectors_c(
-  double* origins,
-  double* targets,
-  int* n_dims,
-  int* n_vecs,
-  int* vecs_selection_mask,
-  int* n_selected_vecs,
-  int* selected_axes_for_signed,
+  const double* origins,
+  const double* targets,
+  const int* n_dims,
+  const int* n_vecs,
+  const int* vecs_selection_mask,
+  const int* n_selected_vecs,
+  const int* selected_axes_for_signed,
   double* signed_angles,
   int* ierr
 );
 
 void omics_vector_RAP_projection_c(
   const double* vecs,
-  int* n_axes,
-  int* n_vecs,
+  const int* n_axes,
+  const int* n_vecs,
   const int* vecs_selection_mask,
-  int* n_selected_vecs,
+  const int* n_selected_vecs,
   const int* axes_selection_mask,
-  int* n_selected_axes,
+  const int* n_selected_axes,
   double* projections,
   int* ierr
 );
 
 void omics_field_RAP_projection_c(
   const double* vecs,
-  int* n_axes,
-  int* n_vecs,
+  const int* n_axes,
+  const int* n_vecs,
   const int* vecs_selection_mask,
-  int* n_selected_vecs,
+  const int* n_selected_vecs,
   const int* axes_selection_mask,
-  int* n_selected_axes,
+  const int* n_selected_axes,
   double* projections,
   int* ierr
 );
 
 void normalize_by_std_dev_c(
-  int* n_genes,
-  int* n_tissues,
-  double* input_matrix,
+  const int* n_genes,
+  const int* n_tissues,
+  const double* input_matrix,
   double* output_matrix,
   int* ierr
 );
 
 void quantile_normalization_c(
-  int* n_genes,
-  int* n_tissues,
-  double* input_matrix,
+  const int* n_genes,
+  const int* n_tissues,
+  const double* input_matrix,
   double* output_matrix,
   double* temp_col,
   double* rank_means,
   int* perm,
   int* stack_left,
   int* stack_right,
-  int* max_stack,
+  const int* max_stack,
   int* ierr
 );
 
 void log2_transformation_c(
-  int* n_genes,
-  int* n_tissues,
-  double* input_matrix,
+  const int* n_genes,
+  const int* n_tissues,
+  const double* input_matrix,
   double* output_matrix,
   int* ierr
 );
 
 void calc_tiss_avg_c(
-  int* n_genes,
-  int* n_grps,
-  int* group_s,
-  int* group_c,
-  double* input_matrix,
+  const int* n_genes,
+  const int* n_grps,
+  const int* group_s,
+  const int* group_c,
+  const double* input_matrix,
   double* output_matrix,
   int* ierr
 );
 
 void calc_fchange_c(
-  int* n_genes,
-  int* n_cols,
-  int* n_pairs,
-  int* control_cols,
-  int* cond_cols,
-  double* input_matrix,
+  const int* n_genes,
+  const int* n_cols,
+  const int* n_pairs,
+  const int* control_cols,
+  const int* cond_cols,
+  const double* input_matrix,
   double* output_matrix,
   int* ierr
 );
 
 void normalization_pipeline_c(
-  int* n_genes,
-  int* n_tissues,
-  double* input_matrix,
+  const int* n_genes,
+  const int* n_tissues,
+  const double* input_matrix,
   double* buf_stddev,
   double* buf_quant,
   double* buf_avg,
@@ -157,18 +228,18 @@ void normalization_pipeline_c(
   int* perm,
   int* stack_left,
   int* stack_right,
-  int* max_stack,
-  int* group_s,
-  int* group_c,
-  int* n_grps,
+  const int* max_stack,
+  const int* group_s,
+  const int* group_c,
+  const int* n_grps,
   int* ierr
 );
 
 void compute_family_scaling_c(
-  int* n_genes,
-  int* n_families,
-  double* distances,
-  int* gene_to_fam,
+  const int* n_genes,
+  const int* n_families,
+  const double* distances,
+  const int* gene_to_fam,
   double* dscale,
   double* loess_x,
   double* loess_y,
@@ -177,10 +248,10 @@ void compute_family_scaling_c(
 );
 
 void compute_family_scaling_expert_c(
-  int* n_genes,
-  int* n_families,
-  double* distances,
-  int* gene_to_fam,
+  const int* n_genes,
+  const int* n_families,
+  const double* distances,
+  const int* gene_to_fam,
   double* dscale,
   double* loess_x,
   double* loess_y,
@@ -193,11 +264,11 @@ void compute_family_scaling_expert_c(
 );
 
 void compute_rdi_c(
-  int* n_genes,
-  int* n_families,
-  double* distances,
-  int* gene_to_fam,
-  double* dscale,
+  const int* n_genes,
+  const int* n_families,
+  const double* distances,
+  const int* gene_to_fam,
+  const double* dscale,
   double* rdi,
   double* sorted_rdi,
   int* perm,
@@ -206,19 +277,19 @@ void compute_rdi_c(
 );
 
 void identify_outliers_c(
-  int* n_genes,
-  double* rdi,
-  double* sorted_rdi,
+  const int* n_genes,
+  const double* rdi,
+  const double* sorted_rdi,
   int* is_outlier_int,
   double* threshold,
-  double* percentile
+  const double* percentile
 );
 
 void detect_outliers_c(
-  int* n_genes,
-  int* n_families,
-  double* distances,
-  int* gene_to_fam,
+  const int* n_genes,
+  const int* n_families,
+  const double* distances,
+  const int* gene_to_fam,
   double* work_array,
   int* perm,
   int* stack_left,
@@ -227,176 +298,177 @@ void detect_outliers_c(
   double* loess_x,
   double* loess_y,
   int* loess_n,
-  double* percentile,
+  const double* percentile,
   int* ierr
 );
 
 void euclidean_distance_c(
-  double* vec1,
-  double* vec2,
-  int* d,
+  const double* vec1,
+  const double* vec2,
+  const int* d,
   double* result
 );
 
 void distance_to_centroid_c(
-  int* n_genes,
-  int* n_families,
-  double* genes,
-  double* centroids,
-  int* gene_to_fam,
+  const int* n_genes,
+  const int* n_families,
+  const double* genes,
+  const double* centroids,
+  const int* gene_to_fam,
   double* distances,
-  int* d
+  const int* d
 );
 
 void compute_tissue_versatility_c(
-  int* n_axes,
-  int* n_vectors,
-  double* expression_vectors,
-  int* exp_vecs_selection_index,
-  int* n_selected_vectors,
-  int* axes_selection,
-  int* n_selected_axes,
+  const int* n_axes,
+  const int* n_vectors,
+  const double* expression_vectors,
+  const int* exp_vecs_selection_index,
+  const int* n_selected_vectors,
+  const int* axes_selection,
+  const int* n_selected_axes,
   double* tissue_versatilities,
   double* tissue_angles_deg,
   int* ierr
 );
 
 void compute_shift_vector_field_c(
-  int* d,
-  int* n_genes,
-  int* n_families,
-  double* expression_vectors,
-  double* family_centroids,
-  int* gene_to_centroid,
+  const int* d,
+  const int* n_genes,
+  const int* n_families,
+  const double* expression_vectors,
+  const double* family_centroids,
+  const int* gene_to_centroid,
   double* shift_vectors,
   int* ierr
 );
 
+
 void detect_neofunctionalization_c(
-  double* ancestors,
-  int* n_families,
-  double* genes,
-  int* n_axes,
-  int* gene_to_fam,
-  int* n_genes,
-  double* thresholds,
+  const double* ancestors,
+  const int* n_families,
+  const double* genes,
+  const int* n_axes,
+  const int* gene_to_fam,
+  const int* n_genes,
+  const double* thresholds,
   int* neofunc,
   int* ierr
 );
 
 void mask_check_state_c(
-  int* bit_mask,
-  int* n_mask_chunks,
-  int* i_gene,
+  const int* bit_mask,
+  const int* n_mask_chunks,
+  const int* i_gene,
   int* state,
   int* ierr
 );
 
 void mask_chunk_count_c(
-  int* n_genes,
+  const int* n_genes,
   int* count,
   int* ierr
 );
 
 void calc_work_arr_paralog_subsets_size(
-  int* max_subset_size,
-  int* n_genes,
+  const int* max_subset_size,
+  const int* n_genes,
   int* work_array_size,
-  int* filtered_paralogs_mask,
-  int* n_mask_chunks,
+  const int* filtered_paralogs_mask,
+  const int* n_mask_chunks,
   int* ierr
 );
 
 void filter_paralogs_by_pattern_dosage_effect(
-  double* gene_angles,
-  double* threshold,
-  int* n_genes,
-  int* n_families,
-  int* gene_to_fam,
+  const double* gene_angles,
+  const double* threshold,
+  const int* n_genes,
+  const int* n_families,
+  const int* gene_to_fam,
   int* masks,
-  int* n_mask_chunks,
+  const int* n_mask_chunks,
   int* ierr
 );
 
 void filter_paralogs_by_pattern_subfunctionalization_c(
-  double* gene_angles,
-  double* threshold,
-  int* n_genes,
-  int* n_families,
-  int* gene_to_fam,
+  const double* gene_angles,
+  const double* threshold,
+  const int* n_genes,
+  const int* n_families,
+  const int* gene_to_fam,
   int* masks,
-  int* n_mask_chunks,
+  const int* n_mask_chunks,
   int* ierr
 );
 
 void detect_subfunctionalization_c(
-  double* ancestor,
-  double* genes,
-  int* n_genes,
-  int* n_dims,
-  double* rdi_threshold,
-  int* filtered_paralogs_mask,
-  int* n_mask_chunks,
+  const double* ancestor,
+  const double* genes,
+  const int* n_genes,
+  const int* n_dims,
+  const double* rdi_threshold,
+  const int* filtered_paralogs_mask,
+  const int* n_mask_chunks,
   int* n_results,
-  int* max_subset_size,
+  const int* max_subset_size,
   int* work_arr_paralog_subsets,
-  int* n_paralog_subsets,
+  const int* n_paralog_subsets,
   int* active_mask,
   double* temp_paralog_vector,
-  double* paralog_norms,
-  int* sorted_paralog_norms_perm,
+  const double* paralog_norms,
+  const int* sorted_paralog_norms_perm,
   double* temp_work_array,
   int* ierr
 );
 
 void detect_dosage_effect_c(
-  double* ancestor,
-  double* genes,
-  int* n_genes,
-  int* n_dims,
-  int* filtered_paralogs_mask,
-  int* n_mask_chunks,
+  const double* ancestor,
+  const double* genes,
+  const int* n_genes,
+  const int* n_dims,
+  const int* filtered_paralogs_mask,
+  const int* n_mask_chunks,
   int* n_results,
-  int* max_subset_size,
+  const int* max_subset_size,
   int* work_arr_paralog_subsets,
-  int* n_paralog_subsets,
+  const int* n_paralog_subsets,
   int* active_mask,
   double* temp_paralog_vector,
-  double* max_angle,
-  double* gain_gamma,
+  const double* max_angle,
+  const double* gain_gamma,
   int* ierr
 );
 
 void mean_vector_c(
-  double* expression_vectors,
-  int* n_axes,
-  int* n_genes,
-  int* gene_indices,
-  int* n_selected_genes,
+  const double* expression_vectors,
+  const int* n_axes,
+  const int* n_genes,
+  const int* gene_indices,
+  const int* n_selected_genes,
   double* centroid_col,
   int* ierr
 );
 
 void group_centroid_c(
-  double* expression_vectors,
-  int* n_axes,
-  int* n_genes,
-  int* gene_to_family,
-  int* n_families,
+  const double* expression_vectors,
+  const int* n_axes,
+  const int* n_genes,
+  const int* gene_to_family,
+  const int* n_families,
   double* centroid_matrix,
   const char* mode,
-  int* ortholog_set,
+  const int* ortholog_set,
   int* selected_indices,
-  int* selected_indices_len,
+  const int* selected_indices_len,
   int* ierr
 );
 
 void build_kd_index_C(
-  double* points,
-  int* num_dimensions,
-  int* num_points,
+  const double* points,
+  const int* num_dimensions,
+  const int* num_points,
   int* kd_indices,
-  int* dimension_order,
+  const int* dimension_order,
   int* workspace,
   double* value_buffer,
   int* permutation,
@@ -406,24 +478,24 @@ void build_kd_index_C(
 );
 
 void which_c(
-  int* mask,
-  int* n,
+  const int* mask,
+  const int* n,
   int* idx_out,
-  int* m_max,
+  const int* m_max,
   int* m_out,
   int* ierr
 );
 
 void loess_smooth_2d_c(
-  int* n_total,
-  int* n_target,
-  double* x_ref,
-  double* y_ref,
-  int* indices_used,
+  const int* n_total,
+  const int* n_target,
+  const double* x_ref,
+  const double* y_ref,
+  const int* indices_used,
   int* n_used,
-  double* x_query,
-  double* kernel_sigma,
-  double* kernel_cutoff,
+  const double* x_query,
+  const double* kernel_sigma,
+  const double* kernel_cutoff,
   double* y_out,
   int* ierr
 );
@@ -1032,7 +1104,39 @@ List tox_log2_transformation_rcpp(NumericMatrix input) {
                         Named("ierr") = ierr);
 }
 
+//' Compute scalar baselines for a factor and dependent variable
+//'
+//' @param factor Numeric vector of factor values
+//' @param dependent Numeric vector of dependent variable values
+//' @param mode String indicating baseline calculation mode (e.g., 'raw', 'min', 'mean')
+//' @return List with factor baseline, dependent baseline, and error code
+// [[Rcpp::export]]
+List tox_compute_baselines_factor_dependent_rcpp(NumericVector factor,
+                                               NumericVector dependent,
+                                               std::string mode) {
+  int n_timepoints = factor.size();
+  
+  // Fortran expects mode as a char array (e.g., 'raw', 'min', 'mean'), pad/truncate to 8 chars
+  char mode_c[8] = {' '};
+  size_t len = std::min(mode.size(), size_t(8));
+  std::memcpy(mode_c, mode.c_str(), len);
 
+  double factor_baseline = 0.0;
+  double dependent_baseline = 0.0;
+  int ierr = 0;
+
+  compute_baselines_factor_dependent_c(factor.begin(),
+                     dependent.begin(),
+                     &n_timepoints,
+                     mode_c,
+                     &factor_baseline,
+                     &dependent_baseline,
+                     &ierr);
+
+  return List::create(Named("factor_baseline") = factor_baseline,
+            Named("dependent_baseline") = dependent_baseline,
+            Named("ierr") = ierr);
+}
 
 //' Calculate average expression across replicates for each tissue group
 //'
@@ -2139,7 +2243,7 @@ List tox_deserialize_real_array_rcpp(std::string filename, int max_dims = 5) {
     int ierr = 0;
     int clen = 0;
 
-    get_array_metadata_C(fname.data(),
+      get_array_metadata_C(fname.data(),
                          &fn_len,
                          dims_out.data(),
                          &max_dims,
@@ -2859,5 +2963,190 @@ List tox_omics_field_RAP_projection_rcpp(NumericMatrix vecs,
                         Named("ierr") = ierr);
 }
 
+//' Calculate contributions of factors to dependent variables based on specified mode (e.g., raw, min, mean) using optimized C implementation
+//'
+//' @param factor Numeric vector of factor values
+//' @param dependent Numeric vector of dependent variable values
+//' @param n_dims Integer specifying the number of dimensions (length of factor and dependent vectors)
+//' @param mode Integer specifying the mode of contribution calculation (e.g., 0 for raw, 1 for min, 2 for mean)
+//' @return List with local contributions for each dimension, total contribution, and error code from contribution calculation function
+// [[Rcpp::export]]
+List tox_compute_contributions_rcpp(NumericVector factor,
+                                    NumericVector dependent,
+                                    std::string mode) {
+  int n_dims = factor.size();
+  NumericVector local_contributions(n_dims);
+  double total_contribution = 0.0;
+  int ierr = 0;
+
+  
+  char mode_c[8] = {' '};
+  size_t len = std::min(mode.size(), size_t(8));
+  std::memcpy(mode_c, mode.c_str(), len);
+
+  compute_contributions_c(factor.begin(),
+                         dependent.begin(),
+                         &n_dims,
+                         mode_c,
+                         local_contributions.begin(),
+                         &total_contribution,
+                         &ierr);
+
+  return List::create(Named("local_contributions") = local_contributions,
+                      Named("total_contribution") = total_contribution,
+                      Named("ierr") = ierr);
+}
+//' Calculate contributions of multiple factors to multiple dependent variables across samples and timepoints based on specified mode (e.g., raw, min, mean) using optimized C implementation
+//'
+//' @param trajectories Numeric vector containing factor and dependent variable trajectories (dimensions: n_factors x n_samples x n_timepoints)
+//' @param n_factors Integer specifying the number of factors in the trajectories
+//' @param n_samples Integer specifying the number of samples in the trajectories
+//' @param n_timepoints Integer specifying the number of timepoints in the trajectories
+//' @param factor_indices Integer vector specifying the indices of the factors to include in the contribution calculations
+//' @param n_selected_factors Integer specifying the number of selected factors to include in the contribution
+//' @param dependent_indices Integer vector specifying the indices of the dependent variables to include in the contribution calculations
+//' @param n_selected_dependents Integer specifying the number of selected dependent variables to include in the contribution calculations
+//' @param mode String specifying the mode of contribution calculation (e.g., "raw", "min", "mean")
+//' @return List with local contributions for each factor-dependent pair across samples and
+// [[Rcpp::export]]
+List tox_compute_all_contributions_rcpp(NumericVector trajectories,
+                                        int n_factors,
+                                        int n_samples,
+                                        int n_timepoints,
+                                        IntegerVector factor_indices,
+                                        int n_selected_factors,
+                                        IntegerVector dependent_indices,
+                                        int n_selected_dependents,
+                                        std::string mode) {
+  // Dimensions for output arrays
+  int n_tp = n_timepoints;
+  // local_contributions: (n_selected_factors x n_selected_dependents x n_samples x n_timepoints)
+  NumericVector local_contributions(n_selected_factors * n_selected_dependents * n_samples * n_timepoints);
+  // total_contributions: (n_selected_factors x n_selected_dependents x n_samples)
+  NumericVector total_contributions(n_selected_factors * n_selected_dependents * n_samples);
+  // temp arrays for Fortran workspace
+  NumericVector temp_factors(n_timepoints);
+  NumericVector temp_dependent(n_timepoints);
+  int ierr = 0;
+
+  // Fortran expects mode as a char array (e.g., 'raw', 'min', 'mean'), pad/truncate to 8 chars
+  char mode_c[8] = {' '};
+  size_t len = std::min(mode.size(), size_t(8));
+  std::memcpy(mode_c, mode.c_str(), len);
+
+  compute_all_contributions_c(
+    trajectories.begin(),
+    &n_factors,
+    &n_samples,
+    &n_timepoints,
+    factor_indices.begin(),
+    &n_selected_factors,
+    dependent_indices.begin(),
+    &n_selected_dependents,
+    mode_c,
+    local_contributions.begin(),
+    total_contributions.begin(),
+    temp_factors.begin(),
+    temp_dependent.begin(),
+    &ierr
+  );
+
+  return List::create(Named("local_contributions") = local_contributions,
+                      Named("total_contributions") = total_contributions,
+                      Named("ierr") = ierr);
+}
+//' Compute permutation test contributions of factors to dependent variables based on specified mode.
+//' @param trajectories Numeric vector containing factor and dependent variable trajectories (dimensions: n_factors x n_samples x n_timepoints)
+//' @param n_factors Integer specifying the number of factors in the trajectories
+//' @param n_samples Integer specifying the number of samples in the trajectories
+//' @param n_timepoints Integer specifying the number of timepoints in the trajectories
+//' @param factor_idx Integer specifying the index of the factor to test contributions for
+//' @param dependent_idx Integer specifying the index of the dependent variable to test contributions for 
+//' @param sample_idx Integer specifying the index of the sample to test contributions for
+//' @param mode String specifying the baseline mode ('raw', 'min', 'mean')
+//' @param n_permutations Integer specifying the number of permutations to perform
+//' @param random_seed Integer seed for random number generation in permutation test
+//' @return List with local contributions for each timepoint across permutations, total contributions across permutations, and error code from permutation test function
+
+// [[Rcpp::export]]
+List tox_perform_permutation_test_rcpp(NumericVector trajectories,
+                                       int n_factors,
+                                       int n_samples,
+                                       int n_timepoints,
+                                       int factor_idx,
+                                       int dependent_idx,
+                                       int sample_idx,
+                                       std::string mode,
+                                       int n_permutations,
+                                       int random_seed) {
+ 
+                                        
+  char mode_c[8] = {' '};
+  size_t len = std::min(mode.size(), size_t(8));
+  std::memcpy(mode_c, mode.c_str(), len);
+
+  NumericMatrix local_contributions(n_timepoints, n_permutations);
+  NumericVector total_contributions(n_permutations);
+  NumericVector temp_factor(n_timepoints);
+  NumericVector temp_dependent(n_timepoints);
+  int ierr = 0;
+
+  perform_permutation_test_c(trajectories.begin(), &n_factors, &n_samples, &n_timepoints,
+    &factor_idx, &dependent_idx, &sample_idx, mode_c, &n_permutations,
+    local_contributions.begin(), total_contributions.begin(),
+    temp_factor.begin(), temp_dependent.begin(), &ierr, &random_seed);
+
+  return List::create(Named("local_contributions") = local_contributions,
+                      Named("total_contributions") = total_contributions,
+                      Named("ierr") = ierr);
+}
 
 
+//' compute p-values for observed contributions against permutation distributions, with optimized C implementation
+//' @param local_contributions_observed Numeric vector of local contributions observed for each timepoint
+//' @param total_contribution_observed Numeric value of total contribution observed across timepoints
+//' @param local_contributions_perm Numeric matrix of local contributions from permutations (dimensions: n_timepoints x n_permutations)
+//' @param total_contributions_perm Numeric vector of total contributions from permutations (length: n_permutations)
+//' @param n_timepoints Integer specifying the number of timepoints for local contributions
+//' @param n_permutations Integer specifying the number of permutations for the null distribution
+//' @return List with local p-values for each timepoint, total p-value, and error
+
+// [[Rcpp::export]]
+List tox_compute_p_values_rcpp(NumericVector local_contributions_observed,
+                              double total_contribution_observed,
+                              NumericMatrix local_contributions_perm,
+                              NumericVector total_contributions_perm,
+                              int n_timepoints,
+                              int n_permutations) {
+  NumericVector local_p_values(n_timepoints);
+  double total_p_value = 0.0;
+  int ierr = 0;
+
+  compute_p_values_c(local_contributions_observed.begin(), &total_contribution_observed,
+    local_contributions_perm.begin(), total_contributions_perm.begin(),
+    &n_timepoints, &n_permutations, local_p_values.begin(), &total_p_value, &ierr);
+
+  return List::create(Named("local_p_values") = local_p_values,
+                      Named("total_p_value") = total_p_value,
+                      Named("ierr") = ierr);
+}
+
+//' Compute empirical distribution function (EDF) for a numeric vector of values, returning unique values, CDF values, number of unique values, and error code from EDF computation function
+//' @param values Numeric vector of values to compute EDF for
+//' @return List with unique values, CDF values, number of unique values, and error code from EDF computation function
+
+// [[Rcpp::export]]
+List tox_compute_edf_rcpp(NumericVector values, IntegerVector perm) {
+  int n_values = values.size();
+  NumericVector unique_values(n_values);
+  NumericVector cdf_values(n_values);
+  int n_unique = 0;
+  int ierr = 0;
+  compute_edf_c(values.begin(), &n_values, unique_values.begin(), cdf_values.begin(), &n_unique, &ierr);
+  return List::create(
+    Named("unique_values") = unique_values,
+    Named("cdf_values") = cdf_values,
+    Named("n_unique") = n_unique,
+    Named("ierr") = ierr
+  );
+}
