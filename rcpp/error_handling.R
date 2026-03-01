@@ -48,6 +48,11 @@ check_err_code <- function(ierr) {
 # Validation helpers for R wrappers
 # -----------------------------
 
+validate_numeric_array <- function(x, name = deparse(substitute(x))) {
+  if (!is.numeric(x) || !is.array(x)) stop(sprintf("%s must be numeric array", name))
+  invisible(TRUE)
+}
+
 validate_numeric_vector <- function(x, name = deparse(substitute(x))) {
   if (!is.numeric(x)) stop(sprintf("%s must be numeric", name))
   invisible(TRUE)
