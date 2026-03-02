@@ -195,6 +195,30 @@ Push right and left intervals onto stack</p></td>
                  <td><p>R interface for building KD index</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../interface/build_residual_histograms.html'>build_residual_histograms</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_residual_histograms_c.html'>build_residual_histograms_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_jsd.f90.html'>tox_data_integration_jsd.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/build_residual_histograms.html">build_residual_histograms</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/build_residual_histograms_filtered_c.html'>build_residual_histograms_filtered_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_jsd.f90.html'>tox_data_integration_jsd.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/build_residual_histograms.html">build_residual_histograms</a>, including neighbor mask for filtered analysis</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/build_residual_histograms_helper.html'>build_residual_histograms_helper</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/build_spherical_kd.html'>build_spherical_kd</a></td>
                  <td><a href='../module/f42_kd_tree.html'>f42_kd_tree</a></td>
                  <td>Subroutine</td>
@@ -280,6 +304,18 @@ Provides an interface for R (.Fortran) and Fortran code to call the fold change 
 Computes log2 fold changes between condition and control columns for all genes. Arguments match R's .Fortran calling convention.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../interface/calc_neighborhood_size.html'>calc_neighborhood_size</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td><p>Calculate the number of neighbors to be used for <a href="../interface/construct_neighborhoods.html">construct_neighborhoods</a>.</p><a href="../interface/calc_neighborhood_size.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_neighborhood_size_c.html'>calc_neighborhood_size_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_preprocessing.f90.html'>tox_data_integration_preprocessing.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/calc_neighborhood_size.html">calc_neighborhood_size</a></p></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/calc_percentile.html'>calc_percentile</a></td>
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Subroutine</td>
@@ -290,7 +326,14 @@ Uses linear interpolation between adjacent values.</p></td>
                  <td><a href='../proc/calc_percentile_alloc.html'>calc_percentile_alloc</a></td>
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Subroutine</td>
-                 <td><p>Calculate the percentile of an array, allocating necessary arrays when no sorting permutation is given</p></td>
+                 <td><p>Calculate the percentile of an array, allocating necessary arrays when no sorting permutation is given</p><a href="../proc/calc_percentile_alloc.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/calc_percentile_helper.html'>calc_percentile_helper</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>(no input validation) Calculate the percentile of an array given a sorted permutation.
+Uses linear interpolation between adjacent values.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/calc_tiss_avg.html'>calc_tiss_avg</a></td>
@@ -359,6 +402,24 @@ This is the reason why the work array holds the results as well, as all subsets 
                  <td><a href='../module/f42_array_utils.html'>f42_array_utils</a></td>
                  <td>Subroutine</td>
                  <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/clamp.html'>clamp</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/clamp_int.html'>clamp_int</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Function</td>
+                 <td><p>Clamps a value into a range <code>min_val &lt;= val &lt;= max_val</code>. If <code>max_val &lt; min_val</code>, <code>min_val</code> is returned</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/clamp_real.html'>clamp_real</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Function</td>
+                 <td><p>Clamps a value into a range <code>min_val &lt;= val &lt;= max_val</code>. If <code>max_val &lt; min_val</code>, <code>min_val</code> is returned</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/clock_hand_angle_between_vectors.html'>clock_hand_angle_between_vectors</a></td>
@@ -449,6 +510,24 @@ This measures both magnitude and directionality of angular separation in RAP spa
                  <td><p>This routine performs contribution analysis for a specific factor–dependent pair, no input validation</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../interface/compute_divergence_per_reference_point.html'>compute_divergence_per_reference_point</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_divergence_per_reference_point_c.html'>compute_divergence_per_reference_point_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_jsd.f90.html'>tox_data_integration_jsd.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/compute_divergence_per_reference_point.html">compute_divergence_per_reference_point</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/compute_divergence_per_reference_point_helper.html'>compute_divergence_per_reference_point_helper</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/compute_edf.html'>compute_edf</a></td>
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Subroutine</td>
@@ -531,6 +610,24 @@ Calls compute_family_scaling_alloc with standard Fortran types for R interface.
 This is the recommended version for most users as it handles memory allocation automatically.</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../interface/compute_gene_means.html'>compute_gene_means</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_gene_means_c.html'>compute_gene_means_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_preprocessing.f90.html'>tox_data_integration_preprocessing.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/compute_gene_means.html">compute_gene_means</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/compute_gene_means_helper.html'>compute_gene_means_helper</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/compute_p_values.html'>compute_p_values</a></td>
                  <td><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></td>
                  <td>Subroutine</td>
@@ -572,6 +669,24 @@ Outputs both unsorted and sorted RDI, permutation, and sorting workspace arrays 
                  <td>Subroutine</td>
                  <td><p>Compute fractional contribution of each axis to a RAP-projected and normalized shift vector.
 Shared utility: computes fractional contribution of each axis to a RAP-projected and normalized vector.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/compute_residuals.html'>compute_residuals</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_residuals_c.html'>compute_residuals_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_preprocessing.f90.html'>tox_data_integration_preprocessing.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/compute_residuals.html">compute_residuals</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/compute_residuals_helper.html'>compute_residuals_helper</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/compute_shift_vector_field.html'>compute_shift_vector_field</a></td>
@@ -617,6 +732,48 @@ Exposes compute_tissue_versatility to C via iso_c_binding types with explicit di
                  <td>Subroutine</td>
                  <td><p>R wrapper for compute_tissue_versatility.
 Calls compute_tissue_versatility with standard Fortran types for R interface.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/compute_weighted_global_divergence.html'>compute_weighted_global_divergence</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/compute_weighted_global_divergence_c.html'>compute_weighted_global_divergence_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_jsd.f90.html'>tox_data_integration_jsd.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/compute_weighted_global_divergence.html">compute_weighted_global_divergence</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/compute_weighted_global_divergence_helper.html'>compute_weighted_global_divergence_helper</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/construct_neighborhoods.html'>construct_neighborhoods</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/construct_neighborhoods_alloc.html'>construct_neighborhoods_alloc</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/construct_neighborhoods_c.html'>construct_neighborhoods_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_preprocessing.f90.html'>tox_data_integration_preprocessing.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/construct_neighborhoods_alloc.html">construct_neighborhoods_alloc</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/construct_neighborhoods_helper.html'>construct_neighborhoods_helper</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/create_zip_archive.html'>create_zip_archive</a></td>
@@ -689,14 +846,14 @@ Calls compute_tissue_versatility with standard Fortran types for R interface.</p
                  <td><a href='../sourcefile/f42_deserialize_char.f90.html'>f42_deserialize_char.F90</a></td>
                  <td>Subroutine</td>
                  <td><p>Subroutine to deserialize a flat character array from a file and return it as a raw array callable by R
-Deserializes the array into a flat buffer.</p></td>
+Deserializes the array into a flat buffer.</p><a href="../proc/deserialize_char_flat_r.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_char_nd_c.html'>deserialize_char_nd_C</a></td>
                  <td><a href='../sourcefile/f42_deserialize_char.f90.html'>f42_deserialize_char.F90</a></td>
                  <td>Subroutine</td>
                  <td><p>C binding for the subroutine to deserialize a flat character array from a file.
-Deserializes the array into a flat buffer.</p></td>
+Deserializes the array into a flat buffer.</p><a href="../proc/deserialize_char_nd_c.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_complex_1d.html'>deserialize_complex_1d</a></td>
@@ -740,14 +897,14 @@ Directly deserialize a 1D complex array from a file</p></td>
                  <td><a href='../sourcefile/f42_deserialize_complex.f90.html'>f42_deserialize_complex.F90</a></td>
                  <td>Subroutine</td>
                  <td><p>C binding for the subroutine to deserialize a complex array from a file.
-The array is read into a flat buffer and reshaped in the calling language.</p></td>
+ The array is read into a flat buffer and reshaped in the calling language.</p><a href="../proc/deserialize_complex_nd_c.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_complex_r.html'>deserialize_complex_r</a></td>
                  <td><a href='../sourcefile/f42_deserialize_complex.f90.html'>f42_deserialize_complex.F90</a></td>
                  <td>Subroutine</td>
                  <td><p>R interface for deserializing a complex array from a file
-Deserializes an array of any dimension into a flat buffer.</p></td>
+Deserializes an array of any dimension into a flat buffer.</p><a href="../proc/deserialize_complex_r.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_int_1d.html'>deserialize_int_1d</a></td>
@@ -791,14 +948,14 @@ Directly deserialize a 1D integer array from a file</p></td>
                  <td><a href='../sourcefile/f42_deserialize_int.f90.html'>f42_deserialize_int.F90</a></td>
                  <td>Subroutine</td>
                  <td><p>C binding for the subroutine to deserialize an integer array from a file
-Deserializes an array of any dimension into a flat buffer.</p></td>
+ Deserializes an array of any dimension into a flat buffer.</p><a href="../proc/deserialize_int_nd_c.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_int_r.html'>deserialize_int_r</a></td>
                  <td><a href='../sourcefile/f42_deserialize_int.f90.html'>f42_deserialize_int.F90</a></td>
                  <td>Subroutine</td>
                  <td><p>R interface for deserializing an integer array from a file.
-Deserializes an array of any dimension into a flat buffer.</p></td>
+Deserializes an array of any dimension into a flat buffer.</p><a href="../proc/deserialize_int_r.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_logical_1d.html'>deserialize_logical_1d</a></td>
@@ -842,14 +999,14 @@ Directly deserialize a 1D logical array from a file</p></td>
                  <td><a href='../sourcefile/f42_deserialize_logical.f90.html'>f42_deserialize_logical.F90</a></td>
                  <td>Subroutine</td>
                  <td><p>C binding for the subroutine to deserialize a logical array from a file.
-Deserializes an array of any dimension into a flat buffer.</p></td>
+ Deserializes an array of any dimension into a flat buffer.</p><a href="../proc/deserialize_logical_nd_c.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_logical_r.html'>deserialize_logical_r</a></td>
                  <td><a href='../sourcefile/f42_deserialize_logical.f90.html'>f42_deserialize_logical.F90</a></td>
                  <td>Subroutine</td>
                  <td><p>R interface for deserializing a logical array from a file
-Deserializes an array of any dimension into a flat buffer.</p></td>
+Deserializes an array of any dimension into a flat buffer.</p><a href="../proc/deserialize_logical_r.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_real_1d.html'>deserialize_real_1d</a></td>
@@ -892,14 +1049,14 @@ Deserializes an array of any dimension into a flat buffer.</p></td>
                  <td><a href='../sourcefile/f42_deserialize_real.f90.html'>f42_deserialize_real.F90</a></td>
                  <td>Subroutine</td>
                  <td><p>R binding for the subroutine to deserialize a flat real array from a file.
-Deserializes an array of any dimension into a flat buffer.</p></td>
+Deserializes an array of any dimension into a flat buffer.</p><a href="../proc/deserialize_real_flat_r.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/deserialize_real_nd_c.html'>deserialize_real_nd_C</a></td>
                  <td><a href='../sourcefile/f42_deserialize_real.f90.html'>f42_deserialize_real.F90</a></td>
                  <td>Subroutine</td>
                  <td><p>C binding for the subroutine to deserialize a real array from a file.
-Deserializes an array of any dimension into a flat buffer.</p></td>
+Deserializes an array of any dimension into a flat buffer.</p><a href="../proc/deserialize_real_nd_c.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/detect_dosage_effect.html'>detect_dosage_effect</a></td>
@@ -962,6 +1119,36 @@ Calls detect_outliers with standard Fortran types for R interface.</p></td>
                  <td><a href='../sourcefile/tox_paralog_analysis.f90.html'>tox_paralog_analysis.F90</a></td>
                  <td>Subroutine</td>
                  <td><p>C-compatible wrapper for <code>detect_subfunctionalization</code></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/determine_shared_residual_range.html'>determine_shared_residual_range</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/determine_shared_residual_range_alloc.html'>determine_shared_residual_range_alloc</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/determine_shared_residual_range_c.html'>determine_shared_residual_range_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_jsd.f90.html'>tox_data_integration_jsd.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/determine_shared_residual_range_alloc.html">determine_shared_residual_range_alloc</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/determine_shared_residual_range_expert_c.html'>determine_shared_residual_range_expert_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_jsd.f90.html'>tox_data_integration_jsd.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/determine_shared_residual_range.html">determine_shared_residual_range</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/determine_shared_residual_range_helper.html'>determine_shared_residual_range_helper</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/distance_to_centroid.html'>distance_to_centroid</a></td>
@@ -1080,6 +1267,48 @@ as genes that are already too close in angle to the ancestor don't match the pat
                  <td><p>C binding for filtering unassigned genes</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../interface/fjct_compute_contribution_scores.html'>fjct_compute_contribution_scores</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fjct_compute_contribution_scores_c.html'>fjct_compute_contribution_scores_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_per_family.f90.html'>tox_data_integration_per_family.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/fjct_compute_contribution_scores.html">fjct_compute_contribution_scores</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/fjct_compute_contribution_scores_helper.html'>fjct_compute_contribution_scores_helper</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/fjct_compute_jsd.html'>fjct_compute_jsd</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/fjct_compute_jsd_alloc.html'>fjct_compute_jsd_alloc</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fjct_compute_jsd_c.html'>fjct_compute_jsd_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_per_family.f90.html'>tox_data_integration_per_family.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/fjct_compute_jsd_alloc.html">fjct_compute_jsd_alloc</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/fjct_compute_jsd_expert_c.html'>fjct_compute_jsd_expert_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_per_family.f90.html'>tox_data_integration_per_family.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/fjct_compute_jsd.html">fjct_compute_jsd</a></p></td>
+               </tr>
+			   <tr>
                  <td><a href='../interface/free.html'>free</a></td>
                  <td><a href='../module/tox_archive.html'>tox_archive</a></td>
                  <td>Interface</td>
@@ -1189,6 +1418,36 @@ by using the self-distance as indicator in which iteration the cluster was merge
                  <td><a href='../module/tox_archive.html'>tox_archive</a></td>
                  <td>Subroutine</td>
                  <td><p>Helper function to get the name of a ZIP entry</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/gjct_permutation_test.html'>gjct_permutation_test</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/gjct_permutation_test_alloc.html'>gjct_permutation_test_alloc</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/gjct_permutation_test_c.html'>gjct_permutation_test_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_stats.f90.html'>tox_data_integration_stats.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/gjct_permutation_test_alloc.html">gjct_permutation_test_alloc</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/gjct_permutation_test_filtered_c.html'>gjct_permutation_test_filtered_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_stats.f90.html'>tox_data_integration_stats.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/gjct_permutation_test_alloc.html">gjct_permutation_test_alloc</a>, including neighbor masks for filtered analysis</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/gjct_permutation_test_helper.html'>gjct_permutation_test_helper</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/group_centroid.html'>group_centroid</a></td>
@@ -1335,6 +1594,12 @@ Calls identify_outliers with standard Fortran types for R interface.</p></td>
                  <td><p>check if the error code indicates success</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../interface/jct_compute_jsd_pipeline_helper.html'>jct_compute_jsd_pipeline_helper</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/k_means_assign_cluster_helper.html'>k_means_assign_cluster_helper</a></td>
                  <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
                  <td>Subroutine</td>
@@ -1462,6 +1727,12 @@ Applies log2(x+1) to each element of the input matrix. Arguments match R's .Fort
                  <td><p>Converts a logical value to c_int, elemental -&gt; any shape</p></td>
                </tr>
 			   <tr>
+                 <td><a href='../proc/logx.html'>logx</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Compute logarithm for any base</p></td>
+               </tr>
+			   <tr>
                  <td><a href='../interface/malloc.html'>malloc</a></td>
                  <td><a href='../module/tox_archive.html'>tox_archive</a></td>
                  <td>Interface</td>
@@ -1477,7 +1748,7 @@ Applies log2(x+1) to each element of the input matrix. Arguments match R's .Fort
                  <td><a href='../proc/mask_check_state_c.html'>mask_check_state_c</a></td>
                  <td><a href='../sourcefile/tox_paralog_analysis.f90.html'>tox_paralog_analysis.F90</a></td>
                  <td>Subroutine</td>
-                 <td><p>C-compatible wrapper for <code>mask_check_state</code></p></td>
+                 <td><p>C-compatible wrapper for <a href="../proc/mask_check_state.html">mask_check_state</a></p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/mask_chunk_count.html'>mask_chunk_count</a></td>
@@ -1692,6 +1963,36 @@ Input: trajectory(n_factors, n_timepoints) for ONE sample/entity</p></td>
                  <td><p>C-compatible wrapper for <a href="../proc/perform_permutation_test.html">perform_permutation_test</a></p></td>
                </tr>
 			   <tr>
+                 <td><a href='../interface/pool_means.html'>pool_means</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/pool_means_alloc.html'>pool_means_alloc</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pool_means_c.html'>pool_means_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_preprocessing.f90.html'>tox_data_integration_preprocessing.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/pool_means_alloc.html">pool_means_alloc</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/pool_means_expert_c.html'>pool_means_expert_c</a></td>
+                 <td><a href='../sourcefile/tox_data_integration_preprocessing.f90.html'>tox_data_integration_preprocessing.F90</a></td>
+                 <td>Subroutine</td>
+                 <td><p>C-compatible wrapper for <a href="../interface/pool_means.html">pool_means</a></p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/pool_means_helper.html'>pool_means_helper</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
                  <td><a href='../proc/post_merge_distances_helper.html'>post_merge_distances_helper</a></td>
                  <td><a href='../module/tox_clustering.html'>tox_clustering</a></td>
                  <td>Subroutine</td>
@@ -1749,7 +2050,8 @@ Sorts indirectly using the permutation vector <code>perm</code>. Manual stack re
                  <td><a href='../proc/radians.html'>radians</a></td>
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Function</td>
-                 <td><p>Returns the given degrees in positive radian value (-90deg -&gt; 3*PI/2, not -PI/2)</p></td>
+                 <td><p>Returns the given degrees in positive radian value <script type="math/tex"> -90^{\circ} \Rightarrow \frac{3\cdot \pi}{2}, \text{not} -\frac{\pi}{2} </script>
+</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/rand_range.html'>rand_range</a></td>
@@ -1983,7 +2285,7 @@ The file will contain a magic number, type code, dimension, shape, character len
                  <td><a href='../module/f42_serialize_char.html'>f42_serialize_char</a></td>
                  <td>Subroutine</td>
                  <td><p>Serialize a character array of arbitrary dimensions to a binary file.
-The file will contain a magic number, type code, dimension, shape, character length, and the array data.</p></td>
+The file will contain a magic number, type code, dimension, shape, character length, and the array data.</p><a href="../proc/serialize_char_nd.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/serialize_char_nd_c.html'>serialize_char_nd_C</a></td>
@@ -2037,7 +2339,7 @@ R can not pass a multidimensional array directly, so we use a flat array and dim
                  <td><a href='../proc/serialize_complex_nd.html'>serialize_complex_nd</a></td>
                  <td><a href='../module/f42_serialize_complex.html'>f42_serialize_complex</a></td>
                  <td>Subroutine</td>
-                 <td><p>Serialize a flat complex array with specified dimensions and number of dimensions to a binary file.</p></td>
+                 <td><p>Serialize a flat complex array with specified dimensions and number of dimensions to a binary file.</p><a href="../proc/serialize_complex_nd.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/serialize_complex_nd_c.html'>serialize_complex_nd_C</a></td>
@@ -2091,7 +2393,7 @@ R can not pass a multidimensional array directly, so we use a flat array and dim
                  <td><a href='../proc/serialize_int_nd.html'>serialize_int_nd</a></td>
                  <td><a href='../module/f42_serialize_int.html'>f42_serialize_int</a></td>
                  <td>Subroutine</td>
-                 <td><p>Serialize a flat integer array with specified dimensions and number of dimensions to a binary file.</p></td>
+                 <td><p>Serialize a flat integer array with specified dimensions and number of dimensions to a binary file.</p><a href="../proc/serialize_int_nd.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/serialize_int_nd_c.html'>serialize_int_nd_C</a></td>
@@ -2145,7 +2447,7 @@ R can not pass a multidimensional array directly, so we use a flat array and dim
                  <td><a href='../proc/serialize_logical_nd.html'>serialize_logical_nd</a></td>
                  <td><a href='../module/f42_serialize_logical.html'>f42_serialize_logical</a></td>
                  <td>Subroutine</td>
-                 <td><p>Serialize a flat logical array with specified dimensions and number of dimensions to a binary file.</p></td>
+                 <td><p>Serialize a flat logical array with specified dimensions and number of dimensions to a binary file.</p><a href="../proc/serialize_logical_nd.html" class="pull-right"><emph>Read more&hellip;</emph></a></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/serialize_logical_nd_c.html'>serialize_logical_nd_C</a></td>
@@ -2224,6 +2526,30 @@ R can not pass a multidimensional array directly, so we use a flat array and dim
                  <td><a href='../module/tox_errors.html'>tox_errors</a></td>
                  <td>Subroutine</td>
                  <td><p>set the error code to OK, use at beginning of procedures</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/shuffle_reference_point_helper.html'>shuffle_reference_point_helper</a></td>
+                 <td><a href='../module/tox_data_integration.html'>tox_data_integration</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../interface/shuffle_vector.html'>shuffle_vector</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Interface</td>
+                 <td></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/shuffle_vector_int.html'>shuffle_vector_int</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Shuffle a vector in-place, using Fisher-Yates shuffle</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/shuffle_vector_real.html'>shuffle_vector_real</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Shuffle a vector in-place, using Fisher-Yates shuffle</p></td>
                </tr>
 			   <tr>
                  <td><a href='../interface/sort_array.html'>sort_array</a></td>
@@ -2314,6 +2640,12 @@ Creates a sorted version of the array by reordering the <code>perm</code> vector
                  <td><a href='../module/f42_utils.html'>f42_utils</a></td>
                  <td>Subroutine</td>
                  <td><p>Swap two integer values in-place.</p></td>
+               </tr>
+			   <tr>
+                 <td><a href='../proc/swap_real.html'>swap_real</a></td>
+                 <td><a href='../module/f42_utils.html'>f42_utils</a></td>
+                 <td>Subroutine</td>
+                 <td><p>Swap two real values in-place.</p></td>
                </tr>
 			   <tr>
                  <td><a href='../proc/take_active_mask_helper.html'>take_active_mask_helper</a></td>
@@ -2610,7 +2942,7 @@ Converts integer mask to logical and calls which.</p></td>
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2026-01-21 21:21 +0000"             </p>
+ on "2026-02-10 09:30 +0000"             </p>
           </div>
         </div>
         <br>
