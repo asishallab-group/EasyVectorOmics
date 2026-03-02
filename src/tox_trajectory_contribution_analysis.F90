@@ -11,6 +11,8 @@ module tox_trajectory_contribution_analysis
     integer(int32), parameter :: BASELINE_RAW  = 1
     integer(int32), parameter :: BASELINE_MIN  = 2
     integer(int32), parameter :: BASELINE_MEAN = 3
+
+   
 contains
 
     !> Selects a random sample different to `current_sample`. For reproducibility call [[f42_utils(module):init_random(subroutine)]] beforehand.
@@ -613,6 +615,14 @@ contains
        real(real64), dimension(n_factors, n_samples, n_timepoints), intent(in) :: trajectories
        !! input position trajectories
 
+    ! NOTE (performance layout):
+    ! `trajectories` uses (n_factors, n_samples, n_timepoints).
+    ! Velocity and acceleration use time-first layouts:
+    !   velocity     -> (max(0, n_timepoints-1), n_factors, n_samples)
+    !   acceleration -> (max(0, n_timepoints-2), n_factors, n_samples)
+    ! This keeps slices like velocity(:, factor, sample) contiguous,
+    ! avoids expensive temporaries, and improves cache efficiency.
+
        ! Workspace (preallocated by caller, reused for both velocity and acceleration)
        real(real64), dimension(n_timepoints-1, n_factors), intent(out) :: factor_workspace
        !! workspace for factor data (used for velocity and acceleration)
@@ -666,15 +676,19 @@ contains
        do sample = 1, n_samples
            ! ---- Step 1: velocity contributions ----
            do factor_index = 1, n_factors
-               call compute_velocity_trajectory_helper(trajectories(factor_index, sample, :), temp_velocity, n_timepoints, ierr)
-               if (is_err(ierr)) return
-               factor_workspace(:, factor_index) = temp_velocity
+               do time_index = 1, n_vel
+                   temp_velocity(time_index) = trajectories(factor_index, sample, time_index + 1) - &
+                                               trajectories(factor_index, sample, time_index)
+               end do
+               factor_workspace(1:n_vel, factor_index) = temp_velocity(1:n_vel)
            end do
 
            do dependent_index = 1, n_factors
-               call compute_velocity_trajectory_helper(trajectories(dependent_index, sample, :), temp_velocity, n_timepoints, ierr)
-               if (is_err(ierr)) return
-               dependent_workspace(:) = temp_velocity
+               do time_index = 1, n_vel
+                   temp_velocity(time_index) = trajectories(dependent_index, sample, time_index + 1) - &
+                                               trajectories(dependent_index, sample, time_index)
+               end do
+               dependent_workspace(1:n_vel) = temp_velocity(1:n_vel)
 
                do factor_index = 1, n_factors
                    velocity_contribution_series(sample, factor_index, dependent_index, 1) = 0.0_real64
@@ -705,8 +719,10 @@ contains
            end do
 
            do dependent_index = 1, n_factors
-               call compute_velocity_trajectory_helper(trajectories(dependent_index, sample, :), temp_velocity, n_timepoints, ierr)
-               if (is_err(ierr)) return
+               do time_index = 1, n_vel
+                   temp_velocity(time_index) = trajectories(dependent_index, sample, time_index + 1) - &
+                                               trajectories(dependent_index, sample, time_index)
+               end do
                call compute_acceleration_from_velocity_trajectory_helper(temp_velocity, temp_acceleration, n_timepoints, ierr)
                if (is_err(ierr)) return
                dependent_workspace(1:n_timepoints-2) = temp_acceleration
@@ -1065,13 +1081,14 @@ subroutine tox_compute_velocity_trajectories_c(trajectories, n_factors, n_sample
     integer(c_int), intent(in),  target :: n_timepoints
     !! number of timepoints
     real(c_double), dimension(n_factors, n_samples, n_timepoints), intent(in),  target :: trajectories
-    !! input trajectories
+    !! input trajectories in layout (n_factors, n_samples, n_timepoints)
     real(c_double), dimension(max(0, n_timepoints-1), n_factors, n_samples), intent(out), target :: velocity
-    !! output velocity trajectories
+    !! output velocity in layout (n_timepoints-1, n_factors, n_samples)
+    !! time-first layout keeps velocity(:,factor,sample) contiguous
     integer(c_int), intent(out), target :: ierr
     !! error code
 
-    !! Null-pointer validation 
+    !! Null-pointer validation
     M_CHECK_IERR_NON_NULL
     M_CHECK_NON_NULL(n_factors)
     M_CHECK_NON_NULL(n_samples)
@@ -1102,9 +1119,11 @@ subroutine tox_compute_acceleration_from_velocity_c(velocity, n_factors, n_sampl
     integer(c_int), intent(in),  target :: n_timepoints
     !! number of timepoints
     real(c_double), dimension(max(0, n_timepoints-1), n_factors, n_samples), intent(in),  target :: velocity
-    !! input velocity trajectories
+    !! input velocity in layout (n_timepoints-1, n_factors, n_samples)
+    !! time-first layout keeps velocity(:,factor,sample) contiguous
     real(c_double), dimension(max(0, n_timepoints-2), n_factors, n_samples), intent(out), target :: acceleration
-    !! output acceleration trajectories
+    !! output acceleration in layout (n_timepoints-2, n_factors, n_samples)
+    !! time-first layout keeps acceleration(:,factor,sample) contiguous
     integer(c_int), intent(out), target :: ierr
     !! error code
 
@@ -1143,10 +1162,12 @@ subroutine tox_compute_velocity_acceleration_contributions_c(trajectories, n_fac
     integer(c_int), intent(out), target :: ierr
     !! error code
     real(c_double), dimension(n_factors, n_samples, n_timepoints), intent(in),  target :: trajectories
-    !! input trajectories
+    !! input trajectories in layout (n_factors, n_samples, n_timepoints)
 
     ! ---- Workspace arrays (passed in from C, reused for velocity and acceleration) ----
-    ! Caller must allocate all with size (n_timepoints-1) if n_timepoints>1
+    ! NOTE (performance layout): unlike trajectories, these are time-first so slices like
+    ! workspace(:, factor) are contiguous and avoid temporary arrays in inner computations.
+    ! Caller must allocate all with size (n_timepoints-1) if n_timepoints>1.
     real(c_double), dimension(n_timepoints - 1, n_factors), intent(out), target :: factor_workspace
     !! workspace for factor data (used for velocity and acceleration)
     real(c_double), dimension(n_timepoints - 1), intent(out), target :: dependent_workspace
@@ -1190,7 +1211,7 @@ subroutine tox_compute_velocity_acceleration_contributions_c(trajectories, n_fac
 
 end subroutine tox_compute_velocity_acceleration_contributions_c
 
-!> C wrapper for compute_velocity_acceleration_contributions_alloc 
+!> C wrapper for compute_velocity_acceleration_contributions_alloc
 subroutine tox_compute_velocity_acceleration_contributions_alloc_c(trajectories, n_factors, n_samples, n_timepoints, mode, &
     contrib_velocity, velocity_contribution_series, &
     contrib_acceleration, acceleration_contribution_series, ierr) &
