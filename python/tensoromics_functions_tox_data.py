@@ -210,7 +210,7 @@ def read_gene_ids_from_tsv_file(filename,n_genes, gene_ids_len, n_header_rows, g
 
 # Function for read_expression_vectors_tsv_C
 #> tox_data_read_write:read_expression_vectors_tsv_C: Read expression vectors from given tabular (csv/tsv) files
-def read_expression_vectors_tsv(file_list, gene_ids, n_samples, n_header_rows, 
+def read_expression_vectors_tsv(file_list, gene_ids, n_samples, n_header_rows,
                            gene_col, value_cols, delimiter='\t'):
     """
     Read expression vectors from given tabular (csv/tsv) files
@@ -720,7 +720,7 @@ def create_zip_archive(zip_filename: str, keys, filenames) -> None:
         else:
             keys_array[max_key_len - 1, i] = 0  # null terminator at last position
 
-        # Fill filenames array - each column is one string  
+        # Fill filenames array - each column is one string
         for j in range(min(len(fname_bytes), max_filename_len - 1)):
             filenames_array[j, i] = fname_bytes[j]
         # Add null terminator
@@ -734,7 +734,7 @@ def create_zip_archive(zip_filename: str, keys, filenames) -> None:
         ctypes.POINTER(ctypes.c_char), ctypes.c_int,                    # zip_filename, zip_len
         np.ctypeslib.ndpointer(dtype=np.byte, ndim=2, flags='F_CONTIGUOUS'),  # keys
         ctypes.c_int, ctypes.c_int,                                     # keys_len, keys_count
-        np.ctypeslib.ndpointer(dtype=np.byte, ndim=2, flags='F_CONTIGUOUS'),  # filenames  
+        np.ctypeslib.ndpointer(dtype=np.byte, ndim=2, flags='F_CONTIGUOUS'),  # filenames
         ctypes.c_int, ctypes.c_int,                                     # filenames_len, filenames_count
         ctypes.POINTER(ctypes.c_int)                                    # ierr
     ]
@@ -743,13 +743,13 @@ def create_zip_archive(zip_filename: str, keys, filenames) -> None:
 
     # Call Fortran function - arrays are already in Fortran order
     lib.create_zip_archive_c(
-        zip_b, 
+        zip_b,
         ctypes.c_int(zip_len),
         keys_array,
-        ctypes.c_int(max_key_len), 
+        ctypes.c_int(max_key_len),
         ctypes.c_int(count),
-        filenames_array, 
-        ctypes.c_int(max_filename_len), 
+        filenames_array,
+        ctypes.c_int(max_filename_len),
         ctypes.c_int(count),
         ctypes.byref(ierr)
     )
@@ -786,7 +786,7 @@ def extract_zip_archive(zip_filename):
         raise FileNotFoundError(f"Zip file not found: {zip_filename}")
 
     lib.extract_zip_archive_c.argtypes = [
-        ctypes.POINTER(ctypes.c_char), 
+        ctypes.POINTER(ctypes.c_char),
         ctypes.c_int,
         ctypes.POINTER(ctypes.c_int)
     ]
