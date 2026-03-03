@@ -620,13 +620,13 @@ contains
         !! workspace for contribution calculations (used for velocity and acceleration)
 
         ! Outputs
-        real(real64), dimension(n_samples, n_factors, n_factors), intent(out) :: contrib_velocity
+        real(real64), dimension(n_factors, n_factors,n_samples), intent(out) :: contrib_velocity
         !! output velocity contributions
-        real(real64), dimension(n_samples, n_factors, n_factors, n_timepoints), intent(out) :: velocity_contribution_series
+        real(real64), dimension(n_timepoints, n_factors, n_factors, n_samples), intent(out) :: velocity_contribution_series
         !! output velocity contribution series
-        real(real64), dimension(n_samples, n_factors, n_factors), intent(out) :: contrib_acceleration
+        real(real64), dimension(n_factors, n_factors,n_samples), intent(out) :: contrib_acceleration
         !! output acceleration contributions
-        real(real64), dimension(n_samples, n_factors, n_factors, n_timepoints), intent(out) :: acceleration_contribution_series
+        real(real64), dimension(n_timepoints, n_factors, n_factors, n_samples), intent(out) :: acceleration_contribution_series
         !! output acceleration contribution series
 
         integer(int32), intent(out) :: ierr
@@ -663,15 +663,15 @@ contains
                 call compute_factor_velocity_from_trajectories_helper(trajectories, n_factors, n_samples, n_timepoints, dependent_index, sample, dependent_workspace)
 
                 do factor_index = 1, n_factors
-                    velocity_contribution_series(sample, factor_index, dependent_index, 1) = 0.0_real64
+                    velocity_contribution_series(1, factor_index, dependent_index, sample) = 0.0_real64
 
                     call compute_contributions_helper( &
                         factor_workspace(:, factor_index), dependent_workspace, n_vel, mode, &
-                        contributions_workspace, contrib_velocity(sample, factor_index, dependent_index), tmp_ierr)
+                        contributions_workspace, contrib_velocity(factor_index, dependent_index, sample), tmp_ierr)
                     if (is_err(tmp_ierr)) ierr = tmp_ierr
 
                     do time_index = 2, n_timepoints
-                        velocity_contribution_series(sample, factor_index, dependent_index, time_index) = &
+                        velocity_contribution_series(time_index, factor_index, dependent_index, sample) = &
                             contributions_workspace(time_index-1)
                     end do
                 end do
@@ -691,16 +691,16 @@ contains
                 call compute_velocity_trajectory_helper(contributions_workspace, dependent_workspace, n_vel)
 
                 do factor_index = 1, n_factors
-                    acceleration_contribution_series(sample, factor_index, dependent_index, 1) = 0.0_real64
-                    acceleration_contribution_series(sample, factor_index, dependent_index, 2) = 0.0_real64
+                    acceleration_contribution_series(1, factor_index, dependent_index, sample) = 0.0_real64
+                    acceleration_contribution_series(2, factor_index, dependent_index, sample) = 0.0_real64
 
                     call compute_contributions_helper( &
                         factor_workspace(1:n_acc, factor_index), dependent_workspace(1:n_acc), n_acc, mode, &
-                        contributions_workspace(1:n_acc), contrib_acceleration(sample, factor_index, dependent_index), tmp_ierr)
+                        contributions_workspace(1:n_acc), contrib_acceleration(factor_index, dependent_index, sample), tmp_ierr)
                     if (is_err(tmp_ierr)) ierr = tmp_ierr
 
                     do time_index = 3, n_timepoints
-                        acceleration_contribution_series(sample, factor_index, dependent_index, time_index) = &
+                        acceleration_contribution_series(time_index, factor_index, dependent_index, sample) = &
                             contributions_workspace(time_index-2)
                     end do
                 end do
@@ -723,13 +723,13 @@ contains
         real(real64), dimension(n_factors, n_samples, n_timepoints), intent(in) :: trajectories
          !! input position trajectories
 
-        real(real64), dimension(n_samples, n_factors, n_factors), intent(out) :: contrib_velocity
+        real(real64), dimension(n_factors, n_factors,n_samples), intent(out) :: contrib_velocity
         !! output velocity contributions
-        real(real64), dimension(n_samples, n_factors, n_factors, n_timepoints), intent(out) :: velocity_contribution_series
+        real(real64), dimension(n_timepoints, n_factors, n_factors, n_samples), intent(out) :: velocity_contribution_series
         !! output acceleration contributions
-        real(real64), dimension(n_samples, n_factors, n_factors), intent(out) :: contrib_acceleration
+        real(real64), dimension(n_factors, n_factors,n_samples), intent(out) :: contrib_acceleration
         !! output acceleration contributions
-        real(real64), dimension(n_samples, n_factors, n_factors, n_timepoints), intent(out) :: acceleration_contribution_series
+        real(real64), dimension(n_timepoints, n_factors, n_factors, n_samples), intent(out) :: acceleration_contribution_series
         !! output acceleration contributions
         integer(int32), intent(out) :: ierr
         !! Error code
@@ -1137,13 +1137,13 @@ pure subroutine tox_compute_velocity_acceleration_contributions_c(trajectories, 
     real(c_double), dimension(n_timepoints - 1), intent(out), target :: contributions_workspace
     !! workspace for contribution calculations (used for velocity and acceleration)
 
-    real(c_double), dimension(n_samples, n_factors, n_factors), intent(out), target :: Contrib_velocity
+    real(c_double), dimension(n_factors, n_factors, n_samples), intent(out), target :: Contrib_velocity
     !! velocity covariance matrix
-    real(c_double), dimension(n_samples, n_factors, n_factors, n_timepoints), intent(out), target :: velocity_contribution_series
+    real(c_double), dimension(n_timepoints, n_factors, n_factors, n_samples), intent(out), target :: velocity_contribution_series
     !! velocity contribution series
-    real(c_double), dimension(n_samples, n_factors, n_factors), intent(out), target :: Contrib_acceleration
+    real(c_double), dimension(n_factors, n_factors, n_samples), intent(out), target :: Contrib_acceleration
     !! acceleration covariance matrix
-    real(c_double), dimension(n_samples, n_factors, n_factors, n_timepoints), intent(out), target :: acceleration_contribution_series
+    real(c_double), dimension(n_timepoints, n_factors, n_factors, n_samples), intent(out), target :: acceleration_contribution_series
     !! acceleration contribution series
 
     integer(int32) :: mode_int
@@ -1197,13 +1197,13 @@ pure subroutine tox_compute_velocity_acceleration_contributions_alloc_c(trajecto
 
     real(c_double), dimension(n_factors, n_samples, n_timepoints), intent(in),  target :: trajectories
     !! input trajectories
-    real(c_double), dimension(n_samples, n_factors, n_factors), intent(out), target :: contrib_velocity
+    real(c_double), dimension(n_factors, n_factors, n_samples), intent(out), target :: contrib_velocity
     !! velocity covariance matrix
-    real(c_double), dimension(n_samples, n_factors, n_factors, n_timepoints), intent(out), target :: velocity_contribution_series
+    real(c_double), dimension(n_timepoints, n_factors, n_factors, n_samples), intent(out), target :: velocity_contribution_series
     !! velocity contribution series
-    real(c_double), dimension(n_samples, n_factors, n_factors), intent(out), target :: contrib_acceleration
+    real(c_double), dimension(n_factors, n_factors, n_samples), intent(out), target :: contrib_acceleration
     !! acceleration covariance matrix
-    real(c_double), dimension(n_samples, n_factors, n_factors, n_timepoints), intent(out), target :: acceleration_contribution_series
+    real(c_double), dimension(n_timepoints, n_factors, n_factors, n_samples), intent(out), target :: acceleration_contribution_series
     !! acceleration contribution series
     integer(c_int), intent(out), target :: ierr
     !! error code
