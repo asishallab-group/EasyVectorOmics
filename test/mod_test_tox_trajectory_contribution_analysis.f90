@@ -189,8 +189,8 @@ contains
         call compute_acceleration_from_velocity(velocity, acceleration, 2, 2, 4, ierr)
         call assert_equal_int(ierr, ERR_OK, "compute_acceleration_from_velocity: expected OK status")
 
-        call assert_equal_array_real(reshape(acceleration, [size(acceleration)]), &
-                                     reshape(expected, [size(expected)]), &
+        call assert_equal_array_real(acceleration, &
+                                     expected, &
                                      size(acceleration), TOL, &
                                      "compute_acceleration_from_velocity: acceleration mismatch")
     end subroutine test_compute_acceleration_from_velocity

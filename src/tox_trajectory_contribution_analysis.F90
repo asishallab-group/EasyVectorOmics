@@ -487,7 +487,7 @@ contains
        integer(int32) :: factor, sample
        integer(int32) :: i_vel, n_vel
    
-        n_vel = size(velocity, kind=int32)
+        n_vel = size(velocity, dim=1, kind=int32)
         if (n_vel == 0_int32) return
 
         do sample = 1, n_samples
@@ -539,15 +539,16 @@ contains
         real(real64), dimension(max(0_int32, n_timepoints-2), n_factors, n_samples), intent(out) :: acceleration
         !! output acceleration trajectories
 
-        integer(int32) :: factor, sample
+        integer(int32) :: factor, sample, n_vel
 
-        if (size(acceleration, kind=int32) == 0) return
+        n_vel = size(velocity, dim=1, kind=int32)
+        if (n_vel < 2) return
 
         do sample = 1, n_samples
             do factor = 1, n_factors
                 call compute_velocity_trajectory_helper(velocity(:, factor, sample), &
                                                                  acceleration(:, factor, sample), &
-                                                                 n_timepoints)
+                                                                 n_vel)
             end do
         end do
     end subroutine compute_acceleration_from_velocity_helper
