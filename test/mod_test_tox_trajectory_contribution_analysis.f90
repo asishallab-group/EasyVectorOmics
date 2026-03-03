@@ -150,22 +150,11 @@ contains
             end do
         end do
 
-        ! Debug: print trajectories to verify correct layout
-        print *, "Trajectories:"
-        print *, "Factor 1, Sample 1:", trajectories(1,1,:)
-        print *, "Factor 1, Sample 2:", trajectories(1,2,:)
-        print *, "Factor 2, Sample 1:", trajectories(2,1,:)
-        print *, "Factor 2, Sample 2:", trajectories(2,2,:)
-
         call compute_velocity_trajectories(trajectories, velocity, 2, 2, 4, ierr)
         call assert_equal_int(ierr, ERR_OK, "compute_velocity_trajectories: expected OK status")
 
-        ! Debug: print computed vs expected
-        print *, "Computed velocity (:,1,1):", velocity(:,1,1)
-        print *, "Expected velocity (:,1,1):", expected(:,1,1)
-
-        call assert_equal_array_real(reshape(velocity, [size(velocity)]), &
-                                     reshape(expected, [size(expected)]), &
+        call assert_equal_array_real(velocity, &
+                                     expected, &
                                      size(velocity), TOL, &
                                      "compute_velocity_trajectories: velocity mismatch")
     end subroutine test_compute_velocity_trajectories
@@ -178,7 +167,7 @@ contains
         integer(int32) :: factor, sample, t
 
         ! Compact velocity layout: (time=3, factor=2, sample=2)
-         velocity = reshape([ &
+        velocity = reshape([ &
             0.0_real64, 0.0_real64, &      
             0.0_real64, 0.0_real64, &     
             1.0_real64, -1.0_real64, &     
@@ -276,7 +265,7 @@ contains
 
         call assert_equal_array_real(series_acc(1,1,2,:), expected_series_acc, size(expected_series_acc), TOL, &
                 "compute_velocity_acceleration_contributions: acceleration series")
-            end subroutine test_compute_velocity_acceleration_contributions
+    end subroutine test_compute_velocity_acceleration_contributions
 
     subroutine test_compute_velocity_acceleration_contribs_alloc()
         real(real64) :: trajectories(2,1,4)
