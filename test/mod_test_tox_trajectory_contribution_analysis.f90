@@ -197,10 +197,10 @@ contains
 
     subroutine test_compute_velocity_acceleration_contributions()
         real(real64) :: trajectories(2,1,4)
-        real(real64) :: C_vel(1,2,2)
-        real(real64) :: C_acc(1,2,2)
-        real(real64) :: series_vel(1,2,2,4)
-        real(real64) :: series_acc(1,2,2,4)
+        real(real64) :: C_vel(2,2,1)
+        real(real64) :: C_acc(2,2,1)
+        real(real64) :: series_vel(4,2,2,1)
+        real(real64) :: series_acc(4,2,2,1)
         real(real64) :: velocity(3,2,1)
         real(real64) :: acceleration(2,2,1)
         real(real64) :: expected_total_vel, expected_total_acc
@@ -254,16 +254,16 @@ contains
         expected_series_acc = 0.0_real64
         expected_series_acc(3:4) = raw_acceleration_contrib
 
-        call assert_equal_real(C_vel(1,1,2), expected_total_vel, TOL, &
+        call assert_equal_real(C_vel(1,2,1), expected_total_vel, TOL, &
             "compute_velocity_acceleration_contributions: total velocity contribution")
 
-        call assert_equal_array_real(series_vel(1,1,2,:), expected_series_vel, size(expected_series_vel), TOL, &
+        call assert_equal_array_real(series_vel(:,1,2,1), expected_series_vel, size(expected_series_vel), TOL, &
             "compute_velocity_acceleration_contributions: velocity series")
 
-        call assert_equal_real(C_acc(1,1,2), expected_total_acc, TOL, &
+        call assert_equal_real(C_acc(1,2,1), expected_total_acc, TOL, &
             "compute_velocity_acceleration_contributions: total acceleration contribution")
 
-        call assert_equal_array_real(series_acc(1,1,2,:), expected_series_acc, size(expected_series_acc), TOL, &
+        call assert_equal_array_real(series_acc(:,1,2,1), expected_series_acc, size(expected_series_acc), TOL, &
                 "compute_velocity_acceleration_contributions: acceleration series")
     end subroutine test_compute_velocity_acceleration_contributions
 
@@ -272,14 +272,14 @@ contains
         real(real64) :: factor_velocity(3,2)
         real(real64) :: dependent_velocity(3)
         real(real64) :: velocity_contrib(3)
-        real(real64) :: C_vel_ref(1,2,2)
-        real(real64) :: C_acc_ref(1,2,2)
-        real(real64) :: series_vel_ref(1,2,2,4)
-        real(real64) :: series_acc_ref(1,2,2,4)
-        real(real64) :: C_vel_alloc(1,2,2)
-        real(real64) :: C_acc_alloc(1,2,2)
-        real(real64) :: series_vel_alloc(1,2,2,4)
-        real(real64) :: series_acc_alloc(1,2,2,4)
+        real(real64) :: C_vel_ref(2,2,1)
+        real(real64) :: C_acc_ref(2,2,1)
+        real(real64) :: series_vel_ref(4,2,2,1)
+        real(real64) :: series_acc_ref(4,2,2,1)
+        real(real64) :: C_vel_alloc(2,2,1)
+        real(real64) :: C_acc_alloc(2,2,1)
+        real(real64) :: series_vel_alloc(4,2,2,1)
+        real(real64) :: series_acc_alloc(4,2,2,1)
         integer(int32) :: ierr
         integer(int32) :: mode
 

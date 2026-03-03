@@ -4882,11 +4882,15 @@ def tox_compute_velocity_acceleration_contributions(trajectories, mode):
     # Fortran-contiguous input (n_factors, n_samples, n_timepoints)
     trajectories_f = np.asfortranarray(trajectories)
 
-    # Output arrays with correct shapes
-    C_velocity_f = np.zeros((n_samples, n_factors, n_factors), dtype=np.float64, order="F")
-    velocity_series_f = np.zeros((n_samples, n_factors, n_factors, n_timepoints), dtype=np.float64, order="F")
-    C_acceleration_f = np.zeros((n_samples, n_factors, n_factors), dtype=np.float64, order="F")
-    acceleration_series_f = np.zeros((n_samples, n_factors, n_factors, n_timepoints), dtype=np.float64, order="F")
+    # Fortran-native output layout
+    # C_velocity_f:            (n_factors, n_factors, n_samples)
+    # velocity_series_f:       (n_timepoints, n_factors, n_factors, n_samples)
+    # C_acceleration_f:        (n_factors, n_factors, n_samples)
+    # acceleration_series_f:   (n_timepoints, n_factors, n_factors, n_samples)
+    C_velocity_f = np.zeros((n_factors, n_factors, n_samples), dtype=np.float64, order="F")
+    velocity_series_f = np.zeros((n_timepoints, n_factors, n_factors, n_samples), dtype=np.float64, order="F")
+    C_acceleration_f = np.zeros((n_factors, n_factors, n_samples), dtype=np.float64, order="F")
+    acceleration_series_f = np.zeros((n_timepoints, n_factors, n_factors, n_samples), dtype=np.float64, order="F")
 
     ierr = ctypes.c_int(0)
 
@@ -4924,13 +4928,20 @@ def tox_compute_velocity_acceleration_contributions(trajectories, mode):
 
     check_err_code(ierr.value)
 
-    _readonly(C_velocity_f, velocity_series_f, C_acceleration_f, acceleration_series_f)
+    # Public Python API stays sample-first for backwards compatibility:
+    # (n_samples, n_factors, n_factors) and (n_samples, n_factors, n_factors, n_timepoints)
+    C_velocity = np.transpose(C_velocity_f, (2, 0, 1))
+    velocity_series = np.transpose(velocity_series_f, (3, 1, 2, 0))
+    C_acceleration = np.transpose(C_acceleration_f, (2, 0, 1))
+    acceleration_series = np.transpose(acceleration_series_f, (3, 1, 2, 0))
+
+    _readonly(C_velocity, velocity_series, C_acceleration, acceleration_series)
 
     return {
-        "C_velocity": C_velocity_f,
-        "velocity_contribution_series": velocity_series_f,
-        "C_acceleration": C_acceleration_f,
-        "acceleration_contribution_series": acceleration_series_f,
+        "C_velocity": C_velocity,
+        "velocity_contribution_series": velocity_series,
+        "C_acceleration": C_acceleration,
+        "acceleration_contribution_series": acceleration_series,
     }
 
 #> tox_trajectory_contribution_analysis:tox_compute_velocity_acceleration_contributions_c: Compute velocity and acceleration contributions for all variable pairs
@@ -4960,11 +4971,11 @@ def tox_compute_velocity_acceleration_contributions_expert(trajectories, mode):
     # Fortran-contiguous array with correct dimension order
     trajectories_f = np.asfortranarray(trajectories)
 
-    # Output arrays with correct shapes
-    C_velocity_f = np.empty((n_samples, n_factors, n_factors), dtype=np.float64, order="F")
-    velocity_series_f = np.empty((n_samples, n_factors, n_factors, n_timepoints), dtype=np.float64, order="F")
-    C_acceleration_f = np.empty((n_samples, n_factors, n_factors), dtype=np.float64, order="F")
-    acceleration_series_f = np.empty((n_samples, n_factors, n_factors, n_timepoints), dtype=np.float64, order="F")
+    # Fortran-native output layout
+    C_velocity_f = np.empty((n_factors, n_factors, n_samples), dtype=np.float64, order="F")
+    velocity_series_f = np.empty((n_timepoints, n_factors, n_factors, n_samples), dtype=np.float64, order="F")
+    C_acceleration_f = np.empty((n_factors, n_factors, n_samples), dtype=np.float64, order="F")
+    acceleration_series_f = np.empty((n_timepoints, n_factors, n_factors, n_samples), dtype=np.float64, order="F")
 
     # Workspace arrays with correct shapes (reused for velocity and acceleration)
     vel_len = max(1, n_timepoints - 1)
@@ -5016,14 +5027,19 @@ def tox_compute_velocity_acceleration_contributions_expert(trajectories, mode):
 
     check_err_code(ierr.value)
 
+    C_velocity = np.transpose(C_velocity_f, (2, 0, 1))
+    velocity_series = np.transpose(velocity_series_f, (3, 1, 2, 0))
+    C_acceleration = np.transpose(C_acceleration_f, (2, 0, 1))
+    acceleration_series = np.transpose(acceleration_series_f, (3, 1, 2, 0))
+
     # Mark outputs as read-only
-    _readonly(C_velocity_f, velocity_series_f, C_acceleration_f, acceleration_series_f)
+    _readonly(C_velocity, velocity_series, C_acceleration, acceleration_series)
 
     return {
-        "C_velocity": C_velocity_f,
-        "velocity_contribution_series": velocity_series_f,
-        "C_acceleration": C_acceleration_f,
-        "acceleration_contribution_series": acceleration_series_f,
+        "C_velocity": C_velocity,
+        "velocity_contribution_series": velocity_series,
+        "C_acceleration": C_acceleration,
+        "acceleration_contribution_series": acceleration_series,
     }
 
 #> tox_trajectory_contribution_analysis:tox_compute_velocity_trajectory_c: Compute velocity for a single trajectory (1D array)
