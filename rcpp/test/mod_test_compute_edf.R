@@ -211,6 +211,26 @@ test_compute_edf_list_input <- function() {
   cat("  ✓ List input test passed\n")
 }
 
+# Test 11: Default path without perm
+test_compute_edf_default_no_perm <- function() {
+  cat("\n[test_compute_edf_default_no_perm] Default EDF path without perm\n")
+  x <- c(3, 1, 2, 2, 3, 3)
+  result <- tox_compute_edf(x)
+  n_unique <- result$n_unique
+  unique_vals <- result$unique_values[seq_len(n_unique)]
+  cdf_vals <- result$cdf_values[seq_len(n_unique)]
+  expected_unique <- c(1, 2, 3)
+  expected_cdf <- c(1/6, 3/6, 6/6)
+  cat("  Input values:", x, "\n")
+  cat("  Number of unique values:", n_unique, "\n")
+  cat("  Unique values:", unique_vals, "\n")
+  cat("  CDF values:", cdf_vals, "\n")
+  stopifnot(n_unique == 3)
+  stopifnot(all(abs(unique_vals - expected_unique) < TOL))
+  stopifnot(all(abs(cdf_vals - expected_cdf) < TOL))
+  cat("  ✓ Default no-perm path test passed\n")
+}
+
 # =====================
 # Run all tests
 # =====================
@@ -229,6 +249,7 @@ test_compute_edf_large_dataset()
 test_compute_edf_negative_values()
 test_compute_edf_unsorted_input()
 test_compute_edf_list_input()
+test_compute_edf_default_no_perm()
 
 cat("=================================================\n")
 cat("             ALL TESTS COMPLETED\n")
