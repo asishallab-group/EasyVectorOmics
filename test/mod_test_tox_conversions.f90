@@ -28,14 +28,14 @@ contains
     function get_all_tests() result(all_tests)
         type(test_case) :: all_tests(TEST_COUNT)
 
-        all_tests(1) = test_case("test_tox_conversions_c_char_as_char", test_c_char_as_char)
-        all_tests(2) = test_case("test_tox_conversions_c_char_1d_as_string", test_c_char_1d_as_string)
-        all_tests(3) = test_case("test_tox_conversions_c_char_2d_as_string", test_c_char_2d_as_string)
-        all_tests(4) = test_case("test_tox_conversions_c_int_as_logical", test_c_int_as_logical)
-        all_tests(5) = test_case("test_tox_conversions_char_as_c_char", test_char_as_c_char)
-        all_tests(6) = test_case("test_tox_conversions_string_as_c_char_1d", test_string_as_c_char_1d)
-        all_tests(7) = test_case("test_tox_conversions_string_as_c_char_2d", test_string_as_c_char_2d)
-        all_tests(8) = test_case("test_tox_conversions_logical_as_c_int", test_logical_as_c_int)
+        all_tests(1) = test_case("test_conversions_c_char_as_char", test_c_char_as_char)
+        all_tests(2) = test_case("test_conversions_c_char_1d_as_string", test_c_char_1d_as_string)
+        all_tests(3) = test_case("test_conversions_c_char_2d_as_string", test_c_char_2d_as_string)
+        all_tests(4) = test_case("test_conversions_c_int_as_logical", test_c_int_as_logical)
+        all_tests(5) = test_case("test_conversions_char_as_c_char", test_char_as_c_char)
+        all_tests(6) = test_case("test_conversions_string_as_c_char_1d", test_string_as_c_char_1d)
+        all_tests(7) = test_case("test_conversions_string_as_c_char_2d", test_string_as_c_char_2d)
+        all_tests(8) = test_case("test_conversions_logical_as_c_int", test_logical_as_c_int)
     end function get_all_tests
 
     subroutine test_c_int_as_logical
@@ -125,15 +125,15 @@ contains
 
         f_val = .true.
         call logical_as_c_int(f_val, casted_c)
-        call assert_true(casted_c /= 0_c_int, "test_tox_conversions_logical_as_c_int: expected non-zero for .true.")
+        call assert_true(casted_c /= 0_c_int, "test_conversions_logical_as_c_int: expected non-zero for .true.")
 
         f_val = .false.
         call logical_as_c_int(f_val, casted_c)
-        call assert_true(casted_c == 0_c_int, "test_tox_conversions_logical_as_c_int: expected zero for .false.")
+        call assert_true(casted_c == 0_c_int, "test_conversions_logical_as_c_int: expected zero for .false.")
 
         f_val_array = [.false.]
         call logical_as_c_int(f_val_array, casted_array)
-        call assert_true(casted_array(1) == 0_c_int, "test_tox_conversions_logical_as_c_int: array value mismatch")
+        call assert_true(casted_array(1) == 0_c_int, "test_conversions_logical_as_c_int: array value mismatch")
     end subroutine test_logical_as_c_int
 
     subroutine test_char_as_c_char
@@ -144,15 +144,15 @@ contains
 
         f_val = "H"
         call char_as_c_char(f_val, casted_c)
-        call assert_true(casted_c == "H", "test_tox_conversions_char_as_c_char: value mismatch")
+        call assert_true(casted_c == "H", "test_conversions_char_as_c_char: value mismatch")
 
         f_val_array = [f_val]
         call char_as_c_char(f_val_array, casted_array)
-        call assert_true(casted_array(1) == "H", "test_tox_conversions_char_as_c_char: array value mismatch")
+        call assert_true(casted_array(1) == "H", "test_conversions_char_as_c_char: array value mismatch")
 
         f_val = achar(0)
         call char_as_c_char(f_val, casted_c)
-        call assert_true(casted_c == c_null_char, "test_tox_conversions_char_as_c_char: null char mismatch")
+        call assert_true(casted_c == c_null_char, "test_conversions_char_as_c_char: null char mismatch")
     end subroutine test_char_as_c_char
 
     subroutine test_string_as_c_char_1d
@@ -163,15 +163,15 @@ contains
         allocate(c_array(6))
         call string_as_c_char_1d(f_str, c_array)
         call assert_true(all(c_array == ["H", "e", "l", "l", "o", c_null_char]), &
-            "test_tox_conversions_string_as_c_char_1d: value mismatch")
+            "test_conversions_string_as_c_char_1d: value mismatch")
 
         call string_as_c_char_1d(f_str, c_array(1:5))
         call assert_true(all(c_array(1:5) == ["H", "e", "l", "l", c_null_char]), &
-            "test_tox_conversions_string_as_c_char_1d: value mismatch")
+            "test_conversions_string_as_c_char_1d: value mismatch")
 
         f_str = ""
         call string_as_c_char_1d(f_str, c_array)
-        call assert_true(c_array(1) == c_null_char, "test_tox_conversions_string_as_c_char_1d: empty string mismatch")
+        call assert_true(c_array(1) == c_null_char, "test_conversions_string_as_c_char_1d: empty string mismatch")
 
         ! just check empty array output
         deallocate(c_array)
@@ -186,8 +186,8 @@ contains
         f_str(1) = "Hello"
         f_str(2) = ""
         call string_as_c_char_2d(f_str, c_array)
-        call assert_true(all(c_array(:, 1) == ["H", "e", "l", "l", "o", c_null_char]), "test_tox_conversions_string_as_c_char_2d: mismatch in first string")
-        call assert_true(c_array(1, 2) == c_null_char, "test_tox_conversions_string_as_c_char_2d: mismatch in second string")
+        call assert_true(all(c_array(:, 1) == ["H", "e", "l", "l", "o", c_null_char]), "test_conversions_string_as_c_char_2d: mismatch in first string")
+        call assert_true(c_array(1, 2) == c_null_char, "test_conversions_string_as_c_char_2d: mismatch in second string")
     end subroutine test_string_as_c_char_2d
 
     !> Run all tox_conversions tests.
