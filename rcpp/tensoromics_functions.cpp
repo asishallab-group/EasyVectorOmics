@@ -11,13 +11,22 @@ using namespace Rcpp;
 
 extern "C" {
 void compute_edf_c(
-    const double* values,
-    const int* n_values,
-    double* unique_values,
-    double* cdf_values,
-    int* n_unique,
-    int* ierr
-  );
+  const double* values,
+  const int* n_values,
+  double* unique_values,
+  double* cdf_values,
+  int* n_unique,
+  int* ierr
+);
+void compute_edf_expert_c(
+  const double* values,
+  const int* n_values,
+  const int* perm,
+  double* unique_values,
+  double* cdf_values,
+  int* n_unique,
+  int* ierr
+);
 void compute_all_contributions_c(
   const double* trajectories,
   const int* n_factors,
@@ -102,6 +111,17 @@ void k_means_clustering_c(
   int* labels,
   int* label_counts,
   const int* max_iterations,
+  int* ierr
+);
+
+void linkage_clustering_c(
+  double* distances,
+  const int* n_points,
+  int* merge_i,
+  int* merge_j,
+  double* heights,
+  int* cluster_sizes,
+  const char* method,
   int* ierr
 );
 
@@ -194,6 +214,12 @@ void log2_transformation_c(
   int* ierr
 );
 
+void normalize_unit_length_c(
+  double* vector,
+  const int* n_dims,
+  int* ierr
+);
+
 void calc_tiss_avg_c(
   const int* n_genes,
   const int* n_grps,
@@ -215,39 +241,226 @@ void calc_fchange_c(
   int* ierr
 );
 
-    void fjct_compute_jsd_c( int* family_idx, int* gene_to_family_S1, int* gene_to_family_S2, int* n_genes_S1, int* n_genes_S2, double* neighborhood_residuals_S1, double* neighborhood_residuals_S2, int* neighborhood_genes_S1, int* neighborhood_genes_S2, int* n_reps_S1, int* n_reps_S2, int* n_neighbors, int* n_points, int* n_bins, double* shared_residual_range, double* js_divergences, int* included_n_reps_S1, int* included_n_reps_S2, int* total_included_n_reps, double* global_js_divergence, double* weights, int* ierr );
+void fjct_compute_jsd_c(
+  const int* family_idx,
+  const int* gene_to_family_S1,
+  const int* gene_to_family_S2,
+  const int* n_genes_S1,
+  const int* n_genes_S2,
+  const double* neighborhood_residuals_S1,
+  const double* neighborhood_residuals_S2,
+  const int* neighborhood_genes_S1,
+  const int* neighborhood_genes_S2,
+  const int* n_reps_S1,
+  const int* n_reps_S2,
+  const int* n_neighbors,
+  const int* n_points,
+  const int* n_bins,
+  const double* shared_residual_range,
+  double* js_divergences,
+  int* included_n_reps_S1,
+  int* included_n_reps_S2,
+  int* total_included_n_reps,
+  double* global_js_divergence,
+  double* weights,
+  int* ierr
+);
 
-    void fjct_compute_jsd_expert_c( double* neighborhood_residuals_S1, double* neighborhood_residuals_S2, int* n_reps_S1, int* n_reps_S2, int* n_neighbors, int* n_points, int* neighbor_mask_S1, int* neighbor_mask_S2, int* n_bins, double* shared_residual_range, double* js_divergences, int* included_n_reps_S1, int* included_n_reps_S2, int* total_included_n_reps, double* global_js_divergence, double* weights, double* pmf_S1, double* pmf_S2, int* tmp_counts, int* ierr );
+void fjct_compute_jsd_expert_c(
+  const double* neighborhood_residuals_S1,
+  const double* neighborhood_residuals_S2,
+  const int* n_reps_S1,
+  const int* n_reps_S2,
+  const int* n_neighbors,
+  const int* n_points,
+  const int* neighbor_mask_S1,
+  const int* neighbor_mask_S2,
+  const int* n_bins,
+  const double* shared_residual_range,
+  double* js_divergences,
+  int* included_n_reps_S1,
+  int* included_n_reps_S2,
+  int* total_included_n_reps,
+  double* global_js_divergence,
+  double* weights,
+  double* pmf_S1,
+  double* pmf_S2,
+  int* tmp_counts,
+  int* ierr
+);
 
-    void fjct_compute_contribution_scores_c( double* global_js_divergences, int* total_included_n_reps_per_f, int* k_families, double* support_weights, double* contribution_scores, int* ierr);
+void fjct_compute_contribution_scores_c(
+  const double* global_js_divergences,
+  const int* total_included_n_reps_per_f,
+  const int* k_families,
+  const double* support_weights,
+  double* contribution_scores,
+  int* ierr
+);
 
-    void gjct_permutation_test_c( double* neighborhood_residuals_S1, double* neighborhood_residuals_S2, int* n_reps_S1, int* n_reps_S2, int* n_neighbors, int* n_points, double* global_jsd_observed, int* n_bins, double* shared_residual_range, int* n_permutations, double* jsd_null, double* p_value, int* ierr, int* random_seed );
+void gjct_permutation_test_c(
+  const double* neighborhood_residuals_S1,
+  const double* neighborhood_residuals_S2,
+  const int* n_reps_S1,
+  const int* n_reps_S2,
+  const int* n_neighbors,
+  const int* n_points,
+  const double* global_jsd_observed,
+  const int* n_bins,
+  const double* shared_residual_range,
+  const int* n_permutations,
+  double* jsd_null,
+  double* p_value,
+  int* ierr,
+  const int* random_seed
+);
 
-    void gjct_permutation_test_filtered_c( double* neighborhood_residuals_S1, double* neighborhood_residuals_S2, int* n_reps_S1, int* n_reps_S2, int* n_neighbors, int* n_points, double* global_jsd_observed, int* n_bins, double* shared_residual_range, int* n_permutations, double* jsd_null, double* p_value, int* ierr, int* random_seed, int* neighbor_mask_S1, int* neighbor_mask_S2 );
+void gjct_permutation_test_filtered_c(
+  const double* neighborhood_residuals_S1,
+  const double* neighborhood_residuals_S2,
+  const int* n_reps_S1,
+  const int* n_reps_S2,
+  const int* n_neighbors,
+  const int* n_points,
+  const double* global_jsd_observed,
+  const int* n_bins,
+  const double* shared_residual_range,
+  const int* n_permutations,
+  double* jsd_null,
+  double* p_value,
+  int* ierr,
+  const int* random_seed,
+  const int* neighbor_mask_S1,
+  const int* neighbor_mask_S2
+);
 
-    void compute_weighted_global_divergence_c( double* js_divergences, int* n_points, int* included_n_residuals_S1, int* included_n_residuals_S2, double* global_js_divergence, double* weights, int* ierr );
+void compute_weighted_global_divergence_c(
+  const double* js_divergences,
+  const int* n_points,
+  const int* included_n_residuals_S1,
+  const int* included_n_residuals_S2,
+  double* global_js_divergence,
+  double* weights,
+  int* ierr
+);
 
-    void compute_divergence_per_reference_point_c( double* pmf_S1, double* pmf_S2, int* n_points, int* n_bins, double* js_divergences, int* ierr );
+void compute_divergence_per_reference_point_c(
+  const double* pmf_S1,
+  const double* pmf_S2,
+  const int* n_points,
+  const int* n_bins,
+  double* js_divergences,
+  int* ierr
+);
 
-    void build_residual_histograms_c( double* neighborhood_residuals, int* n_reps, int* n_neighbors, int* n_points, double* shared_residual_range, int* n_bins, int* counts, double* pmf, int* included_n_residuals, int* ierr );
+void build_residual_histograms_c(
+  const double* neighborhood_residuals,
+  const int* n_reps,
+  const int* n_neighbors,
+  const int* n_points,
+  const double* shared_residual_range,
+  const int* n_bins,
+  int* counts,
+  double* pmf,
+  int* included_n_residuals,
+  int* ierr
+);
 
-    void build_residual_histograms_filtered_c( double* neighborhood_residuals, int* n_reps, int* n_neighbors, int* n_points, double* shared_residual_range, int* n_bins, int* counts, double* pmf, int* included_n_residuals, int* ierr, int* neighbor_mask );
+void build_residual_histograms_filtered_c(
+  const double* neighborhood_residuals,
+  const int* n_reps,
+  const int* n_neighbors,
+  const int* n_points,
+  const double* shared_residual_range,
+  const int* n_bins,
+  int* counts,
+  double* pmf,
+  int* included_n_residuals,
+  int* ierr,
+  const int* neighbor_mask
+);
 
-    void determine_shared_residual_range_c( double* neighborhood_residuals_S1, double* neighborhood_residuals_S2, int* n_reps_S1, int* n_reps_S2, int* n_neighbors, int* n_points, double* residual_range_quantile, double* shared_residual_range, int* ierr );
+void determine_shared_residual_range_c(
+  const double* neighborhood_residuals_S1,
+  const double* neighborhood_residuals_S2,
+  const int* n_reps_S1,
+  const int* n_reps_S2,
+  const int* n_neighbors,
+  const int* n_points,
+  const double* residual_range_quantile,
+  double* shared_residual_range,
+  int* ierr
+);
 
-    void determine_shared_residual_range_expert_c( double* residual_pool, int* residual_pool_perm, int* n_pool, double* residual_range_quantile, double* shared_R, int* ierr );
+void determine_shared_residual_range_expert_c(
+  const double* residual_pool,
+  int* residual_pool_perm,
+  const int* n_pool,
+  const double* residual_range_quantile,
+  double* shared_R,
+  int* ierr
+);
 
-    void compute_gene_means_c( int* n_genes, int* n_reps, double* expr, double* means, int* ierr);
+void compute_gene_means_c(
+  const int* n_genes,
+  const int* n_reps,
+  const double* expr,
+  double* means,
+  int* ierr
+);
 
-    void compute_residuals_c( int* n_genes, int* n_reps, double* expr, double* means, double* resid, int* ierr);
+void compute_residuals_c(
+  const int* n_genes,
+  const int* n_reps,
+  const double* expr,
+  const double* means,
+  double* resid,
+  int* ierr
+);
 
-    void pool_means_c( int* n_genes_S1, double* mean_S1, int* n_genes_S2, double* mean_S2, int* n_points, int* n_pool, double* x_star, int* ierr);
+void pool_means_c(
+  const int* n_genes_S1,
+  const double* mean_S1,
+  const int* n_genes_S2,
+  const double* mean_S2,
+  const int* n_points,
+  const int* n_pool,
+  double* x_star,
+  int* ierr
+);
 
-    void pool_means_expert_c( double* pooled_means, int* pooled_means_perm, int* pool_size, int* n_points, int* n_pool, double* x_star, int* ierr);
+void pool_means_expert_c(
+  const double* pooled_means,
+  int* pooled_means_perm,
+  const int* pool_size,
+  const int* n_points,
+  const int* n_pool,
+  double* x_star,
+  int* ierr
+);
 
-    void calc_neighborhood_size_c( int* n_pool, int* n_points, int* n_genes_S, double* mean_S, int* desired_size, int* n_neighbors, int* ierr);
+void calc_neighborhood_size_c(
+  const int* n_pool,
+  const int* n_points,
+  const int* n_genes_S,
+  const double* mean_S,
+  const int* desired_size,
+  int* n_neighbors,
+  int* ierr
+);
 
-    void construct_neighborhoods_c( int* n_points, double* x_star, int* n_genes_S, double* mean_S, int* n_reps_S, double* resid_S, double* neighborhood_residuals, int* neighborhood_indices, int* n_neighbors, int* ierr);
+void construct_neighborhoods_c(
+  const int* n_points,
+  const double* x_star,
+  const int* n_genes_S,
+  const double* mean_S,
+  const int* n_reps_S,
+  const double* resid_S,
+  double* neighborhood_residuals,
+  int* neighborhood_indices,
+  const int* n_neighbors,
+  int* ierr
+);
 
     
 
@@ -269,6 +482,33 @@ void normalization_pipeline_c(
   const int* group_c,
   const int* n_grps,
   int* ierr
+);
+
+void normalize_variable_timeseries_C(
+  const double* v,
+  double* v_norm,
+  const int* n_points,
+  int* ierr,
+  int* status
+);
+
+void normalize_single_trajectory_C(
+  const double* trajectory,
+  double* trajectory_norm,
+  const int* n_factors,
+  const int* n_timepoints,
+  int* ierr,
+  int* status
+);
+
+void normalize_all_trajectories_C(
+  const double* trajectories,
+  double* trajectories_norm,
+  const int* n_factors,
+  const int* n_samples,
+  const int* n_timepoints,
+  int* ierr,
+  int* status
 );
 
 void compute_family_scaling_c(
@@ -538,96 +778,96 @@ void loess_smooth_2d_c(
 
 void deserialize_int_nd_C(
   int* arr,
-  int* arr_size,
-  char* filename_ascii,
-  int* fn_len,
+  const int* arr_size,
+  const char* filename_ascii,
+  const int* fn_len,
   int* ierr
 );
 
 void deserialize_real_nd_C(
   double* arr,
-  int* arr_size,
-  char* filename_ascii,
-  int* fn_len,
+  const int* arr_size,
+  const char* filename_ascii,
+  const int* fn_len,
   int* ierr
 );
 
 void deserialize_char_nd_C(
   char* ascii_arr,
-  int* clen,
-  int* total_array_size,
-  char* filename_ascii,
-  int* fn_len,
+  const int* clen,
+  const int* total_array_size,
+  const char* filename_ascii,
+  const int* fn_len,
   int* ierr
 );
 
 void serialize_int_nd_C(
-  void* arr,
-  int* dims,
-  int* ndim,
-  char* filename_ascii,
-  int* fn_len,
+  const void* arr,
+  const int* dims,
+  const int* ndim,
+  const char* filename_ascii,
+  const int* fn_len,
   int* ierr
 );
 
 void serialize_real_nd_C(
-  void* arr,
-  int* dims,
-  int* ndim,
-  char* filename_ascii,
-  int* fn_len,
+  const void* arr,
+  const int* dims,
+  const int* ndim,
+  const char* filename_ascii,
+  const int* fn_len,
   int* ierr
 );
 
 void serialize_char_nd_C(
-  char* ascii_arr,
-  int* dims,
-  int* ndim,
-  int* clen,
-  char* filename_ascii,
-  int* fn_len,
+  const char* ascii_arr,
+  const int* dims,
+  const int* ndim,
+  const int* clen,
+  const char* filename_ascii,
+  const int* fn_len,
   int* ierr
 );
 
 void deserialize_logical_nd_C(
   int* arr,
-  int* arr_size,
-  char* filename_ascii,
-  int* fn_len,
+  const int* arr_size,
+  const char* filename_ascii,
+  const int* fn_len,
   int* ierr
 );
 
 void serialize_logical_nd_C(
-  int* arr,
-  int* dims,
-  int* ndim,
-  char* filename_ascii,
-  int* fn_len,
+  const int* arr,
+  const int* dims,
+  const int* ndim,
+  const char* filename_ascii,
+  const int* fn_len,
   int* ierr
 );
 
 void serialize_complex_nd_C(
-  void* arr,
-  int* dims,
-  int* ndim,
-  char* filename_ascii,
-  int* fn_len,
+  const void* arr,
+  const int* dims,
+  const int* ndim,
+  const char* filename_ascii,
+  const int* fn_len,
   int* ierr
 );
 
 void deserialize_complex_nd_C(
   void* arr,
-  int* arr_size,
-  char* filename_ascii,
-  int* fn_len,
+  const int* arr_size,
+  const char* filename_ascii,
+  const int* fn_len,
   int* ierr
 );
 
 void get_array_metadata_C(
   const char* filename_ascii,
-  int* fn_len,
+  const int* fn_len,
   int* dims_out,
-  int* dims_out_capacity,
+  const int* dims_out_capacity,
   int* ndims,
   int* ierr,
   int* clen
@@ -635,7 +875,7 @@ void get_array_metadata_C(
 
 void build_bst_index_C(
   const double* values,
-  int* num_values,
+  const int* num_values,
   int* sorted_indices,
   int* left_stack,
   int* right_stack,
@@ -645,9 +885,9 @@ void build_bst_index_C(
 void bst_range_query_C(
   const double* values,
   const int* sorted_indices,
-  int* num_values,
-  double* lower_bound,
-  double* upper_bound,
+  const int* num_values,
+  const double* lower_bound,
+  const double* upper_bound,
   int* output_indices,
   int* num_matches,
   int* ierr
@@ -655,10 +895,10 @@ void bst_range_query_C(
 
 void build_spherical_kd_C(
   const double* vectors,
-  int* num_dimensions,
-  int* num_vectors,
+  const int* num_dimensions,
+  const int* num_vectors,
   int* sphere_indices,
-  int* dimension_order,
+  const int* dimension_order,
   int* workspace,
   double* value_buffer,
   int* permutation,
@@ -669,38 +909,38 @@ void build_spherical_kd_C(
 
 void read_expression_vectors_tsv_C(
   const char* file_list_raw,
-  int* file_list_len,
-  int* n_files,
+  const int* file_list_len,
+  const int* n_files,
   const char* gene_ids_raw,
-  int* gene_ids_len,
-  int* n_genes,
+  const int* gene_ids_len,
+  const int* n_genes,
   double* expression_vectors,
-  int* n_samples,
-  int* n_header_rows,
-  int* gene_col,
+  const int* n_samples,
+  const int* n_header_rows,
+  const int* gene_col,
   const int* value_cols,
-  int* n_value_cols,
+  const int* n_value_cols,
   const char* delimiter_raw,
   int* ierr
 );
 
 void read_gene_ids_from_tsv_file_C(
   const char* filename_raw,
-  int* fn_len,
+  const int* fn_len,
   char* gene_ids_raw,
   int* gene_ids_len,
   int* n_genes,
-  int* n_header_rows,
-  int* gene_col,
+  const int* n_header_rows,
+  const int* gene_col,
   int* ierr
 );
 
 void read_orthofinder_file_C(
   const char* filename_raw,
-  int* fn_len,
+  const int* fn_len,
   const char* gene_ids_raw,
-  int* gene_ids_len,
-  int* n_genes,
+  const int* gene_ids_len,
+  const int* n_genes,
   char* family_ids_raw,
   int* family_ids_len,
   int* n_families,
@@ -710,8 +950,8 @@ void read_orthofinder_file_C(
 
 void filter_unassigned_genes_C(
   const char* gene_ids_raw,
-  int* gene_ids_len,
-  int* n_genes,
+  const int* gene_ids_len,
+  const int* n_genes,
   const int* gene_to_fam,
   int* mask,
   int* n_genes_kept,
@@ -719,13 +959,13 @@ void filter_unassigned_genes_C(
 );
 
 void validate_data_structure_C(
-  int* n_genes,
-  int* n_families,
-  int* n_samples,
+  const int* n_genes,
+  const int* n_families,
+  const int* n_samples,
   const char* gene_ids_raw,
-  int* gene_ids_len,
+  const int* gene_ids_len,
   const char* gene_family_ids_raw,
-  int* fam_len,
+  const int* fam_len,
   const int* gene_to_fam,
   const double* expression_vectors,
   const double* family_centroids,
@@ -735,23 +975,23 @@ void validate_data_structure_C(
 
 void validate_gene_to_family_mapping_C(
   const int* gene_to_fam,
-  int* n_genes,
-  int* n_families,
+  const int* n_genes,
+  const int* n_families,
   int* ierr
 );
 
 void validate_expression_data_C(
   const double* expression_vectors,
-  int* n_genes,
-  int* n_samples,
-  int* check_non_negative,
+  const int* n_genes,
+  const int* n_samples,
+  const int* check_non_negative,
   int* ierr
 );
 
 void validate_family_centroids_C(
   const double* family_centroids,
-  int* n_families,
-  int* n_samples,
+  const int* n_families,
+  const int* n_samples,
   int* ierr
 );
 
@@ -760,27 +1000,27 @@ void validate_shift_vectors_C(
   const double* expression_vectors,
   const double* family_centroids,
   const int* gene_to_fam,
-  int* n_genes,
-  int* n_samples,
-  int* n_families,
+  const int* n_genes,
+  const int* n_samples,
+  const int* n_families,
   int* ierr
 );
 
 void validate_string_array_uniqueness_C(
   const char* str_arr,
-  int* str_len,
-  int* n_strings,
+  const int* str_len,
+  const int* n_strings,
   int* ierr
 );
 
 void validate_all_data_C(
-  int* n_genes,
-  int* n_families,
-  int* n_samples,
+  const int* n_genes,
+  const int* n_families,
+  const int* n_samples,
   const char* gene_ids_raw,
-  int* gene_len,
+  const int* gene_len,
   const char* gene_family_ids_raw,
-  int* fam_len,
+  const int* fam_len,
   const int* gene_to_fam,
   const double* expression_vectors,
   const double* family_centroids,
@@ -841,11 +1081,11 @@ List tox_cluster_factor_trajectories_k_means_rcpp(NumericVector trajectories,
 //' @return List with centroids, labels, and label counts
 // [[Rcpp::export]]
 List tox_k_means_clustering_rcpp(int n_clusters,
-                                NumericMatrix data_points,
-                                int n_points,
-                                int n_dims,
-                                NumericMatrix centroids,
-                                int max_iterations = 300) {
+                                 NumericMatrix data_points,
+                                 int n_points,
+                                 int n_dims,
+                                 NumericMatrix centroids,
+                                 int max_iterations = 300) {
     IntegerVector labels(n_points);
     IntegerVector label_counts(n_clusters);
     int ierr = 0;
@@ -869,6 +1109,41 @@ List tox_k_means_clustering_rcpp(int n_clusters,
                         Named("ierr") = ierr);
 }
 
+  //' Perform hierarchical linkage clustering on a distance matrix
+  //'
+  //' @param distances Numeric square distance matrix (n_points x n_points)
+  //' @param method Linkage method: "average", "weighted", or "ward"
+  //' @return List with merge indices, heights, cluster sizes, and error code
+  // [[Rcpp::export]]
+  List tox_linkage_clustering_rcpp(NumericMatrix distances,
+                   std::string method) {
+    int n_points = distances.nrow();
+    IntegerVector merge_i(n_points - 1);
+    IntegerVector merge_j(n_points - 1);
+    NumericVector heights(n_points - 1);
+    IntegerVector cluster_sizes(n_points - 1);
+    int ierr = 0;
+
+    char method_c[8] = {' '};
+    size_t len = std::min(method.size(), size_t(8));
+    std::memcpy(method_c, method.c_str(), len);
+
+    linkage_clustering_c(distances.begin(),
+               &n_points,
+               merge_i.begin(),
+               merge_j.begin(),
+               heights.begin(),
+               cluster_sizes.begin(),
+               method_c,
+               &ierr);
+
+    return List::create(Named("merge_i") = merge_i,
+              Named("merge_j") = merge_j,
+              Named("heights") = heights,
+              Named("cluster_sizes") = cluster_sizes,
+              Named("ierr") = ierr);
+  }
+
 
 //' Calculate Euclidean distance between two vectors
 //'
@@ -876,7 +1151,8 @@ List tox_k_means_clustering_rcpp(int n_clusters,
 //' @param vec2 Second numeric vector
 //' @return Euclidean distance (double)
 // [[Rcpp::export]]
-double tox_euclidean_distance_rcpp(NumericVector vec1, NumericVector vec2) {
+double tox_euclidean_distance_rcpp(NumericVector vec1,
+                                   NumericVector vec2) {
     int d = vec1.length();
     double result = 0.0;
 
@@ -895,6 +1171,7 @@ double tox_euclidean_distance_rcpp(NumericVector vec1, NumericVector vec2) {
 //' @return List with contributions 
 // [[Rcpp::export]]
 List tox_relative_axes_changes_from_shift_vector_rcpp(NumericVector vec) {
+
     int n_axes = vec.length();
     NumericVector contributions(n_axes);
     int ierr = 0;
@@ -914,6 +1191,7 @@ List tox_relative_axes_changes_from_shift_vector_rcpp(NumericVector vec) {
 //' @return List with contributions
 // [[Rcpp::export]]
 List tox_relative_axes_expression_from_expression_vector_rcpp(NumericVector vec) {
+
     int n_axes = vec.length();
     NumericVector contributions(n_axes);
     int ierr = 0;
@@ -936,8 +1214,8 @@ List tox_relative_axes_expression_from_expression_vector_rcpp(NumericVector vec)
 //' @return List with signed angle
 // [[Rcpp::export]]
 List tox_clock_hand_angle_between_vectors_rcpp(NumericVector v1,
-                                                 NumericVector v2,
-                                                 IntegerVector selected_axes_for_signed) {
+                                               NumericVector v2,
+                                               IntegerVector selected_axes_for_signed) {
     int n_dims = v1.length();
     double signed_angle = 0.0;
     int ierr = 0;
@@ -962,9 +1240,9 @@ List tox_clock_hand_angle_between_vectors_rcpp(NumericVector v1,
 //' @return List with signed angles 
 // [[Rcpp::export]]
 List tox_clock_hand_angles_for_shift_vectors_rcpp(NumericMatrix origins,
-                                                           NumericMatrix targets,
-                                                           IntegerVector vecs_selection_mask,
-                                                           IntegerVector selected_axes_for_signed) {
+                                                  NumericMatrix targets,
+                                                  IntegerVector vecs_selection_mask,
+                                                  IntegerVector selected_axes_for_signed) {
     int n_dims = origins.nrow();
     int n_vecs = origins.ncol();
     NumericVector signed_angles(n_vecs);
@@ -1002,9 +1280,9 @@ List tox_clock_hand_angles_for_shift_vectors_rcpp(NumericMatrix origins,
 //' @return Numeric vector of distances
 // [[Rcpp::export]]
 NumericVector tox_distance_to_centroid_rcpp(NumericVector genes,
-                                           NumericVector centroids,
-                                           IntegerVector gene_to_fam,
-                                           int d) {
+                                            NumericVector centroids,
+                                            IntegerVector gene_to_fam,
+                                            int d) {
     int n_genes = genes.length() / d;
     int n_families = centroids.length() / d;
 
@@ -1021,39 +1299,44 @@ NumericVector tox_distance_to_centroid_rcpp(NumericVector genes,
     return distances;
 }
 
-
+//' Determine shared residual range for JSD calculation (expert method)
+//'
+//'@param residual_pool Numeric vector of residuals from both sets
+//'@param residual_pool_perm Integer vector for permutation of residual pool
+//'@param residual_range_quantile Double quantile to determine shared residual range (e.g.,95.0 for 95th percentile)
+//'@return List with shared residual range
 // [[Rcpp::export]]
-Rcpp::List tox_determine_shared_residual_range_expert_rcpp(
-    Rcpp::NumericVector residual_pool,
-    Rcpp::IntegerVector residual_pool_perm,
-    double residual_range_quantile = 95.0
-) {
+List tox_determine_shared_residual_range_expert_rcpp(NumericVector residual_pool,
+                                                     IntegerVector residual_pool_perm,
+                                                     double residual_range_quantile = 95.0) {
+
     int pool_size = residual_pool.size();
     double shared_R = 0.0;
     int ierr = 0;
 
-    determine_shared_residual_range_expert_c(
-        residual_pool.begin(),
-        residual_pool_perm.begin(),
-        &pool_size,
-        &residual_range_quantile,
-        &shared_R,
-        &ierr
-    );
+    determine_shared_residual_range_expert_c(residual_pool.begin(),
+                                             residual_pool_perm.begin(),
+                                             &pool_size,
+                                             &residual_range_quantile,
+                                             &shared_R,
+                                             &ierr);
 
-    return Rcpp::List::create(
-        Rcpp::Named("shared_R") = shared_R,
-        Rcpp::Named("ierr") = ierr
-    );
+    return List::create(Named("shared_R") = shared_R,
+                        Named("ierr") = ierr);
 }
 
+//' Determine shared residual range for JSD calculation
+//'
+//'@param neighborhood_residuals_S1 Numeric vector of neighborhood residuals for set 1 (reps x neighbors x points)
+//'@param neighborhood_residuals_S2 Numeric vector of neighborhood residuals for set 2
+//'@param residual_range_quantile Double quantile to determine shared residual range (e.g.,95.0 for 95th percentile)
+//'@return List with shared residual range
 // [[Rcpp::export]]
-Rcpp::List tox_determine_shared_residual_range_rcpp(
-    Rcpp::NumericVector neighborhood_residuals_S1,
-    Rcpp::NumericVector neighborhood_residuals_S2,
-    double residual_range_quantile = 95.0
-) {
-    Rcpp::IntegerVector dims = neighborhood_residuals_S1.attr("dim");
+List tox_determine_shared_residual_range_rcpp(NumericVector neighborhood_residuals_S1,
+                                              NumericVector neighborhood_residuals_S2,
+                                              double residual_range_quantile = 95.0) {
+
+    IntegerVector dims = neighborhood_residuals_S1.attr("dim");
     int n_reps_S1 = dims[0];
     int n_neighbors = dims[1];
     int n_points = dims[2];
@@ -1063,283 +1346,300 @@ Rcpp::List tox_determine_shared_residual_range_rcpp(
     double shared_R = 0.0;
     int ierr = 0;
 
-    determine_shared_residual_range_c(
-        neighborhood_residuals_S1.begin(),
-        neighborhood_residuals_S2.begin(),
-        &n_reps_S1,
-        &n_reps_S2,
-        &n_neighbors,
-        &n_points,
-        &residual_range_quantile,
-        &shared_R,
-        &ierr
-    );
+    determine_shared_residual_range_c(neighborhood_residuals_S1.begin(),
+                                      neighborhood_residuals_S2.begin(),
+                                      &n_reps_S1,
+                                      &n_reps_S2,
+                                      &n_neighbors,
+                                      &n_points,
+                                      &residual_range_quantile,
+                                      &shared_R,
+                                      &ierr);
 
-    return Rcpp::List::create(
-        Rcpp::Named("shared_R") = shared_R,
-        Rcpp::Named("ierr") = ierr
-    );
+    return List::create(Named("shared_R") = shared_R,
+                        Named("ierr") = ierr);
 }
 
+//' Build residual histograms for JSD calculation
+//'
+//' @param neighborhood_residuals Numeric vector of neighborhood residuals (reps x neighbors x points)
+//' @param shared_residual_range Double maximum residual value to consider for histogram binning
+//' @param n_bins Integer number of histogram bins
+//' @return List with counts, pmf and included number of residuals
 // [[Rcpp::export]]
-Rcpp::List tox_build_residual_histograms_rcpp(
-    Rcpp::NumericVector neighborhood_residuals,
-    double shared_residual_range,
-    int n_bins
-) {
-    Rcpp::IntegerVector dims = neighborhood_residuals.attr("dim");
+List tox_build_residual_histograms_rcpp(NumericVector neighborhood_residuals,
+                                        double shared_residual_range,
+                                        int n_bins) {
+
+    IntegerVector dims = neighborhood_residuals.attr("dim");
     int n_reps = dims[0];
     int n_neighbors = dims[1];
     int n_points = dims[2];
 
-    Rcpp::IntegerMatrix counts(n_points, n_bins);
-    Rcpp::NumericMatrix pmf(n_points, n_bins);
-    Rcpp::IntegerVector included_n_residuals(n_points);
+    IntegerMatrix counts(n_points, n_bins);
+    NumericMatrix pmf(n_points, n_bins);
+    IntegerVector included_n_residuals(n_points);
 
     int ierr = 0;
 
-    build_residual_histograms_c(
-        neighborhood_residuals.begin(),
-        &n_reps,
-        &n_neighbors,
-        &n_points,
-        &shared_residual_range,
-        &n_bins,
-        counts.begin(),
-        pmf.begin(),
-        included_n_residuals.begin(),
-        &ierr
-    );
+    build_residual_histograms_c(neighborhood_residuals.begin(),
+                                &n_reps,
+                                &n_neighbors,
+                                &n_points,
+                                &shared_residual_range,
+                                &n_bins,
+                                counts.begin(),
+                                pmf.begin(),
+                                included_n_residuals.begin(),
+                                &ierr);
 
-    return Rcpp::List::create(
-        Rcpp::Named("counts") = counts,
-        Rcpp::Named("pmf") = pmf,
-        Rcpp::Named("included_n_residuals") = included_n_residuals,
-        Rcpp::Named("ierr") = ierr
-    );
+    return List::create(Named("counts") = counts,
+                        Named("pmf") = pmf,
+                        Named("included_n_residuals") = included_n_residuals,
+                        Named("ierr") = ierr);
 }
 
+//' Build residual histograms for JSD calculation with neighbor filtering
+//'
+//' @param neighborhood_residuals Numeric vector of neighborhood residuals (reps x neighbors x points)
+//' @param shared_residual_range Double maximum residual value to consider for histogram binning
+//' @param n_bins Integer number of histogram bins
+//' @param neighbor_mask Integer vector indicating which neighbors to include (length should be equal to number of neighbors)
+//' @return List with counts, pmf and included number of residuals
 // [[Rcpp::export]]
-Rcpp::List tox_build_residual_histograms_filtered_rcpp(
-    Rcpp::NumericVector neighborhood_residuals,
-    double shared_residual_range,
-    int n_bins,
-    IntegerVector neighbor_mask
-) {
-    Rcpp::IntegerVector dims = neighborhood_residuals.attr("dim");
+List tox_build_residual_histograms_filtered_rcpp(NumericVector neighborhood_residuals,
+                                                 double shared_residual_range,
+                                                 int n_bins,
+                                                 IntegerVector neighbor_mask) {
+
+    IntegerVector dims = neighborhood_residuals.attr("dim");
     int n_reps = dims[0];
     int n_neighbors = dims[1];
     int n_points = dims[2];
 
-    Rcpp::IntegerMatrix counts(n_points, n_bins);
-    Rcpp::NumericMatrix pmf(n_points, n_bins);
-    Rcpp::IntegerVector included_n_residuals(n_points);
+    IntegerMatrix counts(n_points, n_bins);
+    NumericMatrix pmf(n_points, n_bins);
+    IntegerVector included_n_residuals(n_points);
 
     int ierr = 0;
 
-    build_residual_histograms_filtered_c(
-        neighborhood_residuals.begin(),
-        &n_reps,
-        &n_neighbors,
-        &n_points,
-        &shared_residual_range,
-        &n_bins,
-        counts.begin(),
-        pmf.begin(),
-        included_n_residuals.begin(),
-        &ierr,
-        neighbor_mask.begin()
-    );
+    build_residual_histograms_filtered_c(neighborhood_residuals.begin(),
+                                         &n_reps,
+                                         &n_neighbors,
+                                         &n_points,
+                                         &shared_residual_range,
+                                         &n_bins,
+                                         counts.begin(),
+                                         pmf.begin(),
+                                         included_n_residuals.begin(),
+                                         &ierr,
+                                         neighbor_mask.begin());
 
-    return Rcpp::List::create(
-        Rcpp::Named("counts") = counts,
-        Rcpp::Named("pmf") = pmf,
-        Rcpp::Named("included_n_residuals") = included_n_residuals,
-        Rcpp::Named("ierr") = ierr
-    );
+    return List::create(Named("counts") = counts,
+                        Named("pmf") = pmf,
+                        Named("included_n_residuals") = included_n_residuals,
+                        Named("ierr") = ierr);
 }
-
+//' Compute JSD divergence per reference point
+//'
+//' @param pmf_S1 Numeric matrix of probability mass functions for set 1 (points x bins)
+//' @param pmf_S2 Numeric matrix of probability mass functions for set 2 (points x bins)
+//' @return List with JSD divergences per point
 // [[Rcpp::export]]
-Rcpp::List tox_compute_divergence_per_reference_point_rcpp(
-    Rcpp::NumericMatrix pmf_S1,
-    Rcpp::NumericMatrix pmf_S2
-) {
+List tox_compute_divergence_per_reference_point_rcpp(NumericMatrix pmf_S1,
+                                                     NumericMatrix pmf_S2) {
+
     int n_points = pmf_S1.nrow();
     int n_bins = pmf_S1.ncol();
 
-    Rcpp::NumericVector js_divergences(n_points);
+    NumericVector js_divergences(n_points);
     int ierr = 0;
 
-    compute_divergence_per_reference_point_c(
-        pmf_S1.begin(),
-        pmf_S2.begin(),
-        &n_points,
-        &n_bins,
-        js_divergences.begin(),
-        &ierr
-    );
+    compute_divergence_per_reference_point_c(pmf_S1.begin(),
+                                             pmf_S2.begin(),
+                                             &n_points,
+                                             &n_bins,
+                                             js_divergences.begin(),
+                                             &ierr);
 
-    return Rcpp::List::create(
-        Rcpp::Named("js_divergences") = js_divergences,
-        Rcpp::Named("ierr") = ierr
-    );
+    return List::create(Named("js_divergences") = js_divergences,
+                        Named("ierr") = ierr);
 }
-
+//' Compute weighted global JSD divergence
+//'
+//' @param js_divergences Numeric vector of JSD divergences per point
+//' @param included_n_residuals_S1 Integer vector of included residuals for set 1
+//' @param included_n_residuals_S2 Integer vector of included residuals for set 2
+//' @return List with global JSD divergence and weights
 // [[Rcpp::export]]
-Rcpp::List tox_compute_weighted_global_divergence_rcpp(
-    Rcpp::NumericVector js_divergences,
-    Rcpp::IntegerVector included_n_residuals_S1,
-    Rcpp::IntegerVector included_n_residuals_S2
-) {
+List tox_compute_weighted_global_divergence_rcpp(NumericVector js_divergences,
+                                                 IntegerVector included_n_residuals_S1,
+                                                 IntegerVector included_n_residuals_S2) {
     int n_points = js_divergences.size();
 
     double global_jsd = 0.0;
-    Rcpp::NumericVector weights(n_points);
+    NumericVector weights(n_points);
     int ierr = 0;
 
-    compute_weighted_global_divergence_c(
-        js_divergences.begin(),
-        &n_points,
-        included_n_residuals_S1.begin(),
-        included_n_residuals_S2.begin(),
-        &global_jsd,
-        weights.begin(),
-        &ierr
-    );
+    compute_weighted_global_divergence_c(js_divergences.begin(),
+                                         &n_points,
+                                         included_n_residuals_S1.begin(),
+                                         included_n_residuals_S2.begin(),
+                                         &global_jsd,
+                                         weights.begin(),
+                                         &ierr);
 
-    return Rcpp::List::create(
-        Rcpp::Named("global_js_divergence") = global_jsd,
-        Rcpp::Named("weights") = weights,
-        Rcpp::Named("ierr") = ierr
-    );
+    return List::create(Named("global_js_divergence") = global_jsd,
+                        Named("weights") = weights,
+                        Named("ierr") = ierr);
 }
-
+//' Perform permutation test for global JSD divergence
+//'
+//'@param neighborhood_residuals_S1 Numeric vector of neighborhood residuals for set 1 (reps x neighbors x points)
+//'@param neighborhood_residuals_S2 Numeric vector of neighborhood residuals for set 2
+//'@param global_jsd_observed Double observed global JSD divergence
+//'@param n_bins Integer number of histogram bins
+//'@param shared_residual_range Double maximum residual value to consider for histogram binning
+//'@param n_permutations Integer number of permutations to perform
+//'@param random_seed Integer random seed for permutation reproducibility
+//'@return List with null distribution of JSD divergences and p-value
 // [[Rcpp::export]]
-Rcpp::List tox_gjct_permutation_test_rcpp(
-    Rcpp::NumericVector neighborhood_residuals_S1,
-    Rcpp::NumericVector neighborhood_residuals_S2,
-    double global_jsd_observed,
-    int n_bins,
-    double shared_residual_range,
-    int n_permutations,
-    int random_seed
-) {
-    Rcpp::IntegerVector dims = neighborhood_residuals_S1.attr("dim");
+List tox_gjct_permutation_test_rcpp(NumericVector neighborhood_residuals_S1,
+                                    NumericVector neighborhood_residuals_S2,
+                                    double global_jsd_observed,
+                                    int n_bins,
+                                    double shared_residual_range,
+                                    int n_permutations,
+                                    int random_seed) {
+
+    IntegerVector dims = neighborhood_residuals_S1.attr("dim");
     int n_reps_S1 = dims[0];
     int n_neighbors = dims[1];
     int n_points = dims[2];
     dims = neighborhood_residuals_S2.attr("dim");
     int n_reps_S2 = dims[0];
 
-    Rcpp::NumericVector jsd_null(n_permutations);
+    NumericVector jsd_null(n_permutations);
     double p_value = 0.0;
     int ierr = 0;
 
-    gjct_permutation_test_c(
-        neighborhood_residuals_S1.begin(),
-        neighborhood_residuals_S2.begin(),
-        &n_reps_S1,
-        &n_reps_S2,
-        &n_neighbors,
-        &n_points,
-        &global_jsd_observed,
-        &n_bins,
-        &shared_residual_range,
-        &n_permutations,
-        jsd_null.begin(),
-        &p_value,
-        &ierr,
-        &random_seed
-    );
+    gjct_permutation_test_c(neighborhood_residuals_S1.begin(),
+                            neighborhood_residuals_S2.begin(),
+                            &n_reps_S1,
+                            &n_reps_S2,
+                            &n_neighbors,
+                            &n_points,
+                            &global_jsd_observed,
+                            &n_bins,
+                            &shared_residual_range,
+                            &n_permutations,
+                            jsd_null.begin(),
+                            &p_value,
+                            &ierr,
+                            &random_seed);
 
-    return Rcpp::List::create(
-        Rcpp::Named("jsd_null") = jsd_null,
-        Rcpp::Named("p_value")  = p_value,
-        Rcpp::Named("ierr")     = ierr
-    );
+    return List::create(Named("jsd_null") = jsd_null,
+                        Named("p_value")  = p_value,
+                        Named("ierr")     = ierr);
 }
-
+//' Perform permutation test for global JSD divergence with neighbor filtering
+//'
+//'@param neighborhood_residuals_S1 Numeric vector of neighborhood residuals for set 1
+//'@param neighborhood_residuals_S2 Numeric vector of neighborhood residuals for set 2
+//'@param global_jsd_observed Double observed global JSD divergence
+//'@param n_bins Integer number of histogram bins
+//'@param shared_residual_range Double maximum residual value to consider for histogram binning
+//'@param n_permutations Integer number of permutations to perform
+//'@param random_seed Integer random seed for permutation reproducibility
+//'@param neighbor_mask_S1 Integer vector of neighbor indices for set 1
+//'@param neighbor_mask_S2 Integer vector of neighbor indices for set 2
+//'@return List with null distribution of JSD divergences and  p-value
 // [[Rcpp::export]]
-Rcpp::List tox_gjct_permutation_test_filtered_rcpp(
-    Rcpp::NumericVector neighborhood_residuals_S1,
-    Rcpp::NumericVector neighborhood_residuals_S2,
-    double global_jsd_observed,
-    int n_bins,
-    double shared_residual_range,
-    int n_permutations,
-    IntegerVector neighbor_mask_S1,
-    IntegerVector neighbor_mask_S2,
-    int random_seed
-) {
-    Rcpp::IntegerVector dims = neighborhood_residuals_S1.attr("dim");
+List tox_gjct_permutation_test_filtered_rcpp(NumericVector neighborhood_residuals_S1,
+                                             NumericVector neighborhood_residuals_S2,
+                                             double global_jsd_observed,
+                                             int n_bins,
+                                             double shared_residual_range,
+                                             int n_permutations,
+                                             IntegerVector neighbor_mask_S1,
+                                             IntegerVector neighbor_mask_S2,
+                                             int random_seed) {
+
+    IntegerVector dims = neighborhood_residuals_S1.attr("dim");
     int n_reps_S1 = dims[0];
     int n_neighbors = dims[1];
     int n_points = dims[2];
     dims = neighborhood_residuals_S2.attr("dim");
     int n_reps_S2 = dims[0];
 
-    Rcpp::NumericVector jsd_null(n_permutations);
+    NumericVector jsd_null(n_permutations);
     double p_value = 0.0;
     int ierr = 0;
 
-    gjct_permutation_test_filtered_c(
-        neighborhood_residuals_S1.begin(),
-        neighborhood_residuals_S2.begin(),
-        &n_reps_S1,
-        &n_reps_S2,
-        &n_neighbors,
-        &n_points,
-        &global_jsd_observed,
-        &n_bins,
-        &shared_residual_range,
-        &n_permutations,
-        jsd_null.begin(),
-        &p_value,
-        &ierr,
-        &random_seed,
-        neighbor_mask_S1.begin(),
-        neighbor_mask_S2.begin()
-    );
+    gjct_permutation_test_filtered_c(neighborhood_residuals_S1.begin(),
+                                     neighborhood_residuals_S2.begin(),
+                                     &n_reps_S1,
+                                     &n_reps_S2,
+                                     &n_neighbors,
+                                     &n_points,
+                                     &global_jsd_observed,
+                                     &n_bins,
+                                     &shared_residual_range,
+                                     &n_permutations,
+                                     jsd_null.begin(),
+                                     &p_value,
+                                     &ierr,
+                                     &random_seed,
+                                     neighbor_mask_S1.begin(),
+                                     neighbor_mask_S2.begin());
 
-    return Rcpp::List::create(
-        Rcpp::Named("jsd_null") = jsd_null,
-        Rcpp::Named("p_value")  = p_value,
-        Rcpp::Named("ierr")     = ierr
-    );
+    return List::create(Named("jsd_null") = jsd_null,
+                        Named("p_value")  = p_value,
+                        Named("ierr")     = ierr);
 }
-
+//' Calculate neighborhood size for JSD calculation
+//'
+//' @param n_pool Integer number of pooled genes to consider for neighborhood construction
+//' @param n_points Integer number of reference points
+//' @param n_genes_S Integer number of genes in the dataset
+//' @param mean_S Numeric vector of mean expression values for each gene
+//' @param desired_size Integer desired neighborhood size (if 0, the function will determine the optimal size)
+//' @return List with calculated neighborhood size
 // [[Rcpp::export]]
-Rcpp::List tox_calc_neighborhood_size_rcpp(int n_pool,
-                                           int n_points,
-                                           int n_genes_S,
-                                           Rcpp::NumericVector mean_S,
-                                           int desired_size = 0) {
+List tox_calc_neighborhood_size_rcpp(int n_pool,
+                                     int n_points,
+                                     int n_genes_S,
+                                     NumericVector mean_S,
+                                     int desired_size = 0) {
     int n_neighbors = 0;
     int ierr = 0;
 
-    calc_neighborhood_size_c(
-        &n_pool,
-        &n_points,
-        &n_genes_S,
-        mean_S.begin(),
-        &desired_size,
-        &n_neighbors,
-        &ierr
-    );
+    calc_neighborhood_size_c(&n_pool,
+                             &n_points,
+                             &n_genes_S,
+                             mean_S.begin(),
+                             &desired_size,
+                             &n_neighbors,
+                             &ierr);
 
-    return Rcpp::List::create(
-        Rcpp::Named("n_neighbors") = n_neighbors,
-        Rcpp::Named("ierr")        = ierr
-    );
+    return List::create(Named("n_neighbors") = n_neighbors,
+                        Named("ierr")        = ierr);
 }
 
+//' Construct neighborhoods for JSD calculation
+//'
+//' @param x_star Numeric vector of reference points
+//' @param n_pool Integer number of pooled genes to consider for neighborhood construction
+//' @param mean_S Numeric vector of mean expression values for each gene
+//' @param resid_S Numeric matrix of residuals for each gene and reference point
+//' @param desired_n_neighbors Integer desired neighborhood size (if 0, the function will determine the optimal size)
+//' @return List with constructed neighborhoods and error code
 // [[Rcpp::export]]
-Rcpp::List tox_construct_neighborhoods_rcpp(
-        Rcpp::NumericVector x_star,
-        int n_pool,
-        Rcpp::NumericVector mean_S,
-        Rcpp::NumericMatrix resid_S,
-        int desired_n_neighbors = 0) {
+List tox_construct_neighborhoods_rcpp(NumericVector x_star,
+                                      int n_pool,
+                                      NumericVector mean_S,
+                                      NumericMatrix resid_S,
+                                      int desired_n_neighbors = 0) {
 
     int n_points  = x_star.size();
     int n_genes_S = mean_S.size();
@@ -1347,297 +1647,318 @@ Rcpp::List tox_construct_neighborhoods_rcpp(
     int n_neighbors = 0;
     int ierr = 0;
 
-    calc_neighborhood_size_c( &n_pool, &n_points, &n_genes_S, mean_S.begin(), &desired_n_neighbors, &n_neighbors, &ierr);
+    calc_neighborhood_size_c(&n_pool,
+                             &n_points,
+                             &n_genes_S,
+                             mean_S.begin(),
+                             &desired_n_neighbors,
+                             &n_neighbors,
+                             &ierr);
 
-    if (ierr != 0)
-    {
-        Rcpp::NumericVector neigh_res(0);
-        Rcpp::IntegerMatrix neigh_idx(0, n_points);
+    if (ierr != 0) {
+        NumericVector neigh_res(0);
+        IntegerMatrix neigh_idx(0, n_points);
 
-        return Rcpp::List::create(
-            Rcpp::Named("neighborhood_residuals") = neigh_res,
-            Rcpp::Named("neighborhood_indices")   = neigh_idx,
-            Rcpp::Named("ierr")                   = ierr
-        );
+        return List::create(Named("neighborhood_residuals") = neigh_res,
+                            Named("neighborhood_indices")   = neigh_idx,
+                            Named("ierr")                   = ierr);
     }
 
-    // Flat buffer
-    Rcpp::NumericVector neigh_res(n_reps_S * n_neighbors * n_points);
-    Rcpp::IntegerMatrix neigh_idx(n_neighbors, n_points);
+    NumericVector neigh_res(n_reps_S * n_neighbors * n_points);
+    IntegerMatrix neigh_idx(n_neighbors, n_points);
 
-    construct_neighborhoods_c(
-        &n_points, x_star.begin(),
-        &n_genes_S, mean_S.begin(),
-        &n_reps_S, resid_S.begin(),
-        neigh_res.begin(),
-        neigh_idx.begin(),
-        &n_neighbors,
-        &ierr
-    );
+    construct_neighborhoods_c(&n_points,
+                              x_star.begin(),
+                              &n_genes_S,
+                              mean_S.begin(),
+                              &n_reps_S,
+                              resid_S.begin(),
+                              neigh_res.begin(),
+                              neigh_idx.begin(),
+                              &n_neighbors,
+                              &ierr);
 
-    // Convert to 3D array
-    neigh_res.attr("dim") = Rcpp::IntegerVector::create(
+    neigh_res.attr("dim") = IntegerVector::create(
         n_reps_S,
         n_neighbors,
         n_points
     );
 
-    return Rcpp::List::create(
-        Rcpp::Named("neighborhood_residuals") = neigh_res,
-        Rcpp::Named("neighborhood_indices")   = neigh_idx,
-        Rcpp::Named("ierr")                   = ierr
-    );
+    return List::create(Named("neighborhood_residuals") = neigh_res,
+                        Named("neighborhood_indices")   = neigh_idx,
+                        Named("ierr")                   = ierr);
 }
-
+//' Compute gene means for JSD calculation
+//'
+//' @param expr Numeric matrix of gene expression values (replicates x genes)
+//' @return List with gene means 
 // [[Rcpp::export]]
-Rcpp::List tox_compute_gene_means_rcpp(Rcpp::NumericMatrix expr) {
+List tox_compute_gene_means_rcpp(NumericMatrix expr) {
+
     int n_reps  = expr.nrow();
     int n_genes = expr.ncol();
 
-    Rcpp::NumericVector means(n_genes);
+    NumericVector means(n_genes);
     int ierr = 0;
 
-    compute_gene_means_c(
-        &n_genes, &n_reps, expr.begin(),
-        means.begin(),
-        &ierr
-    );
+    compute_gene_means_c(&n_genes,
+                         &n_reps,
+                         expr.begin(),
+                         means.begin(),
+                         &ierr);
 
-    return Rcpp::List::create(
-        Rcpp::Named("means") = means,
-        Rcpp::Named("ierr")  = ierr
-    );
+    return List::create(Named("means") = means,
+                        Named("ierr")  = ierr);
 }
 
+//' Compute residuals for JSD calculation
+//'
+//' @param expr Numeric matrix of gene expression values (replicates x genes)
+//' @param means Numeric vector of gene means (length equal to number of genes)
+//' @return List with residuals matrix 
 // [[Rcpp::export]]
-Rcpp::List tox_compute_residuals_rcpp(Rcpp::NumericMatrix expr,
-                                      Rcpp::NumericVector means) {
+List tox_compute_residuals_rcpp(NumericMatrix expr,
+                                NumericVector means) {
+
     int n_reps  = expr.nrow();
     int n_genes = expr.ncol();
 
-    Rcpp::NumericMatrix resid(n_reps, n_genes);
+    NumericMatrix resid(n_reps, n_genes);
     int ierr = 0;
 
-    compute_residuals_c(
-        &n_genes, &n_reps, expr.begin(), 
-        means.begin(),
-        resid.begin(),
-        &ierr
-    );
+    compute_residuals_c(&n_genes,
+                        &n_reps,
+                        expr.begin(),
+                        means.begin(),
+                        resid.begin(),
+                        &ierr);
 
-    return Rcpp::List::create(
-        Rcpp::Named("resid") = resid,
-        Rcpp::Named("ierr")  = ierr
-    );
+    return List::create(Named("resid") = resid,
+                        Named("ierr")  = ierr);
 }
-
+//' Calculate pooled means for JSD calculation
+//'@param mean_S1 Numeric vector of gene means for set 1
+//'@param mean_S2 Numeric vector of gene means for set 2
+//'@param n_points Integer number of reference points to calculate
+//'@return List with pooled means 
 // [[Rcpp::export]]
-Rcpp::List tox_pool_means_rcpp(Rcpp::NumericVector mean_S1,
-                                     Rcpp::NumericVector mean_S2,
-                                     int n_points) {
+List tox_pool_means_rcpp(NumericVector mean_S1,
+                         NumericVector mean_S2,
+                         int n_points) {
+
     int n_genes_S1 = mean_S1.size();
     int n_genes_S2 = mean_S2.size();
 
-    Rcpp::NumericVector x_star(n_points);
+    NumericVector x_star(n_points);
     int n_pool = 0;
     int ierr = 0;
 
-    pool_means_c(
-        &n_genes_S1, mean_S1.begin(),
-        &n_genes_S2, mean_S2.begin(),
-        &n_points,
-        &n_pool,
-        x_star.begin(),
-        &ierr
-    );
+    pool_means_c(&n_genes_S1,
+                 mean_S1.begin(),
+                 &n_genes_S2,
+                 mean_S2.begin(),
+                 &n_points,
+                 &n_pool,
+                 x_star.begin(),
+                 &ierr);
 
-    return Rcpp::List::create(
-        Rcpp::Named("n_pool") = n_pool,
-        Rcpp::Named("x_star") = x_star,
-        Rcpp::Named("ierr")   = ierr
-    );
+    return List::create(Named("n_pool") = n_pool,
+                        Named("x_star") = x_star,
+                        Named("ierr")   = ierr);
 }
 
+//' Calculate pooled means for JSD calculation using expert method
+//'
+//'@param pooled_means Numeric vector of pooled means (length equal to number of reference points)
+//'@param pooled_perm Integer vector for permutation of pooled means
+//'@param n_points Integer number of reference points to calculate
+//'@return List with pooled means
 // [[Rcpp::export]]
-Rcpp::List tox_pool_means_expert_rcpp(Rcpp::NumericVector pooled_means,
-                               Rcpp::IntegerVector pooled_perm,
-                               int n_points) {
+List tox_pool_means_expert_rcpp(NumericVector pooled_means,
+                                IntegerVector pooled_perm,
+                                int n_points) {
 
-    Rcpp::NumericVector x_star(n_points);
+    NumericVector x_star(n_points);
     int pool_size = pooled_means.size();
     int n_pool = 0;
     int ierr = 0;
 
-    pool_means_expert_c(
-        pooled_means.begin(),
-        pooled_perm.begin(),
-        &pool_size,
-        &n_points,
-        &n_pool,
-        x_star.begin(),
-        &ierr
-    );
+    pool_means_expert_c(pooled_means.begin(),
+                        pooled_perm.begin(),
+                        &pool_size,
+                        &n_points,
+                        &n_pool,
+                        x_star.begin(),
+                        &ierr);
 
-    return Rcpp::List::create(
-        Rcpp::Named("n_pool") = n_pool,
-        Rcpp::Named("x_star") = x_star,
-        Rcpp::Named("ierr")   = ierr
-    );
+    return List::create(Named("n_pool") = n_pool,
+                        Named("x_star") = x_star,
+                        Named("ierr")   = ierr);
 }
-
+//' Compute JSD divergences for each reference point and global JSD divergence
+//'
+//' @param family_idx Integer index of the gene family being analyzed
+//' @param gene_to_family_S1 Integer vector mapping each gene in set 1 to its family
+//' @param gene_to_family_S2 Integer vector mapping each gene in set 2 to its family
+//' @param neighborhood_residuals_S1 Numeric vector of neighborhood residuals for set 1 (reps x neighbors x points)
+//' @param neighborhood_residuals_S2 Numeric vector of neighborhood residuals for set 2 (reps x neighbors x points)
+//' @param neighborhood_genes_S1 Integer matrix of gene indices for neighborhoods in set 1 (neighbors x points)
+//' @param neighborhood_genes_S2 Integer matrix of gene indices for neighborhoods in set 2 (neighbors x points)
+//' @param n_bins Integer number of histogram bins for JSD calculation
+//' @param shared_residual_range Double maximum residual value to consider for histogram binning
+//' @return List with JSD divergences per point, included number of replicates, total included replicates, global JSD divergence, weights, and error code
 // [[Rcpp::export]]
-Rcpp::List tox_fjct_compute_jsd_alloc_rcpp(
-    int family_idx,
-    Rcpp::IntegerVector gene_to_family_S1,
-    Rcpp::IntegerVector gene_to_family_S2,
-    Rcpp::NumericVector neighborhood_residuals_S1,
-    Rcpp::NumericVector neighborhood_residuals_S2,
-    Rcpp::IntegerMatrix neighborhood_genes_S1,
-    Rcpp::IntegerMatrix neighborhood_genes_S2,
-    int n_bins,
-    double shared_residual_range
-) {
-    Rcpp::IntegerVector dims = neighborhood_residuals_S1.attr("dim");
+List tox_fjct_compute_jsd_alloc_rcpp(int family_idx,
+                                     IntegerVector gene_to_family_S1,
+                                     IntegerVector gene_to_family_S2,
+                                     NumericVector neighborhood_residuals_S1,
+                                     NumericVector neighborhood_residuals_S2,
+                                     IntegerMatrix neighborhood_genes_S1,
+                                     IntegerMatrix neighborhood_genes_S2,
+                                     int n_bins,
+                                     double shared_residual_range) {
+
+    IntegerVector dims = neighborhood_residuals_S1.attr("dim");
     int n_reps_S1 = dims[0];
     int n_neighbors = dims[1];
     int n_points = dims[2];
     dims = neighborhood_residuals_S2.attr("dim");
     int n_reps_S2 = dims[0];
-    Rcpp::NumericVector jsd(n_points);
-    Rcpp::IntegerVector inc1(n_points);
-    Rcpp::IntegerVector inc2(n_points);
+    NumericVector jsd(n_points);
+    IntegerVector inc1(n_points);
+    IntegerVector inc2(n_points);
     int n_genes_S1 = gene_to_family_S1.size();
     int n_genes_S2 = gene_to_family_S2.size();
     int total_included = 0;
     double global_jsd = 0.0;
-    Rcpp::NumericVector weights(n_points);
+    NumericVector weights(n_points);
     int ierr = 0;
 
-    fjct_compute_jsd_c(
-        &family_idx,
-        gene_to_family_S1.begin(),
-        gene_to_family_S2.begin(),
-        &n_genes_S1,
-        &n_genes_S2,
-        neighborhood_residuals_S1.begin(),
-        neighborhood_residuals_S2.begin(),
-        neighborhood_genes_S1.begin(),
-        neighborhood_genes_S2.begin(),
-        &n_reps_S1,
-        &n_reps_S2,
-        &n_neighbors,
-        &n_points,
-        &n_bins,
-        &shared_residual_range,
-        jsd.begin(),
-        inc1.begin(),
-        inc2.begin(),
-        &total_included,
-        &global_jsd,
-        weights.begin(),
-        &ierr
-    );
+    fjct_compute_jsd_c(&family_idx,
+                       gene_to_family_S1.begin(),
+                       gene_to_family_S2.begin(),
+                       &n_genes_S1,
+                       &n_genes_S2,
+                       neighborhood_residuals_S1.begin(),
+                       neighborhood_residuals_S2.begin(),
+                       neighborhood_genes_S1.begin(),
+                       neighborhood_genes_S2.begin(),
+                       &n_reps_S1,
+                       &n_reps_S2,
+                       &n_neighbors,
+                       &n_points,
+                       &n_bins,
+                       &shared_residual_range,
+                       jsd.begin(),
+                       inc1.begin(),
+                       inc2.begin(),
+                       &total_included,
+                       &global_jsd,
+                       weights.begin(),
+                       &ierr);
 
-    return Rcpp::List::create(
-        Rcpp::Named("js_divergences") = jsd,
-        Rcpp::Named("included_n_reps_S1") = inc1,
-        Rcpp::Named("included_n_reps_S2") = inc2,
-        Rcpp::Named("total_included_n_reps") = total_included,
-        Rcpp::Named("global_js_divergence") = global_jsd,
-        Rcpp::Named("weights") = weights,
-        Rcpp::Named("ierr") = ierr
-    );
+    return List::create(Named("js_divergences") = jsd,
+                        Named("included_n_reps_S1") = inc1,
+                        Named("included_n_reps_S2") = inc2,
+                        Named("total_included_n_reps") = total_included,
+                        Named("global_js_divergence") = global_jsd,
+                        Named("weights") = weights,
+                        Named("ierr") = ierr);
 }
 
+//' Compute JSD divergences for each reference point and global JSD divergence using expert method
+//'
+//' @param neighborhood_residuals_S1 Numeric vector of neighborhood residuals for set 1 (reps x neighbors x points)
+//' @param neighborhood_residuals_S2 Numeric vector of neighborhood residuals for set 2 (reps x neighbors x points)
+//' @param neighbor_mask_S1 Integer matrix of neighbor masks for set 1 (neighbors x points)
+//' @param neighbor_mask_S2 Integer matrix of neighbor masks for set 2 (neighbors x points)
+//' @param n_bins Integer number of histogram bins for JSD calculation
+//' @param shared_residual_range Double maximum residual value to consider for histogram binning
+//' @return List with JSD divergences per point, included number of replicates, total included replicates, global JSD divergence and weights
 // [[Rcpp::export]]
-Rcpp::List tox_fjct_compute_jsd_expert_rcpp(
-    Rcpp::NumericVector neighborhood_residuals_S1,
-    Rcpp::NumericVector neighborhood_residuals_S2,
-    Rcpp::IntegerMatrix neighbor_mask_S1,
-    Rcpp::IntegerMatrix neighbor_mask_S2,
-    int n_bins,
-    double shared_residual_range
-) {
-    Rcpp::IntegerVector dims = neighborhood_residuals_S1.attr("dim");
+List tox_fjct_compute_jsd_expert_rcpp(NumericVector neighborhood_residuals_S1,
+                                      NumericVector neighborhood_residuals_S2,
+                                      IntegerMatrix neighbor_mask_S1,
+                                      IntegerMatrix neighbor_mask_S2,
+                                      int n_bins,
+                                      double shared_residual_range) {
+
+    IntegerVector dims = neighborhood_residuals_S1.attr("dim");
     int n_reps_S1 = dims[0];
     int n_neighbors = dims[1];
     int n_points = dims[2];
     dims = neighborhood_residuals_S2.attr("dim");
     int n_reps_S2 = dims[0];
-    Rcpp::NumericVector jsd(n_points);
-    Rcpp::IntegerVector inc1(n_points);
-    Rcpp::IntegerVector inc2(n_points);
+    NumericVector jsd(n_points);
+    IntegerVector inc1(n_points);
+    IntegerVector inc2(n_points);
     int total_included = 0;
     double global_jsd = 0.0;
-    Rcpp::NumericVector weights(n_points);
+    NumericVector weights(n_points);
 
-    Rcpp::NumericMatrix pmf_S1(n_points, n_bins);
-    Rcpp::NumericMatrix pmf_S2(n_points, n_bins);
-    Rcpp::IntegerMatrix tmp_counts(n_points, n_bins);
+    NumericMatrix pmf_S1(n_points, n_bins);
+    NumericMatrix pmf_S2(n_points, n_bins);
+    IntegerMatrix tmp_counts(n_points, n_bins);
 
     int ierr = 0;
 
-    fjct_compute_jsd_expert_c(
-        neighborhood_residuals_S1.begin(),
-        neighborhood_residuals_S2.begin(),
-        &n_reps_S1,
-        &n_reps_S2,
-        &n_neighbors,
-        &n_points,
-        neighbor_mask_S1.begin(),
-        neighbor_mask_S2.begin(),
-        &n_bins,
-        &shared_residual_range,
-        jsd.begin(),
-        inc1.begin(),
-        inc2.begin(),
-        &total_included,
-        &global_jsd,
-        weights.begin(),
-        pmf_S1.begin(),
-        pmf_S2.begin(),
-        tmp_counts.begin(),
-        &ierr
-    );
+    fjct_compute_jsd_expert_c(neighborhood_residuals_S1.begin(),
+                              neighborhood_residuals_S2.begin(),
+                              &n_reps_S1,
+                              &n_reps_S2,
+                              &n_neighbors,
+                              &n_points,
+                              neighbor_mask_S1.begin(),
+                              neighbor_mask_S2.begin(),
+                              &n_bins,
+                              &shared_residual_range,
+                              jsd.begin(),
+                              inc1.begin(),
+                              inc2.begin(),
+                              &total_included,
+                              &global_jsd,
+                              weights.begin(),
+                              pmf_S1.begin(),
+                              pmf_S2.begin(),
+                              tmp_counts.begin(),
+                              &ierr);
 
-    return Rcpp::List::create(
-        Rcpp::Named("js_divergences") = jsd,
-        Rcpp::Named("included_n_reps_S1") = inc1,
-        Rcpp::Named("included_n_reps_S2") = inc2,
-        Rcpp::Named("total_included_n_reps") = total_included,
-        Rcpp::Named("global_js_divergence") = global_jsd,
-        Rcpp::Named("weights") = weights,
-        Rcpp::Named("pmf_S1") = pmf_S1,
-        Rcpp::Named("pmf_S2") = pmf_S2,
-        Rcpp::Named("tmp_counts") = tmp_counts,
-        Rcpp::Named("ierr") = ierr
-    );
+    return List::create(Named("js_divergences") = jsd,
+                        Named("included_n_reps_S1") = inc1,
+                        Named("included_n_reps_S2") = inc2,
+                        Named("total_included_n_reps") = total_included,
+                        Named("global_js_divergence") = global_jsd,
+                        Named("weights") = weights,
+                        Named("pmf_S1") = pmf_S1,
+                        Named("pmf_S2") = pmf_S2,
+                        Named("tmp_counts") = tmp_counts,
+                        Named("ierr") = ierr);
 }
 
+//' Compute contribution scores for each family based on global JSD divergences and included replicates
+//'
+//' @param global_js_divergences Numeric vector of global JSD divergences for each family
+//' @param total_included_n_reps_per_f Integer vector of total included replicates for each family
+//' @return List with support weights and contribution scores
 // [[Rcpp::export]]
-Rcpp::List tox_fjct_compute_contribution_scores_rcpp(
-    Rcpp::NumericVector global_js_divergences,
-    Rcpp::IntegerVector total_included_n_reps_per_f
-) {
+List tox_fjct_compute_contribution_scores_rcpp(NumericVector global_js_divergences,
+                                               IntegerVector total_included_n_reps_per_f) {
+
     int k_families = global_js_divergences.size();
-    Rcpp::NumericVector support_weights(k_families);
-    Rcpp::NumericVector contribution_scores(k_families);
+    NumericVector support_weights(k_families);
+    NumericVector contribution_scores(k_families);
     int ierr = 0;
 
-    fjct_compute_contribution_scores_c(
-        global_js_divergences.begin(),
-        total_included_n_reps_per_f.begin(),
-        &k_families,
-        support_weights.begin(),
-        contribution_scores.begin(),
-        &ierr
-    );
+    fjct_compute_contribution_scores_c(global_js_divergences.begin(),
+                                       total_included_n_reps_per_f.begin(),
+                                       &k_families,
+                                       support_weights.begin(),
+                                       contribution_scores.begin(),
+                                       &ierr);
 
-    return Rcpp::List::create(
-        Rcpp::Named("support_weights") = support_weights,
-        Rcpp::Named("contribution_scores") = contribution_scores,
-        Rcpp::Named("ierr") = ierr
-    );
+    return List::create(Named("support_weights") = support_weights,
+                        Named("contribution_scores") = contribution_scores,
+                        Named("ierr") = ierr);
 }
 
 
@@ -1652,6 +1973,7 @@ Rcpp::List tox_fjct_compute_contribution_scores_rcpp(
 List tox_calculate_tissue_versatility_rcpp(NumericMatrix expression_vectors,
                                            IntegerVector vector_selection,
                                            IntegerVector axis_selection) {
+
     int n_axes = expression_vectors.nrow();
     int n_vectors = expression_vectors.ncol();
     int n_selected_vectors = sum(vector_selection);
@@ -1686,6 +2008,7 @@ List tox_calculate_tissue_versatility_rcpp(NumericMatrix expression_vectors,
 //' @return List with normalized output matrix 
 // [[Rcpp::export]]
 List tox_normalize_by_std_dev_rcpp(NumericMatrix input) {
+
     int n_genes = input.nrow();
     int n_tissues = input.ncol();
     NumericMatrix output(n_genes, n_tissues);
@@ -1708,6 +2031,7 @@ List tox_normalize_by_std_dev_rcpp(NumericMatrix input) {
 //' @return List with quantile-normalized output matrix and intermediate results
 // [[Rcpp::export]]
 List tox_quantile_normalization_rcpp(NumericMatrix input) {
+
     int n_genes = input.nrow();
     int n_tissues = input.ncol();
 
@@ -1745,6 +2069,7 @@ List tox_quantile_normalization_rcpp(NumericMatrix input) {
 //' @return List with log2-transformed output matrix
 // [[Rcpp::export]]
 List tox_log2_transformation_rcpp(NumericMatrix input) {
+
     int n_genes = input.nrow();
     int n_tissues = input.ncol();
     NumericMatrix output(n_genes, n_tissues);
@@ -1760,6 +2085,24 @@ List tox_log2_transformation_rcpp(NumericMatrix input) {
                         Named("ierr") = ierr);
 }
 
+  //' Normalize a numeric vector to unit length
+  //'
+  //' @param vector Numeric vector
+  //' @return List with normalized vector and error code
+  // [[Rcpp::export]]
+  List tox_normalize_unit_length_rcpp(NumericVector vector) {
+
+    int n_dims = vector.size();
+    int ierr = 0;
+
+    normalize_unit_length_c(vector.begin(),
+                &n_dims,
+                &ierr);
+
+    return List::create(Named("vector") = vector,
+              Named("ierr") = ierr);
+  }
+
 //' Compute scalar baselines for a factor and dependent variable
 //'
 //' @param factor Numeric vector of factor values
@@ -1768,8 +2111,8 @@ List tox_log2_transformation_rcpp(NumericMatrix input) {
 //' @return List with factor baseline, dependent baseline, and error code
 // [[Rcpp::export]]
 List tox_compute_baselines_factor_dependent_rcpp(NumericVector factor,
-                                               NumericVector dependent,
-                                               std::string mode) {
+                                                 NumericVector dependent,
+                                                 std::string mode) {
   int n_timepoints = factor.size();
   
   // Fortran expects mode as a char array (e.g., 'raw', 'min', 'mean'), pad/truncate to 8 chars
@@ -1782,16 +2125,16 @@ List tox_compute_baselines_factor_dependent_rcpp(NumericVector factor,
   int ierr = 0;
 
   compute_baselines_factor_dependent_c(factor.begin(),
-                     dependent.begin(),
-                     &n_timepoints,
-                     mode_c,
-                     &factor_baseline,
-                     &dependent_baseline,
-                     &ierr);
+                                       dependent.begin(),
+                                       &n_timepoints,
+                                       mode_c,
+                                       &factor_baseline,
+                                       &dependent_baseline,
+                                       &ierr);
 
   return List::create(Named("factor_baseline") = factor_baseline,
-            Named("dependent_baseline") = dependent_baseline,
-            Named("ierr") = ierr);
+                      Named("dependent_baseline") = dependent_baseline,
+                      Named("ierr") = ierr);
 }
 
 //' Calculate average expression across replicates for each tissue group
@@ -1804,6 +2147,7 @@ List tox_compute_baselines_factor_dependent_rcpp(NumericVector factor,
 List tox_calc_tiss_avg_rcpp(NumericMatrix input,
                             IntegerVector group_s,
                             IntegerVector group_c) {
+
     int n_gene = input.nrow();
     int n_grps = group_s.size();
     NumericMatrix output(n_gene, n_grps);
@@ -1832,6 +2176,7 @@ List tox_calc_tiss_avg_rcpp(NumericMatrix input,
 List tox_calc_fchange_rcpp(NumericMatrix input,
                            IntegerVector control_cols,
                            IntegerVector cond_cols) {
+
     int n_genes = input.nrow();
     int n_cols = input.ncol();
     int n_pairs = control_cols.size();
@@ -1862,6 +2207,7 @@ List tox_calc_fchange_rcpp(NumericMatrix input,
 List tox_normalization_pipeline_rcpp(NumericMatrix input,
                                      IntegerVector group_s,
                                      IntegerVector group_c) {
+
     int n_genes = input.nrow();
     int n_tissues = input.ncol();
     int n_grps = group_s.size();
@@ -1907,6 +2253,87 @@ List tox_normalization_pipeline_rcpp(NumericMatrix input,
 }
 
 
+            //' Normalize a single time series using min-max scaling
+            //'
+            //' @param v Numeric vector representing one time series
+            //' @return List with normalized vector, status code, and error code
+            // [[Rcpp::export]]
+            List tox_normalize_variable_timeseries_rcpp(NumericVector v) {
+
+              int n_points = v.size();
+              NumericVector v_norm(n_points);
+              int ierr = 0;
+              int status = 0;
+
+              normalize_variable_timeseries_C(v.begin(),
+                                              v_norm.begin(),
+                                              &n_points,
+                                              &ierr,
+                                              &status);
+
+              return List::create(Named("v_norm") = v_norm,
+                                  Named("status") = status,
+                                  Named("ierr") = ierr);
+            }
+
+
+            //' Normalize all factors in a single trajectory independently
+            //'
+            //' @param trajectory Numeric matrix (timepoints x factors)
+            //' @return List with normalized trajectory, status code, and error code
+            // [[Rcpp::export]]
+            List tox_normalize_single_trajectory_rcpp(NumericMatrix trajectory) {
+
+              int n_timepoints = trajectory.nrow();
+              int n_factors = trajectory.ncol();
+              NumericMatrix trajectory_norm(n_timepoints, n_factors);
+              int ierr = 0;
+              int status = 0;
+
+              normalize_single_trajectory_C(trajectory.begin(),
+                                            trajectory_norm.begin(),
+                                            &n_factors,
+                                            &n_timepoints,
+                                            &ierr,
+                                            &status);
+
+              return List::create(Named("traj_norm") = trajectory_norm,
+                                  Named("status") = status,
+                                  Named("ierr") = ierr);
+            }
+
+
+            //' Normalize all trajectories across factors, samples, and timepoints
+            //'
+            //' @param trajectories Numeric array flattened as vector (factors x samples x timepoints)
+            //' @param n_factors Integer number of factors
+            //' @param n_samples Integer number of samples
+            //' @param n_timepoints Integer number of timepoints
+            //' @return List with normalized trajectories, status code, and error code
+            // [[Rcpp::export]]
+            List tox_normalize_all_trajectories_rcpp(NumericVector trajectories,
+                                                     int n_factors,
+                                                     int n_samples,
+                                                     int n_timepoints) {
+
+              NumericVector trajectories_norm(n_factors * n_samples * n_timepoints);
+              int ierr = 0;
+              int status = 0;
+
+              normalize_all_trajectories_C(trajectories.begin(),
+                                           trajectories_norm.begin(),
+                                           &n_factors,
+                                           &n_samples,
+                                           &n_timepoints,
+                                           &ierr,
+                                           &status);
+
+              return List::create(Named("traj_norm") = trajectories_norm,
+                                  Named("status") = status,
+                                  Named("ierr") = ierr);
+            }
+
+
 //' Calculate shift vector field for gene expression vectors
 //'
 //' @param expression_vectors Numeric matrix (axes x genes)
@@ -1917,6 +2344,8 @@ List tox_normalization_pipeline_rcpp(NumericMatrix input,
 List tox_compute_shift_vector_field_rcpp(NumericMatrix expression_vectors,
                                          NumericMatrix family_centroids,
                                          IntegerVector gene_to_centroid) {
+
+
     int n_axes_genes = expression_vectors.nrow();
     int n_vectors = expression_vectors.ncol();
     int n_axes_centroids = family_centroids.nrow();
@@ -1950,6 +2379,8 @@ List tox_compute_shift_vector_field_rcpp(NumericMatrix expression_vectors,
 // [[Rcpp::export]]
 List tox_mean_vector_rcpp(NumericMatrix expression_vectors,
                           IntegerVector gene_indices) {
+
+
     int n_axes = expression_vectors.nrow();
     int n_genes = expression_vectors.ncol();
     int n_selected_genes = gene_indices.length();
@@ -1984,6 +2415,8 @@ List tox_group_centroid_rcpp(NumericMatrix expression_vectors,
                              int n_families,
                              IntegerVector ortholog_set,
                              String mode) {
+
+
     int n_axes = expression_vectors.nrow();
     int n_genes = expression_vectors.ncol();
 
@@ -2018,18 +2451,20 @@ List tox_group_centroid_rcpp(NumericMatrix expression_vectors,
 }
 
 
-  //' Detect neofunctionalization for genes
-  //'
-  //' @param ancestors Numeric matrix of ancestor vectors (axes x families)
-  //' @param genes Numeric matrix of gene vectors (axes x genes)
-  //' @param gene_to_fam Integer vector mapping each gene to its family index
-  //' @param thresholds Numeric vector of per-axis thresholds
-  //' @return List with neofunctionalization matrix
-  // [[Rcpp::export]]
-  List tox_detect_neofunctionalization_rcpp(NumericMatrix ancestors,
-                        NumericMatrix genes,
-                        IntegerVector gene_to_fam,
-                        NumericVector thresholds) {
+//' Detect neofunctionalization for genes
+//'
+//' @param ancestors Numeric matrix of ancestor vectors (axes x families)
+//' @param genes Numeric matrix of gene vectors (axes x genes)
+//' @param gene_to_fam Integer vector mapping each gene to its family index
+//' @param thresholds Numeric vector of per-axis thresholds
+//' @return List with neofunctionalization matrix
+// [[Rcpp::export]]
+List tox_detect_neofunctionalization_rcpp(NumericMatrix ancestors,
+                                          NumericMatrix genes,
+                                          IntegerVector gene_to_fam,
+                                          NumericVector thresholds) {
+
+
     int n_axes = ancestors.nrow();
     int n_families = ancestors.ncol();
     int n_genes = genes.ncol();
@@ -2038,14 +2473,14 @@ List tox_group_centroid_rcpp(NumericMatrix expression_vectors,
     int ierr = 0;
 
     detect_neofunctionalization_c(ancestors.begin(),
-                    &n_families,
-                    genes.begin(),
-                    &n_axes,
-                    gene_to_fam.begin(),
-                    &n_genes,
-                    thresholds.begin(),
-                    neofunc_int.begin(),
-                    &ierr);
+                                  &n_families,
+                                  genes.begin(),
+                                  &n_axes,
+                                  gene_to_fam.begin(),
+                                  &n_genes,
+                                  thresholds.begin(),
+                                  neofunc_int.begin(),
+                                  &ierr);
 
     LogicalMatrix neofunc(n_genes, n_axes);
     for (int j = 0; j < n_axes; ++j) {
@@ -2066,6 +2501,7 @@ List tox_group_centroid_rcpp(NumericMatrix expression_vectors,
 //' @return List with logical state 
 // [[Rcpp::export]]
 List tox_mask_check_state_rcpp(IntegerVector bit_mask, int i_gene) {
+
     int n_mask_chunks = bit_mask.size();
     int state = 0;
     int ierr = 0;
@@ -2081,42 +2517,46 @@ List tox_mask_check_state_rcpp(IntegerVector bit_mask, int i_gene) {
 }
 
 
-  //' Compute number of 32-bit chunks needed to encode n_genes in a bit mask
-  //'
-  //' @param n_genes Number of genes to encode
-  //' @return List with count of chunks 
-  // [[Rcpp::export]]
-  List tox_mask_chunk_count_rcpp(int n_genes) {
+//' Compute number of 32-bit chunks needed to encode n_genes in a bit mask
+//'
+//' @param n_genes Number of genes to encode
+//' @return List with count of chunks
+// [[Rcpp::export]]
+List tox_mask_chunk_count_rcpp(int n_genes) {
+
     int count = 0;
     int ierr = 0;
 
-    mask_chunk_count_c(&n_genes, &count, &ierr);
+    mask_chunk_count_c(&n_genes,
+                       &count,
+                       &ierr);
 
     return List::create(Named("count") = count,
                         Named("ierr") = ierr);
   }
 
 
-  //' Compute required work array size for paralog subset analysis
-  //'
-  //' @param max_subset_size Desired maximum subset size
-  //' @param n_genes Number of genes
-  //' @param filtered_paralogs_mask Chunked bit mask of filtered paralogs
-  //' @return List with adjusted max subset size and work array size
-  // [[Rcpp::export]]
-  List tox_calc_work_arr_paralog_subsets_size_rcpp(int max_subset_size,
-                           int n_genes,
-                           IntegerVector filtered_paralogs_mask) {
+//' Compute required work array size for paralog subset analysis
+//'
+//' @param max_subset_size Desired maximum subset size
+//' @param n_genes Number of genes
+//' @param filtered_paralogs_mask Chunked bit mask of filtered paralogs
+//' @return List with adjusted max subset size and work array size
+// [[Rcpp::export]]
+List tox_calc_work_arr_paralog_subsets_size_rcpp(int max_subset_size,
+                                                 int n_genes,
+                                                 IntegerVector filtered_paralogs_mask) {
+
     int n_mask_chunks = filtered_paralogs_mask.size();
     int work_array_size = 0;
     int ierr = 0;
 
     calc_work_arr_paralog_subsets_size(&max_subset_size,
-                       &n_genes,
-                       &work_array_size,
-                       filtered_paralogs_mask.begin(),
-                       &n_mask_chunks,
-                       &ierr);
+                                       &n_genes,
+                                       &work_array_size,
+                                       filtered_paralogs_mask.begin(),
+                                       &n_mask_chunks,
+                                       &ierr);
 
     return List::create(Named("actual_max_subset_size") = max_subset_size,
                         Named("work_array_size") = work_array_size,
@@ -2124,62 +2564,63 @@ List tox_mask_check_state_rcpp(IntegerVector bit_mask, int i_gene) {
   }
 
 
-  //' Filter paralogs by dosage-effect pattern
-  //'
-  //' @param gene_angles Angles for all genes
-  //' @param threshold Filtering threshold
-  //' @param gene_to_fam Gene-to-family mapping
-  //' @param n_families Number of families
-  //' @return List with masks 
-  // [[Rcpp::export]]
-  List tox_filter_paralogs_by_pattern_dosage_effect_rcpp(NumericVector gene_angles,
-                               double threshold,
-                               IntegerVector gene_to_fam,
-                               int n_families) {
+//' Filter paralogs by dosage-effect pattern
+//'
+//' @param gene_angles Angles for all genes
+//' @param threshold Filtering threshold
+//' @param gene_to_fam Gene-to-family mapping
+//' @param n_families Number of families
+//' @return List with masks
+// [[Rcpp::export]]
+List tox_filter_paralogs_by_pattern_dosage_effect_rcpp(NumericVector gene_angles,
+                                                       double threshold,
+                                                       IntegerVector gene_to_fam,
+                                                       int n_families) {
+
     int n_genes = gene_angles.size();
     int n_mask_chunks = (n_genes + 31) / 32;
     IntegerMatrix masks(n_mask_chunks, n_families);
     int ierr = 0;
 
     filter_paralogs_by_pattern_dosage_effect(gene_angles.begin(),
-                         &threshold,
-                         &n_genes,
-                         &n_families,
-                         gene_to_fam.begin(),
-                         masks.begin(),
-                         &n_mask_chunks,
-                         &ierr);
+                                             &threshold,
+                                             &n_genes,
+                                             &n_families,
+                                             gene_to_fam.begin(),
+                                             masks.begin(),
+                                             &n_mask_chunks,
+                                             &ierr);
 
     return List::create(Named("masks") = masks,
                         Named("ierr") = ierr);
   }
 
 
-  //' Filter paralogs by subfunctionalization pattern
-  //'
-  //' @param gene_angles Angles for all genes
-  //' @param threshold Filtering threshold
-  //' @param gene_to_fam Gene-to-family mapping
-  //' @param n_families Number of families
-  //' @return List with masks
-  // [[Rcpp::export]]
-  List tox_filter_paralogs_by_pattern_subfunctionalization_rcpp(NumericVector gene_angles,
-                                  double threshold,
-                                  IntegerVector gene_to_fam,
-                                  int n_families) {
+//' Filter paralogs by subfunctionalization pattern
+//'
+//' @param gene_angles Angles for all genes
+//' @param threshold Filtering threshold
+//' @param gene_to_fam Gene-to-family mapping
+//' @param n_families Number of families
+//' @return List with masks
+// [[Rcpp::export]]
+List tox_filter_paralogs_by_pattern_subfunctionalization_rcpp(NumericVector gene_angles,
+                                                              double threshold,
+                                                              IntegerVector gene_to_fam,
+                                                              int n_families) {
     int n_genes = gene_angles.size();
     int n_mask_chunks = (n_genes + 31) / 32;
     IntegerMatrix masks(n_mask_chunks, n_families);
     int ierr = 0;
 
     filter_paralogs_by_pattern_subfunctionalization_c(gene_angles.begin(),
-                              &threshold,
-                              &n_genes,
-                              &n_families,
-                              gene_to_fam.begin(),
-                              masks.begin(),
-                              &n_mask_chunks,
-                              &ierr);
+                                                      &threshold,
+                                                      &n_genes,
+                                                      &n_families,
+                                                      gene_to_fam.begin(),
+                                                      masks.begin(),
+                                                      &n_mask_chunks,
+                                                      &ierr);
 
     return List::create(Named("masks") = masks,
                         Named("ierr") = ierr);
@@ -2210,11 +2651,11 @@ List tox_mask_check_state_rcpp(IntegerVector bit_mask, int i_gene) {
 
     int work_array_size = 0;
     calc_work_arr_paralog_subsets_size(&max_subset_size,
-                       &n_genes,
-                       &work_array_size,
-                       filtered_paralogs_mask.begin(),
-                       &n_mask_chunks,
-                       &ierr);
+                                       &n_genes,
+                                       &work_array_size,
+                                       filtered_paralogs_mask.begin(),
+                                       &n_mask_chunks,
+                                       &ierr);
 
     if (work_array_size < 0) {
       work_array_size = 0;
@@ -2228,22 +2669,22 @@ List tox_mask_check_state_rcpp(IntegerVector bit_mask, int i_gene) {
     int n_results = 0;
 
     detect_subfunctionalization_c(ancestor.begin(),
-                    genes.begin(),
-                    &n_genes,
-                    &n_dims,
-                    &rdi_threshold,
-                    filtered_paralogs_mask.begin(),
-                    &n_mask_chunks,
-                    &n_results,
-                    &max_subset_size,
-                    work_arr_paralog_subsets.begin(),
-                    &n_paralog_subsets,
-                    active_mask.begin(),
-                    temp_paralog_vector.begin(),
-                    paralog_norms.begin(),
-                    sorted_paralog_norms_perm.begin(),
-                    temp_work_array.begin(),
-                    &ierr);
+                                  genes.begin(),
+                                  &n_genes,
+                                  &n_dims,
+                                  &rdi_threshold,
+                                  filtered_paralogs_mask.begin(),
+                                  &n_mask_chunks,
+                                  &n_results,
+                                  &max_subset_size,
+                                  work_arr_paralog_subsets.begin(),
+                                  &n_paralog_subsets,
+                                  active_mask.begin(),
+                                  temp_paralog_vector.begin(),
+                                  paralog_norms.begin(),
+                                  sorted_paralog_norms_perm.begin(),
+                                  temp_work_array.begin(),
+                                  &ierr);
 
     if (n_results < 0) {
       n_results = 0;
@@ -2260,9 +2701,9 @@ List tox_mask_check_state_rcpp(IntegerVector bit_mask, int i_gene) {
     }
 
     return List::create(Named("n_results") = n_results,
-              Named("results") = results,
-              Named("actual_max_subset_size") = max_subset_size,
-              Named("ierr") = ierr);
+                        Named("results") = results,
+                        Named("actual_max_subset_size") = max_subset_size,
+                        Named("ierr") = ierr);
   }
 
   //' Detect dosage effect among paralogs
@@ -2276,11 +2717,11 @@ List tox_mask_check_state_rcpp(IntegerVector bit_mask, int i_gene) {
   //' @return List with n_results, results matrix and actual_max_subset_size
   // [[Rcpp::export]]
   List tox_detect_dosage_effect_rcpp(NumericVector ancestor,
-                     NumericMatrix genes,
-                     IntegerVector filtered_paralogs_mask,
-                     int max_subset_size,
-                     double gain_gamma,
-                     double max_angle) {
+                                     NumericMatrix genes,
+                                     IntegerVector filtered_paralogs_mask,
+                                     int max_subset_size,
+                                     double gain_gamma,
+                                     double max_angle) {
     int n_dims = ancestor.size();
     int n_genes = genes.ncol();
     int n_mask_chunks = filtered_paralogs_mask.size();
@@ -2288,11 +2729,11 @@ List tox_mask_check_state_rcpp(IntegerVector bit_mask, int i_gene) {
 
     int work_array_size = 0;
     calc_work_arr_paralog_subsets_size(&max_subset_size,
-                       &n_genes,
-                       &work_array_size,
-                       filtered_paralogs_mask.begin(),
-                       &n_mask_chunks,
-                       &ierr);
+                                       &n_genes,
+                                       &work_array_size,
+                                       filtered_paralogs_mask.begin(),
+                                       &n_mask_chunks,
+                                       &ierr);
 
     if (work_array_size < 0) {
       work_array_size = 0;
@@ -2305,20 +2746,20 @@ List tox_mask_check_state_rcpp(IntegerVector bit_mask, int i_gene) {
     int n_results = 0;
 
     detect_dosage_effect_c(ancestor.begin(),
-                 genes.begin(),
-                 &n_genes,
-                 &n_dims,
-                 filtered_paralogs_mask.begin(),
-                 &n_mask_chunks,
-                 &n_results,
-                 &max_subset_size,
-                 work_arr_paralog_subsets.begin(),
-                 &n_paralog_subsets,
-                 active_mask.begin(),
-                 temp_paralog_vector.begin(),
-                 &max_angle,
-                 &gain_gamma,
-                 &ierr);
+                           genes.begin(),
+                           &n_genes,
+                           &n_dims,
+                           filtered_paralogs_mask.begin(),
+                           &n_mask_chunks,
+                           &n_results,
+                           &max_subset_size,
+                           work_arr_paralog_subsets.begin(),
+                           &n_paralog_subsets,
+                           active_mask.begin(),
+                           temp_paralog_vector.begin(),
+                           &max_angle,
+                           &gain_gamma,
+                           &ierr);
 
     if (n_results < 0) {
       n_results = 0;
@@ -2335,9 +2776,9 @@ List tox_mask_check_state_rcpp(IntegerVector bit_mask, int i_gene) {
     }
 
     return List::create(Named("n_results") = n_results,
-              Named("results") = results,
-              Named("actual_max_subset_size") = max_subset_size,
-              Named("ierr") = ierr);
+                        Named("results") = results,
+                        Named("actual_max_subset_size") = max_subset_size,
+                        Named("ierr") = ierr);
   }
 
 
@@ -2426,15 +2867,17 @@ List tox_compute_family_scaling_expert_rcpp(int n_families,
 }
 
 
-//' Identify outliers based on RDI percentiles
+//' Compute Residual Distance Index (RDI) for genes and identify outliers
 //'
-//' @param rdi Numeric vector of RDI values
-//' @param percentile Percentile threshold
-//' @return List with logical outlier vector and threshold value
+//'@param distances Numeric vector of gene distances
+//' @param gene_to_fam Integer vector mapping genes to family indices
+//' @param dscale Numeric vector of family scaling factors
+//'@return List with RDI values, sorted RDI, permutation, and stack arrays
 // [[Rcpp::export]]
 List tox_compute_rdi_rcpp(NumericVector distances,
                           IntegerVector gene_to_fam,
                           NumericVector dscale) {
+
     int n_genes = distances.size();
     int n_families = dscale.size();
     NumericVector rdi(n_genes);
@@ -2466,7 +2909,8 @@ List tox_compute_rdi_rcpp(NumericVector distances,
 //' @param percentile Percentile threshold
 //' @return List with logical outlier vector and threshold value
 // [[Rcpp::export]]
-List tox_identify_outliers_rcpp(NumericVector rdi, double percentile) {
+List tox_identify_outliers_rcpp(NumericVector rdi,
+                                double percentile) {
     int n_genes = rdi.size();
     NumericVector sorted_rdi = clone(rdi);
     std::sort(sorted_rdi.begin(), sorted_rdi.end());
@@ -2502,6 +2946,7 @@ List tox_detect_outliers_rcpp(NumericVector distances,
                               IntegerVector gene_to_fam,
                               int n_families,
                               double percentile) {
+
     int n_genes = distances.size();
     NumericVector work_array(n_genes);
     IntegerVector perm(n_genes);
@@ -2546,7 +2991,9 @@ List tox_detect_outliers_rcpp(NumericVector distances,
 //' @param dim_order Integer vector specifying the order of dimensions for splitting
 //' @return List with k-d tree index 
 // [[Rcpp::export]]
-List tox_build_kd_index_rcpp(NumericMatrix X, IntegerVector dim_order) {
+List tox_build_kd_index_rcpp(NumericMatrix X,
+                             IntegerVector dim_order) {
+
     int d = X.nrow();
     int n = X.ncol();
 
@@ -2577,11 +3024,14 @@ List tox_build_kd_index_rcpp(NumericMatrix X, IntegerVector dim_order) {
 //'Identify indices of non-zero elements in a mask vector
 //'
 //' @param mask Integer vector mask (0/1 values)
-//' @param n Length of the mask vector
 //' @param m_max Maximum number of indices to return
 //' @return List with output indices and number of indices found
 // [[Rcpp::export]]
-List tox_which_rcpp(IntegerVector mask, int n, int m_max) {
+List tox_which_rcpp(IntegerVector mask, 
+                    int m_max) {
+
+  int n = mask.size();
+
     IntegerVector idx_out(m_max);
     int m_out = 0;
     int ierr = 0;
@@ -2592,6 +3042,10 @@ List tox_which_rcpp(IntegerVector mask, int n, int m_max) {
             &m_max,
             &m_out,
             &ierr);
+
+    if (m_out > m_max) {
+      m_out = m_max;
+    }
 
     return List::create(Named("idx_out") = idx_out,
                         Named("m_out") = m_out,
@@ -2620,6 +3074,7 @@ List tox_loess_smooth_2d_rcpp(int n_total,
                              NumericVector x_query,
                              double kernel_sigma,
                              double kernel_cutoff) {
+
     NumericVector y_out(n_target);
     int ierr = 0;
 
@@ -2688,7 +3143,9 @@ int tox_serialize_int_array_rcpp(IntegerVector arr, std::string filename) {
 //' @param filename String specifying the output filename for serialization
 //' @return  error code from serialization function
 // [[Rcpp::export]]
-int tox_serialize_real_array_rcpp(NumericVector arr, std::string filename) {
+int tox_serialize_real_array_rcpp(NumericVector arr, 
+                                  std::string filename) {
+
     IntegerVector dim = arr.hasAttribute("dim")
                             ? as<IntegerVector>(arr.attr("dim"))
                             : IntegerVector::create((int)arr.size());
@@ -2718,7 +3175,9 @@ int tox_serialize_real_array_rcpp(NumericVector arr, std::string filename) {
 //' @param filename String specifying the output filename for serialization
 //' @return  error code from serialization function
 // [[Rcpp::export]]
-int tox_serialize_char_array_rcpp(CharacterVector carr, std::string filename) {
+int tox_serialize_char_array_rcpp(CharacterVector carr, 
+                                  std::string filename) {
+
     IntegerVector dim = carr.hasAttribute("dim")
                             ? as<IntegerVector>(carr.attr("dim"))
                             : IntegerVector::create((int)carr.size());
@@ -2773,7 +3232,9 @@ int tox_serialize_char_array_rcpp(CharacterVector carr, std::string filename) {
 //' @param filename String specifying the output filename for serialization
 //' @return  error code from serialization function
 // [[Rcpp::export]]
-int tox_serialize_logical_array_rcpp(LogicalVector arr, std::string filename) {
+int tox_serialize_logical_array_rcpp(LogicalVector arr, 
+                                     std::string filename) {
+
     IntegerVector dim = arr.hasAttribute("dim")
                             ? as<IntegerVector>(arr.attr("dim"))
                             : IntegerVector::create((int)arr.size());
@@ -2815,7 +3276,9 @@ int tox_serialize_logical_array_rcpp(LogicalVector arr, std::string filename) {
 //' @param filename String specifying the output filename for serialization
 //' @return  error code from serialization function
 // [[Rcpp::export]]
-int tox_serialize_complex_array_rcpp(ComplexVector arr, std::string filename) {
+int tox_serialize_complex_array_rcpp(ComplexVector arr, 
+                                     std::string filename) {
+
     IntegerVector dim = arr.hasAttribute("dim")
                             ? as<IntegerVector>(arr.attr("dim"))
                             : IntegerVector::create((int)arr.size());
@@ -2845,7 +3308,9 @@ int tox_serialize_complex_array_rcpp(ComplexVector arr, std::string filename) {
 //' @param max_dims Maximum number of dimensions to read (default 5)
 //' @return List with deserialized values and dimensions
 // [[Rcpp::export]]
-List tox_deserialize_int_array_rcpp(std::string filename, int max_dims = 5) {
+List tox_deserialize_int_array_rcpp(std::string filename, 
+                                    int max_dims = 5) {
+
     int fn_len = 0;
     auto fname = filename_to_ascii(filename, fn_len);
     std::vector<int> dims_out(max_dims);
@@ -2891,7 +3356,9 @@ List tox_deserialize_int_array_rcpp(std::string filename, int max_dims = 5) {
 //' @param max_dims Maximum number of dimensions to read (default 5)
 //' @return List with deserialized values and dimensions
 // [[Rcpp::export]]
-List tox_deserialize_real_array_rcpp(std::string filename, int max_dims = 5) {
+List tox_deserialize_real_array_rcpp(std::string filename, 
+                                     int max_dims = 5) {
+
     int fn_len = 0;
     auto fname = filename_to_ascii(filename, fn_len);
     std::vector<int> dims_out(max_dims);
@@ -2936,7 +3403,9 @@ List tox_deserialize_real_array_rcpp(std::string filename, int max_dims = 5) {
 //' @param max_dims Maximum number of dimensions to read (default 5)
 //' @return List with deserialized values and dimensions
 // [[Rcpp::export]]
-List tox_deserialize_char_array_rcpp(std::string filename, int max_dims = 5) {
+List tox_deserialize_char_array_rcpp(std::string filename, 
+                                     int max_dims = 5) {
+
     int fn_len = 0;
     auto fname = filename_to_ascii(filename, fn_len);
     std::vector<int> dims_out(max_dims);
@@ -3005,7 +3474,9 @@ List tox_deserialize_char_array_rcpp(std::string filename, int max_dims = 5) {
 //' @param max_dims Maximum number of dimensions to read (default 5)
 //' @return List with deserialized values and dimensions
 // [[Rcpp::export]]
-List tox_deserialize_logical_array_rcpp(std::string filename, int max_dims = 5) {
+List tox_deserialize_logical_array_rcpp(std::string filename, 
+                                        int max_dims = 5) {
+
     int fn_len = 0;
     auto fname = filename_to_ascii(filename, fn_len);
     std::vector<int> dims_out(max_dims);
@@ -3057,7 +3528,9 @@ List tox_deserialize_logical_array_rcpp(std::string filename, int max_dims = 5) 
 //' @param max_dims Maximum number of dimensions to read (default 5)
 //' @return List with deserialized values and dimensions
 // [[Rcpp::export]]
-List tox_deserialize_complex_array_rcpp(std::string filename, int max_dims = 5) {
+List tox_deserialize_complex_array_rcpp(std::string filename, 
+                                        int max_dims = 5) {
+
     int fn_len = 0;
     auto fname = filename_to_ascii(filename, fn_len);
     std::vector<int> dims_out(max_dims);
@@ -3096,12 +3569,12 @@ List tox_deserialize_complex_array_rcpp(std::string filename, int max_dims = 5) 
                         Named("ierr") = ierr);
 }
 
-//' Calculate retrieval of array metadata (dimensions, number of dimensions, and optionally character length) from binary files with specified filenames
+//' Get metadata of arrays stored in binary files, including dimensions, number of dimensions
 //'
 //' @param filename String specifying the input filename for metadata retrieval
-//' @param max_dims Maximum number of dimensions to read (default 5)
+//' @param dims_out_capacity Maximum number of dimensions to retrieve (default 5)
 //' @param with_clen Logical indicating whether to include character length in the output (default FALSE)
-//' @return List with dimensions, number of dimensions, and optionally character length
+//' @return List with dimensions, number of dimensions, and optionally character length and error code
 // [[Rcpp::export]]
 List tox_get_array_metadata_rcpp(std::string filename,
                                 int dims_out_capacity = 5,
@@ -3136,9 +3609,10 @@ List tox_get_array_metadata_rcpp(std::string filename,
 //' Build a binary search tree index for a numeric vector, returning sorted indices and auxiliary stacks for traversal
 //'
 //' @param values Numeric vector to index
-//' @return List with sorted indices and traversal stacks
+//' @return Integer vector of sorted indices (1-based Fortran indices preserved) for the BST index
 // [[Rcpp::export]]
-IntegerVector build_bst_index_rcpp(NumericVector values) {
+IntegerVector tox_build_bst_index_rcpp(NumericVector values) {
+
     int num_values = static_cast<int>(values.size());
     IntegerVector sorted_indices(num_values);
     IntegerVector left_stack(num_values);
@@ -3164,10 +3638,11 @@ IntegerVector build_bst_index_rcpp(NumericVector values) {
 //' @param upper_bound Numeric value specifying the upper bound of the range query
 //' @return List with output indices of values within the range and number of matches
 // [[Rcpp::export]]
-List bst_range_query_rcpp(NumericVector values,
+List tox_bst_range_query_rcpp(NumericVector values,
                           IntegerVector sorted_indices,
                           double lower_bound,
                           double upper_bound) {
+
     int num_values = static_cast<int>(values.size());
     IntegerVector output_indices(num_values);
     int num_matches = 0;
@@ -3193,7 +3668,8 @@ List bst_range_query_rcpp(NumericVector values,
 //' @param dim_order Integer vector specifying the order of dimensions for splitting
 //' @return List with spherical k-d tree index 
 // [[Rcpp::export]]
-List tox_build_spherical_kd_rcpp(NumericMatrix V, IntegerVector dim_order) {
+List tox_build_spherical_kd_rcpp(NumericMatrix V, 
+                                 IntegerVector dim_order) {
     int d = V.nrow();
     int n = V.ncol();
 
@@ -3239,6 +3715,7 @@ List tox_read_expression_vectors_tsv_rcpp(RawMatrix file_list_raw,
                                          int n_samples,
                                          int n_header_rows,
                                          int gene_col) {
+
     int file_list_len = file_list_raw.nrow();
     int n_files = file_list_raw.ncol();
     int gene_ids_len = gene_ids_raw.nrow();
@@ -3281,6 +3758,7 @@ List tox_read_gene_ids_from_tsv_file_rcpp(RawVector filename_raw,
                                          int gene_ids_len,
                                          int n_header_rows,
                                          int gene_col) {
+
     RawMatrix gene_ids_raw(gene_ids_len, n_genes);
     std::fill(gene_ids_raw.begin(), gene_ids_raw.end(), static_cast<Rbyte>(0));
 
@@ -3312,6 +3790,7 @@ List tox_read_orthofinder_file_rcpp(RawVector filename_raw,
                                    RawMatrix gene_ids_raw,
                                    int n_families,
                                    int family_ids_len) {
+
     int gene_ids_len = gene_ids_raw.nrow();
     int n_genes = gene_ids_raw.ncol();
 
@@ -3353,6 +3832,7 @@ int tox_validate_data_structure_rcpp(RawMatrix gene_ids_raw,
                                      NumericMatrix expression_vectors,
                                      NumericMatrix family_centroids,
                                      NumericMatrix shift_vectors) {
+
     int n_genes = gene_ids_raw.ncol();
     int gene_ids_len = gene_ids_raw.nrow();
     int n_families = gene_family_ids_raw.ncol();
@@ -3384,7 +3864,8 @@ int tox_validate_data_structure_rcpp(RawMatrix gene_ids_raw,
 // [[Rcpp::export]]
 
 List tox_filter_unassigned_genes_rcpp(RawMatrix gene_ids_raw,
-                                     IntegerVector gene_to_fam) {
+                                      IntegerVector gene_to_fam) {
+
     int gene_ids_len = gene_ids_raw.nrow();
     int n_genes = gene_ids_raw.ncol();
     IntegerVector mask(n_genes);
@@ -3429,6 +3910,7 @@ int tox_validate_gene_to_family_mapping_rcpp(IntegerVector gene_to_fam,
 // [[Rcpp::export]]
 int tox_validate_expression_data_rcpp(NumericMatrix expression_vectors,
                                       bool check_non_negative) {
+
     int n_samples = expression_vectors.nrow();
     int n_genes = expression_vectors.ncol();
     int flag = check_non_negative ? 1 : 0;
@@ -3445,9 +3927,10 @@ int tox_validate_expression_data_rcpp(NumericMatrix expression_vectors,
 //' Calculate validation of family centroids based on family centroid matrix and checks for NaN or infinite values
 //'
 //' @param family_centroids Numeric matrix of family centroids to validate
-//' @return List with error code from validation function
+//' @return  error code from validation function
 // [[Rcpp::export]]
 int tox_validate_family_centroids_rcpp(NumericMatrix family_centroids) {
+
     int n_samples = family_centroids.nrow();
     int n_families = family_centroids.ncol();
     int ierr = 0;
@@ -3465,12 +3948,13 @@ int tox_validate_family_centroids_rcpp(NumericMatrix family_centroids) {
 //' @param expression_vectors Numeric matrix of expression vectors to use for validation
 //' @param family_centroids Numeric matrix of family centroids to use for validation
 //' @param gene_to_fam Integer vector mapping genes to families to use for validation
-//' @return List with error code from validation function
+//' @return  error code from validation function
 // [[Rcpp::export]]
 int tox_validate_shift_vectors_rcpp(NumericMatrix shift_vectors,
-                                     NumericMatrix expression_vectors,
-                                     NumericMatrix family_centroids,
-                                     IntegerVector gene_to_fam) {
+                                    NumericMatrix expression_vectors,
+                                    NumericMatrix family_centroids,
+                                    IntegerVector gene_to_fam) {
+
     int n_samples = expression_vectors.nrow();
     int n_genes = expression_vectors.ncol();
     int n_families = family_centroids.ncol();
@@ -3491,9 +3975,10 @@ int tox_validate_shift_vectors_rcpp(NumericMatrix shift_vectors,
 //' Calculate validation of string array uniqueness based on raw matrix of strings, checking for duplicates
 //'
 //' @param string_arr_raw Raw matrix of strings to validate for uniqueness
-//' @return List with error code from validation function
+//' @return  error code from validation function
 // [[Rcpp::export]]
 int tox_validate_string_array_uniqueness_rcpp(RawMatrix string_arr_raw) {
+
     int str_len = string_arr_raw.nrow();
     int n_strings = string_arr_raw.ncol();
     int ierr = 0;
@@ -3514,7 +3999,7 @@ int tox_validate_string_array_uniqueness_rcpp(RawMatrix string_arr_raw) {
 //' @param expression_vectors Numeric matrix of expression vectors to validate
 //' @param family_centroids Numeric matrix of family centroids to validate
 //' @param shift_vectors Numeric matrix of shift vectors to validate
-//' @return List with error code from validation function
+//' @return  error code from validation function
 // [[Rcpp::export]]
 int tox_validate_all_data_rcpp(RawMatrix gene_ids_raw,
                                RawMatrix gene_family_ids_raw,
@@ -3522,6 +4007,7 @@ int tox_validate_all_data_rcpp(RawMatrix gene_ids_raw,
                                NumericMatrix expression_vectors,
                                NumericMatrix family_centroids,
                                NumericMatrix shift_vectors) {
+
     int n_genes = gene_ids_raw.ncol();
     int gene_len = gene_ids_raw.nrow();
     int n_families = gene_family_ids_raw.ncol();
@@ -3623,13 +4109,13 @@ List tox_omics_field_RAP_projection_rcpp(NumericMatrix vecs,
 //'
 //' @param factor Numeric vector of factor values
 //' @param dependent Numeric vector of dependent variable values
-//' @param n_dims Integer specifying the number of dimensions (length of factor and dependent vectors)
 //' @param mode Integer specifying the mode of contribution calculation (e.g., 0 for raw, 1 for min, 2 for mean)
 //' @return List with local contributions for each dimension, total contribution, and error code from contribution calculation function
 // [[Rcpp::export]]
 List tox_compute_contributions_rcpp(NumericVector factor,
                                     NumericVector dependent,
                                     std::string mode) {
+
   int n_dims = factor.size();
   NumericVector local_contributions(n_dims);
   double total_contribution = 0.0;
@@ -3663,7 +4149,7 @@ List tox_compute_contributions_rcpp(NumericVector factor,
 //' @param dependent_indices Integer vector specifying the indices of the dependent variables to include in the contribution calculations
 //' @param n_selected_dependents Integer specifying the number of selected dependent variables to include in the contribution calculations
 //' @param mode String specifying the mode of contribution calculation (e.g., "raw", "min", "mean")
-//' @return List with local contributions for each factor-dependent pair across samples and
+//' @return List with local contributions for each factor-dependent pair across samples and timepoints and  total contributions for each factor-dependent pair across samples
 // [[Rcpp::export]]
 List tox_compute_all_contributions_rcpp(NumericVector trajectories,
                                         int n_factors,
@@ -3674,6 +4160,7 @@ List tox_compute_all_contributions_rcpp(NumericVector trajectories,
                                         IntegerVector dependent_indices,
                                         int n_selected_dependents,
                                         std::string mode) {
+
   // Dimensions for output arrays
   int n_tp = n_timepoints;
   // local_contributions: (n_selected_factors x n_selected_dependents x n_samples x n_timepoints)
@@ -3690,28 +4177,27 @@ List tox_compute_all_contributions_rcpp(NumericVector trajectories,
   size_t len = std::min(mode.size(), size_t(8));
   std::memcpy(mode_c, mode.c_str(), len);
 
-  compute_all_contributions_c(
-    trajectories.begin(),
-    &n_factors,
-    &n_samples,
-    &n_timepoints,
-    factor_indices.begin(),
-    &n_selected_factors,
-    dependent_indices.begin(),
-    &n_selected_dependents,
-    mode_c,
-    local_contributions.begin(),
-    total_contributions.begin(),
-    temp_factors.begin(),
-    temp_dependent.begin(),
-    &ierr
-  );
+  compute_all_contributions_c(trajectories.begin(),
+                              &n_factors,
+                              &n_samples,
+                              &n_timepoints,
+                              factor_indices.begin(),
+                              &n_selected_factors,
+                              dependent_indices.begin(),
+                              &n_selected_dependents,
+                              mode_c,
+                              local_contributions.begin(),
+                              total_contributions.begin(),
+                              temp_factors.begin(),
+                              temp_dependent.begin(),
+                              &ierr);
 
   return List::create(Named("local_contributions") = local_contributions,
                       Named("total_contributions") = total_contributions,
                       Named("ierr") = ierr);
 }
 //' Compute permutation test contributions of factors to dependent variables based on specified mode.
+//'
 //' @param trajectories Numeric vector containing factor and dependent variable trajectories (dimensions: n_factors x n_samples x n_timepoints)
 //' @param n_factors Integer specifying the number of factors in the trajectories
 //' @param n_samples Integer specifying the number of samples in the trajectories
@@ -3723,7 +4209,6 @@ List tox_compute_all_contributions_rcpp(NumericVector trajectories,
 //' @param n_permutations Integer specifying the number of permutations to perform
 //' @param random_seed Integer seed for random number generation in permutation test
 //' @return List with local contributions for each timepoint across permutations, total contributions across permutations, and error code from permutation test function
-
 // [[Rcpp::export]]
 List tox_perform_permutation_test_rcpp(NumericVector trajectories,
                                        int n_factors,
@@ -3747,10 +4232,21 @@ List tox_perform_permutation_test_rcpp(NumericVector trajectories,
   NumericVector temp_dependent(n_timepoints);
   int ierr = 0;
 
-  perform_permutation_test_c(trajectories.begin(), &n_factors, &n_samples, &n_timepoints,
-    &factor_idx, &dependent_idx, &sample_idx, mode_c, &n_permutations,
-    local_contributions.begin(), total_contributions.begin(),
-    temp_factor.begin(), temp_dependent.begin(), &ierr, &random_seed);
+  perform_permutation_test_c(trajectories.begin(),
+                             &n_factors,
+                             &n_samples,
+                             &n_timepoints,
+                             &factor_idx,
+                             &dependent_idx,
+                             &sample_idx,
+                             mode_c,
+                             &n_permutations,
+                             local_contributions.begin(),
+                             total_contributions.begin(),
+                             temp_factor.begin(),
+                             temp_dependent.begin(),
+                             &ierr,
+                             &random_seed);
 
   return List::create(Named("local_contributions") = local_contributions,
                       Named("total_contributions") = total_contributions,
@@ -3759,6 +4255,7 @@ List tox_perform_permutation_test_rcpp(NumericVector trajectories,
 
 
 //' compute p-values for observed contributions against permutation distributions, with optimized C implementation
+//'
 //' @param local_contributions_observed Numeric vector of local contributions observed for each timepoint
 //' @param total_contribution_observed Numeric value of total contribution observed across timepoints
 //' @param local_contributions_perm Numeric matrix of local contributions from permutations (dimensions: n_timepoints x n_permutations)
@@ -3766,7 +4263,6 @@ List tox_perform_permutation_test_rcpp(NumericVector trajectories,
 //' @param n_timepoints Integer specifying the number of timepoints for local contributions
 //' @param n_permutations Integer specifying the number of permutations for the null distribution
 //' @return List with local p-values for each timepoint, total p-value, and error
-
 // [[Rcpp::export]]
 List tox_compute_p_values_rcpp(NumericVector local_contributions_observed,
                               double total_contribution_observed,
@@ -3774,35 +4270,75 @@ List tox_compute_p_values_rcpp(NumericVector local_contributions_observed,
                               NumericVector total_contributions_perm,
                               int n_timepoints,
                               int n_permutations) {
+
   NumericVector local_p_values(n_timepoints);
   double total_p_value = 0.0;
   int ierr = 0;
 
-  compute_p_values_c(local_contributions_observed.begin(), &total_contribution_observed,
-    local_contributions_perm.begin(), total_contributions_perm.begin(),
-    &n_timepoints, &n_permutations, local_p_values.begin(), &total_p_value, &ierr);
+  compute_p_values_c(local_contributions_observed.begin(),
+                     &total_contribution_observed,
+                     local_contributions_perm.begin(),
+                     total_contributions_perm.begin(),
+                     &n_timepoints,
+                     &n_permutations,
+                     local_p_values.begin(),
+                     &total_p_value,
+                     &ierr);
 
   return List::create(Named("local_p_values") = local_p_values,
                       Named("total_p_value") = total_p_value,
                       Named("ierr") = ierr);
 }
 
-//' Compute empirical distribution function (EDF) for a numeric vector of values, returning unique values, CDF values, number of unique values, and error code from EDF computation function
+//' Compute empirical distribution function (EDF) for a numeric vector of values
+//'
 //' @param values Numeric vector of values to compute EDF for
 //' @return List with unique values, CDF values, number of unique values, and error code from EDF computation function
-
 // [[Rcpp::export]]
-List tox_compute_edf_rcpp(NumericVector values, IntegerVector perm) {
+List tox_compute_edf_rcpp(NumericVector values) {
+
   int n_values = values.size();
   NumericVector unique_values(n_values);
   NumericVector cdf_values(n_values);
   int n_unique = 0;
   int ierr = 0;
-  compute_edf_c(values.begin(), &n_values, unique_values.begin(), cdf_values.begin(), &n_unique, &ierr);
-  return List::create(
-    Named("unique_values") = unique_values,
-    Named("cdf_values") = cdf_values,
-    Named("n_unique") = n_unique,
-    Named("ierr") = ierr
-  );
+  compute_edf_c(values.begin(),
+                &n_values,
+                unique_values.begin(),
+                cdf_values.begin(),
+                &n_unique,
+                &ierr);
+
+     return List::create(Named("unique_values") = unique_values,
+                         Named("cdf_values") = cdf_values,
+                         Named("n_unique") = n_unique,
+                         Named("ierr") = ierr);
+}
+
+//' Compute empirical distribution function (EDF) with a pre-sorted permutation
+//'
+//' @param values Numeric vector of values to compute EDF for
+//' @param perm Integer vector of permutation indices sorted by values[perm]
+//' @return List with unique values, CDF values, number of unique values, and error code from EDF expert computation
+// [[Rcpp::export]]
+List tox_compute_edf_expert_rcpp(NumericVector values,
+                                 IntegerVector perm) {
+
+  int n_values = values.size();
+  NumericVector unique_values(n_values);
+  NumericVector cdf_values(n_values);
+  int n_unique = 0;
+  int ierr = 0;
+  compute_edf_expert_c(values.begin(),
+                       &n_values,
+                       perm.begin(),
+                       unique_values.begin(),
+                       cdf_values.begin(),
+                       &n_unique,
+                       &ierr);
+ 
+     return List::create(Named("unique_values") = unique_values,
+                         Named("cdf_values") = cdf_values,
+                         Named("n_unique") = n_unique,
+                         Named("ierr") = ierr);
 }

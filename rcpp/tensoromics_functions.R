@@ -415,6 +415,20 @@ tox_log2_transformation <- function(input_matrix) {
   return(matrix(result$output_vector, nrow = n_genes, ncol = n_tissues, dimnames = dimnames(input_matrix)))
 }
 
+#> tox_normalization:normalize_unit_length_c: Normalize a vector to unit length
+#' Normalize a numeric vector to unit length
+#'
+#' @param vector Numeric vector
+#' @return Numeric vector with unit norm
+tox_normalize_unit_length <- function(vector) {
+  validate_numeric_vector(vector)
+  validate_nonempty(vector)
+
+  result <- tox_normalize_unit_length_rcpp(as.numeric(vector))
+  check_err_code(result$ierr)
+  return(result$vector)
+}
+
 #> tox_normalization:calc_tiss_avg_c: Calculate average expression across replicates for each tissue group
 #' Calculate average expression across replicates for each tissue group
 #'
@@ -523,6 +537,74 @@ tox_normalization_pipeline <- function(input_matrix, group_s, group_c) {
   
 
   return(matrix(result$buf_log, nrow = nrow(input_matrix), ncol = length(group_s)))
+}
+
+#> tox_trajectory_normalization:normalize_variable_timeseries_C: Normalize a single variable across time using min-max scaling.
+#' Normalize a single variable across time using min-max scaling
+#'
+#' @param v Numeric vector time series (length = n_points)
+#' @return A list with normalized vector and status code
+tox_normalize_variable_timeseries <- function(v) {
+  validate_numeric_vector(v)
+  validate_nonempty(v)
+
+  result <- tox_normalize_variable_timeseries_rcpp(as.numeric(v))
+  check_err_code(result$ierr)
+
+  return(list(
+    v_norm = result$v_norm,
+    status = result$status
+  ))
+}
+
+#> tox_trajectory_normalization:normalize_single_trajectory_C: Normalize all factors in a single trajectory independently across time.
+#' Normalize all factors in a single trajectory independently across time
+#'
+#' @param trajectory Numeric matrix (n_timepoints x n_factors)
+#' @return A list with normalized trajectory and status code
+tox_normalize_single_trajectory <- function(trajectory) {
+  validate_numeric_matrix(trajectory)
+
+  result <- tox_normalize_single_trajectory_rcpp(trajectory)
+  check_err_code(result$ierr)
+
+  return(list(
+    traj_norm = matrix(result$traj_norm,
+      nrow = nrow(trajectory),
+      ncol = ncol(trajectory),
+      dimnames = dimnames(trajectory)
+    ),
+    status = result$status
+  ))
+}
+
+#> tox_trajectory_normalization:normalize_all_trajectories_C: Normalize all trajectories across multiple entities.
+#' Normalize all trajectories across multiple entities
+#'
+#' @param trajectories 3D numeric array (n_factors x n_samples x n_timepoints)
+#' @return A list with normalized trajectories and status code
+tox_normalize_all_trajectories <- function(trajectories) {
+  validate_numeric_array(trajectories)
+
+  dims <- dim(trajectories)
+  if (length(dims) != 3) stop("trajectories must be a 3D array (n_factors x n_samples x n_timepoints)")
+
+  n_factors <- as.integer(dims[1])
+  n_samples <- as.integer(dims[2])
+  n_timepoints <- as.integer(dims[3])
+
+  result <- tox_normalize_all_trajectories_rcpp(
+    as.numeric(trajectories),
+    n_factors,
+    n_samples,
+    n_timepoints
+  )
+  check_err_code(result$ierr)
+
+  return(list(
+    traj_norm = array(result$traj_norm, dim = dims, dimnames = dimnames(trajectories)),
+    status = result$status
+  ))
 }
 
 ##################################################
@@ -1404,7 +1486,7 @@ tox_pool_means_expert <- function(pooled_means, pooled_perm, n_points) {
   validate_same_length(pooled_means, pooled_perm)
   
   # Call the Rcpp function
-  result <- tox_pool_means_rcpp(mean_S1, mean_S2, n_points)
+  result <- tox_pool_means_expert_rcpp(pooled_means, as.integer(pooled_perm), n_points)
 
   check_err_code(result$ierr)
   
@@ -2167,7 +2249,7 @@ build_bst_index <- function(x) {
   x <- as.numeric(x)
 
   # Call Rcpp wrapper (returns IntegerVector of indices)
-  result <- build_bst_index_rcpp(x)
+  result <- tox_build_bst_index_rcpp(x)
 
   # Return index vector
   return(result)
@@ -2208,7 +2290,7 @@ bst_range_query <- function(x, ix, lo, hi) {
   hi <- as.numeric(hi)
 
   # Call Rcpp wrapper
-  result <- bst_range_query_rcpp(x, ix, lo, hi)
+  result <- tox_bst_range_query_rcpp(x, ix, lo, hi)
 
   # Check for errors
   check_err_code(result$ierr)
@@ -2435,6 +2517,31 @@ tox_k_means_clustering <- function(n_clusters, data_points, n_points, n_dims, ce
   res <- tox_k_means_clustering_rcpp(n_clusters, data_points, n_points, n_dims, centroids, max_iterations)
   check_err_code(res$ierr)
   return(res)
+}
+
+#> tox_clustering:linkage_clustering_c: Hierarchical linkage clustering
+#' Perform hierarchical linkage clustering
+#'
+#' @param distances Numeric square distance matrix (n_points x n_points)
+#' @param method Linkage method: "average", "weighted", or "ward"
+#' @return List with merge_i, merge_j, heights, and cluster_sizes
+tox_linkage_clustering <- function(distances, method = "average") {
+  validate_numeric_matrix(distances, "distances")
+  if (nrow(distances) != ncol(distances)) stop("distances must be square")
+  method <- as.character(method)
+  if (!(method %in% c("average", "weighted", "ward"))) {
+    stop("method must be one of: average, weighted, ward")
+  }
+
+  result <- tox_linkage_clustering_rcpp(distances, method)
+  check_err_code(result$ierr)
+
+  return(list(
+    merge_i = result$merge_i,
+    merge_j = result$merge_j,
+    heights = result$heights,
+    cluster_sizes = result$cluster_sizes
+  ))
 }
 
 # ============================================================
@@ -2697,19 +2804,35 @@ tox_loess_smooth_2d <- function(x_ref,y_ref,x_query,indices_used = NULL,kernel_s
 #> f42_utils:compute_edf_c: Compute Empirical Distribution Function (EDF)
 #' Compute Empirical Distribution Function (EDF)
 #' @param values Numeric vector of observed values
-#' @param perm Integer vector of permutation indices (sorted by values[perm])
+#' @param perm Optional integer vector of permutation indices (sorted by values[perm])
 #' @return List with unique_values, cdf_values, n_unique, ierr
-tox_compute_edf <- function(values, perm) {
+tox_compute_edf <- function(values, perm = NULL) {
   # Input validation
   validate_numeric_vector(values)
-  validate_integer_vector(perm)
-
-   # Call Rcpp wrapper
-  result <- tox_compute_edf_rcpp(values, perm)
+  if (is.null(perm)) {
+    result <- tox_compute_edf_rcpp(values)
+  } else {
+    validate_integer_vector(perm)
+    result <- tox_compute_edf_expert_rcpp(values, perm)
+  }
 
   # Error handling
   check_err_code(result$ierr)
   # Return structured result
+  return(result)
+}
+
+#> f42_utils:compute_edf_expert_c: Expert EDF with pre-sorted permutation
+#' Compute Empirical Distribution Function (EDF) using expert permutation input
+#' @param values Numeric vector of observed values
+#' @param perm Integer vector of permutation indices (sorted by values[perm])
+#' @return List with unique_values, cdf_values, n_unique, ierr
+tox_compute_edf_expert <- function(values, perm) {
+  validate_numeric_vector(values)
+  validate_integer_vector(perm)
+
+  result <- tox_compute_edf_expert_rcpp(values, perm)
+  check_err_code(result$ierr)
   return(result)
 }
 
@@ -2731,6 +2854,11 @@ tox_which <- function(mask, m_max = length(mask)) {
   # Error handling
   check_err_code(result$ierr)
 
-    # Return indices of TRUE/non-zero elements
-  result$idx_out[seq_len(result$m_out)]
+  # Return indices of TRUE/non-zero elements (capped by m_max)
+  m_out <- as.integer(result$m_out)
+  n_take <- min(m_out, as.integer(m_max), length(result$idx_out))
+  if (n_take <= 0L) {
+    return(integer(0))
+  }
+  result$idx_out[seq_len(n_take)]
 }
