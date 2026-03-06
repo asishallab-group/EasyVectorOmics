@@ -58,6 +58,13 @@ validate_numeric_vector <- function(x, name = deparse(substitute(x))) {
   invisible(TRUE)
 }
 
+validate_numeric_scalar <- function(x, name = deparse(substitute(x))) {
+  if (!is.numeric(x) || length(x) != 1 || is.na(x) || !is.finite(x)) {
+    stop(sprintf("%s must be a finite numeric scalar", name))
+  }
+  invisible(TRUE)
+}
+
 validate_nonempty <- function(x, name = deparse(substitute(x))) {
   if (length(x) == 0) stop(sprintf("%s cannot be empty", name))
   invisible(TRUE)

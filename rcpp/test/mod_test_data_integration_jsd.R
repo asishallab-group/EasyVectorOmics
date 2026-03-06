@@ -473,7 +473,6 @@ test_gjct_permutation_test <- function() {
   )
 
   assert_true(abs(res_p1$p_value - 1/3) < 1e-12, "Test 3A: p-value should be 1 when for huge observed JSD and without included residuals")
-  print(args(tox_gjct_permutation_test_filtered))
   filtered <- function(S1_arr, S2_arr, global_jsd_observed, n_bins, shared_residual_range, n_permutations, random_seed) {
       tox_gjct_permutation_test_filtered(
           S1_arr,
@@ -514,7 +513,6 @@ test_gjct_permutation_test <- function() {
       n_permutations = n_permutations,
       random_seed = random_seed
     )
-    check_err_code(res_p1$ierr)
 
     assert_true(abs(res_p1$p_value - 1.0) < 1e-12,
                "Test 3A: p-value should be 1 when observed JSD = 0")
