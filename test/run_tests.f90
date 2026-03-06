@@ -24,10 +24,9 @@ program main
   use mod_test_arrays
   use mod_test_tox_paralog_analysis
   use mod_test_tox_traj_contrib_analysis
-  use mod_test_tox_trajectory_normalization
   use mod_test_normalization_unit_length
   use mod_test_tox_clustering
-  use mod_test_tox_data_integration
+  use mod_test_data_integration
 
   implicit none
 
@@ -112,7 +111,6 @@ contains
     call add_suite("tox_conversions", run_all_tests_tox_conversions, run_named_tests_tox_conversions)
     call add_suite("tox_paralog_analysis", run_all_tests_tox_paralog_analysis, run_named_tests_tox_paralog_analysis)
     call add_suite("tox_trajectory_contribution_analysis", run_all_tests_tox_trajectory_contribution_analysis, run_named_tests_tox_trajectory_contribution_analysis)
-    call add_suite("tox_trajectory_normalization", run_all_tests_tox_trajectory_normalization, run_named_tests_tox_trajectory_normalization)
     call add_suite("normalization_unit_length", run_all_tests_normalization_unit_length, run_named_tests_normalization_unit_length)
     call add_suite("tox_clustering", run_all_tests_tox_clustering, run_named_tests_tox_clustering)
     call add_suite("tox_data_integration", run_all_tests_tox_data_integration, run_named_tests_tox_data_integration)
@@ -229,4 +227,3 @@ contains
   end subroutine print_usage
 
 end program main
-
