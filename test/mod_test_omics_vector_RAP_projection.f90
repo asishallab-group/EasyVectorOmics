@@ -1,3 +1,5 @@
+! filepath: test/mod_test_omics_vector_RAP_projection.f90
+!> Unit test suite for omics_vector_RAP_projection routine.
 module mod_test_rap_tools_omics_vector_RAP_projection
    use asserts
    use tox_relative_axis_plane_tools
@@ -17,13 +19,13 @@ module mod_test_rap_tools_omics_vector_RAP_projection
       procedure(test_interface), pointer, nopass :: test_proc => null()
    end type test_case
 
-   integer, parameter :: TEST_COUNT = 9
+   
 
 contains
 
    !> Get array of all available tests.
    function get_all_tests() result(all_tests)
-      type(test_case) :: all_tests(TEST_COUNT)
+      type(test_case) :: all_tests(9)
 
       all_tests(1) = test_case("test_omics_vector_RAP_projection_all_selected", test_all_selected)
       all_tests(2) = test_case("test_omics_vector_RAP_projection_one_axis_selected", test_one_axis_selected)
@@ -35,6 +37,57 @@ contains
       all_tests(8) = test_case("test_omics_vector_RAP_projection_mixed_selection", test_mixed_selection)
       all_tests(9) = test_case("test_omics_vector_RAP_projection_non_square_vecs", test_non_square_vecs)
    end function get_all_tests
+
+   !> Run all omics_vector_RAP_projection test.
+   subroutine run_all_tests()
+      type(test_case) :: all_tests(9)
+      integer :: i
+
+      all_tests = get_all_tests()
+
+      do i = 1, size(all_tests)
+         call all_tests(i)%test_proc()
+         print *, trim(all_tests(i)%name), " passed."
+      end do
+      print *, "All rap_tools_omics_vector_RAP_projection tests passed successfully."
+   end subroutine run_all_tests
+
+   !> Run specific omics_vector_RAP_projection tests by name.
+   subroutine run_named_tests(test_names)
+      character(len=*), intent(in) :: test_names(:)
+      type(test_case) :: all_tests(9)
+      integer :: i, j
+      logical :: found
+
+      all_tests = get_all_tests()
+
+      do i = 1, size(test_names)
+         found = .false.
+         do j = 1, size(all_tests)
+            if (trim(test_names(i)) == trim(all_tests(j)%name)) then
+               call all_tests(j)%test_proc()
+               print *, trim(test_names(i)), " passed."
+               found = .true.
+               exit
+            end if
+         end do
+         if (.not. found) then
+            print *, "Unknown test: ", trim(test_names(i))
+         end if
+      end do
+   end subroutine run_named_tests
+
+   !> Run all tests using suite-specific API name.
+   subroutine run_all_tests_rap_tools_omics_vector_RAP_projection()
+      call run_all_tests()
+   end subroutine run_all_tests_rap_tools_omics_vector_RAP_projection
+
+   !> Run named tests using suite-specific API name.
+   subroutine run_named_tests_rap_tools_omics_vector_RAP_projection(test_names)
+      character(len=*), intent(in) :: test_names(:)
+
+      call run_named_tests(test_names)
+   end subroutine run_named_tests_rap_tools_omics_vector_RAP_projection
 
    !> Wrapper function for the actual call of `call_omics_vector_RAP_projection`
    subroutine call_omics_vector_RAP_projection(test_name, vecs, axes_mask, vecs_mask, result_projections)
@@ -285,46 +338,5 @@ contains
       call omics_vector_RAP_projection(vecs, 4, 2, vecs_mask, n_selected_vecs, axes_mask, n_selected_axes, projections, ierr)
       call assert_equal_int(ierr, 0, "ierr should be 0 for valid input: non-square vecs")
    end subroutine test_non_square_vecs
-
-
-
-
-   !> Run all omics_vector_RAP_projection test.
-   subroutine run_all_tests()
-      type(test_case) :: all_tests(TEST_COUNT)
-      integer :: i
-
-      all_tests = get_all_tests()
-
-      do i = 1, size(all_tests)
-         call all_tests(i)%test_proc()
-         print *, trim(all_tests(i)%name), " passed."
-      end do
-      print *, "All rap_tools_omics_vector_RAP_projection tests passed successfully."
-   end subroutine run_all_tests
-
-   !> Run specific omics_vector_RAP_projection tests by name.
-   subroutine run_named_tests(test_names)
-      character(len=*), intent(in) :: test_names(:)
-      type(test_case) :: all_tests(TEST_COUNT)
-      integer :: i, j
-      logical :: found
-
-      all_tests = get_all_tests()
-
-      do i = 1, size(test_names)
-         found = .false.
-         do j = 1, size(all_tests)
-            if (trim(test_names(i)) == trim(all_tests(j)%name)) then
-               call all_tests(j)%test_proc()
-               print *, trim(test_names(i)), " passed."
-               found = .true.
-               exit
-            end if
-         end do
-         if (.not. found) then
-            print *, "Unknown test: ", trim(test_names(i))
-         end if
-      end do
-   end subroutine run_named_tests
+   
 end module mod_test_rap_tools_omics_vector_RAP_projection

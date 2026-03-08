@@ -1,3 +1,4 @@
+! filepath: test/mod_test_tox_data.f90
 !> Unit test suite for expression readers and data processing routines.
 module mod_test_tox_data
   use asserts
@@ -67,6 +68,49 @@ contains
     all_tests(22) = test_case("test_validate_dimension_mismatch", test_validate_dimension_mismatch)
     all_tests(23) = test_case("test_manual_archive", test_manual_archive)
   end function get_all_tests
+
+   !> Run all expression reader tests.
+  subroutine run_all_tests_tox_data()
+    type(test_case) :: all_tests(23)  ! Updated
+    integer(int32):: i
+    
+    ! Setup global data first
+    call setup_global_data()
+    
+    all_tests = get_all_tests()
+    do i = 1, size(all_tests)
+      call all_tests(i)%test_proc()
+      print *, trim(all_tests(i)%name), " passed."
+    end do
+    print *, "All tox data tests passed successfully."
+  end subroutine run_all_tests_tox_data
+
+  !> Run specific expression reader tests by name.
+  subroutine run_named_tests_tox_data(test_names)
+    character(len=*), intent(in) :: test_names(:)
+    type(test_case) :: all_tests(23)  ! Updated
+    integer(int32):: i, j
+    logical :: found
+    
+    ! Setup global data first
+    call setup_global_data()
+    
+    all_tests = get_all_tests()
+    do i = 1, size(test_names)
+      found = .false.
+      do j = 1, size(all_tests)
+        if (trim(test_names(i)) == trim(all_tests(j)%name)) then
+          call all_tests(j)%test_proc()
+          print *, trim(test_names(i)), " passed."
+          found = .true.
+          exit
+        end if
+      end do
+      if (.not. found) then
+        print *, "Unknown test: ", trim(test_names(i))
+      end if
+    end do
+  end subroutine run_named_tests_tox_data
 
   !> Setup global test data
   subroutine setup_global_data()
@@ -154,48 +198,7 @@ contains
     deallocate(ortholog_mask, selected_indices)
   end subroutine setup_global_data
 
-  !> Run all expression reader tests.
-  subroutine run_all_tests_tox_data()
-    type(test_case) :: all_tests(23)  ! Updated
-    integer(int32) :: i
-    
-    ! Setup global data first
-    call setup_global_data()
-    
-    all_tests = get_all_tests()
-    do i = 1, size(all_tests)
-      call all_tests(i)%test_proc()
-      print *, trim(all_tests(i)%name), " passed."
-    end do
-    print *, "All tox data tests passed successfully."
-  end subroutine run_all_tests_tox_data
-
-  !> Run specific expression reader tests by name.
-  subroutine run_named_tests_tox_data(test_names)
-    character(len=*), intent(in) :: test_names(:)
-    type(test_case) :: all_tests(23)  ! Updated
-    integer(int32) :: i, j
-    logical :: found
-    
-    ! Setup global data first
-    call setup_global_data()
-    
-    all_tests = get_all_tests()
-    do i = 1, size(test_names)
-      found = .false.
-      do j = 1, size(all_tests)
-        if (trim(test_names(i)) == trim(all_tests(j)%name)) then
-          call all_tests(j)%test_proc()
-          print *, trim(test_names(i)), " passed."
-          found = .true.
-          exit
-        end if
-      end do
-      if (.not. found) then
-        print *, "Unknown test: ", trim(test_names(i))
-      end if
-    end do
-  end subroutine run_named_tests_tox_data
+ 
 
   !> Test reading gene IDs
   subroutine test_read_gene_ids()

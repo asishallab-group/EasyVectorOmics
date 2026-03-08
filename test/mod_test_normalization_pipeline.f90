@@ -1,3 +1,4 @@
+! filepath: test/mod_test_normalization_pipeline.f90
 !> Unit test suite for normalization_pipeline routine.
 module mod_test_normalization_pipeline
   use asserts
@@ -6,11 +7,13 @@ module mod_test_normalization_pipeline
   implicit none
   public
 
+  ! Abstract interface for all test procedures
   abstract interface
     subroutine test_interface()
     end subroutine test_interface
   end interface
 
+  ! Type to hold test name and procedure pointer
   type :: test_case
     character(len=64) :: name
     procedure(test_interface), pointer, nopass :: test_proc => null()
@@ -18,7 +21,7 @@ module mod_test_normalization_pipeline
 
 contains
 
-
+  !> Get array of all available tests.
   function get_all_tests() result(all_tests)
     type(test_case) :: all_tests(4)
     all_tests(1) = test_case("test_pipeline_basic", test_pipeline_basic)
@@ -26,7 +29,8 @@ contains
     all_tests(3) = test_case("test_pipeline_vs_manual", test_pipeline_vs_manual)
     all_tests(4) = test_case("test_pipeline_empty_matrix", test_pipeline_empty_matrix)
   end function get_all_tests
-
+ 
+  !> Run all normalization_pipeline tests.
   subroutine run_all_tests_normalization_pipeline()
     type(test_case) :: all_tests(4)
     integer(int32) :: i

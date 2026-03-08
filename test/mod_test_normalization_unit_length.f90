@@ -1,3 +1,4 @@
+! filepath: test/mod_test_normalization_unit_length.f90
 !> Unit test suite for normalization_unit_length routine.
 module mod_test_normalization_unit_length
     use asserts
@@ -30,6 +31,47 @@ contains
         all_tests(1) = test_case("test_normalization_unit_length", test_normalize_unit_length)
     end function get_all_tests
 
+    !> Run all normalization_unit_length tests.
+    subroutine run_all_tests_normalization_unit_length
+       type(test_case) :: all_tests(1)
+        integer :: i
+
+        all_tests = get_all_tests()
+
+        do i = 1, size(all_tests)
+            call all_tests(i)%test_proc()
+            print *, trim(all_tests(i)%name), " passed."
+        end do
+        print *, "All normalization_unit_length tests passed successfully."
+    end subroutine run_all_tests_normalization_unit_length
+
+    !> Run specific normalization_unit_length tests by name.
+    subroutine run_named_tests_normalization_unit_length(test_names)
+        character(len=*), intent(in) :: test_names(:)
+         type(test_case) :: all_tests(1)
+         integer :: i, j
+
+        logical :: found
+
+        all_tests = get_all_tests()
+
+        do i = 1, size(test_names)
+            found = .false.
+            do j = 1, size(all_tests)
+                if (trim(test_names(i)) == trim(all_tests(j)%name)) then
+                    call all_tests(j)%test_proc()
+                    print *, trim(test_names(i)), " passed."
+                    found = .true.
+                    exit
+                end if
+            end do
+            if (.not. found) then
+                print *, "Unknown test: ", trim(test_names(i))
+            end if
+        end do
+    end subroutine run_named_tests_normalization_unit_length
+
+    !> Test the normalize_unit_length function with various cases.
     subroutine test_normalize_unit_length()
         integer(int32) :: ierr
         integer(int32), parameter :: n_dims = 3
@@ -83,42 +125,5 @@ contains
         call assert_equal_int(ierr, ERR_NAN_INF, "test_normalize_unit_length: vector with Infinity should trigger ERR_NAN_INF")
     end subroutine test_normalize_unit_length
 
-    !> Run all normalization_unit_length tests.
-    subroutine run_all_tests_normalization_unit_length
-        type(test_case), allocatable :: all_tests(:)
-        integer(int32) :: i
-
-        all_tests = get_all_tests()
-
-        do i = 1, size(all_tests)
-            call all_tests(i)%test_proc()
-            print "(' ',A,' passed.')", trim(all_tests(i)%name)
-        end do
-        print *, "All normalization_unit_length tests passed successfully."
-    end subroutine run_all_tests_normalization_unit_length
-
-    !> Run specific normalization_unit_length tests by name.
-    subroutine run_named_tests_normalization_unit_length(test_names)
-        character(len=*), intent(in) :: test_names(:)
-        type(test_case), allocatable :: all_tests(:)
-        integer(int32) :: i, j
-        logical :: found
-
-        all_tests = get_all_tests()
-
-        do i = 1, size(test_names)
-            found = .false.
-            do j = 1, size(all_tests)
-                if (trim(test_names(i)) == trim(all_tests(j)%name)) then
-                    call all_tests(j)%test_proc()
-                    print "(' ',A,' passed.')", trim(test_names(i))
-                    found = .true.
-                    exit
-                end if
-            end do
-            if (.not. found) then
-                print *, "Unknown test: ", trim(test_names(i))
-            end if
-        end do
-    end subroutine run_named_tests_normalization_unit_length
+    
 end module mod_test_normalization_unit_length

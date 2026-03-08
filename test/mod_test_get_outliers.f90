@@ -1,4 +1,5 @@
-!> @brief Unit test suite for tox_get_outliers routines.
+! filepath: test/mod_test_get_outliers.f90
+!> Unit test suite for get_outliers routines.
 module mod_test_get_outliers
   use asserts
   use tox_get_outliers
@@ -16,11 +17,14 @@ module mod_test_get_outliers
     procedure(test_interface), pointer, nopass :: test_proc => null()
   end type test_case
 
+ 
+  
+
 contains
 
-  !> @brief Get array of all available tests (as subroutine, not function).
-  subroutine get_all_tests(all_tests)
-    type(test_case), intent(out) :: all_tests(19)
+  !> Get array of all available tests.
+  function get_all_tests() result(all_tests)
+    type(test_case) :: all_tests(19)
     all_tests(1) = test_case("test_scaling_basic", test_scaling_basic)
     all_tests(2) = test_case("test_loess_fallback", test_loess_fallback)
     all_tests(3) = test_case("test_rdi_basic", test_rdi_basic)
@@ -40,18 +44,16 @@ contains
     all_tests(17) = test_case("test_invalid_family_indices", test_invalid_family_indices)
     all_tests(18) = test_case("test_single_gene_family_scaling", test_single_gene_family_scaling)
     all_tests(19) = test_case("test_all_negative_rdi", test_all_negative_rdi)
+  end function get_all_tests
 
-    
-  end subroutine get_all_tests
-
-  !> @brief Run specific get_outliers tests by name.
+  !> Run specific get_outliers tests by name.
   subroutine run_named_tests_get_outliers(test_names)
     character(len=*), intent(in) :: test_names(:)
-    type(test_case) :: all_tests(25)
+    type(test_case) :: all_tests(19)
     integer(int32) :: i, j
     logical :: found
 
-    call get_all_tests(all_tests)
+    all_tests = get_all_tests()
 
     do i = 1, size(test_names)
       found = .false.
@@ -69,11 +71,12 @@ contains
     end do
   end subroutine run_named_tests_get_outliers
 
-  !> @brief Run all tox_get_outliers tests.
+  !>  Run all tox_get_outliers tests.
   subroutine run_all_tests_get_outliers()
     type(test_case) :: all_tests(19)
     integer(int32) :: i
-    call get_all_tests(all_tests)
+
+    all_tests = get_all_tests()
     do i = 1, size(all_tests)
       call all_tests(i)%test_proc()
       print *, trim(all_tests(i)%name), " passed."

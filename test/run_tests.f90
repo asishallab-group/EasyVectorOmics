@@ -1,5 +1,5 @@
 program main
-  use mod_test_edf
+  use mod_test_compute_edf
   use mod_test_bst
   use mod_test_kd_tree
   use mod_test_sorting
@@ -20,12 +20,13 @@ program main
   use mod_test_normalization_pipeline
   use mod_test_shift_vectors
   use mod_test_gene_centroids
-  use mod_test_tox_conversions
+  use mod_test_conversions
   use mod_test_arrays
-  use mod_test_tox_paralog_analysis
-  use mod_test_tox_traj_contrib_analysis
+  use mod_test_paralog_analysis
+  use mod_test_trajectory_contribution_analysis
+  use mod_test_trajectory_normalization
   use mod_test_normalization_unit_length
-  use mod_test_tox_clustering
+  use mod_test_clustering
   use mod_test_data_integration
 
   implicit none
@@ -87,7 +88,7 @@ contains
     allocate(available_suites(0))
     
     call add_suite("bst", run_all_tests_bst, run_named_tests_bst)
-  call add_suite("edf", run_all_tests_edf, run_named_tests_edf)
+  call add_suite("compute_edf", run_all_tests_compute_edf, run_named_tests_compute_edf)
     call add_suite("k-d-tree", run_all_tests_kd_tree, run_named_tests_kd_tree)
     call add_suite("sorting", run_all_tests_sorting, run_named_tests_sorting)
     call add_suite("get_outliers",run_all_tests_get_outliers, run_named_tests_get_outliers)
@@ -108,12 +109,13 @@ contains
     call add_suite("shift_vectors", run_all_tests_shift_vectors, run_named_tests_shift_vectors)
     call add_suite("arrays", run_all_tests_array, run_named_tests_array)
     call add_suite("gene_centroids", run_all_tests_gene_centroids, run_named_tests_gene_centroids)
-    call add_suite("tox_conversions", run_all_tests_tox_conversions, run_named_tests_tox_conversions)
-    call add_suite("tox_paralog_analysis", run_all_tests_tox_paralog_analysis, run_named_tests_tox_paralog_analysis)
-    call add_suite("tox_trajectory_contribution_analysis", run_all_tests_tox_trajectory_contribution_analysis, run_named_tests_tox_trajectory_contribution_analysis)
+    call add_suite("conversions", run_all_tests_conversions, run_named_tests_conversions)
+    call add_suite("paralog_analysis", run_all_tests_paralog_analysis, run_named_tests_paralog_analysis)
+    call add_suite("trajectory_contribution_analysis", run_all_tests_trajectory_contribution_analysis, run_named_tests_trajectory_contribution_analysis)
+    call add_suite("trajectory_normalization", run_all_tests_trajectory_normalization, run_named_tests_trajectory_normalization)
     call add_suite("normalization_unit_length", run_all_tests_normalization_unit_length, run_named_tests_normalization_unit_length)
-    call add_suite("tox_clustering", run_all_tests_tox_clustering, run_named_tests_tox_clustering)
-    call add_suite("tox_data_integration", run_all_tests_tox_data_integration, run_named_tests_tox_data_integration)
+    call add_suite("clustering", run_all_tests_clustering, run_named_tests_clustering)
+    call add_suite("data_integration", run_all_tests_data_integration, run_named_tests_data_integration)
   end subroutine initialize_suites
   
 
