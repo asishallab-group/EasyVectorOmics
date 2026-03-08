@@ -1,4 +1,7 @@
-# tox_test_jensen_shannon_test.py
+"""
+Comprehensive Python test suite for data integration preprocessing functions in tensoromics.
+Uses tensoromics_functions.py wrapper function (mirrors Fortran test suite)
+"""
 import numpy as np
 import sys
 import os

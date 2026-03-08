@@ -1,3 +1,7 @@
+"""
+Comprehensive Python test suite for data integration and Jensen–Shannon divergence functions in tensoromics.
+Uses tensoromics_functions.py wrapper function (mirrors Fortran test suite)
+"""
 import numpy as np
 import sys
 import os
