@@ -22,18 +22,21 @@ def test_tox_which_example_1():
     mask = np.array([1, 0, 1, 0, 0], dtype=np.int32)
     print(f"Input mask: {mask}")
     
-    idx_out, m_out = tox_which(mask)
-    print(f"Output indices: {idx_out}")
+    idx_out = tox_which(mask)
+    # Only valid indices are the first nonzero elements
+    valid_indices = idx_out[idx_out != 0]
+    m_out = len(valid_indices)
+    print(f"Output indices: {valid_indices}")
     print(f"Count: {m_out}")
-    
+
     # Manual verification - should get indices 1 and 3 (1-based)
     expected_count = 2
     expected_indices = [1, 3]
-    
+
     assert m_out == expected_count, f"Count should be {expected_count}, got {m_out}"
-    actual_indices = idx_out[:m_out].tolist()
+    actual_indices = valid_indices.tolist()
     assert actual_indices == expected_indices, f"Indices should be {expected_indices}, got {actual_indices}"
-    
+
     print("✓ Test passed!")
 
 def test_tox_which_example_2():
@@ -45,10 +48,12 @@ def test_tox_which_example_2():
     mask = np.zeros(5, dtype=np.int32)
     print(f"Input mask: {mask}")
     
-    idx_out, m_out = tox_which(mask)
-    print(f"Output indices: {idx_out}")
+    idx_out = tox_which(mask)
+    valid_indices = idx_out[idx_out != 0]
+    m_out = len(valid_indices)
+    print(f"Output indices: {valid_indices}")
     print(f"Count: {m_out}")
-    
+
     assert m_out == 0, f"Count should be 0, got {m_out}"
     print("✓ Test passed!")
 
@@ -61,17 +66,19 @@ def test_tox_which_example_3():
     mask = np.ones(5, dtype=np.int32)
     print(f"Input mask: {mask}")
     
-    idx_out, m_out = tox_which(mask)
-    print(f"Output indices: {idx_out}")
+    idx_out = tox_which(mask)
+    valid_indices = idx_out[idx_out != 0]
+    m_out = len(valid_indices)
+    print(f"Output indices: {valid_indices}")
     print(f"Count: {m_out}")
-    
+
     expected_count = 5
     expected_indices = [1, 2, 3, 4, 5]
-    
+
     assert m_out == expected_count, f"Count should be {expected_count}, got {m_out}"
-    actual_indices = idx_out[:m_out].tolist()
+    actual_indices = valid_indices.tolist()
     assert actual_indices == expected_indices, f"Indices should be {expected_indices}, got {actual_indices}"
-    
+
     print("✓ Test passed!")
 
 if __name__ == "__main__":

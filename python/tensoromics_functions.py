@@ -17,13 +17,19 @@ def _filename_to_ascii_array(filename):
     Convert a filename string to an ASCII integer array.
 
     Args:
-        filename: Input filename.
+        filename (str): Input filename.
 
     Returns:
-        element1: description.
+        dict: {
+            'ascii_arr' (np.ndarray): Array of ASCII codes,
+            'length' (int): Length of the array
+        }
     """
     ascii_arr = np.array([ord(c) for c in filename], dtype=np.int32)
-    return ascii_arr, np.int32(len(ascii_arr))
+    return {
+        'ascii_arr': ascii_arr,
+        'length': int(len(ascii_arr))
+    }
 
 
 #> f42_helper: Mark all given NumPy arrays as read-only
@@ -32,10 +38,10 @@ def _readonly(*arrays: np.ndarray) -> None:
     Mark all given NumPy arrays as read-only.
 
     Args:
-        arrays: One or more NumPy arrays.
+        arrays (np.ndarray): One or more NumPy arrays.
 
     Returns:
-        element1: Updates arrays in place.
+        None: Updates arrays in place.
     """
     for a in arrays:
         if isinstance(a, np.ndarray):
@@ -50,10 +56,10 @@ def _c_char_array_to_string(c_array):
     Convert a C char array back to a Python string.
 
     Args:
-        c_array: Input C char buffer.
+        c_array (np.ndarray): Input C char buffer.
 
     Returns:
-        element1: Decoded ASCII string up to null terminator.
+        str: Decoded ASCII string up to null terminator.
     """
     # Find null terminator or use full length
     bytes_list = []
@@ -71,11 +77,11 @@ def _strings_to_c_char_matrix(strings, max_length):
     Convert a list of strings to a Fortran-compatible char matrix.
 
     Args:
-        strings: Input strings.
-        max_length: Fixed length per string.
+        strings (list of str): Input strings.
+        max_length (int): Fixed length per string.
 
     Returns:
-        element1: Character matrix with shape (n_strings, max_length).
+        np.ndarray: Character matrix with shape (n_strings, max_length).
     """
     import numpy as np
     n_strings = len(strings)
@@ -109,11 +115,11 @@ def _string_array_to_c_char_matrix(string_array, max_length):
     Convert a NumPy string array to a C-compatible char matrix.
 
     Args:
-        string_array: Input NumPy string array.
-        max_length: Fixed length per string.
+        string_array (np.ndarray): Input NumPy string array.
+        max_length (int): Fixed length per string.
 
     Returns:
-        element1: Byte matrix of encoded strings.
+        np.ndarray: Byte matrix of encoded strings.
     """
     import numpy as np
 
@@ -141,11 +147,11 @@ def _c_char_matrix_to_strings(matrix, n_strings):
     Convert a C char matrix into Python strings.
 
     Args:
-        matrix: Character matrix.
-        n_strings: Number of strings to decode.
+        matrix (np.ndarray): Character matrix.
+        n_strings (int): Number of strings to decode.
 
     Returns:
-        element1: Decoded strings.
+        list of str: Decoded strings.
     """
     import numpy as np
 
@@ -181,11 +187,11 @@ def _string_to_c_char_array(s, length):
     Convert a Python string to a null-terminated C char array.
 
     Args:
-        s: Input string.
-        length: Output array length.
+        s (str): Input string.
+        length (int): Output array length.
 
     Returns:
-        element1: Byte array with null termination when possible.
+        np.ndarray: Byte array with null termination when possible.
     """
     if s is None:
         s = ""
@@ -211,12 +217,15 @@ def tox_get_array_metadata(filename, max_dims=5, with_clen=False):
     Read dimensions (and optionally character length) of a serialized array file.
 
     Args:
-        filename: Path to serialized file.
-        max_dims: Maximum number of dimensions to read.
-        with_clen: Whether to return character length metadata.
+        filename (str): Path to serialized file.
+        max_dims (int): Maximum number of dimensions to read.
+        with_clen (bool): Whether to return character length metadata.
 
     Returns:
-        element1: description.
+        dict: {
+            "dims_out" (np.ndarray): Array dimensions,
+            "clen" (int, optional): Character length metadata (if with_clen is True)
+        }
     """
     filename_c = _string_to_c_char_array(filename, len(filename) + 1)
     fn_len = len(filename_c)
@@ -264,11 +273,11 @@ def tox_serialize_int_nd(arr: np.ndarray, filename: str):
     Serialize an n-dimensional int32 array to a binary file.
 
     Args:
-        arr: Input int32 array.
-        filename: Output file path.
+        arr (np.ndarray): Input int32 array.
+        filename (str): Output file path.
 
     Returns:
-        element1: Writes array data to disk.
+        None: Writes array data to disk.
     """
     if not isinstance(arr, np.ndarray) or arr.dtype != np.int32:
         raise ValueError("arr must be a numpy array of int32")
@@ -320,7 +329,7 @@ def tox_deserialize_int_nd(filename):
         filename: Input file path.
 
     Returns:
-        element1: Deserialized int32 array.
+        np.ndarray: Deserialized int32 array with original shape.
     """
     # read size of the array
     dims = tox_get_array_metadata(filename)
@@ -356,7 +365,7 @@ def tox_serialize_real_nd(arr: np.ndarray, filename: str):
         filename: Output file path.
 
     Returns:
-        element1: Writes array data to disk.
+        None: Writes array data to disk.
     """
     if not isinstance(arr, np.ndarray) or arr.dtype != np.float64:
         raise ValueError("arr must be a numpy array of float64")
@@ -408,7 +417,7 @@ def tox_deserialize_real_nd(filename):
         filename: Input file path.
 
     Returns:
-        element1: Deserialized float64 array.
+        np.ndarray: Deserialized float64 array with original shape.
     """
     #read dimensions
     dims = tox_get_array_metadata(filename)
@@ -444,7 +453,7 @@ def tox_serialize_char_nd(arr: np.ndarray, filename: str):
         filename: Output file path.
 
     Returns:
-        element1: Writes array data to disk.
+        None: Writes array data to disk.
     """
     if not isinstance(arr, np.ndarray) or arr.dtype.kind != 'U':
         raise ValueError("arr must be a numpy array of strings (dtype='U')")
@@ -497,7 +506,7 @@ def tox_deserialize_char_nd(filename):
         filename: Input file path.
 
     Returns:
-        element1: Deserialized Unicode array.
+        np.ndarray: Deserialized Unicode array with original shape.
     """
     # Read dimensions and clen from file metadata
     dims, clen = tox_get_array_metadata(filename, with_clen=True)  # Sie müssen diese Funktion anpassen oder erstellen
@@ -551,7 +560,7 @@ def tox_serialize_logical_nd(arr: np.ndarray, filename: str):
         filename: Output file path.
 
     Returns:
-        element1: Writes array data to disk.
+        None: Writes array data to disk.
     """
     if not isinstance(arr, np.ndarray) or arr.dtype != np.bool_:
         raise ValueError("arr must be a numpy array of bool")
@@ -604,7 +613,7 @@ def tox_deserialize_logical_nd(filename):
         filename: Input file path.
 
     Returns:
-        element1: Deserialized boolean array.
+        np.ndarray: Deserialized boolean array with original shape.
     """
     # read size of the array
     dims = tox_get_array_metadata(filename)
@@ -643,7 +652,7 @@ def tox_serialize_complex_nd(arr: np.ndarray, filename: str):
         filename: Output file path.
 
     Returns:
-        element1: Writes array data to disk.
+        None: Writes array data to disk.
     """
     if not isinstance(arr, np.ndarray) or arr.dtype != np.complex128:
         raise ValueError("arr must be a numpy array of complex128")
@@ -695,7 +704,7 @@ def tox_deserialize_complex_nd(filename):
         filename: Input file path.
 
     Returns:
-        element1: Deserialized complex128 array.
+        np.ndarray: Deserialized complex128 array with original shape.
     """
     # read dimensions
     dims = tox_get_array_metadata(filename)
@@ -730,7 +739,7 @@ def build_bst_index(values):
         values: 1D array of values to index.
 
     Returns:
-        element1: BST indices (1-based).
+        np.ndarray: BST indices (1-based).
     """
     values = np.ascontiguousarray(values, dtype=np.float64)
     n = len(values)
@@ -767,7 +776,7 @@ def build_spherical_kd(vectors, dimension_order=None):
         dimension_order: Order of dimensions for splitting (1-based).
 
     Returns:
-        element1: Spherical KD-Tree indices (1-based Fortran indices).
+        np.ndarray: Spherical KD-Tree indices (1-based Fortran indices).
     """
     vectors = np.asfortranarray(vectors, dtype=np.float64)
     d, n = vectors.shape
@@ -834,7 +843,10 @@ def bst_range_query(values, indices, lower_bound, upper_bound):
         upper_bound: Upper bound of range (inclusive).
 
     Returns:
-        element1: description.
+        dict: {
+            'matching_indices' (np.ndarray): Indices matching the range,
+            'count' (int): Number of matches
+        }
     """
     values = np.ascontiguousarray(values, dtype=np.float64)
     indices = np.ascontiguousarray(indices, dtype=np.int32)
@@ -880,7 +892,7 @@ def build_kd_index(points, dimension_order=None):
         dimension_order: Order of dimensions for splitting (1-based).
 
     Returns:
-        element1: KD-Tree indices (1-based Fortran indices).
+        np.ndarray: KD-Tree indices (1-based Fortran indices).
     """
     points = np.asfortranarray(points, dtype=np.float64)
     d, n = points.shape
@@ -939,7 +951,7 @@ def tox_vector_RAP_projection(vecs, vecs_selection_mask, axes_selection_mask):
         axes_selection_mask: Boolean/integer array (length n_axes).
 
     Returns:
-        element1: Projected vectors (n_selected_axes x n_selected_vecs).
+        np.ndarray: Projected vectors (n_selected_axes x n_selected_vecs).
     """
     vecs = np.asfortranarray(vecs, dtype=np.float64)
     vecs_selection_mask = np.ascontiguousarray(vecs_selection_mask, dtype=np.int32)
@@ -992,7 +1004,7 @@ def tox_field_RAP_projection(vecs, vecs_selection_mask, axes_selection_mask):
         axes_selection_mask: Boolean/integer array (length n_axes).
 
     Returns:
-        element1: Projected vectors (n_selected_axes x n_selected_vecs).
+        np.ndarray: Projected vectors (n_selected_axes x n_selected_vecs).
     """
     vecs = np.asfortranarray(vecs, dtype=np.float64)
     vecs_selection_mask = np.ascontiguousarray(vecs_selection_mask, dtype=np.int32)
@@ -1046,7 +1058,7 @@ def tox_clock_hand_angle_between_vectors(v1, v2, selected_axes_for_signed):
         selected_axes_for_signed: Integer array of axes to use for signed angle (length n_dims).
 
     Returns:
-        element1: Signed angle between vectors in degrees.
+        float: Signed angle between vectors in degrees.
     """
     # Input validation and conversion
     v1 = np.ascontiguousarray(v1, dtype=np.float64)  # First vector
@@ -1100,7 +1112,7 @@ def tox_clock_hand_angles_for_shift_vectors(origins, targets, vecs_selection_mas
         selected_axes_for_signed: Integer array of axes to use for signed angle (length n_dims).
 
     Returns:
-        element1: Signed angles for selected vectors in degrees.
+        np.ndarray: Signed angles for selected vectors in degrees.
     """
     # Input validation and conversion
     origins = np.asfortranarray(origins, dtype=np.float64)  # Origin vectors
@@ -1169,7 +1181,7 @@ def relative_axes_changes_from_shift_vector(shift_vector):
         shift_vector: Input vector (1D).
 
     Returns:
-        element1: Relative axis contributions (sum to 1).
+        np.ndarray: Relative axis contributions (sum to 1).
     """
     # Input validation and conversion
     vec = np.ascontiguousarray(shift_vector, dtype=np.float64)  # Shift vector
@@ -1207,7 +1219,7 @@ def relative_axes_expression_from_expression_vector(expression_vector):
         expression_vector: Input vector (1D).
 
     Returns:
-        element1: Relative axis contributions (sum to 1).
+        np.ndarray: Relative axis contributions (sum to 1).
     """
     # Input validation and conversion
     vec = np.ascontiguousarray(expression_vector, dtype=np.float64)  # Expression vector
@@ -1245,7 +1257,7 @@ def tox_normalize_by_std_dev(input_matrix):
         input_matrix: A numeric matrix with genes as rows and tissues as columns.
 
     Returns:
-        element1: Normalized matrix with same dimensions as input.
+        np.ndarray: Normalized matrix with same dimensions as input.
     """
     input_matrix = np.asarray(input_matrix, dtype=np.float64)
     n_genes, n_tissues = input_matrix.shape
@@ -1295,7 +1307,7 @@ def tox_quantile_normalization(input_matrix):
         input_matrix: A numeric matrix with genes as rows and tissues as columns.
 
     Returns:
-        element1: Quantile-normalized matrix with same dimensions as input.
+        np.ndarray: Quantile-normalized matrix with same dimensions as input.
     """
     input_matrix = np.asarray(input_matrix, dtype=np.float64)
     n_genes, n_tissues = input_matrix.shape
@@ -1353,7 +1365,7 @@ def tox_log2_transformation(input_matrix):
         input_matrix: A numeric matrix with genes as rows and tissues as columns.
 
     Returns:
-        element1: Log2-transformed matrix with same dimensions as input.
+        np.ndarray: Log2-transformed matrix with same dimensions as input.
     """
     input_matrix = np.asarray(input_matrix, dtype=np.float64)
     n_genes, n_tissues = input_matrix.shape
@@ -1399,7 +1411,7 @@ def tox_calculate_tissue_averages(input_matrix, group_starts, group_counts):
         group_counts: Array of counts for each group.
 
     Returns:
-        element1: Matrix with genes as rows and averaged tissues as columns.
+        np.ndarray: Matrix with genes as rows and averaged tissues as columns.
     """
     input_matrix = np.asarray(input_matrix, dtype=np.float64)
     group_starts = np.asarray(group_starts, dtype=np.int32)
@@ -1454,7 +1466,7 @@ def tox_normalization_pipeline(input_matrix, group_starts, group_counts):
         group_counts: Integer array, number of columns per replicate group.
 
     Returns:
-        element1: log2(x+1) normalized expression (genes x groups).
+        np.ndarray: log2(x+1) normalized expression (genes x groups).
     """
     input_matrix = np.asarray(input_matrix, dtype=np.float64)
     group_starts = np.asarray(group_starts, dtype=np.int32)
@@ -1531,7 +1543,7 @@ def tox_calculate_fold_changes(input_matrix, control_cols, condition_cols):
         condition_cols: Array of condition column indices (1-based for Fortran).
 
     Returns:
-        element1: Matrix with genes as rows and fold change values as columns.
+        np.ndarray: Matrix with genes as rows and fold change values as columns.
     """
     input_matrix = np.asarray(input_matrix, dtype=np.float64)
     control_cols = np.asarray(control_cols, dtype=np.int32)
@@ -1588,11 +1600,12 @@ def tox_calculate_tissue_versatility(expression_vectors, vector_selection, axis_
         axis_selection: Boolean or integer array indicating which axes to include in calculation (length n_axes).
 
     Returns:
-        dict: Dictionary containing:
-        - tissue_versatilities: Normalized tissue versatility values [0,1] for selected vectors
-        - tissue_angles_deg: Angles in degrees [0,90] for selected vectors
-        - n_selected_vectors: Number of vectors processed
-        - n_selected_axes: Number of axes used in calculation
+        dict: {
+            'tissue_versatilities' (np.ndarray): Normalized tissue versatility values in [0,1] for selected vectors,
+            'tissue_angles_deg' (np.ndarray): Angles in degrees [0,90] for selected vectors,
+            'n_selected_vectors' (int): Number of vectors processed,
+            'n_selected_axes' (int): Number of axes used in calculation
+        }
     """
     # Input validation
     if not isinstance(expression_vectors, np.ndarray):
@@ -1688,7 +1701,7 @@ def tox_euclidean_distance(vec1, vec2):
         vec2: Second vector (numpy array).
 
     Returns:
-        element1: Euclidean distance between the vectors.
+        float: Euclidean distance between the vectors.
     """
     # Input validation
     if not isinstance(vec1, np.ndarray):
@@ -1744,7 +1757,7 @@ def tox_distance_to_centroid(genes, centroids, gene_to_fam, d):
         d: Number of dimensions.
 
     Returns:
-        element1: Distances from each gene to its centroid (-1 for invalid families).
+        np.ndarray: Distances from each gene to its centroid (-1 for invalid families).
     """
     # Input validation
     if not isinstance(genes, np.ndarray):
@@ -1821,7 +1834,7 @@ def tox_loess_smooth_2d(x_ref, y_ref, indices_used, x_query, kernel_sigma, kerne
         kernel_cutoff: Kernel cutoff parameter.
 
     Returns:
-        element1: Smoothed y values at query points.
+        np.ndarray: Smoothed y values at query points.
     """
     # Input validation and conversion
     x_ref = np.ascontiguousarray(x_ref, dtype=np.float64)
@@ -1901,7 +1914,12 @@ def tox_compute_family_scaling(distances, gene_to_fam):
         gene_to_fam: Gene-to-family mapping.
 
     Returns:
-        dict: Dictionary containing scaling factors and intermediate results
+        dict: {
+            'dscale' (np.ndarray): Scaling factors for each family,
+            'loess_x' (np.ndarray): X values used in LOESS smoothing,
+            'loess_y' (np.ndarray): Smoothed Y values,
+            'indices_used' (np.ndarray): Indices of used families
+        }
     """
     distances = np.ascontiguousarray(distances, dtype=np.float64)
     gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
@@ -1978,7 +1996,16 @@ def tox_compute_family_scaling_expert(distances, gene_to_fam, perm_tmp, stack_le
         family_distances: Pre-allocated work array for family distances (n_genes).
 
     Returns:
-        dict: Dictionary containing scaling factors and intermediate results
+        dict: {
+            'dscale' (np.ndarray): Scaling factors for each family,
+            'loess_x' (np.ndarray): X values used in LOESS smoothing,
+            'loess_y' (np.ndarray): Smoothed Y values,
+            'indices_used' (np.ndarray): Indices of used families,
+            'perm_tmp' (np.ndarray): Permutation array used for sorting,
+            'stack_left_tmp' (np.ndarray): Left stack array for sorting,
+            'stack_right_tmp' (np.ndarray): Right stack array for sorting,
+            'family_distances' (np.ndarray): Work array for family distances
+        }
     """
     distances = np.ascontiguousarray(distances, dtype=np.float64)
     gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
@@ -2075,7 +2102,7 @@ def tox_compute_rdi(distances, gene_to_fam, dscale):
         dscale: Family scaling factors.
 
     Returns:
-        element1: RDI values for each gene.
+        np.ndarray: RDI values for each gene.
     """
     distances = np.ascontiguousarray(distances, dtype=np.float64)
     gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
@@ -2129,9 +2156,10 @@ def tox_identify_outliers(rdi, threshold=None, percentile=95.0):
         percentile: Percentile threshold for outlier detection (default: 95 for top 5%).
 
     Returns:
-        dict: Dictionary containing:
-        - outliers: Boolean array indicating outliers
-        - threshold: Threshold value used for detection
+        dict: {
+            'outliers' (np.ndarray): Boolean/int array indicating outliers,
+            'threshold' (float): Threshold value used for detection
+        }
     """
     rdi = np.ascontiguousarray(rdi, dtype=np.float64)
     n_genes = len(rdi)
@@ -2182,7 +2210,12 @@ def tox_detect_outliers(distances, gene_to_fam, percentile=95.0):
         percentile: Percentile threshold for outlier detection (default: 95 for top 5%).
 
     Returns:
-        dict: Dictionary containing outliers and intermediate results
+        dict: {
+            'outliers' (np.ndarray): Integer array indicating outliers,
+            'loess_x' (np.ndarray): X values used in LOESS smoothing,
+            'loess_y' (np.ndarray): Smoothed Y values,
+            'loess_n' (np.ndarray): Counts per family for LOESS
+        }
     """
     distances = np.ascontiguousarray(distances, dtype=np.float64)
     gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
@@ -2256,7 +2289,7 @@ def tox_which(cond):
         cond: Array of boolean/integer values (0/1).
 
     Returns:
-        element1: (idx_out, m_out) where idx_out contains 1-based indices and m_out is count.
+        np.ndarray: 1-based indices of True values.
     """
     cond = np.ascontiguousarray(cond, dtype=np.int32)
 
@@ -2298,7 +2331,7 @@ def tox_which(cond):
     # Mark output as read-only
     _readonly(idx_out)
 
-    return idx_out, int(m_out[0])
+    return idx_out
 
 
 #> tox_shift_vectors:compute_shift_vector_field_c: Computes the shift vector field for each gene expression vector based on its family centroid
@@ -2312,7 +2345,7 @@ def tox_compute_shift_vector_field(expression_vectors, family_centroids, gene_to
         gene_to_centroid: Array mapping each gene to its corresponding family centroid index in family_centroids with length n_vectors (1 based for fortran).
 
     Returns:
-        element1: The computed shift vectors for each gene expression vector.
+        np.ndarray: The computed shift vectors for each gene expression vector.
     """
 
     # Input validation
@@ -2412,7 +2445,7 @@ def tox_group_centroid(expression_vectors, gene_to_family, n_families, mode, ort
         ortholog_set: np.ndarray.
 
     Returns:
-        element1: np.ndarray.
+        np.ndarray: Computed centroids for each group of genes.
     """
 
     # 1) Validate and prepare inputs
@@ -2497,7 +2530,7 @@ def tox_mean_vector(expression_vectors, gene_indices):
         gene_indices: 1D numpy array of column indices of selected genes (1-based).
 
     Returns:
-        element1: 1D array of length n_axes representing the computed centroid.
+        np.ndarray: 1D array of length n_axes representing the computed centroid.
     """
     # Validate inputs
     if not isinstance(expression_vectors, np.ndarray) or expression_vectors.ndim != 2:
@@ -2554,10 +2587,11 @@ def compute_edf(values):
         values: Array of observed data values (e.g., contributions or spikes).
 
     Returns:
-        dict: Dictionary with keys:
-        - 'unique_values': Sorted unique data values (read-only numpy array)
-        - 'cdf_values': Corresponding cumulative frequencies between 0 and 1 (read-only)
-        - 'n_unique': Number of unique values found (int)
+        dict: {
+            'unique_values' (np.ndarray): Sorted unique data values (read-only),
+            'cdf_values' (np.ndarray): Corresponding cumulative frequencies between 0 and 1 (read-only),
+            'n_unique' (int): Number of unique values found
+        }
     """
     # Input validation and conversion
     values = np.asarray(values, dtype=np.float64)
@@ -2614,10 +2648,11 @@ def compute_edf_expert(values, perm):
         perm: Pre-sorted permutation indices (must be sorted by values[perm]).
 
     Returns:
-        dict: Dictionary with keys:
-        - 'unique_values': Sorted unique data values (read-only numpy array)
-        - 'cdf_values': Corresponding cumulative frequencies between 0 and 1 (read-only)
-        - 'n_unique': Number of unique values found (int)
+        dict: {
+            'unique_values' (np.ndarray): Sorted unique data values (read-only),
+            'cdf_values' (np.ndarray): Corresponding cumulative frequencies between 0 and 1 (read-only),
+            'n_unique' (int): Number of unique values found
+        }
     """
     # Input validation and conversion
     values = np.asarray(values, dtype=np.float64)
@@ -2681,9 +2716,10 @@ def tox_compute_baselines_factor_dependent(factor, dependent, mode):
         mode: Baseline computation mode:.
 
     Returns:
-        dict: Dictionary containing:
-        - 'baseline_factor': float, baseline value for factor
-        - 'baseline_dependent': float, baseline value for dependent variable
+        dict: {
+            'baseline_factor' (float): Baseline value for factor,
+            'baseline_dependent' (float): Baseline value for dependent variable
+        }
     """
     # Input validation and conversion
     factor = np.ascontiguousarray(factor, dtype=np.float64)
@@ -2749,7 +2785,11 @@ def tox_cluster_factor_trajectories_k_means(n_clusters, trajectories, n_factors,
         max_iterations: Maximum number of iterations.
 
     Returns:
-        dict: {"centroids", "labels", "label_counts"}
+        dict: {
+            'centroids' (np.ndarray): Final cluster centroids (n_factors x n_clusters),
+            'labels' (np.ndarray): Cluster label for each point (1D int array),
+            'label_counts' (np.ndarray): Number of points in each cluster (1D int array)
+        }
     """
     trajectories = np.ascontiguousarray(trajectories, dtype=np.float64)
     centroids = np.asfortranarray(centroids, dtype=np.float64)
@@ -2809,9 +2849,9 @@ def tox_k_means_clustering(data_points, centroids, max_iter):
 
     Returns:
         dict: {
-        "centroids": np.ndarray of shape (n_dims, n_clusters),
-        "labels": np.ndarray of shape (n_points),
-        "label_counts": np.ndarray of shape (n_clusters)
+            'centroids' (np.ndarray): Final cluster centroids (n_dims x n_clusters),
+            'labels' (np.ndarray): Cluster label for each point (1D int array),
+            'label_counts' (np.ndarray): Number of points in each cluster (1D int array)
         }
     """
 
@@ -2872,10 +2912,10 @@ def tox_linkage_clustering(distances, method):
 
     Returns:
         dict: {
-        "merge_i": np.ndarray of shape (n_points - 1),
-        "merge_j": np.ndarray of shape (n_points - 1),
-        "heights": np.ndarray of shape (n_points - 1),
-        "cluster_sizes": np.ndarray of shape (n_points - 1)
+            'merge_i' (np.ndarray): Index of first cluster merged at each step (1D int array, length n_points-1),
+            'merge_j' (np.ndarray): Index of second cluster merged at each step (1D int array, length n_points-1),
+            'heights' (np.ndarray): Height at which clusters are merged (1D float array, length n_points-1),
+            'cluster_sizes' (np.ndarray): Size of each newly formed cluster (1D int array, length n_points-1)
         }
     """
 
@@ -2941,7 +2981,7 @@ def tox_normalize_unit_length(vector):
         vector: 1D array of shape (n_dims,) to be normalized.
 
     Returns:
-        element1: The same array, normalized in-place.
+        np.ndarray: The same array, normalized in-place.
     """
 
     vector = np.ascontiguousarray(vector, dtype=np.float64)
@@ -2975,7 +3015,7 @@ def tox_detect_neofunctionalization(ancestors, genes, gene_to_fam, thresholds):
         thresholds: 1D array of shape (n_axes,) with per-axis thresholds.
 
     Returns:
-        element1: Integer array of shape (n_genes, n_axes) with 0/1 values.
+        np.ndarray: Boolean array of shape (n_genes, n_axes) indicating neofunctionalization (True/False).
     """
 
     # Ensure contiguous arrays with correct dtypes
@@ -3029,7 +3069,7 @@ def tox_mask_check_state(bit_mask, i_gene):
         i_gene: Index of the gene to check.
 
     Returns:
-        element1: bool  # indicating inactive or active.
+        bool: True if gene is active, False otherwise.
     """
     bit_mask = np.ascontiguousarray(bit_mask, dtype=np.int32)
     n_mask_chunks = ctypes.c_int(len(bit_mask))
@@ -3062,7 +3102,7 @@ def tox_mask_chunk_count(n_genes):
         n_genes: Number of genes to encode.
 
     Returns:
-        element1: int  # Number of 32-bit chunks required.
+        int: Number of 32-bit chunks required.
     """
     n_genes = ctypes.c_int(n_genes)
     count = ctypes.c_int(0)
@@ -3096,8 +3136,8 @@ def tox_calc_work_arr_paralog_subsets_size(max_subset_size, n_genes, filtered_pa
 
     Returns:
         dict: {
-        'actual_max_subset_size': int,
-        'work_array_size': int
+            'actual_max_subset_size' (int): Actual maximum subset size used,
+            'work_array_size' (int): Required work array size
         }
     """
     filtered_paralogs_mask = np.ascontiguousarray(filtered_paralogs_mask, dtype=np.int32)
@@ -3142,7 +3182,7 @@ def tox_filter_paralogs_by_pattern_dosage_effect(gene_angles, threshold,
         n_families: Number of families.
 
     Returns:
-        element1: int32 mask (chunks of 32 bits) with 1 for kept, 0 otherwise.
+        np.ndarray: int32 mask (chunks of 32 bits) with 1 for kept, 0 otherwise.
     """
     gene_angles = np.ascontiguousarray(gene_angles, dtype=np.float64)
     gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
@@ -3192,7 +3232,7 @@ def tox_filter_paralogs_by_pattern_subfunctionalization(gene_angles, threshold,
         n_families: Number of families.
 
     Returns:
-        element1: int32 mask (chunks of 32 bits) with 1 for kept, 0 otherwise.
+        np.ndarray: int32 mask (chunks of 32 bits) with 1 for kept, 0 otherwise.
     """
     gene_angles = np.ascontiguousarray(gene_angles, dtype=np.float64)
     gene_to_fam = np.ascontiguousarray(gene_to_fam, dtype=np.int32)
@@ -3245,7 +3285,10 @@ def tox_detect_subfunctionalization(ancestor, genes, rdi_threshold,
         sorted_paralog_norms_perm: int32 permutation of norms (n_genes).
 
     Returns:
-        dict: { 'n_results': int, 'results': np.ndarray }
+        dict: {
+            'n_results' (int): Number of results found,
+            'results' (np.ndarray): Array of detected subfunctionalization results
+        }
     """
     ancestor = np.asfortranarray(ancestor, dtype=np.float64)
     genes = np.asfortranarray(genes, dtype=np.float64)
@@ -3325,7 +3368,10 @@ def tox_detect_dosage_effect(ancestor, genes,
         max_angle: Maximum allowed angle in radians (default π).
 
     Returns:
-        dict: { 'n_results': int, 'results': np.ndarray }
+        dict: {
+            'n_results' (int): Number of results found,
+            'results' (np.ndarray): Array of detected dosage effect results
+        }
     """
     ancestor = np.asfortranarray(ancestor, dtype=np.float64)
     genes = np.asfortranarray(genes, dtype=np.float64)
@@ -3393,7 +3439,10 @@ def tox_normalize_variable_timeseries(v):
         v: 1D time series to normalize (length = n_points).
 
     Returns:
-        element1: Normalized time series in [0,1].
+        dict: {
+            'v_norm' (np.ndarray): Normalized time series in [0,1],
+            'status' (int): Status code from normalization routine
+        }
     """
     v_arr = np.asfortranarray(v, dtype=np.float64)
     n_points = ctypes.c_int(len(v_arr))
@@ -3431,7 +3480,10 @@ def tox_normalize_single_trajectory(trajectory):
         trajectory: 2D array shape(n_timepoints, n_factors) for one sample.
 
     Returns:
-        element1: Normalized trajectory shape(n_timepoints, n_factors) in [0,1].
+        dict: {
+            'traj_norm' (np.ndarray): Normalized trajectory shape (n_timepoints, n_factors) in [0,1],
+            'status' (int): Status code from normalization routine
+        }
     """
     traj_arr = np.asfortranarray(trajectory, dtype=np.float64)
     n_timepoints, n_factors = traj_arr.shape
@@ -3474,7 +3526,10 @@ def tox_normalize_all_trajectories(trajectories):
         trajectories: 3D array (n_factors × n_samples × n_timepoints).
 
     Returns:
-        element1: Normalized trajectories (n_factors × n_samples × n_timepoints) in [0,1].
+        dict: {
+            'traj_norm' (np.ndarray): Normalized trajectories (n_factors × n_samples × n_timepoints) in [0,1],
+            'status' (int): Status code from normalization routine
+        }
     """
     traj_arr = np.asfortranarray(trajectories, dtype=np.float64)
     n_factors, n_samples, n_timepoints = traj_arr.shape
@@ -3524,8 +3579,8 @@ def tox_compute_contributions(factor, dependent, mode):
 
     Returns:
         dict: {
-        'local_contributions': np.ndarray, # 1D array of per-element contributions.
-        'total_contribution': float        # Sum of local contributions.
+            'local_contributions' (np.ndarray): 1D array of per-element contributions,
+            'total_contribution' (float): Sum of local contributions
         }
     """
 
@@ -3578,10 +3633,8 @@ def tox_compute_all_contributions(trajectories, factor_indices, dependent_indice
 
     Returns:
         dict: {
-        "local_contributions": np.ndarray of shape
-        (n_timepoints, n_selected_factors, n_selected_dependents, n_samples),
-        "total_contributions": np.ndarray of shape
-        (n_selected_factors, n_selected_dependents, n_samples)
+            'local_contributions' (np.ndarray): Array of shape (n_timepoints, n_selected_factors, n_selected_dependents, n_samples),
+            'total_contributions' (np.ndarray): Array of shape (n_selected_factors, n_selected_dependents, n_samples)
         }
     """
     # Ensure Fortran-order contiguous arrays
@@ -3659,8 +3712,8 @@ def tox_perform_permutation_test(trajectories, factor_idx, dependent_idx, sample
 
     Returns:
         dict: {
-        "local_contributions": np.ndarray of shape (n_timepoints, n_permutations),
-        "total_contributions": np.ndarray of shape (n_permutations,)
+            'local_contributions' (np.ndarray): Array of shape (n_timepoints, n_permutations),
+            'total_contributions' (np.ndarray): Array of shape (n_permutations,)
         }
     """
 
@@ -3740,8 +3793,8 @@ def tox_compute_p_values(local_contributions_observed,
 
     Returns:
         dict: {
-        "local_p_values": np.ndarray of shape (n_timepoints,),
-        "total_p_value": float
+            'local_p_values' (np.ndarray): Array of shape (n_timepoints,),
+            'total_p_value' (float): P-value for total contribution
         }
     """
 
@@ -3923,10 +3976,11 @@ def tox_build_residual_histograms(
         n_bins: int
 
     Returns:
-        dict with:
-            counts: (n_points, n_bins)
-            pmf: (n_points, n_bins)
-            included_n_residuals: (n_points,)
+        dict: {
+            'counts' (np.ndarray): Histogram counts (n_points, n_bins),
+            'pmf' (np.ndarray): Probability mass function (n_points, n_bins),
+            'included_n_residuals' (np.ndarray): Number of included residuals per point (n_points,)
+        }
     """
 
     E = np.asfortranarray(neighborhood_residuals, dtype=np.float64)
@@ -3999,10 +4053,11 @@ def tox_build_residual_histograms_filtered(
         neighbor_mask : np.ndarray, shape (n_neighbors, n_points), bool
             Mask selecting neighbors to be included in the histogram calculation.
     Returns:
-        dict with:
-            counts: (n_points, n_bins)
-            pmf: (n_points, n_bins)
-            included_n_residuals: (n_points,)
+        dict: {
+            'counts' (np.ndarray): Histogram counts (n_points, n_bins),
+            'pmf' (np.ndarray): Probability mass function (n_points, n_bins),
+            'included_n_residuals' (np.ndarray): Number of included residuals per point (n_points,)
+        }
     """
 
     E = np.asfortranarray(neighborhood_residuals, dtype=np.float64)
@@ -4071,7 +4126,7 @@ def tox_compute_divergence_per_reference_point(pmf_S1, pmf_S2):
         pmf_S2: np.ndarray (n_points, n_bins)
 
     Returns:
-        np.ndarray (n_points,)
+        np.ndarray: Jensen–Shannon divergences for each point (shape: n_points,)
     """
 
     P1 = np.asfortranarray(pmf_S1, dtype=np.float64)
@@ -4123,9 +4178,10 @@ def tox_compute_weighted_global_divergence(
         included_S2: np.ndarray (n_points,)
 
     Returns:
-        dict with:
-            global_js_divergence: float
-            weights: np.ndarray (n_points,)
+        dict: {
+            'global_js_divergence' (float): Weighted global Jensen–Shannon divergence value,
+            'weights' (np.ndarray): Weights for each point (n_points,)
+        }
     """
 
     jsd = np.ascontiguousarray(js_divergences, dtype=np.float64)
@@ -4187,9 +4243,10 @@ def gjct_permutation_test(
         n_permutations: int
 
     Returns:
-        dict with:
-            jsd_null: (n_permutations,)
-            p_value: float
+        dict: {
+            'jsd_null' (np.ndarray): Jensen–Shannon divergence values from permutations (n_permutations,),
+            'p_value' (float): P-value estimating the likelihood of the observed divergence under the null hypothesis
+        }
     """
 
     S1_c = np.asfortranarray(neighborhood_residuals_S1, dtype=np.float64)
@@ -4269,9 +4326,10 @@ def gjct_permutation_test_filtered(
             Mask selecting neighbors for study 2.
         random_seed: int
     Returns:
-        dict with:
-            jsd_null: (n_permutations,)
-            p_value: float
+        dict: {
+            'jsd_null' (np.ndarray): Jensen–Shannon divergence values from permutations (n_permutations,),
+            'p_value' (float): P-value estimating the likelihood of the observed divergence under the null hypothesis
+        }
     """
 
     S1_c = np.asfortranarray(neighborhood_residuals_S1, dtype=np.float64)
@@ -4431,9 +4489,10 @@ def tox_pool_means(mean_S1, mean_S2, n_points):
         n_points: int
 
     Returns:
-        dict with:
-            n_pool: int
-            x_star: np.ndarray (n_points,)
+        dict: {
+            'n_pool' (int): Number of pooled samples,
+            'x_star' (np.ndarray): Pooled means (shape: n_points,)
+        }
     """
     mean_S1_c = np.ascontiguousarray(mean_S1, dtype=np.float64)
     mean_S2_c = np.ascontiguousarray(mean_S2, dtype=np.float64)
@@ -4491,9 +4550,10 @@ def tox_pool_means_expert(pooled_means, pooled_perm, n_points):
         n_points: int
 
     Returns:
-        dict with:
-            n_pool: int
-            x_star: np.ndarray (n_points,)
+        dict: {
+            'n_pool' (int): Number of pooled samples,
+            'x_star' (np.ndarray): Pooled means (shape: n_points,)
+        }
     """
     pm = np.ascontiguousarray(pooled_means, dtype=np.float64)
     perm = np.ascontiguousarray(pooled_perm, dtype=np.int32)
@@ -4547,7 +4607,7 @@ def tox_calc_neighborhood_size(n_pool, n_points, n_genes_S, mean_S, desired_size
         desired_size: int (optional)
 
     Returns:
-        n_neighbors: int
+        int: Number of neighbors computed for the given parameters.
     """
     mean_S_c = np.ascontiguousarray(mean_S, dtype=np.float64)
 
@@ -4592,9 +4652,10 @@ def tox_construct_neighborhoods(x_star, mean_S, resid_S, n_pool, desired_n_neigh
         desired_n_neighbors: int
 
     Returns:
-        dict with:
-            neighborhood_residuals: np.ndarray (n_reps_S, actual_n_neighbors, n_points)
-            neighborhood_indices: np.ndarray (actual_n_neighbors, n_points)
+        dict: {
+            'neighborhood_residuals' (np.ndarray): Residuals for each neighborhood (shape: n_reps_S, actual_n_neighbors, n_points),
+            'neighborhood_indices' (np.ndarray): Indices of neighbors for each point (shape: actual_n_neighbors, n_points)
+        }
     """
     x_star_c = np.ascontiguousarray(x_star, dtype=np.float64)
     mean_S_c = np.ascontiguousarray(mean_S, dtype=np.float64)
@@ -4661,54 +4722,30 @@ def fjct_compute_jsd(
     shared_residual_range
 ):
     """
-    Compute the family-level Jensen–Shannon divergence using the
-    Fortran routine `fjct_compute_jsd_alloc_c` from the tox_data_integration module.
+    Compute the family-level Jensen–Shannon divergence for a gene family.
 
-    This routine:
-      - builds family-specific neighbor masks,
-      - constructs masked residual histograms,
-      - computes per-point JSD values,
-      - computes weighted global JSD,
-      - returns included replicate counts and weights.
+    Args:
+        family_idx (int): Index of the gene family to analyze.
+        gene_to_family_S1 (np.ndarray): Family index for each gene in study 1 (n_genes_S1,).
+        gene_to_family_S2 (np.ndarray): Family index for each gene in study 2 (n_genes_S2,).
+        neighborhood_residuals_S1 (np.ndarray): Residuals for study 1 (n_reps_S1, n_neighbors, n_points).
+        neighborhood_residuals_S2 (np.ndarray): Residuals for study 2 (n_reps_S2, n_neighbors, n_points).
+        neighborhood_genes_S1 (np.ndarray): Gene indices for study 1 neighborhoods (n_neighbors, n_points).
+        neighborhood_genes_S2 (np.ndarray): Gene indices for study 2 neighborhoods (n_neighbors, n_points).
+        n_bins (int): Number of histogram bins.
+        shared_residual_range (float): Shared residual range for histogram construction.
 
-    Parameters
-    ----------
-    family_idx : int
-        Index of the gene family to analyze.
-    gene_to_family_S1 : np.ndarray, shape (n_genes_S1,), int32
-        Family index for each gene in study 1.
-    gene_to_family_S2 : np.ndarray, shape (n_genes_S2,), int32
-        Family index for each gene in study 2.
-    neighborhood_residuals_S1 : np.ndarray, shape (n_reps_S1, n_neighbors, n_points), float64 (F-order)
-        Residuals for study 1.
-    neighborhood_residuals_S2 : np.ndarray, shape (n_reps_S2, n_neighbors, n_points), float64 (F-order)
-        Residuals for study 2.
-    neighborhood_genes_S1 : np.ndarray, shape (n_neighbors, n_points), int32
-        Gene indices for study 1 neighborhoods.
-    neighborhood_genes_S2 : np.ndarray, shape (n_neighbors, n_points), int32
-        Gene indices for study 2 neighborhoods.
-    n_bins : int
-        Number of histogram bins.
-    shared_residual_range : float
-        Shared residual range for histogram construction.
-
-    Returns
-    -------
-    dict
-        {
-            "js_divergences": np.ndarray (n_points,),
-            "included_n_reps_S1": np.ndarray (n_points,),
-            "included_n_reps_S2": np.ndarray (n_points,),
-            "total_included_n_reps": int,
-            "global_js_divergence": float,
-            "weights": np.ndarray (n_points,),
-            "ierr": int
+    Returns:
+        dict: {
+            'js_divergences' (np.ndarray): Jensen–Shannon divergences for each point (n_points,),
+            'included_n_reps_S1' (np.ndarray): Number of included replicates for S1 (n_points,),
+            'included_n_reps_S2' (np.ndarray): Number of included replicates for S2 (n_points,),
+            'total_included_n_reps' (int): Total number of included replicates,
+            'global_js_divergence' (float): Weighted global Jensen–Shannon divergence value,
+            'weights' (np.ndarray): Weights for each point (n_points,),
+            'ierr' (int): Error code (0 if successful)
         }
 
-    Notes
-    -----
-    - All arrays must be Fortran-contiguous.
-    - Raises an exception if ierr != 0.
     """
 
     gene_to_family_S1 = np.asfortranarray(gene_to_family_S1, dtype=np.int32)
@@ -4807,43 +4844,31 @@ def fjct_compute_jsd_expert(
     shared_residual_range
 ):
     """
-    Expert variant of the family-level JSD computation. This version accepts
-    precomputed neighbor masks and returns full histogram data (PMFs and counts).
+    Expert variant of the family-level JSD computation. Accepts precomputed neighbor masks and returns full histogram data (PMFs and counts).
 
-    Parameters
-    ----------
-    neighborhood_residuals_S1 : np.ndarray, shape (n_reps_S1, n_neighbors, n_points), float64 (F-order)
-        Residuals for study 1.
-    neighborhood_residuals_S2 : np.ndarray, shape (n_reps_S2, n_neighbors, n_points), float64 (F-order)
-        Residuals for study 2.
-    neighbor_mask_S1 : np.ndarray, shape (n_neighbors, n_points), bool
-        Mask selecting neighbors for study 1.
-    neighbor_mask_S2 : np.ndarray, shape (n_neighbors, n_points), bool
-        Mask selecting neighbors for study 2.
-    n_bins : int
-        Number of histogram bins.
-    shared_residual_range : float
-        Shared residual range for histogram construction.
+    Args:
+        neighborhood_residuals_S1 (np.ndarray): Residuals for study 1 (n_reps_S1, n_neighbors, n_points).
+        neighborhood_residuals_S2 (np.ndarray): Residuals for study 2 (n_reps_S2, n_neighbors, n_points).
+        neighbor_mask_S1 (np.ndarray): Mask selecting neighbors for study 1 (n_neighbors, n_points).
+        neighbor_mask_S2 (np.ndarray): Mask selecting neighbors for study 2 (n_neighbors, n_points).
+        n_bins (int): Number of histogram bins.
+        shared_residual_range (float): Shared residual range for histogram construction.
 
-    Returns
-    -------
-    dict
-        {
-            "js_divergences": np.ndarray (n_points,),
-            "included_n_reps_S1": np.ndarray (n_points,),
-            "included_n_reps_S2": np.ndarray (n_points,),
-            "total_included_n_reps": int,
-            "global_js_divergence": float,
-            "weights": np.ndarray (n_points,),
-            "pmf_S1": np.ndarray (n_points, n_bins),
-            "pmf_S2": np.ndarray (n_points, n_bins),
-            "tmp_counts": np.ndarray (n_points, n_bins),
-            "ierr": int
+    Returns:
+        dict: {
+            'js_divergences' (np.ndarray): Jensen–Shannon divergences for each point (n_points,),
+            'included_n_reps_S1' (np.ndarray): Number of included replicates for S1 (n_points,),
+            'included_n_reps_S2' (np.ndarray): Number of included replicates for S2 (n_points,),
+            'total_included_n_reps' (int): Total number of included replicates,
+            'global_js_divergence' (float): Weighted global Jensen–Shannon divergence value,
+            'weights' (np.ndarray): Weights for each point (n_points,),
+            'pmf_S1' (np.ndarray): Probability mass function for S1 (n_points, n_bins),
+            'pmf_S2' (np.ndarray): Probability mass function for S2 (n_points, n_bins),
+            'tmp_counts' (np.ndarray): Histogram counts (n_points, n_bins),
+            'ierr' (int): Error code (0 if successful)
         }
 
-    Notes
-    -----
-    - All arrays must be Fortran-contiguous.
+
     """
 
     neighborhood_residuals_S1 = np.asfortranarray(neighborhood_residuals_S1, dtype=np.float64)
@@ -4937,34 +4962,18 @@ def fjct_compute_contribution_scores(
     total_included_n_reps_per_f
 ):
     """
-    Compute per-family contribution scores using the Fortran routine
-    `fjct_compute_contribution_scores_c`.
+   Compute per-family contribution scores.
 
-    This combines:
-      1. the divergence of each family (global_js_divergences),
-      2. the residual support weight of each family
-         (total_included_n_reps_per_f / sum(total_included_n_reps_per_f)).
+        Args:
+            global_js_divergences (np.ndarray): Global Jensen–Shannon divergence for each family (k_families,).
+            total_included_n_reps_per_f (np.ndarray): Number of included replicates per family (k_families,).
 
-    Parameters
-    ----------
-    global_js_divergences : np.ndarray, shape (k_families,), float64
-        Weighted global JSD per family.
-    total_included_n_reps_per_f : np.ndarray, shape (k_families,), int32
-        Total included replicates per family.
-
-    Returns
-    -------
-    dict
-        {
-            "support_weights": np.ndarray (k_families,),
-            "contribution_scores": np.ndarray (k_families,),
-            "ierr": int
-        }
-
-    Notes
-    -----
-    - All arrays must be contiguous and correctly typed.
-    - Raises an exception if ierr != 0.
+        Returns:
+            dict: {
+                'support_weights' (np.ndarray): Support weights for each family (k_families,),
+                'contribution_scores' (np.ndarray): Contribution scores for each family (k_families,),
+                'ierr' (int): Error code (0 if successful)
+            }
     """
 
     global_js_divergences = np.asfortranarray(global_js_divergences, dtype=np.float64)
@@ -5004,3 +5013,6 @@ def fjct_compute_contribution_scores(
         "contribution_scores": contrib,
         "ierr": ierr.value,
     }
+        
+        
+
