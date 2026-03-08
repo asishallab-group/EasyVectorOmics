@@ -34,8 +34,6 @@ tox_euclidean_distance <- function(vec1, vec2) {
   validate_numeric_vector(vec2)
   validate_same_length(vec1, vec2)
   validate_nonempty(vec1)
-  vec1 <- as.numeric(vec1)
-  vec2 <- as.numeric(vec2)
 
   # Call the Rcpp forwarder
   result <- tox_euclidean_distance_rcpp(vec1, vec2)
@@ -69,11 +67,8 @@ tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
   # Calculate dimensions
   n_genes <- as.integer(length(genes) / d)
   n_families <- as.integer(length(centroids) / d)
-  validate_gene_to_family(gene_to_fam, n_genes, n_families)
+  validate_gene_to_family_centroid(gene_to_fam, n_genes, n_families)
   validate_length_equals_n(gene_to_fam, n_genes)
-  genes <- as.numeric(genes)
-  centroids <- as.numeric(centroids)
-  gene_to_fam <- as.integer(gene_to_fam)
 
   # Call the Rcpp forwarder
   result <- tox_distance_to_centroid_rcpp(genes,
@@ -115,13 +110,12 @@ tox_distance_to_centroid <- function(genes, centroids, gene_to_fam, d) {
 tox_calculate_tissue_versatility <- function(expression_vectors, vector_selection, axis_selection) {
   # Input Validation
   validate_numeric_matrix(expression_vectors)
-  expression_vectors <- as.matrix(expression_vectors)
   n_axes <- nrow(expression_vectors)
   n_vectors <- ncol(expression_vectors)
 
   # Ensure selectors have expected lengths
-  validate_logical_or_index_vector(vector_selection)
-  validate_logical_or_index_vector(axis_selection)
+  validate_logical_or_index_vector(vector_selection, expected_length = n_vectors, name = "vector_selection")
+  validate_logical_or_index_vector(axis_selection, expected_length = n_axes, name = "axis_selection")
 
   #Convert to appropriate types for Rcpp
   if (is.numeric(vector_selection)) {
@@ -182,11 +176,14 @@ tox_detect_outliers <- function(distances, gene_to_fam, n_families, percentile =
 
   # Input Validation
   validate_numeric_vector(distances)
-  n_genes <- as.integer(length(distances))
-  gene_to_fam <- as.integer(gene_to_fam)
-  validate_integer_vector(gene_to_fam)
+  n_genes <- length(distances)
+  validate_logical_or_index_vector(gene_to_fam, expected_length = n_genes, name = "gene_to_fam")
+  
+  
   validate_length_equals_n(gene_to_fam, n_genes)
-  validate_index_bounds(gene_to_fam, low = 1, high = n_families)
+  validate_positive_integer_scalar(n_families)
+  validate_numeric_scalar(percentile)
+  validate_gene_to_family_outliers(gene_to_fam, n_genes, n_families)
 
   # Call the Rcpp forwarder
   result <- tox_detect_outliers_rcpp(distances,
@@ -230,10 +227,8 @@ tox_compute_family_scaling <- function(distances, gene_to_fam, n_families) {
 
   # Input Validation
   validate_numeric_vector(distances)
-  distances <- as.numeric(distances)
-  n_genes <- as.integer(length(distances))
+  n_genes <- length(distances)
   validate_length_equals_n(gene_to_fam, n_genes)
-  validate_index_bounds(gene_to_fam, low = 1, high = n_families)
 
   # Call the Rcpp forwarder
   result <- tox_compute_family_scaling_rcpp(distances,
@@ -283,9 +278,8 @@ tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families
                                               family_distances) {
   # Input Validation
   validate_numeric_vector(distances)
-  n_genes <- as.integer(length(distances))
+  n_genes <- length(distances)
   validate_length_equals_n(gene_to_fam, n_genes)
-  validate_index_bounds(gene_to_fam, low = 1, high = n_families)
   validate_length_equals_n(perm_tmp, n_genes)
   validate_length_equals_n(stack_left_tmp, n_genes)
   validate_length_equals_n(stack_right_tmp, n_genes)
@@ -337,9 +331,9 @@ tox_compute_rdi <- function(distances, gene_to_fam, dscale) {
 
   # Input Validation
   validate_numeric_vector(distances)
-  n_genes <- as.integer(length(distances))
+  n_genes <- length(distances)
   validate_length_equals_n(gene_to_fam, n_genes)
-  n_families <- as.integer(length(dscale))
+  n_families <- length(dscale)
   validate_index_bounds(gene_to_fam, low = 1, high = n_families)
 
   # Call the Rcpp forwarder
@@ -373,8 +367,6 @@ tox_identify_outliers <- function(rdi, percentile = 95.0) {
   # Input Validation
   validate_numeric_vector(rdi)
   validate_numeric_scalar(percentile)
-  rdi <- as.numeric(rdi)
-  percentile <- as.numeric(percentile)
 
   # Call the Rcpp forwarder
   result <- tox_identify_outliers_rcpp(rdi, percentile)
@@ -404,7 +396,7 @@ tox_normalize_by_std_dev <- function(input_matrix) {
 
   # Input Validation
   validate_numeric_matrix_values(input_matrix)
-  input_matrix <- as.matrix(input_matrix)
+
   n_genes <- nrow(input_matrix)
   n_tissues <- ncol(input_matrix)
   
@@ -432,7 +424,7 @@ tox_quantile_normalization <- function(input_matrix) {
 
   # Input Validation
   validate_matrix(input_matrix)
-  input_matrix <- as.matrix(input_matrix)
+
   n_genes <- nrow(input_matrix)
   n_tissues <- ncol(input_matrix)
 
@@ -459,7 +451,7 @@ tox_log2_transformation <- function(input_matrix) {
 
   # Input Validation
   validate_matrix(input_matrix)
-  input_matrix <- as.matrix(input_matrix)
+
   n_genes <- nrow(input_matrix)
   n_tissues <- ncol(input_matrix)
 
@@ -484,7 +476,6 @@ tox_normalize_unit_length <- function(vector) {
   # Input Validation
   validate_numeric_vector(vector)
   validate_nonempty(vector)
-  vector <- as.numeric(vector)
 
   # Call the Rcpp forwarder
   result <- tox_normalize_unit_length_rcpp(vector)
@@ -508,29 +499,28 @@ tox_normalize_unit_length <- function(vector) {
 tox_calculate_tissue_averages <- function(df) {
   
   # Input Validation
-  df_matrix <- as.matrix(df)
-  validate_matrix(df_matrix)
+  validate_matrix(df)
 
-  tissue_groups <- as.character(sapply(colnames(df_matrix), tox_parse_tissue_group))
-  sort_idx <- order(tissue_groups)
-  sorted_tissue_groups <- tissue_groups[sort_idx]
-  unique_groups <- unique(sorted_tissue_groups)
+  tissue_groups <- vapply(colnames(df), tox_parse_tissue_group, FUN.VALUE = character(1), USE.NAMES = FALSE)
+  unique_groups <- unique(tissue_groups)
+
   n_groups <- length(unique_groups)
   group_starts <- integer(n_groups)
   group_counts <- integer(n_groups)
-  df_sorted <- df_matrix[, sort_idx, drop = FALSE]
-  current_group <- as.character(sorted_tissue_groups[1])
+  df_sorted <- df[, order(tissue_groups)]
+  sorted_tissue_groups <- tissue_groups[order(tissue_groups)]
+  current_group <- sorted_tissue_groups[1]
   group_starts[1] <- 1
   group_counts[1] <- 1
   group_idx <- 1
   for (i in 2:length(sorted_tissue_groups)) {
-    if (!is.na(sorted_tissue_groups[i]) && !is.na(current_group) && as.character(sorted_tissue_groups[i]) == as.character(current_group)) {
+    if (!is.na(sorted_tissue_groups[i]) && !is.na(current_group) && sorted_tissue_groups[i] == current_group) {
       group_counts[group_idx] <- group_counts[group_idx] + 1
     } else {
       group_idx <- group_idx + 1
       group_starts[group_idx] <- i
       group_counts[group_idx] <- 1
-      current_group <- as.character(sorted_tissue_groups[i])
+      current_group <- sorted_tissue_groups[i]
     }
   }
   # Call the Rcpp forwarder
@@ -562,8 +552,8 @@ tox_calculate_tissue_averages <- function(df) {
 #' @return A data frame with log2 fold changes for each gene and condition, with genes as rows and conditions as columns.
 tox_calculate_fold_changes <- function(df, control_pattern, condition_patterns) {
   # Input Validation
+  
   validate_matrix(df)
-  df <- as.matrix(df)
   validate_string_scalar(control_pattern)
   validate_character_vector(condition_patterns) 
  
@@ -606,9 +596,7 @@ tox_calculate_fold_changes <- function(df, control_pattern, condition_patterns) 
 tox_normalization_pipeline <- function(input_matrix, group_s, group_c) {
   # Input Validation
   validate_matrix(input_matrix)
-  input_matrix <- as.matrix(input_matrix)
-  group_s <- as.integer(group_s)
-  group_c <- as.integer(group_c)
+  
   validate_group_vectors(group_s, group_c, ncol(input_matrix))
 
   # Call the Rcpp forwarder
@@ -643,7 +631,6 @@ tox_normalize_variable_timeseries <- function(v) {
   # Input Validation
   validate_numeric_vector(v)
   validate_nonempty(v)
-  v <- as.numeric(v)
 
   # Call the Rcpp forwarder
   result <- tox_normalize_variable_timeseries_rcpp(v)
@@ -672,10 +659,10 @@ tox_normalize_single_trajectory <- function(trajectory) {
 
   # Input Validation
   validate_numeric_matrix(trajectory)
-  n_timepoints <- as.integer(nrow(trajectory))
-  n_factors <- as.integer(ncol(trajectory))
+  n_timepoints <- nrow(trajectory)
+  n_factors <- ncol(trajectory)
   traj_dimnames <- dimnames(trajectory)
-  trajectory <- matrix(as.numeric(trajectory), nrow = n_timepoints, ncol = n_factors)
+
   
   # Call the Rcpp forwarder
   result <- tox_normalize_single_trajectory_rcpp(trajectory)
@@ -708,12 +695,12 @@ tox_normalize_all_trajectories <- function(trajectories) {
   validate_numeric_array(trajectories)
 
   dims <- dim(trajectories)
+  validate_length_equals_n(dims, 3)
 
-  n_factors <- as.integer(dims[1])
-  n_samples <- as.integer(dims[2])
-  n_timepoints <- as.integer(dims[3])
+  n_factors <- dims[1]
+  n_samples <- dims[2]
+  n_timepoints <- dims[3]
   traj_dimnames <- dimnames(trajectories)
-  trajectories <- as.numeric(trajectories)
 
 
   # Call the Rcpp forwarder
@@ -1099,6 +1086,12 @@ get_kd_point <- function(X, kd_ix, position) {
   # Input validation using standardized validation functions
   validate_numeric_matrix(X, "X")
   validate_array_or_vector(kd_ix, "kd_ix")
+  validate_numeric_scalar(position, "position")
+  if (position != as.integer(position)) {
+    stop("position must be an integer-valued scalar")
+  }
+  position <- as.integer(position)
+  validate_index_bounds(position, low = 1, high = length(kd_ix), name = "position")
   
   # Extract the point at the specified position
   # Note: X is organized as (dimensions, points), so we need to extract column kd_ix[position]
@@ -1125,17 +1118,15 @@ tox_compute_shift_vector_field <- function(expression_vectors, family_centroids,
   # Input Validation
   validate_numeric_matrix(expression_vectors)
   validate_numeric_matrix(family_centroids)
-
-  expression_vectors <- as.matrix(expression_vectors)
-  family_centroids <- as.matrix(family_centroids)
+  
 
   # Ensure matching axes (rows)
   validate_matching_rows(expression_vectors, family_centroids)
 
   # Ensure mapping length matches number of vectors
-  gene_to_centroid <- as.integer(gene_to_centroid)
   n_vectors <- ncol(expression_vectors)
-  validate_length_equals_n(gene_to_centroid, n_vectors)
+  validate_logical_or_index_vector(gene_to_centroid, expected_length = n_vectors, name = "gene_to_centroid")
+  gene_to_centroid <- as.integer(gene_to_centroid)
 
   # Call the Rcpp forwarder
   result <- tox_compute_shift_vector_field_rcpp(expression_vectors,
@@ -1172,12 +1163,6 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
   # Input Validation
   validate_group_centroid_inputs(expression_vectors, gene_to_family, n_families, ortholog_set, mode)
 
-  expression_vectors <- as.matrix(expression_vectors)
-  gene_to_family <- as.integer(gene_to_family)
-  n_families <- as.integer(n_families)
-  ortholog_set <- as.integer(ortholog_set)
-  mode <- as.character(mode)
-
   # Call the Rcpp forwarder
   result <- tox_group_centroid_rcpp(expression_vectors,
                                     gene_to_family,
@@ -1189,7 +1174,7 @@ tox_group_centroid <- function(expression_vectors, gene_to_family, n_families, o
   # Check for errors
   check_err_code(result$ierr)
 
-  # Return centroid matrix
+  # Return only the centroid matrix
   return(result$centroid_matrix)
 }
 
@@ -1208,9 +1193,6 @@ tox_mean_vector <- function(expression_vectors, gene_indices) {
 
   # Input Validation
   validate_mean_vector_inputs(expression_vectors, gene_indices)
-
-  expression_vectors <- as.matrix(expression_vectors)
-  gene_indices <- as.integer(gene_indices)
 
   # Call the Rcpp forwarder
   result <- tox_mean_vector_rcpp(expression_vectors, gene_indices)
@@ -1245,6 +1227,7 @@ tox_determine_shared_residual_range_expert <- function(residual_pool, residual_p
   validate_integer_vector(residual_pool_perm)
   validate_nonempty_vector(residual_pool)
   validate_equal_length(residual_pool, residual_pool_perm)
+  validate_numeric_scalar(residual_range_quantile)
 
   # Call the Rcpp forwarder
   result <- tox_determine_shared_residual_range_expert_rcpp(residual_pool,
@@ -1276,6 +1259,7 @@ tox_determine_shared_residual_range <- function(neighborhood_residuals_S1, neigh
   # Input Validation
   validate_numeric_array(neighborhood_residuals_S1)
   validate_numeric_array(neighborhood_residuals_S2)
+  validate_numeric_scalar(residual_range_quantile)
 
   # Call the Rcpp forwarder
   result <- tox_determine_shared_residual_range_rcpp(neighborhood_residuals_S1,
@@ -1312,12 +1296,14 @@ tox_build_residual_histograms <- function(neighborhood_residuals, shared_residua
 
   # Input Validation
   validate_numeric_array(neighborhood_residuals)
+  validate_length_equals_n(dim(neighborhood_residuals), 3)
+  validate_numeric_scalar(shared_residual_range)
   validate_positive_integer_scalar(n_bins)
 
   # Call the Rcpp forwarder
   result <- tox_build_residual_histograms_rcpp(neighborhood_residuals,
                                                shared_residual_range,
-                                               as.integer(n_bins)
+                                               n_bins
   )
  
   # Check for errors
@@ -1354,6 +1340,9 @@ tox_build_residual_histograms_filtered <- function(neighborhood_residuals, share
 
   # Input Validation
   validate_numeric_array(neighborhood_residuals)
+  dims <- dim(neighborhood_residuals)
+  validate_length_equals_n(dims, 3)
+  validate_numeric_scalar(shared_residual_range)
   validate_positive_integer_scalar(n_bins)
 
   # Convert mask to integer representation expected by backend
@@ -1362,7 +1351,7 @@ tox_build_residual_histograms_filtered <- function(neighborhood_residuals, share
   # Call the Rcpp forwarder
   result <- tox_build_residual_histograms_filtered_rcpp(neighborhood_residuals,
                                                         shared_residual_range,
-                                                        as.integer(n_bins),
+                                                        n_bins,
                                                         mask_int
   )
 
@@ -1465,7 +1454,6 @@ tox_compute_weighted_global_divergence <- function(js_divergences, included_n_re
 #'   \describe{
 #'     \item{jsd_null}{Numeric vector (length n_permutations)}
 #'     \item{p_value}{Numeric scalar}
-#'     \item{ierr}{Integer status code from backend routine}
 #'   }
 #'
 tox_gjct_permutation_test <- function(neighborhood_residuals_S1, neighborhood_residuals_S2, global_jsd_observed, n_bins, shared_residual_range, n_permutations,
@@ -1473,6 +1461,11 @@ tox_gjct_permutation_test <- function(neighborhood_residuals_S1, neighborhood_re
   # Input Validation
   validate_numeric_array(neighborhood_residuals_S1)
   validate_numeric_array(neighborhood_residuals_S2)
+  validate_numeric_scalar(global_jsd_observed)
+  validate_positive_integer_scalar(n_bins)
+  validate_numeric_scalar(shared_residual_range)
+  validate_positive_integer_scalar(n_permutations)
+  
 
   # Call the Rcpp forwarder
   result <- tox_gjct_permutation_test_rcpp(neighborhood_residuals_S1,
@@ -1490,7 +1483,8 @@ tox_gjct_permutation_test <- function(neighborhood_residuals_S1, neighborhood_re
   # Return structured result
   return(list(
     jsd_null = result$jsd_null,
-    p_value = result$p_value
+    p_value = result$p_value,
+    ierr = result$ierr
   ))
 }
 
@@ -1515,7 +1509,6 @@ tox_gjct_permutation_test <- function(neighborhood_residuals_S1, neighborhood_re
 #'   \describe{
 #'     \item{jsd_null}{Numeric vector (length n_permutations)}
 #'     \item{p_value}{Numeric scalar}
-#'     \item{ierr}{Integer status code from backend routine}
 #'   }
 #'
 tox_gjct_permutation_test_filtered <- function(neighborhood_residuals_S1, neighborhood_residuals_S2, global_jsd_observed, n_bins, shared_residual_range,
@@ -1527,6 +1520,11 @@ tox_gjct_permutation_test_filtered <- function(neighborhood_residuals_S1, neighb
   # Input Validation
   validate_numeric_array(neighborhood_residuals_S1)
   validate_numeric_array(neighborhood_residuals_S2)
+  validate_numeric_scalar(global_jsd_observed)
+  validate_positive_integer_scalar(n_bins)
+  validate_numeric_scalar(shared_residual_range)
+  validate_positive_integer_scalar(n_permutations)
+  
 
   # Convert masks to integer representation expected by backend
   mask_int_S1 <- neighbor_mask_S1 * 1L
@@ -1550,7 +1548,8 @@ tox_gjct_permutation_test_filtered <- function(neighborhood_residuals_S1, neighb
   # Return structured result
   return(list(
     jsd_null = result$jsd_null,
-    p_value = result$p_value
+    p_value = result$p_value,
+    ierr = result$ierr
   ))
 }
 
@@ -1589,6 +1588,8 @@ tox_compute_gene_means <- function(expr) {
 tox_compute_residuals <- function(expr, means) {
   # Input Validation
   validate_numeric_matrix(expr)
+  validate_numeric_vector(means)
+  validate_length_equals_n(means, ncol(expr))
   
   # Call the Rcpp forwarder
   result <- tox_compute_residuals_rcpp(expr, means)
@@ -1619,6 +1620,7 @@ tox_pool_means <- function(mean_S1, mean_S2, n_points) {
   # Input Validation
   validate_numeric_vector(mean_S1)
   validate_numeric_vector(mean_S2)
+  validate_positive_integer_scalar(n_points)
   
   # Call the Rcpp forwarder
   result <- tox_pool_means_rcpp(mean_S1,
@@ -1656,10 +1658,11 @@ tox_pool_means_expert <- function(pooled_means, pooled_perm, n_points) {
   validate_numeric_vector(pooled_means)
   validate_logical_or_index_vector(pooled_perm)
   validate_same_length(pooled_means, pooled_perm)
+  validate_positive_integer_scalar(n_points)
   
   # Call the Rcpp forwarder
   result <- tox_pool_means_expert_rcpp(pooled_means,
-                                       as.integer(pooled_perm),
+                                       pooled_perm,
                                        n_points
   )
 
@@ -1696,6 +1699,8 @@ tox_construct_neighborhoods <- function(x_star, n_pool, mean_S, resid_S,
   validate_numeric_vector(x_star)
   validate_numeric_vector(mean_S)
   validate_numeric_matrix(resid_S)
+  validate_positive_integer_scalar(n_pool)
+
   
   n_points <- length(x_star)
   
@@ -1753,8 +1758,11 @@ tox_fjct_compute_jsd <- function(
   # Input Validation
   validate_numeric_array(neighborhood_residuals_S1)
   validate_numeric_array(neighborhood_residuals_S2)
-  validate_numeric_vector(neighborhood_genes_S1)
-  validate_numeric_vector(neighborhood_genes_S2)
+  validate_positive_integer_scalar(family_idx)
+  validate_integer_vector(gene_to_family_S1)
+  validate_integer_vector(gene_to_family_S2)
+  validate_numeric_matrix(neighborhood_genes_S1)
+  validate_numeric_matrix(neighborhood_genes_S2)
 
   # Call the Rcpp forwarder
   result <- tox_fjct_compute_jsd_alloc_rcpp(family_idx,
@@ -1815,6 +1823,10 @@ tox_fjct_compute_jsd_expert <- function(
   # Input Validation
   validate_numeric_array(neighborhood_residuals_S1)
   validate_numeric_array(neighborhood_residuals_S2)
+  validate_positive_integer_scalar(n_bins)
+  validate_numeric_scalar(shared_residual_range)
+  
+
 
   # Convert masks to integer representation expected by backend
   mask_int_S1 <- neighbor_mask_S1 * 1L
@@ -1864,6 +1876,7 @@ tox_fjct_compute_contribution_scores <- function(
   # Input Validation
   validate_numeric_vector(global_js_divergences)
   validate_integer_vector(total_included_n_reps_per_f)
+  validate_same_length(global_js_divergences, total_included_n_reps_per_f)
 
   # Call the Rcpp forwarder
   result <- tox_fjct_compute_contribution_scores_rcpp(global_js_divergences, total_included_n_reps_per_f)
@@ -1902,10 +1915,7 @@ tox_detect_neofunctionalization <- function(ancestors, genes, gene_to_fam, thres
   n_families <- ncol(ancestors)
   n_genes <- ncol(genes)
 
-  ancestors <- as.matrix(ancestors)
-  genes <- as.matrix(genes)
-  gene_to_fam <- as.integer(gene_to_fam)
-  thresholds <- as.numeric(thresholds)
+ 
 
   validate_length_equals_n(gene_to_fam, n_genes)
   validate_index_bounds(gene_to_fam, low = 1, high = n_families)
@@ -1933,9 +1943,7 @@ tox_detect_neofunctionalization <- function(ancestors, genes, gene_to_fam, thres
 #' @return Logical value indicating inactive (FALSE) or active (TRUE).
 tox_mask_check_state <- function(bit_mask, i_gene) {
   # Input Validation
-  bit_mask <- as.integer(bit_mask)
-  i_gene <- as.integer(i_gene)
-
+  
   validate_integer_vector(bit_mask)
   validate_positive_integer_scalar(i_gene)
   validate_index_bounds(i_gene, low = 1, high = length(bit_mask) * 32)
@@ -1957,7 +1965,7 @@ tox_mask_check_state <- function(bit_mask, i_gene) {
 #' @return Integer count of 32-bit chunks.
 tox_mask_chunk_count <- function(n_genes) {
   # Input Validation
-  n_genes <- as.integer(n_genes)
+
   validate_positive_integer_scalar(n_genes)
 
   # Call the Rcpp forwarder
@@ -1983,9 +1991,7 @@ tox_mask_chunk_count <- function(n_genes) {
 #' }
 tox_calc_work_arr_paralog_subsets_size <- function(max_subset_size, n_genes, filtered_paralogs_mask) {
   # Input Validation
-  max_subset_size <- as.integer(max_subset_size)
-  n_genes <- as.integer(n_genes)
-  filtered_paralogs_mask <- as.integer(filtered_paralogs_mask)
+
 
   validate_positive_integer_scalar(max_subset_size)
   validate_positive_integer_scalar(n_genes)
@@ -2017,10 +2023,6 @@ tox_calc_work_arr_paralog_subsets_size <- function(max_subset_size, n_genes, fil
 #' @return Integer matrix mask (n_mask_chunks x n_families).
 tox_filter_paralogs_by_pattern_dosage_effect <- function(gene_angles, threshold, gene_to_fam, n_families) {
   # Input Validation
-  gene_angles <- as.numeric(gene_angles)
-  gene_to_fam <- as.integer(gene_to_fam)
-  threshold <- as.numeric(threshold)
-  n_families <- as.integer(n_families)
 
   validate_numeric_vector(gene_angles)
   validate_numeric_scalar(threshold)
@@ -2052,10 +2054,7 @@ tox_filter_paralogs_by_pattern_dosage_effect <- function(gene_angles, threshold,
 #' @return Integer matrix mask (n_mask_chunks x n_families).
 tox_filter_paralogs_by_pattern_subfunctionalization <- function(gene_angles, threshold, gene_to_fam, n_families) {
   # Input Validation
-  gene_angles <- as.numeric(gene_angles)
-  gene_to_fam <- as.integer(gene_to_fam)
-  threshold <- as.numeric(threshold)
-  n_families <- as.integer(n_families)
+
 
   validate_numeric_vector(gene_angles)
   validate_numeric_scalar(threshold)
@@ -2096,13 +2095,7 @@ tox_detect_subfunctionalization <- function(ancestor, genes, rdi_threshold,
                                             filtered_paralogs_mask, max_subset_size,
                                             paralog_norms, sorted_paralog_norms_perm) {
   # Input Validation
-  ancestor <- as.numeric(ancestor)
-  genes <- as.matrix(genes)
-  filtered_paralogs_mask <- as.integer(filtered_paralogs_mask)
-  max_subset_size <- as.integer(max_subset_size)
-  rdi_threshold <- as.numeric(rdi_threshold)
-  paralog_norms <- as.numeric(paralog_norms)
-  sorted_paralog_norms_perm <- as.integer(sorted_paralog_norms_perm)
+
 
   validate_numeric_vector(ancestor)
   validate_numeric_matrix(genes)
@@ -2154,13 +2147,7 @@ tox_detect_dosage_effect <- function(ancestor, genes,
                                      filtered_paralogs_mask, max_subset_size,
                                      gain_gamma = 0.1, max_angle = pi) {
   # Input Validation
-  ancestor <- as.numeric(ancestor)
-  genes <- as.matrix(genes)
-  filtered_paralogs_mask <- as.integer(filtered_paralogs_mask)
-  max_subset_size <- as.integer(max_subset_size)
-  gain_gamma <- as.numeric(gain_gamma)
-  max_angle <- as.numeric(max_angle)
-
+ 
   validate_numeric_vector(ancestor)
   validate_numeric_matrix(genes)
   validate_length_equals_n(ancestor, nrow(genes))
@@ -2208,11 +2195,7 @@ tox_get_array_metadata <- function(filename, max_dims = 5L, with_clen = FALSE) {
   validate_filename(filename)
   validate_max_dims(max_dims)
 
-  # Coerce to expected base types
-  filename  <- as.character(filename)
-  max_dims  <- as.integer(max_dims)
-  with_clen <- as.logical(with_clen)
-
+  
   # Call the Rcpp forwarder
   result <- tox_get_array_metadata_rcpp(filename,
                                         max_dims,
@@ -2239,7 +2222,6 @@ tox_get_array_metadata <- function(filename, max_dims = 5L, with_clen = FALSE) {
 
 
 
-
 # ============================================================
 #  DESERIALIZATION FUNCTIONS 
 # ============================================================
@@ -2253,9 +2235,7 @@ tox_deserialize_int_array <- function(filename, max_dims = 5L) {
   validate_max_dims(max_dims)
   validate_file_exists(filename)
 
-  filename <- as.character(filename)
-  max_dims <- as.integer(max_dims)
-
+ 
   # Call the Rcpp forwarder
   result <- tox_deserialize_int_array_rcpp(filename, max_dims)
 
@@ -2276,9 +2256,7 @@ tox_deserialize_real_array <- function(filename, max_dims = 5L) {
   validate_max_dims(max_dims)
   validate_file_exists(filename)
 
-  # Coerce to base types
-  filename <- as.character(filename)
-  max_dims <- as.integer(max_dims)
+
 
   # Call the Rcpp forwarder
   result <- tox_deserialize_real_array_rcpp(filename, max_dims)
@@ -2299,10 +2277,6 @@ tox_deserialize_char_array <- function(filename, max_dims = 5L) {
   validate_filename(filename)
   validate_max_dims(max_dims)
   validate_file_exists(filename)
-  
-  # Coerce to base types
-  filename <- as.character(filename)
-  max_dims <- as.integer(max_dims)
 
   # Call the Rcpp forwarder
   result <- tox_deserialize_char_array_rcpp(filename, max_dims)
@@ -2323,9 +2297,6 @@ tox_deserialize_logical_array <- function(filename, max_dims = 5L) {
   validate_max_dims(max_dims)
   validate_file_exists(filename)
   
-  # Coerce to base types
-  filename <- as.character(filename)
-  max_dims <- as.integer(max_dims)
 
   # Call the Rcpp forwarder
   result <- tox_deserialize_logical_array_rcpp(filename, max_dims)
@@ -2347,9 +2318,6 @@ tox_deserialize_complex_array <- function(filename, max_dims = 5L) {
   validate_max_dims(max_dims)
   validate_file_exists(filename)
   
-  # Coerce to base types
-  filename <- as.character(filename)
-  max_dims <- as.integer(max_dims)
 
   # Call the Rcpp forwarder
   result <- tox_deserialize_complex_array_rcpp(filename, max_dims)
@@ -2374,10 +2342,7 @@ tox_serialize_int_array <- function(arr, filename) {
   validate_array_or_vector(arr)
   validate_filename(filename)
   
-  # Coerce to base types
-  filename <- as.character(filename)
-  arr <- as.array(arr)
-
+  
   # Call the Rcpp forwarder
   ierr <- tox_serialize_int_array_rcpp(arr, filename)
 
@@ -2397,9 +2362,7 @@ tox_serialize_real_array <- function(arr, filename) {
   validate_array_or_vector(arr)
   validate_filename(filename)
 
-  # Coerce to base types
-  filename <- as.character(filename)
-  arr <- as.array(arr)
+
 
   # Call the Rcpp forwarder
   ierr <- tox_serialize_real_array_rcpp(arr, filename)
@@ -2422,9 +2385,7 @@ tox_serialize_char_array <- function(arr, filename) {
   validate_array_or_vector(arr)
   validate_filename(filename)
 
-  # Coerce to base types
-  filename <- as.character(filename)
-  arr <- as.array(arr)
+
 
   # Call the Rcpp forwarder
   ierr <- tox_serialize_char_array_rcpp(arr, filename)
@@ -2445,9 +2406,7 @@ tox_serialize_logical_array <- function(arr, filename) {
   validate_array_or_vector(arr)
   validate_filename(filename)
   
-  # Coerce to base types
-  filename <- as.character(filename)
-  arr <- as.array(arr)
+
 
   # Call the Rcpp forwarder
   ierr <- tox_serialize_logical_array_rcpp(arr, filename)
@@ -2467,10 +2426,7 @@ tox_serialize_complex_array <- function(arr, filename) {
   # Input Validation
   validate_array_or_vector(arr)
   validate_filename(filename)
-  
-  # Coerce to base types
-  filename <- as.character(filename)
-  arr <- as.array(arr)
+
 
   # Call the Rcpp forwarder
   ierr <- tox_serialize_complex_array_rcpp(arr, filename)
@@ -2498,11 +2454,9 @@ tox_serialize_complex_array <- function(arr, filename) {
 build_kd_index <- function(X, dim_order = NULL) {
   # Input Validation
   validate_numeric_matrix(X)
+
+  d <- nrow(X)
   
-  # Coerce to matrix for stable shape handling
-  X <- as.matrix(X)
-  d <- as.integer(nrow(X))
-  n <- as.integer(ncol(X))
   
   if (is.null(dim_order)) {
     dim_order <- seq_len(d)
@@ -2510,11 +2464,9 @@ build_kd_index <- function(X, dim_order = NULL) {
   
   # Validate and coerce split dimension order
   validate_logical_or_index_vector(dim_order, expected_length = d, name = "dim_order")
-  dim_order <- as.integer(dim_order)
+  
   validate_length_equals_n(dim_order, d)
   
-  # Ensure numeric storage for Rcpp
-  X <- matrix(as.numeric(X), nrow = d, ncol = n)
   
   # Call the Rcpp forwarder
   result <- tox_build_kd_index_rcpp(X, dim_order)
@@ -2536,23 +2488,19 @@ build_kd_index <- function(X, dim_order = NULL) {
 build_spherical_kd <- function(V, dim_order = NULL) {
   # Input Validation
   validate_numeric_matrix(V)
-  
-  # Coerce to matrix for stable shape handling
-  V <- as.matrix(V)
-  d <- as.integer(nrow(V))
-  n <- as.integer(ncol(V))
-  
+
+  d <- nrow(V)
+  n <- ncol(V)
+
+
   if (is.null(dim_order)) {
     dim_order <- seq_len(d)
   }
   
   # Validate and coerce split dimension order
   validate_logical_or_index_vector(dim_order, expected_length = d, name = "dim_order")
-  dim_order <- as.integer(dim_order)
-  validate_length_equals_n(dim_order, d)
   
-  # Ensure numeric storage for Rcpp
-  V <- matrix(as.numeric(V), nrow = d, ncol = n)
+  validate_length_equals_n(dim_order, d)
   
   # Call the Rcpp forwarder
   result <- tox_build_spherical_kd_rcpp(V, dim_order)
@@ -2579,8 +2527,7 @@ build_bst_index <- function(x) {
   # Input Validation
   validate_numeric_vector(x)
 
-  # Convert to type expected by backend
-  x <- as.numeric(x)
+
 
   # Call the Rcpp forwarder
   result <- tox_build_bst_index_rcpp(x)
@@ -2594,10 +2541,12 @@ build_bst_index <- function(x) {
 get_sorted_value <- function(x, ix, position) {
   # Input Validation
   validate_numeric_vector(x)
-  ix <- as.integer(ix)
-  position <- as.integer(position)
   validate_array_or_vector(ix)
-  validate_positive_integer_scalar(position)
+  validate_numeric_scalar(position, "position")
+  if (position != as.integer(position)) {
+    stop("position must be an integer-valued scalar")
+  }
+  position <- as.integer(position)
   validate_index_bounds(position, low = 1, high = length(ix))
 
   # Return sorted value at selected position
@@ -2626,11 +2575,7 @@ bst_range_query <- function(x, ix, lo, hi) {
   validate_numeric_scalar(lo)
   validate_numeric_scalar(hi)
 
-  # Convert types for Rcpp
-  x  <- as.numeric(x)
-  ix <- as.integer(ix)
-  lo <- as.numeric(lo)
-  hi <- as.numeric(hi)
+ 
 
   # Call the Rcpp forwarder
   result <- tox_bst_range_query_rcpp(x,
@@ -2667,14 +2612,15 @@ bst_range_query <- function(x, ix, lo, hi) {
 tox_omics_vector_RAP_projection <- function(vecs, vecs_selection_mask, axes_selection_mask) {
   # Input Validation
   validate_numeric_matrix(vecs)
-  vecs <- as.matrix(vecs)
   n_axes <- nrow(vecs)
   n_vecs <- ncol(vecs)
+  validate_logical_or_index_vector(vecs_selection_mask, expected_length = n_vecs, name = "vecs_selection_mask")
+  validate_logical_or_index_vector(axes_selection_mask, expected_length = n_axes, name = "axes_selection_mask")
 
-  validate_logical_or_index_vector(vecs_selection_mask)
-  validate_logical_or_index_vector(axes_selection_mask)
-  vecs_selection_mask <- as.integer(vecs_selection_mask)
-  axes_selection_mask <- as.integer(axes_selection_mask)
+  # Convert selection masks to integer 0/1 representation expected by backend
+  vecs_selection_mask <- as.integer(as.logical(vecs_selection_mask))
+  axes_selection_mask <- as.integer(as.logical(axes_selection_mask))
+  
 
   # Call the Rcpp forwarder
   result <- tox_omics_vector_RAP_projection_rcpp(vecs,
@@ -2701,16 +2647,18 @@ tox_omics_vector_RAP_projection <- function(vecs, vecs_selection_mask, axes_sele
 tox_omics_field_RAP_projection <- function(vecs, vecs_selection_mask, axes_selection_mask) {
   # Input Validation
   validate_numeric_matrix(vecs)
-  vecs <- as.matrix(vecs)
+  
   n_rows <- nrow(vecs)
-
   n_axes <- as.integer(n_rows / 2L)
   n_vecs <- ncol(vecs)
 
-  validate_logical_or_index_vector(vecs_selection_mask)
-  validate_logical_or_index_vector(axes_selection_mask)
-  vecs_selection_mask <- as.integer(vecs_selection_mask)
-  axes_selection_mask <- as.integer(axes_selection_mask)
+  validate_logical_or_index_vector(vecs_selection_mask, expected_length = n_vecs, name = "vecs_selection_mask")
+  validate_logical_or_index_vector(axes_selection_mask, expected_length = n_axes, name = "axes_selection_mask")
+
+  # Convert selection masks to integer 0/1 representation expected by backend
+  vecs_selection_mask <- as.integer(as.logical(vecs_selection_mask))
+  axes_selection_mask <- as.integer(as.logical(axes_selection_mask))
+  
 
   # Call the Rcpp forwarder
   result <- tox_omics_field_RAP_projection_rcpp(vecs,
@@ -2734,11 +2682,10 @@ tox_omics_field_RAP_projection <- function(vecs, vecs_selection_mask, axes_selec
 tox_relative_axes_changes_from_shift_vector <- function(vec) {
   # Input Validation
   validate_numeric_vector(vec)
-  vec <- as.numeric(vec)
-  
-  # Handle zero vector case - return zero contributions
-  if (all(vec == 0)) {
-    return(rep(0.0, length(vec)))
+
+  # Preserve stable zero-vector behavior expected by tests/callers.
+  if (length(vec) > 0L && all(vec == 0, na.rm = TRUE)) {
+    return(rep(0, length(vec)))
   }
   
   # Call the Rcpp forwarder
@@ -2766,20 +2713,25 @@ tox_clock_hand_angle_between_vectors <- function(v1, v2, selected_axes_for_signe
   validate_numeric_vector(v1)
   validate_numeric_vector(v2)
   validate_same_length(v1, v2)
-  v1 <- as.numeric(v1)
-  v2 <- as.numeric(v2)
-  
-  # Convert to integer if needed
-  selected_axes_for_signed <- as.integer(selected_axes_for_signed)
-  
-  # For 2D vectors, adjust selected_axes_for_signed to be within range
+
   n_dims <- length(v1)
-  if (n_dims <= 3) {
-    # For 2D/3D, use only valid axes
-    selected_axes_for_signed <- c(1L, min(2L, n_dims), min(3L, n_dims))
+
+  if (missing(selected_axes_for_signed)) {
+    if (n_dims <= 1L) {
+      selected_axes_for_signed <- c(1L, 1L, 1L)
+    } else if (n_dims == 2L) {
+      selected_axes_for_signed <- c(1L, 2L, 1L)
+    } else {
+      selected_axes_for_signed <- c(1L, 2L, 3L)
+    }
   }
-  
-  validate_integer_vector(selected_axes_for_signed)
+
+  # Accept numeric index triplets and normalize to integer for backend.
+  validate_logical_or_index_vector(selected_axes_for_signed, expected_length = 3, name = "selected_axes_for_signed")
+  selected_axes_for_signed <- as.integer(selected_axes_for_signed)
+
+  validate_length_equals_n(selected_axes_for_signed, 3)
+  validate_index_bounds(selected_axes_for_signed, low = 1, high = n_dims)
 
   # Call the Rcpp forwarder
   result <- tox_clock_hand_angle_between_vectors_rcpp(v1,
@@ -2813,22 +2765,27 @@ tox_clock_hand_angles_for_shift_vectors <- function(origins, targets, vecs_selec
   validate_matching_cols(origins, targets)
 
   n_vecs <- ncol(origins)
-  validate_logical_or_index_vector(vecs_selection_mask)
-  vecs_selection_mask <- as.integer(vecs_selection_mask)
-  origins <- as.matrix(origins)
-  targets <- as.matrix(targets)
-  
-  # Convert to integer if needed
-  selected_axes_for_signed <- as.integer(selected_axes_for_signed)
-  
-  # For 2D vectors, adjust selected_axes_for_signed to be within range
+  validate_logical_or_index_vector(vecs_selection_mask, expected_length = n_vecs, name = "vecs_selection_mask")
+  vecs_selection_mask <- as.integer(as.logical(vecs_selection_mask))
+
   n_dims <- nrow(origins)
-  if (n_dims <= 3) {
-    # For 2D/3D, use only valid axes
-    selected_axes_for_signed <- c(1L, min(2L, n_dims), min(3L, n_dims))
+
+  if (missing(selected_axes_for_signed)) {
+    if (n_dims <= 1L) {
+      selected_axes_for_signed <- c(1L, 1L, 1L)
+    } else if (n_dims == 2L) {
+      selected_axes_for_signed <- c(1L, 2L, 1L)
+    } else {
+      selected_axes_for_signed <- c(1L, 2L, 3L)
+    }
   }
-  
-  validate_integer_vector(selected_axes_for_signed)
+
+  # Accept numeric index triplets and normalize to integer for backend.
+  validate_logical_or_index_vector(selected_axes_for_signed, expected_length = 3, name = "selected_axes_for_signed")
+  selected_axes_for_signed <- as.integer(selected_axes_for_signed)
+
+  validate_length_equals_n(selected_axes_for_signed, 3)
+  validate_index_bounds(selected_axes_for_signed, low = 1, high = n_dims)
 
   # Call the Rcpp forwarder
   result <- tox_clock_hand_angles_for_shift_vectors_rcpp(origins,
@@ -2853,11 +2810,10 @@ tox_clock_hand_angles_for_shift_vectors <- function(origins, targets, vecs_selec
 tox_relative_axes_expression_from_expression_vector <- function(vec) {
   # Input Validation
   validate_numeric_vector(vec)
-  vec <- as.numeric(vec)
-  
-  # Handle zero vector case - return zero contributions
-  if (all(vec == 0)) {
-    return(rep(0.0, length(vec)))
+
+  # Preserve stable zero-vector behavior expected by tests/callers.
+  if (length(vec) > 0L && all(vec == 0, na.rm = TRUE)) {
+    return(rep(0, length(vec)))
   }
   
   # Call the Rcpp forwarder
@@ -2902,15 +2858,6 @@ tox_cluster_factor_trajectories_k_means <- function(n_clusters, trajectories, n_
   validate_numeric_matrix(centroids)
   validate_positive_integer_scalar(max_iterations)
 
-  # Coerce to expected base types
-  n_clusters <- as.integer(n_clusters)
-  n_factors <- as.integer(n_factors)
-  n_samples <- as.integer(n_samples)
-  n_timepoints <- as.integer(n_timepoints)
-  max_iterations <- as.integer(max_iterations)
-  trajectories <- as.numeric(trajectories)
-  centroids <- matrix(as.numeric(centroids), nrow = n_factors, ncol = n_clusters)
-
   
   
 
@@ -2918,7 +2865,7 @@ tox_cluster_factor_trajectories_k_means <- function(n_clusters, trajectories, n_
   validate_matrix_shape_factor_centroids(centroids, n_factors, n_clusters)
 
   # Call the Rcpp forwarder
-  result <- tox_cluster_factor_trajectories_k_means_rcpp(trajectories = as.numeric(trajectories),
+  result <- tox_cluster_factor_trajectories_k_means_rcpp(trajectories = trajectories,
                                                          centroids = centroids,
                                                          n_clusters = n_clusters,
                                                          n_factors = n_factors,
@@ -2964,13 +2911,7 @@ tox_k_means_clustering <- function(n_clusters, data_points, n_points, n_dims, ce
   validate_numeric_matrix(centroids)
   validate_positive_integer_scalar(max_iterations)
 
-  # Coerce to expected base types
-  n_clusters <- as.integer(n_clusters)
-  n_points <- as.integer(n_points)
-  n_dims <- as.integer(n_dims)
-  max_iterations <- as.integer(max_iterations)
-  data_points <- matrix(as.numeric(data_points), nrow = n_dims, ncol = n_points)
-  centroids <- matrix(as.numeric(centroids), nrow = n_dims, ncol = n_clusters)
+ 
 
   # Validate matrix shapes
   validate_matrix_shape_data_points(data_points, n_dims, n_points)
@@ -3011,7 +2952,7 @@ tox_k_means_clustering <- function(n_clusters, data_points, n_points, n_dims, ce
 tox_linkage_clustering <- function(distances, method = "average") {
   # Input Validation
   validate_numeric_matrix(distances)
-  distances <- as.matrix(distances)
+ 
  
 
   # Call the Rcpp forwarder
@@ -3049,8 +2990,9 @@ tox_compute_baselines_factor_dependent <- function(factor, dependent, mode = "ra
   validate_numeric_vector(dependent)
   validate_same_length(factor, dependent, "factor", "dependent")
   validate_nonempty(factor)
-  mode <- as.character(mode)
-
+  validate_string_scalar(mode)
+ 
+ 
   # Call the Rcpp forwarder
   result <- tox_compute_baselines_factor_dependent_rcpp(factor,
                                                         dependent,
@@ -3087,10 +3029,14 @@ tox_perform_permutation_test <- function(trajectories, factor_idx, dependent_idx
   # Input Validation
   validate_numeric_array(trajectories)
   dims <- dim(trajectories)
-  n_factors <- as.integer(dims[1])
-  n_samples <- as.integer(dims[2])
-  n_timepoints <- as.integer(dims[3])
+  validate_length_equals_n(dims, 3)
+  n_factors <- dims[1]
+  n_samples <- dims[2]
+  n_timepoints <- dims[3]
 
+  validate_string_scalar(mode)
+ 
+ 
   validate_positive_integer_scalar(factor_idx)
   validate_positive_integer_scalar(dependent_idx)
   validate_positive_integer_scalar(sample_idx)
@@ -3098,15 +3044,14 @@ tox_perform_permutation_test <- function(trajectories, factor_idx, dependent_idx
   validate_index_bounds(dependent_idx, low = 1, high = n_factors)
   validate_index_bounds(sample_idx, low = 1, high = n_samples)
   validate_positive_integer_scalar(n_permutations)
-  factor_idx <- as.integer(factor_idx)
-  dependent_idx <- as.integer(dependent_idx)
-  sample_idx <- as.integer(sample_idx)
-  n_permutations <- as.integer(n_permutations)
 
   if (is.null(random_seed)) {
     random_seed <- 0L
   }
-  random_seed <- as.integer(random_seed)
+  validate_is_integer(random_seed, "random_seed")
+  validate_length_equals(random_seed, 1, "random_seed")
+ 
+ 
 
   # Call the Rcpp forwarder
   result <- tox_perform_permutation_test_rcpp(trajectories,
@@ -3158,11 +3103,6 @@ tox_compute_p_values <- function(local_contributions_observed, total_contributio
   validate_length_equals_n(total_contributions_perm, n_permutations)
   validate_length_equals_n(local_contributions_observed, nrow(local_contributions_perm))
 
-  local_contributions_observed <- as.numeric(local_contributions_observed)
-  total_contribution_observed <- as.numeric(total_contribution_observed)
-  local_contributions_perm <- as.matrix(local_contributions_perm)
-  total_contributions_perm <- as.numeric(total_contributions_perm)
-
   # Call the Rcpp forwarder
   result <- tox_compute_p_values_rcpp(local_contributions_observed,
                                       total_contribution_observed,
@@ -3201,6 +3141,7 @@ tox_compute_contributions <- function(factor, dependent, mode) {
   validate_numeric_vector(dependent)
   validate_same_length(factor, dependent, "factor", "dependent")
   validate_nonempty(factor)
+  validate_string_scalar(mode)
 
 
   # Call the Rcpp forwarder
@@ -3237,19 +3178,18 @@ tox_compute_all_contributions <- function(trajectories, factor_indices, dependen
   # Input Validation
   validate_numeric_array(trajectories)
   dims <- dim(trajectories)
-  n_factors <- as.integer(dims[1])
-  n_samples <- as.integer(dims[2])
-  n_timepoints <- as.integer(dims[3])
-
+  validate_length_equals_n(dims, 3)
+  n_factors <- dims[1]
+  n_samples <- dims[2]
+  n_timepoints <- dims[3]
+  validate_string_scalar(mode)
+  
+  
   validate_integer_vector(factor_indices)
   validate_integer_vector(dependent_indices)
 
-  factor_indices <- as.integer(factor_indices)
-  dependent_indices <- as.integer(dependent_indices)
   validate_index_bounds(factor_indices, low = 1, high = n_factors)
   validate_index_bounds(dependent_indices, low = 1, high = n_factors)
-
-  trajectories <- as.numeric(trajectories)
 
   n_selected_factors <- length(factor_indices)
   n_selected_dependents <- length(dependent_indices)
@@ -3301,45 +3241,45 @@ tox_compute_all_contributions <- function(trajectories, factor_indices, dependen
 #' 
 tox_loess_smooth_2d <- function(x_ref, y_ref, x_query, indices_used = NULL, kernel_sigma, kernel_cutoff) {
   # Input Validation
-  validate_numeric_vector(x_ref)
-  validate_numeric_vector(x_query)
-  validate_nonempty(x_ref)
-  validate_nonempty(x_query)
+  validate_numeric_vector(x_ref, "x_ref")
+  validate_nonempty(x_ref, "x_ref")
 
-  x_ref <- as.numeric(x_ref)
-  x_query <- as.numeric(x_query)
-
-  # Accept vector or matrix input and flatten to backend representation
   if (is.matrix(y_ref)) {
-    validate_numeric_matrix(y_ref)
-    y_ref <- as.numeric(y_ref)
+    validate_numeric_matrix(y_ref, "y_ref")
+    y_ref <- as.vector(y_ref)
   } else {
-    validate_numeric_vector(y_ref)
-    y_ref <- as.numeric(y_ref)
+    validate_numeric_vector(y_ref, "y_ref")
   }
-  validate_length_equals_n(y_ref, length(x_ref))
- 
+  validate_length_equals_n(y_ref, length(x_ref), "y_ref")
+
+  validate_numeric_vector(x_query, "x_query")
+  validate_nonempty(x_query, "x_query")
+
+  if (!is.null(indices_used)) {
+    validate_logical_or_index_vector(indices_used, name = "indices_used")
+    validate_nonempty(indices_used, "indices_used")
+  }
+
+  validate_numeric_scalar(kernel_sigma, "kernel_sigma")
+  validate_numeric_scalar(kernel_cutoff, "kernel_cutoff")
+
   # Indices used: default to all, then validate
-  n_total <- as.integer(length(x_ref))
+  n_total <- length(x_ref)
   if (is.null(indices_used)) {
     indices_used <- seq_len(n_total)
   }
-  validate_index_vector(indices_used, n_total)
-  indices_used <- as.integer(indices_used)
+  
+ 
 
-  # Kernel parameters
-  validate_positive_numeric_scalar(kernel_sigma)
-  validate_positive_numeric_scalar(kernel_cutoff)
-  kernel_sigma <- as.numeric(kernel_sigma)
-  kernel_cutoff <- as.numeric(kernel_cutoff)
+  
 
   # Call the Rcpp forwarder
   result <- tox_loess_smooth_2d_rcpp(n_total = n_total,
-                                     n_target = as.integer(length(x_query)),
+                                     n_target = length(x_query),
                                      x_ref = x_ref,
                                      y_ref = y_ref,
                                      indices_used = indices_used,
-                                     n_used = as.integer(length(indices_used)),
+                                     n_used = length(indices_used),
                                      x_query = x_query,
                                      kernel_sigma = kernel_sigma,
                                      kernel_cutoff = kernel_cutoff
@@ -3352,7 +3292,7 @@ tox_loess_smooth_2d <- function(x_ref, y_ref, x_query, indices_used = NULL, kern
   y_out <- result$y_out
   return(list(
     y_out = y_out,
-    smoothed_values = as.vector(y_out)
+    smoothed_values = y_out
   ))
 }
 
@@ -3369,16 +3309,14 @@ tox_loess_smooth_2d <- function(x_ref, y_ref, x_query, indices_used = NULL, kern
 tox_compute_edf <- function(values, perm = NULL) {
   # Input Validation
   validate_numeric_vector(values)
-  values <- as.numeric(values)
 
   if (is.null(perm)) {
     # Call the Rcpp forwarder (auto permutation)
     result <- tox_compute_edf_rcpp(values)
   } else {
     # Call the Rcpp forwarder (expert permutation)
-    validate_integer_vector(perm)
-    validate_length_equals_n(perm, length(values))
-    perm <- as.integer(perm)
+
+    validate_is_permutation(perm, n = length(values), name = "perm")
     result <- tox_compute_edf_expert_rcpp(values, perm)
   }
 
@@ -3406,10 +3344,7 @@ tox_compute_edf <- function(values, perm = NULL) {
 tox_compute_edf_expert <- function(values, perm) {
   # Input Validation
   validate_numeric_vector(values)
-  validate_integer_vector(perm)
-  validate_length_equals_n(perm, length(values))
-  values <- as.numeric(values)
-  perm <- as.integer(perm)
+  validate_is_permutation(perm, n = length(values), name = "perm")
 
   # Call the Rcpp forwarder
   result <- tox_compute_edf_expert_rcpp(values, perm)
@@ -3433,10 +3368,12 @@ tox_compute_edf_expert <- function(values, perm) {
 #' 
 tox_which <- function(mask, m_max = length(mask)) {
   # Input Validation
-  mask <- as.integer(mask)
+
+  if (is.logical(mask)) {
+    mask <- as.integer(mask)
+  }
   validate_integer_vector(mask)
   validate_positive_integer_scalar(m_max)
-  m_max <- as.integer(m_max)
 
   # Call the Rcpp forwarder
   result <- tox_which_rcpp(mask = mask, m_max = m_max)

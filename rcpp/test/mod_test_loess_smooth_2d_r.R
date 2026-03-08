@@ -197,7 +197,7 @@ test_loess_invalid_dimensions <- function() {
   }, error = function(e) {
     error_caught <<- TRUE
     cat("Actual error message:", e$message, "\n")
-    stopifnot(grepl("n_total must be a positive integer scalar", e$message))
+    stopifnot(grepl("n_total must be a positive integer scalar|x_ref cannot be empty", e$message))
   })
   stopifnot(error_caught)  # Make sure an error was actually thrown
   
