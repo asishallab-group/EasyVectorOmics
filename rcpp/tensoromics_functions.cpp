@@ -2140,23 +2140,23 @@ List tox_log2_transformation_rcpp(NumericMatrix input) {
                         Named("ierr") = ierr);
 }
 
-  //' Normalize a numeric vector to unit length
-  //'
-  //' @param vector Numeric vector
-  //' @return List with normalized vector and error code
-  // [[Rcpp::export]]
-  List tox_normalize_unit_length_rcpp(NumericVector vector) {
+//' Normalize a numeric vector to unit length
+//'
+//' @param vector Numeric vector
+//' @return List with normalized vector and error code
+// [[Rcpp::export]]
+List tox_normalize_unit_length_rcpp(NumericVector vector) {
 
-    int n_dims = vector.size();
-    int ierr = 0;
+  int n_dims = vector.size();
+  int ierr = 0;
 
-    normalize_unit_length_c(vector.begin(),
-                &n_dims,
-                &ierr);
+  normalize_unit_length_c(vector.begin(),
+              &n_dims,
+              &ierr);
 
-    return List::create(Named("vector") = vector,
-              Named("ierr") = ierr);
-  }
+  return List::create(Named("vector") = vector,
+            Named("ierr") = ierr);
+}
 
 //' Compute scalar baselines for a factor and dependent variable
 //'
@@ -2308,85 +2308,85 @@ List tox_normalization_pipeline_rcpp(NumericMatrix input,
 }
 
 
-            //' Normalize a single time series using min-max scaling
-            //'
-            //' @param v Numeric vector representing one time series
-            //' @return List with normalized vector, status code, and error code
-            // [[Rcpp::export]]
-            List tox_normalize_variable_timeseries_rcpp(NumericVector v) {
+//' Normalize a single time series using min-max scaling
+//'
+//' @param v Numeric vector representing one time series
+//' @return List with normalized vector, status code, and error code
+// [[Rcpp::export]]
+List tox_normalize_variable_timeseries_rcpp(NumericVector v) {
 
-              int n_points = v.size();
-              NumericVector v_norm(n_points);
-              int ierr = 0;
-              int status = 0;
+  int n_points = v.size();
+  NumericVector v_norm(n_points);
+  int ierr = 0;
+  int status = 0;
 
-              normalize_variable_timeseries_C(v.begin(),
-                                              v_norm.begin(),
-                                              &n_points,
-                                              &ierr,
-                                              &status);
+  normalize_variable_timeseries_C(v.begin(),
+                                  v_norm.begin(),
+                                  &n_points,
+                                  &ierr,
+                                  &status);
 
-              return List::create(Named("v_norm") = v_norm,
-                                  Named("status") = status,
-                                  Named("ierr") = ierr);
-            }
-
-
-            //' Normalize all factors in a single trajectory independently
-            //'
-            //' @param trajectory Numeric matrix (timepoints x factors)
-            //' @return List with normalized trajectory, status code, and error code
-            // [[Rcpp::export]]
-            List tox_normalize_single_trajectory_rcpp(NumericMatrix trajectory) {
-
-              int n_timepoints = trajectory.nrow();
-              int n_factors = trajectory.ncol();
-              NumericMatrix trajectory_norm(n_timepoints, n_factors);
-              int ierr = 0;
-              int status = 0;
-
-              normalize_single_trajectory_C(trajectory.begin(),
-                                            trajectory_norm.begin(),
-                                            &n_factors,
-                                            &n_timepoints,
-                                            &ierr,
-                                            &status);
-
-              return List::create(Named("traj_norm") = trajectory_norm,
-                                  Named("status") = status,
-                                  Named("ierr") = ierr);
-            }
+  return List::create(Named("v_norm") = v_norm,
+                      Named("status") = status,
+                      Named("ierr") = ierr);
+}
 
 
-            //' Normalize all trajectories across factors, samples, and timepoints
-            //'
-            //' @param trajectories Numeric array flattened as vector (factors x samples x timepoints)
-            //' @param n_factors Integer number of factors
-            //' @param n_samples Integer number of samples
-            //' @param n_timepoints Integer number of timepoints
-            //' @return List with normalized trajectories, status code, and error code
-            // [[Rcpp::export]]
-            List tox_normalize_all_trajectories_rcpp(NumericVector trajectories,
-                                                     int n_factors,
-                                                     int n_samples,
-                                                     int n_timepoints) {
+//' Normalize all factors in a single trajectory independently
+//'
+//' @param trajectory Numeric matrix (timepoints x factors)
+//' @return List with normalized trajectory, status code, and error code
+// [[Rcpp::export]]
+List tox_normalize_single_trajectory_rcpp(NumericMatrix trajectory) {
 
-              NumericVector trajectories_norm(n_factors * n_samples * n_timepoints);
-              int ierr = 0;
-              int status = 0;
+  int n_timepoints = trajectory.nrow();
+  int n_factors = trajectory.ncol();
+  NumericMatrix trajectory_norm(n_timepoints, n_factors);
+  int ierr = 0;
+  int status = 0;
 
-              normalize_all_trajectories_C(trajectories.begin(),
-                                           trajectories_norm.begin(),
-                                           &n_factors,
-                                           &n_samples,
-                                           &n_timepoints,
-                                           &ierr,
-                                           &status);
+  normalize_single_trajectory_C(trajectory.begin(),
+                                trajectory_norm.begin(),
+                                &n_factors,
+                                &n_timepoints,
+                                &ierr,
+                                &status);
 
-              return List::create(Named("traj_norm") = trajectories_norm,
-                                  Named("status") = status,
-                                  Named("ierr") = ierr);
-            }
+  return List::create(Named("traj_norm") = trajectory_norm,
+                      Named("status") = status,
+                      Named("ierr") = ierr);
+}
+
+
+//' Normalize all trajectories across factors, samples, and timepoints
+//'
+//' @param trajectories Numeric array flattened as vector (factors x samples x timepoints)
+//' @param n_factors Integer number of factors
+//' @param n_samples Integer number of samples
+//' @param n_timepoints Integer number of timepoints
+//' @return List with normalized trajectories, status code, and error code
+// [[Rcpp::export]]
+List tox_normalize_all_trajectories_rcpp(NumericVector trajectories,
+                                          int n_factors,
+                                          int n_samples,
+                                          int n_timepoints) {
+
+  NumericVector trajectories_norm(n_factors * n_samples * n_timepoints);
+  int ierr = 0;
+  int status = 0;
+
+  normalize_all_trajectories_C(trajectories.begin(),
+                                trajectories_norm.begin(),
+                                &n_factors,
+                                &n_samples,
+                                &n_timepoints,
+                                &ierr,
+                                &status);
+
+  return List::create(Named("traj_norm") = trajectories_norm,
+                      Named("status") = status,
+                      Named("ierr") = ierr);
+}
 
 
 //' Calculate shift vector field for gene expression vectors
