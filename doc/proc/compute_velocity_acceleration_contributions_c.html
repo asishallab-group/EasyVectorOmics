@@ -10,7 +10,7 @@
     <meta name="author" content="TensorOmics Developers" >
     <link rel="icon" href="../favicon.png">
 
-    <title>validate_family_centroids_R &ndash; TensorOmics</title>
+    <title>compute_velocity_acceleration_contributions_c &ndash; TensorOmics</title>
 
     <!-- Bootstrap -->
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet"
@@ -77,7 +77,7 @@
 
     <div class="container">
   <div class="row">
-    <h1>validate_family_centroids_R
+    <h1>compute_velocity_acceleration_contributions_c
       <small>Subroutine</small>
       
     </h1>
@@ -88,20 +88,20 @@
 
             <li class="list-inline-item" id="statements"><i class="fa fa-list-ol"></i>
               <a data-bs-toggle="tooltip" data-bs-placement="bottom" data-bs-html="true"
-                 title=" 0.1% of total for procedures.">11 statements</a>
+                 title=" 0.6% of total for procedures.">75 statements</a>
             </li>
 
             <li class="list-inline-item" id="source-file">
               <i class="fa fa-code"></i>
-              <a href="../src/tox_data_validation.F90"> Source File</a>
+              <a href="../src/tox_trajectory_contribution_analysis.F90"> Source File</a>
             </li>
         </ul>
       </div>
       <div class="col">
         <nav aria-label="breadcrumb">
           <ol class="breadcrumb justify-content-end mb-0">
-                <li class="breadcrumb-item"><a href='../sourcefile/tox_data_validation.f90.html'>tox_data_validation.F90</a></li>
-            <li class="breadcrumb-item active" aria-current="page">validate_family_centroids_R</li>
+                <li class="breadcrumb-item"><a href='../sourcefile/tox_trajectory_contribution_analysis.f90.html'>tox_trajectory_contribution_analysis.F90</a></li>
+            <li class="breadcrumb-item active" aria-current="page">compute_velocity_acceleration_contributions_c</li>
           </ol>
         </nav>
       </div>
@@ -148,7 +148,7 @@
     </div>
     
     <div class="col-md-9" id='text'>
-    <h2> subroutine validate_family_centroids_R(family_centroids, n_families, n_samples, ierr)  
+    <h2>pure subroutine compute_velocity_acceleration_contributions_c(trajectories, n_factors, n_samples, n_timepoints, mode, factor_workspace, dependent_workspace, contributions_workspace, Contrib_velocity, velocity_contribution_series, Contrib_acceleration, acceleration_contribution_series, ierr) bind(C, name="compute_velocity_acceleration_contributions_c")  
 </h2>
         <div class="card mb-4">
       <h3 class="card-header card-title bg-light">Uses</h3>
@@ -157,8 +157,9 @@
             <li class="list-group-item">
               <ul class="list-inline">
                   <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_fortran_env'>iso_fortran_env</a></li>
-                  <li class="list-inline-item"><a href='../module/tox_data_validation.html'>tox_data_validation</a></li>
                   <li class="list-inline-item"><a href='../module/tox_errors.html'>tox_errors</a></li>
+                  <li class="list-inline-item"><a href='http://fortranwiki.org/fortran/show/iso_c_binding'>iso_c_binding</a></li>
+                  <li class="list-inline-item"><a href='../module/tox_trajectory_contribution_analysis.html'>tox_trajectory_contribution_analysis</a></li>
               </ul>
             </li>
         </ul>
@@ -166,7 +167,7 @@
     </div>
 
 
-    <p>R Binding to validate family centroids</p>
+    <p>C wrapper for compute_velocity_and_acceleration_contributions</p>
 
 
     <h3>Arguments</h3>
@@ -182,62 +183,197 @@
     <tbody>
         <tr>
             <td>
-              <span class="anchor" id="variable-family_centroids~11"></span>
-              real(kind=real64),
+              <span class="anchor" id="variable-trajectories~11"></span>
+              real(kind=c_double),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              dimension(n_factors, n_samples, n_timepoints), target
             </td>
             <td>::</td>
-            <td><strong>family_centroids</strong>(n_samples,n_families)</td>
+            <td><strong>trajectories</strong></td>
             <td>
-                <p>Family centroids array</p>
+                <p>input trajectories in layout (n_factors, n_samples, n_timepoints)</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_families~11"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-n_factors~14"></span>
+              integer(kind=c_int),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              target
             </td>
             <td>::</td>
-            <td><strong>n_families</strong></td>
+            <td><strong>n_factors</strong></td>
             <td>
-                <p>Number of families</p>
+                <p>number of factors</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-n_samples~27"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-n_samples~15"></span>
+              integer(kind=c_int),
             </td>
-<td>intent(in)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              target
             </td>
             <td>::</td>
             <td><strong>n_samples</strong></td>
             <td>
-                <p>Number of samples</p>
+                <p>number of samples</p>
             </td>
         </tr>
         <tr>
             <td>
-              <span class="anchor" id="variable-ierr~133"></span>
-              integer(kind=int32),
+              <span class="anchor" id="variable-n_timepoints~21"></span>
+              integer(kind=c_int),
             </td>
-<td>intent(out)</td>
+<td>intent(in),</td>
               <td></td>            <td>
-              
+              target
+            </td>
+            <td>::</td>
+            <td><strong>n_timepoints</strong></td>
+            <td>
+                <p>number of timepoints</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-mode~13"></span>
+              character(kind=c_char, len=1),
+            </td>
+<td>intent(in),</td>
+              <td></td>            <td>
+              dimension(*), target
+            </td>
+            <td>::</td>
+            <td><strong>mode</strong></td>
+            <td>
+                <p>Baseline mode: "raw", "min", "mean"</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-factor_workspace~3"></span>
+              real(kind=c_double),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_timepoints - 1, n_factors), target
+            </td>
+            <td>::</td>
+            <td><strong>factor_workspace</strong></td>
+            <td>
+                <p>workspace for factor data (used for velocity and acceleration)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-dependent_workspace~3"></span>
+              real(kind=c_double),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_timepoints - 1), target
+            </td>
+            <td>::</td>
+            <td><strong>dependent_workspace</strong></td>
+            <td>
+                <p>workspace for dependent data (used for velocity and acceleration)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-contributions_workspace~3"></span>
+              real(kind=c_double),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_timepoints - 1), target
+            </td>
+            <td>::</td>
+            <td><strong>contributions_workspace</strong></td>
+            <td>
+                <p>workspace for contribution calculations (used for velocity and acceleration)</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-contrib_velocity"></span>
+              real(kind=c_double),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_factors, n_factors, n_samples), target
+            </td>
+            <td>::</td>
+            <td><strong>Contrib_velocity</strong></td>
+            <td>
+                <p>velocity covariance matrix</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-velocity_contribution_series~3"></span>
+              real(kind=c_double),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_timepoints, n_factors, n_factors, n_samples), target
+            </td>
+            <td>::</td>
+            <td><strong>velocity_contribution_series</strong></td>
+            <td>
+                <p>velocity contribution series</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-contrib_acceleration"></span>
+              real(kind=c_double),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_factors, n_factors, n_samples), target
+            </td>
+            <td>::</td>
+            <td><strong>Contrib_acceleration</strong></td>
+            <td>
+                <p>acceleration covariance matrix</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-acceleration_contribution_series~3"></span>
+              real(kind=c_double),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              dimension(n_timepoints, n_factors, n_factors, n_samples), target
+            </td>
+            <td>::</td>
+            <td><strong>acceleration_contribution_series</strong></td>
+            <td>
+                <p>acceleration contribution series</p>
+            </td>
+        </tr>
+        <tr>
+            <td>
+              <span class="anchor" id="variable-ierr~22"></span>
+              integer(kind=c_int),
+            </td>
+<td>intent(out),</td>
+              <td></td>            <td>
+              target
             </td>
             <td>::</td>
             <td><strong>ierr</strong></td>
             <td>
-                <p>Error code</p>
+                <p>error code</p>
             </td>
         </tr>
     </tbody>
@@ -274,7 +410,7 @@
             <p class="text-end">
               Documentation generated by
               <a href="https://github.com/Fortran-FOSS-Programmers/ford">FORD</a>
- on "2026-03-04 09:48 +0000"             </p>
+ on "2026-03-24 12:03 +0000"             </p>
           </div>
         </div>
         <br>
