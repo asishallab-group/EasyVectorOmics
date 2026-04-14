@@ -5,6 +5,7 @@
 
 # Source the main functions
 source("rcpp/tensoromics_functions.R")
+source("rcpp/test_helpers.R")
 
 cat("=== Testing outlier detection R wrapper functions ===\n")
 cat("Based on Fortran test suite with comprehensive test coverage\n")
@@ -353,8 +354,8 @@ test_detect_outliers_large_dataset <- function() {
     c(20, 25)             # Two clear outliers
   )
   # Map each distance to a family index. The constructed distances vector has
-  # 10+10+10+10+10+10+10+10+10+2 = 102 elements, so create a matching mapping of length 102.
-  gene_to_fam <- c(rep(1:10, each = 10), 9, 10)
+  # 10+10+10+10+10+10+10+10+2 = 92 elements, so create a matching mapping of length 92.
+  gene_to_fam <- c(rep(1:10, each = 9), 9, 10)
   percentile <- 90.0
 
   result <- tox_detect_outliers(distances, gene_to_fam, n_families, percentile)
@@ -487,40 +488,4 @@ test_compute_family_scaling_expert_consistency <- function() {
 # Run all tests
 # =====================
 
-cat("\n=================================================\n")
-cat("    OUTLIER DETECTION FULL R INTERFACE TESTS\n")
-cat("=================================================\n\n")
-
-# compute_family_scaling tests
-test_compute_family_scaling_basic()
-test_compute_family_scaling_invalid()
-test_compute_family_scaling_zero_distances()
-test_compute_family_scaling_large_dataset()
-
-# compute_rdi tests
-test_compute_rdi_normal()
-test_compute_rdi_zero_scaling()
-test_compute_rdi_precision()
-test_compute_rdi_negative_distances()
-
-# identify_outliers tests
-test_identify_outliers_simple()
-test_identify_outliers_all_zeros()
-test_identify_outliers_percentile_0()
-test_identify_outliers_percentile_100()
-
-# detect_outliers tests (complete workflow)
-test_detect_outliers_typical()
-test_detect_outliers_invalid_families()
-test_detect_outliers_single_families()
-test_detect_outliers_mixed_sizes()
-test_detect_outliers_large_dataset()
-
-# compute_family_scaling_expert tests
-test_compute_family_scaling_expert_basic()
-test_compute_family_scaling_expert_consistency()
-
-cat("=================================================\n")
-cat("             ALL TESTS COMPLETED\n")
-cat("=================================================\n")
-cat("If you see this message, all outlier detection R interface tests passed! ✓\n")
+run_all_tests()
