@@ -3,24 +3,17 @@ module mod_test_get_outliers
   use asserts
   use tox_get_outliers
   use, intrinsic :: iso_fortran_env, only: real64, int32
+  use test_suite
   implicit none
   public
-
-  abstract interface
-    subroutine test_interface()
-    end subroutine test_interface
-  end interface
-
-  type :: test_case
-    character(len=64) :: name
-    procedure(test_interface), pointer, nopass :: test_proc => null()
-  end type test_case
 
 contains
 
   !> @brief Get array of all available tests (as subroutine, not function).
-  subroutine get_all_tests(all_tests)
-    type(test_case), intent(out) :: all_tests(24)
+  function get_all_tests_get_outliers() result(all_tests)
+    type(test_case), allocatable :: all_tests(:)
+    allocate(all_tests(24))
+
     all_tests(1) = test_case("test_scaling_basic", test_scaling_basic)
     all_tests(2) = test_case("test_rdi_basic", test_rdi_basic)
     all_tests(3) = test_case("test_identify_outliers_basic", test_identify_outliers_basic)
@@ -46,44 +39,7 @@ contains
     all_tests(23) = test_case("test_outliers_nan_handling", test_outliers_nan_handling)
     all_tests(24) = test_case("test_scaling_performance_benchmark",test_scaling_performance_benchmark)
 
-  end subroutine get_all_tests
-
-  !> @brief Run specific get_outliers tests by name.
-  subroutine run_named_tests_get_outliers(test_names)
-    character(len=*), intent(in) :: test_names(:)
-    type(test_case) :: all_tests(24)
-    integer(int32) :: i, j
-    logical :: found
-
-    call get_all_tests(all_tests)
-
-    do i = 1, size(test_names)
-      found = .false.
-      do j = 1, size(all_tests)
-        if (trim(test_names(i)) == trim(all_tests(j)%name)) then
-          call all_tests(j)%test_proc()
-          print *, trim(test_names(i)), " passed."
-          found = .true.
-          exit
-        end if
-      end do
-      if (.not. found) then
-        print *, "Unknown test: ", trim(test_names(i))
-      end if
-    end do
-  end subroutine run_named_tests_get_outliers
-
-  !> @brief Run all tox_get_outliers tests.
-  subroutine run_all_tests_get_outliers()
-    type(test_case) :: all_tests(24)
-    integer(int32) :: i
-    call get_all_tests(all_tests)
-    do i = 1, size(all_tests)
-      call all_tests(i)%test_proc()
-      print *, trim(all_tests(i)%name), " passed."
-    end do
-    print *, "All tox_get_outliers tests passed successfully."
-  end subroutine run_all_tests_get_outliers
+  end function get_all_tests_get_outliers
 
   !> Test: Basic scaling with orthologs and non-orthologs.
   !> This test checks that the scaling for each family is set to the corresponding value using loess.
