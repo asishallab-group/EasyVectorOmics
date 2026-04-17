@@ -33,6 +33,47 @@ module f42_utils
   real(real64), parameter :: EPS = epsilon(1.0_real64)
 contains
 
+    pure real(real64) function mean(vec)
+        real(real64), dimension(:), intent(in) :: vec
+            !! Vector to compute the mean value from
+
+        mean = sum(vec) / real(size(vec, kind=int32), real64)
+    end function mean
+
+    pure real(real64) function std_dev(vec, do_bessel_correction)
+        real(real64), dimension(:), intent(in) :: vec
+            !! Vector to compute the standard deviation value from
+        logical, intent(in), optional :: do_bessel_correction
+            !! Tells whether to apply the bessel's correction or not, default: `.false.`
+            !!
+            !! |    Case     |                                                Formula                                                      |
+            !! |-------------|-------------------------------------------------------------------------------------------------------------|
+            !! |  `.true.`   | \(\frac{1}{\texttt{size}(vec) - 1} \cdot \sum_{i=1}^{\texttt{size}(vec)} (vec(i) - \texttt{mean}(i))^{2}\)  |
+            !! |  `.false.`  |  \(\frac{1}{\texttt{size}(vec)} \cdot \sum_{i=1}^{\texttt{size}(vec)} vec(i)^{2} - \texttt{mean}(i)^{2}\)   |
+
+        logical :: bessel
+        integer(int32) :: n_elements, i_element
+        real(real64) :: mean_val, squares_sum
+
+        M_DEFAULT_VAL(do_bessel_correction, bessel, .false.)
+
+        mean_val = mean(vec)
+        n_elements = size(vec, kind=int32)
+        if (bessel) then
+            squares_sum = 0.0_real64
+            do concurrent (i_element = 1:n_elements) shared(vec, mean_val) reduce(+:squares_sum)
+                squares_sum = squares_sum + (vec(i_element) - mean_val) ** 2
+            end do
+            std_dev = sqrt(squares_sum / real(n_elements, kind=real64))
+        else
+            squares_sum = 0.0_real64
+            do concurrent (i_element = 1:n_elements) shared(vec, mean_val) reduce(+:squares_sum)
+                squares_sum = squares_sum + vec(i_element) ** 2
+            end do
+            std_dev = sqrt(max(0.0_real64, squares_sum / real(n_elements, kind=real64) - mean_val))
+        end if
+    end function std_dev
+
   !> Clamps a value into a range `min_val <= val <= max_val`. If `max_val < min_val`, `min_val` is returned
   pure real(real64) function clamp_real(val, min_val, max_val) result(clamped)
     real(real64), intent(in) :: val
@@ -120,7 +161,6 @@ contains
           !! Output permutation array
 
       integer(int32) :: i, rand_idx
-      real(real64) :: rand_val
       
       ! Fisher-Yates shuffle
       do i = size(vec, kind=int32), 2, -1
@@ -137,7 +177,6 @@ contains
           !! Output permutation array
 
       integer(int32) :: i, rand_idx
-      real(real64) :: rand_val
       
       ! Fisher-Yates shuffle
       do i = size(vec, kind=int32), 2, -1
