@@ -1,4 +1,3 @@
-
 #> f42_helper-import_libs: Import necessary packages
 library(Rcpp)
 
@@ -261,7 +260,6 @@ tox_compute_family_scaling <- function(distances, gene_to_fam, n_families) {
 #' @param perm_tmp Integer vector for temporary permutation storage.
 #' @param stack_left_tmp Integer vector for temporary left stack storage.
 #' @param stack_right_tmp Integer vector for temporary right stack storage.
-#' @param family_distances Numeric vector for temporary family distances storage.
 #' @param span Numeric, smoothing parameter for LOESS (default: 0.7).
 #' @param degree Integer, degree of polynomial for LOESS (default: 2).
 #' @param mode Integer, mode for LOESS (default: 1).
@@ -274,14 +272,13 @@ tox_compute_family_scaling <- function(distances, gene_to_fam, n_families) {
 #'   - ierr: Error code (0 = success).
 tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families,
                                               perm_tmp, stack_left_tmp, stack_right_tmp,
-                                              family_distances, span, degree, mode, n_iters) {
+                                              span, degree, mode, n_iters) {
   # Validate inputs
   distances <- as.numeric(distances)
   gene_to_fam <- as.integer(gene_to_fam)
   perm_tmp <- as.integer(perm_tmp)
   stack_left_tmp <- as.integer(stack_left_tmp)
   stack_right_tmp <- as.integer(stack_right_tmp)
-  family_distances <- as.numeric(family_distances)
 
   # Calculate workspace sizes
   workspace <- tox_loess_required_workspace(d = 1, nvmax = n_families, setlf = FALSE)
@@ -296,7 +293,7 @@ tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families
   result <- tox_compute_family_scaling_expert_rcpp(
     distances, gene_to_fam, n_families,
     perm_tmp, stack_left_tmp, stack_right_tmp,
-    family_distances, iv, liv, lv, span, degree, mode, n_iters
+    iv, liv, lv, span, degree, mode, n_iters
   )
 
 
@@ -304,17 +301,7 @@ tox_compute_family_scaling_expert <- function(distances, gene_to_fam, n_families
   check_err_code(result$ierr)
 
   # Return structured result
-  return(list(
-    dscale = result$dscale,
-    loess_x = result$loess_x,
-    loess_y = result$loess_y,
-    indices_used = result$indices_used,
-    perm_tmp     = result$perm_tmp,
-    stack_left_tmp   = result$stack_left_tmp,
-    stack_right_tmp  = result$stack_right_tmp,
-    family_distances = result$family_distances
-
-  ))
+  return(result)
 }
 
 #> tox_get_outliers:compute_rdi_c: Compute Relative Distance Index (RDI) for outlier detection
@@ -346,11 +333,9 @@ tox_compute_rdi <- function(distances, gene_to_fam, dscale) {
                                  dscale
   )
 
+  check_err_code(result$ierr)
   # Return structured result
-  return(list(
-    rdi = result$rdi,
-    sorted_rdi = result$sorted_rdi
-  ))
+  return(result)
 }
 
 #> tox_get_outliers:identify_outliers_c: Identify outliers based on RDI percentile or threshold
@@ -375,13 +360,9 @@ tox_identify_outliers <- function(rdi, percentile = 95.0) {
   # Call the Rcpp forwarder
   result <- tox_identify_outliers_rcpp(rdi, percentile)
 
+  check_err_code(result$ierr)
   # Return structured result
-  return(list(
-    is_outlier = result$is_outlier,
-    threshold = result$threshold,
-    p_values = result$p_values,
-    perm = result$perm
-  ))
+  return(result)
 
 }
 
@@ -3537,6 +3518,7 @@ tox_which <- function(mask, m_max = length(mask)) {
 tox_loess_required_workspace <- function(d, nvmax, setlf) {
 
   result <- tox_loess_required_workspace_rcpp(as.integer(d), as.integer(nvmax), as.logical(setlf))
+  check_err_code(result$ierr)
   return(result)
 }
 
