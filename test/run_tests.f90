@@ -47,7 +47,7 @@ program main
   call add_suite("sorting", get_all_tests_sorting)
   call add_suite("get_outliers", get_all_tests_get_outliers)
   call add_suite("loess_smoothing", get_all_tests_loess_smoothing)
-  call add_suite("normalization_by_std_dev", get_all_tests_normalize_by_std_dev)
+  call add_suite("normalize_by_std_dev", get_all_tests_normalize_by_std_dev)
   call add_suite("quantile_normalization", get_all_tests_quantile_normalization)
   call add_suite("log2_transformation", get_all_tests_log2_transformation)
   call add_suite("calc_tiss_avg", get_all_tests_tiss_avg)

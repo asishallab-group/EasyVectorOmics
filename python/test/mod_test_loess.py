@@ -21,10 +21,10 @@ from tensoromics_functions import (
 def test_workspace_calculation():
     """Validates that the workspace recommendation function returns consistent values."""
     print("Testing tox_loess_required_workspace...")
-    
+
     # Typical parameters: d=1 (univariate), nvmax=100, setlf=True
     ws = tox_loess_required_workspace(d=1, nvmax=100, setlf=True)
-    
+
     assert isinstance(ws, dict), "Should return a dictionary"
     assert ws["liv"] > 0, "LIV (Integer Workspace) should be positive"
     assert ws["lv"] > 0, "LV (Real Workspace) should be positive"
@@ -40,7 +40,7 @@ def test_loess_plain_functionality():
     y = 2.0 * x + np.random.normal(0, 0.1, n) 
     w = np.ones(n)
     z = x.copy()
-    
+
     # Get required workspace sizes
     ws = tox_loess_required_workspace(d=1, nvmax=n, setlf=False)
     iv = np.zeros(ws["liv"], dtype=np.int32)
@@ -48,7 +48,7 @@ def test_loess_plain_functionality():
     diagl = np.zeros(n, dtype=np.float64)
 
     print(" Workspace sizes - liv:", ws["liv"], "lv:", ws["lv"])
-    
+
     yhat = loess_fit_plain(
         n=n, x=x, y=y, w=w, z=z, 
         span=0.5, degree=1, nvmax=n, 
@@ -56,7 +56,7 @@ def test_loess_plain_functionality():
         iv=iv, liv=ws["liv"], wv=wv, lv=ws["lv"], 
         diagl=diagl
     )
-    
+
     assert yhat.shape == (n,), "Output shape mismatch"
     assert not np.any(np.isnan(yhat)), "Output contains NaNs"
     print(" loess_fit_plain passed.")
@@ -69,11 +69,11 @@ def test_loess_robust_functionality():
     x = np.linspace(1, 10, n)
     y = 3.0 * x
     y[5] = 100.0  # Introduce an aggressive outlier
-    
+
     w = np.ones(n)
     z = x.copy()
     ws = tox_loess_required_workspace(d=1, nvmax=n, setlf=False)
-    
+
     # Additional arrays required specifically for the robust version
     iv = np.zeros(ws["liv"], dtype=np.int32)
     wv = np.zeros(ws["lv"], dtype=np.float64)
@@ -82,7 +82,7 @@ def test_loess_robust_functionality():
     ww = np.zeros(n, dtype=np.float64)
     res = np.zeros(n, dtype=np.float64)
     pi = np.zeros(n, dtype=np.int32)
-    
+
     yhat = loess_fit_robust(
         n=n, x=x, y=y, w=w, z=z, 
         span=0.5, degree=1, nvmax=n, 
@@ -90,7 +90,7 @@ def test_loess_robust_functionality():
         iv=iv, liv=ws["liv"], wv=wv, lv=ws["lv"],
         diagl=diagl, rw=rw, ww=ww, res=res, pi=pi
     )
-    
+
     assert yhat.shape == (n,), "Output shape mismatch"
     # If robustness (bisquare reweighting) works, the outlier at index 5 
     # should be largely ignored, resulting in a value much lower than 100.
@@ -104,18 +104,18 @@ def test_tox_loess_wrapper():
     n = 30
     x = np.arange(n, dtype=np.float64)
     y = np.sin(x / 5.0)
-    
+
     # Test Plain mode (mode=0)
     yhat_plain = tox_loess(x, y, span=0.4, degree=1, mode=0)
     assert yhat_plain.shape == (n,), "Plain mode shape mismatch"
-    
+
     # Test Robust mode (mode=1)
     yhat_robust = tox_loess(x, y, span=0.4, degree=1, mode=1, n_iters=2)
     assert yhat_robust.shape == (n,), "Robust mode shape mismatch"
-    
+
     # Verify that results differ due to robust iterations
     assert not np.array_equal(yhat_plain, yhat_robust), "Plain and Robust results should not be identical"
-    
+
     print(" tox_loess wrapper passed.")
 
 

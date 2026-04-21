@@ -13,12 +13,56 @@ contains
   !> Get array of all available tests.
   function get_all_tests_normalize_by_std_dev() result(all_tests)
     type(test_case), allocatable :: all_tests(:)
-    allocate(all_tests(2))
+    allocate(all_tests(3))
     
-    all_tests(1) = test_case("test_loess_normalization_outlier_correction", test_loess_normalization_outlier_correction)
-    all_tests(2) = test_case("test_loess_zero_variance_handling", test_loess_zero_variance_handling)
+    all_tests(1) = test_case("test_std_dev", test_std_dev)
+    all_tests(2) = test_case("test_loess_normalization_outlier_correction", test_loess_normalization_outlier_correction)
+    all_tests(3) = test_case("test_loess_zero_variance_handling", test_loess_zero_variance_handling)
 
   end function get_all_tests_normalize_by_std_dev
+
+  subroutine test_std_dev()
+    real(real64), dimension(5) :: v
+    real(real64) :: s_pop, s_samp
+
+    ! Test vector
+    v = [1.0_real64, 2.0_real64, 3.0_real64, 4.0_real64, 5.0_real64]
+
+    ! --- Expected values ---
+    ! Population variance = 2.0  → std = sqrt(2)
+    ! Sample variance     = 2.5  → std = sqrt(2.5)
+
+    ! --- Compute using the user's function ---
+    s_pop  = std_dev(v)                     ! default: no Bessel correction
+    s_samp = std_dev(v, do_bessel_correction=.true.)
+
+    ! --- Assertions ---
+    call assert_equal_real(s_pop,  sqrt(2.0_real64), 1e-12_real64, &
+         "test_std_dev: population std_dev incorrect")
+
+    call assert_equal_real(s_samp, sqrt(2.5_real64), 1e-12_real64, &
+         "test_std_dev: sample std_dev (Bessel) incorrect")
+
+    ! No NaNs or Infs
+    call assert_true(.not. ieee_is_nan(s_pop),  "test_std_dev: population std_dev produced NaN")
+    call assert_true(.not. ieee_is_nan(s_samp), "test_std_dev: sample std_dev produced NaN")
+    call assert_in_range_real(s_pop,  0.0_real64, huge(1.0_real64), "test_std_dev: population std_dev out of range")
+    call assert_in_range_real(s_samp, 0.0_real64, huge(1.0_real64), "test_std_dev: sample std_dev out of range")
+
+    ! Edge case: vector of length 1 → std = 0 for both modes
+    block
+      real(real64), dimension(1) :: w
+      real(real64) :: s1, s1b
+      w = [3.14159_real64]
+
+      s1  = std_dev(w)
+      s1b = std_dev(w, do_bessel_correction=.true.)
+
+      call assert_equal_real(s1,  0.0_real64, 1e-12_real64, "test_std_dev: std_dev length-1 (population)")
+      call assert_equal_real(s1b, 0.0_real64, 1e-12_real64, "test_std_dev: std_dev length-1 (sample)")
+    end block
+
+  end subroutine test_std_dev
 
   !> Main test: Verifies that an SD outlier is corrected by the global curve.
   subroutine test_loess_normalization_outlier_correction()

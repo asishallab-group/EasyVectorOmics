@@ -7,6 +7,10 @@ module tox_normalization
     use tox_errors, only: set_ok, set_err, ERR_EMPTY_INPUT, ERR_DIVISION_BY_ZERO, ERR_INVALID_INPUT, is_err, validate_dimension_size, validate_in_range_real, ERR_ALLOC_FAIL, validate_all_in_range_int
     use f42_utils, only: norm, is_close, logx, mean, std_dev
     use tox_loess, only: loess_alloc
+
+#define CM_LOESS_SPAN_DEFAULT 0.7_real64
+#define CM_LOESS_DEGREE_DEFAULT 2_int32
+
 contains
 
     !> AUTHOR_FRANZ_ERIC_SILL
@@ -62,10 +66,10 @@ contains
         real(real64), dimension(n_tissues, n_genes), intent(out), target :: log_transformed_expr
             !! Log-transformed grouped `expr`
 
-        real(real64), intent(in) :: span
-            !! LOESS span parameter
-        integer(int32), intent(in) :: degree
-            !! LOESS degree parameter
+        real(real64), intent(in), optional :: span
+            !! LOESS span parameter, default: `CM_LOESS_SPAN_DEFAULT`
+        integer(int32), intent(in), optional :: degree
+            !! LOESS degree parameter, default: `CM_LOESS_DEGREE_DEFAULT`
         logical, intent(in), optional :: use_quantile
             !! Use quantile normalization, default: `.false.`
         integer(int32), intent(out) :: ierr
@@ -149,10 +153,10 @@ contains
             !! Gene Expression matrix
         real(real64), dimension(n_replicates, n_genes), intent(out) :: normalized_expr
             !! Normalized `expr`
-        real(real64), intent(in) :: span
-            !! LOESS span parameter
-        integer(int32), intent(in) :: degree
-            !! LOESS degree parameter
+        real(real64), intent(in), optional :: span
+            !! LOESS span parameter, default: `CM_LOESS_SPAN_DEFAULT`
+        integer(int32), intent(in), optional :: degree
+            !! LOESS degree parameter, default: `CM_LOESS_DEGREE_DEFAULT`
         integer(int32), intent(out) :: ierr
             !! Error code
 
@@ -195,16 +199,19 @@ contains
         real(real64), dimension(n_genes), intent(out) :: tmp_yhat_global
             !! Fitted standard deviation values (LOESS predictions)
 
-        real(real64), intent(in) :: span
-            !! LOESS span parameter
-        integer(int32), intent(in) :: degree
-            !! LOESS degree parameter
+        real(real64), intent(in), optional :: span
+            !! LOESS span parameter, default: `CM_LOESS_SPAN_DEFAULT`
+        integer(int32), intent(in), optional :: degree
+            !! LOESS degree parameter, default: `CM_LOESS_DEGREE_DEFAULT`
         integer(int32), intent(out) :: ierr
             !! Error code
 
         ! Local variables
-        integer(int32) :: i_gene, i_valid, i_tissue, n_valid, gene_idx
-        real(real64) :: mean_val, fitted_sd
+        integer(int32) :: i_gene, i_valid, i_tissue, n_valid, gene_idx, actual_degree
+        real(real64) :: mean_val, fitted_sd, actual_span
+
+        M_DEFAULT_VAL(span, actual_span, CM_LOESS_SPAN_DEFAULT)
+        M_DEFAULT_VAL(degree, actual_degree, CM_LOESS_DEGREE_DEFAULT)
 
         ! Initialize error code and output arrays
         call set_ok(ierr)
@@ -231,7 +238,7 @@ contains
         end if
 
         call loess_alloc(x=tmp_loess_x(1:n_valid), y=tmp_loess_y(1:n_valid), &
-                         span=span, degree=degree, yhat=tmp_yhat_global(1:n_valid), &
+                         span=actual_span, degree=actual_degree, yhat=tmp_yhat_global(1:n_valid), &
                          mode=1, n_iters=3, ierr=ierr)
         if (is_err(ierr)) return
 
@@ -459,7 +466,7 @@ contains
         do concurrent (i_gene = 1:n_genes) shared(n_tissues, expr, ierr)
             do concurrent (i_group = 1:n_tissues) local(tmp_ierr, expr_val) shared(expr, ierr, i_gene)
                 ! Apply the log2(x + 1) transformation
-                expr_val = expr(i_group, i_gene) + 1.0_real64 
+                expr_val = expr(i_group, i_gene) + 1.0_real64
                 call logx(expr_val, 2.0_real64, expr(i_group, i_gene), tmp_ierr)
                 if (is_err(tmp_ierr)) ierr = tmp_ierr
             end do

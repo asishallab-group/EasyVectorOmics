@@ -547,25 +547,25 @@ subroutine tox_loess_c(x, y, n, span, degree, yhat, mode, n_iters, ierr) bind(C,
 
     ! Input parameters
     integer(c_int), intent(in), target :: n
-  !! Number of data points
+        !! Number of data points
     real(c_double), dimension(n), intent(in), target :: x
-  !! Predictor variable array
+        !! Predictor variable array
     real(c_double), dimension(n), intent(in), target :: y
-  !! Response variable array
+        !! Response variable array
     real(c_double), intent(in), target :: span
-  !! Smoothing parameter for LOESS
+        !! Smoothing parameter for LOESS
     integer(c_int), intent(in), target :: degree
-  !! Degree of the LOESS polynomial
+        !! Degree of the LOESS polynomial
     integer(c_int), intent(in), target :: mode
-  !! Mode of operation: 0 for plain, 1 for robust
+        !! Mode of operation: 0 for plain, 1 for robust
     integer(c_int), intent(in), target :: n_iters
-  !! Number of robust iterations (only used when mode = 1)
+        !! Number of robust iterations (only used when mode = 1)
 
     ! Output parameters
     real(c_double), dimension(n), intent(out), target :: yhat
-  !! Smoothed response variable array
+        !! Smoothed response variable array
     integer(c_int), intent(out), target :: ierr
-  !! Error code
+        !! Error code
 
     ! Null validation macros
     M_CHECK_IERR_NON_NULL
@@ -588,46 +588,49 @@ end subroutine tox_loess_c
 subroutine loess_fit_plain_c(n, x, y, w, z, span, degree, nvmax, infl, setlf, iv, liv, wv, lv, diagl, yhat, ierr) bind(C, name="loess_fit_plain_c")
     use tox_loess, only: loess_fit_plain
     use, intrinsic :: iso_c_binding, only: c_int, c_double
+    use tox_conversions, only: c_int_as_logical
     M_USE_NULL_VALIDATION
     implicit none
 
     ! Input parameters
     integer(c_int), intent(in), target :: n
-  !! Total number of data points
+        !! Total number of data points
     real(c_double), dimension(n), intent(in), target :: x
-  !! Predictor variable array
+        !! Predictor variable array
     real(c_double), dimension(n), intent(in), target :: y
-  !! Response variable array
+        !! Response variable array
     real(c_double), dimension(n), intent(in), target :: w
-  !! Weight array for data points
+        !! Weight array for data points
     real(c_double), dimension(n, 1), intent(in), target :: z
-  !! Additional predictor variable array
+        !! Additional predictor variable array
     real(c_double), intent(in), target :: span
-  !! Smoothing parameter for LOESS
+        !! Smoothing parameter for LOESS
     integer(c_int), intent(in), target :: degree
-  !! Degree of the LOESS polynomial
+        !! Degree of the LOESS polynomial
     integer(c_int), intent(in), target :: nvmax
-  !! Maximum neighborhood size
+        !! Maximum neighborhood size
     integer(c_int), intent(in), target :: infl
-  !! Influence calculation flag (0 for false, non-zero for true)
+        !! Influence calculation flag (0 for false, non-zero for true)
     integer(c_int), intent(in), target :: setlf
-  !! Save matrix factorization flag (0 for false, non-zero for true)
-    integer(c_int), dimension(*), intent(inout), target :: iv
-  !! Integer workspace array
+        !! Save matrix factorization flag (0 for false, non-zero for true)
     integer(c_int), intent(in), target :: liv
-  !! Length of the integer workspace array
-    real(c_double), dimension(*), intent(inout), target :: wv
-  !! Real workspace array
+        !! Length of the integer workspace array
+    integer(c_int), dimension(liv), intent(inout), target :: iv
+        !! Integer workspace array
     integer(c_int), intent(in), target :: lv
-  !! Length of the real workspace array
+        !! Length of the real workspace array
+    real(c_double), dimension(lv), intent(inout), target :: wv
+        !! Real workspace array
 
     ! Output parameters
     real(c_double), dimension(n), intent(out), target :: diagl
-  !! Diagonal elements of the hat matrix
+        !! Diagonal elements of the hat matrix
     real(c_double), dimension(n), intent(out), target :: yhat
-  !! Smoothed response variable array
+        !! Smoothed response variable array
     integer(c_int), intent(out), target :: ierr
-  !! Error code
+        !! Error code
+
+    logical :: infl_f, setlf_f
 
     ! Null validation macros
     M_CHECK_IERR_NON_NULL
@@ -648,8 +651,11 @@ subroutine loess_fit_plain_c(n, x, y, w, z, span, degree, nvmax, infl, setlf, iv
     M_CHECK_NON_NULL(diagl)
     M_CHECK_NON_NULL(yhat)
 
+    call c_int_as_logical(infl, infl_f)
+    call c_int_as_logical(setlf, setlf_f)
+
     ! Call the Fortran subroutine
-    call loess_fit_plain(n, x, y, w, z, span, degree, nvmax, infl /= 0, setlf /= 0, iv, liv, wv, lv, diagl, yhat, ierr)
+    call loess_fit_plain(n, x, y, w, z, span, degree, nvmax, infl_f, setlf_f, iv, liv, wv, lv, diagl, yhat, ierr)
 end subroutine loess_fit_plain_c
 
 !> Perform robust LOESS fitting with bisquare reweighting.
@@ -658,56 +664,59 @@ end subroutine loess_fit_plain_c
 subroutine loess_fit_robust_c(n, x, y, w, z, span, degree, nvmax, infl, setlf, n_iters, iv, liv, wv, lv, diagl, rw, ww, res, pi, yhat, ierr) bind(C, name="loess_fit_robust_c")
     use tox_loess, only: loess_fit_robust
     use, intrinsic :: iso_c_binding, only: c_int, c_double
+    use tox_conversions, only: c_int_as_logical
     M_USE_NULL_VALIDATION
     implicit none
 
     ! Input parameters
     integer(c_int), intent(in), target :: n
-  !! Number of data points
+        !! Number of data points
     real(c_double), dimension(n), intent(in), target :: x
-  !! Predictor variable array
+        !! Predictor variable array
     real(c_double), dimension(n), intent(in), target :: y
-  !! Response variable array
+        !! Response variable array
     real(c_double), dimension(n), intent(in), target :: w
-  !! Weight array for data points
+        !! Weight array for data points
     real(c_double), dimension(n, 1), intent(in), target :: z
-  !! Additional predictor variable array
+        !! Additional predictor variable array
     real(c_double), intent(in), target :: span
-  !! Smoothing parameter for LOESS
+        !! Smoothing parameter for LOESS
     integer(c_int), intent(in), target :: degree
-  !! Degree of the LOESS polynomial
+        !! Degree of the LOESS polynomial
     integer(c_int), intent(in), target :: nvmax
-  !! Maximum neighborhood size
+        !! Maximum neighborhood size
     integer(c_int), intent(in), target :: infl
-  !! Influence calculation flag (0 for false, non-zero for true)
+        !! Influence calculation flag (0 for false, non-zero for true)
     integer(c_int), intent(in), target :: setlf
-  !! Save matrix factorization flag (0 for false, non-zero for true)
+        !! Save matrix factorization flag (0 for false, non-zero for true)
     integer(c_int), intent(in), target :: n_iters
-  !! Number of robust iterations
-    integer(c_int), dimension(*), intent(inout), target :: iv
-  !! Integer workspace array
+        !! Number of robust iterations
     integer(c_int), intent(in), target :: liv
-  !! Length of the integer workspace array
-    real(c_double), dimension(*), intent(inout), target :: wv
-  !! Real workspace array
+        !! Length of the integer workspace array
+    integer(c_int), dimension(liv), intent(inout), target :: iv
+        !! Integer workspace array
     integer(c_int), intent(in), target :: lv
-  !! Length of the real workspace array
+        !! Length of the real workspace array
+    real(c_double), dimension(lv), intent(inout), target :: wv
+        !! Real workspace array
 
     ! Output parameters
     real(c_double), dimension(n), intent(out), target :: diagl
-  !! Diagonal elements of the hat matrix
+        !! Diagonal elements of the hat matrix
     real(c_double), dimension(n), intent(out), target :: rw
-  !! Robust weights array
+        !! Robust weights array
     real(c_double), dimension(n), intent(out), target :: ww
-  !! Working weights array
+        !! Working weights array
     real(c_double), dimension(n), intent(out), target :: res
-  !! Residuals array
+        !! Residuals array
     integer(c_int), dimension(n), intent(out), target :: pi
-  !! Permutation indices array
+        !! Permutation indices array
     real(c_double), dimension(n), intent(out), target :: yhat
-  !! Smoothed response variable array
+        !! Smoothed response variable array
     integer(c_int), intent(out), target :: ierr
-  !! Error code
+        !! Error code
+
+    logical :: infl_f, setlf_f
 
     ! Null validation macros
     M_CHECK_IERR_NON_NULL
@@ -733,33 +742,54 @@ subroutine loess_fit_robust_c(n, x, y, w, z, span, degree, nvmax, infl, setlf, n
     M_CHECK_NON_NULL(pi)
     M_CHECK_NON_NULL(yhat)
 
+    call c_int_as_logical(infl, infl_f)
+    call c_int_as_logical(setlf, setlf_f)
+
     ! Call the Fortran subroutine
-    call loess_fit_robust(n, x, y, w, z, span, degree, nvmax, infl /= 0, setlf /= 0, n_iters, iv, liv, wv, lv, diagl, rw, ww, res, pi, yhat, ierr)
+    call loess_fit_robust(n, x, y, w, z, span, degree, nvmax, infl_f, setlf_f, n_iters, iv, liv, wv, lv, diagl, rw, ww, res, pi, yhat, ierr)
 end subroutine loess_fit_robust_c
 
 !! Wrapper for recommending workspace sizes based on Netlib exact formulas.
 !! This subroutine is designed to be called from C code and computes the required sizes
 !! for integer and real workspace arrays. These sizes depend on the dimensionality of the data,
 !! the maximum neighborhood size, and whether matrix factorizations are saved.
-subroutine tox_loess_required_workspace_c(d, nvmax, liv, lv, setlf) bind(C, name="tox_loess_required_workspace_c")
+subroutine tox_loess_required_workspace_c(d, nvmax, liv, lv, setlf, ierr) bind(C, name="tox_loess_required_workspace_c")
     use tox_loess, only: tox_loess_required_workspace
     use, intrinsic :: iso_c_binding, only: c_int
+    use tox_conversions, only: c_int_as_logical
+    use tox_errors, only: set_ok
+    M_USE_NULL_VALIDATION
     implicit none
 
     ! Input parameters
     integer(c_int), intent(in), target :: d
-  !! Dimensionality of the data
+        !! Dimensionality of the data
     integer(c_int), intent(in), target :: nvmax
-  !! Maximum neighborhood size
+        !! Maximum neighborhood size
     integer(c_int), intent(in), target :: setlf
-  !! Save matrix factorization flag (0 for false, non-zero for true)
+        !! Save matrix factorization flag (0 for false, non-zero for true)
 
     ! Output parameters
-    integer(c_int), intent(out) :: liv
-  !! Length of the integer workspace array
-    integer(c_int), intent(out) :: lv
-  !! Length of the real workspace array
+    integer(c_int), intent(out), target :: liv
+        !! Length of the integer workspace array
+    integer(c_int), intent(out), target :: lv
+        !! Length of the real workspace array
+    integer(c_int), intent(out), target :: ierr
+        !! Error code
+
+    logical :: setlf_f
+
+    M_CHECK_IERR_NON_NULL
+    M_CHECK_NON_NULL(d)
+    M_CHECK_NON_NULL(nvmax)
+    M_CHECK_NON_NULL(setlf)
+    M_CHECK_NON_NULL(liv)
+    M_CHECK_NON_NULL(lv)
+
+    call set_ok(ierr)
+
+    call c_int_as_logical(setlf, setlf_f)
 
     ! Call the Fortran subroutine
-    call tox_loess_required_workspace(d, nvmax, liv, lv, setlf /= 0)
+    call tox_loess_required_workspace(d, nvmax, liv, lv, setlf_f)
 end subroutine tox_loess_required_workspace_c

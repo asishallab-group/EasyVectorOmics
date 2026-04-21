@@ -9,98 +9,78 @@ using namespace Rcpp;
 extern "C" {
 
 void root_mean_sq_normalization_c(
-  int n_genes,
-  int n_tissues,
-  double *input_matrix,
-  double *output_matrix,
-  int *ierr
+  int* n_genes,
+  int* n_replicates,
+  double* expr,
+  double* normalized_expr,
+  int* ierr
 );
 
 void normalize_by_std_dev_c(
-  int *n_genes,
-  int *n_tissues,
-  double *input_matrix,
-  double *output_matrix,
-  double *loess_x,
-  double *loess_y,
-  int *indices_used,
-  double *yhat_global,
-  double *span,
-  int *degree,
-  int *ierr
+  int* n_genes,
+  int* n_replicates,
+  double* expr,
+  double* normalized_expr,
+  double* span,
+  int* degree,
+  int* ierr
 );
 
 void quantile_normalization_c(
-  int n_genes,
-  int n_tissues,
-  double *input_matrix,
-  double *output_matrix,
-  double *temp_col,
-  double *rank_means,
-  int *perm,
-  int *stack_left,
-  int *stack_right,
-  int max_stack,
-  int *ierr
+  int* n_genes,
+  int* n_replicates,
+  double* expr,
+  double* normalized_expr,
+  double* rank_means,
+  double* temp_col,
+  int* perm,
+  int* ierr
 );
 
 void log2_transformation_c(
-  int n_genes,
-  int n_tissues,
-  double *input_matrix,
-  double *output_matrix,
-  int *ierr
+  int* n_genes,
+  int* n_tissues,
+  double* expr,
+  double* transformed_expr,
+  int* ierr
 );
 
 void calc_tiss_avg_c(
-  int n_genes,
-  int n_grps,int *group_s,
-  int *group_c,
-  double *input_matrix,
-  double *output_matrix,
-  int *ierr
+  int* n_genes,
+  int* n_tissues,
+  int* reps_per_tissue,
+  double* expr,
+  double* tissue_averages,
+  int* ierr
 );
 
 void calc_fchange_c(
-  int n_genes,
-  int n_cols,
-  int n_pairs,int *control_cols,
-  int *cond_cols,
-  double *input_matrix,
-  double *output_matrix,
-  int *ierr
+  int* n_genes,
+  int* n_tissues,
+  int* n_pairs,
+  int* control_tissues,
+  int* condition_tissues,
+  double* expr,
+  double* normalized_expr,
+  int* ierr
 );
 
 void normalization_pipeline_c(
-  int *n_genes,
-  int *n_tissues,
-  double *input_matrix,
-  double *buf_stddev,
-  double *buf_quant,
-  double *buf_avg,
-  double *buf_log,
-  double *temp_col,
-  double *rank_means,
-  int *perm,
-  int *stack_left,
-  int *stack_right,
-  int *max_stack,
-  int *group_s,
-  int *group_c,
-  int *n_grps,
-  double *loess_x,
-  double *loess_y,
-  int *indices_used,
-  double *yhat_global,
-  double *span,
-  int *degree,
-  int *use_quantile,
-  int *ierr
+  int* n_genes,
+  int* n_replicates,
+  double* expr,
+  double* log_transformed_expr,
+  int* reps_per_tissue,
+  int* n_tissues,
+  double* span,
+  int* degree,
+  int* use_quantile,
+  int* ierr
 );
 
 void compute_family_scaling_c(
-  int n_genes,
-  int n_families,
+  int* n_genes,
+  int* n_families,
   double* distances,
   int* gene_to_fam,
   double* dscale,
@@ -146,8 +126,8 @@ void compute_family_scaling_expert_c(
 );
 
 void compute_rdi_c(
-  int n_genes,
-  int n_families,
+  int* n_genes,
+  int* n_families,
   double* distances,
   int* gene_to_fam,
   double* dscale,
@@ -4310,40 +4290,35 @@ List tox_compute_edf_expert_rcpp(NumericVector values,
  * Calculate normalization by standard deviation
  */
 // [[Rcpp::export]]
-List tox_root_mean_sq_normalization_rcpp(NumericMatrix input) {
-    int n_genes = input.nrow();
-    int n_tissues = input.ncol();
-    NumericMatrix output(n_genes, n_tissues);
+List tox_root_mean_sq_normalization_rcpp(NumericMatrix expr) {
+    int n_genes = expr.ncol();
+    int n_replicates = expr.nrow();
+    NumericMatrix output(n_replicates, n_genes);
     int ierr = 0;
 
-    root_mean_sq_normalization_c(n_genes, n_tissues, input.begin(), output.begin(), &ierr);
+    root_mean_sq_normalization_c(&n_genes, &n_replicates, expr.begin(), output.begin(), &ierr);
 
     return List::create(
-        Named("output_vector") = output,
+        Named("normalized_expr") = output,
         Named("ierr") = ierr
     );
 }
 
 // [[Rcpp::export]]
-List tox_normalize_by_std_dev_rcpp(NumericMatrix input, double span, int degree) {
-    int n_genes = input.nrow();
-    int n_tissues = input.ncol();
-    NumericMatrix output(n_genes, n_tissues);
+List tox_normalize_by_std_dev_rcpp(NumericMatrix expr, double span, int degree) {
+    int n_genes = expr.ncol();
+    int n_replicates = expr.nrow();
+    NumericMatrix output(n_replicates, n_genes);
     NumericVector loess_x(n_genes);
     NumericVector loess_y(n_genes);
     NumericVector yhat_global(n_genes);
     IntegerVector indices_used(n_genes);
     int ierr = 0;
 
-    normalize_by_std_dev_c(&n_genes, &n_tissues, input.begin(), output.begin(), loess_x.begin(), loess_y.begin(), indices_used.begin(), yhat_global.begin(),
-                                     &span, &degree, &ierr);
+    normalize_by_std_dev_c(&n_genes, &n_replicates, expr.begin(), output.begin(), &span, &degree, &ierr);
 
     return List::create(
-        Named("output_vector") = output,
-        Named("loess_x") = loess_x,
-        Named("loess_y") = loess_y,
-        Named("yhat_global") = yhat_global,
-        Named("indices_used") = indices_used,
+        Named("normalized_expr") = output,
         Named("ierr") = ierr
     );
 }
@@ -4352,13 +4327,13 @@ List tox_normalize_by_std_dev_rcpp(NumericMatrix input, double span, int degree)
  * Perform quantile normalization
  */
 // [[Rcpp::export]]
-List tox_quantile_normalization_rcpp(NumericMatrix input) {
-    int n_genes = input.nrow();
-    int n_tissues = input.ncol();
+List tox_quantile_normalization_rcpp(NumericMatrix expr) {
+    int n_genes = expr.ncol();
+    int n_tissues = expr.nrow();
 
     int max_stack = static_cast<int>(std::ceil(std::log2(n_genes)) + 10);
 
-    NumericMatrix output(n_genes, n_tissues);
+    NumericMatrix output(n_tissues, n_genes);
     NumericVector temp_col(n_genes);
     NumericVector rank_means(n_genes);
     IntegerVector perm(n_genes);
@@ -4366,12 +4341,11 @@ List tox_quantile_normalization_rcpp(NumericMatrix input) {
     IntegerVector stack_right(max_stack);
     int ierr = 0;
 
-    quantile_normalization_c(n_genes, n_tissues, input.begin(), output.begin(),
-                             temp_col.begin(), rank_means.begin(), perm.begin(),
-                             stack_left.begin(), stack_right.begin(), max_stack, &ierr);
+    quantile_normalization_c(&n_genes, &n_tissues, expr.begin(), output.begin(),
+                             rank_means.begin(), temp_col.begin(), perm.begin(), &ierr);
 
     return List::create(
-        Named("output_vector")     = output,
+        Named("normalized_expr")     = output,
         Named("rank_means") = rank_means,
         Named("perm")       = perm,
         Named("ierr")       = ierr
@@ -4382,16 +4356,16 @@ List tox_quantile_normalization_rcpp(NumericMatrix input) {
  * Perform log2 transformation
  */
 // [[Rcpp::export]]
-List tox_log2_transformation_rcpp(NumericMatrix input) {
-    int n_genes = input.nrow();
-    int n_tissues = input.ncol();
-    NumericMatrix output(n_genes, n_tissues);
+List tox_log2_transformation_rcpp(NumericMatrix expr) {
+    int n_genes = expr.ncol();
+    int n_tissues = expr.nrow();
+    NumericMatrix output(n_tissues, n_genes);
     int ierr = 0;
 
-    log2_transformation_c(n_genes, n_tissues, input.begin(), output.begin(), &ierr);
+    log2_transformation_c(&n_genes, &n_tissues, expr.begin(), output.begin(), &ierr);
 
     return List::create(
-        Named("output_vector") = output,
+        Named("transformed_expr") = output,
         Named("ierr") = ierr
     );
 }
@@ -4400,15 +4374,15 @@ List tox_log2_transformation_rcpp(NumericMatrix input) {
  * Calculate tissue averages
  */
 // [[Rcpp::export]]
-List tox_calc_tiss_avg_rcpp(NumericMatrix input, IntegerVector group_s, IntegerVector group_c) {
-    int n_gene = input.nrow();
-    int n_grps = group_s.size();
-    NumericMatrix output(n_gene, n_grps);
+List tox_calc_tiss_avg_rcpp(NumericMatrix expr, IntegerVector reps_per_tissue) {
+    int n_gene = expr.ncol();
+    int n_tissues = reps_per_tissue.size();
+    NumericMatrix output(n_tissues, n_gene);
     int ierr = 0;
 
-    calc_tiss_avg_c(n_gene, n_grps, group_s.begin(), group_c.begin(), input.begin(), output.begin(), &ierr);
+    calc_tiss_avg_c(&n_gene, &n_tissues, reps_per_tissue.begin(), expr.begin(), output.begin(), &ierr);
     return List::create(
-        Named("output_vector") = output,
+        Named("tissue_averages") = output,
         Named("ierr") = ierr
     );
 }
@@ -4417,16 +4391,16 @@ List tox_calc_tiss_avg_rcpp(NumericMatrix input, IntegerVector group_s, IntegerV
  * Calculate fold change
  */
 // [[Rcpp::export]]
-List tox_calc_fchange_rcpp(NumericMatrix input, IntegerVector control_cols, IntegerVector cond_cols) {
-    int n_genes = input.nrow();
-    int n_cols = input.ncol();
-    int n_pairs = control_cols.size();
-    NumericMatrix output(n_genes, n_pairs);
+List tox_calc_fchange_rcpp(NumericMatrix expr, IntegerVector control_tissues, IntegerVector condition_tissues) {
+    int n_genes = expr.ncol();
+    int n_tissues = expr.nrow();
+    int n_pairs = control_tissues.size();
+    NumericMatrix output(n_pairs, n_genes);
     int ierr = 0;
 
-    calc_fchange_c(n_genes, n_cols, n_pairs, control_cols.begin(), cond_cols.begin(), input.begin(), output.begin(), &ierr);
+    calc_fchange_c(&n_genes, &n_tissues, &n_pairs, control_tissues.begin(), condition_tissues.begin(), expr.begin(), output.begin(), &ierr);
     return List::create(
-        Named("output_vector") = output,
+        Named("fold_changes") = output,
         Named("ierr") = ierr
     );
 }
@@ -4435,49 +4409,21 @@ List tox_calc_fchange_rcpp(NumericMatrix input, IntegerVector control_cols, Inte
  * Perform normalization pipeline
  */
 // [[Rcpp::export]]
-List tox_normalization_pipeline_rcpp(NumericMatrix input, IntegerVector group_s, IntegerVector group_c, double span, int degree, int use_quantile) {
-    int n_genes = input.nrow();
-    int n_tissues = input.ncol();
-    int n_grps = group_s.size();
+List tox_normalization_pipeline_rcpp(NumericMatrix expr, IntegerVector reps_per_tissue, double span, int degree, int use_quantile) {
+    int n_genes = expr.ncol();
+    int n_replicates = expr.nrow();
+    int n_tissues = reps_per_tissue.size();
 
-   int max_stack = static_cast<int>(std::ceil(std::log2(n_genes)) + 10);
-
-    NumericMatrix buf_stddev(n_genes, n_tissues);
-    NumericMatrix buf_quant(n_genes, n_tissues);
-    NumericMatrix buf_avg(n_genes, n_grps);
-    NumericMatrix buf_log(n_genes, n_grps);
-    NumericVector temp_col(n_genes);
-    NumericVector rank_means(n_genes);
-    NumericVector loess_x(n_genes);
-    NumericVector loess_y(n_genes);
-    NumericVector yhat_global(n_genes);
-    IntegerVector perm(n_genes);
-    IntegerVector stack_left(max_stack);
-    IntegerVector stack_right(max_stack);
-    IntegerVector indices_used(n_genes);
+    NumericMatrix log_transformed_expr(n_tissues, n_genes);
     int ierr = 0;
 
-
-     normalization_pipeline_c(&n_genes, &n_tissues, input.begin(),
-                                     buf_stddev.begin(), buf_quant.begin(),
-                                     buf_avg.begin(), buf_log.begin(),
-                                     temp_col.begin(), rank_means.begin(), perm.begin(),
-                                     stack_left.begin(), stack_right.begin(), &max_stack,
-                                     group_s.begin(), group_c.begin(), &n_grps,
-                                     loess_x.begin(), loess_y.begin(), indices_used.begin(), yhat_global.begin(),
-                                     &span, &degree, &use_quantile, &ierr);
+    normalization_pipeline_c(&n_genes, &n_replicates, expr.begin(),
+                              log_transformed_expr.begin(),
+                              reps_per_tissue.begin(), &n_tissues,
+                              &span, &degree, &use_quantile, &ierr);
 
     return List::create(
-        Named("buf_stddev") = buf_stddev,
-        Named("buf_quant") = buf_quant,
-        Named("buf_avg") = buf_avg,
-        Named("buf_log") = buf_log,
-        Named("rank_means") = rank_means,
-        Named("perm") = perm,
-        Named("loess_x") = loess_x,
-        Named("loess_y") = loess_y,
-        Named("yhat_global") = yhat_global,
-        Named("indices_used") = indices_used,
+        Named("normalized_expr") = log_transformed_expr,
         Named("ierr") = ierr
     );
 }
@@ -4496,7 +4442,7 @@ List tox_compute_family_scaling_rcpp(NumericVector distances, IntegerVector gene
   int ierr = 0;
 
   compute_family_scaling_c(
-    n_genes, n_families,
+    &n_genes, &n_families,
     distances.begin(),
     gene_to_fam.begin(),
     dscale.begin(),
@@ -4578,7 +4524,7 @@ List tox_compute_rdi_rcpp(NumericVector distances, IntegerVector gene_to_fam, Nu
   IntegerVector stack_right(n_genes);
 
   compute_rdi_c(
-    n_genes, n_families,
+    &n_genes, &n_families,
     distances.begin(),
     gene_to_fam.begin(),
     dscale.begin(),

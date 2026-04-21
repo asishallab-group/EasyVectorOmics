@@ -64,13 +64,13 @@ contains
             do concurrent (i_element = 1:n_elements) shared(vec, mean_val) reduce(+:squares_sum)
                 squares_sum = squares_sum + (vec(i_element) - mean_val) ** 2
             end do
-            std_dev = sqrt(squares_sum / real(n_elements, kind=real64))
+            std_dev = sqrt(squares_sum / real(n_elements - 1, kind=real64))
         else
             squares_sum = 0.0_real64
-            do concurrent (i_element = 1:n_elements) shared(vec, mean_val) reduce(+:squares_sum)
+            do concurrent (i_element = 1:n_elements) shared(vec) reduce(+:squares_sum)
                 squares_sum = squares_sum + vec(i_element) ** 2
             end do
-            std_dev = sqrt(max(0.0_real64, squares_sum / real(n_elements, kind=real64) - mean_val))
+            std_dev = sqrt(max(0.0_real64, squares_sum / real(n_elements, kind=real64) - mean_val ** 2))
         end if
     end function std_dev
 
