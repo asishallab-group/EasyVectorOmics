@@ -6,6 +6,8 @@ permissions:
 
 on:
   push:
+    branches:
+      - main
     paths:
       - helper/generate_snippets.py
       - rcpp/**
