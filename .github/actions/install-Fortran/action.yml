@@ -14,7 +14,7 @@ runs:
       if: ${{ inputs.compiler == 'ifx' }}
       shell: bash
       run: |
-        pacman -S --needed --noconfirm gcc  # ifx needs some libs from gcc
+        pacman -Sy --needed --noconfirm gcc  # ifx needs some libs from gcc
         pacman -Scc --noconfirm
         curl https://registrationcenter-download.intel.com/akdlm/IRC_NAS/724303ca-6927-4327-a560-e0aabb55b010/intel-fortran-compiler-2025.3.1.16_offline.sh -o install_ifx.sh
         bash install_ifx.sh -a -s --eula accept
@@ -24,14 +24,14 @@ runs:
       if: ${{ inputs.compiler == 'gfortran' }}
       shell: bash
       run: |
-        pacman -S --needed --noconfirm gcc-fortran
+        pacman -Sy --needed --noconfirm gcc-fortran
         pacman -Scc --noconfirm
         gfortran --version
 
     - name: Install needed libraries used in TensorOmics
       shell: bash
       run: |
-        pacman -S --needed --noconfirm libzip xxhash
+        pacman -Sy --needed --noconfirm libzip xxhash
         pacman -Scc --noconfirm
 
     - name: Install fpm
