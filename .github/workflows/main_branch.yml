@@ -9,6 +9,8 @@ on:
     branches:
       - main
     paths:
+      - .github/workflows/main_branch.yml
+      - .github/workflows/run_tests.yml
       - helper/generate_snippets.py
       - rcpp/**
       - python/**

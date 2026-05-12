@@ -4,6 +4,8 @@ description: 'Triggers all workflows needed for Pull Requests'
 on:
   pull_request:
     paths:
+      - .github/workflows/pull_requests.yml
+      - .github/workflows/run_tests.yml
       - helper/generate_snippets.py
       - rcpp/**
       - python/**
