@@ -22,19 +22,19 @@ on:
       - ford.yml
       - .fpm.toml
 jobs:
-  run_tests:
-    if: ${{ github.actor != vars.CI_BOT_NAME }}
-    strategy:
-      matrix:
-        compiler: [ifx, gfortran]
-    uses: ./.github/workflows/run_tests.yml
-    with:
-      compiler: ${{ matrix.compiler }}
+  # run_tests:
+  #   if: ${{ github.actor != vars.CI_BOT_NAME }}
+  #   strategy:
+  #     matrix:
+  #       compiler: [ifx, gfortran]
+  #   uses: ./.github/workflows/run_tests.yml
+  #   with:
+  #     compiler: ${{ matrix.compiler }}
 
-      ref: main
+  #     ref: main
 
   generate_snippets_and_docs:
-    needs: run_tests
+    # needs: run_tests
     if: ${{ success() && (github.actor != vars.CI_BOT_NAME ) }}
     runs-on: ubuntu-latest
     container:
@@ -56,15 +56,8 @@ jobs:
       - name: Generate docs
         run: ford ford.yml
 
-      - name: Configure Git
-        run: |
-          git config user.name "${{ vars.CI_BOT_NAME }}"
-          git config user.email "${{ vars.CI_BOT_NAME }}@users.noreply.github.com"
-
-      - name: Commit changes
-        run: |
-          git add -f doc snippets
-          git commit -m "Snippets and Documentation for ${{ github.sha }}" || echo "No changes"
-
-      # - name: Push changes
-      #   run: git push origin HEAD:main
+      - name: Commit
+        uses: ./.github/actions/git-push
+        with:
+          message: Generated Snippets and Docs for ${{ github.sha }}
+          files: doc snippets

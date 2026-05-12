@@ -27,7 +27,6 @@ runs:
       run: |
         pacman -Sy --needed --noconfirm gcc-fortran
         pacman -Scc --noconfirm
-        gfortran --version
 
     - name: Install needed libraries used in TensorOmics
       shell: bash
