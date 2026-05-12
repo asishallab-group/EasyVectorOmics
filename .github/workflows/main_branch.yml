@@ -8,9 +8,12 @@ on:
   push:
     branches:
       - main
+      - 132-gh-workflow
     paths:
       - .github/workflows/main_branch.yml
       - .github/workflows/run_tests.yml
+      - .github/actions/install-Python/*
+      - .github/actions/git-push/*
       - helper/generate_snippets.py
       - rcpp/**
       - python/**
@@ -42,7 +45,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: main
+          ref: 132-gh-workflow
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Python
@@ -62,3 +65,5 @@ jobs:
           message: Generated Snippets and Docs for ${{ github.sha }}
           files: doc snippets
           bot_name: ${{ vars.CI_BOT_NAME }}
+          token: ${{ secrets.GITHUB_TOKEN }}
+          branch: 132-gh-workflow

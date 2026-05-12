@@ -8,6 +8,9 @@ on:
     paths:
       - .github/workflows/pull_requests.yml
       - .github/workflows/run_tests.yml
+      - .github/actions/install-Python/*
+      - .github/actions/install-Fortran/*
+      - .github/actions/install-R/*
       - helper/generate_snippets.py
       - rcpp/**
       - python/**
