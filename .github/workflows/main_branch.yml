@@ -4,9 +4,6 @@ description: 'Triggers all workflows needed when updating main branch'
 permissions:
   contents: write
 
-env:
-  CI_BOT_NAME: github-actions[bot]
-
 on:
   push:
     branches:
@@ -24,11 +21,11 @@ on:
       - .fpm.toml
 jobs:
   run_tests:
-    if: ${{github.actor != CI_BOT_NAME}}
+    if: ${{ github.actor != vars.CI_BOT_NAME }}
     strategy:
       matrix:
         compiler: [ifx, gfortran]
-    uses: ./.github/workflows/core/run_tests.yml
+    uses: ./.github/workflows/run_tests.yml
     with:
       compiler: ${{ matrix.compiler }}
 
@@ -36,7 +33,7 @@ jobs:
 
   generate_snippets_and_docs:
     needs: run_tests
-    if: ${{ success() && (github.actor != CI_BOT_NAME) }}
+    if: ${{ success() && (github.actor != vars.CI_BOT_NAME ) }}
     runs-on: ubuntu-latest
     container:
       image: archlinux:latest
@@ -59,8 +56,8 @@ jobs:
 
       - name: Configure Git
         run: |
-          git config user.name "${{CI_BOT_NAME}}"
-          git config user.email "${{CI_BOT_NAME}}@users.noreply.github.com"
+          git config user.name "${{ vars.CI_BOT_NAME }}"
+          git config user.email "${{ vars.CI_BOT_NAME }}@users.noreply.github.com"
 
       - name: Commit changes
         run: |

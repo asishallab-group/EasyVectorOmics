@@ -18,7 +18,7 @@ jobs:
     strategy:
       matrix:
         compiler: [ifx, gfortran]
-    uses: ./.github/workflows/core/run_tests.yml
+    uses: ./.github/workflows/run_tests.yml
     with:
       compiler: ${{ matrix.compiler }}
 
