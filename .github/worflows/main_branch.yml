@@ -1,0 +1,61 @@
+name: 'Workflow related to main branch events'
+description: 'Triggers all workflows needed when updating main branch'
+
+permissions:
+  contents: write
+
+on:
+  push:
+    paths:
+      - helper/generate_snippets.py
+      - rcpp/**
+      - python/**
+      - src/**
+      - test/**
+      - test_runner.sh
+      - build.sh
+      - build_utils.sh
+      - ford.yml
+      - .fpm.toml
+jobs:
+  run_tests:
+    strategy:
+      matrix:
+        compiler: [ifx, gfortran]
+    uses: ./.github/workflows/core/run_tests.yml
+    with:
+      compiler: ${{ matrix.compiler }}
+
+      ref: main
+
+  generate_snippets_and_docs:
+    needs: run_tests
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: main
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Python
+        uses: ./.github/actions/install-Python.yml
+        with:
+          packages: ford
+
+      - name: Generate snippets
+        run: python helper/generate_snippets.py
+
+      - name: Generate docs
+        run: ford ford.yml
+
+      - name: Configure Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Commit changes
+        run: |
+          git add -f doc snippets
+          git commit -m "Snippets and Documentation for ${{ github.sha }}" || echo "No changes"
+
+      - name: Push changes
+        run: git push origin HEAD:main
