@@ -1,7 +1,7 @@
 name: 'Workflow related to Pull Requests'
 description: 'Triggers all workflows needed for Pull Requests'
 
-run-name: 'PR ${{ github.event.pull_request.number }}, Commit: ${{ github.event.pull_request.head.sha[0:7] }}, Message: ${{ github.event.pull_request.head.message }}'
+run-name: 'PR ${{ github.event.pull_request.number }}, Message: ${{ github.event.pull_request.head.message }}, Commit: ${{ github.event.pull_request.head.sha }}'
 
 on:
   pull_request:
