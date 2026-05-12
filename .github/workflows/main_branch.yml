@@ -8,7 +8,6 @@ on:
   push:
     branches:
       - main
-      - 132-gh-workflow
     paths:
       - .github/workflows/main_branch.yml
       - .github/workflows/run_tests.yml
@@ -25,19 +24,19 @@ on:
       - ford.yml
       - .fpm.toml
 jobs:
-  # run_tests:
-  #   if: ${{ github.actor != vars.CI_BOT_NAME }}
-  #   strategy:
-  #     matrix:
-  #       compiler: [ifx, gfortran]
-  #   uses: ./.github/workflows/run_tests.yml
-  #   with:
-  #     compiler: ${{ matrix.compiler }}
+  run_tests:
+    if: ${{ github.actor != vars.CI_BOT_NAME }}
+    strategy:
+      matrix:
+        compiler: [ifx, gfortran]
+    uses: ./.github/workflows/run_tests.yml
+    with:
+      compiler: ${{ matrix.compiler }}
 
-  #     ref: main
+      ref: main
 
   generate_snippets_and_docs:
-    # needs: run_tests
+    needs: run_tests
     if: ${{ success() && (github.actor != vars.CI_BOT_NAME ) }}
     runs-on: ubuntu-latest
     container:
@@ -45,7 +44,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
         with:
-          ref: 132-gh-workflow
+          ref: main
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Python
@@ -66,4 +65,4 @@ jobs:
           files: doc snippets
           bot_name: ${{ vars.CI_BOT_NAME }}
           token: ${{ secrets.GITHUB_TOKEN }}
-          branch: 132-gh-workflow
+          branch: main
