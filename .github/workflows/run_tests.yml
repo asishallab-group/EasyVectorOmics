@@ -7,9 +7,11 @@ on:
       compiler:
         description: 'The Fortran compiler to run the tests with (ifx, gfortran)'
         required: true
+        type: string
       ref:
         description: 'The git ref (branch, tag, commit SHA) to run the tests on'
         required: true
+        type: string
 
 jobs:
   run_tests:
