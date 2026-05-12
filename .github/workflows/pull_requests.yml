@@ -1,6 +1,8 @@
 name: 'Workflow related to Pull Requests'
 description: 'Triggers all workflows needed for Pull Requests'
 
+run_name: 'PR ${{ github.event.pull_request.number }}, Commit: ${{ github.event.pull_request.head.sha }}'
+
 on:
   pull_request:
     paths:
