@@ -46,4 +46,4 @@ runs:
 
         git add -f ${{ inputs.files }}
         git commit -m "${{ inputs.message }}" || echo "No changes to commit"
-        git push https://x-access-token:${{ inputs.token }}@github.com/${{ inputs.repository }}.git HEAD:origin/${{ inputs.branch }}
+        git push https://x-access-token:${{ inputs.token }}@github.com/${{ inputs.repository }}.git HEAD:${{ inputs.branch }}
