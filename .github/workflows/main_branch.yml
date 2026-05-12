@@ -46,7 +46,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Install Python
-        uses: ./.github/actions/install-Python.yml
+        uses: ./.github/actions/install-Python
         with:
           packages: ford
 

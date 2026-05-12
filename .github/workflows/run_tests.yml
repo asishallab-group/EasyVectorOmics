@@ -25,7 +25,7 @@ jobs:
           ref: ${{ inputs.ref }}
 
       - name: Install Fortran Compiler
-        uses: ./.github/actions/install-Fortran.yml
+        uses: ./.github/actions/install-Fortran
         with:
           compiler: ${{ inputs.compiler }}
 
@@ -33,13 +33,13 @@ jobs:
         run: bash test_runner.sh --compiler "${{ inputs.compiler }}"
 
       - name: Install R
-        uses: ./.github/actions/install-R.yml
+        uses: ./.github/actions/install-R
 
       - name: Run R Tests
         run: for i in rcpp/test/*.[rR]; do echo ; echo $i ; Rscript $i ; done
 
       - name: Install Python
-        uses: ./.github/actions/install-Python.yml
+        uses: ./.github/actions/install-Python
         with:
           packages: numpy pandas
 
