@@ -30,7 +30,7 @@ jobs:
           compiler: ${{ inputs.compiler }}
 
       - name: Run Fortran Tests
-        run: bash test_runner.sh --compiler "${{ inputs.compiler }}"
+        run: FC="${{ inputs.compiler }}" bash test_runner.sh
 
       - name: Install R
         uses: ./.github/actions/install-R
