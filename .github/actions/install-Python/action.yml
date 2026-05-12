@@ -21,6 +21,8 @@ runs:
       run: |
         python -m venv .venv
         source .venv/bin/activate
+        env | grep -o '^[^:]*\.venv[^:]\+:' | sed 's/^\(.*\)=\(.*\)./\1=\2:"${\1}"/' >> $GITHUB_ENV
+        env | grep -o '^[^:]*\.venv[^:]\+$' | sed 's/^\(.*\)=\(.*\)/\1=\2:"${\1}"/' >> $GITHUB_ENV
 
     - name: Install needed Python packages
       shell: bash
