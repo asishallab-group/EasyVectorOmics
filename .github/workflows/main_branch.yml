@@ -61,3 +61,4 @@ jobs:
         with:
           message: Generated Snippets and Docs for ${{ github.sha }}
           files: doc snippets
+          bot_name: ${{ vars.CI_BOT_NAME }}
