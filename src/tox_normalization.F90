@@ -238,7 +238,7 @@ contains
         end if
 
         call loess_alloc(x=tmp_loess_x(1:n_valid), y=tmp_loess_y(1:n_valid), &
-                         span=actual_span, degree=actual_degree, yhat=tmp_yhat_global(1:n_valid), &
+                         span=actual_span, degree=actual_degree, fitted_values=tmp_yhat_global(1:n_valid), &
                          mode=1, n_iters=3, ierr=ierr)
         if (is_err(ierr)) return
 
