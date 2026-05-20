@@ -7,7 +7,7 @@ module tox_get_outliers
     use, intrinsic :: ieee_arithmetic, only: ieee_is_nan, ieee_value, ieee_quiet_nan
     use f42_utils, only: sort_array, calc_percentile, logx, is_close, compute_empirical_p_values
     use tox_errors, only: ERR_INVALID_INPUT, set_ok, set_err_once, check_alloc_stat, is_err
-    use tox_loess, only: tox_loess_required_workspace, loess_fit_robust, loess_fit_plain, EPS_LOESS, lowese
+    use tox_loess, only: tox_loess_required_workspace, loess_fit_robust, loess_fit_plain, EPS_LOESS, loess_evaluation
     implicit none
 
 contains
@@ -272,7 +272,7 @@ contains
 
         if (is_err(ierr)) return
 
-        call lowese(tmp_iv, liv, lv, tmp_wv, n_families, tmp_z_mat(1:n_families, 1:1), tmp_yhat(1:n_families))
+        call loess_evaluation(tmp_iv, liv, lv, tmp_wv, n_families, tmp_z_mat(1:n_families, 1:1), tmp_yhat(1:n_families))
 
         if (is_err(ierr)) return
 
