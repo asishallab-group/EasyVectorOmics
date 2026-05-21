@@ -26,9 +26,7 @@ if [[ "$CLEAN_BUILD" ]]; then
 fi
 
 # Compile external libraries
-if [[ ! -f external/lib/libloess_netlib.a ]]; then
-  ./build_externals.sh
-fi
+./build_externals.sh
 
 # Build with FPM first
 generate_fpm_toml .fpm.toml $COMPILER > fpm.toml
